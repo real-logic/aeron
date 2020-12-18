@@ -53,7 +53,7 @@ int aeron_driver_receiver_init(
             AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH,
             AERON_CACHE_LINE_LENGTH) < 0)
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            AERON_APPEND_ERR("%s", "Failed to allocate receiver->recv_buffers");
             return -1;
         }
 
@@ -536,7 +536,7 @@ int aeron_driver_receiver_add_pending_setup(
 
     if (ensure_capacity_result < 0)
     {
-        aeron_set_err_from_last_err_code("receiver add_pending_setup");
+        AERON_APPEND_ERR("%s", "receiver add_pending_setup");
         return ensure_capacity_result;
     }
 

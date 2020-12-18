@@ -74,9 +74,7 @@ int aeron_image_create(
     if (aeron_alloc((void **)&_image, sizeof(aeron_image_t)) < 0 ||
         aeron_alloc((void **)&_image->source_identity, source_identity_length + 1) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_image_create (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("%s", "Failed to allocate aeron_image and source_identity");
         return -1;
     }
 
@@ -136,8 +134,11 @@ int aeron_image_constants(aeron_image_t *image, aeron_image_constants_t *constan
 {
     if (NULL == image || NULL == constants)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, image: %s, constants: %s",
+            AERON_NULL_STR(image),
+            AERON_NULL_STR(constants));
         return -1;
     }
 
@@ -161,8 +162,7 @@ int64_t aeron_image_position(aeron_image_t *image)
 
     if (NULL == image)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_position(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Parameters must not be null, image: %s", AERON_NULL_STR(image));
         return -1;
     }
 
@@ -181,8 +181,7 @@ int aeron_image_set_position(aeron_image_t *image, int64_t position)
 
     if (NULL == image)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_set_position(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Parameters must not be null, image: %s", AERON_NULL_STR(image));
         return -1;
     }
 
@@ -207,8 +206,7 @@ bool aeron_image_is_end_of_stream(aeron_image_t *image)
 
     if (NULL == image)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_is_end_of_stream: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Parameters must not be null, image: %s", AERON_NULL_STR(image));
         return -1;
     }
 
@@ -231,8 +229,7 @@ int aeron_image_active_transport_count(aeron_image_t *image)
 
     if (NULL == image)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_active_transport_count: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Parameters must not be null, image: %s", AERON_NULL_STR(image));
         return -1;
     }
 
@@ -254,8 +251,11 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
 
     if (NULL == image || NULL == handler)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_poll(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, image: %s, handler: %s",
+            AERON_NULL_STR(image),
+            AERON_NULL_STR(handler));
         return -1;
     }
 
@@ -322,8 +322,11 @@ int aeron_image_controlled_poll(
 
     if (NULL == image || NULL == handler)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_controlled_poll(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, image: %s, handler: %s",
+            AERON_NULL_STR(image),
+            AERON_NULL_STR(handler));
         return -1;
     }
 
@@ -415,8 +418,11 @@ int aeron_image_bounded_poll(
 
     if (NULL == image || NULL == handler)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_bounded_poll(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, image: %s, handler: %s",
+            AERON_NULL_STR(image),
+            AERON_NULL_STR(handler));
         return -1;
     }
 
@@ -489,8 +495,11 @@ int aeron_image_bounded_controlled_poll(
 
     if (NULL == image || NULL == handler)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_bounded_controlled_poll(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, image: %s, handler: %s",
+            AERON_NULL_STR(image),
+            AERON_NULL_STR(handler));
         return -1;
     }
 
@@ -583,8 +592,11 @@ int64_t aeron_image_controlled_peek(
 
     if (NULL == image || NULL == handler)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_controlled_peek(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, image: %s, handler: %s",
+            AERON_NULL_STR(image),
+            AERON_NULL_STR(handler));
         return -1;
     }
 
@@ -679,8 +691,11 @@ int aeron_image_block_poll(
 
     if (NULL == image || NULL == handler)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_image_block_poll(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, image: %s, handler: %s",
+            AERON_NULL_STR(image),
+            AERON_NULL_STR(handler));
         return -1;
     }
 

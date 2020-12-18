@@ -88,10 +88,16 @@ const char *aeron_errmsg()
             size_t maxlen = sizeof(error_state->errmsg) - 1;
             size_t offset = 0;
             error_message_ptr[maxlen] = '\0';
+            int bytes_written;
+
+            const char *err_str = aeron_errcode() < 0 ?
+                aeron_error_code_str(-aeron_errcode()) : strerror(aeron_errcode());
+            bytes_written = snprintf(error_message_ptr, maxlen, "(%d) %s\n", aeron_errcode(), err_str);
+            error_message_ptr += bytes_written;
+            offset += bytes_written;
 
             for (int i = 0, n = error_state->stack_depth; i < n; i++)
             {
-                int bytes_written;
                 if (i == AERON_ERROR_MAX_STACK_DEPTH - 1 && 0 < error_state->stack_overflows)
                 {
                     bytes_written = snprintf(
@@ -320,6 +326,7 @@ void aeron_err_set(int errcode, const char *function, const char *filename, int 
     aeron_per_thread_error_t *error_state = get_required_error_state();
 
     error_state->errcode = errcode;
+    aeron_set_errno(errcode);
 
     int stack_position = 0;
     error_state->stack_depth = 1;
@@ -350,6 +357,18 @@ void aeron_err_append(const char *function, const char *filename, int line_numbe
     va_start(args, format);
     aeron_err_update_entry(error_state, stack_position, function, filename, line_number, format, args);
     va_end(args);
+}
+
+void aeron_err_clear()
+{
+    aeron_per_thread_error_t *error_state = get_required_error_state();
+
+    aeron_set_errno(0);
+    error_state->errcode = 0;
+    strcpy(error_state->errmsg, "no error");
+    error_state->errmsg_valid = true;
+    error_state->stack_depth = 0;
+    error_state->stack_overflows = 0;
 }
 
 #if defined(AERON_COMPILER_MSVC)

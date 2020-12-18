@@ -37,13 +37,18 @@ int aeron_distinct_error_log_init(
 {
     if (NULL == log || NULL == clock || NULL == linger)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters can not be null, log: %s, clock: %s, linger: %s",
+            NULL == log ? "NULL" : "OK",
+            NULL == clock ? "NULL" : "OK",
+            NULL == linger ? "NULL" : "OK");
         return -1;
     }
 
     if (aeron_alloc((void **)&log->observation_list, sizeof(aeron_distinct_error_log_observation_list_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Unable to allocate distinct error log");
         return -1;
     }
 
@@ -164,7 +169,7 @@ int aeron_distinct_error_log_record(
 {
     if (NULL == log)
     {
-        aeron_set_err(EINVAL, "%s", "invalid argument");
+        AERON_SET_ERR(EINVAL, "%s", "log is null");
         return -1;
     }
 

@@ -335,13 +335,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     if (NULL == context)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_driver_context_init(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "aeron_driver_context_init(NULL)");
         return -1;
     }
 
     if (aeron_alloc((void **)&_context, sizeof(aeron_driver_context_t)) < 0)
     {
+        AERON_APPEND_ERR("%s", "Failed to allocate aeron_driver_context");
         return -1;
     }
 
@@ -1039,8 +1039,7 @@ int aeron_driver_context_bindings_clientd_create_entries(aeron_driver_context_t 
 
     if (aeron_alloc((void **)&_entries, sizeof(aeron_driver_context_bindings_clientd_entry_t) * num_entries) < 0)
     {
-        aeron_set_err(
-            aeron_errcode(), "could not allocate context_bindings_clientd_entries: %s", aeron_errmsg());
+        AERON_APPEND_ERR("%s", "could not allocate context_bindings_clientd_entries");
         return -1;
     }
 
@@ -1060,8 +1059,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
 {
     if (NULL == context)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_driver_context_close(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "aeron_driver_context_close(NULL)");
         return -1;
     }
 
@@ -1086,12 +1084,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
                 delete_result = EINVAL;
             }
 
-            errno = delete_result;
-            aeron_set_err(
-                delete_result,
-                "aeron_driver_context_close failed to delete dir: %s %s",
-                strerror(delete_result),
-                context->aeron_dir);
+            AERON_SET_ERR(delete_result, "aeron_driver_context_close failed to delete dir: %s", context->aeron_dir);
 
             result = -1;
         }
@@ -1127,7 +1120,7 @@ int aeron_driver_validate_unblock_timeout(aeron_driver_context_t *context)
     if (context->publication_unblock_timeout_ns <= context->client_liveness_timeout_ns)
     {
         errno = EINVAL;
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "publication_unblock_timeout_ns=%" PRIu64 " <= client_liveness_timeout_ns=%" PRIu64,
             context->publication_unblock_timeout_ns, context->client_liveness_timeout_ns);
@@ -1137,7 +1130,7 @@ int aeron_driver_validate_unblock_timeout(aeron_driver_context_t *context)
     if (context->client_liveness_timeout_ns <= context->timer_interval_ns)
     {
         errno = EINVAL;
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "client_liveness_timeout_ns=%" PRIu64 " <= timer_interval_ns=%" PRIu64,
             context->client_liveness_timeout_ns, context->timer_interval_ns);
@@ -1152,7 +1145,7 @@ int aeron_driver_validate_untethered_timeouts(aeron_driver_context_t *context)
     if (context->untethered_window_limit_timeout_ns <= context->timer_interval_ns)
     {
         errno = EINVAL;
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "untethered_window_limit_timeout_ns=%" PRIu64 " <= timer_interval_ns=%" PRIu64,
             context->untethered_window_limit_timeout_ns, context->timer_interval_ns);
@@ -1162,7 +1155,7 @@ int aeron_driver_validate_untethered_timeouts(aeron_driver_context_t *context)
     if (context->untethered_resting_timeout_ns <= context->timer_interval_ns)
     {
         errno = EINVAL;
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "untethered_resting_timeout_ns=%" PRIu64 " <= timer_interval_ns=%" PRIu64,
             context->untethered_resting_timeout_ns, context->timer_interval_ns);
@@ -1176,7 +1169,7 @@ int aeron_driver_context_validate_mtu_length(uint64_t mtu_length)
 {
     if (mtu_length <= AERON_DATA_HEADER_LENGTH || mtu_length > AERON_MAX_UDP_PAYLOAD_LENGTH)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "mtuLength must be a > HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: mtuLength=%" PRIu64,
             mtu_length);
@@ -1185,7 +1178,7 @@ int aeron_driver_context_validate_mtu_length(uint64_t mtu_length)
 
     if ((mtu_length & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1)) != 0)
     {
-        aeron_set_err(EINVAL, "mtuLength must be a multiple of FRAME_ALIGNMENT: mtuLength=%" PRIu64, mtu_length);
+        AERON_SET_ERR(EINVAL, "mtuLength must be a multiple of FRAME_ALIGNMENT: mtuLength=%" PRIu64, mtu_length);
         return -1;
     }
 
@@ -1310,7 +1303,7 @@ do \
 { \
     if (NULL == (a)) \
     { \
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL)); \
+        AERON_SET_ERR(EINVAL, "%s is null", #a); \
         return (r); \
     } \
 } \

@@ -44,15 +44,15 @@ aeron_per_thread_error_t;
 
 int aeron_errcode();
 const char *aeron_errmsg();
-void aeron_set_err(int errcode, const char *format, ...);
 void aeron_set_errno(int errcode);
-void aeron_set_err_from_last_err_code(const char *format, ...);
 const char *aeron_error_code_str(int errcode);
 void aeron_err_set(int errcode, const char *function, const char *filename, int line_number, const char *format, ...);
 void aeron_err_append(const char *function, const char *filename, int line_number, const char *format, ...);
+void aeron_err_clear();
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define AERON_SET_ERR(errcode, fmt, ...) aeron_err_set(errcode, __func__, __FILENAME__, __LINE__, fmt, __VA_ARGS__)
 #define AERON_APPEND_ERR(fmt, ...) aeron_err_append(__func__, __FILENAME__, __LINE__, fmt, __VA_ARGS__)
+#define AERON_NULL_STR(v) NULL == v ? "NULL" : "OK"
 
 #if defined(AERON_COMPILER_MSVC)
 bool aeron_error_dll_process_attach();

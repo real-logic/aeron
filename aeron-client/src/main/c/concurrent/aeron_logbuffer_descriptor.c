@@ -23,7 +23,7 @@ int aeron_logbuffer_check_term_length(uint64_t term_length)
 {
     if (term_length < AERON_LOGBUFFER_TERM_MIN_LENGTH)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "term length less than min length of %" PRIu64 ": length=%" PRIu64,
             AERON_LOGBUFFER_TERM_MIN_LENGTH, term_length);
@@ -32,7 +32,7 @@ int aeron_logbuffer_check_term_length(uint64_t term_length)
 
     if (term_length > AERON_LOGBUFFER_TERM_MAX_LENGTH)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "term length greater than max length of %" PRIu64 ": length=%" PRIu64,
             AERON_LOGBUFFER_TERM_MAX_LENGTH, term_length);
@@ -41,7 +41,7 @@ int aeron_logbuffer_check_term_length(uint64_t term_length)
 
     if (!AERON_IS_POWER_OF_TWO(term_length))
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "term length not a power of 2: length=%" PRIu64,
             term_length);
@@ -55,7 +55,7 @@ int aeron_logbuffer_check_page_size(uint64_t page_size)
 {
     if (page_size < AERON_PAGE_MIN_SIZE)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "page size less than min size of %" PRIu64 ": size=%" PRIu64,
             AERON_PAGE_MIN_SIZE, page_size);
@@ -64,7 +64,7 @@ int aeron_logbuffer_check_page_size(uint64_t page_size)
 
     if (page_size > AERON_PAGE_MAX_SIZE)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "page size greater than max size of %" PRIu64 ": size=%" PRIu64,
             AERON_PAGE_MAX_SIZE, page_size);
@@ -73,7 +73,7 @@ int aeron_logbuffer_check_page_size(uint64_t page_size)
 
     if (!AERON_IS_POWER_OF_TWO(page_size))
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "page size not a power of 2: size=%" PRIu64,
             page_size);

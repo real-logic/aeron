@@ -490,3 +490,8 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
+TEST_P(CSystemTest, foo)
+{
+    ASSERT_EQ(0, aeron_driver_context_set_dir(NULL, NULL)) << aeron_errmsg();
+}
+

@@ -211,7 +211,7 @@ int aeron_address_split(const char *address_str, aeron_parsed_address_t *parsed_
 {
     if (NULL == address_str || '\0' == *address_str)
     {
-        aeron_set_err(EINVAL, "no address value");
+        AERON_SET_ERR(EINVAL, "%s", "no address value");
         return -1;
     }
 
@@ -250,7 +250,7 @@ int aeron_address_split(const char *address_str, aeron_parsed_address_t *parsed_
     {
         if (l_brace_index < 0 || r_brace_index < 0 || r_brace_index < l_brace_index)
         {
-            aeron_set_err(EINVAL, "host address invalid: %s", address_str);
+            AERON_SET_ERR(EINVAL, "host address invalid: %s", address_str);
             return -1;
         }
 
@@ -267,7 +267,7 @@ int aeron_address_split(const char *address_str, aeron_parsed_address_t *parsed_
     {
         if (i - 1 == colon_index)
         {
-            aeron_set_err(EINVAL, "port invalid: %s", address_str);
+            AERON_SET_ERR(EINVAL, "port invalid: %s", address_str);
             return -1;
         }
 
@@ -276,7 +276,7 @@ int aeron_address_split(const char *address_str, aeron_parsed_address_t *parsed_
 
         if (length >= AERON_MAX_PORT_LENGTH)
         {
-            aeron_set_err(EINVAL, "port invalid: %s", address_str);
+            AERON_SET_ERR(EINVAL, "port invalid: %s", address_str);
             return -1;
         }
 
@@ -306,7 +306,7 @@ int aeron_address_split(const char *address_str, aeron_parsed_address_t *parsed_
 
     if (length >= AERON_MAX_HOST_LENGTH)
     {
-        aeron_set_err(EINVAL, "host address invalid: %s", address_str);
+        AERON_SET_ERR(EINVAL, "host address invalid: %s", address_str);
         return -1;
     }
 
@@ -320,7 +320,7 @@ int aeron_interface_split(const char *interface_str, aeron_parsed_interface_t *p
 {
     if (NULL == interface_str || '\0' == *interface_str)
     {
-        aeron_set_err(EINVAL, "no interface value");
+        AERON_SET_ERR(EINVAL, "%s", "no interface value");
         return -1;
     }
 
@@ -364,7 +364,7 @@ int aeron_interface_split(const char *interface_str, aeron_parsed_interface_t *p
     {
         if (l_brace_index < 0 || r_brace_index < 0 || r_brace_index < l_brace_index)
         {
-            aeron_set_err(EINVAL, "host address invalid: %s", interface_str);
+            AERON_SET_ERR(EINVAL, "host address invalid: %s", interface_str);
             return -1;
         }
 
@@ -382,13 +382,13 @@ int aeron_interface_split(const char *interface_str, aeron_parsed_interface_t *p
         int length = i - slash_index;
         if (length <= 0)
         {
-            aeron_set_err(EINVAL, "subnet prefix invalid: %s", interface_str);
+            AERON_SET_ERR(EINVAL, "subnet prefix invalid: %s", interface_str);
             return -1;
         }
 
         if (length >= AERON_MAX_PREFIX_LENGTH)
         {
-            aeron_set_err(EINVAL, "subnet prefix invalid: %s", interface_str);
+            AERON_SET_ERR(EINVAL, "subnet prefix invalid: %s", interface_str);
             return -1;
         }
 
@@ -401,7 +401,7 @@ int aeron_interface_split(const char *interface_str, aeron_parsed_interface_t *p
     {
         if (i - 1 == colon_index)
         {
-            aeron_set_err(EINVAL, "port invalid: %s", interface_str);
+            AERON_SET_ERR(EINVAL, "port invalid: %s", interface_str);
             return -1;
         }
 
@@ -410,7 +410,7 @@ int aeron_interface_split(const char *interface_str, aeron_parsed_interface_t *p
 
         if (length >= AERON_MAX_PORT_LENGTH)
         {
-            aeron_set_err(EINVAL, "port invalid: %s", interface_str);
+            AERON_SET_ERR(EINVAL, "port invalid: %s", interface_str);
             return -1;
         }
 
@@ -445,7 +445,7 @@ int aeron_interface_split(const char *interface_str, aeron_parsed_interface_t *p
 
     if (length >= AERON_MAX_HOST_LENGTH)
     {
-        aeron_set_err(EINVAL, "host address invalid: %s", interface_str);
+        AERON_SET_ERR(EINVAL, "host address invalid: %s", interface_str);
         return -1;
     }
 
@@ -474,7 +474,7 @@ int aeron_parse_get_line(char *str, size_t max_length, const char *buffer)
         }
     }
 
-    aeron_set_err(EINVAL, "line too long: %" PRIu64 "/%" PRIu64, (uint64_t)i, (uint64_t)max_length);
+    AERON_SET_ERR(EINVAL, "line too long: %" PRIu64 "/%" PRIu64, (uint64_t)i, (uint64_t)max_length);
     return -1;
 }
 

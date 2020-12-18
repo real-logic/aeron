@@ -155,7 +155,7 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
 
     if (NULL == name)
     {
-        aeron_set_err(EINVAL, "%s", "invalid name_resolver supplier function name");
+        AERON_SET_ERR(EINVAL, "%s", "invalid name_resolver supplier function name");
         return NULL;
     }
 
@@ -179,7 +179,7 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
 #endif
         if ((supplier_func = (aeron_name_resolver_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 EINVAL, "could not find name resolver %s: dlsym - %s", name, aeron_dlerror());
         }
 #if defined(AERON_COMPILER_GCC)
@@ -200,7 +200,7 @@ static void aeron_name_resolver_set_err(
     char dl_name_buffer[128];
     const char *address_or_null = NULL != address_str ? address_str : "null";
 
-    aeron_set_err(
+    AERON_SET_ERR(
         EINVAL,
         "Unresolved - %s=%s, name-and-port=%s, name-resolver-lookup=%s, name-resolver-resolve=%s",
         uri_param_name,

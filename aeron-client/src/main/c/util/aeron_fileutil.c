@@ -64,7 +64,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 
     if (!hmap)
     {
-        aeron_set_err_from_last_err_code("CreateFileMapping");
+        AERON_SET_ERR(errno, "%s", "CreateFileMapping");
         close(fd);
         return -1;
     }
@@ -228,7 +228,7 @@ static int unlink_func(const char *path, const struct stat *sb, int type_flag, s
 {
     if (remove(path) != 0)
     {
-        aeron_set_err_from_last_err_code("could not remove %s", path);
+        AERON_SET_ERR(errno, "could not remove %s", path);
     }
 
     return 0;
@@ -302,17 +302,17 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
             }
             else
             {
-                aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+                AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
             }
         }
         else
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            AERON_SET_ERR(errno, "Failed to stat file: %s", path);
         }
     }
     else
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "Failed to open file: %s", path);
     }
 
     return result;
@@ -335,17 +335,17 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
             }
             else
             {
-                aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+                AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
             }
         }
         else
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            AERON_SET_ERR(errno, "Failed to stat file: %s", path);
         }
     }
     else
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "Failed to open file: %s", path);
     }
 
     return result;
@@ -428,7 +428,7 @@ int aeron_raw_log_map(
 
             if (aeron_mmap(&mapped_raw_log->mapped_file, fd, 0) < 0)
             {
-                aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+                AERON_SET_ERR(errno, "Failed to map raw log, filename: %s", path);
                 return -1;
             }
 
@@ -452,12 +452,12 @@ int aeron_raw_log_map(
         }
         else
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            AERON_SET_ERR(errno, "Failed to truncate raw log, filename: %s", path);
         }
     }
     else
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "Failed to open raw log, filename: %s", path);
     }
 
     return result;
@@ -476,12 +476,12 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
 
             if (aeron_mmap(&mapped_raw_log->mapped_file, fd, 0) < 0)
             {
-                aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+                AERON_SET_ERR(errno, "Failed to mmap existing raw log, filename: %s", path);
             }
         }
         else
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            AERON_SET_ERR(errno, "Failed to stat existing raw log, filename: %s", path);
         }
 
         mapped_raw_log->log_meta_data.addr =
@@ -495,6 +495,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
 
         if (aeron_logbuffer_check_term_length(term_length) < 0 || aeron_logbuffer_check_page_size(page_size) < 0)
         {
+            AERON_APPEND_ERR("Raw log metadata invalid, unmapping, filename: %s", path);
             aeron_unmap(&mapped_raw_log->mapped_file);
             return -1;
         }
@@ -524,7 +525,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
     }
     else
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "Failed to open existing raw log, filename: %s", path);
     }
 
     return result;
@@ -534,7 +535,7 @@ int aeron_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
 {
     if (!aeron_raw_log_free(mapped_raw_log, filename))
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "Failed to close raw log, filename: %s", filename);
         return -1;
     }
 
@@ -649,12 +650,12 @@ int aeron_file_resolve(const char *parent, const char *child, char *buffer, size
 
     if (result < 0)
     {
-        aeron_set_err(errno, "Failed to format resolved path");
+        AERON_SET_ERR(errno, "%s", "Failed to format resolved path");
         return -1;
     }
     else if ((int)buffer_len <= result)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "Path name was truncated, required: %d, supplied: %d, result: %s",
             result,

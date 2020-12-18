@@ -93,7 +93,7 @@ int aeron_send_channel_endpoint_create(
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER) < 0)
     {
-        aeron_set_err(aeron_errcode(), "%s: uri=%s", aeron_errmsg(), channel->original_uri);
+        AERON_APPEND_ERR("uri=%s", channel->original_uri);
         aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
         return -1;
     }
@@ -264,7 +264,7 @@ int aeron_send_channel_endpoint_add_publication(
     int result = aeron_int64_to_ptr_hash_map_put(&endpoint->publication_dispatch_map, key_value, publication);
     if (result < 0)
     {
-        aeron_set_err_from_last_err_code("send_channel_endpoint_add(hash_map)");
+        AERON_APPEND_ERR("%s", "Failed to add publication to publication_dispatch_map");
     }
 
     return result;

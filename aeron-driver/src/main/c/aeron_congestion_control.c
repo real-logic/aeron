@@ -49,7 +49,7 @@ aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strat
 #endif
     if ((func = (aeron_congestion_control_strategy_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, strategy_name)) == NULL)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL, "could not find congestion control strategy %s: dlsym - %s", strategy_name, aeron_dlerror());
 
         return NULL;

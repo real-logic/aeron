@@ -43,7 +43,7 @@ int aeron_broadcast_receiver_init(aeron_broadcast_receiver_t *receiver, void *bu
     }
     else
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Capacity: %llu invalid, must be power of two", (unsigned long long) capacity);
     }
 
     return result;
@@ -65,7 +65,11 @@ int aeron_broadcast_receiver_receive(
     {
         if (last_seen_lapped_count != receiver->lapped_count)
         {
-            aeron_set_err(EINVAL, "unable to keep up with broadcast");
+            AERON_SET_ERR(
+                EINVAL,
+                "unable to keep up with broadcast, last_seen_lapped_count: %ld, receiver->lapped_count: %ld",
+                last_seen_lapped_count,
+                receiver->lapped_count);
             return -1;
         }
 
@@ -76,7 +80,11 @@ int aeron_broadcast_receiver_receive(
 
         if (length > sizeof(receiver->scratch_buffer))
         {
-            aeron_set_err(EINVAL, "scratch buffer too small");
+            AERON_SET_ERR(
+                EINVAL,
+                "scratch buffer too small, required: %llu, found: %llu",
+                (unsigned long long) length,
+                (unsigned long long) sizeof(receiver->scratch_buffer));
             return -1;
         }
 
@@ -88,7 +96,7 @@ int aeron_broadcast_receiver_receive(
 
         if (!aeron_broadcast_receiver_validate(receiver))
         {
-            aeron_set_err(EINVAL, "unable to keep up with broadcast");
+            AERON_SET_ERR(EINVAL, "%s", "unable to keep up with broadcast");
             return -1;
         }
 

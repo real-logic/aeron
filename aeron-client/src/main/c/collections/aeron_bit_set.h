@@ -59,7 +59,7 @@ inline int aeron_bit_set_stack_alloc(
     {
         if (aeron_alloc((void **)&bit_set->bits, sizeof(uint64_t) * u64_len) < 0)
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            AERON_APPEND_ERR("%s", "Unable to allocate overflow bit set");
             return -1;
         }
     }
@@ -76,7 +76,7 @@ inline int aeron_bit_set_heap_alloc(size_t bit_set_length, aeron_bit_set_t **bit
 
     if (aeron_alloc((void **)bit_set, sizeof(aeron_bit_set_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Unable to allocate bit set");
         return -1;
     }
 

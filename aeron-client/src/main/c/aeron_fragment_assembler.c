@@ -29,7 +29,7 @@ int aeron_buffer_builder_create(aeron_buffer_builder_t **buffer_builder)
 
     if (aeron_alloc((void **)&_buffer_builder, sizeof(aeron_buffer_builder_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Failed to allocate buffer_builder");
         return -1;
     }
 
@@ -55,8 +55,7 @@ int aeron_buffer_builder_find_suitable_capacity(size_t current_capacity, size_t 
         {
             if (AERON_BUFFER_BUILDER_MAX_CAPACITY == capacity)
             {
-                errno = EINVAL;
-                aeron_set_err(EINVAL, "max capacity reached: %" PRId32, AERON_BUFFER_BUILDER_MAX_CAPACITY);
+                AERON_SET_ERR(EINVAL, "max capacity reached: %" PRId32, AERON_BUFFER_BUILDER_MAX_CAPACITY);
                 return -1;
             }
 
@@ -88,7 +87,7 @@ int aeron_buffer_builder_ensure_capacity(aeron_buffer_builder_t *buffer_builder,
 
         if (aeron_alloc((void **)&buffer_builder->buffer, (size_t)suitable_capacity) < 0)
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            AERON_APPEND_ERR("%s", "Unable to allocate buffer_builder->builder");
             return -1;
         }
 
@@ -116,7 +115,7 @@ int aeron_image_fragment_assembler_create(
 
     if (aeron_alloc((void **)&_assembler, sizeof(aeron_image_fragment_assembler_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Failed to allocate assembler");
         return -1;
     }
 
@@ -184,7 +183,7 @@ int aeron_image_controlled_fragment_assembler_create(
 
     if (aeron_alloc((void **)&_assembler, sizeof(aeron_image_controlled_fragment_assembler_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Failed to allocate assembler");
         return -1;
     }
 
@@ -267,17 +266,14 @@ int aeron_fragment_assembler_create(
 
     if (aeron_alloc((void **)&_assembler, sizeof(aeron_fragment_assembler_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Failed to allocate assembler");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
         &_assembler->builder_by_session_id_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_fragment_assembler_create - builder_by_session_id_map: %s",
-            strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to init builder_by_session_id_map");
         return -1;
     }
 
@@ -361,17 +357,14 @@ int aeron_controlled_fragment_assembler_create(
 
     if (aeron_alloc((void **)&_assembler, sizeof(aeron_controlled_fragment_assembler_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Failed to allocate assembler");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
         &_assembler->builder_by_session_id_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_controlled_fragment_assembler_create - builder_by_session_id_map: %s",
-            strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to init builder_by_session_id_map");
         return -1;
     }
 

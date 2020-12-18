@@ -31,7 +31,7 @@ int aeron_receive_destination_create(
 
     if (aeron_alloc((void **)&_destination, sizeof(aeron_receive_destination_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("could not allocate receive_channel_endpoint");
+        AERON_APPEND_ERR("%s", "could not allocate receive_channel_endpoint");
         return -1;
     }
 

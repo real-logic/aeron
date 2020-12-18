@@ -787,7 +787,7 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
 
         if (aeron_alloc((void **)&incoming_bindings, sizeof(aeron_udp_channel_interceptor_bindings_t)) < 0)
         {
-            aeron_set_err(ENOMEM, "could not allocate %s:%d", __FILE__, __LINE__);
+            AERON_APPEND_ERR("%s", "Incoming interceptor bindings for logging agent");
             return -1;
         }
 
@@ -832,7 +832,7 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
 
         if (aeron_alloc((void **)&outgoing_bindings, sizeof(aeron_udp_channel_interceptor_bindings_t)) < 0)
         {
-            aeron_set_err(ENOMEM, "could not allocate %s:%d", __FILE__, __LINE__);
+            AERON_APPEND_ERR("%s", "Outgoing interceptor bindings for logging agent");
             return -1;
         }
 

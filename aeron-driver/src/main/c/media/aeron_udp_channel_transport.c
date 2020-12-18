@@ -259,7 +259,7 @@ int aeron_udp_channel_transport_recvmmsg(
             return 0;
         }
 
-        aeron_set_err_from_last_err_code("recvmmsg");
+        AERON_SET_ERR(errno, "Failed to recvmmsg, fd: %d", transport->fd);
         return -1;
     }
     else if (0 == result)
@@ -300,7 +300,7 @@ int aeron_udp_channel_transport_recvmmsg(
                 break;
             }
 
-            aeron_set_err_from_last_err_code("recvmsg");
+            AERON_SET_ERR(errno, "Failed to recvmmsg, fd: %d", transport->fd);
             return -1;
         }
 
@@ -337,7 +337,7 @@ int aeron_udp_channel_transport_sendmmsg(
     int sendmmsg_result = sendmmsg(transport->fd, msgvec, vlen, 0);
     if (sendmmsg_result < 0)
     {
-        aeron_set_err_from_last_err_code("sendmmsg");
+        AERON_SET_ERR(errno, "Failed to sendmmsg, fd: %d", transport->fd);
         return -1;
     }
 
@@ -350,7 +350,7 @@ int aeron_udp_channel_transport_sendmmsg(
         ssize_t sendmsg_result = sendmsg(transport->fd, &msgvec[i].msg_hdr, 0);
         if (sendmsg_result < 0)
         {
-            aeron_set_err_from_last_err_code("sendmsg");
+            AERON_SET_ERR(errno, "Failed to sendmsg, fd: %d", transport->fd);
             return -1;
         }
 
@@ -376,7 +376,7 @@ int aeron_udp_channel_transport_sendmsg(
     ssize_t sendmsg_result = sendmsg(transport->fd, message, 0);
     if (sendmsg_result < 0)
     {
-        aeron_set_err_from_last_err_code("sendmsg");
+        AERON_SET_ERR(errno, "Failed to sendmsg, fd: %d", transport->fd);
         return -1;
     }
 
@@ -389,7 +389,7 @@ int aeron_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *tra
 
     if (aeron_getsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, so_rcvbuf, &len) < 0)
     {
-        aeron_set_err_from_last_err_code("getsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "Failed to get SO_RCVBUF for fd: %s", transport->fd);
         return -1;
     }
 
@@ -404,7 +404,7 @@ int aeron_udp_channel_transport_bind_addr_and_port(
 
     if (getsockname(transport->fd, (struct sockaddr *)&addr, &addr_len) < 0)
     {
-        aeron_set_err_from_last_err_code("getsockname %s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "Failed to get socket name for fd: %d", transport->fd);
         return -1;
     }
 

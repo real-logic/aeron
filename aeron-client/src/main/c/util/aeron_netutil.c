@@ -63,7 +63,7 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
     int error, result = -1;
     if ((error = getaddrinfo(host, NULL, &hints, &info)) != 0)
     {
-        aeron_set_err(EINVAL, "Unable to resolve host=(%s): (%d) %s", host, error, gai_strerror(error));
+        AERON_SET_ERR(EINVAL, "Unable to resolve host=(%s): (%d) %s", host, error, gai_strerror(error));
         return -1;
     }
 
@@ -81,7 +81,7 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
     }
     else
     {
-        aeron_set_err(EINVAL, "Only IPv4 and IPv6 hosts are supported: family=%d", info->ai_family);
+        AERON_SET_ERR(EINVAL, "Only IPv4 and IPv6 hosts are supported: family=%d", info->ai_family);
     }
 
     freeaddrinfo(info);
@@ -162,12 +162,12 @@ int aeron_udp_port_resolver(const char *port_str, bool optional)
 
     if ((0 == value && 0 != errno) || end_ptr == port_str)
     {
-        aeron_set_err(EINVAL, "port invalid: %s", port_str);
+        AERON_SET_ERR(EINVAL, "port invalid: %s", port_str);
         return -1;
     }
     else if (value > UINT16_MAX)
     {
-        aeron_set_err(EINVAL, "port out of range: %s", port_str);
+        AERON_SET_ERR(EINVAL, "port out of range: %s", port_str);
         return -1;
     }
 
@@ -197,12 +197,12 @@ int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
 
     if ((0 == value && 0 != errno) || end_ptr == prefixlen)
     {
-        aeron_set_err(EINVAL, "prefixlen invalid: %s", prefixlen);
+        AERON_SET_ERR(EINVAL, "prefixlen invalid: %s", prefixlen);
         return -1;
     }
     else if (value > max)
     {
-        aeron_set_err(EINVAL, "prefixlen out of range: %s", prefixlen);
+        AERON_SET_ERR(EINVAL, "prefixlen out of range: %s", prefixlen);
         return -1;
     }
 
@@ -536,7 +536,7 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
 
     if (0 == result)
     {
-        aeron_set_err(EINVAL, "could not find matching interface=(%s)", interface_str);
+        AERON_SET_ERR(EINVAL, "could not find matching interface=(%s)", interface_str);
         return -1;
     }
 

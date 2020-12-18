@@ -30,6 +30,7 @@
 #endif
 
 #include "util/aeron_bitutil.h"
+#include "util/aeron_error.h"
 #include "aeron_alloc.h"
 
 int aeron_alloc_no_err(void **ptr, size_t size)
@@ -52,10 +53,7 @@ int aeron_alloc(void **ptr, size_t size)
 
     if (NULL == *ptr)
     {
-        errno = ENOMEM;
-#if defined(AERON_COMPILER_MSVC)
-        SetLastError(ERROR_OUTOFMEMORY);
-#endif
+        AERON_SET_ERR(ENOMEM, "Failed to allocate: %llu bytes", (unsigned long long)size);
         return -1;
     }
 

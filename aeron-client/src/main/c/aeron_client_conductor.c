@@ -37,18 +37,14 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     if (aeron_broadcast_receiver_init(
         &conductor->to_client_buffer, aeron_cnc_to_clients_buffer(metadata), (size_t)metadata->to_clients_buffer_length) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_client_conductor_init - broadcast_receiver: %s", strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to init to_client_buffer");
         return -1;
     }
 
     if (aeron_mpsc_rb_init(
         &conductor->to_driver_buffer, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_client_conductor_init - to_driver_rb: %s", strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to init to_driver_buffer");
         return -1;
     }
 
@@ -59,36 +55,28 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
         aeron_cnc_counters_values_buffer(metadata),
         (size_t)metadata->counter_values_buffer_length) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_client_conductor_init - counters_reader: %s", strerror(errcode));
+        AERON_SET_ERR(errno, "%s", "Unable to init counters_reader");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
         &conductor->log_buffer_by_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_client_conductor_init - log_buffer_by_id_map: %s", strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to init log_buffer_by_id_map");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
         &conductor->resource_by_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_client_conductor_init - resource_by_id_map: %s", strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to init resource_by_id_map");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
         &conductor->image_by_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_client_conductor_init - image_by_id_map: %s", strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to init image_by_id_map");
         return -1;
     }
 
@@ -104,9 +92,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
         AERON_ARRAY_ENSURE_CAPACITY(result, conductor->available_counter_handlers, aeron_on_available_counter_pair_t);
         if (result < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "available_counter_handlers: %s", strerror(errcode));
+            AERON_APPEND_ERR("%s", "Unable to ensure capacity for available_counter_handlers");
             return -1;
         }
 
@@ -128,9 +114,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
             result, conductor->unavailable_counter_handlers, aeron_on_unavailable_counter_pair_t);
         if (result < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "unavailable_counter_handlers: %s", strerror(errcode));
+            AERON_APPEND_ERR("%s", "Unable to ensure capacity for unavailable_counter_handlers");
             return -1;
         }
 
@@ -151,9 +135,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
         AERON_ARRAY_ENSURE_CAPACITY(result, conductor->close_handlers, aeron_on_close_client_pair_t);
         if (result < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "close_handlers: %s", strerror(errcode));
+            AERON_APPEND_ERR("%s", "Unable to ensure capacity for close_handlers");
             return -1;
         }
 
@@ -443,7 +425,7 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
                 aeron_client_conductor_force_close_resources(conductor);
                 snprintf(buffer, sizeof(buffer) - 1, "unexpected close of heartbeat timestamp counter: %" PRId32, id);
                 conductor->error_handler(conductor->error_handler_clientd, ETIMEDOUT, buffer);
-                aeron_set_err(ETIMEDOUT, "%s", buffer);
+                AERON_SET_ERR(ETIMEDOUT, "%s", buffer);
                 return -1;
             }
 
@@ -1320,7 +1302,7 @@ int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *co
     {
         if (++fail_count > AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD)
         {
-            aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", "could not offer to conductor command queue");
+            AERON_SET_ERR(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", "could not offer to conductor command queue");
             return -1;
         }
 
@@ -1342,9 +1324,7 @@ int aeron_client_conductor_async_add_publication(
     if (aeron_alloc((void **)&cmd, sizeof(aeron_async_add_publication_t)) < 0 ||
         aeron_alloc((void **)&uri_copy, uri_length + 1) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_async_add_publication (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to allocate publication and uri_copy");
         return -1;
     }
 
@@ -1429,9 +1409,7 @@ int aeron_client_conductor_async_add_exclusive_publication(
     if (aeron_alloc((void **)&cmd, sizeof(aeron_async_add_exclusive_publication_t)) < 0 ||
         aeron_alloc((void **)&uri_copy, uri_length + 1) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_async_add_exclusive_publication (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to allocate exclusive_publication and uri_copy");
         return -1;
     }
 
@@ -1520,9 +1498,7 @@ int aeron_client_conductor_async_add_subscription(
     if (aeron_alloc((void **)&cmd, sizeof(aeron_async_add_subscription_t)) < 0 ||
         aeron_alloc((void **)&uri_copy, uri_length + 1) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_async_add_subscription (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to allocate subscription and uri_copy");
         return -1;
     }
 
@@ -1615,9 +1591,7 @@ int aeron_client_conductor_async_add_counter(
         aeron_alloc((void **)&key_buffer_copy, key_buffer_length) < 0 ||
         aeron_alloc((void **)&label_buffer_copy, label_buffer_length + 1) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_async_add_counter (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to allocate counter");
         return -1;
     }
 
@@ -1714,17 +1688,13 @@ static int aeron_client_conductor_async_destination(
 
     if (aeron_alloc((void **)&uri_copy, uri_length + 1) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_async_add_destination (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to allocate uri_copy");
         return -1;
     }
 
     if (aeron_alloc((void **)&cmd, sizeof(aeron_async_destination_t)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_async_add_destination (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to allocate destination");
         return -1;
     }
 
@@ -1872,9 +1842,7 @@ int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_e
 
             if (aeron_alloc((void **)&resource->error_message, (size_t)response->error_message_length + 1) < 0)
             {
-                int errcode = errno;
-
-                aeron_set_err(errcode, "aeron_client_conductor_on_error (%d): %s", errcode, strerror(errcode));
+                AERON_APPEND_ERR("%s", "Unable to allocate error message");
                 return -1;
             }
 
@@ -1917,10 +1885,7 @@ int aeron_client_conductor_get_or_create_log_buffer(
         if (aeron_int64_to_ptr_hash_map_put(
             &conductor->log_buffer_by_id_map, original_registration_id, *log_buffer) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "aeron_client_conductor_get_or_create_log_buffer (%d): %s",
-                errcode, strerror(errcode));
+            AERON_SET_ERR(errno, "%s", "Unable to insert into log_buffer_by_id_map");
             aeron_log_buffer_delete(*log_buffer);
             return -1;
         }
@@ -2001,10 +1966,9 @@ int aeron_client_conductor_on_publication_ready(
                 if (aeron_int64_to_ptr_hash_map_put(
                     &conductor->resource_by_id_map, resource->registration_id, publication) < 0)
                 {
-                    int errcode = errno;
-
-                    aeron_set_err(errcode, "on_publication_ready - resource_by_id_map put (%d): %s",
-                        errcode, strerror(errcode));
+                    AERON_APPEND_ERR(
+                        "Unable to insert publication into resource_by_id_map: resource_id: %" PRId64,
+                        resource->registration_id);
                     return -1;
                 }
             }
@@ -2039,10 +2003,9 @@ int aeron_client_conductor_on_publication_ready(
                 if (aeron_int64_to_ptr_hash_map_put(
                     &conductor->resource_by_id_map, resource->registration_id, publication) < 0)
                 {
-                    int errcode = errno;
-
-                    aeron_set_err(errcode, "on_publication_ready - resource_by_id_map put (%d): %s",
-                        errcode, strerror(errcode));
+                    AERON_APPEND_ERR(
+                        "Unable to insert publication into resource_by_id_map: resource_id: %" PRId64,
+                        resource->registration_id);
                     return -1;
                 }
             }
@@ -2127,10 +2090,9 @@ int aeron_client_conductor_on_subscription_ready(
             if (aeron_int64_to_ptr_hash_map_put(
                 &conductor->resource_by_id_map, resource->registration_id, subscription) < 0)
             {
-                int errcode = errno;
-
-                aeron_set_err(errcode, "on_subscription_ready - resource_by_id_map put (%d): %s",
-                    errcode, strerror(errcode));
+                AERON_APPEND_ERR(
+                    "Unable to insert subscription into resource_by_id_map: resource_id: %" PRId64,
+                    resource->registration_id);
                 return -1;
             }
 
@@ -2239,10 +2201,7 @@ int aeron_client_conductor_on_available_image(
 
         if (aeron_int64_to_ptr_hash_map_put(&conductor->image_by_id_map, response->correlation_id, image) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "on_available_image - resource_by_id_map put (%d): %s",
-                errcode, strerror(errcode));
+            AERON_APPEND_ERR("Unable to put into image_by_id_map, correlation_id: %" PRId64, response->correlation_id);
             return -1;
         }
 
@@ -2329,10 +2288,9 @@ int aeron_client_conductor_on_counter_ready(aeron_client_conductor_t *conductor,
             if (aeron_int64_to_ptr_hash_map_put(
                 &conductor->resource_by_id_map, resource->registration_id, counter) < 0)
             {
-                int errcode = errno;
-
-                aeron_set_err(errcode, "on_counter_ready - resource_by_id_map put (%d): %s",
-                    errcode, strerror(errcode));
+                AERON_APPEND_ERR(
+                    "Unable to put counter into resource_by_id_map, registration_id: %" PRId64,
+                    resource->registration_id);
                 return -1;
             }
 
@@ -2394,7 +2352,7 @@ int aeron_client_conductor_offer_remove_command(
             snprintf(err_buffer, sizeof(err_buffer) - 1, "remove command could not be sent (%s:%d)",
                 __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
-            aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);
+            AERON_SET_ERR(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);
             return -1;
         }
 
@@ -2433,7 +2391,7 @@ int aeron_client_conductor_offer_destination_command(
             snprintf(err_buffer, sizeof(err_buffer) - 1, "destination command could not be sent (%s:%d)",
                 __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
-            aeron_set_err(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);
+            AERON_SET_ERR(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);
             return -1;
         }
 

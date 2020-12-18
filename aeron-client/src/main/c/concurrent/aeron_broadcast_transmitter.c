@@ -35,7 +35,7 @@ int aeron_broadcast_transmitter_init(aeron_broadcast_transmitter_t *transmitter,
     }
     else
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Capacity: %llu invalid, must be power of two", (unsigned long long) capacity);
     }
 
     return result;

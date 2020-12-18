@@ -129,14 +129,14 @@ static bool aeron_driver_conductor_has_clashing_subscription(
             if (params->is_reliable != link->is_reliable)
             {
                 const char *value = params->is_reliable ? "true" : "false";
-                aeron_set_err(EINVAL, "option conflicts with existing subscriptions: reliable=%s", value);
+                AERON_SET_ERR(EINVAL, "option conflicts with existing subscriptions: reliable=%s", value);
                 return true;
             }
 
             if (params->is_rejoin != link->is_rejoin)
             {
                 const char *value = params->is_rejoin ? "true" : "false";
-                aeron_set_err(EINVAL, "option conflicts with existing subscriptions: rejoin=%s", value);
+                AERON_SET_ERR(EINVAL, "option conflicts with existing subscriptions: rejoin=%s", value);
                 return true;
             }
         }
@@ -303,7 +303,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     if (aeron_name_resolver_init(&conductor->name_resolver, context->name_resolver_init_args, context) < 0)
     {
-        aeron_set_err_from_last_err_code("Failed to start name resolver: %s", aeron_errmsg());
+        AERON_APPEND_ERR("%s", "Failed to init name resolver");
         return -1;
     }
 
@@ -479,7 +479,7 @@ int aeron_confirm_publication_match(
 {
     if (params->has_session_id && params->session_id != existing_session_id)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "existing publication has different session id: existing=%" PRId32 " requested=%" PRId32,
             existing_session_id, params->session_id);
@@ -489,7 +489,7 @@ int aeron_confirm_publication_match(
 
     if (params->mtu_length != (size_t)logbuffer_metadata->mtu_length)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "existing publication has different MTU length: existing=%" PRId32 " requested=%" PRIu32,
             logbuffer_metadata->mtu_length, (uint32_t)params->mtu_length);
@@ -499,7 +499,7 @@ int aeron_confirm_publication_match(
 
     if (params->term_length != (size_t)logbuffer_metadata->term_length)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "existing publication has different term length: existing=%" PRId32 " requested=%" PRIu32,
             logbuffer_metadata->term_length, (uint32_t)params->term_length);
@@ -535,7 +535,7 @@ void aeron_driver_conductor_error(
 {
     aeron_distinct_error_log_record(&conductor->error_log, error_code, description, message);
     aeron_counter_increment(conductor->errors_counter, 1);
-    aeron_set_err(0, "%s", "no error");
+    aeron_err_clear();
 }
 
 void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *client)
@@ -1107,13 +1107,13 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
     if (session_id_found < 0)
     {
-        aeron_set_err(EINVAL, "(BUG) Unable to allocate session-id");
+        AERON_SET_ERR(EINVAL, "%s", "(BUG) Unable to allocate session-id");
         return NULL;
     }
 
     if (is_session_id_in_use && (is_exclusive || NULL == publication))
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
             (int)uri_length, uri, stream_id);
@@ -1273,13 +1273,13 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
     if (session_id_found < 0)
     {
-        aeron_set_err(EINVAL, "(BUG) Unable to allocate session-id");
+        AERON_SET_ERR(EINVAL, "%s", "(BUG) Unable to allocate session-id");
         return NULL;
     }
 
     if (is_session_id_in_use && (is_exclusive || NULL == publication))
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
             (int)uri_length, uri, stream_id);
@@ -1291,7 +1291,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     {
         if (publication->spies_simulate_connection != params->spies_simulate_connection)
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 EINVAL,
                 "existing publication has different spies simulate connection: requested=%s",
                 params->spies_simulate_connection ? "true" : "false");
@@ -1486,7 +1486,7 @@ int aeron_driver_conductor_update_and_check_ats_status(
 {
     if (!context->ats_enabled && AERON_URI_ATS_STATUS_ENABLED == channel->ats_status)
     {
-        aeron_set_err(EINVAL, "%s", "ATS is not enabled and thus ats=true not allowed.");
+        AERON_SET_ERR(EINVAL, "%s", "ATS is not enabled and thus ats=true not allowed.");
         return -1;
     }
 
@@ -1498,7 +1498,7 @@ int aeron_driver_conductor_update_and_check_ats_status(
     {
         if (existing_channel->ats_status != channel->ats_status)
         {
-            aeron_set_err(EINVAL, "%s", "ATS mismatch on existing channel");
+            AERON_SET_ERR(EINVAL, "%s", "ATS mismatch on existing channel");
             return -1;
         }
     }
@@ -1516,7 +1516,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     {
         if (!aeron_udp_channel_is_wildcard(channel))
         {
-            aeron_set_err(EINVAL, "matching tag %" PRId64 " already in use", channel->tag_id);
+            AERON_SET_ERR(EINVAL, "matching tag %" PRId64 " already in use", channel->tag_id);
             return NULL;
         }
     }
@@ -1527,7 +1527,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
             !channel->is_manual_control_mode &&
             NULL == channel->uri.params.udp.endpoint)
         {
-            aeron_set_err(EINVAL, "URI must have explicit control, endpoint, or be manual control-mode when original");
+            AERON_SET_ERR(
+                EINVAL, "%s", "URI must have explicit control, endpoint, or be manual control-mode when original");
             return NULL;
         }
 
@@ -1590,7 +1591,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
     {
         if (!aeron_udp_channel_is_wildcard(channel))
         {
-            aeron_set_err(EINVAL, "matching tag %" PRId64 " already in use", channel->tag_id);
+            AERON_SET_ERR(EINVAL, "matching tag %" PRId64 " already in use", channel->tag_id);
             return NULL;
         }
     }
@@ -1752,10 +1753,7 @@ void aeron_driver_conductor_on_error(
             char error_message[AERON_MAX_PATH];
             int os_errno = aeron_errcode();
             int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
-            const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
-
-            AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
-            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
+            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", aeron_errmsg());
             return;
         }
         on_error(conductor, error_code, message, length, correlation_id, response_length, buffer);
@@ -2687,7 +2685,7 @@ int aeron_driver_conductor_on_add_network_publication(
 
     if (AERON_SEND_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
     {
-        aeron_set_err(EINVAL, "%s", "send_channel_endpoint found in CLOSING state");
+        AERON_SET_ERR(EINVAL, "%s", "send_channel_endpoint found in CLOSING state");
         return -1;
     }
 
@@ -2783,7 +2781,7 @@ int aeron_driver_conductor_on_remove_publication(aeron_driver_conductor_t *condu
         }
     }
 
-    aeron_set_err(
+    AERON_SET_ERR(
         -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
         "unknown publication client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,
@@ -3012,8 +3010,9 @@ int aeron_driver_conductor_on_add_network_subscription(
 
     if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE != endpoint->conductor_fields.status)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             -AERON_ERROR_CODE_RESOURCE_TEMPORARILY_UNAVAILABLE,
+            "%s",
             "receive_channel_endpoint found in CLOSING state, please retry");
         return -1;
     }
@@ -3157,7 +3156,7 @@ int aeron_driver_conductor_on_remove_subscription(
         }
     }
 
-    aeron_set_err(
+    AERON_SET_ERR(
         -AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION,
         "unknown subscription client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,
@@ -3200,7 +3199,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
         aeron_uri_t *uri; // Ownership is transferred to destination, no need to close...
         if (aeron_alloc((void **)&uri, sizeof(aeron_uri_t)) < 0)
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            AERON_APPEND_ERR("%s", "Failed to allocate uri");
             goto error_cleanup;
         }
 
@@ -3212,7 +3211,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
 
         if (NULL == endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 EINVAL,
                 "channel does not allow manual control of destinations: %.*s",
                 command->channel_length, command_uri);
@@ -3221,7 +3220,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
 
         if (uri->type != AERON_URI_UDP || NULL == uri->params.udp.endpoint)
         {
-            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
+            AERON_SET_ERR(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             goto error_cleanup;
         }
 
@@ -3233,6 +3232,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             false,
             &destination_addr) < 0)
         {
+            // TODO: (MJB) revise this.
             aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
             goto error_cleanup;
         }
@@ -3249,7 +3249,7 @@ error_cleanup:
         return -1;
     }
 
-    aeron_set_err(
+    AERON_SET_ERR(
         -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
         "unknown add destination registration_id=%" PRId64,
         command->correlated.client_id,
@@ -3286,7 +3286,7 @@ int aeron_driver_conductor_on_remove_destination(
 
         if (NULL == endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 EINVAL,
                 "channel does not allow manual control of destinations: %.*s",
                 command->channel_length, command_uri);
@@ -3295,7 +3295,7 @@ int aeron_driver_conductor_on_remove_destination(
 
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint)
         {
-            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
+            AERON_SET_ERR(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             goto error_cleanup;
         }
 
@@ -3322,7 +3322,7 @@ int aeron_driver_conductor_on_remove_destination(
         return -1;
     }
 
-    aeron_set_err(
+    AERON_SET_ERR(
         -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
         "unknown remove destination, client_id=%" PRId64 " registration_id=%" PRId64,
         command->correlated.client_id,
@@ -3349,7 +3349,7 @@ int aeron_driver_conductor_on_add_receive_destination(
 
     if (NULL == endpoint)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             -AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION,
             "unknown add destination client_id=%" PRId64 " registration_id=%" PRId64,
             command->correlated.client_id,
@@ -3360,7 +3360,7 @@ int aeron_driver_conductor_on_add_receive_destination(
 
     if (!endpoint->conductor_fields.udp_channel->is_manual_control_mode)
     {
-        aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "channel does not allow manual control");
+        AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "channel does not allow manual control");
         return -1;
     }
 
@@ -3416,7 +3416,7 @@ int aeron_driver_conductor_on_remove_receive_destination(
 
     if (NULL == endpoint)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             -AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION,
             "unknown add destination client_id=%" PRId64 " registration_id=%" PRId64,
             command->correlated.client_id,
@@ -3540,7 +3540,7 @@ int aeron_driver_conductor_on_remove_counter(aeron_driver_conductor_t *conductor
         }
     }
 
-    aeron_set_err(
+    AERON_SET_ERR(
         -AERON_ERROR_CODE_UNKNOWN_COUNTER,
         "unknown counter client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,

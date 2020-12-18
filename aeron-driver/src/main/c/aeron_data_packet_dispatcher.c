@@ -27,14 +27,14 @@ int aeron_data_packet_dispatcher_init(
     if (aeron_int64_to_ptr_hash_map_init(
         &dispatcher->ignored_sessions_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        aeron_set_err_from_last_err_code("could not init ignored_session_map");
+        AERON_APPEND_ERR("%s", "Unable to init ignored_sessions_map");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
         &dispatcher->session_by_stream_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        aeron_set_err_from_last_err_code("could not init session_by_stream_id_map");
+        AERON_APPEND_ERR("%s", "Unable to init session_by_stream_id_map");
         return -1;
     }
 
@@ -51,14 +51,14 @@ static int aeron_data_packet_dispatcher_stream_interest_init(
     if (aeron_int64_to_tagged_ptr_hash_map_init(
         &stream_interest->image_by_session_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        aeron_set_err_from_last_err_code("could not init image_by_session_id_map");
+        AERON_APPEND_ERR("%s", "Unable to init image_by_session_id_map");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
         &stream_interest->subscribed_sessions, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        aeron_set_err_from_last_err_code("could not init subscribed_sessions");
+        AERON_APPEND_ERR("%s", "Unable to init subscribed_sessions");
         return -1;
     }
 
@@ -126,7 +126,7 @@ int aeron_data_packet_dispatcher_add_subscription(aeron_data_packet_dispatcher_t
             aeron_data_packet_dispatcher_stream_interest_init(stream_interest, true) < 0 ||
             aeron_int64_to_ptr_hash_map_put(&dispatcher->session_by_stream_id_map, stream_id, stream_interest) < 0)
         {
-            aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_add_subscription");
+            AERON_APPEND_ERR("%s", "Failed to add stream_interest to session_by_stream_id_map");
             return -1;
         }
     }
@@ -152,7 +152,7 @@ int aeron_data_packet_dispatcher_add_subscription_by_session(
             aeron_data_packet_dispatcher_stream_interest_init(stream_interest, false) < 0 ||
             aeron_int64_to_ptr_hash_map_put(&dispatcher->session_by_stream_id_map, stream_id, stream_interest) < 0)
         {
-            aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_add_subscription_by_session");
+            AERON_APPEND_ERR("%s", "Failed to add stream_interest to session_by_stream_id_map");
             return -1;
         }
     }
@@ -160,7 +160,7 @@ int aeron_data_packet_dispatcher_add_subscription_by_session(
     if (aeron_int64_to_ptr_hash_map_put(
         &stream_interest->subscribed_sessions, session_id, &dispatcher->tokens.subscribed) < 0)
     {
-        aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_add_subscription_by_session");
+        AERON_APPEND_ERR("%s", "Failed to add session_id (%" PRId32 ") to subscribed sessions", session_id);
         return -1;
     }
 
@@ -180,7 +180,7 @@ int aeron_data_packet_dispatcher_remove_subscription(aeron_data_packet_dispatche
 
     if ((stream_interest = aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, stream_id)) == NULL)
     {
-        aeron_set_err(EINVAL, "No subscription for stream: %" PRIi32, stream_id);
+        AERON_SET_ERR(EINVAL, "No subscription for stream: %" PRIi32, stream_id);
         return -1;
     }
 
@@ -205,7 +205,7 @@ int aeron_data_packet_dispatcher_remove_subscription_by_session(
 
     if ((stream_interest = aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, stream_id)) == NULL)
     {
-        aeron_set_err(EINVAL, "No subscription for stream: %" PRIi32, stream_id);
+        AERON_SET_ERR(EINVAL, "No subscription for stream: %" PRIi32, stream_id);
         return -1;
     }
 
@@ -236,7 +236,7 @@ int aeron_data_packet_dispatcher_add_publication_image(
         if (aeron_int64_to_tagged_ptr_hash_map_put(
             &stream_interest->image_by_session_id_map, image->session_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_ACTIVE, image) < 0)
         {
-            aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_add_publication_image");
+            AERON_APPEND_ERR("%s", "Failed to add image to image_by_session_id_map");
             return -1;
         }
     }
@@ -262,7 +262,9 @@ int aeron_data_packet_dispatcher_remove_publication_image(
             if (aeron_int64_to_tagged_ptr_hash_map_put(
                 &stream_interest->image_by_session_id_map, image->session_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_COOL_DOWN, NULL) < 0)
             {
-                aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_remove_publication_image");
+                AERON_APPEND_ERR(
+                    "Unable to set IMAGE_COOL_DOWN for session_id (%" PRId32 ") in image_by_session_id_map",
+                    image->session_id);
                 return -1;
             }
         }
@@ -366,7 +368,9 @@ int aeron_data_packet_dispatcher_create_publication(
         AERON_DATA_PACKET_DISPATCHER_IMAGE_INIT_IN_PROGRESS,
         NULL) < 0)
     {
-        aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_create_publication");
+        AERON_APPEND_ERR(
+            "Unable to set INIT_IN_PROGRESS for session_id (%" PRId32 ") in image_by_session_id_map",
+            header->session_id);
         return -1;
     }
 
@@ -506,7 +510,9 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
         AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME,
         NULL) < 0)
     {
-        aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_elicit_setup_from_source");
+        AERON_APPEND_ERR(
+            "Unable to set IMAGE_PENDING_SETUP_FRAME for session_id (%" PRId32 ") in image_by_session_id_map",
+            session_id);
         return -1;
     }
 

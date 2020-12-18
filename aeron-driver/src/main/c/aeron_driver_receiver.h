@@ -96,7 +96,7 @@ do \
     snprintf(error_buffer, sizeof(error_buffer) - 1, format, __VA_ARGS__); \
     aeron_distinct_error_log_record(receiver->error_log, err_code, aeron_errmsg(), error_buffer); \
     aeron_counter_increment(receiver->errors_counter, 1); \
-    aeron_set_err(0, "%s", "no error"); \
+    aeron_err_clear(); \
 } \
 while(0)
 

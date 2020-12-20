@@ -867,7 +867,14 @@ class Election
         logSubscription = ctx.aeron().addSubscription(logChannel, streamId);
         consensusModuleAgent.startLogRecording(logChannel, streamId, SourceLocation.REMOTE);
         consensusModuleAgent.awaitServicesReady(
-            logChannel, streamId, logSessionId, leadershipTermId, logPosition, Long.MAX_VALUE, isLeaderStartup);
+            logChannel,
+            streamId,
+            logSessionId,
+            leadershipTermId,
+            logPosition,
+            Long.MAX_VALUE,
+            isLeaderStartup,
+            Cluster.Role.FOLLOWER);
     }
 
     private void state(final ElectionState newState, final long nowNs)

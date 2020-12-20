@@ -1338,9 +1338,15 @@ class ConsensusModuleAgent implements Agent
         startLogRecording(recordingChannel, streamId, SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
 
-        final String logChannel = channelUri.isUdp() ? SPY_PREFIX + recordingChannel : recordingChannel;
         awaitServicesReady(
-            logChannel, streamId, logSessionId, leadershipTermId, logPosition, Long.MAX_VALUE, isStartup);
+            channelUri.isUdp() ? SPY_PREFIX + recordingChannel : recordingChannel,
+            streamId,
+            logSessionId,
+            leadershipTermId,
+            logPosition,
+            Long.MAX_VALUE,
+            isStartup,
+            Cluster.Role.LEADER);
         leadershipTermId(leadershipTermId);
         prepareSessionsForNewTerm(isStartup);
     }
@@ -1390,7 +1396,8 @@ class ConsensusModuleAgent implements Agent
         final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
-        final boolean isStartup)
+        final boolean isStartup,
+        final Cluster.Role role)
     {
         serviceProxy.joinLog(
             leadershipTermId,
@@ -1400,6 +1407,7 @@ class ConsensusModuleAgent implements Agent
             logSessionId,
             streamId,
             isStartup,
+            role,
             logChannel);
 
         expectedAckPosition = logPosition;

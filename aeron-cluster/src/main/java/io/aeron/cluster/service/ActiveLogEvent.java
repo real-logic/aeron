@@ -27,6 +27,7 @@ class ActiveLogEvent
     final int sessionId;
     final int streamId;
     final boolean isStartup;
+    final Cluster.Role role;
     final String channel;
 
     ActiveLogEvent(
@@ -37,6 +38,7 @@ class ActiveLogEvent
         final int sessionId,
         final int streamId,
         final boolean isStartup,
+        final Cluster.Role role,
         final String channel)
     {
         this.leadershipTermId = leadershipTermId;
@@ -46,6 +48,7 @@ class ActiveLogEvent
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.isStartup = isStartup;
+        this.role = role;
         this.channel = channel;
     }
 
@@ -59,6 +62,7 @@ class ActiveLogEvent
             ", sessionId=" + sessionId +
             ", streamId=" + streamId +
             ", isStartup=" + isStartup +
+            ", role=" + role +
             ", channel='" + channel + '\'' +
             '}';
     }

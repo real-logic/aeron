@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.service.Cluster;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.*;
@@ -55,6 +56,7 @@ final class ServiceProxy implements AutoCloseable
         final int logSessionId,
         final int logStreamId,
         final boolean isStartup,
+        final Cluster.Role role,
         final String channel)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogEncoder.BLOCK_LENGTH +
@@ -75,6 +77,7 @@ final class ServiceProxy implements AutoCloseable
                     .logSessionId(logSessionId)
                     .logStreamId(logStreamId)
                     .isStartup(isStartup ? BooleanType.TRUE : BooleanType.FALSE)
+                    .role(role.code())
                     .logChannel(channel);
 
                 bufferClaim.commit();

@@ -317,7 +317,8 @@
         <field name="logSessionId"             id="5" type="int32"/>
         <field name="logStreamId"              id="6" type="int32"/>
         <field name="isStartup"                id="7" type="BooleanType"/>
-        <data  name="logChannel"               id="8" type="varAsciiEncoding"/>
+        <field name="role"                     id="8" type="int32"/>
+        <data  name="logChannel"               id="9" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="ClusterMembersResponse"

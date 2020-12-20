@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.service.Cluster;
 import io.aeron.exceptions.AeronException;
 import org.agrona.CloseHelper;
 
@@ -80,13 +81,20 @@ final class LogReplay
             {
                 if (image.joinPosition() != startPosition)
                 {
-                    throw new ClusterException("Image did not join at start position", AeronException.Category.WARN);
+                    throw new ClusterException("Image did not join at expected position", AeronException.Category.WARN);
                 }
 
                 final String channel = logSubscription.channel();
                 final int streamId = logSubscription.streamId();
                 consensusModuleAgent.awaitServicesReady(
-                    channel, streamId, logSessionId, leadershipTermId, startPosition, stopPosition, true);
+                    channel,
+                    streamId,
+                    logSessionId,
+                    leadershipTermId,
+                    startPosition,
+                    stopPosition,
+                    true,
+                    Cluster.Role.FOLLOWER);
 
                 logAdapter.image(image);
                 workCount += 1;

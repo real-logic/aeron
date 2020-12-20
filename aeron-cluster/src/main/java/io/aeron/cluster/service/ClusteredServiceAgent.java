@@ -79,7 +79,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     private final BoundedLogAdapter logAdapter;
     private String activeLifecycleCallbackName;
-    private ReadableCounter roleCounter;
     private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
     private Role role = Role.FOLLOWER;
@@ -107,7 +106,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         closeHandlerRegistrationId = aeron.addCloseHandler(this::abort);
         final CountersReader counters = aeron.countersReader();
-        roleCounter = awaitClusterRoleCounter(counters, ctx.clusterId());
         commitPosition = awaitCommitPositionCounter(counters, ctx.clusterId());
 
         recoverState(counters);
@@ -329,11 +327,20 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final int logSessionId,
         final int logStreamId,
         final boolean isStartup,
+        final Cluster.Role role,
         final String logChannel)
     {
         logAdapter.maxLogPosition(logPosition);
         activeLogEvent = new ActiveLogEvent(
-            leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, logStreamId, isStartup, logChannel);
+            leadershipTermId,
+            logPosition,
+            maxLogPosition,
+            memberId,
+            logSessionId,
+            logStreamId,
+            isStartup,
+            role,
+            logChannel);
     }
 
     void onServiceTerminationPosition(final long logPosition)
@@ -496,7 +503,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         checkForLifecycleCallback();
 
-        if (role != Cluster.Role.LEADER)
+        if (Cluster.Role.LEADER != role)
         {
             return ClientSession.MOCKED_OFFER;
         }
@@ -517,7 +524,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         checkForLifecycleCallback();
 
-        if (role != Cluster.Role.LEADER)
+        if (Cluster.Role.LEADER != role)
         {
             return ClientSession.MOCKED_OFFER;
         }
@@ -544,7 +551,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         checkForLifecycleCallback();
 
-        if (role != Cluster.Role.LEADER)
+        if (Cluster.Role.LEADER != role)
         {
             final int maxPayloadLength = headerBuffer.capacity() - SESSION_HEADER_LENGTH;
             if (length > maxPayloadLength)
@@ -643,7 +650,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         logPosition = Math.max(logAdapter.image().position(), logPosition);
         CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
-        role(Role.get(roleCounter.get()));
+        role(Role.FOLLOWER);
     }
 
     private void joinActiveLog(final ActiveLogEvent activeLog)
@@ -651,10 +658,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
         try
         {
-            memberId = activeLog.memberId;
-            ctx.clusterMarkFile().memberId(memberId);
-            role(Role.get(roleCounter.get()));
-
             final long id = ackId++;
             idleStrategy.reset();
             while (!consensusModuleProxy.ack(activeLog.logPosition, clusterTime, id, NULL_VALUE, serviceId))
@@ -665,6 +668,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
             logAdapter.maxLogPosition(activeLog.maxLogPosition);
             logSubscription = null;
+
+            memberId = activeLog.memberId;
+            ctx.clusterMarkFile().memberId(memberId);
+            role(activeLog.role);
         }
         finally
         {
@@ -699,19 +706,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         return image;
-    }
-
-    private ReadableCounter awaitClusterRoleCounter(final CountersReader counters, final int clusterId)
-    {
-        idleStrategy.reset();
-        int counterId = ClusterCounters.find(counters, CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
-        while (NULL_COUNTER_ID == counterId)
-        {
-            idle();
-            counterId = ClusterCounters.find(counters, CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
-        }
-
-        return new ReadableCounter(counters, counterId);
     }
 
     private ReadableCounter awaitCommitPositionCounter(final CountersReader counters, final int clusterId)

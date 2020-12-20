@@ -409,7 +409,14 @@ public class ElectionTest
         election.doWork(t3);
 
         verify(consensusModuleAgent).awaitServicesReady(
-            anyString(), anyInt(), anyInt(), anyLong(), anyLong(), anyLong(), eq(leaderIsStart));
+            anyString(),
+            anyInt(),
+            anyInt(),
+            anyLong(),
+            anyLong(),
+            anyLong(),
+            eq(leaderIsStart),
+            any(Cluster.Role.class));
     }
 
     @Test

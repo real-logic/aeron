@@ -27,9 +27,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ReadableCounter;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.SemanticVersion;
+import org.agrona.*;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
@@ -121,7 +119,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
         else
         {
-
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             if (isServiceActive)
             {
@@ -307,6 +304,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     public void idle()
     {
         idleStrategy.idle();
+        if (Thread.interrupted())
+        {
+            throw new AgentTerminationException("unexpected interrupt");
+        }
         checkForClockTick();
     }
 
@@ -315,6 +316,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         idleStrategy.idle(workCount);
         if (workCount <= 0)
         {
+            if (Thread.interrupted())
+            {
+                throw new AgentTerminationException("unexpected interrupt");
+            }
             checkForClockTick();
         }
     }
@@ -774,8 +779,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     private long onTakeSnapshot(final long logPosition, final long leadershipTermId)
     {
-        final long recordingId;
-
         try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext().clone());
             ExclusivePublication publication = aeron.addExclusivePublication(
                 ctx.snapshotChannel(), ctx.snapshotStreamId()))
@@ -784,16 +787,15 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL, true);
             final CountersReader counters = aeron.countersReader();
             final int counterId = awaitRecordingCounter(publication.sessionId(), counters, archive);
-            recordingId = RecordingPos.getRecordingId(counters, counterId);
+            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             snapshotState(publication, logPosition, leadershipTermId);
             checkForClockTick();
             service.onTakeSnapshot(publication);
-
             awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
-        }
 
-        return recordingId;
+            return recordingId;
+        }
     }
 
     private void awaitRecordingComplete(
@@ -872,12 +874,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         if (cachedTimeMs != nowMs)
         {
             cachedTimeMs = nowMs;
-
-            if (Thread.interrupted())
-            {
-                isAbort = true;
-                throw new AgentTerminationException("unexpected interrupt - " + context().clusterDir());
-            }
 
             if (null != aeronAgentInvoker)
             {

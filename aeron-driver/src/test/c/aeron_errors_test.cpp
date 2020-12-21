@@ -341,7 +341,7 @@ TEST_F(CErrorsTest, shouldFailToResovleNameOnPublication)
 
     ASSERT_EQ(-1, result);
     std::string errorMessage = std::string(aeron_errmsg());
-    const char *expectedDriverMessage = "Name or service not known";
+    const char *expectedDriverMessage = "Unable to resolve host";
 
     ASSERT_THAT(-AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errcode());
     ASSERT_THAT(
@@ -380,7 +380,7 @@ TEST_F(CErrorsTest, shouldFailToResovleNameOnDestination)
 
     ASSERT_EQ(-1, result);
     std::string errorMessage = std::string(aeron_errmsg());
-    const char *expectedDriverMessage = "Name or service not known";
+    const char *expectedDriverMessage = "Unable to resolve host";
 
     ASSERT_THAT(-AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errcode());
     ASSERT_THAT(
@@ -408,7 +408,7 @@ TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
 
     ASSERT_EQ(1, result);
     std::string errorMessage = std::string(aeron_errmsg());
-    const char *expectedDriverMessage = "Name or service not known";
+    const char *expectedDriverMessage = "Unable to resolve host";
 
     waitForErrorCounterIncrease();
     verifyDistinctErrorLogContains(expectedDriverMessage);

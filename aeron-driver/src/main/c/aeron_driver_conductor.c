@@ -1750,7 +1750,6 @@ void aeron_driver_conductor_on_error(
         char *buffer = NULL;
         if (aeron_alloc((void **)&buffer, response_length) < 0)
         {
-            char error_message[AERON_MAX_PATH];
             int os_errno = aeron_errcode();
             int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
             aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", aeron_errmsg());
@@ -2259,9 +2258,8 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
         int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
         const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
 
-        AERON_FORMAT_BUFFER(error_message, "(%d) %s\n%s", os_errno, error_description, aeron_errmsg());
-        aeron_driver_conductor_on_error(conductor, code, error_message, strlen(error_message), correlation_id);
-        aeron_driver_conductor_error(conductor, code, error_description, error_message);
+        aeron_driver_conductor_on_error(conductor, code, aeron_errmsg(), strlen(aeron_errmsg()), correlation_id);
+        aeron_driver_conductor_error(conductor, code, error_description, aeron_errmsg());
     }
 
     return;
@@ -2576,6 +2574,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
     if (aeron_uri_parse(uri_length, uri, &aeron_uri_params) < 0 ||
         aeron_diver_uri_publication_params(&aeron_uri_params, &params, conductor, is_exclusive) < 0)
     {
+        AERON_APPEND_ERR("%s", "Failed to parse IPC publication URI");
         goto error_cleanup;
     }
 
@@ -2654,6 +2653,7 @@ int aeron_driver_conductor_on_add_network_publication(
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_diver_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0)
     {
+        AERON_APPEND_ERR("%s", "Failed to parse network publication URI");
         aeron_udp_channel_delete(udp_channel);
         return -1;
     }

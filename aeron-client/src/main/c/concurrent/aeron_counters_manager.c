@@ -76,13 +76,9 @@ int32_t aeron_counters_manager_allocate(
     const int32_t counter_id = aeron_counters_manager_next_counter_id(manager);
     if (counter_id < 0)
     {
-        // TODO: (MJB) should this be ENOSPC?
-        AERON_SET_ERR(
-            EINVAL,
-            "Unable to allocate counter: type: %" PRId32 ", key: %.*s, label: %.*s",
+        AERON_APPEND_ERR(
+            "Unable to allocate counter: type: %" PRId32 ", label: %.*s",
             type_id,
-            (int)key_length,
-            key,
             (int)label_length,
             label);
         return -1;
@@ -207,6 +203,7 @@ int32_t aeron_counters_manager_next_counter_id(aeron_counters_manager_t *manager
 
     if ((manager->id_high_water_mark + 1) > manager->max_counter_id)
     {
+        AERON_SET_ERR(ENOMEM, "Max counter id (%" PRId32 ") exceeded", manager->max_counter_id);
         return -1;
     }
 

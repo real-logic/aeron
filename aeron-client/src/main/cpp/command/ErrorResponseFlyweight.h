@@ -56,7 +56,7 @@ struct ErrorResponseDefn
 
 static const std::int32_t ERROR_CODE_UNKNOWN_CODE_VALUE = -1;
 
-static const std::int32_t ERROR_CODE_GENERIC_ERROR = 0;
+static const std::int32_t ERROR_CODE_UNUSED = 0;
 static const std::int32_t ERROR_CODE_INVALID_CHANNEL = 1;
 static const std::int32_t ERROR_CODE_UNKNOWN_SUBSCRIPTION = 2;
 static const std::int32_t ERROR_CODE_UNKNOWN_PUBLICATION = 3;
@@ -67,6 +67,7 @@ static const std::int32_t ERROR_CODE_MALFORMED_COMMAND = 7;
 static const std::int32_t ERROR_CODE_NOT_SUPPORTED = 8;
 static const std::int32_t ERROR_CODE_UNKNOWN_HOST = 9;
 static const std::int32_t ERROR_CODE_RESOURCE_TEMPORARILY_UNAVAILABLE = 10;
+static const std::int32_t ERROR_CODE_GENERIC_ERROR = 11;
 
 class ErrorResponseFlyweight : public Flyweight<ErrorResponseDefn>
 {

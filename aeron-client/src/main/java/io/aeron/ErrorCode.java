@@ -23,9 +23,9 @@ import io.aeron.exceptions.AeronException;
 public enum ErrorCode
 {
     /**
-     * Aeron encountered an error condition.
+     * Old generic value, no longer used (0 value clashes with success).  Retained for version compatibility.
      */
-    GENERIC_ERROR(0),
+    UNUSED(0),
 
     /**
      * A failure occurred creating a new channel or parsing the channel string.
@@ -76,6 +76,12 @@ public enum ErrorCode
      * Attempted to send a command that referred to a resource that currently was unavailable.
      */
     RESOURCE_TEMPORARILY_UNAVAILABLE(10),
+
+    /**
+     * Aeron encountered an error condition.
+     */
+    GENERIC_ERROR(11),
+
 
     // *** Insert new codes above here.
 

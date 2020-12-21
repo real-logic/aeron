@@ -265,6 +265,7 @@ const char *aeron_error_code_str(int errcode)
 {
     switch (errcode)
     {
+        case AERON_ERROR_CODE_UNUSED:
         case AERON_ERROR_CODE_GENERIC_ERROR:
             return "generic error, see message";
 

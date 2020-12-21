@@ -80,6 +80,10 @@ aeron_driver_test(c_local_addresses_test aeron_c_local_addresses_test.cpp)
 set_tests_properties(c_local_addresses_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_local_addresses_test PROPERTIES RUN_SERIAL TRUE)
 
+aeron_driver_test(c_errors_test aeron_errors_test.cpp)
+set_tests_properties(c_errors_test PROPERTIES TIMEOUT 60)
+set_tests_properties(c_errors_test PROPERTIES RUN_SERIAL TRUE)
+
 aeron_driver_test(c_cnc_test aeron_c_cnc_test.cpp)
 set_tests_properties(c_cnc_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_cnc_test PROPERTIES RUN_SERIAL TRUE)

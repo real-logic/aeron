@@ -364,10 +364,7 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
     {
         int os_errno = aeron_errcode();
         int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
-        const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
-
-        AERON_CLIENT_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
-        conductor->error_handler(conductor->error_handler_clientd, code, error_message);
+        conductor->error_handler(conductor->error_handler_clientd, code, aeron_errmsg());
     }
 
     return;
@@ -2273,6 +2270,7 @@ int aeron_client_conductor_on_counter_ready(aeron_client_conductor_t *conductor,
                 response->counter_id,
                 counter_addr) < 0)
             {
+                AERON_APPEND_ERR("%s", "");
                 return -1;
             }
 

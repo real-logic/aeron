@@ -343,7 +343,7 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
     {
         AERON_SET_ERR(
             EINVAL,
-            "Parameters must be valid, type: %d (expected: %d)",
+            "Parameters must be valid, async->type: %d (expected: %d)",
             (int)(async->type),
             (int)AERON_CLIENT_TYPE_COUNTER);
     }
@@ -363,9 +363,8 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
             AERON_SET_ERR(
-                EINVAL,
-                "async_add_publication registration (error code %" PRId32 "): %*s",
-                async->error_code,
+                -async->error_code,
+                "async_add_publication registration\n== Driver Error ==\n%*s",
                 (int)async->error_message_length,
                 async->error_message);
             aeron_async_cmd_free(async);
@@ -432,10 +431,9 @@ int aeron_async_add_exclusive_publication_poll(
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
             AERON_SET_ERR(
-                EINVAL,
-                "async_add_exclusive_publication registration (error code %" PRId32 "): %*s",
-                async->error_code,
-                async->error_message_length,
+                -async->error_code,
+                "async_add_exclusive_publication registration\n== Driver Error ==\n%*s",
+                (int)async->error_message_length,
                 async->error_message);
             aeron_async_cmd_free(async);
             return -1;
@@ -512,7 +510,7 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
     {
         AERON_SET_ERR(
             EINVAL,
-            "Parameters must be valid, type: %d (expected: %d)",
+            "Parameters must be valid, async->type: %d (expected: %d)",
             (int)async->type,
             (int)AERON_CLIENT_TYPE_COUNTER);
         return -1;
@@ -533,9 +531,8 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
             AERON_SET_ERR(
-                EINVAL,
-                "async_add_subscription registration (error code %" PRId32 "): %*s",
-                async->error_code,
+                -async->error_code,
+                "async_add_subscription registration\n== Driver Error ==\n%.*s",
                 (int)async->error_message_length,
                 async->error_message);
             aeron_async_cmd_free(async);
@@ -610,7 +607,7 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
     {
         AERON_SET_ERR(
             EINVAL,
-            "Parameters must be valid, type: %d (expected: %d)",
+            "Parameters must be valid, async->type: %d (expected: %d)",
             (int)async->type,
             (int)AERON_CLIENT_TYPE_COUNTER);
         return -1;
@@ -631,9 +628,8 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
             AERON_SET_ERR(
-                EINVAL,
-                "async_add_counter registration (error code %" PRId32 "): %.*s",
-                async->error_code,
+                -async->error_code,
+                "async_add_counter registration\n== Driver Error ==\n%*s",
                 (int)async->error_message_length,
                 async->error_message);
             aeron_async_cmd_free(async);
@@ -678,7 +674,7 @@ static int aeron_async_destination_poll(aeron_async_destination_t *async)
     {
         AERON_SET_ERR(
             EINVAL,
-            "Parameters must be valid, type: %d (expected: %d)",
+            "Parameters must be valid, async->type: %d (expected: %d)",
             (int)async->type,
             (int)AERON_CLIENT_TYPE_COUNTER);
         return -1;
@@ -696,8 +692,11 @@ static int aeron_async_destination_poll(aeron_async_destination_t *async)
 
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
-            AERON_SET_ERR(EINVAL, "async_add_counter registration (error code %" PRId32 "): %*s",
-                async->error_code, async->error_message_length, async->error_message);
+            AERON_SET_ERR(
+                -async->error_code,
+                "async_add_destination registration\n== Driver Error ==\n%*s",
+                (int)async->error_message_length,
+                async->error_message);
             aeron_async_cmd_free(async);
             return -1;
         }

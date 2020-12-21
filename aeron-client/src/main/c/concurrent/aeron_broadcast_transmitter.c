@@ -61,7 +61,7 @@ int aeron_broadcast_transmitter_transmit(
     {
         AERON_SET_ERR(
             EINVAL,
-            "length (%" PRIu32 ") > transmitter->max_message_length (%" PRId32 ") || msg_type_id (%s" PRId32 ") < 1",
+            "length (%" PRIu32 ") > transmitter->max_message_length (%" PRId32 ") || msg_type_id (%" PRId32 ") < 1",
             (uint32_t) length,
             (uint32_t) transmitter->max_message_length,
             msg_type_id);

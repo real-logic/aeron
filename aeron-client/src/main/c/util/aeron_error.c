@@ -192,7 +192,7 @@ static void aeron_err_vprintf(
     }
 
     int result = vsnprintf(
-        error_state->errmsg + error_state->offset, sizeof(error_state->errmsg) - error_state->offset, format, args);
+        &error_state->errmsg[(int)error_state->offset], sizeof(error_state->errmsg) - error_state->offset, format, args);
 
     if (result < 0)
     {

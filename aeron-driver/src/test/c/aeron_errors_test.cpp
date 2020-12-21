@@ -23,7 +23,6 @@
 
 extern "C"
 {
-#include <dlfcn.h>
 #include "concurrent/aeron_thread.h"
 #include "aeron_system_counters.h"
 #include "command/aeron_control_protocol.h"
@@ -53,12 +52,16 @@ private:
     int m_errorCount;
 };
 
+const char *CSV_NAME_CONFIG_WITH_UNRESOLVABLE_ADDRESS = "server0,endpoint,foo.example.com:20001,localhost:20002|";
+
 class CErrorsTest : public CSystemTestBase, public testing::Test
 {
 public:
     CErrorsTest() : CSystemTestBase(
         std::vector<std::pair<std::string, std::string>>{
             { "AERON_COUNTERS_BUFFER_LENGTH", "32768" },
+            { "AERON_NAME_RESOLVER_SUPPLIER", "csv_table" },
+            { "AERON_NAME_RESOLVER_INIT_ARGS", CSV_NAME_CONFIG_WITH_UNRESOLVABLE_ADDRESS }
         })
     {
     }
@@ -169,24 +172,16 @@ TEST_F(CErrorsTest, publicationErrorIncludesClientAndDriverErrorAndReportsInDist
 
     ASSERT_EQ(-1, result);
     std::string errorMessage = std::string(aeron_errmsg());
+    const char *expectedDriverMessage = "invalid URI scheme or transport: aeron:tcp?endpoint=localhost:21345";
 
     ASSERT_THAT(-AERON_ERROR_CODE_INVALID_CHANNEL, aeron_errcode());
     ASSERT_THAT(
         errorMessage, testing::HasSubstr("async_add_publication registration"));
     ASSERT_THAT(
-        errorMessage, testing::HasSubstr("invalid URI scheme or transport: aeron:tcp?endpoint=localhost:21345"));
+        errorMessage, testing::HasSubstr(expectedDriverMessage));
 
     waitForErrorCounterIncrease();
-
-    aeron_cnc_t *aeronCnc;
-    ASSERT_EQ(0, aeron_cnc_init(&aeronCnc, aeron_context_get_dir(m_context), 100));
-
-    ErrorCallbackValidation errorCallbackValidation
-        {
-            std::vector<std::string>{ "invalid URI scheme or transport: aeron:tcp?endpoint=localhost:21345" }
-        };
-
-    aeron_cnc_error_log_read(aeronCnc, errorCallback, &errorCallbackValidation, 0);
+    verifyDistinctErrorLogContains(expectedDriverMessage);
 }
 
 TEST_F(CErrorsTest, exclusivePublicationErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
@@ -205,24 +200,16 @@ TEST_F(CErrorsTest, exclusivePublicationErrorIncludesClientAndDriverErrorAndRepo
 
     ASSERT_EQ(-1, result);
     std::string errorMessage = std::string(aeron_errmsg());
+    const char *expectedDriverMessage = "invalid URI scheme or transport: aeron:tcp?endpoint=localhost:21345";
 
     ASSERT_THAT(-AERON_ERROR_CODE_INVALID_CHANNEL, aeron_errcode());
     ASSERT_THAT(
         errorMessage, testing::HasSubstr("async_add_exclusive_publication registration"));
     ASSERT_THAT(
-        errorMessage, testing::HasSubstr("invalid URI scheme or transport: aeron:tcp?endpoint=localhost:21345"));
+        errorMessage, testing::HasSubstr(expectedDriverMessage));
 
     waitForErrorCounterIncrease();
-
-    aeron_cnc_t *aeronCnc;
-    ASSERT_EQ(0, aeron_cnc_init(&aeronCnc, aeron_context_get_dir(m_context), 100));
-
-    ErrorCallbackValidation errorCallbackValidation
-        {
-            std::vector<std::string>{ "invalid URI scheme or transport: aeron:tcp?endpoint=localhost:21345" }
-        };
-
-    aeron_cnc_error_log_read(aeronCnc, errorCallback, &errorCallbackValidation, 0);
+    verifyDistinctErrorLogContains(expectedDriverMessage);
 }
 
 TEST_F(CErrorsTest, subscriptionErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
@@ -295,7 +282,6 @@ TEST_F(CErrorsTest, counterErrorIncludesClientAndDriverErrorAndReportsInDistinct
     verifyDistinctErrorLogContains(expectedDriverMessage);
 }
 
-
 TEST_F(CErrorsTest, destinationErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
 {
     aeron_t *aeron = connect();
@@ -330,6 +316,96 @@ TEST_F(CErrorsTest, destinationErrorIncludesClientAndDriverErrorAndReportsInDist
         errorMessage, testing::HasSubstr("async_add_destination registration"));
     ASSERT_THAT(
         errorMessage, testing::HasSubstr(expectedDriverMessage));
+
+    waitForErrorCounterIncrease();
+    verifyDistinctErrorLogContains(expectedDriverMessage);
+}
+
+
+TEST_F(CErrorsTest, shouldFailToResovleNameOnPublication)
+{
+    aeron_t *aeron = connect();
+    aeron_async_add_publication_t *pub_async;
+    aeron_publication_t *pub;
+
+    ASSERT_EQ(0, aeron_async_add_publication(&pub_async, aeron, "aeron:udp?endpoint=foo.example.com:20202", 1001));
+
+    int result;
+    while (0 == (result = aeron_async_add_publication_poll(&pub, pub_async)))
+    {
+        proc_yield();
+    }
+
+    ASSERT_EQ(-1, result);
+    std::string errorMessage = std::string(aeron_errmsg());
+    const char *expectedDriverMessage = "Name or service not known";
+
+    ASSERT_THAT(-AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errcode());
+    ASSERT_THAT(
+        errorMessage, testing::HasSubstr("async_add_publication registration"));
+    ASSERT_THAT(
+        errorMessage, testing::HasSubstr(expectedDriverMessage));
+
+    waitForErrorCounterIncrease();
+    verifyDistinctErrorLogContains(expectedDriverMessage);
+}
+
+TEST_F(CErrorsTest, shouldFailToResovleNameOnDestination)
+{
+    aeron_t *aeron = connect();
+    aeron_async_add_exclusive_publication_t *pub_async;
+    aeron_async_destination_t *dest_async;
+    aeron_exclusive_publication_t *pub;
+
+    ASSERT_EQ(0, aeron_async_add_exclusive_publication(&pub_async, aeron, "aeron:udp?control-mode=manual", 1001));
+
+    int result;
+    while (0 == (result = aeron_async_add_exclusive_publication_poll(&pub, pub_async)))
+    {
+        proc_yield();
+    }
+
+    ASSERT_EQ(1, result) << aeron_errmsg();
+
+    ASSERT_EQ(0, aeron_exclusive_publication_async_add_destination(
+        &dest_async, aeron, pub, "aeron:udp?endpoint=foo.example.com:21345"));
+
+    while (0 == (result = aeron_exclusive_publication_async_destination_poll(dest_async)))
+    {
+        proc_yield();
+    }
+
+    ASSERT_EQ(-1, result);
+    std::string errorMessage = std::string(aeron_errmsg());
+    const char *expectedDriverMessage = "Name or service not known";
+
+    ASSERT_THAT(-AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errcode());
+    ASSERT_THAT(
+        errorMessage, testing::HasSubstr("async_add_destination registration"));
+    ASSERT_THAT(
+        errorMessage, testing::HasSubstr(expectedDriverMessage));
+
+    waitForErrorCounterIncrease();
+    verifyDistinctErrorLogContains(expectedDriverMessage);
+}
+
+TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
+{
+    aeron_t *aeron = connect();
+    aeron_async_add_publication_t *pub_async;
+    aeron_publication_t *pub;
+
+    ASSERT_EQ(0, aeron_async_add_publication(&pub_async, aeron, "aeron:udp?endpoint=server0", 1001));
+
+    int result;
+    while (0 == (result = aeron_async_add_publication_poll(&pub, pub_async)))
+    {
+        proc_yield();
+    }
+
+    ASSERT_EQ(1, result);
+    std::string errorMessage = std::string(aeron_errmsg());
+    const char *expectedDriverMessage = "Name or service not known";
 
     waitForErrorCounterIncrease();
     verifyDistinctErrorLogContains(expectedDriverMessage);

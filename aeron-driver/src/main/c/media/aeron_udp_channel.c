@@ -250,6 +250,7 @@ int aeron_udp_channel_parse(
         if (aeron_name_resolver_resolve_host_and_port(
             resolver, _channel->uri.params.udp.endpoint, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &endpoint_addr) < 0)
         {
+            AERON_APPEND_ERR("URI: %.*s", (int) uri_length, uri);
             goto error_cleanup;
         }
     }

@@ -21,13 +21,15 @@
 #include "aeron_common.h"
 
 #define AERON_ERROR_MAX_STACK_DEPTH (16)
+#define AERON_ERROR_MAX_ERROR_LINE_LENGTH (4096)
+#define AERON_ERROR_MAX_TOTAL_LENGTH (8192)
 
 typedef struct aeron_error_stack_entry_stct
 {
     const char *function;
     const char *filename;
     int line_number;
-    char message[AERON_MAX_PATH];
+    char message[AERON_ERROR_MAX_ERROR_LINE_LENGTH];
 }
 aeron_err_stack_entry_t;
 
@@ -37,8 +39,8 @@ typedef struct aeron_per_thread_error_stct
     int stack_depth;
     bool errmsg_valid;
     int stack_overflows;
-    char errmsg[AERON_ERROR_MAX_STACK_DEPTH * (AERON_MAX_PATH * 2)];
-    aeron_err_stack_entry_t error_stack[AERON_ERROR_MAX_STACK_DEPTH];
+    char errmsg[AERON_ERROR_MAX_TOTAL_LENGTH];
+    aeron_err_stack_entry_t error_stack[AERON_ERROR_MAX_ERROR_LINE_LENGTH];
 }
 aeron_per_thread_error_t;
 

@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_atomic.h"
 #include "util/aeron_error.h"
@@ -58,6 +59,12 @@ int aeron_broadcast_transmitter_transmit(
 {
     if (length > transmitter->max_message_length || AERON_BROADCAST_INVALID_MSG_TYPE_ID(msg_type_id))
     {
+        AERON_SET_ERR(
+            EINVAL,
+            "length (%" PRIu32 ") > transmitter->max_message_length (%" PRId32 ") || msg_type_id (%s" PRId32 ") < 1",
+            (uint32_t) length,
+            (uint32_t) transmitter->max_message_length,
+            msg_type_id);
         return -1;
     }
 

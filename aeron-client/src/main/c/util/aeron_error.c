@@ -210,57 +210,6 @@ void aeron_set_errno(int errcode)
 #endif
 }
 
-void aeron_set_err_from_last_err_code(const char *format, ...)
-{
-#if defined(AERON_COMPILER_MSVC)
-    int errcode = (int)GetLastError();
-#else
-    int errcode = errno;
-#endif
-
-    aeron_per_thread_error_t *error_state = get_required_error_state();
-
-    error_state->errcode = errcode;
-    va_list args;
-    char stack_message[sizeof(error_state->errmsg)];
-
-    va_start(args, format);
-    int written = vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
-    va_end(args);
-
-    if (written < 0)
-    {
-        error_state->errmsg[0] = '\0';
-        return;
-    }
-
-    strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
-
-#if defined(AERON_COMPILER_MSVC)
-    int length = (int)FormatMessageA(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        errcode,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        stack_message,
-        sizeof(stack_message),
-        NULL);
-
-    if (length >= 2 && stack_message[length - 1] == '\n' && stack_message[length - 2] == '\r')
-    {
-        stack_message[length - 2] = '\0';
-    }
-    else if (!length)
-    {
-        snprintf(stack_message, sizeof(stack_message), "error %d", errcode);
-    }
-
-    snprintf(error_state->errmsg + written, sizeof(error_state->errmsg) - written, ": %s", stack_message);
-#else
-    snprintf(error_state->errmsg + written, sizeof(error_state->errmsg) - written, ": %s", strerror(errcode));
-#endif
-}
-
 const char *aeron_error_code_str(int errcode)
 {
     switch (errcode)
@@ -318,8 +267,8 @@ static void aeron_err_update_entry(
     error_state->error_stack[stack_position].function = function;
     error_state->error_stack[stack_position].filename = filename;
     error_state->error_stack[stack_position].line_number = line_number;
-    vsnprintf(stack_message, AERON_MAX_PATH - 1, format, args);
-    stack_message[AERON_MAX_PATH - 1] = '\0';
+    vsnprintf(stack_message, AERON_ERROR_MAX_ERROR_LINE_LENGTH - 1, format, args);
+    stack_message[AERON_ERROR_MAX_ERROR_LINE_LENGTH - 1] = '\0';
 }
 
 void aeron_err_set(int errcode, const char *function, const char *filename, int line_number, const char *format, ...)

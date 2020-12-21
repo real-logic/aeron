@@ -530,10 +530,9 @@ void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *condu
     aeron_driver_conductor_unlink_all_subscribable(conductor, link);
 }
 
-void aeron_driver_conductor_error(
-    aeron_driver_conductor_t *conductor, int error_code, const char *description, const char *message)
+void aeron_driver_conductor_log_error(aeron_driver_conductor_t *conductor)
 {
-    aeron_distinct_error_log_record(&conductor->error_log, error_code, description, message);
+    aeron_distinct_error_log_record(&conductor->error_log, aeron_errcode(), aeron_errmsg());
     aeron_counter_increment(conductor->errors_counter, 1);
     aeron_err_clear();
 }
@@ -683,13 +682,8 @@ void aeron_driver_conductor_on_available_image(
         char *buffer = NULL;
         if (aeron_alloc((void **)&buffer, response_length) < 0)
         {
-            char error_message[AERON_MAX_PATH];
-            int os_errno = aeron_errcode();
-            int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
-            const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
-
-            AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
-            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
+            AERON_APPEND_ERR("%s", "failed to allocate response buffer");
+            aeron_driver_conductor_log_error(conductor);
             return;
         }
 
@@ -1710,10 +1704,8 @@ void aeron_driver_conductor_client_transmit(
     conductor->context->to_client_interceptor_func(conductor, msg_type_id, msg, length);
     if (aeron_broadcast_transmitter_transmit(&conductor->to_clients, msg_type_id, msg, length) < 0)
     {
-        char error_message[AERON_MAX_PATH];
-
-        AERON_FORMAT_BUFFER(error_message, "msg_type_id=%d,  length=%" PRIu32, msg_type_id, (uint32_t)length);
-        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_GENERIC_ERROR, "failed to transmit message", error_message);
+        AERON_APPEND_ERR("%s", "failed to transmit message");
+        aeron_driver_conductor_log_error(conductor);
     }
 }
 
@@ -1750,9 +1742,8 @@ void aeron_driver_conductor_on_error(
         char *buffer = NULL;
         if (aeron_alloc((void **)&buffer, response_length) < 0)
         {
-            int os_errno = aeron_errcode();
-            int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
-            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", aeron_errmsg());
+            AERON_APPEND_ERR("%s", "failed to allocate response buffer");
+            aeron_driver_conductor_log_error(conductor);
             return;
         }
         on_error(conductor, error_code, message, length, correlation_id, response_length, buffer);
@@ -1816,13 +1807,8 @@ void aeron_driver_conductor_on_publication_ready(
         char *buffer = NULL;
         if (aeron_alloc((void **)&buffer, response_length) < 0)
         {
-            char error_message[AERON_MAX_PATH];
-            int os_errno = aeron_errcode();
-            int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
-            const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
-
-            AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
-            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
+            AERON_APPEND_ERR("%s", "failed to allocate response buffer");
+            aeron_driver_conductor_log_error(conductor);
             return;
         }
 
@@ -1957,13 +1943,8 @@ void aeron_driver_conductor_on_unavailable_image(
         char *buffer = NULL;
         if (aeron_alloc((void **)&buffer, response_length) < 0)
         {
-            char error_message[AERON_MAX_PATH];
-            int os_errno = aeron_errcode();
-            int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
-            const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
-
-            AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
-            aeron_driver_conductor_error(conductor, code, "failed to allocate response buffer", error_message);
+            AERON_APPEND_ERR("%s", "failed to allocate response buffer");
+            aeron_driver_conductor_log_error(conductor);
             return;
         }
 
@@ -2000,8 +1981,6 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     int result = 0;
 
     conductor->context->to_driver_interceptor_func(msg_type_id, message, length, clientd);
-
-    char error_message[AERON_MAX_PATH] = "\0";
 
     switch (msg_type_id)
     {
@@ -2246,9 +2225,8 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
         }
 
         default:
-            AERON_FORMAT_BUFFER(error_message, "command=%d unknown", msg_type_id);
-            aeron_driver_conductor_error(
-                conductor, AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, "unknown command type id", error_message);
+            AERON_SET_ERR(-AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, "command=%d unknown", msg_type_id);
+            aeron_driver_conductor_log_error(conductor);
             break;
     }
 
@@ -2256,17 +2234,16 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     {
         int os_errno = aeron_errcode();
         int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
-        const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
-
         aeron_driver_conductor_on_error(conductor, code, aeron_errmsg(), strlen(aeron_errmsg()), correlation_id);
-        aeron_driver_conductor_error(conductor, code, error_description, aeron_errmsg());
+        aeron_driver_conductor_log_error(conductor);
     }
 
     return;
 
 malformed_command:
-    AERON_FORMAT_BUFFER(error_message, "command=%d too short: length=%" PRIu32, msg_type_id, (uint32_t)length);
-    aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short", error_message);
+    AERON_SET_ERR(
+        -AERON_ERROR_CODE_MALFORMED_COMMAND, "command=%d too short: length=%" PRIu32, msg_type_id, (uint32_t)length);
+    aeron_driver_conductor_log_error(conductor);
 }
 
 void aeron_driver_conductor_on_command_queue(void *clientd, void *item)
@@ -2653,7 +2630,7 @@ int aeron_driver_conductor_on_add_network_publication(
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_diver_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0)
     {
-        AERON_APPEND_ERR("%s", "Failed to parse network publication URI");
+        AERON_APPEND_ERR("%s", "");
         aeron_udp_channel_delete(udp_channel);
         return -1;
     }
@@ -2886,6 +2863,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
         command->channel_length - strlen(AERON_SPY_PREFIX), uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_driver_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -2978,6 +2956,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_driver_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         aeron_udp_channel_delete(udp_channel);
         return -1;
     }
@@ -3232,8 +3211,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             false,
             &destination_addr) < 0)
         {
-            // TODO: (MJB) revise this.
-            aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+            AERON_APPEND_ERR("uri: %.*s", (int) uri_length, uri);
             goto error_cleanup;
         }
 
@@ -3307,7 +3285,7 @@ int aeron_driver_conductor_on_remove_destination(
             true,
             &destination_addr) < 0)
         {
-            aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+            AERON_APPEND_ERR("uri: %.*s", (int) uri_length, command_uri);
             goto error_cleanup;
         }
 
@@ -3370,7 +3348,7 @@ int aeron_driver_conductor_on_add_receive_destination(
     if (aeron_udp_channel_parse(
         command->channel_length, command_uri, &conductor->name_resolver, &udp_channel, true) < 0)
     {
-        // TODO-MDS: should the error be set here or can we just use the lower down value...
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -3431,7 +3409,7 @@ int aeron_driver_conductor_on_remove_receive_destination(
     if (aeron_udp_channel_parse(
         command->channel_length, command_uri, &conductor->name_resolver, &udp_channel, true) < 0)
     {
-        // TODO-MDS: should the error be set here or can we just use the lower down value...
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -3595,7 +3573,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     if (aeron_receiver_channel_endpoint_validate_sender_mtu_length(
         endpoint, (size_t)command->mtu_length, conductor->context->initial_window_length) < 0)
     {
-        aeron_driver_conductor_error(conductor, aeron_errcode(), aeron_errmsg(), aeron_errmsg());
+        AERON_APPEND_ERR("%s", "");
+        aeron_driver_conductor_log_error(conductor);
         return;
     }
 
@@ -3764,7 +3743,8 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
     if (aeron_name_resolver_resolve_host_and_port(
         &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_addr) < 0)
     {
-        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+        AERON_APPEND_ERR("%s", "");
+        aeron_driver_conductor_log_error(conductor);
         return;
     }
 
@@ -3787,7 +3767,8 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     if (aeron_name_resolver_resolve_host_and_port(
         &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_CONTROL_KEY, true, &resolved_addr) < 0)
     {
-        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errmsg(), "");
+        AERON_APPEND_ERR("%s", "");
+        aeron_driver_conductor_log_error(conductor);
         return;
     }
 

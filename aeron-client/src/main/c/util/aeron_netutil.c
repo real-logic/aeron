@@ -26,6 +26,7 @@
 #include "util/aeron_error.h"
 #include "util/aeron_parse_util.h"
 #include "aeron_socket.h"
+#include "command/aeron_control_protocol.h"
 
 #if defined(AERON_COMPILER_GCC)
 
@@ -63,7 +64,8 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
     int error, result = -1;
     if ((error = getaddrinfo(host, NULL, &hints, &info)) != 0)
     {
-        AERON_SET_ERR(EINVAL, "Unable to resolve host=(%s): (%d) %s", host, error, gai_strerror(error));
+        AERON_SET_ERR(
+            -AERON_ERROR_CODE_UNKNOWN_HOST, "Unable to resolve host=(%s): (%d) %s", host, error, gai_strerror(error));
         return -1;
     }
 

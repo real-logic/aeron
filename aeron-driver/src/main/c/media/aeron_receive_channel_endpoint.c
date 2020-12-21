@@ -373,7 +373,8 @@ void aeron_receive_channel_endpoint_dispatch(
             {
                 if (aeron_receive_channel_endpoint_on_data(endpoint, destination, buffer, length, addr) < 0)
                 {
-                    AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_data: %s", aeron_errmsg());
+                    AERON_APPEND_ERR("%s", "receiver on_data");
+                    aeron_driver_receiver_log_error(receiver);
                 }
             }
             else
@@ -387,7 +388,8 @@ void aeron_receive_channel_endpoint_dispatch(
             {
                 if (aeron_receive_channel_endpoint_on_setup(endpoint, destination, buffer, length, addr) < 0)
                 {
-                    AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_setup: %s", aeron_errmsg());
+                    AERON_APPEND_ERR("%s", "receiver on_setup");
+                    aeron_driver_receiver_log_error(receiver);
                 }
             }
             else
@@ -401,7 +403,8 @@ void aeron_receive_channel_endpoint_dispatch(
             {
                 if (aeron_receive_channel_endpoint_on_rttm(endpoint, destination, buffer, length, addr) < 0)
                 {
-                    AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_rttm: %s", aeron_errmsg());
+                    AERON_APPEND_ERR("%s", "receiver on_rttm");
+                    aeron_driver_receiver_log_error(receiver);
                 }
             }
             else
@@ -882,7 +885,8 @@ int aeron_receive_channel_endpoint_add_pending_setup(
         aeron_receive_destination_t *destination = endpoint->destinations.array[0].destination;
         if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination) < 0)
         {
-            AERON_DRIVER_RECEIVER_ERROR(receiver, "%s", aeron_errmsg());
+            AERON_APPEND_ERR("%s", "");
+            aeron_driver_receiver_log_error(receiver);
         }
     }
 

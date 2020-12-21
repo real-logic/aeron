@@ -201,8 +201,7 @@ int aeron_properties_parse_file(const char *filename, aeron_properties_file_hand
 
     if ((fpin = fopen(filename, "r")) == NULL)
     {
-        // TODO: (MJB) should we use errno hear to surface the system error?
-        AERON_SET_ERR(EINVAL, "could not open filename %s", filename);
+        AERON_SET_ERR(errno, "could not open properties file: %s", filename);
         return -1;
     }
 

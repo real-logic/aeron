@@ -224,11 +224,12 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
 
     if (0 != bytes_read && !was_present)
     {
-        aeron_distinct_error_log_record(
-            strategy_state->error_log,
+        AERON_SET_ERR(
             EINVAL,
-            "invalid group tag on status message",
+            "%s",
             "Received a status message for tagged flow control that did not have 0 or 8 bytes for the group_tag");
+        aeron_distinct_error_log_record(strategy_state->error_log, aeron_errcode(), aeron_errmsg());
+        aeron_err_clear();
     }
 
     const bool matches_tag = was_present && receiver_group_tag == strategy_state->group_tag;

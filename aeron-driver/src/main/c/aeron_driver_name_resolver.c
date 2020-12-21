@@ -498,8 +498,7 @@ static bool aeron_driver_name_resolver_is_wildcard(int8_t res_type, uint8_t *add
 
 static void aeron_name_resolver_log_and_clear_error(aeron_driver_name_resolver_t *resolver)
 {
-    // TODO: (MJB) This needs revising....
-    aeron_distinct_error_log_record(resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+    aeron_distinct_error_log_record(resolver->error_log, aeron_errcode(), aeron_errmsg());
     aeron_counter_increment(resolver->error_counter, 1);
     aeron_err_clear();
 }
@@ -849,9 +848,7 @@ static int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_nam
             if (aeron_driver_name_resolver_do_send(resolver, frame_header, entry_offset, &neighbor->socket_addr) < 0)
             {
                 AERON_APPEND_ERR("%s", "Failed to send neighbour resolutions");
-                // TODO (MJB): Review this use of the distinct error log.
-                aeron_distinct_error_log_record(
-                    resolver->error_log, AERON_ERROR_CODE_GENERIC_ERROR, aeron_errmsg(), "");
+                aeron_distinct_error_log_record(resolver->error_log, aeron_errcode(), aeron_errmsg());
             }
             else
             {

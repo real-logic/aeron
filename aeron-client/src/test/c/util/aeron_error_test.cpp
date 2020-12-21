@@ -68,10 +68,19 @@ TEST_F(ErrorTest, shouldStackErrors)
 TEST_F(ErrorTest, shouldHandleErrorsOverflow)
 {
     AERON_SET_ERR(EINVAL, "%s", "this is the root error");
-    for (int i = 0; i < AERON_ERROR_MAX_STACK_DEPTH + 10; i++)
+
+    for (int i = 0; i < 1000; i++)
     {
         AERON_APPEND_ERR("this is a nested error: %d", i);
     }
+
+    printf("%s\n", aeron_errmsg());
+    fflush(stdout);
+}
+
+TEST_F(ErrorTest, shouldReportZeroAsErrorForBackwardCompatibility)
+{
+    AERON_SET_ERR(0, "%s", "this is the root error");
 
     printf("%s\n", aeron_errmsg());
     fflush(stdout);

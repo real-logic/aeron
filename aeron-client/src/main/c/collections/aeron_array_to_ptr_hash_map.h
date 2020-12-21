@@ -166,7 +166,7 @@ inline int aeron_array_to_ptr_hash_map_put(
 {
     if (NULL == value)
     {
-        aeron_set_errno(EINVAL);
+        AERON_SET_ERR(EINVAL, "%s", "value is null");
         return -1;
     }
 

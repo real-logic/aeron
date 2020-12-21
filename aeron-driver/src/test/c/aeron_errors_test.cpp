@@ -122,6 +122,8 @@ protected:
             EXPECT_THAT(errorStr, testing::HasSubstr(subString));
         }
 
+        std::cout << std::string(error, error_length) << std::endl;
+
         callbackValidation->incrementCount();
     }
 
@@ -309,6 +311,7 @@ TEST_F(CErrorsTest, destinationErrorIncludesClientAndDriverErrorAndReportsInDist
 
     ASSERT_EQ(-1, result);
     std::string errorMessage = std::string(aeron_errmsg());
+
     const char *expectedDriverMessage = "invalid URI scheme or transport: aeron:tcp?endpoint=localhost:21345";
 
     ASSERT_THAT(-AERON_ERROR_CODE_INVALID_CHANNEL, aeron_errcode());

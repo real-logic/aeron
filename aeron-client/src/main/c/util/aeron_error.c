@@ -25,6 +25,8 @@
 #include "aeron_alloc.h"
 #include "command/aeron_control_protocol.h"
 
+#define AERON_ERR_TRAILER "...\n"
+
 #if defined(AERON_COMPILER_MSVC)
 #include <windows.h>
 #endif
@@ -76,71 +78,16 @@ int aeron_errcode()
 const char *aeron_errmsg()
 {
     initialize_error();
-
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
-    const char *result = "";
 
     if (NULL != error_state)
     {
-        if (!error_state->errmsg_valid)
-        {
-            char *error_message_ptr = error_state->errmsg;
-            size_t maxlen = sizeof(error_state->errmsg) - 1;
-            size_t offset = 0;
-            error_message_ptr[maxlen] = '\0';
-            int bytes_written;
-
-            const char *err_str = aeron_errcode() < 0 ?
-                aeron_error_code_str(-aeron_errcode()) : strerror(aeron_errcode());
-            bytes_written = snprintf(error_message_ptr, maxlen, "(%d) %s\n", aeron_errcode(), err_str);
-            error_message_ptr += bytes_written;
-            offset += bytes_written;
-
-            for (int i = 0, n = error_state->stack_depth; i < n; i++)
-            {
-                if (i == AERON_ERROR_MAX_STACK_DEPTH - 1 && 0 < error_state->stack_overflows)
-                {
-                    bytes_written = snprintf(
-                        error_message_ptr, maxlen, "(%d lines omitted...)\n", error_state->stack_overflows);
-
-                    if (bytes_written < 0)
-                    {
-                        return NULL;
-                    }
-                    else if (bytes_written >= (int)maxlen)
-                    {
-                        break;
-                    }
-
-                    error_message_ptr = error_message_ptr + bytes_written;
-                    offset += bytes_written;
-                }
-
-                aeron_err_stack_entry_t *entry = &error_state->error_stack[i];
-                maxlen = (sizeof(error_state->errmsg) - offset) - 1;
-                bytes_written = snprintf(
-                    error_message_ptr, maxlen, "[%s, %s:%d] %s\n", entry->function,
-                    entry->filename, entry->line_number, entry->message);
-
-                if (bytes_written < 0)
-                {
-                    return NULL;
-                }
-                else if (bytes_written >= (int)maxlen)
-                {
-                    break;
-                }
-
-                error_message_ptr = error_message_ptr + bytes_written;
-                offset += bytes_written;
-            }
-
-            error_state->errmsg_valid = true;
-        }
-        result = error_state->errmsg;
+        return error_state->errmsg;
     }
-
-    return result;
+    else
+    {
+        return "no error";
+    }
 }
 
 static aeron_per_thread_error_t *get_required_error_state()
@@ -164,26 +111,7 @@ static aeron_per_thread_error_t *get_required_error_state()
         }
     }
 
-    error_state->errmsg_valid = true;
-
     return error_state;
-}
-
-void aeron_set_err(int errcode, const char *format, ...)
-{
-    aeron_per_thread_error_t *error_state = get_required_error_state();
-
-    error_state->errcode = errcode;
-    aeron_set_errno(errcode);
-
-    va_list args;
-    char stack_message[sizeof(error_state->errmsg)];
-
-    va_start(args, format);
-    vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
-    va_end(args);
-    strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
-    error_state->errmsg_valid = true;
 }
 
 void aeron_set_errno(int errcode)
@@ -253,22 +181,47 @@ const char *aeron_error_code_str(int errcode)
     }
 }
 
+static void aeron_err_vprintf(
+    aeron_per_thread_error_t *error_state,
+    const char *format,
+    va_list args)
+{
+    if (error_state->offset >= sizeof(error_state->errmsg))
+    {
+        return;
+    }
+
+    int result = vsnprintf(
+        error_state->errmsg + error_state->offset, sizeof(error_state->errmsg) - error_state->offset, format, args);
+
+    if (result < 0)
+    {
+        fprintf(stderr, "Failed to update err_msg: %d\n", result);
+    }
+
+    error_state->offset += result;
+}
+
+static void aeron_err_printf(aeron_per_thread_error_t *error_state, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    aeron_err_vprintf(error_state, format, args);
+    va_end(args);
+}
+
 static void aeron_err_update_entry(
     aeron_per_thread_error_t *error_state,
-    int stack_position,
     const char *function,
     const char *filename,
     int line_number,
     const char *format,
     va_list args)
 {
-    error_state->errmsg_valid = false;
-    char *stack_message = error_state->error_stack[stack_position].message;
-    error_state->error_stack[stack_position].function = function;
-    error_state->error_stack[stack_position].filename = filename;
-    error_state->error_stack[stack_position].line_number = line_number;
-    vsnprintf(stack_message, AERON_ERROR_MAX_ERROR_LINE_LENGTH - 1, format, args);
-    stack_message[AERON_ERROR_MAX_ERROR_LINE_LENGTH - 1] = '\0';
+    aeron_err_printf(error_state, "[%s, %s:%d] ", function, filename, line_number);
+    aeron_err_vprintf(error_state, format, args);
+    aeron_err_printf(error_state, "%s", "\n");
+    strcpy(error_state->errmsg + (sizeof(error_state->errmsg) - (strlen(AERON_ERR_TRAILER) + 2)), AERON_ERR_TRAILER);
 }
 
 void aeron_err_set(int errcode, const char *function, const char *filename, int line_number, const char *format, ...)
@@ -277,35 +230,22 @@ void aeron_err_set(int errcode, const char *function, const char *filename, int 
 
     error_state->errcode = errcode;
     aeron_set_errno(errcode);
+    error_state->offset = 0;
 
-    int stack_position = 0;
-    error_state->stack_depth = 1;
-
+    const char *err_str = aeron_errcode() <= 0 ? aeron_error_code_str(-aeron_errcode()) : strerror(aeron_errcode());
+    aeron_err_printf(error_state, "(%d) %s\n", aeron_errcode(), err_str);
     va_list args;
     va_start(args, format);
-    aeron_err_update_entry(error_state, stack_position, function, filename, line_number, format, args);
+    aeron_err_update_entry(error_state, function, filename, line_number, format, args);
     va_end(args);
 }
 
 void aeron_err_append(const char *function, const char *filename, int line_number, const char *format, ...)
 {
     aeron_per_thread_error_t *error_state = get_required_error_state();
-
-    int stack_position;
-    if (error_state->stack_depth < AERON_ERROR_MAX_STACK_DEPTH)
-    {
-        stack_position = error_state->stack_depth;
-        error_state->stack_depth++;
-    }
-    else
-    {
-        stack_position = AERON_ERROR_MAX_STACK_DEPTH - 1;
-        error_state->stack_overflows++;
-    }
-
     va_list args;
     va_start(args, format);
-    aeron_err_update_entry(error_state, stack_position, function, filename, line_number, format, args);
+    aeron_err_update_entry(error_state, function, filename, line_number, format, args);
     va_end(args);
 }
 
@@ -316,9 +256,6 @@ void aeron_err_clear()
     aeron_set_errno(0);
     error_state->errcode = 0;
     strcpy(error_state->errmsg, "no error");
-    error_state->errmsg_valid = true;
-    error_state->stack_depth = 0;
-    error_state->stack_overflows = 0;
 }
 
 #if defined(AERON_COMPILER_MSVC)

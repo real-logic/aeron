@@ -153,7 +153,7 @@ inline int aeron_str_to_ptr_hash_map_put(aeron_str_to_ptr_hash_map_t *map, const
 {
     if (NULL == value)
     {
-        aeron_set_errno(EINVAL);
+        AERON_SET_ERR(EINVAL, "%s", "value is null");
         return -1;
     }
 

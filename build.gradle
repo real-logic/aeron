@@ -46,7 +46,7 @@ def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
 def agronaVersion = '1.9.0'
-def agronaVersionRange = '[1.8,1.9[' // allow any patch release of 1.8.x
+def agronaVersionRange = '[1.9,1.10[' // allow any patch release of 1.9.x
 def sbeVersion = '1.20.3'
 def checkstyleVersion = '8.38'
 def hamcrestVersion = '2.2'

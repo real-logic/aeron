@@ -59,7 +59,7 @@ public class MultiNodeTest
             final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(leader, messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             cluster.stopAllNodes();
             cluster.restartAllNodes(false);
@@ -88,12 +88,13 @@ public class MultiNodeTest
             final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
             cluster.sendMessages(preCatchupMessageCount);
             cluster.awaitResponseMessageCount(preCatchupMessageCount);
-            cluster.awaitServiceMessageCount(leader, preCatchupMessageCount);
+            cluster.awaitServicesMessageCount(preCatchupMessageCount);
 
             cluster.stopNode(cluster.node(0));
 
             cluster.sendMessages(postCatchupMessageCount);
             cluster.awaitResponseMessageCount(totalMessageCount);
+            cluster.awaitServicesMessageCount(totalMessageCount);
 
             cluster.stopAllNodes();
             cluster.restartAllNodes(false);

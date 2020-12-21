@@ -888,7 +888,7 @@ public class TestCluster implements AutoCloseable
     {
         for (final TestNode node : nodes)
         {
-            if (null != node)
+            if (null != node && !node.isClosed())
             {
                 awaitSnapshotCount(node, value);
             }
@@ -937,7 +937,7 @@ public class TestCluster implements AutoCloseable
     {
         for (final TestNode node : nodes)
         {
-            if (null != node)
+            if (null != node && !node.isClosed())
             {
                 awaitServiceMessageCount(node, messageCount);
             }

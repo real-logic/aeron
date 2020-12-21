@@ -17,7 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.ChannelUri;
 import io.aeron.driver.media.SendChannelEndpoint;
-import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -152,7 +152,7 @@ final class SenderProxy
             Thread.yield();
             if (Thread.interrupted())
             {
-                throw new AgentTerminationException("unexpected interrupt");
+                LangUtil.rethrowUnchecked(new InterruptedException());
             }
         }
     }

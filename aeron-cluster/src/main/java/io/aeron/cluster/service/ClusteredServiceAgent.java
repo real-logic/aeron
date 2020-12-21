@@ -306,7 +306,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         idleStrategy.idle();
         if (Thread.interrupted())
         {
-            throw new AgentTerminationException("unexpected interrupt");
+            LangUtil.rethrowUnchecked(new InterruptedException());
         }
         checkForClockTick();
     }
@@ -318,7 +318,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             if (Thread.interrupted())
             {
-                throw new AgentTerminationException("unexpected interrupt");
+                LangUtil.rethrowUnchecked(new InterruptedException());
             }
             checkForClockTick();
         }

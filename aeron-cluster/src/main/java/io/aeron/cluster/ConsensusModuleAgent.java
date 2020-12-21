@@ -2649,7 +2649,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (Thread.interrupted())
         {
-            throw new AgentTerminationException("unexpected interrupt");
+            LangUtil.rethrowUnchecked(new InterruptedException());
         }
     }
 

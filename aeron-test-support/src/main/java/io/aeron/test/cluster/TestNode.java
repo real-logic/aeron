@@ -54,14 +54,14 @@ public class TestNode implements AutoCloseable
     private final ClusteredServiceContainer container;
     private final TestService service;
     private final Context context;
+    private final TestMediaDriver mediaDriver;
     private boolean isClosed = false;
-    private final TestMediaDriver testMediaDriver;
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
-        testMediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
+        mediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
         clusteredArchive = ClusteredArchive.launch(
-            testMediaDriver.aeronDirectoryName(),
+            mediaDriver.aeronDirectoryName(),
             context.archiveContext,
             context.consensusModuleContext.terminationHook(ClusterTests.dynamicTerminationHook(
                 context.terminationExpected, context.memberWasTerminated)));
@@ -77,7 +77,7 @@ public class TestNode implements AutoCloseable
         dataCollector.add(container.context().clusterDir().toPath());
         dataCollector.add(clusteredArchive.consensusModule().context().clusterDir().toPath());
         dataCollector.add(clusteredArchive.archive().context().archiveDir().toPath());
-        dataCollector.add(testMediaDriver.context().aeronDirectory().toPath());
+        dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
     }
 
     public ConsensusModule consensusModule()
@@ -100,7 +100,7 @@ public class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.closeAll(clusteredArchive.consensusModule(), container, clusteredArchive, testMediaDriver);
+            CloseHelper.closeAll(clusteredArchive.consensusModule(), container, clusteredArchive, mediaDriver);
         }
     }
 
@@ -145,7 +145,7 @@ public class TestNode implements AutoCloseable
             {
                 clusteredArchive.consensusModule().context().deleteDirectory();
                 clusteredArchive.archive().context().deleteDirectory();
-                testMediaDriver.context().deleteDirectory();
+                mediaDriver.context().deleteDirectory();
             }
         }
         catch (final Throwable t)
@@ -266,7 +266,7 @@ public class TestNode implements AutoCloseable
 
     CountersReader countersReader()
     {
-        return testMediaDriver.counters();
+        return mediaDriver.counters();
     }
 
     public long errors()

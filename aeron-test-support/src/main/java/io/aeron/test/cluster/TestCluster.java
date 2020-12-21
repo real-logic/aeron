@@ -898,13 +898,19 @@ public class TestCluster implements AutoCloseable
     public void awaitSnapshotCount(final TestNode node, final long value)
     {
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
-        while (snapshotCounter.get() < value)
+        while (true)
         {
-            Tests.yield();
             if (snapshotCounter.isClosed())
             {
                 throw new IllegalStateException("counter is unexpectedly closed");
             }
+
+            if (snapshotCounter.get() >= value)
+            {
+                break;
+            }
+
+            Tests.yield();
         }
     }
 

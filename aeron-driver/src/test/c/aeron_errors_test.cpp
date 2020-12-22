@@ -141,12 +141,11 @@ protected:
 
 
         std::int64_t deadlineMs = aeron_epoch_clock() + timeoutMs;
-        size_t num = 0;
         do
         {
             std::this_thread::yield();
             errorCallbackValidation.reset();
-            num = aeron_cnc_error_log_read(aeronCnc, errorCallback, &errorCallbackValidation, 0);
+            aeron_cnc_error_log_read(aeronCnc, errorCallback, &errorCallbackValidation, 0);
         }
         while (!errorCallbackValidation.validated() && aeron_epoch_clock() <= deadlineMs);
 

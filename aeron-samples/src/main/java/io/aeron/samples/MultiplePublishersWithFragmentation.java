@@ -38,6 +38,11 @@ public class MultiplePublishersWithFragmentation
     private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(9000, BitUtil.CACHE_LINE_LENGTH));
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         System.out.println(

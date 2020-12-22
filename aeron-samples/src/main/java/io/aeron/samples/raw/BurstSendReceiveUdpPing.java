@@ -40,6 +40,12 @@ import static java.lang.Math.min;
  */
 public class BurstSendReceiveUdpPing
 {
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws IOException if an error occurs with the channel.
+     */
     public static void main(final String[] args) throws IOException
     {
         String remoteHost = "localhost";

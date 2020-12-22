@@ -37,6 +37,11 @@ import static java.lang.Math.min;
  */
 public class SegmentInspector
 {
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         final PrintStream out = System.out;

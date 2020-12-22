@@ -51,6 +51,11 @@ public class ArchiveCreator
 
     private static int recordingNumber = 0;
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         final String archiveDirName = Archive.Configuration.archiveDirName();

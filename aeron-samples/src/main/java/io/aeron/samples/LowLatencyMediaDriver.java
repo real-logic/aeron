@@ -29,6 +29,11 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
  */
 public class LowLatencyMediaDriver
 {
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process which will be used for loading properties files.
+     */
     public static void main(final String[] args)
     {
         loadPropertiesFiles(args);

@@ -33,6 +33,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class SimpleSubscriber
 {
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         // Maximum number of message fragments to receive during a single 'poll' operation

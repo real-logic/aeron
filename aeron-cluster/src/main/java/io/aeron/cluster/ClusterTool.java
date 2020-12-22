@@ -84,6 +84,11 @@ public class ClusterTool
     private static final long TIMEOUT_MS =
         NANOSECONDS.toMillis(getDurationInNanos(AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME, 0));
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     @SuppressWarnings("methodlength")
     public static void main(final String[] args)
     {

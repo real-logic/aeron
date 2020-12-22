@@ -180,6 +180,11 @@ public class BasicAuctionClusterClient implements EgressListener
         System.out.println(message);
     }
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         final int customerId = Integer.parseInt(System.getProperty("aeron.cluster.tutorial.customerId"));       // <1>

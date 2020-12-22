@@ -82,9 +82,9 @@ public final class MediaDriver implements AutoCloseable
     private final Context ctx;
 
     /**
-     * Start Media Driver as a stand-alone process.
+     * Main method for launching the process.
      *
-     * @param args command line arguments
+     * @param args passed to the process.
      */
     public static void main(final String[] args)
     {

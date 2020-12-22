@@ -32,6 +32,11 @@ import static java.lang.System.getProperty;
  */
 public class LossStat
 {
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         final String aeronDirectoryName = getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);

@@ -37,7 +37,13 @@ public class EmbeddedExclusiveBufferClaimIpcThroughput
     private static final String CHANNEL = CommonContext.IPC_CHANNEL;
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
 
-    public static void main(final String[] args) throws Exception
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws InterruptedException if the join on the created threads is interrupted.
+     */
+    public static void main(final String[] args) throws InterruptedException
     {
         loadPropertiesFiles(args);
 

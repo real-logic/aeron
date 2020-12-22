@@ -347,6 +347,11 @@ public class SingleNodeCluster implements AutoCloseable
         }
     }
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         sendSingleMessageAndEchoBack();

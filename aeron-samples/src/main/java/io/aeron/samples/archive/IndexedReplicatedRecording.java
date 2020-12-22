@@ -176,7 +176,13 @@ public class IndexedReplicatedRecording implements AutoCloseable
         dstArchivingMediaDriver.archive().context().deleteDirectory();
     }
 
-    public static void main(final String[] args) throws Exception
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws InterruptedException if the thread is interrupted.
+     */
+    public static void main(final String[] args) throws InterruptedException
     {
         try (IndexedReplicatedRecording test = new IndexedReplicatedRecording())
         {

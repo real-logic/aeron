@@ -51,7 +51,13 @@ public class StreamingPublisher
 
     private static volatile boolean printingActive = true;
 
-    public static void main(final String[] args) throws Exception
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws InterruptedException if the linger delay is interrupted.
+     */
+    public static void main(final String[] args) throws InterruptedException
     {
         if (MESSAGE_LENGTH < SIZE_OF_LONG)
         {

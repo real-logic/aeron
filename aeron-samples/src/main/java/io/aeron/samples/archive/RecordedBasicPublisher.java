@@ -44,7 +44,13 @@ public class RecordedBasicPublisher
 
     private static final UnsafeBuffer BUFFER = new UnsafeBuffer(BufferUtil.allocateDirectAligned(256, 64));
 
-    public static void main(final String[] args) throws Exception
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws InterruptedException if the thread sleep delay is interrupted.
+     */
+    public static void main(final String[] args) throws InterruptedException
     {
         System.out.println("Publishing to " + CHANNEL + " on stream id " + STREAM_ID);
 

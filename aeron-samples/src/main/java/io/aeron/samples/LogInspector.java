@@ -57,6 +57,11 @@ public class LogInspector
 
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         final PrintStream out = System.out;

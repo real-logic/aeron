@@ -28,7 +28,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class SimplePublisher
 {
-    public static void main(final String[] args) throws Exception
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws InterruptedException if the thread sleep delay is interrupted.
+     */
+    public static void main(final String[] args) throws InterruptedException
     {
         // Allocate enough buffer size to hold maximum message length
         // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management

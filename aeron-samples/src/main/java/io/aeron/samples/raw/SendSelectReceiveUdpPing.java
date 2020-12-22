@@ -47,6 +47,12 @@ public class SendSelectReceiveUdpPing
 
     private int sequenceNumber;
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws IOException if an error occurs with the channel.
+     */
     public static void main(final String[] args) throws IOException
     {
         new SendSelectReceiveUdpPing().run();

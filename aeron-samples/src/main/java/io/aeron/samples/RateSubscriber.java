@@ -21,10 +21,7 @@ import io.aeron.driver.MediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.SigInt;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.samples.SamplesUtil.rateReporterHandler;
@@ -39,7 +36,14 @@ public class RateSubscriber
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    public static void main(final String[] args) throws Exception
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws InterruptedException if the task is interrupted
+     * @throws ExecutionException if the result if the {@link Future} has an error.
+     */
+    public static void main(final String[] args) throws InterruptedException, ExecutionException
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream id " + STREAM_ID);
 

@@ -36,6 +36,11 @@ import static io.aeron.CncFileDescriptor.*;
  */
 public class DriverTool
 {
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         boolean printPidOnly = false;

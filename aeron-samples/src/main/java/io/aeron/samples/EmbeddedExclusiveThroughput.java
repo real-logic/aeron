@@ -47,7 +47,13 @@ public class EmbeddedExclusiveThroughput
 
     private static volatile boolean printingActive = true;
 
-    public static void main(final String[] args) throws Exception
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws InterruptedException if the thread is interrupted during linger.
+     */
+    public static void main(final String[] args) throws InterruptedException
     {
         loadPropertiesFiles(args);
 

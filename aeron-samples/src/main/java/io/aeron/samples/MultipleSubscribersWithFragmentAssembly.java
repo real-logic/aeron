@@ -43,6 +43,11 @@ public class MultipleSubscribersWithFragmentAssembly
 
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         System.out.format("Subscribing to %s on stream ID %d and stream ID %d%n",

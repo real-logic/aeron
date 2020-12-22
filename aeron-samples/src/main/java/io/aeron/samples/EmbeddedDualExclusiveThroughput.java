@@ -50,8 +50,14 @@ public class EmbeddedDualExclusiveThroughput
 
     private static volatile boolean printingActive = true;
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws InterruptedException if the thread sleep delay is interrupted.
+     */
     @SuppressWarnings("MethodLength")
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args) throws InterruptedException
     {
         loadPropertiesFiles(args);
 

@@ -39,6 +39,12 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class WriteReceiveUdpPing
 {
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws IOException if an error occurs with the channel.
+     */
     public static void main(final String[] args) throws IOException
     {
         int numChannels = 1;

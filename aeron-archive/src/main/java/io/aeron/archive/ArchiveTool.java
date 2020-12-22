@@ -96,6 +96,11 @@ public class ArchiveTool
         boolean confirm(T context);
     }
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     @SuppressWarnings("MethodLength")
     public static void main(final String[] args)
     {

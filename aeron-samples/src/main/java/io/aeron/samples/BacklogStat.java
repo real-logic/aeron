@@ -54,6 +54,11 @@ public class BacklogStat
 {
     private final CountersReader counters;
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         final CountersReader counters = SamplesUtil.mapCounters();

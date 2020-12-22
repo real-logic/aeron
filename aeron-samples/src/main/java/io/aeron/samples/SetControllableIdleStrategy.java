@@ -22,11 +22,17 @@ import org.agrona.concurrent.status.StatusIndicator;
 
 /**
  * Allows a {@link org.agrona.concurrent.ControllableIdleStrategy} to be set via the command line.
+ * <p>
  * The first command line arg should be an integer value representing one of constants in
  * {@link org.agrona.concurrent.ControllableIdleStrategy}.
  */
 public class SetControllableIdleStrategy
 {
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     public static void main(final String[] args)
     {
         if (args.length != 1)

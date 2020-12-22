@@ -38,6 +38,12 @@ import static io.aeron.samples.raw.Common.init;
  */
 public class SendReceiveUdpPing
 {
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws IOException if an error occurs with the channel.
+     */
     public static void main(final String[] args) throws IOException
     {
         int numChannels = 1;

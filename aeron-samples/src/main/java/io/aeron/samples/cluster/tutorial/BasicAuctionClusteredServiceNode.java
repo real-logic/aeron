@@ -108,6 +108,11 @@ public class BasicAuctionClusteredServiceNode
         return sb.toString();
     }
 
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     */
     // tag::main[]
     public static void main(final String[] args)
     {

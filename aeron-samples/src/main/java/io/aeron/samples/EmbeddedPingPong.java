@@ -62,7 +62,13 @@ public class EmbeddedPingPong
     private static final IdleStrategy PONG_HANDLER_IDLE_STRATEGY = SampleConfiguration.newIdleStrategy();
     private static final AtomicBoolean RUNNING = new AtomicBoolean(true);
 
-    public static void main(final String[] args) throws Exception
+    /**
+     * Main method for launching the process.
+     *
+     * @param args passed to the process.
+     * @throws InterruptedException if the thread is interrupted.
+     */
+    public static void main(final String[] args) throws InterruptedException
     {
         loadPropertiesFiles(args);
 

@@ -21,7 +21,6 @@ import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.concurrent.AgentTerminationException;
 
 import java.util.Objects;
 import java.util.Random;
@@ -170,13 +169,10 @@ class Election
                     break;
             }
         }
-        catch (final AgentTerminationException ex)
-        {
-            throw ex;
-        }
         catch (final Exception ex)
         {
             handleError(nowNs, ex);
+            throw ex;
         }
 
         return workCount;

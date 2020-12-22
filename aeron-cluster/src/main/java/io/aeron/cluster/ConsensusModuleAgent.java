@@ -188,7 +188,10 @@ class ConsensusModuleAgent implements Agent
         leaderMember = thisMember;
 
         final ChannelUri consensusUri = ChannelUri.parse(ctx.consensusChannel());
-        consensusUri.put(ENDPOINT_PARAM_NAME, thisMember.consensusEndpoint());
+        if (!consensusUri.containsKey(ENDPOINT_PARAM_NAME))
+        {
+            consensusUri.put(ENDPOINT_PARAM_NAME, thisMember.consensusEndpoint());
+        }
 
         final int statusStreamId = ctx.consensusStreamId();
         consensusAdapter = new ConsensusAdapter(

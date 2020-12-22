@@ -15,6 +15,7 @@
  */
 
 #include <functional>
+#include <utility>
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -34,25 +35,60 @@ extern "C"
 class ErrorCallbackValidation
 {
 public:
-    ErrorCallbackValidation(std::vector<std::string> expectedSubstrings) : m_expectedSubstrings(expectedSubstrings)
+    explicit ErrorCallbackValidation(std::vector<std::string> expectedSubstrings) : 
+        m_expectedSubstrings(std::move(expectedSubstrings))
     {}
 
-    std::vector<std::string> expectedSubstrings()
+    void reset()
     {
-        return m_expectedSubstrings;
+        m_observations.clear();
     }
 
-    void incrementCount()
+    void validate(std::string &errorStr) 
     {
-        m_errorCount++;
+        m_observations.push_back(errorStr);
+
+        for (auto &subString : m_expectedSubstrings)
+        {
+            if (std::string::npos == errorStr.find(subString))
+            {
+                return;
+            }
+        }
+        
+        m_validated = true;
+    }
+    
+    bool validated() const
+    {
+        return m_validated;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const ErrorCallbackValidation& bar)
+    {
+        os << "Unable to find: ";
+        os << "{ ";
+        for (auto &subString : bar.m_expectedSubstrings)
+        {
+            os << subString << "; ";
+        }
+        os << "} in:";
+        os << std::endl;
+        for (auto &subString : bar.m_observations)
+        {
+            os << subString;
+        }
+
+        return os;
     }
 
 private:
     std::vector<std::string> m_expectedSubstrings;
-    int m_errorCount;
+    std::vector<std::string> m_observations{};
+    bool m_validated = false;
 };
 
-const char *CSV_NAME_CONFIG_WITH_UNRESOLVABLE_ADDRESS = "server0,endpoint,foo.example.com:20001,localhost:20002|";
+const char *CSV_NAME_CONFIG_WITH_UNRESOLVABLE_ADDRESS = "server0,endpoint,foo.example.com:24326,localhost:24326|";
 
 class CErrorsTest : public CSystemTestBase, public testing::Test
 {
@@ -71,7 +107,7 @@ protected:
     std::int64_t m_initialErrorCount = 0;
     aeron_counters_reader_t *m_countersReader = NULL;
 
-    virtual aeron_t *connect()
+    aeron_t *connect() override
     {
         aeron_t *aeron = CSystemTestBase::connect();
 
@@ -93,7 +129,7 @@ protected:
         while (currentErrorCount <= m_initialErrorCount);
     }
     
-    void verifyDistinctErrorLogContains(const char *text)
+    void verifyDistinctErrorLogContains(const char *text, std::int64_t timeoutMs = 0)
     {
         aeron_cnc_t *aeronCnc;
         ASSERT_EQ(0, aeron_cnc_init(&aeronCnc, aeron_context_get_dir(m_context), 100));
@@ -103,7 +139,20 @@ protected:
                 std::vector<std::string>{ text }
             };
 
-        aeron_cnc_error_log_read(aeronCnc, errorCallback, &errorCallbackValidation, 0);
+
+        std::int64_t deadlineMs = aeron_epoch_clock() + timeoutMs;
+        size_t num = 0;
+        do
+        {
+            std::this_thread::yield();
+            errorCallbackValidation.reset();
+            num = aeron_cnc_error_log_read(aeronCnc, errorCallback, &errorCallbackValidation, 0);
+        }
+        while (!errorCallbackValidation.validated() && aeron_epoch_clock() <= deadlineMs);
+
+        EXPECT_TRUE(errorCallbackValidation.validated()) << errorCallbackValidation;
+        
+        aeron_cnc_close(aeronCnc);
     }
 
     static void errorCallback(
@@ -114,17 +163,9 @@ protected:
         size_t error_length,
         void *clientd)
     {
-        ErrorCallbackValidation *callbackValidation = (ErrorCallbackValidation *)clientd;
+        auto *callbackValidation = reinterpret_cast<ErrorCallbackValidation *>(clientd);
         std::string errorStr = std::string(error, error_length);
-
-        for (auto &subString : callbackValidation->expectedSubstrings())
-        {
-            EXPECT_THAT(errorStr, testing::HasSubstr(subString));
-        }
-
-        std::cout << std::string(error, error_length) << std::endl;
-
-        callbackValidation->incrementCount();
+        callbackValidation->validate(errorStr);
     }
 
 };
@@ -395,6 +436,7 @@ TEST_F(CErrorsTest, shouldFailToResovleNameOnDestination)
 TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
 {
     aeron_t *aeron = connect();
+
     aeron_async_add_publication_t *pub_async;
     aeron_publication_t *pub;
 
@@ -407,9 +449,8 @@ TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
     }
 
     ASSERT_EQ(1, result);
-    std::string errorMessage = std::string(aeron_errmsg());
     const char *expectedDriverMessage = "Unable to resolve host";
 
     waitForErrorCounterIncrease();
-    verifyDistinctErrorLogContains(expectedDriverMessage);
+    verifyDistinctErrorLogContains(expectedDriverMessage, 10000);
 }

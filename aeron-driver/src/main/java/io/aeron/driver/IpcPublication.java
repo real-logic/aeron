@@ -121,16 +121,31 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         timeOfLastConsumerPositionUpdateNs = ctx.cachedNanoClock().nanoTime();
     }
 
+    /**
+     * Channel URI string for this publication.
+     *
+     * @return channel URI string for this publication.
+     */
     public String channel()
     {
         return channel;
     }
 
+    /**
+     * Session id allocated to this stream.
+     *
+     * @return session id allocated to this stream.
+     */
     public int sessionId()
     {
         return sessionId;
     }
 
+    /**
+     * Stream id within the channel.
+     *
+     * @return stream id within the channel.
+     */
     public int streamId()
     {
         return streamId;

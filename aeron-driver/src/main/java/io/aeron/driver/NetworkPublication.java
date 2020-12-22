@@ -263,24 +263,44 @@ public class NetworkPublication
         CloseHelper.close(errorHandler, rawLog);
     }
 
+    /**
+     * Time of the last status message a from a receiver.
+     *
+     * @return this of the last status message a from a receiver.
+     */
     public long timeOfLastStatusMessageNs()
     {
         return timeOfLastStatusMessageNs;
     }
 
+    /**
+     * Channel URI string for this publication.
+     *
+     * @return channel URI string for this publication.
+     */
     public String channel()
     {
         return channelEndpoint.originalUriString();
     }
 
-    public int streamId()
-    {
-        return streamId;
-    }
-
+    /**
+     * Session id allocated to this stream.
+     *
+     * @return session id allocated to this stream.
+     */
     public int sessionId()
     {
         return sessionId;
+    }
+
+    /**
+     * Stream id within the channel.
+     *
+     * @return stream id within the channel.
+     */
+    public int streamId()
+    {
+        return streamId;
     }
 
     public void triggerSendSetupFrame()

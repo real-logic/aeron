@@ -46,18 +46,31 @@ public final class DriverConductorProxy
         this.failCount = failCount;
     }
 
-    public void channelEndpointError(final long statusIndicatorId, final Exception error)
+    /**
+     * Notify the conductor indicating an error with a channel endpoint.
+     *
+     * @param statusIndicatorId representing the channel.
+     * @param ex                cause of the error.
+     */
+    public void channelEndpointError(final long statusIndicatorId, final Exception ex)
     {
         if (notConcurrent())
         {
-            driverConductor.onChannelEndpointError(statusIndicatorId, error);
+            driverConductor.onChannelEndpointError(statusIndicatorId, ex);
         }
         else
         {
-            offer(() -> driverConductor.onChannelEndpointError(statusIndicatorId, error));
+            offer(() -> driverConductor.onChannelEndpointError(statusIndicatorId, ex));
         }
     }
 
+    /**
+     * Request the conductor re-resolve an endpoint address.
+     *
+     * @param endpoint        in string format.
+     * @param channelEndpoint that the endpoint belongs to.
+     * @param address         of previous resolution.
+     */
     public void reResolveEndpoint(
         final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
@@ -71,6 +84,14 @@ public final class DriverConductorProxy
         }
     }
 
+    /**
+     * Re-resolve a control endpoint for a channel.
+     *
+     * @param endpoint        to be re-resolved.
+     * @param udpChannel      which contained the endpoint.
+     * @param channelEndpoint to which the endpoint belongs.
+     * @param address         of previous resolution.
+     */
     public void reResolveControl(
         final String endpoint,
         final UdpChannel udpChannel,
@@ -87,6 +108,11 @@ public final class DriverConductorProxy
         }
     }
 
+    /**
+     * Is the driver conductor not concurrent with the sender and receiver threads.
+     *
+     * @return true if the {@link DriverConductor} is on the same thread as the sender and receiver.
+     */
     public boolean notConcurrent()
     {
         return threadingMode == SHARED || threadingMode == INVOKER;

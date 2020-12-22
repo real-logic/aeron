@@ -36,6 +36,9 @@ import java.util.List;
 
 import static java.lang.Integer.parseInt;
 
+/**
+ * Node that launches the service for the {@link BasicAuctionClusteredService}.
+ */
 // tag::new_service[]
 public class BasicAuctionClusteredServiceNode
 // end::new_service[]

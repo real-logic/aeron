@@ -31,9 +31,9 @@ This tutorial assumes that the user already has a basic working knowledge of Aer
 
 Aeron Cluster is a framework for high-performance in memory fault tolerant services. It implements the
 https://raft.github.io/[Raft Consensus Algorithm] to provide log replication, to allow multiple nodes to maintain the
-same state and automated leader election to ensure that there is a single leader within the cluster. Systems build
-using Aeron Cluster have linearizable consistency model and can cope with partial system failure, including failure of
-the leader node, as long as a quorum of `(n / 2) + 1` nodes remain available.
+same state and automated leader election to ensure that there is a single leader within the cluster. Systems built using
+Aeron Cluster have a linearizable consistency model and can cope with partial system failure, including failure of the
+leader node, as long as a quorum of `(n / 2) + 1` nodes remain available.
 
 === Raft Basics
 
@@ -380,8 +380,8 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 ----
 
 Because Cluster's Consensus Module requires that we write a log file to support the Raft protocol, we need a client for
-the constructed Archive for it to use. The client needs a channel to receive responses back from the cluster, so we are
-using port 0 to prevent collisions and have the port to be assigned by the OS from the ephemeral port range.
+the constructed Archive for it to use. As the Consensus Module should always be deployed on the same node as its
+archive, we're going to use the local (IPC) configuration.
 
 ==== Consensus Module
 
@@ -690,7 +690,7 @@ can discover the pid for that member using the following command:
 
 [subs = "attributes+"]
 ----
-> java -cp <AERON_HOME>/build/libs/aeron-all-{aeronVersion}.jar \
+> java -cp <AERON_HOME>/aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
   io.aeron.cluster.ClusterTool node<leaderMemberId>/consensus-module pid
 15060
 ----
@@ -816,7 +816,7 @@ Firstly lets look at the recording log.
 
 [subs="attributes+"]
 ----
-> java -cp <AERON_HOME>/build/libs/aeron-all-{aeronVersion}.jar \
+> java -cp <AERON_HOME>/aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
   io.aeron.cluster.ClusterTool node0/consensus-module recording-log
 ----
 
@@ -829,7 +829,7 @@ RecordingLog{entries=[Entry{recordingId=0, leadershipTermId=0, termBaseLogPositi
 We can trigger a snapshot on the leader.
 
 ----
-> java -cp <AERON_HOME>/build/libs/aeron-all-{aeronVersion}.jar \
+> java -cp <AERON_HOME>/aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
   io.aeron.cluster.ClusterTool node2/consensus-module snapshot
 ----
 

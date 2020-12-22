@@ -153,9 +153,9 @@ public class BasicAuctionClusteredServiceNode
         // tag::archive_client[]
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(archiveContext.controlChannel())
-            .controlRequestStreamId(archiveContext.controlStreamId())
-            .controlResponseChannel("aeron:udp?endpoint=localhost:0|term-length=64k")
+            .controlRequestChannel(archiveContext.localControlChannel())
+            .controlRequestStreamId(archiveContext.localControlStreamId())
+            .controlResponseChannel(archiveContext.localControlChannel())
             .aeronDirectoryName(aeronDirName);
         // end::archive_client[]
 

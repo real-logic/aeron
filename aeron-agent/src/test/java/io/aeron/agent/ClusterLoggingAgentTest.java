@@ -115,7 +115,7 @@ public class ClusterLoggingAgentTest
             .aeronDirectoryName(aeronDirectoryName)
             .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
             .controlRequestStreamId(100)
-            .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
+            .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
             .controlResponseStreamId(101)
             .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
 
@@ -127,6 +127,7 @@ public class ClusterLoggingAgentTest
             .controlStreamId(aeronArchiveContext.controlRequestStreamId())
             .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
             .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
+            .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
 
         final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()

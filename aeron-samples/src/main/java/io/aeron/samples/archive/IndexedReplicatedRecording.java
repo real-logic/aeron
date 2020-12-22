@@ -62,11 +62,11 @@ public class IndexedReplicatedRecording implements AutoCloseable
     private static final long CATALOG_CAPACITY = 64 * 1024;
     private static final int SRC_CONTROL_STREAM_ID = AeronArchive.Configuration.CONTROL_STREAM_ID_DEFAULT;
     private static final String SRC_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8090";
-    private static final String SRC_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8091";
+    private static final String SRC_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String DST_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8095";
-    private static final String DST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8096";
-    private static final String SRC_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:8040";
-    private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:8041";
+    private static final String DST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:0";
+    private static final String SRC_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
+    private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
 
     private static final int LIVE_STREAM_ID = 1033;
     private static final String LIVE_CHANNEL = new ChannelUriStringBuilder()

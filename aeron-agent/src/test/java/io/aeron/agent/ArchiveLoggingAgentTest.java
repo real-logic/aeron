@@ -104,7 +104,7 @@ public class ArchiveLoggingAgentTest
             .aeronDirectoryName(aeronDirectoryName)
             .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
             .controlRequestStreamId(100)
-            .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
+            .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
             .controlResponseStreamId(101);
 
         final Archive.Context archiveCtx = new Archive.Context()

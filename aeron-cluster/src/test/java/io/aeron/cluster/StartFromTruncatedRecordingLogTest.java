@@ -352,7 +352,7 @@ public class StartFromTruncatedRecordingLogTest
                 .archiveDir(new File(baseDirName, "archive"))
                 .controlChannel(archiveCtx.controlRequestChannel())
                 .controlStreamId(archiveCtx.controlRequestStreamId())
-                .localControlChannel("aeron:ipc?term-length=64k")
+                .localControlChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
                 .localControlStreamId(archiveCtx.controlRequestStreamId())
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)

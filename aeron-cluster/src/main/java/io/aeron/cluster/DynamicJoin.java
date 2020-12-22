@@ -221,7 +221,7 @@ class DynamicJoin implements AutoCloseable
                 final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
                     .aeron(ctx.aeron())
                     .lock(NoOpLock.INSTANCE)
-                    .controlRequestChannel("aeron:udp?endpoint=" + leaderMember.archiveEndpoint())
+                    .controlRequestChannel("aeron:udp?term-length=64k|endpoint=" + leaderMember.archiveEndpoint())
                     .controlRequestStreamId(ctx.archiveContext().controlRequestStreamId())
                     .controlResponseChannel("aeron:udp?endpoint=" + archiveEndpoint)
                     .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());

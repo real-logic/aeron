@@ -307,6 +307,7 @@ public class ClusterTimerTest
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
+                .logChannel("aeron:ipc")
                 .terminationHook(ClusterTests.TERMINATION_HOOK)
                 .deleteDirOnStart(initialLaunch));
     }

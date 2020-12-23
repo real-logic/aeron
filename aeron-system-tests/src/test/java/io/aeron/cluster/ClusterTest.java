@@ -773,7 +773,7 @@ public class ClusterTest
 
             Tests.sleep(NANOSECONDS.toMillis(context.sessionTimeoutNs()));
 
-            cluster.shouldPrintClientCloseReason(false);
+            cluster.shouldErrorOnClientClose(false);
             while (!client.isClosed())
             {
                 Tests.sleep(1);
@@ -802,18 +802,17 @@ public class ClusterTest
             TestNode followerB = followers.get(1);
 
             cluster.connectClient();
-            final Thread messageThread = startMessageThread(cluster, MICROSECONDS.toNanos(500));
+            final long backoffIntervalNs = MICROSECONDS.toNanos(500);
+            final Thread messageThread = startMessageThread(cluster, backoffIntervalNs);
 
             try
             {
                 cluster.stopNode(followerB);
-                Tests.sleep(2_000); // wait until existing replay can be cleaned up by conductor.
+                Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
-                cluster.client().sendKeepAlive();
                 followerB = cluster.startStaticNode(followerB.index(), false);
                 awaitElectionClosed(followerB);
 
-                cluster.client().sendKeepAlive();
                 Tests.sleep(3_000); // keep ingress going so started node has to catchup.
             }
             finally
@@ -822,9 +821,10 @@ public class ClusterTest
                 messageThread.join();
             }
 
+            cluster.client().close();
+
             while (leader.commitPosition() > followerB.commitPosition())
             {
-                cluster.client().pollEgress();
                 Tests.sleep(1);
             }
 

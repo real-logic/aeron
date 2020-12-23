@@ -184,8 +184,8 @@ int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
     {
         AERON_SET_ERR(
             EINVAL,
-            "dl libs list too long, must have: %" PRIu32 " < %d",
-            (uint32_t)libs_length, AERON_MAX_DL_LIBS_LEN);
+            "dl libs list too long, must have: %" PRIu64 " < %d",
+            (uint64_t)libs_length, AERON_MAX_DL_LIBS_LEN);
         return -1;
     }
 

@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 #include "concurrent/aeron_broadcast_receiver.h"
 #include "util/aeron_error.h"
 
@@ -43,7 +44,7 @@ int aeron_broadcast_receiver_init(aeron_broadcast_receiver_t *receiver, void *bu
     }
     else
     {
-        AERON_SET_ERR(EINVAL, "Capacity: %llu invalid, must be power of two", (unsigned long long) capacity);
+        AERON_SET_ERR(EINVAL, "Capacity: %" PRIu64 " invalid, must be power of two", (uint64_t)capacity);
     }
 
     return result;
@@ -82,9 +83,9 @@ int aeron_broadcast_receiver_receive(
         {
             AERON_SET_ERR(
                 EINVAL,
-                "scratch buffer too small, required: %llu, found: %llu",
-                (unsigned long long) length,
-                (unsigned long long) sizeof(receiver->scratch_buffer));
+                "scratch buffer too small, required: %" PRIu64 ", found: %" PRIu64,
+                (uint64_t) length,
+                (uint64_t) sizeof(receiver->scratch_buffer));
             return -1;
         }
 

@@ -173,9 +173,9 @@ int64_t aeron_publication_offer(
                 {
                     AERON_SET_ERR(
                         EINVAL,
-                        "aeron_publication_offer: length=%" PRIu32 " > max_message_length=%" PRIu32,
-                        (uint32_t)length,
-                        (uint32_t)publication->max_message_length);
+                        "aeron_publication_offer: length=%" PRIu64 " > max_message_length=%" PRIu64,
+                        (uint64_t)length,
+                        (uint64_t)publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
                 }
 
@@ -271,9 +271,9 @@ int64_t aeron_publication_offerv(
                 {
                     AERON_SET_ERR(
                         EINVAL,
-                        "aeron_publication_offerv: length=%" PRIu32 " > max_message_length=%" PRIu32,
-                        (uint32_t)length,
-                        (uint32_t)publication->max_message_length);
+                        "aeron_publication_offerv: length=%" PRIu64 " > max_message_length=%" PRIu64,
+                        (uint64_t)length,
+                        (uint64_t)publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
                 }
 
@@ -321,9 +321,9 @@ int64_t aeron_publication_try_claim(aeron_publication_t *publication, size_t len
     {
         AERON_SET_ERR(
             EINVAL,
-            "aeron_publication_try_claim: length=%" PRIu32 " > max_payload_length=%" PRIu32,
-            (uint32_t)length,
-            (uint32_t)publication->max_payload_length);
+            "aeron_publication_try_claim: length=%" PRIu64 " > max_payload_length=%" PRIu64,
+            (uint64_t)length,
+            (uint64_t)publication->max_payload_length);
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -524,7 +524,7 @@ int aeron_publication_local_sockaddrs(
     if (address_vec_len < 1)
     {
         AERON_SET_ERR(
-            EINVAL, "Parameters must be valid, address_vec_len (%llu) < 1", (unsigned long long) address_vec_len);
+            EINVAL, "Parameters must be valid, address_vec_len (%" PRIu64 ") < 1", (uint64_t)address_vec_len);
         return -1;
     }
 

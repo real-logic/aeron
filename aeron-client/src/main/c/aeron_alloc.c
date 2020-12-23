@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #if defined(AERON_COMPILER_MSVC)
 #include <windows.h>
@@ -53,7 +54,7 @@ int aeron_alloc(void **ptr, size_t size)
 
     if (NULL == *ptr)
     {
-        AERON_SET_ERR(ENOMEM, "Failed to allocate %llu bytes", (unsigned long long)size);
+        AERON_SET_ERR(ENOMEM, "Failed to allocate %" PRIu64 " bytes", (uint64_t)size);
         return -1;
     }
 

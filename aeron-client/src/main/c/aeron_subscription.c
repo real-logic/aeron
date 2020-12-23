@@ -126,7 +126,7 @@ int aeron_subscription_alloc_image_list(volatile aeron_image_list_t **image_list
     *image_list = NULL;
     if (aeron_alloc((void **)&_image_list, AERON_IMAGE_LIST_ALLOC_SIZE(length)) < 0)
     {
-        AERON_APPEND_ERR("Unable to allocate image list, length: %lld", (unsigned long long)length);
+        AERON_APPEND_ERR("Unable to allocate image list, length: %" PRIu64, (uint64_t)length);
         return -1;
     }
 
@@ -552,7 +552,7 @@ int aeron_subscription_local_sockaddrs(
     if (address_vec_len < 1)
     {
         AERON_SET_ERR(
-            EINVAL, "Parameters must be valid, address_vec_len (%llu) < 1", (unsigned long long) address_vec_len);
+            EINVAL, "Parameters must be valid, address_vec_len (%" PRIu64 ") < 1", (uint64_t)address_vec_len);
     }
 
     return aeron_local_sockaddr_find_addrs(
@@ -577,7 +577,7 @@ int aeron_subscription_resolved_endpoint(
     if (address_len < 1)
     {
         AERON_SET_ERR(
-            EINVAL, "Parameters must be valid, address_len (%llu) < 1", (unsigned long long) address_len);
+            EINVAL, "Parameters must be valid, address_len (%" PRIu64 ") < 1", (uint64_t)address_len);
     }
 
     aeron_iovec_t addr_vec =
@@ -639,7 +639,7 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
     if (uri_len < 1)
     {
         AERON_SET_ERR(
-            EINVAL, "Parameters must be valid, uri_len (%llu) < 1", (unsigned long long) uri_len);
+            EINVAL, "Parameters must be valid, uri_len (%" PRIu64 ") < 1", (uint64_t)uri_len);
     }
 
     int result = -1;

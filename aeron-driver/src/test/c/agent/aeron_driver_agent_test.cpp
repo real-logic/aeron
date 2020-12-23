@@ -612,7 +612,7 @@ TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
     buffer[message_length - 1] = 'c';
 
     iov.iov_base = buffer;
-    iov.iov_len = (uint32_t) message_length;
+    iov.iov_len = (uint32_t)message_length;
     message.msg_iovlen = 1;
     message.msg_iov = &iov;
     message.msg_name = &addr;
@@ -660,7 +660,7 @@ TEST_F(DriverAgentTest, shouldLogAgentLogFramesAndCopyUpToMaxFrameLengthMessage)
     memset(buffer, 'x', message_length);
 
     iov.iov_base = buffer;
-    iov.iov_len = (uint32_t) message_length;
+    iov.iov_len = (uint32_t)message_length;
     message.msg_iovlen = 1;
     message.msg_iov = &iov;
     message.msg_name = &addr;

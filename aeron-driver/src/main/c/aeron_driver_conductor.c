@@ -491,8 +491,8 @@ int aeron_confirm_publication_match(
     {
         AERON_SET_ERR(
             EINVAL,
-            "existing publication has different MTU length: existing=%" PRId32 " requested=%" PRIu32,
-            logbuffer_metadata->mtu_length, (uint32_t)params->mtu_length);
+            "existing publication has different MTU length: existing=%" PRId32 " requested=%" PRIu64,
+            logbuffer_metadata->mtu_length, (uint64_t)params->mtu_length);
 
         return -1;
     }
@@ -501,8 +501,8 @@ int aeron_confirm_publication_match(
     {
         AERON_SET_ERR(
             EINVAL,
-            "existing publication has different term length: existing=%" PRId32 " requested=%" PRIu32,
-            logbuffer_metadata->term_length, (uint32_t)params->term_length);
+            "existing publication has different term length: existing=%" PRId32 " requested=%" PRIu64,
+            logbuffer_metadata->term_length, (uint64_t)params->term_length);
 
         return -1;
     }
@@ -2242,7 +2242,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
 malformed_command:
     AERON_SET_ERR(
-        -AERON_ERROR_CODE_MALFORMED_COMMAND, "command=%d too short: length=%" PRIu32, msg_type_id, (uint32_t)length);
+        -AERON_ERROR_CODE_MALFORMED_COMMAND, "command=%d too short: length=%" PRIu64, msg_type_id, (uint64_t)length);
     aeron_driver_conductor_log_error(conductor);
 }
 

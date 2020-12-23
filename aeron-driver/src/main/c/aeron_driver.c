@@ -368,7 +368,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
         if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
         {
             AERON_SET_ERR(
-                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, %" PRIu32 ")", (uint32_t)socket_sndbuf);
+                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, %" PRIu64 ")", (uint64_t)socket_sndbuf);
             goto cleanup;
         }
 
@@ -399,7 +399,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
         if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
             AERON_SET_ERR(
-                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, %" PRIu32 ")", (uint32_t)socket_rcvbuf);
+                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, %" PRIu64 ")", (uint64_t)socket_rcvbuf);
             goto cleanup;
         }
 

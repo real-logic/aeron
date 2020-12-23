@@ -175,9 +175,9 @@ int64_t aeron_exclusive_publication_offer(
                 {
                     AERON_SET_ERR(
                         EINVAL,
-                        "aeron_exclusive_publication_offer: length=%" PRIu32 " > max_message_length=%" PRIu32,
-                        (uint32_t)length,
-                        (uint32_t)publication->max_message_length);
+                        "aeron_exclusive_publication_offer: length=%" PRIu64 " > max_message_length=%" PRIu64,
+                        (uint64_t)length,
+                        (uint64_t)publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
                 }
 
@@ -264,9 +264,9 @@ int64_t aeron_exclusive_publication_offerv(
                 {
                     AERON_SET_ERR(
                         EINVAL,
-                        "aeron_exclusive_publication_offerv: length=%" PRIu32 " > max_message_length=%" PRIu32,
-                        (uint32_t)length,
-                        (uint32_t)publication->max_message_length);
+                        "aeron_exclusive_publication_offerv: length=%" PRIu64 " > max_message_length=%" PRIu64,
+                        (uint64_t)length,
+                        (uint64_t)publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
                 }
 
@@ -315,9 +315,9 @@ int64_t aeron_exclusive_publication_try_claim(
     {
         AERON_SET_ERR(
             EINVAL,
-            "aeron_exclusive_publication_try_claim: length=%" PRIu32 " > max_payload_length=%" PRIu32,
-            (uint32_t)length,
-            (uint32_t)publication->max_payload_length);
+            "aeron_exclusive_publication_try_claim: length=%" PRIu64 " > max_payload_length=%" PRIu64,
+            (uint64_t)length,
+            (uint64_t)publication->max_payload_length);
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -366,9 +366,9 @@ int64_t aeron_exclusive_publication_append_padding(aeron_exclusive_publication_t
     if (length > publication->max_message_length)
     {
         AERON_SET_ERR(
-            EINVAL, "aeron_exclusive_publication_append_padding: length=%" PRIu32 " > max_message_length=%" PRIu32,
-            (uint32_t)length,
-            (uint32_t)publication->max_message_length);
+            EINVAL, "aeron_exclusive_publication_append_padding: length=%" PRIu64 " > max_message_length=%" PRIu64,
+            (uint64_t)length,
+            (uint64_t)publication->max_message_length);
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -437,9 +437,9 @@ int64_t aeron_exclusive_publication_offer_block(
         {
             AERON_SET_ERR(
                 EINVAL,
-                "aeron_exclusive_publication_offer_block: invalid block length %" PRIu32 ", remaining space in term is %" PRIu32,
-                (uint32_t)length,
-                (uint32_t)(publication->term_buffer_length - publication->term_offset));
+                "aeron_exclusive_publication_offer_block: invalid block length %" PRIu64 ", remaining space in term is %" PRIu64,
+                (uint64_t)length,
+                (uint64_t)(publication->term_buffer_length - publication->term_offset));
             return AERON_PUBLICATION_ERROR;
         }
 
@@ -594,10 +594,10 @@ int aeron_exclusive_publication_local_sockaddrs(
     {
         AERON_SET_ERR(
             EINVAL,
-            "Parameters must correct, publication: %s, address_vec: %s, address_vec_len: %llu < 1",
+            "Parameters must correct, publication: %s, address_vec: %s, address_vec_len: (%" PRIu64 ") < 1",
             AERON_NULL_STR(publication),
             AERON_NULL_STR(address_vec),
-            (unsigned long long)address_vec_len);
+            (uint64_t)address_vec_len);
         return -1;
     }
 

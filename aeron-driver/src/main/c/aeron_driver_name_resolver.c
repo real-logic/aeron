@@ -418,9 +418,9 @@ static int aeron_driver_name_resolver_add_neighbor(
         if (ensure_capacity_result < 0)
         {
             AERON_APPEND_ERR(
-                "Failed to allocate rows for neighbors table (%" PRIu32 ",%" PRIu32 ")",
-                (uint32_t)resolver->neighbors.length,
-                (uint32_t)resolver->neighbors.capacity);
+                "Failed to allocate rows for neighbors table (%" PRIu64 ",%" PRIu64 ")",
+                (uint64_t)resolver->neighbors.length,
+                (uint64_t)resolver->neighbors.capacity);
 
             return ensure_capacity_result;
         }

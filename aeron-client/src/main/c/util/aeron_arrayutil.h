@@ -45,7 +45,7 @@ inline int aeron_array_ensure_capacity(uint8_t **array, size_t element_size, siz
 {
     if (aeron_reallocf((void **)array, new_capacity * element_size) < 0)
     {
-        AERON_SET_ERR(ENOMEM, "could not ensure capacity of: %" PRIu32, (uint32_t)(new_capacity * element_size));
+        AERON_SET_ERR(ENOMEM, "could not ensure capacity of: %" PRIu64, (uint64_t)(new_capacity * element_size));
         return -1;
     }
 

@@ -134,9 +134,9 @@ int aeron_csv_table_name_resolver_supplier(
         if (ensure_capacity_result < 0)
         {
             AERON_APPEND_ERR(
-                "Failed to allocate rows for lookup table (%" PRIu32 ",%" PRIu32 ")",
-                (uint32_t)lookup_table->length,
-                (uint32_t)lookup_table->capacity);
+                "Failed to allocate rows for lookup table (%" PRIu64 ",%" PRIu64 ")",
+                (uint64_t)lookup_table->length,
+                (uint64_t)lookup_table->capacity);
             aeron_free(lookup_table->array);
             aeron_free(lookup_table);
             return -1;

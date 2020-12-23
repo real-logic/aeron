@@ -135,8 +135,8 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
     {
         AERON_SET_ERR(
             EINVAL,
-            "Interceptors list too long, must have: %" PRIu32 " < %d",
-            (uint32_t)interceptors_length,
+            "Interceptors list too long, must have: %" PRIu64 " < %d",
+            (uint64_t)interceptors_length,
             AERON_MAX_INTERCEPTORS_LEN);
         return NULL;
     }

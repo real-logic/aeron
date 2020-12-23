@@ -52,9 +52,9 @@ int aeron_counters_manager_init(
     {
         AERON_SET_ERR(
             EINVAL,
-            "Counter buffer lengths invalid, metadata_length: %llu, values_length: %llu",
-            (unsigned long long)metadata_length,
-            (unsigned long long)values_length);
+            "Counter buffer lengths invalid, metadata_length: %" PRIu64 ", values_length: %" PRIu64,
+            (uint64_t)metadata_length,
+            (uint64_t)values_length);
     }
 
     return result;

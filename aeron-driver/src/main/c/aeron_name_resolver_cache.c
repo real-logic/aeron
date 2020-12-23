@@ -81,9 +81,9 @@ int aeron_name_resolver_cache_add_or_update(
         if (ensure_capacity_result < 0)
         {
             AERON_APPEND_ERR(
-                "Failed to allocate rows for lookup table (%" PRIu32 ",%" PRIu32 ")",
-                (uint32_t)cache->entries.length,
-                (uint32_t)cache->entries.capacity);
+                "Failed to allocate rows for lookup table (%" PRIu64 ",%" PRIu64 ")",
+                (uint64_t)cache->entries.length,
+                (uint64_t)cache->entries.capacity);
             return -1;
         }
 

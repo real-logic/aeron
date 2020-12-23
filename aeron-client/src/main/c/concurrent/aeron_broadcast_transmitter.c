@@ -36,7 +36,7 @@ int aeron_broadcast_transmitter_init(aeron_broadcast_transmitter_t *transmitter,
     }
     else
     {
-        AERON_SET_ERR(EINVAL, "Capacity: %llu invalid, must be power of two", (unsigned long long) capacity);
+        AERON_SET_ERR(EINVAL, "Capacity: %" PRIu64 " invalid, must be power of two", (uint64_t)capacity);
     }
 
     return result;
@@ -61,9 +61,9 @@ int aeron_broadcast_transmitter_transmit(
     {
         AERON_SET_ERR(
             EINVAL,
-            "length (%" PRIu32 ") > transmitter->max_message_length (%" PRId32 ") || msg_type_id (%" PRId32 ") < 1",
-            (uint32_t) length,
-            (uint32_t) transmitter->max_message_length,
+            "length (%" PRIu64 ") > transmitter->max_message_length (%" PRIu64 ") || msg_type_id (%" PRId32 ") < 1",
+            (uint64_t)length,
+            (uint64_t)transmitter->max_message_length,
             msg_type_id);
         return -1;
     }

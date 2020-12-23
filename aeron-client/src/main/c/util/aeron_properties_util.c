@@ -354,7 +354,7 @@ int aeron_properties_http_load(const char *url)
         }
         else
         {
-            AERON_SET_ERR(EINVAL, "status code %" PRIu32 " from HTTP GET", (uint32_t)response->status_code);
+            AERON_SET_ERR(EINVAL, "status code %" PRIu64 " from HTTP GET", (uint64_t)response->status_code);
             goto cleanup;
         }
     }

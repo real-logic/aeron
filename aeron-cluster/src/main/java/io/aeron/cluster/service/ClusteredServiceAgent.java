@@ -673,10 +673,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
             logAdapter.maxLogPosition(activeLog.maxLogPosition);
             logSubscription = null;
-
-            memberId = activeLog.memberId;
-            ctx.clusterMarkFile().memberId(memberId);
-            role(activeLog.role);
         }
         finally
         {
@@ -685,7 +681,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         for (final ClientSession session : sessionByIdMap.values())
         {
-            if (Role.LEADER == role)
+            if (Role.LEADER == activeLog.role)
             {
                 if (ctx.isRespondingService() && !activeLog.isStartup)
                 {
@@ -699,6 +695,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 session.disconnect(ctx.countedErrorHandler());
             }
         }
+
+        memberId = activeLog.memberId;
+        ctx.clusterMarkFile().memberId(memberId);
+        role(activeLog.role);
     }
 
     private Image awaitImage(final int sessionId, final Subscription subscription)

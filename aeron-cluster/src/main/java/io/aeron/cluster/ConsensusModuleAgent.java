@@ -82,8 +82,7 @@ class ConsensusModuleAgent implements Agent
     private int memberId;
     private int highMemberId;
     private int pendingMemberRemovals = 0;
-    private int logPublicationTag;
-    private int logPublicationChannelTag;
+    private long logPublicationChannelTag;
     private ReadableCounter appendPosition;
     private final Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -174,8 +173,6 @@ class ConsensusModuleAgent implements Agent
         Arrays.fill(serviceClientIds, NULL_VALUE);
         this.serviceAckQueues = ServiceAck.newArray(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(clusterMembers);
-        this.logPublicationChannelTag = (int)aeron.nextCorrelationId();
-        this.logPublicationTag = (int)aeron.nextCorrelationId();
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -603,8 +600,7 @@ class ConsensusModuleAgent implements Agent
                 final String replayChannel = new ChannelUriStringBuilder()
                     .media(CommonContext.UDP_MEDIA)
                     .endpoint(follower.catchupEndpoint())
-                    .isSessionIdTagged(true)
-                    .sessionId(logPublicationTag)
+                    .sessionId(logPublisher.sessionId())
                     .linger(0L)
                     .eos(false)
                     .build();
@@ -1272,9 +1268,8 @@ class ConsensusModuleAgent implements Agent
 
     int addNewLogPublication()
     {
-        logPublicationTag = (int)aeron.nextCorrelationId();
-        logPublicationChannelTag = (int)aeron.nextCorrelationId();
-
+        final long logPublicationTag = aeron.nextCorrelationId();
+        logPublicationChannelTag = aeron.nextCorrelationId();
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         final boolean isMulticast = channelUri.containsKey(ENDPOINT_PARAM_NAME);
 

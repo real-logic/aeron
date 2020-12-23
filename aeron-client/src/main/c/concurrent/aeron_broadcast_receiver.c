@@ -66,11 +66,7 @@ int aeron_broadcast_receiver_receive(
     {
         if (last_seen_lapped_count != receiver->lapped_count)
         {
-            AERON_SET_ERR(
-                EINVAL,
-                "unable to keep up with broadcast, last_seen_lapped_count: %ld, receiver->lapped_count: %ld",
-                last_seen_lapped_count,
-                receiver->lapped_count);
+            AERON_SET_ERR(EINVAL, "%s", "unable to keep up with broadcast");
             return -1;
         }
 

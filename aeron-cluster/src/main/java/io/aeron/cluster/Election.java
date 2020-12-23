@@ -51,8 +51,7 @@ class Election
     private long candidateTermId = NULL_VALUE;
     private ClusterMember leaderMember = null;
     private ElectionState state = ElectionState.INIT;
-    private Subscription logSubscription;
-    private String liveLogDestination;
+    private Subscription logSubscription = null;
     private LogReplay logReplay = null;
     private ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
@@ -423,7 +422,6 @@ class Election
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
             CloseHelper.close(logSubscription);
             logSubscription = null;
-            liveLogDestination = null;
         }
 
         candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
@@ -715,7 +713,8 @@ class Election
     {
         int workCount = consensusModuleAgent.catchupPoll(logSubscription, logSessionId, catchupPosition, nowNs);
 
-        if (null == liveLogDestination && consensusModuleAgent.isCatchupNearLive(catchupPosition))
+        if (null == consensusModuleAgent.liveLogDestination() &&
+            consensusModuleAgent.isCatchupNearLive(catchupPosition))
         {
             addLiveLogDestination();
             workCount += 1;
@@ -748,7 +747,7 @@ class Election
             subscribeAsFollower();
         }
 
-        if (null == liveLogDestination)
+        if (null == consensusModuleAgent.liveLogDestination())
         {
             addLiveLogDestination();
         }
@@ -842,7 +841,6 @@ class Election
         final String dstUri = channelUri.toString();
         logSubscription.asyncAddDestination(dstUri);
         consensusModuleAgent.liveLogDestination(dstUri);
-        liveLogDestination = dstUri;
     }
 
     private void subscribeAsFollower()

@@ -1359,6 +1359,11 @@ class ConsensusModuleAgent implements Agent
         this.liveLogDestination = liveLogDestination;
     }
 
+    String liveLogDestination()
+    {
+        return liveLogDestination;
+    }
+
     void replayLogDestination(final String replayLogDestination)
     {
         this.replayLogDestination = replayLogDestination;
@@ -1650,18 +1655,16 @@ class ConsensusModuleAgent implements Agent
 
     boolean isCatchupNearLive(final long position)
     {
-        boolean result = false;
-
         final Image image = logAdapter.image();
         if (null != image)
         {
             final long localPosition = image.position();
             final long window = Math.min(image.termBufferLength() >> 2, LIVE_ADD_MAX_WINDOW);
 
-            result = localPosition >= (position - window);
+            return localPosition >= (position - window);
         }
 
-        return result;
+        return false;
     }
 
     void stopAllCatchups()

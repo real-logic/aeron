@@ -132,7 +132,13 @@ protected:
     void verifyDistinctErrorLogContains(const char *text, std::int64_t timeoutMs = 0)
     {
         aeron_cnc_t *aeronCnc;
-        ASSERT_EQ(0, aeron_cnc_init(&aeronCnc, aeron_context_get_dir(m_context), 100));
+        int result = aeron_cnc_init(&aeronCnc, aeron_context_get_dir(m_context), 100);
+        EXPECT_EQ(0, result);
+        if (result < 0)
+        {
+            aeron_cnc_close(aeronCnc);
+            return;
+        }
 
         ErrorCallbackValidation errorCallbackValidation
             {

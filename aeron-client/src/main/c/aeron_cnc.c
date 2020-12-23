@@ -186,6 +186,9 @@ int aeron_cnc_loss_reporter_read(
 
 void aeron_cnc_close(aeron_cnc_t *aeron_cnc)
 {
-    aeron_unmap(&aeron_cnc->cnc_mmap);
-    aeron_free(aeron_cnc);
+    if (NULL != aeron_cnc)
+    {
+        aeron_unmap(&aeron_cnc->cnc_mmap);
+        aeron_free(aeron_cnc);
+    }
 }

@@ -1326,19 +1326,16 @@ class ConsensusModuleAgent implements Agent
     void becomeLeader(
         final long leadershipTermId, final long logPosition, final int logSessionId, final boolean isStartup)
     {
-        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        channelUri.put(SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        channelUri.put(TAGS_PARAM_NAME, Long.toString(logPublicationChannelTag));
-        channelUri.put(ALIAS_PARAM_NAME, "log");
+        final boolean isIpc = ctx.logChannel().startsWith(IPC_CHANNEL);
+        final String channel = (isIpc ? "aeron:ipc" : "aeron:udp") +
+            "?tags=" + logPublicationChannelTag + "|session-id=" + logSessionId + "|alias=log";
 
-        final String recordingChannel = channelUri.toString();
-        final int streamId = ctx.logStreamId();
-        startLogRecording(recordingChannel, streamId, SourceLocation.LOCAL);
+        startLogRecording(channel, ctx.logStreamId(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
 
         awaitServicesReady(
-            channelUri.isUdp() ? SPY_PREFIX + recordingChannel : recordingChannel,
-            streamId,
+            isIpc ? channel : SPY_PREFIX + channel,
+            ctx.logStreamId(),
             logSessionId,
             leadershipTermId,
             logPosition,

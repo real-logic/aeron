@@ -84,7 +84,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
-        logAdapter = new BoundedLogAdapter(this);
+        logAdapter = new BoundedLogAdapter(this, ctx.logFragmentLimit());
         this.ctx = ctx;
 
         aeron = ctx.aeron();

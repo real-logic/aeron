@@ -27,8 +27,7 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
 
 final class LogAdapter implements ControlledFragmentHandler
 {
-    private static final int FRAGMENT_LIMIT = 100;
-
+    private final int fragmentLimit;
     private long logPosition;
     private Image image;
     private final ConsensusModuleAgent consensusModuleAgent;
@@ -42,9 +41,10 @@ final class LogAdapter implements ControlledFragmentHandler
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
     private final MembershipChangeEventDecoder membershipChangeEventDecoder = new MembershipChangeEventDecoder();
 
-    LogAdapter(final ConsensusModuleAgent consensusModuleAgent)
+    LogAdapter(final ConsensusModuleAgent consensusModuleAgent, final int fragmentLimit)
     {
         this.consensusModuleAgent = consensusModuleAgent;
+        this.fragmentLimit = fragmentLimit;
     }
 
     void disconnect(final ErrorHandler errorHandler)
@@ -80,7 +80,7 @@ final class LogAdapter implements ControlledFragmentHandler
 
     int poll(final long boundPosition)
     {
-        return image.boundedControlledPoll(this, boundPosition, FRAGMENT_LIMIT);
+        return image.boundedControlledPoll(this, boundPosition, fragmentLimit);
     }
 
     boolean isImageClosed()

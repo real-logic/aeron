@@ -1039,6 +1039,7 @@ public final class ConsensusModule implements AutoCloseable
         private int snapshotStreamId = Configuration.snapshotStreamId();
         private String consensusChannel = Configuration.consensusChannel();
         private int consensusStreamId = Configuration.consensusStreamId();
+        private int logFragmentLimit = ClusteredServiceContainer.Configuration.logFragmentLimit();
 
         private int serviceCount = Configuration.serviceCount();
         private int errorBufferLength = Configuration.errorBufferLength();
@@ -1982,6 +1983,30 @@ public final class ConsensusModule implements AutoCloseable
         public int consensusStreamId()
         {
             return consensusStreamId;
+        }
+
+        /**
+         * Set the fragment limit to be used when polling the log {@link Subscription}.
+         *
+         * @param logFragmentLimit for this clustered service.
+         * @return this for a fluent API
+         * @see ClusteredServiceContainer.Configuration#LOG_FRAGMENT_LIMIT_DEFAULT
+         */
+        public Context logFragmentLimit(final int logFragmentLimit)
+        {
+            this.logFragmentLimit = logFragmentLimit;
+            return this;
+        }
+
+        /**
+         * Get the fragment limit to be used when polling the log {@link Subscription}.
+         *
+         * @return the fragment limit to be used when polling the log {@link Subscription}.
+         * @see ClusteredServiceContainer.Configuration#LOG_FRAGMENT_LIMIT_PROP_NAME
+         */
+        public int logFragmentLimit()
+        {
+            return logFragmentLimit;
         }
 
         /**

@@ -197,7 +197,7 @@ class ConsensusModuleAgent implements Agent
         ClusterMember.addConsensusPublications(clusterMembers, thisMember, consensusUri, statusStreamId, aeron);
 
         ingressAdapter = new IngressAdapter(ctx.ingressFragmentLimit(), this);
-        logAdapter = new LogAdapter(this);
+        logAdapter = new LogAdapter(this, ctx.logFragmentLimit());
 
         consensusModuleAdapter = new ConsensusModuleAdapter(
             aeron.addSubscription(ctx.controlChannel(), ctx.consensusModuleStreamId()), this);

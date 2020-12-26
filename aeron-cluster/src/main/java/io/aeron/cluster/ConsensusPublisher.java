@@ -22,7 +22,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
 
-class ConsensusPublisher
+final class ConsensusPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
 
@@ -311,25 +311,19 @@ class ConsensusPublisher
     boolean addPassiveMember(
         final ExclusivePublication publication, final long correlationId, final String memberEndpoints)
     {
-        final int length =
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            AddPassiveMemberEncoder.BLOCK_LENGTH +
-            AddPassiveMemberEncoder.memberEndpointsHeaderLength() +
-            memberEndpoints.length();
+        addPassiveMemberEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .memberEndpoints(memberEndpoints);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + addPassiveMemberEncoder.encodedLength();
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = publication.offer(buffer, 0, length);
             if (result > 0)
             {
-                addPassiveMemberEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .memberEndpoints(memberEndpoints);
-
-                bufferClaim.commit();
-
                 return true;
             }
 
@@ -347,29 +341,21 @@ class ConsensusPublisher
         final String activeMembers,
         final String passiveMembers)
     {
-        final int length =
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            ClusterMembersChangeEncoder.BLOCK_LENGTH +
-            ClusterMembersChangeEncoder.activeMembersHeaderLength() +
-            activeMembers.length() +
-            ClusterMembersChangeEncoder.passiveMembersHeaderLength() +
-            passiveMembers.length();
+        clusterMembersChangeEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .leaderMemberId(leaderMemberId)
+            .activeMembers(activeMembers)
+            .passiveMembers(passiveMembers);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + clusterMembersChangeEncoder.encodedLength();
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = publication.offer(buffer, 0, length);
             if (result > 0)
             {
-                clusterMembersChangeEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .leaderMemberId(leaderMemberId)
-                    .activeMembers(activeMembers)
-                    .passiveMembers(passiveMembers);
-
-                bufferClaim.commit();
-
                 return true;
             }
 
@@ -542,28 +528,22 @@ class ConsensusPublisher
         final String responseChannel,
         final byte[] encodedCredentials)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + BackupQueryEncoder.BLOCK_LENGTH +
-            BackupQueryEncoder.responseChannelHeaderLength() +
-            responseChannel.length() +
-            BackupQueryEncoder.encodedCredentialsHeaderLength() +
-            encodedCredentials.length;
+        backupQueryEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .responseStreamId(responseStreamId)
+            .version(version)
+            .responseChannel(responseChannel)
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + backupQueryEncoder.encodedLength();
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = publication.offer(buffer, 0, length);
             if (result > 0)
             {
-                backupQueryEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .responseStreamId(responseStreamId)
-                    .version(version)
-                    .responseChannel(responseChannel)
-                    .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
-
-                bufferClaim.commit();
-
                 return true;
             }
 

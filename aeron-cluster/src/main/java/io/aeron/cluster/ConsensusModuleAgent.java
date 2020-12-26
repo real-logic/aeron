@@ -1583,9 +1583,7 @@ class ConsensusModuleAgent implements Agent
                 if (NULL_VALUE != follower.catchupReplayCorrelationId())
                 {
                     if (archive.archiveProxy().stopReplay(
-                        follower.catchupReplaySessionId(),
-                        aeron.nextCorrelationId(),
-                        archive.controlSessionId()))
+                        follower.catchupReplaySessionId(), aeron.nextCorrelationId(), archive.controlSessionId()))
                     {
                         follower.catchupReplayCorrelationId(NULL_VALUE);
                     }

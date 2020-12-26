@@ -23,7 +23,6 @@ import org.agrona.CloseHelper;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -59,7 +58,6 @@ class Election
     private final ConsensusPublisher consensusPublisher;
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
-    private final Random random;
 
     Election(
         final boolean isNodeStartup,
@@ -85,7 +83,6 @@ class Election
         this.consensusPublisher = consensusPublisher;
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
-        this.random = ctx.random();
 
         Objects.requireNonNull(thisMember);
         ctx.electionStateCounter().setOrdered(ElectionState.INIT.code());
@@ -471,7 +468,7 @@ class Election
         if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
             (ClusterMember.isQuorumCandidate(clusterMembers, thisMember) && nowNs >= canvassDeadlineNs))
         {
-            final long delayNs = (long)(random.nextDouble() * (ctx.electionTimeoutNs() >> 1));
+            final long delayNs = (long)(ctx.random().nextDouble() * (ctx.electionTimeoutNs() >> 1));
             nominationDeadlineNs = nowNs + delayNs;
             state(NOMINATE, nowNs);
             workCount += 1;

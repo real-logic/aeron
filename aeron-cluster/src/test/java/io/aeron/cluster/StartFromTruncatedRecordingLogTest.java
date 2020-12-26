@@ -182,13 +182,7 @@ public class StartFromTruncatedRecordingLogTest
         shutdown(leaderMemberId);
         awaitSnapshotCount(2);
 
-        for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
-        {
-            while (!driver.consensusModule().context().aeron().isClosed())
-            {
-                Tests.yield();
-            }
-        }
+        awaitNodesShutdown();
 
         stopNode(leaderMemberId);
         stopNode(followerMemberIdA);
@@ -201,6 +195,20 @@ public class StartFromTruncatedRecordingLogTest
         startNode(leaderMemberId, false);
         startNode(followerMemberIdA, false);
         startNode(followerMemberIdB, false);
+    }
+
+    private void awaitNodesShutdown()
+    {
+        for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
+        {
+            if (null != driver)
+            {
+                while (!driver.consensusModule().context().aeron().isClosed())
+                {
+                    Tests.yield();
+                }
+            }
+        }
     }
 
     private int awaitLeaderMemberId()

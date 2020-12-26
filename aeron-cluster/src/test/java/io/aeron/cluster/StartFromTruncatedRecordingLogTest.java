@@ -182,6 +182,14 @@ public class StartFromTruncatedRecordingLogTest
         shutdown(leaderMemberId);
         awaitSnapshotCount(2);
 
+        for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
+        {
+            while (!driver.consensusModule().context().aeron().isClosed())
+            {
+                Tests.yield();
+            }
+        }
+
         stopNode(leaderMemberId);
         stopNode(followerMemberIdA);
         stopNode(followerMemberIdB);

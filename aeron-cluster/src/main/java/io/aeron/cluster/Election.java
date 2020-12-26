@@ -604,20 +604,8 @@ class Election
     {
         isLeaderStartup = isNodeStartup;
         consensusModuleAgent.becomeLeader(leadershipTermId, logPosition, logSessionId, isLeaderStartup);
+        updateRecordingLog(nowNs);
 
-        final long recordingId = consensusModuleAgent.logRecordingId();
-        final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
-        final RecordingLog recordingLog = ctx.recordingLog();
-
-        for (long termId = logLeadershipTermId + 1; termId <= leadershipTermId; termId++)
-        {
-            if (recordingLog.isUnknown(termId))
-            {
-                recordingLog.appendTerm(recordingId, termId, logPosition, timestamp);
-            }
-        }
-
-        recordingLog.force(ctx.fileSyncLevel());
         state(LEADER_READY, nowNs);
 
         return 1;
@@ -753,24 +741,7 @@ class Election
         }
 
         consensusModuleAgent.awaitFollowerLogImage(logSubscription, logSessionId);
-
-        final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
-        final long recordingId = consensusModuleAgent.logRecordingId();
-        boolean hasUpdates = false;
-
-        for (long termId = logLeadershipTermId + 1; termId <= leadershipTermId; termId++)
-        {
-            if (ctx.recordingLog().isUnknown(termId))
-            {
-                ctx.recordingLog().appendTerm(recordingId, termId, logPosition, timestamp);
-                hasUpdates = true;
-            }
-        }
-
-        if (hasUpdates)
-        {
-            ctx.recordingLog().force(ctx.fileSyncLevel());
-        }
+        updateRecordingLog(nowNs);
 
         state(FOLLOWER_READY, nowNs);
 
@@ -942,6 +913,22 @@ class Election
     private boolean isPassiveMember()
     {
         return null == ClusterMember.findMember(clusterMembers, thisMember.id());
+    }
+
+    private void updateRecordingLog(final long nowNs)
+    {
+        final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
+        final long recordingId = consensusModuleAgent.logRecordingId();
+        final RecordingLog recordingLog = ctx.recordingLog();
+
+        for (long termId = logLeadershipTermId + 1; termId <= leadershipTermId; termId++)
+        {
+            if (recordingLog.isUnknown(termId))
+            {
+                recordingLog.appendTerm(recordingId, termId, logPosition, timestamp);
+                recordingLog.force(ctx.fileSyncLevel());
+            }
+        }
     }
 
     void stateChange(final ElectionState oldState, final ElectionState newState, final int memberId)

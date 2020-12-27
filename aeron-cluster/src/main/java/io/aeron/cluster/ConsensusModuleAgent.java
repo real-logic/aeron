@@ -1624,8 +1624,7 @@ class ConsensusModuleAgent implements Agent
             {
                 commitPosition.setOrdered(appendPosition);
                 final ExclusivePublication publication = election.leader().publication();
-                if (null != publication &&
-                    consensusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
+                if (consensusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
                 {
                     lastAppendPosition = appendPosition;
                     timeOfLastAppendPositionNs = nowNs;

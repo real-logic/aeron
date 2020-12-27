@@ -580,15 +580,7 @@ class Election
             else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
             {
                 timeOfLastUpdateNs = nowNs;
-                final long timestamp = ctx.clusterClock().time();
-
-                for (final ClusterMember member : clusterMembers)
-                {
-                    if (member.id() != thisMember.id())
-                    {
-                        publishNewLeadershipTerm(member.publication(), leadershipTermId, timestamp);
-                    }
-                }
+                publishNewLeadershipTerm(ctx.clusterClock().time());
 
                 workCount += 1;
             }
@@ -602,7 +594,6 @@ class Election
         isLeaderStartup = isNodeStartup;
         consensusModuleAgent.becomeLeader(leadershipTermId, logPosition, logSessionId, isLeaderStartup);
         updateRecordingLog(nowNs);
-
         state(LEADER_READY, nowNs);
 
         return 1;
@@ -624,15 +615,7 @@ class Election
         else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
-            final long timestamp = ctx.recordingLog().getTermTimestamp(leadershipTermId);
-
-            for (final ClusterMember member : clusterMembers)
-            {
-                if (member.id() != thisMember.id())
-                {
-                    publishNewLeadershipTerm(member.publication(), leadershipTermId, timestamp);
-                }
-            }
+            publishNewLeadershipTerm(ctx.recordingLog().getTermTimestamp(leadershipTermId));
 
             workCount += 1;
         }
@@ -779,19 +762,24 @@ class Election
         }
     }
 
-    private void publishNewLeadershipTerm(
-        final ExclusivePublication publication, final long leadershipTermId, final long timestamp)
+    private void publishNewLeadershipTerm(final long timestamp)
     {
-        consensusPublisher.newLeadershipTerm(
-            publication,
-            logLeadershipTermId,
-            appendPosition,
-            leadershipTermId,
-            appendPosition,
-            timestamp,
-            thisMember.id(),
-            logSessionId,
-            isLeaderStartup);
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member.id() != thisMember.id())
+            {
+                consensusPublisher.newLeadershipTerm(
+                    member.publication(),
+                    logLeadershipTermId,
+                    appendPosition,
+                    leadershipTermId,
+                    appendPosition,
+                    timestamp,
+                    thisMember.id(),
+                    logSessionId,
+                    isLeaderStartup);
+            }
+        }
     }
 
     private boolean sendCatchupPosition()

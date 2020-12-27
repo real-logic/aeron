@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -83,6 +84,7 @@ public class StartFromTruncatedRecordingLogTest
     private final MutableInteger responseCount = new MutableInteger();
     private final EgressListener egressMessageListener =
         (clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
+    private CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
 
     @BeforeEach
     public void before()
@@ -145,7 +147,7 @@ public class StartFromTruncatedRecordingLogTest
 
     @Test
     @Timeout(30)
-    public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws IOException
+    public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws Exception
     {
         stopAndStartClusterWithTruncationOfRecordingLog();
         assertClusterIsFunctioningCorrectly();
@@ -159,7 +161,7 @@ public class StartFromTruncatedRecordingLogTest
         ClusterTests.failOnClusterError();
     }
 
-    private void stopAndStartClusterWithTruncationOfRecordingLog() throws IOException
+    private void stopAndStartClusterWithTruncationOfRecordingLog() throws Exception
     {
         final int leaderMemberId = awaitLeaderMemberId();
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
@@ -181,8 +183,7 @@ public class StartFromTruncatedRecordingLogTest
 
         shutdown(leaderMemberId);
         awaitSnapshotCount(2);
-
-        awaitNodesShutdown();
+        latch.await();
 
         stopNode(leaderMemberId);
         stopNode(followerMemberIdA);
@@ -192,23 +193,10 @@ public class StartFromTruncatedRecordingLogTest
         truncateRecordingLogAndDeleteMarkFiles(followerMemberIdA);
         truncateRecordingLogAndDeleteMarkFiles(followerMemberIdB);
 
+        latch = new CountDownLatch(MEMBER_COUNT);
         startNode(leaderMemberId, false);
         startNode(followerMemberIdA, false);
         startNode(followerMemberIdB, false);
-    }
-
-    private void awaitNodesShutdown()
-    {
-        for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
-        {
-            if (null != driver)
-            {
-                while (!driver.consensusModule().context().aeron().isClosed())
-                {
-                    Tests.yield();
-                }
-            }
-        }
     }
 
     private int awaitLeaderMemberId()
@@ -376,6 +364,7 @@ public class StartFromTruncatedRecordingLogTest
                 .deleteArchiveOnStart(cleanStart),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(index))
+                .terminationHook(latch::countDown)
                 .clusterMemberId(index)
                 .snapshotCounter(mockSnapshotCounters[index])
                 .clusterMembers(CLUSTER_MEMBERS)

@@ -382,7 +382,6 @@ class Election
     {
         if (FOLLOWER_CATCHUP == state)
         {
-            boolean hasUpdates = false;
             final RecordingLog recordingLog = ctx.recordingLog();
 
             for (long termId = logLeadershipTermId; termId <= leadershipTermId; termId++)
@@ -390,19 +389,14 @@ class Election
                 if (!recordingLog.isUnknown(termId - 1))
                 {
                     recordingLog.commitLogPosition(termId - 1, termBaseLogPosition);
-                    hasUpdates = true;
+                    recordingLog.force(ctx.fileSyncLevel());
                 }
 
                 if (recordingLog.isUnknown(termId))
                 {
                     recordingLog.appendTerm(logRecordingId, termId, termBaseLogPosition, timestamp);
-                    hasUpdates = true;
+                    recordingLog.force(ctx.fileSyncLevel());
                 }
-            }
-
-            if (hasUpdates)
-            {
-                recordingLog.force(ctx.fileSyncLevel());
             }
 
             logLeadershipTermId = leadershipTermId;

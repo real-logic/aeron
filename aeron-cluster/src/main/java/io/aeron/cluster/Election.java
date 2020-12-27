@@ -655,10 +655,7 @@ class Election
         if (null == logSubscription)
         {
             subscribeAsFollower();
-
-            final String replayDestination = "aeron:udp?endpoint=" + thisMember.catchupEndpoint();
-            logSubscription.asyncAddDestination(replayDestination);
-            consensusModuleAgent.replayLogDestination(replayDestination);
+            addCatchupLogDestination();
         }
 
         if (sendCatchupPosition())
@@ -692,7 +689,7 @@ class Election
         }
         else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
         {
-            if (consensusModuleAgent.hasReplayDestination() && sendCatchupPosition())
+            if (consensusModuleAgent.hasCatchupLogDestination() && sendCatchupPosition())
             {
                 timeOfLastUpdateNs = nowNs;
                 workCount += 1;
@@ -707,16 +704,11 @@ class Election
         if (null == logSubscription)
         {
             subscribeAsFollower();
-        }
-
-        if (null == consensusModuleAgent.liveLogDestination())
-        {
             addLiveLogDestination();
         }
 
         consensusModuleAgent.awaitFollowerLogImage(logSubscription, logSessionId);
         updateRecordingLog(nowNs);
-
         state(FOLLOWER_READY, nowNs);
 
         return 1;
@@ -782,36 +774,38 @@ class Election
             leaderMember.publication(), leadershipTermId, logPosition, thisMember.id());
     }
 
+    private void addCatchupLogDestination()
+    {
+        final String destination = "aeron:udp?endpoint=" + thisMember.catchupEndpoint();
+        logSubscription.asyncAddDestination(destination);
+        consensusModuleAgent.catchupLogDestination(destination);
+    }
+
     private void addLiveLogDestination()
     {
-        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
-        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
-
-        final String dstUri = channelUri.toString();
-        logSubscription.asyncAddDestination(dstUri);
-        consensusModuleAgent.liveLogDestination(dstUri);
+        // TODO: Handle multicast case
+        final String destination = "aeron:udp?endpoint=" + thisMember.logEndpoint();
+        logSubscription.asyncAddDestination(destination);
+        consensusModuleAgent.liveLogDestination(destination);
     }
 
     private void subscribeAsFollower()
     {
-        final String tagsValue = ctx.aeron().nextCorrelationId() + "," + ctx.aeron().nextCorrelationId();
-        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
-        channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
-        channelUri.put(CommonContext.GROUP_PARAM_NAME, "true");
-        channelUri.put(CommonContext.REJOIN_PARAM_NAME, "false");
-        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        channelUri.put(CommonContext.TAGS_PARAM_NAME, tagsValue);
-        channelUri.put(CommonContext.ALIAS_PARAM_NAME, "log");
-
         final int streamId = ctx.logStreamId();
-        final String logChannel = channelUri.toString();
+        final String channel = new ChannelUriStringBuilder()
+            .media(CommonContext.UDP_MEDIA)
+            .tags(ctx.aeron().nextCorrelationId() + "," + ctx.aeron().nextCorrelationId())
+            .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
+            .sessionId(logSessionId)
+            .group(Boolean.TRUE)
+            .rejoin(Boolean.FALSE)
+            .alias("log")
+            .build();
 
-        logSubscription = ctx.aeron().addSubscription(logChannel, streamId);
-        consensusModuleAgent.startLogRecording(logChannel, streamId, SourceLocation.REMOTE);
+        logSubscription = ctx.aeron().addSubscription(channel, streamId);
+        consensusModuleAgent.startLogRecording(channel, streamId, SourceLocation.REMOTE);
         consensusModuleAgent.awaitServicesReady(
-            logChannel,
+            channel,
             streamId,
             logSessionId,
             leadershipTermId,

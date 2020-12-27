@@ -139,7 +139,7 @@ class ConsensusModuleAgent implements Agent
     private ClusterTermination clusterTermination;
     private long logSubscriptionId = NULL_VALUE;
     private String liveLogDestination;
-    private String replayLogDestination;
+    private String catchupLogDestination;
     private String ingressEndpoints;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
@@ -597,7 +597,7 @@ class ConsensusModuleAgent implements Agent
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && follower.catchupReplaySessionId() == NULL_VALUE)
             {
-                final String replayChannel = new ChannelUriStringBuilder()
+                final String channel = new ChannelUriStringBuilder()
                     .media(CommonContext.UDP_MEDIA)
                     .endpoint(follower.catchupEndpoint())
                     .sessionId(logPublisher.sessionId())
@@ -606,7 +606,7 @@ class ConsensusModuleAgent implements Agent
                     .build();
 
                 follower.catchupReplaySessionId(archive.startReplay(
-                    logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
+                    logRecordingId(), logPosition, Long.MAX_VALUE, channel, ctx.logStreamId()));
 
                 follower.catchupReplayCorrelationId(archive.lastCorrelationId());
             }
@@ -615,10 +615,10 @@ class ConsensusModuleAgent implements Agent
 
     void onStopCatchup(final long leadershipTermId, final int followerMemberId)
     {
-        if (null != replayLogDestination && followerMemberId == memberId && leadershipTermId == this.leadershipTermId)
+        if (null != catchupLogDestination && followerMemberId == memberId && leadershipTermId == this.leadershipTermId)
         {
-            logAdapter.asyncRemoveDestination(replayLogDestination);
-            replayLogDestination = null;
+            logAdapter.asyncRemoveDestination(catchupLogDestination);
+            catchupLogDestination = null;
         }
     }
 
@@ -888,10 +888,10 @@ class ConsensusModuleAgent implements Agent
                 liveLogDestination = null;
             }
 
-            if (null != replayLogDestination)
+            if (null != catchupLogDestination)
             {
-                logAdapter.asyncRemoveDestination(replayLogDestination);
-                replayLogDestination = null;
+                logAdapter.asyncRemoveDestination(catchupLogDestination);
+                catchupLogDestination = null;
             }
 
             logAdapter.disconnect(ctx.countedErrorHandler());
@@ -1356,14 +1356,14 @@ class ConsensusModuleAgent implements Agent
         return liveLogDestination;
     }
 
-    void replayLogDestination(final String replayLogDestination)
+    void catchupLogDestination(final String catchupLogDestination)
     {
-        this.replayLogDestination = replayLogDestination;
+        this.catchupLogDestination = catchupLogDestination;
     }
 
-    boolean hasReplayDestination()
+    boolean hasCatchupLogDestination()
     {
-        return null != replayLogDestination;
+        return null != catchupLogDestination;
     }
 
     void startLogRecording(final String channel, final int streamId, final SourceLocation sourceLocation)

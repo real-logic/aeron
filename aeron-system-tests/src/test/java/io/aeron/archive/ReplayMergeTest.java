@@ -162,11 +162,11 @@ public class ReplayMergeTest
     @AfterEach
     public void after()
     {
-        if (receivedMessageCount.get() != MIN_MESSAGES_PER_TERM * 6)
+        if (receivedMessageCount.get() != MIN_MESSAGES_PER_TERM * 6L)
         {
             System.out.println(
                 "received " + receivedMessageCount.get() + ", sent " + messagesPublished +
-                ", total " + (MIN_MESSAGES_PER_TERM * 6));
+                ", total " + (MIN_MESSAGES_PER_TERM * 6L));
         }
 
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);

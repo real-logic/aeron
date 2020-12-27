@@ -593,8 +593,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 final long position = image.position();
                 if (shouldAddLiveDestination(position))
                 {
-                    final String liveChannel = ChannelUri.addSessionId(liveDestination, replaySessionId);
-                    recordingSubscription.asyncAddDestination(liveChannel);
+                    recordingSubscription.asyncAddDestination(liveDestination);
                     isLiveAdded = true;
                 }
                 else if (shouldStopReplay(position))

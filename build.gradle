@@ -245,8 +245,8 @@ subprojects {
         options.docEncoding = 'UTF-8'
         options.charSet = 'UTF-8'
         options.links("https://www.javadoc.io/doc/org.agrona/agrona/${agronaVersion}/")
-        if (buildJavaVersion >= 16) { // Work around for early access versions for which no JavaDoc is published
-            options.links("https://docs.oracle.com/en/java/javase/15/docs/api/")
+        if (buildJavaVersion >= 16) { // early access JavaDoc location is different
+            options.links("https://download.java.net/java/early_access/jdk${buildJavaVersion}/docs/api/")
         } else if (buildJavaVersion >= 11) {
             options.links("https://docs.oracle.com/en/java/javase/${buildJavaVersion}/docs/api/")
         } else {

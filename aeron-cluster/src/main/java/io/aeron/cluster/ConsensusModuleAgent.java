@@ -1266,7 +1266,7 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    int addNewLogPublication()
+    int addLogPublication()
     {
         final long logPublicationTag = aeron.nextCorrelationId();
         logPublicationChannelTag = aeron.nextCorrelationId();

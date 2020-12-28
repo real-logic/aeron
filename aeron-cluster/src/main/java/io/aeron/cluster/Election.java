@@ -548,8 +548,7 @@ class Election
         if (null == logReplay)
         {
             workCount += 1;
-            logSessionId = consensusModuleAgent.addNewLogPublication();
-
+            logSessionId = consensusModuleAgent.addLogPublication();
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
             thisMember.leadershipTermId(leadershipTermId).logPosition(appendPosition);
 
@@ -654,7 +653,8 @@ class Election
     {
         if (null == logSubscription)
         {
-            subscribeAsFollower();
+            logSubscription = addFollowerSubscription();
+            followLog();
             addCatchupLogDestination();
         }
 
@@ -703,7 +703,8 @@ class Election
     {
         if (null == logSubscription)
         {
-            subscribeAsFollower();
+            logSubscription = addFollowerSubscription();
+            followLog();
             addLiveLogDestination();
         }
 
@@ -789,7 +790,24 @@ class Election
         consensusModuleAgent.liveLogDestination(destination);
     }
 
-    private void subscribeAsFollower()
+    private void followLog()
+    {
+        final int streamId = logSubscription.streamId();
+        final String channel = logSubscription.channel();
+
+        consensusModuleAgent.startLogRecording(channel, streamId, SourceLocation.REMOTE);
+        consensusModuleAgent.awaitServicesReady(
+            channel,
+            streamId,
+            logSessionId,
+            leadershipTermId,
+            logPosition,
+            Long.MAX_VALUE,
+            isLeaderStartup,
+            Cluster.Role.FOLLOWER);
+    }
+
+    private Subscription addFollowerSubscription()
     {
         final int streamId = ctx.logStreamId();
         final String channel = new ChannelUriStringBuilder()
@@ -802,17 +820,7 @@ class Election
             .alias("log")
             .build();
 
-        logSubscription = ctx.aeron().addSubscription(channel, streamId);
-        consensusModuleAgent.startLogRecording(channel, streamId, SourceLocation.REMOTE);
-        consensusModuleAgent.awaitServicesReady(
-            channel,
-            streamId,
-            logSessionId,
-            leadershipTermId,
-            logPosition,
-            Long.MAX_VALUE,
-            isLeaderStartup,
-            Cluster.Role.FOLLOWER);
+        return ctx.aeron().addSubscription(channel, streamId);
     }
 
     private void state(final ElectionState newState, final long nowNs)

@@ -61,7 +61,7 @@ public class ElectionTest
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
         when(aeron.addSubscription(anyString(), anyInt())).thenReturn(subscription);
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
-        when(consensusModuleAgent.addNewLogPublication()).thenReturn(LOG_SESSION_ID);
+        when(consensusModuleAgent.addLogPublication()).thenReturn(LOG_SESSION_ID);
         when(clusterMarkFile.candidateTermId()).thenReturn((long)Aeron.NULL_VALUE);
     }
 
@@ -409,7 +409,7 @@ public class ElectionTest
         election.doWork(t3);
 
         verify(consensusModuleAgent).awaitServicesReady(
-            anyString(),
+            any(),
             anyInt(),
             anyInt(),
             anyLong(),

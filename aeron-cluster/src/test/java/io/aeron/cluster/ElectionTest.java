@@ -161,22 +161,24 @@ public class ElectionTest
         election.doWork(t6);
         verify(consensusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
-            leadershipTermId,
+            candidateTermId,
             logPosition,
             candidateTermId,
             logPosition,
             t6,
             candidateMember.id(),
-            LOG_SESSION_ID, election.isLeaderStartup());
+            LOG_SESSION_ID,
+            election.isLeaderStartup());
         verify(consensusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
-            leadershipTermId,
+            candidateTermId,
             logPosition,
             candidateTermId,
             logPosition,
             t6,
             candidateMember.id(),
-            LOG_SESSION_ID, election.isLeaderStartup());
+            LOG_SESSION_ID,
+            election.isLeaderStartup());
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_READY.code());
 
         when(consensusModuleAgent.electionComplete()).thenReturn(true);

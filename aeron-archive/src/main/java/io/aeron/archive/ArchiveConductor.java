@@ -445,7 +445,7 @@ abstract class ArchiveConductor
         }
         else
         {
-            final String msg = "no recording subscription found for " + subscriptionId;
+            final String msg = "no recording subscription found for subscriptionId=" + subscriptionId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_SUBSCRIPTION, msg, controlResponseProxy);
         }
     }
@@ -747,7 +747,7 @@ abstract class ArchiveConductor
         if (streamId != recordingSummary.streamId)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " with streamId " + streamId + " != existing streamId " + recordingSummary.streamId;
+                " with streamId=" + streamId + " for existing streamId=" + recordingSummary.streamId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
             return null;
         }
@@ -1151,7 +1151,7 @@ abstract class ArchiveConductor
                 final long fileLength = file.length();
                 if (fileLength != segmentLength)
                 {
-                    final String msg = "file length " + fileLength + " not equal to segment length " + segmentLength;
+                    final String msg = "fileLength=" + fileLength + " not equal to segmentLength=" + segmentLength;
                     controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
                     return;
                 }
@@ -1636,8 +1636,8 @@ abstract class ArchiveConductor
         if (image.joinPosition() != recordingSummary.stopPosition)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image joinPosition " + image.joinPosition() +
-                " not equal to recording stopPosition " + recordingSummary.stopPosition;
+                " image joinPosition=" + image.joinPosition() +
+                " not equal to stopPosition=" + recordingSummary.stopPosition;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
@@ -1645,8 +1645,8 @@ abstract class ArchiveConductor
         if (image.initialTermId() != recordingSummary.initialTermId)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image initialTermId " + image.initialTermId() +
-                " not equal to recording initialTermId " + recordingSummary.initialTermId;
+                " image initialTermId=" + image.initialTermId() +
+                " not equal to recording initialTermId=" + recordingSummary.initialTermId;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
@@ -1654,8 +1654,8 @@ abstract class ArchiveConductor
         if (image.termBufferLength() != recordingSummary.termBufferLength)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image termBufferLength " + image.termBufferLength() +
-                " not equal to recording termBufferLength " + recordingSummary.termBufferLength;
+                " image termBufferLength=" + image.termBufferLength() +
+                " not equal to recording termBufferLength=" + recordingSummary.termBufferLength;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
@@ -1663,8 +1663,8 @@ abstract class ArchiveConductor
         if (image.mtuLength() != recordingSummary.mtuLength)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image mtuLength " + image.mtuLength() +
-                " not equal to recording mtuLength " + recordingSummary.mtuLength;
+                " image mtuLength=" + image.mtuLength() +
+                " not equal to recording mtuLength=" + recordingSummary.mtuLength;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
@@ -1741,7 +1741,7 @@ abstract class ArchiveConductor
     {
         if ((position & (FRAME_ALIGNMENT - 1)) != 0)
         {
-            final String msg = "requested replay start position " + position +
+            final String msg = "requested replay start position=" + position +
                 " is not a multiple of FRAME_ALIGNMENT (" + FRAME_ALIGNMENT + ") for recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return true;
@@ -1750,8 +1750,8 @@ abstract class ArchiveConductor
         final long startPosition = recordingSummary.startPosition;
         if (position - startPosition < 0)
         {
-            final String msg = "requested replay start position " + position +
-                " is less than recording start position " + startPosition + " for recording " + recordingId;
+            final String msg = "requested replay start position=" + position +
+                " is less than recording start position=" + startPosition + " for recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return true;
         }
@@ -1759,8 +1759,8 @@ abstract class ArchiveConductor
         final long stopPosition = recordingSummary.stopPosition;
         if (stopPosition != NULL_POSITION && position >= stopPosition)
         {
-            final String msg = "requested replay start position " + position +
-                " must be less than highest recorded position " + stopPosition + " for recording " + recordingId;
+            final String msg = "requested replay start position=" + position +
+                " must be less than highest recorded position=" + stopPosition + " for recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return true;
         }
@@ -1898,8 +1898,7 @@ abstract class ArchiveConductor
         final int srcMtuLength = recordingSummary.mtuLength;
         if (dstMtuLength != srcMtuLength)
         {
-            final String msg = "invalid migrate: srcMtuLength=" + srcMtuLength +
-                " dstMtuLength=" + dstMtuLength;
+            final String msg = "invalid migrate: srcMtuLength=" + srcMtuLength + " dstMtuLength=" + dstMtuLength;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return false;
         }

@@ -210,7 +210,7 @@ subprojects {
         }
 
         useJUnitPlatform {
-            excludeTags 'slow'
+            excludeTags 'slow', 'topology'
         }
 
         testLogging {
@@ -770,6 +770,7 @@ project(':aeron-system-tests') {
     dependencies {
         testImplementation project(':aeron-archive')
         testImplementation project(':aeron-test-support')
+        testImplementation project(':aeron-samples')
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
         testImplementation project(path: ':aeron-cluster')

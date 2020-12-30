@@ -543,12 +543,6 @@ class Election
 
         if (null == logReplay)
         {
-            workCount += 1;
-            isLeaderStartup = isNodeStartup;
-            logSessionId = consensusModuleAgent.addLogPublication();
-            ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
-            thisMember.leadershipTermId(leadershipTermId).logPosition(appendPosition);
-
             if (logPosition < appendPosition)
             {
                 logReplay = consensusModuleAgent.newLogReplay(logPosition, appendPosition);
@@ -557,6 +551,12 @@ class Election
             {
                 state(LEADER_TRANSITION, nowNs);
             }
+
+            workCount += 1;
+            isLeaderStartup = isNodeStartup;
+            logSessionId = consensusModuleAgent.addLogPublication();
+            ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
+            thisMember.leadershipTermId(leadershipTermId).logPosition(appendPosition);
         }
         else
         {

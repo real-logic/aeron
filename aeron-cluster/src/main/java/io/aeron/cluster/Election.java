@@ -197,7 +197,7 @@ class Election
     void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
     {
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-        if (null != follower)
+        if (null != follower && thisMember.id() != followerMemberId)
         {
             follower
                 .leadershipTermId(logLeadershipTermId)
@@ -233,7 +233,7 @@ class Election
             }
             else if (logLeadershipTermId > leadershipTermId)
             {
-                state(CANVASS, ctx.clusterClock().timeNanos());
+                state(INIT, ctx.clusterClock().timeNanos());
             }
         }
     }
@@ -254,8 +254,7 @@ class Election
         {
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
-            state(CANVASS, ctx.clusterClock().timeNanos());
-
+            state(INIT, ctx.clusterClock().timeNanos());
             placeVote(candidateTermId, candidateId, false);
         }
         else
@@ -263,7 +262,6 @@ class Election
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(FOLLOWER_BALLOT, ctx.clusterClock().timeNanos());
-
             placeVote(candidateTermId, candidateId, true);
         }
     }
@@ -331,8 +329,8 @@ class Election
             catchupPosition = logPosition > appendPosition ? logPosition : NULL_POSITION;
             state(FOLLOWER_REPLAY, ctx.clusterClock().timeNanos());
         }
-        else if (compareLog(this.logLeadershipTermId, appendPosition, leadershipTermId, logPosition) < 0 &&
-            CANVASS == state)
+        else if (CANVASS == state &&
+            compareLog(this.logLeadershipTermId, appendPosition, leadershipTermId, logPosition) < 0)
         {
             leaderMember = leader;
             this.isLeaderStartup = isStartup;
@@ -360,10 +358,8 @@ class Election
 
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
-        if (FOLLOWER_CATCHUP == state &&
-            NULL_POSITION != catchupPosition &&
-            leadershipTermId == this.leadershipTermId &&
-            leaderMemberId == leaderMember.id())
+        if (FOLLOWER_CATCHUP == state && NULL_POSITION != catchupPosition &&
+            leadershipTermId == this.leadershipTermId && leaderMemberId == leaderMember.id())
         {
             catchupPosition = Math.max(catchupPosition, logPosition);
         }
@@ -573,7 +569,7 @@ class Election
             else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
             {
                 timeOfLastUpdateNs = nowNs;
-                publishNewLeadershipTerm(ctx.clusterClock().time());
+                publishNewLeadershipTerm(ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
 
                 workCount += 1;
             }
@@ -608,7 +604,7 @@ class Election
         else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
-            publishNewLeadershipTerm(ctx.recordingLog().getTermTimestamp(leadershipTermId));
+            publishNewLeadershipTerm(ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
 
             workCount += 1;
         }

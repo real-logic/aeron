@@ -28,7 +28,6 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -50,7 +49,7 @@ public class ElectionTest
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .aeron(aeron)
         .recordingLog(recordingLog)
-        .clusterClock(new TestClusterClock(TimeUnit.MILLISECONDS))
+        .clusterClock(new TestClusterClock(NANOSECONDS))
         .random(new Random())
         .electionStateCounter(electionStateCounter)
         .clusterMarkFile(clusterMarkFile);
@@ -85,7 +84,7 @@ public class ElectionTest
         verify(clusterMarkFile).candidateTermId();
         verify(consensusModuleAgent).becomeLeader(eq(newLeadershipTermId), eq(logPosition), anyInt(), eq(true));
         verify(recordingLog).isUnknown(newLeadershipTermId);
-        verify(recordingLog).appendTerm(RECORDING_ID, newLeadershipTermId, logPosition, NANOSECONDS.toMillis(t1));
+        verify(recordingLog).appendTerm(RECORDING_ID, newLeadershipTermId, logPosition, t1);
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_READY.code());
     }
 
@@ -148,7 +147,7 @@ public class ElectionTest
         election.doWork(t5);
 
         verify(consensusModuleAgent).becomeLeader(eq(candidateTermId), eq(logPosition), anyInt(), eq(true));
-        verify(recordingLog).appendTerm(RECORDING_ID, candidateTermId, logPosition, NANOSECONDS.toMillis(t5));
+        verify(recordingLog).appendTerm(RECORDING_ID, candidateTermId, logPosition, t5);
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_READY.code());
 
         assertEquals(NULL_POSITION, clusterMembers[1].logPosition());
@@ -156,8 +155,6 @@ public class ElectionTest
         assertEquals(candidateTermId, election.leadershipTermId());
 
         final long t6 = t5 + ctx.leaderHeartbeatIntervalNs();
-        when(recordingLog.getTermTimestamp(candidateTermId)).thenReturn(t6);
-
         election.doWork(t6);
         verify(consensusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),

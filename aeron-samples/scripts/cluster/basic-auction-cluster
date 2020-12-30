@@ -52,7 +52,7 @@ elif [[ $1 == 0 ]] || [[ $1 == 1 ]] || [[ $1 == 2 ]]; then
   echo "starting node $1"
   startNode $1
 else
-  echo "Usage: ./basic-auction-cluster [1,2,3]"
+  echo "Usage: ./basic-auction-cluster [0,1,2]"
   exit 1
 fi
 

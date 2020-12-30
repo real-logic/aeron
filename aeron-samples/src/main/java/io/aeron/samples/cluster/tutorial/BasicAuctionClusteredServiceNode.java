@@ -119,15 +119,15 @@ public class BasicAuctionClusteredServiceNode
     // tag::main[]
     public static void main(final String[] args)
     {
-        final int nodeId = parseInt(System.getProperty("aeron.cluster.tutorial.nodeId"));                // <1>
+        final int nodeId = parseInt(System.getProperty("aeron.cluster.tutorial.nodeId"));               // <1>
+        final String[] hostnames = System.getProperty(
+            "aeron.cluster.tutorial.hostnames", "localhost,localhost,localhost").split(",");            // <2>
+        final String hostname = hostnames[nodeId];
 
-        final List<String> hostnames = Arrays.asList("localhost", "localhost", "localhost");             // <2>
-        final String hostname = hostnames.get(nodeId);
-
-        final File baseDir = new File(System.getProperty("user.dir"), "node" + nodeId);            // <3>
+        final File baseDir = new File(System.getProperty("user.dir"), "node" + nodeId);                 // <3>
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + nodeId + "-driver";
 
-        final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();                               // <4>
+        final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();                              // <4>
         // end::main[]
 
         // tag::media_driver[]
@@ -144,7 +144,7 @@ public class BasicAuctionClusteredServiceNode
         final Archive.Context archiveContext = new Archive.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
-            .controlChannel(udpChannel(nodeId, "localhost", ARCHIVE_CONTROL_REQUEST_PORT_OFFSET))
+            .controlChannel(udpChannel(nodeId, hostname, ARCHIVE_CONTROL_REQUEST_PORT_OFFSET))
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
@@ -163,8 +163,8 @@ public class BasicAuctionClusteredServiceNode
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
             .errorHandler(errorHandler("Consensus Module"))
             .clusterMemberId(nodeId)                                                                     // <1>
-            .clusterMembers(clusterMembers(hostnames))                                                   // <2>
-            .clusterDir(new File(baseDir, "consensus-module"))                                     // <3>
+            .clusterMembers(clusterMembers(Arrays.asList(hostnames)))                                    // <2>
+            .clusterDir(new File(baseDir, "consensus-module"))                                           // <3>
             .ingressChannel("aeron:udp?term-length=64k")                                                 // <4>
             .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
             .archiveContext(aeronArchiveContext.clone());                                                // <6>

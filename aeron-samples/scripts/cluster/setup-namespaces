@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+##
+## Copyright 2014-2020 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+set -euox pipefail
+
+sudo ip netns add ns_cluster0
+sudo ip netns add ns_cluster1
+sudo ip netns add ns_cluster2
+
+sudo ip link add name br_c type bridge
+sudo ip link set br_c up
+
+sudo ip link add veth_cluster0 type veth peer name br_cluster0
+sudo ip link set veth_cluster0 netns ns_cluster0
+sudo ip netns exec ns_cluster0 ip addr add 10.42.0.10/24 dev veth_cluster0
+sudo ip netns exec ns_cluster0 ip link set veth_cluster0 up
+sudo ip link set br_cluster0 up
+
+sudo ip link add veth_cluster1 type veth peer name br_cluster1
+sudo ip link set veth_cluster1 netns ns_cluster1
+sudo ip netns exec ns_cluster1 ip addr add 10.42.0.11/24 dev veth_cluster1
+sudo ip netns exec ns_cluster1 ip link set veth_cluster1 up
+sudo ip link set br_cluster1 up
+
+sudo ip link add veth_cluster2 type veth peer name br_cluster2
+sudo ip link set veth_cluster2 netns ns_cluster2
+sudo ip netns exec ns_cluster2 ip addr add 10.42.0.12/24 dev veth_cluster2
+sudo ip netns exec ns_cluster2 ip link set veth_cluster2 up
+sudo ip link set br_cluster2 up
+
+sudo ip link set br_cluster0 master br_c
+sudo ip link set br_cluster1 master br_c
+sudo ip link set br_cluster2 master br_c
+sudo ip addr add 10.42.0.1/24 brd + dev br_c
+

@@ -553,8 +553,8 @@ class Election
             }
 
             workCount += 1;
-            isLeaderStartup = isNodeStartup;
             logSessionId = consensusModuleAgent.addLogPublication();
+            isLeaderStartup = isNodeStartup;
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
             thisMember.leadershipTermId(leadershipTermId).logPosition(appendPosition);
         }

@@ -1429,7 +1429,6 @@ class ConsensusModuleAgent implements Agent
             logPosition,
             appendPosition,
             recoveryPlan.log.leadershipTermId,
-            recoveryPlan.log.sessionId,
             logAdapter,
             ctx);
     }

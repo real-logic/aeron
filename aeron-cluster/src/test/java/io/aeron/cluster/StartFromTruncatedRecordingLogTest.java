@@ -50,7 +50,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -84,7 +83,7 @@ public class StartFromTruncatedRecordingLogTest
     private final MutableInteger responseCount = new MutableInteger();
     private final EgressListener egressMessageListener =
         (clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
-    private CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
+    private final AtomicLong terminateCount = new AtomicLong();
 
     @BeforeEach
     public void before()
@@ -183,7 +182,7 @@ public class StartFromTruncatedRecordingLogTest
 
         shutdown(leaderMemberId);
         awaitSnapshotCount(2);
-        latch.await();
+        Tests.awaitValue(terminateCount, MEMBER_COUNT);
 
         stopNode(leaderMemberId);
         stopNode(followerMemberIdA);
@@ -193,7 +192,7 @@ public class StartFromTruncatedRecordingLogTest
         truncateRecordingLogAndDeleteMarkFiles(followerMemberIdA);
         truncateRecordingLogAndDeleteMarkFiles(followerMemberIdB);
 
-        latch = new CountDownLatch(MEMBER_COUNT);
+        terminateCount.set(0);
         startNode(leaderMemberId, false);
         startNode(followerMemberIdA, false);
         startNode(followerMemberIdB, false);
@@ -364,7 +363,7 @@ public class StartFromTruncatedRecordingLogTest
                 .deleteArchiveOnStart(cleanStart),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(index))
-                .terminationHook(latch::countDown)
+                .terminationHook(terminateCount::incrementAndGet)
                 .clusterMemberId(index)
                 .snapshotCounter(mockSnapshotCounters[index])
                 .clusterMembers(CLUSTER_MEMBERS)

@@ -144,6 +144,27 @@ public class ElectionTest
 
         final long t5 = t4 + 1;
         election.doWork(t5);
+        verify(consensusPublisher).newLeadershipTerm(
+            clusterMembers[1].publication(),
+            leadershipTermId,
+            logPosition,
+            candidateTermId,
+            logPosition,
+            t5,
+            candidateMember.id(),
+            LOG_SESSION_ID,
+            election.isLeaderStartup());
+        verify(consensusPublisher).newLeadershipTerm(
+            clusterMembers[2].publication(),
+            leadershipTermId,
+            logPosition,
+            candidateTermId,
+            logPosition,
+            t5,
+            candidateMember.id(),
+            LOG_SESSION_ID,
+            election.isLeaderStartup());
+
         election.doWork(t5);
 
         verify(consensusModuleAgent).becomeLeader(eq(candidateTermId), eq(logPosition), anyInt(), eq(true));
@@ -154,28 +175,8 @@ public class ElectionTest
         assertEquals(NULL_POSITION, clusterMembers[2].logPosition());
         assertEquals(candidateTermId, election.leadershipTermId());
 
-        final long t6 = t5 + ctx.leaderHeartbeatIntervalNs();
+        final long t6 = t5 + 1;
         election.doWork(t6);
-        verify(consensusPublisher).newLeadershipTerm(
-            clusterMembers[1].publication(),
-            candidateTermId,
-            logPosition,
-            candidateTermId,
-            logPosition,
-            t6,
-            candidateMember.id(),
-            LOG_SESSION_ID,
-            election.isLeaderStartup());
-        verify(consensusPublisher).newLeadershipTerm(
-            clusterMembers[2].publication(),
-            candidateTermId,
-            logPosition,
-            candidateTermId,
-            logPosition,
-            t6,
-            candidateMember.id(),
-            LOG_SESSION_ID,
-            election.isLeaderStartup());
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_READY.code());
 
         when(consensusModuleAgent.electionComplete()).thenReturn(true);

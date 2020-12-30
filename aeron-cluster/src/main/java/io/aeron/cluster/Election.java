@@ -319,8 +319,8 @@ class Election
             catchupPosition = logPosition;
             state(FOLLOWER_REPLAY, ctx.clusterClock().timeNanos());
         }
-        else if (logLeadershipTermId == this.logLeadershipTermId && leadershipTermId == candidateTermId &&
-            (FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state || CANVASS == state))
+        else if ((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state || CANVASS == state) &&
+            leadershipTermId == candidateTermId && appendPosition <= logPosition)
         {
             leaderMember = leader;
             this.isLeaderStartup = isStartup;
@@ -544,6 +544,7 @@ class Election
         if (null == logReplay)
         {
             workCount += 1;
+            isLeaderStartup = isNodeStartup;
             logSessionId = consensusModuleAgent.addLogPublication();
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
             thisMember.leadershipTermId(leadershipTermId).logPosition(appendPosition);
@@ -566,21 +567,15 @@ class Election
                 logPosition = appendPosition;
                 state(LEADER_TRANSITION, nowNs);
             }
-            else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
-            {
-                timeOfLastUpdateNs = nowNs;
-                publishNewLeadershipTerm(ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
-
-                workCount += 1;
-            }
         }
+
+        workCount += publishNewLeadershipTermOnInterval(nowNs);
 
         return workCount;
     }
 
     private int leaderTransition(final long nowNs)
     {
-        isLeaderStartup = isNodeStartup;
         consensusModuleAgent.becomeLeader(leadershipTermId, logPosition, logSessionId, isLeaderStartup);
         updateRecordingLog(nowNs);
         state(LEADER_READY, nowNs);
@@ -590,7 +585,7 @@ class Election
 
     private int leaderReady(final long nowNs)
     {
-        int workCount = 0;
+        int workCount = publishNewLeadershipTermOnInterval(nowNs);
 
         if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition, leadershipTermId))
         {
@@ -598,13 +593,6 @@ class Election
             {
                 state(CLOSED, nowNs);
             }
-
-            workCount += 1;
-        }
-        else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
-        {
-            timeOfLastUpdateNs = nowNs;
-            publishNewLeadershipTerm(ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
 
             workCount += 1;
         }
@@ -743,6 +731,20 @@ class Election
                 thisMember.id(),
                 vote);
         }
+    }
+
+    private int publishNewLeadershipTermOnInterval(final long nowNs)
+    {
+        int workCount = 0;
+
+        if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
+        {
+            timeOfLastUpdateNs = nowNs;
+            publishNewLeadershipTerm(ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
+            workCount += 1;
+        }
+
+        return workCount;
     }
 
     private void publishNewLeadershipTerm(final long timestamp)

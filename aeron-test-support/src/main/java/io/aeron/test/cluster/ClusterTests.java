@@ -104,7 +104,7 @@ public class ClusterTests
         {
             CLUSTER_ERROR.set(ex);
         }
-        else
+        else if (error != ex)
         {
             error.addSuppressed(ex);
         }

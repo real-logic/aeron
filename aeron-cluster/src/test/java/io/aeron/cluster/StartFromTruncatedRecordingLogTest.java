@@ -56,7 +56,6 @@ import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.RecordingLog.RECORDING_LOG_FILE_NAME;
-import static io.aeron.test.cluster.ClusterTests.awaitElectionState;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

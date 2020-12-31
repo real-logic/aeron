@@ -66,7 +66,7 @@ public class ClusterTests
         };
     }
 
-    public static ErrorHandler errorHandler(final int nodeId)
+    public static ErrorHandler errorHandler(final int memberId)
     {
         return
             (ex) ->
@@ -75,9 +75,9 @@ public class ClusterTests
                 {
                     if (((AeronException)ex).category() == AeronException.Category.WARN)
                     {
-                        //final String message = ex.getMessage();
-                        //final String name = ex.getClass().getName();
-                        //System.err.println("Warning in node " + nodeId + " " + name + " : " + message);
+                        // final String message = ex.getMessage();
+                        // final String name = ex.getClass().getName();
+                        // System.err.println("Warning in node " + memberId + " " + name + " : " + message);
                         return;
                     }
                 }
@@ -89,7 +89,7 @@ public class ClusterTests
 
                 addError(ex);
 
-                System.err.println("\n*** Error in node " + nodeId + " followed by system thread dump ***\n\n");
+                System.err.println("\n*** Error in member " + memberId + " followed by system thread dump ***\n\n");
                 ex.printStackTrace();
 
                 System.err.println();

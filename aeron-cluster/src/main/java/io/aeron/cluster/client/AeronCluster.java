@@ -1590,26 +1590,24 @@ public final class AeronCluster implements AutoCloseable
         private void awaitPublicationConnected()
         {
             final String responseChannel = egressSubscription.tryResolveChannelEndpointPort();
-            if (null == responseChannel)
+            if (null != responseChannel)
             {
-                return;
-            }
-
-            if (null == ingressPublication)
-            {
-                for (final MemberIngress member : memberByIdMap.values())
+                if (null == ingressPublication)
                 {
-                    if (member.publication.isConnected())
+                    for (final MemberIngress member : memberByIdMap.values())
                     {
-                        ingressPublication = member.publication;
-                        prepareConnectRequest(responseChannel);
-                        return;
+                        if (member.publication.isConnected())
+                        {
+                            ingressPublication = member.publication;
+                            prepareConnectRequest(responseChannel);
+                            break;
+                        }
                     }
                 }
-            }
-            else if (ingressPublication.isConnected())
-            {
-                prepareConnectRequest(responseChannel);
+                else if (ingressPublication.isConnected())
+                {
+                    prepareConnectRequest(responseChannel);
+                }
             }
         }
 

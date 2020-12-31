@@ -20,7 +20,9 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.AgentTerminationException;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -168,7 +170,6 @@ class Election
         catch (final Exception ex)
         {
             handleError(nowNs, ex);
-            throw ex;
         }
 
         return workCount;
@@ -179,6 +180,11 @@ class Election
         ctx.countedErrorHandler().onError(ex);
         logPosition = ctx.commitPositionCounter().getWeak();
         state(INIT, nowNs);
+
+        if (ex instanceof AgentTerminationException || ex instanceof InterruptedException)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
     void onMembershipChange(

@@ -56,6 +56,7 @@ import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.RecordingLog.RECORDING_LOG_FILE_NAME;
+import static io.aeron.test.cluster.ClusterTests.awaitElectionState;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -166,19 +167,11 @@ public class StartFromTruncatedRecordingLogTest
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
         final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
 
-        final Counter electionStateFollowerA = clusteredMediaDrivers[followerMemberIdA]
-            .consensusModule().context().electionStateCounter();
-
-        final Counter electionStateFollowerB = clusteredMediaDrivers[followerMemberIdB]
-            .consensusModule().context().electionStateCounter();
-
-        ClusterTests.awaitElectionState(electionStateFollowerA, ElectionState.CLOSED);
-        ClusterTests.awaitElectionState(electionStateFollowerB, ElectionState.CLOSED);
-
         takeSnapshot(leaderMemberId);
         awaitSnapshotCount(1);
 
-        awaitNeutralCounter(leaderMemberId);
+        awaitNeutralControlToggle(leaderMemberId);
+        awaitConsensusModulesActive();
 
         shutdown(leaderMemberId);
         awaitSnapshotCount(2);
@@ -533,7 +526,7 @@ public class StartFromTruncatedRecordingLogTest
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters, clusterId);
 
         assertNotNull(controlToggle);
-        awaitNeutralCounter(index);
+        awaitNeutralControlToggle(index);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
     }
 
@@ -558,7 +551,7 @@ public class StartFromTruncatedRecordingLogTest
         return ClusterControl.findControlToggle(context.aeron().countersReader(), context.clusterId());
     }
 
-    private void awaitNeutralCounter(final int index)
+    private void awaitNeutralControlToggle(final int index)
     {
         while (true)
         {
@@ -571,6 +564,20 @@ public class StartFromTruncatedRecordingLogTest
             }
 
             Tests.yield();
+        }
+    }
+
+    private void awaitConsensusModulesActive()
+    {
+        for (int i = 0; i < MEMBER_COUNT; i++)
+        {
+            final ConsensusModule.Context context = clusteredMediaDrivers[i].consensusModule().context();
+            final Counter moduleStateCounter = context.moduleStateCounter();
+
+            while (ConsensusModule.State.ACTIVE != ConsensusModule.State.get(moduleStateCounter))
+            {
+                Tests.yield();
+            }
         }
     }
 

@@ -983,22 +983,23 @@ class ConsensusModuleAgent implements Agent
                 ++serviceAckId;
                 takeSnapshot(timestamp, logPosition, serviceAcks);
 
-                final long nowNs = clusterClock.timeNanos();
                 if (NULL_POSITION == terminationPosition)
                 {
-                    state(ConsensusModule.State.ACTIVE);
-                    ClusterControl.ToggleState.reset(controlToggle);
+                    final long nowNs = clusterClock.timeNanos();
                     for (final ClusterSession session : sessionByIdMap.values())
                     {
                         session.timeOfLastActivityNs(nowNs);
                     }
+
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    state(ConsensusModule.State.ACTIVE);
                 }
                 else
                 {
                     serviceProxy.terminationPosition(terminationPosition);
                     if (null != clusterTermination)
                     {
-                        clusterTermination.deadlineNs(nowNs + ctx.terminationTimeoutNs());
+                        clusterTermination.deadlineNs(clusterClock.timeNanos() + ctx.terminationTimeoutNs());
                     }
 
                     state(ConsensusModule.State.TERMINATING);

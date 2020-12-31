@@ -679,6 +679,9 @@ public class ClusterTest
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
 
+            awaitElectionClosed(followerA);
+            awaitElectionClosed(followerB);
+
             assertEquals(LEADER, leaderOne.service().roleChangedTo());
             assertNull(followerA.service().roleChangedTo());
             assertNull(followerB.service().roleChangedTo());

@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
+import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
@@ -1080,6 +1081,7 @@ public final class ConsensusModule implements AutoCloseable
         private AuthenticatorSupplier authenticatorSupplier;
         private LogPublisher logPublisher;
         private EgressPublisher egressPublisher;
+        private boolean logChannelIsMultiDestination;
 
         /**
          * Perform a shallow copy of the object.
@@ -1305,6 +1307,9 @@ public final class ConsensusModule implements AutoCloseable
             {
                 egressPublisher = new EgressPublisher();
             }
+
+            final ChannelUri channelUri = ChannelUri.parse(logChannel());
+            logChannelIsMultiDestination = channelUri.isUdp() && null == channelUri.get(ENDPOINT_PARAM_NAME);
 
             concludeMarkFile();
         }
@@ -2948,6 +2953,11 @@ public final class ConsensusModule implements AutoCloseable
         EgressPublisher egressPublisher()
         {
             return egressPublisher;
+        }
+
+        boolean logChannelIsMultiDestination()
+        {
+            return logChannelIsMultiDestination;
         }
 
         private void concludeMarkFile()

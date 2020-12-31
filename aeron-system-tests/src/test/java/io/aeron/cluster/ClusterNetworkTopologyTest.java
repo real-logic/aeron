@@ -94,14 +94,18 @@ public class ClusterNetworkTopologyTest
     private static Stream<Arguments> provideTopologyConfigurations()
     {
         return Stream.of(
-            Arguments.of("aeron:udp", INGRESS_ENDPOINTS),
-            Arguments.of("aeron:udp?endpoint=239.20.90.11:9152|interface=10.42.0.0/24", null)
+            Arguments.of("aeron:udp", INGRESS_ENDPOINTS, null),
+            Arguments.of("aeron:udp?endpoint=239.20.90.11:9152|interface=10.42.0.0/24", null, null),
+            Arguments.of("aeron:udp", INGRESS_ENDPOINTS, "aeron:udp?endpoint=239.20.90.13:9152|interface=10.42.0.0/24")
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideTopologyConfigurations")
-    void shouldGetEchoFromCluster(final String ingressChannel, final String ingressEndpoints) throws Exception
+    void shouldGetEchoFromCluster(
+        final String ingressChannel,
+        final String ingressEndpoints,
+        final String logChannel) throws Exception
     {
         try (
             RemoteLaunchClient remote0 = RemoteLaunchClient.connect(NODE_0_HOST, REMOTE_LAUNCH_PORT);
@@ -109,9 +113,9 @@ public class ClusterNetworkTopologyTest
             RemoteLaunchClient remote2 = RemoteLaunchClient.connect(NODE_2_HOST, REMOTE_LAUNCH_PORT))
         {
             final String hostnames = NODE_0_HOST + "," + NODE_1_HOST + "," + NODE_2_HOST;
-            final String[] command0 = deriveCommand(hostnames, 0, ingressChannel);
-            final String[] command1 = deriveCommand(hostnames, 1, ingressChannel);
-            final String[] command2 = deriveCommand(hostnames, 2, ingressChannel);
+            final String[] command0 = deriveCommand(hostnames, 0, ingressChannel, logChannel);
+            final String[] command1 = deriveCommand(hostnames, 1, ingressChannel, logChannel);
+            final String[] command2 = deriveCommand(hostnames, 2, ingressChannel, logChannel);
 
             final SocketChannel execute0 = remote0.execute(false, command0);
             final SocketChannel execute1 = remote1.execute(false, command1);
@@ -318,7 +322,8 @@ public class ClusterNetworkTopologyTest
     private String[] deriveCommand(
         final String hostnames,
         final int nodeId,
-        final String ingressChannel)
+        final String ingressChannel,
+        final String logChannel)
     {
         final List<String> command = new ArrayList<>();
         command.add(FileResolveUtil.resolveJavaBinary().getAbsolutePath());
@@ -331,7 +336,14 @@ public class ClusterNetworkTopologyTest
         command.add(FileResolveUtil.resolveAeronAllJar().getAbsolutePath());
         command.add("-Daeron.dir.delete.on.start=true");
         command.add("-Daeron.print.configuration=true");
-        command.add("-Daeron.cluster.ingress.channel=" + ingressChannel);
+        if (null != ingressChannel)
+        {
+            command.add("-Daeron.cluster.ingress.channel=" + ingressChannel);
+        }
+        if (null != logChannel)
+        {
+            command.add("-Daeron.cluster.log.channel=" + logChannel);
+        }
         command.add("-Daeron.cluster.tutorial.hostnames=" + hostnames);
         command.add("-Daeron.cluster.tutorial.nodeId=" + nodeId);
         command.add(EchoServiceNode.class.getName());

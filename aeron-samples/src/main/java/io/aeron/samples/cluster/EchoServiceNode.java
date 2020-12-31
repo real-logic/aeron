@@ -166,7 +166,6 @@ public class EchoServiceNode
             .clusterMemberId(nodeId)                                                                     // <1>
             .clusterMembers(clusterMembers(Arrays.asList(hostnames)))                                    // <2>
             .clusterDir(new File(baseDir, "consensus-module"))                                           // <3>
-            .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
             .archiveContext(aeronArchiveContext.clone());                                                // <6>
         // end::consensus_module[]
 

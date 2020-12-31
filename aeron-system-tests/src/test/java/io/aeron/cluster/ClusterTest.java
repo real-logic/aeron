@@ -674,21 +674,21 @@ public class ClusterTest
         cluster = startThreeNodeStaticCluster(NULL_VALUE);
         try
         {
-            TestNode leader = cluster.awaitLeader();
+            final TestNode leaderOne = cluster.awaitLeader();
             final List<TestNode> followers = cluster.followers();
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
 
-            assertEquals(LEADER, leader.service().roleChangedTo());
+            assertEquals(LEADER, leaderOne.service().roleChangedTo());
             assertNull(followerA.service().roleChangedTo());
             assertNull(followerB.service().roleChangedTo());
 
-            cluster.stopNode(leader);
+            cluster.stopNode(leaderOne);
 
-            leader = cluster.awaitLeader(leader.index());
+            final TestNode leaderTwo = cluster.awaitLeader(leaderOne.index());
             final TestNode follower = cluster.followers().get(0);
 
-            assertEquals(LEADER, leader.service().roleChangedTo());
+            assertEquals(LEADER, leaderTwo.service().roleChangedTo());
             assertNull(follower.service().roleChangedTo());
         }
         catch (final Throwable ex)

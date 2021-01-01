@@ -44,7 +44,7 @@ static const char *aeron_error_stat_usage()
     return
         "    -h            Displays help information.\n"
         "    -d basePath   Base Path to shared memory. Default: /dev/shm/aeron-[user]\n"
-        "    -t timeout    Number of milliseconds to wait to see if the driver metadata is available.  Default 1,000\n";
+        "    -t timeout    Number of milliseconds to wait to see if the driver metadata is available. Default: 1000\n";
 }
 
 static void aeron_error_stat_print_error_and_usage(const char *message)

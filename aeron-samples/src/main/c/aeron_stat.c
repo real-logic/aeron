@@ -42,8 +42,8 @@ static const char *aeron_stat_usage()
     return
         "    -h               Displays help information.\n"
         "    -p basePath      Base Path to shared memory. Default: /dev/shm/aeron-[user]\n"
-        "    -u update period Update period in milliseconds. Default: 1000ms\n"
-        "    -t timeout       Number of milliseconds to wait to see if the driver metadata is available.  Default 1,000\n";
+        "    -u update period Update period in milliseconds. Default: 1000\n"
+        "    -t timeout       Number of milliseconds to wait to see if the driver metadata is available. Default: 1000\n";
 }
 
 static void aeron_stat_print_error_and_usage(const char *message)

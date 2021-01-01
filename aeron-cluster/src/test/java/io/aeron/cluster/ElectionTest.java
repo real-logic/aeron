@@ -41,6 +41,7 @@ public class ElectionTest
     private final Aeron aeron = mock(Aeron.class);
     private final Counter electionStateCounter = mock(Counter.class);
     private final Subscription subscription = mock(Subscription.class);
+    private final Image logImage = mock(Image.class);
     private final RecordingLog recordingLog = mock(RecordingLog.class);
     private final ClusterMarkFile clusterMarkFile = mock(ClusterMarkFile.class);
     private final ConsensusPublisher consensusPublisher = mock(ConsensusPublisher.class);
@@ -62,6 +63,7 @@ public class ElectionTest
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
         when(consensusModuleAgent.addLogPublication()).thenReturn(LOG_SESSION_ID);
         when(clusterMarkFile.candidateTermId()).thenReturn((long)Aeron.NULL_VALUE);
+        when(subscription.imageBySessionId(anyInt())).thenReturn(logImage);
     }
 
     @Test
@@ -226,14 +228,21 @@ public class ElectionTest
 
         final long t3 = 3;
         election.doWork(t3);
-        election.doWork(t3);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_TRANSITION.code());
+
+        final long t4 = 4;
+        election.doWork(t4);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_JOIN.code());
+
+        final long t5 = 5;
+        election.doWork(t5);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_READY.code());
 
         when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
         when(consensusModuleAgent.electionComplete()).thenReturn(true);
 
-        final long t4 = 4;
-        election.doWork(t4);
+        final long t6 = 6;
+        election.doWork(t6);
         final InOrder inOrder = inOrder(consensusPublisher, consensusModuleAgent, electionStateCounter);
         inOrder.verify(consensusPublisher).appendPosition(
             clusterMembers[candidateId].publication(), candidateTermId, logPosition, followerMember.id());
@@ -385,7 +394,7 @@ public class ElectionTest
 
     @ParameterizedTest
     @CsvSource(value = {"true,true", "true,false", "false,false", "false,true"})
-    public void shouldBaseStartupValueOnLeader(final boolean leaderIsStart, final boolean nodeIsStart)
+    public void shouldBaseStartupValueOnLeader(final boolean isLeaderStart, final boolean isNodeStart)
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
@@ -393,7 +402,7 @@ public class ElectionTest
         final ClusterMember followerMember = clusterMembers[1];
 
         final Election election = newElection(
-            nodeIsStart, leadershipTermId, logPosition, clusterMembers, followerMember);
+            isNodeStart, leadershipTermId, logPosition, clusterMembers, followerMember);
 
         final long t1 = 1;
         election.doWork(t1);
@@ -402,21 +411,16 @@ public class ElectionTest
         final long t2 = t1 + 1;
         final int leaderMemberId = clusterMembers[0].id();
         election.onNewLeadershipTerm(
-            leadershipTermId, logPosition, leadershipTermId, logPosition, t2, leaderMemberId, 0, leaderIsStart);
+            leadershipTermId, logPosition, leadershipTermId, logPosition, t2, leaderMemberId, 0, isLeaderStart);
         election.doWork(t2);
 
         final long t3 = t2 + 1;
         election.doWork(t3);
 
-        verify(consensusModuleAgent).awaitServicesReady(
-            any(),
-            anyInt(),
-            anyInt(),
-            anyLong(),
-            anyLong(),
-            anyLong(),
-            eq(leaderIsStart),
-            any(Cluster.Role.class));
+        final long t4 = t3 + 1;
+        election.doWork(t4);
+
+        verify(consensusModuleAgent).followLog(logImage, isLeaderStart);
     }
 
     @Test

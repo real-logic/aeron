@@ -1331,9 +1331,6 @@ class ConsensusModuleAgent implements Agent
         final String channel = (isIpc ? "aeron:ipc" : "aeron:udp") +
             "?tags=" + logPublicationChannelTag + "|session-id=" + logSessionId + "|alias=log";
 
-        startLogRecording(channel, ctx.logStreamId(), SourceLocation.LOCAL);
-        createAppendPosition(logSessionId);
-
         awaitServicesReady(
             isIpc ? channel : SPY_PREFIX + channel,
             ctx.logStreamId(),
@@ -1343,6 +1340,10 @@ class ConsensusModuleAgent implements Agent
             Long.MAX_VALUE,
             isStartup,
             Cluster.Role.LEADER);
+
+        startLogRecording(channel, ctx.logStreamId(), SourceLocation.LOCAL);
+        createAppendPosition(logSessionId);
+
         leadershipTermId(leadershipTermId);
         prepareSessionsForNewTerm(isStartup);
     }
@@ -1367,27 +1368,29 @@ class ConsensusModuleAgent implements Agent
         return null != catchupLogDestination;
     }
 
-    void startLogRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
+    void followLog(final Image image, final boolean isLeaderStartup)
     {
-        final long logRecordingId = recordingLog.findLastTermRecordingId();
-        if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
-        {
-            logSubscriptionId = archive.startRecording(channel, streamId, sourceLocation, true);
-        }
-        else
-        {
-            logSubscriptionId = archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
-        }
-    }
+        final Subscription logSubscription = image.subscription();
+        final int streamId = logSubscription.streamId();
+        final String channel = logSubscription.channel();
 
-    void awaitFollowerLogImage(final Subscription subscription, final int logSessionId)
-    {
-        idleStrategy.reset();
-        while (!findLogImage(subscription, logSessionId))
-        {
-            idle();
-        }
-        leadershipTermId(election.leadershipTermId());
+        awaitServicesReady(
+            channel,
+            streamId,
+            image.sessionId(),
+            leadershipTermId,
+            image.joinPosition(),
+            Long.MAX_VALUE,
+            isLeaderStartup,
+            Cluster.Role.FOLLOWER);
+
+        startLogRecording(channel, streamId, SourceLocation.REMOTE);
+        createAppendPosition(image.sessionId());
+
+        logAdapter.image(image);
+        lastAppendPosition = 0;
+
+        appendDynamicJoinTermAndSnapshots();
     }
 
     void awaitServicesReady(
@@ -1420,6 +1423,12 @@ class ConsensusModuleAgent implements Agent
 
         ServiceAck.removeHead(serviceAckQueues);
         ++serviceAckId;
+    }
+
+    void leadershipTermId(final long leadershipTermId)
+    {
+        this.leadershipTermId = leadershipTermId;
+        this.replayLeadershipTermId = leadershipTermId;
     }
 
     LogReplay newLogReplay(final long logPosition, final long appendPosition)
@@ -1602,37 +1611,34 @@ class ConsensusModuleAgent implements Agent
         timeOfLastAppendPositionNs = nowNs;
     }
 
-    int catchupPoll(final Subscription subscription, final int logSessionId, final long limitPosition, final long nowNs)
+    int catchupPoll(final long limitPosition, final long nowNs)
     {
         int workCount = 0;
 
-        if (findLogImage(subscription, logSessionId))
+        if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
         {
-            if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
+            final int fragmentsPolled = logAdapter.poll(Math.min(appendPosition.get(), limitPosition));
+            workCount += fragmentsPolled;
+            final Image image = logAdapter.image();
+            if (fragmentsPolled == 0 && image.isClosed())
             {
-                final int fragmentsPolled = logAdapter.poll(Math.min(appendPosition.get(), limitPosition));
-                workCount += fragmentsPolled;
-                final Image image = logAdapter.image();
-                if (fragmentsPolled == 0 && image.isClosed())
-                {
-                    throw new ClusterException("unexpected image close replaying log at position " + image.position());
-                }
+                throw new ClusterException("unexpected image close replaying log at position " + image.position());
             }
-
-            final long appendPosition = logAdapter.position();
-            if (appendPosition != lastAppendPosition)
-            {
-                commitPosition.setOrdered(appendPosition);
-                final ExclusivePublication publication = election.leader().publication();
-                if (consensusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
-                {
-                    lastAppendPosition = appendPosition;
-                    timeOfLastAppendPositionNs = nowNs;
-                }
-            }
-
-            workCount += consensusModuleAdapter.poll();
         }
+
+        final long appendPosition = logAdapter.position();
+        if (appendPosition != lastAppendPosition)
+        {
+            commitPosition.setOrdered(appendPosition);
+            final ExclusivePublication publication = election.leader().publication();
+            if (consensusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
+            {
+                lastAppendPosition = appendPosition;
+                timeOfLastAppendPositionNs = nowNs;
+            }
+        }
+
+        workCount += consensusModuleAdapter.poll();
 
         if ((nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatTimeoutNs)) && ConsensusModule.State.ACTIVE == state)
         {
@@ -1723,6 +1729,19 @@ class ConsensusModuleAgent implements Agent
         }
 
         return false;
+    }
+
+    private void startLogRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
+    {
+        final long logRecordingId = recordingLog.findLastTermRecordingId();
+        if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
+        {
+            logSubscriptionId = archive.startRecording(channel, streamId, sourceLocation, true);
+        }
+        else
+        {
+            logSubscriptionId = archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
+        }
     }
 
     private void prepareSessionsForNewTerm(final boolean isStartup)
@@ -1994,31 +2013,6 @@ class ConsensusModuleAgent implements Agent
     private boolean appendAction(final ClusterAction action)
     {
         return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action);
-    }
-
-    private boolean findLogImage(final Subscription subscription, final int logSessionId)
-    {
-        boolean result = false;
-
-        if (null == logAdapter.image())
-        {
-            final Image image = subscription.imageBySessionId(logSessionId);
-            if (null != image)
-            {
-                logAdapter.image(image);
-                lastAppendPosition = 0;
-                createAppendPosition(logSessionId);
-                appendDynamicJoinTermAndSnapshots();
-
-                result = true;
-            }
-        }
-        else
-        {
-            result = true;
-        }
-
-        return result;
     }
 
     private int processPendingSessions(
@@ -2307,12 +2301,6 @@ class ConsensusModuleAgent implements Agent
         final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
 
         appendPosition = new ReadableCounter(counters, recordingCounterId);
-    }
-
-    private void leadershipTermId(final long leadershipTermId)
-    {
-        this.leadershipTermId = leadershipTermId;
-        this.replayLeadershipTermId = leadershipTermId;
     }
 
     private void loadSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)

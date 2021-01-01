@@ -74,7 +74,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final Collection<ClientSession> unmodifiableClientSessions =
         new UnmodifiableClientSessionCollection(sessionByIdMap.values());
-
     private final BoundedLogAdapter logAdapter;
     private String activeLifecycleCallbackName;
     private ReadableCounter commitPosition;
@@ -663,16 +662,16 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
         try
         {
+            logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
+            logAdapter.maxLogPosition(activeLog.maxLogPosition);
+            logSubscription = null;
+
             final long id = ackId++;
             idleStrategy.reset();
             while (!consensusModuleProxy.ack(activeLog.logPosition, clusterTime, id, NULL_VALUE, serviceId))
             {
                 idle();
             }
-
-            logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
-            logAdapter.maxLogPosition(activeLog.maxLogPosition);
-            logSubscription = null;
         }
         finally
         {

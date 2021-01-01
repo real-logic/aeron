@@ -235,8 +235,8 @@ public class AeronStat
                     "filter by optional regex patterns:%n" +
                     "\t[type=<pattern>]%n" +
                     "\t[identity=<pattern>]%n" +
-                    "\t[sessionId=<pattern>]%n" +
-                    "\t[streamId=<pattern>]%n" +
+                    "\t[session=<pattern>]%n" +
+                    "\t[stream=<pattern>]%n" +
                     "\t[channel=<pattern>]%n");
 
                 System.exit(0);

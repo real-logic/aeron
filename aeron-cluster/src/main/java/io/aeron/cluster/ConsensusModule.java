@@ -1081,7 +1081,7 @@ public final class ConsensusModule implements AutoCloseable
         private AuthenticatorSupplier authenticatorSupplier;
         private LogPublisher logPublisher;
         private EgressPublisher egressPublisher;
-        private boolean logChannelIsMultiDestination;
+        private boolean isLogChannelMultiDestination;
 
         /**
          * Perform a shallow copy of the object.
@@ -1309,7 +1309,7 @@ public final class ConsensusModule implements AutoCloseable
             }
 
             final ChannelUri channelUri = ChannelUri.parse(logChannel());
-            logChannelIsMultiDestination = channelUri.isUdp() && null == channelUri.get(ENDPOINT_PARAM_NAME);
+            isLogChannelMultiDestination = channelUri.isUdp() && null == channelUri.get(ENDPOINT_PARAM_NAME);
 
             concludeMarkFile();
         }
@@ -2955,9 +2955,9 @@ public final class ConsensusModule implements AutoCloseable
             return egressPublisher;
         }
 
-        boolean logChannelIsMultiDestination()
+        boolean isLogChannelMultiDestination()
         {
-            return logChannelIsMultiDestination;
+            return isLogChannelMultiDestination;
         }
 
         private void concludeMarkFile()

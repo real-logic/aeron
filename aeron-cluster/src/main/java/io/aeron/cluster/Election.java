@@ -836,7 +836,7 @@ class Election
 
     private void addLiveLogDestination()
     {
-        final String destination = ctx.logChannelIsMultiDestination() ?
+        final String destination = ctx.isLogChannelMultiDestination() ?
             "aeron:udp?endpoint=" + thisMember.logEndpoint() : ctx.logChannel();
 
         logSubscription.asyncAddDestination(destination);

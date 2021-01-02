@@ -39,7 +39,7 @@ import static io.aeron.CommonContext.*;
  * <p>
  * NOTE: Merging is only supported with UDP streams.
  */
-public class ReplayMerge implements AutoCloseable
+public final class ReplayMerge implements AutoCloseable
 {
     /**
      * The maximum window at which a live destination should be added when trying to merge.

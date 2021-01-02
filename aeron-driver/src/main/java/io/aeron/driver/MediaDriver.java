@@ -404,7 +404,7 @@ public final class MediaDriver implements AutoCloseable
      * The context will be owned by {@link DriverConductor} after a successful
      * {@link MediaDriver#launch(Context)} and closed via {@link MediaDriver#close()}.
      */
-    public static class Context extends CommonContext
+    public static final class Context extends CommonContext
     {
         private boolean isClosed = false;
         private boolean printConfigurationOnStart = Configuration.printConfigurationOnStart();

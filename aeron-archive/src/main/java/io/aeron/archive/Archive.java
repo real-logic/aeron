@@ -178,7 +178,7 @@ public final class Archive implements AutoCloseable
      * <p>
      * Details for the individual parameters can be found in the Javadoc for the {@link Context} setters.
      */
-    public static class Configuration
+    public static final class Configuration
     {
         /**
          * Filename for the single instance of a {@link Catalog} contents for an archive.
@@ -715,7 +715,7 @@ public final class Archive implements AutoCloseable
      * The context will be owned by {@link ArchiveConductor} after a successful
      * {@link Archive#launch(Context)} and closed via {@link Archive#close()}.
      */
-    public static class Context implements Cloneable
+    public static final class Context implements Cloneable
     {
         /**
          * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.

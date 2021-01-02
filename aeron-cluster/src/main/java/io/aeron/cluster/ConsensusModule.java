@@ -262,7 +262,7 @@ public final class ConsensusModule implements AutoCloseable
     /**
      * Configuration options for cluster.
      */
-    public static class Configuration
+    public static final class Configuration
     {
         /**
          * Type of snapshot for this component.
@@ -998,7 +998,7 @@ public final class ConsensusModule implements AutoCloseable
      * The context will be owned by {@link ConsensusModuleAgent} after a successful
      * {@link ConsensusModule#launch(Context)} and closed via {@link ConsensusModule#close()}.
      */
-    public static class Context implements Cloneable
+    public static final class Context implements Cloneable
     {
         /**
          * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.

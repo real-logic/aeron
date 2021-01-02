@@ -56,7 +56,7 @@ import static io.aeron.exceptions.AeronException.Category.WARN;
 import static java.lang.Math.min;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
-class ConsensusModuleAgent implements Agent
+final class ConsensusModuleAgent implements Agent
 {
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final int SERVICE_MESSAGE_LIMIT = 20;

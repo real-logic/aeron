@@ -768,7 +768,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Configuration options for cluster client.
      */
-    public static class Configuration
+    public static final class Configuration
     {
         /**
          * Major version of the network protocol from client to consensus module. If these don't match then client
@@ -940,7 +940,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Context for cluster session and connection.
      */
-    public static class Context implements Cloneable
+    public static final class Context implements Cloneable
     {
         /**
          * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
@@ -1449,7 +1449,7 @@ public final class AeronCluster implements AutoCloseable
      * it returns a non-null value with the new {@link AeronCluster} client. On error {@link #close()} should be called
      * to clean up allocated resources.
      */
-    public static class AsyncConnect implements AutoCloseable
+    public static final class AsyncConnect implements AutoCloseable
     {
         private final Subscription egressSubscription;
         private final long deadlineNs;

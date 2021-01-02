@@ -29,7 +29,7 @@ import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT
 /**
  * Proxy class for encapsulating encoding and sending of control protocol messages to an archive.
  */
-public class ArchiveProxy
+public final class ArchiveProxy
 {
     /**
      * Default number of retry attempts to be made when offering requests.

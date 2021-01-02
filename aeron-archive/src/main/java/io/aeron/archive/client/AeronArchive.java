@@ -50,7 +50,7 @@ import static org.agrona.SystemUtil.getSizeAsInt;
  * Note: This class is threadsafe but the lock can be elided for single threaded access via {@link Context#lock(Lock)}
  * being set to {@link NoOpLock}.
  */
-public class AeronArchive implements AutoCloseable
+public final class AeronArchive implements AutoCloseable
 {
     /**
      * Represents a timestamp that has not been set. Can be used when the time is not known.
@@ -2066,7 +2066,7 @@ public class AeronArchive implements AutoCloseable
     /**
      * Common configuration properties for communicating with an Aeron archive.
      */
-    public static class Configuration
+    public static final class Configuration
     {
         /**
          * Major version of the network protocol from client to archive. If these don't match then client and archive
@@ -2400,7 +2400,7 @@ public class AeronArchive implements AutoCloseable
      * The context will be owned by {@link AeronArchive} after a successful
      * {@link AeronArchive#connect(Context)} and closed via {@link AeronArchive#close()}.
      */
-    public static class Context implements Cloneable
+    public static final class Context implements Cloneable
     {
         /**
          * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
@@ -2907,7 +2907,7 @@ public class AeronArchive implements AutoCloseable
     /**
      * Allows for the async establishment of a archive session.
      */
-    public static class AsyncConnect implements AutoCloseable
+    public static final class AsyncConnect implements AutoCloseable
     {
         private final Context ctx;
         private final ControlResponsePoller controlResponsePoller;

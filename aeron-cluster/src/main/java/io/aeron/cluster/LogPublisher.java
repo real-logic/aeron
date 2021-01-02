@@ -97,17 +97,17 @@ final class LogPublisher
         return publication.sessionId();
     }
 
-    void addPassiveFollower(final boolean logChannelIsMultiDestination, final String followerLogEndpoint)
+    void addPassiveFollower(final boolean isLogChannelMultiDestination, final String followerLogEndpoint)
     {
-        if (logChannelIsMultiDestination && null != publication)
+        if (isLogChannelMultiDestination && null != publication)
         {
             publication.asyncAddDestination("aeron:udp?endpoint=" + followerLogEndpoint);
         }
     }
 
-    void removePassiveFollower(final boolean logChannelIsMultiDestination, final String followerLogEndpoint)
+    void removePassiveFollower(final boolean isLogChannelMultiDestination, final String followerLogEndpoint)
     {
-        if (logChannelIsMultiDestination && null != publication)
+        if (isLogChannelMultiDestination && null != publication)
         {
             publication.asyncRemoveDestination("aeron:udp?endpoint=" + followerLogEndpoint);
         }

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2020 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.cluster;
 
 import com.sun.tools.attach.VirtualMachine;
@@ -37,7 +52,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -289,8 +303,8 @@ public class ClusterNetworkTopologyTest
             final Pattern pattern = Pattern.compile(regexToMatch);
             final CharBuffer duplicate = textOutput.duplicate();
             duplicate.flip();
-            final Matcher matcher = pattern.matcher(duplicate);
-            return matcher.find();
+
+            return pattern.matcher(duplicate).find();
         }
     }
 
@@ -325,25 +339,30 @@ public class ClusterNetworkTopologyTest
         final String ingressChannel,
         final String logChannel)
     {
-        final List<String> command = new ArrayList<>();
+        final ArrayList<String> command = new ArrayList<>();
         command.add(FileResolveUtil.resolveJavaBinary().getAbsolutePath());
+
         if (isVersionAfterJdk8())
         {
             command.add("--add-opens");
             command.add("java.base/sun.nio.ch=ALL-UNNAMED");
         }
+
         command.add("-cp");
         command.add(FileResolveUtil.resolveAeronAllJar().getAbsolutePath());
         command.add("-Daeron.dir.delete.on.start=true");
         command.add("-Daeron.print.configuration=true");
+
         if (null != ingressChannel)
         {
             command.add("-Daeron.cluster.ingress.channel=" + ingressChannel);
         }
+
         if (null != logChannel)
         {
             command.add("-Daeron.cluster.log.channel=" + logChannel);
         }
+
         command.add("-Daeron.cluster.tutorial.hostnames=" + hostnames);
         command.add("-Daeron.cluster.tutorial.nodeId=" + nodeId);
         command.add(EchoServiceNode.class.getName());

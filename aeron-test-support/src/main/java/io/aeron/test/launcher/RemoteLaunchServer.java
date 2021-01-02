@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2020 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.test.launcher;
 
 import org.agrona.CloseHelper;
@@ -15,7 +30,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class RemoteLaunchServer
 {
-
     private final ServerSocketChannel serverChannel;
     private final Collection<Connection> connections = new ConcurrentLinkedDeque<>();
 
@@ -39,11 +53,12 @@ public class RemoteLaunchServer
 
     public void run()
     {
-        Thread.setDefaultUncaughtExceptionHandler((t, e) ->
-        {
-            System.err.println("Uncaught exception on: " + t);
-            e.printStackTrace(System.err);
-        });
+        Thread.setDefaultUncaughtExceptionHandler(
+            (t, e) ->
+            {
+                System.err.println("Uncaught exception on: " + t);
+                e.printStackTrace(System.err);
+            });
 
         try
         {
@@ -55,13 +70,13 @@ public class RemoteLaunchServer
                 connections.add(connection);
             }
         }
-        catch (final AsynchronousCloseException e)
+        catch (final AsynchronousCloseException ignore)
         {
             // Normal close
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -84,8 +99,6 @@ public class RemoteLaunchServer
         private final SocketChannel connectionChannel;
         private final AtomicReference<State> currentState = new AtomicReference<>(State.CREATED);
         private volatile ProcessResponseReader responseReader;
-        private volatile Thread requestThread;
-        private volatile Thread responseThread;
         private Process process = null;
 
         private enum State
@@ -104,7 +117,7 @@ public class RemoteLaunchServer
 
         public void start()
         {
-            requestThread = new Thread(this::runRequests);
+            final Thread requestThread = new Thread(this::runRequests);
             if (currentState.compareAndSet(State.CREATED, State.STARTING))
             {
                 requestThread.start();
@@ -216,7 +229,7 @@ public class RemoteLaunchServer
                     }
                 }
             }
-            catch (final EOFException e)
+            catch (final EOFException ex)
             {
                 if (currentState.compareAndSet(State.RUNNING, State.CLOSING) && null != process)
                 {
@@ -225,7 +238,7 @@ public class RemoteLaunchServer
                     process.destroy();
                 }
             }
-            catch (final AsynchronousCloseException e)
+            catch (final AsynchronousCloseException ex)
             {
                 if (currentState.compareAndSet(State.RUNNING, State.CLOSING) && null != process)
                 {
@@ -233,10 +246,10 @@ public class RemoteLaunchServer
                     process.destroy();
                 }
             }
-            catch (final IOException | ClassNotFoundException e)
+            catch (final IOException | ClassNotFoundException ex)
             {
                 System.err.println("Error occurred");
-                e.printStackTrace();
+                ex.printStackTrace();
 
                 if (currentState.compareAndSet(State.RUNNING, State.CLOSING) && null != process)
                 {
@@ -258,15 +271,15 @@ public class RemoteLaunchServer
                 process = p;
 
                 responseReader = new ProcessResponseReader(connectionChannel);
-                responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
+                final Thread responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
                 responseThread.start();
 
                 return State.RUNNING;
             }
-            catch (final IOException e)
+            catch (final IOException ex)
             {
                 final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                e.printStackTrace(new PrintStream(baos));
+                ex.printStackTrace(new PrintStream(baos));
                 connectionChannel.write(ByteBuffer.wrap(baos.toByteArray()));
                 connectionChannel.close();
 

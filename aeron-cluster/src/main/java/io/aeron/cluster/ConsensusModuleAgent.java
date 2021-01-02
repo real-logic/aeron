@@ -16,15 +16,17 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
-import io.aeron.archive.client.*;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
+import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.service.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.cluster.service.ClusterClock;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.RecoveryState;
 import io.aeron.exceptions.AeronException;
@@ -639,7 +641,7 @@ class ConsensusModuleAgent implements Agent
                     ClusterMember.addConsensusPublication(
                         newMember, ChannelUri.parse(ctx.consensusChannel()), ctx.consensusStreamId(), aeron);
 
-                    logPublisher.addPassiveFollower(newMember.logEndpoint());
+                    logPublisher.addPassiveFollower(ctx.isLogChannelMultiDestination(), newMember.logEndpoint());
                 }
             }
             else if (Cluster.Role.FOLLOWER == role)
@@ -697,7 +699,8 @@ class ConsensusModuleAgent implements Agent
                     final ChannelUri consensusUri = ChannelUri.parse(ctx.consensusChannel());
                     final int streamId = ctx.consensusStreamId();
                     ClusterMember.addConsensusPublication(member, consensusUri, streamId, aeron);
-                    logPublisher.addPassiveFollower(member.logEndpoint());
+
+                    logPublisher.addPassiveFollower(ctx.isLogChannelMultiDestination(), member.logEndpoint());
                 }
 
                 member.hasRequestedJoin(true);
@@ -792,7 +795,8 @@ class ConsensusModuleAgent implements Agent
                 {
                     passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
                     member.closePublication(ctx.countedErrorHandler());
-                    logPublisher.removePassiveFollower(member.logEndpoint());
+
+                    logPublisher.removePassiveFollower(ctx.isLogChannelMultiDestination(), member.logEndpoint());
 
                     clusterMemberByIdMap.remove(memberId);
                     clusterMemberByIdMap.compact();
@@ -1272,7 +1276,6 @@ class ConsensusModuleAgent implements Agent
         final long logPublicationTag = aeron.nextCorrelationId();
         logPublicationChannelTag = aeron.nextCorrelationId();
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        final boolean isMulticast = channelUri.containsKey(ENDPOINT_PARAM_NAME);
 
         channelUri.put(ALIAS_PARAM_NAME, "log");
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
@@ -1285,7 +1288,7 @@ class ConsensusModuleAgent implements Agent
                 channelUri.put(FLOW_CONTROL_PARAM_NAME, "min,t:" + timeout + "s");
             }
 
-            if (!isMulticast)
+            if (ctx.isLogChannelMultiDestination())
             {
                 channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
             }
@@ -1303,7 +1306,7 @@ class ConsensusModuleAgent implements Agent
         final String channel = channelUri.toString();
         final ExclusivePublication publication = aeron.addExclusivePublication(channel, ctx.logStreamId());
 
-        if (!isMulticast)
+        if (ctx.isLogChannelMultiDestination())
         {
             for (final ClusterMember member : clusterMembers)
             {
@@ -2434,7 +2437,7 @@ class ConsensusModuleAgent implements Agent
 
                 member.closePublication(ctx.countedErrorHandler());
 
-                logPublisher.removePassiveFollower(member.logEndpoint());
+                logPublisher.removePassiveFollower(ctx.isLogChannelMultiDestination(), member.logEndpoint());
                 pendingMemberRemovals--;
             }
         }

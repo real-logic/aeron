@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.samples.cluster.tutorial;
+package io.aeron.samples.cluster;
 
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
@@ -26,6 +26,7 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.samples.cluster.tutorial.BasicAuctionClusteredService;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
@@ -40,7 +41,7 @@ import static java.lang.Integer.parseInt;
  * Node that launches the service for the {@link BasicAuctionClusteredService}.
  */
 // tag::new_service[]
-public class BasicAuctionClusteredServiceNode
+public class EchoServiceNode
 // end::new_service[]
 {
     private static ErrorHandler errorHandler(final String context)
@@ -137,7 +138,7 @@ public class BasicAuctionClusteredServiceNode
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .terminationHook(barrier::signal)
-            .errorHandler(BasicAuctionClusteredServiceNode.errorHandler("Media Driver"));
+            .errorHandler(EchoServiceNode.errorHandler("Media Driver"));
         // end::media_driver[]
 
         // tag::archive[]
@@ -165,8 +166,6 @@ public class BasicAuctionClusteredServiceNode
             .clusterMemberId(nodeId)                                                                     // <1>
             .clusterMembers(clusterMembers(Arrays.asList(hostnames)))                                    // <2>
             .clusterDir(new File(baseDir, "consensus-module"))                                           // <3>
-            .ingressChannel("aeron:udp?term-length=64k")                                                 // <4>
-            .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
             .archiveContext(aeronArchiveContext.clone());                                                // <6>
         // end::consensus_module[]
 
@@ -176,7 +175,7 @@ public class BasicAuctionClusteredServiceNode
             .aeronDirectoryName(aeronDirName)                                                            // <1>
             .archiveContext(aeronArchiveContext.clone())                                                 // <2>
             .clusterDir(new File(baseDir, "service"))
-            .clusteredService(new BasicAuctionClusteredService())                                        // <3>
+            .clusteredService(new EchoService())                                                         // <3>
             .errorHandler(errorHandler("Clustered Service"));
         // end::clustered_service[]
 

@@ -237,6 +237,29 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
+    public void shouldEchoMessages(final TestInfo testInfo)
+    {
+        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        try
+        {
+            cluster.awaitLeader();
+            cluster.connectClient();
+
+            final int expectedCount = 10;
+
+            cluster.sendMessages(expectedCount);
+            cluster.awaitResponseMessageCount(expectedCount);
+            cluster.awaitServicesMessageCount(expectedCount);
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo);
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    @Test
+    @Timeout(40)
     public void shouldEchoMessagesThenContinueOnNewLeader(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);

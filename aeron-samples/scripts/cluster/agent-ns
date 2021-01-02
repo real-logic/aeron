@@ -15,14 +15,20 @@
 ## limitations under the License.
 ##
 
+set -euo pipefail
+
 source ./script-common
 
 mkdir -p logs
 
 # tag::start_jvm[]
 function startNode() {
+
+    namespace=ns_cluster$1
+
+    sudo ip netns exec ${namespace} su - ${USER} -c "cd ${PWD} && \
     ${JAVA_HOME}/bin/java \
-        -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
+        -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar:../../../aeron-test-support/build/libs/aeron-test-support-${VERSION}.jar \
         -javaagent:../../../aeron-agent/build/libs/aeron-agent-${VERSION}.jar \
         -XX:+UseBiasedLocking \
         -XX:BiasedLockingStartupDelay=0 \
@@ -31,10 +37,8 @@ function startNode() {
         -XX:+UnlockDiagnosticVMOptions \
         -XX:GuaranteedSafepointInterval=300000 \
         -XX:+UseParallelOldGC \
-        -Daeron.event.cluster.log=all \
-        -Daeron.cluster.tutorial.nodeId=$1 \
-        ${JVM_OPTS} ${ADD_OPENS} \
-        io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode > logs/cluster-$1.log &
+        ${JVM_OPTS:-} ${ADD_OPENS} \
+        io.aeron.test.launcher.RemoteLaunchServer > logs/launch-$1.log" &
 }
 
 function startAll() {
@@ -42,7 +46,7 @@ function startAll() {
   startNode 1
   startNode 2
 
-  tail -n 100 -F logs/cluster-*.log
+  tail -n 100 -F logs/launch-*.log
 }
 # end::start_jvm[]
 

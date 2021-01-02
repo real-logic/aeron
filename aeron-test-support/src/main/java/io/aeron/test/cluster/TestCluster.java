@@ -61,6 +61,10 @@ public class TestCluster implements AutoCloseable
     private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
     private static final long CATALOG_CAPACITY = 128 * 1024;
     private static final String LOG_CHANNEL = "aeron:udp?term-length=512k";
+    // Use for testing cluster with multicast
+    // TODO: Parameterise tests with this.
+//    private static final String LOG_CHANNEL =
+//        "aeron:udp?term-length=512k|endpoint=224.20.30.39:24326|interface=localhost";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =

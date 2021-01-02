@@ -15,15 +15,14 @@
 ## limitations under the License.
 ##
 
-source ./script-common
+set -euo pipefail
 
-mkdir -p logs
+source ./script-common
 
 # tag::start_jvm[]
 function startNode() {
     ${JAVA_HOME}/bin/java \
         -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
-        -javaagent:../../../aeron-agent/build/libs/aeron-agent-${VERSION}.jar \
         -XX:+UseBiasedLocking \
         -XX:BiasedLockingStartupDelay=0 \
         -XX:+UnlockExperimentalVMOptions \
@@ -31,29 +30,23 @@ function startNode() {
         -XX:+UnlockDiagnosticVMOptions \
         -XX:GuaranteedSafepointInterval=300000 \
         -XX:+UseParallelOldGC \
-        -Daeron.event.cluster.log=all \
-        -Daeron.cluster.tutorial.nodeId=$1 \
-        ${JVM_OPTS} ${ADD_OPENS} \
-        io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode > logs/cluster-$1.log &
+        -Daeron.cluster.tutorial.customerId="$1" \
+        -Daeron.cluster.tutorial.numOfBids="$2" \
+        -Daeron.cluster.tutorial.bidIntervalMs="$3" \
+        -Daeron.cluster.tutorial.hostnames=10.42.0.10,10.42.0.11,10.42.0.12 \
+        ${JVM_OPTS:-} ${ADD_OPENS} \
+        io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient
 }
-
-function startAll() {
-  startNode 0
-  startNode 1
-  startNode 2
-
-  tail -n 100 -F logs/cluster-*.log
-}
-# end::start_jvm[]
 
 if [[ $# -lt 1 ]]; then
-  startAll
-elif [[ $1 == 0 ]] || [[ $1 == 1 ]] || [[ $1 == 2 ]]; then
-  echo "starting node $1"
-  startNode $1
-else
-  echo "Usage: ./basic-auction-cluster [0,1,2]"
+  echo "Usage: ./basic-action-client <customer id> [number of bids (default 10)] [bid interval ms (default 1000)]"
   exit 1
 fi
 
+CUSTOMER_ID=${1}
+NUM_OF_BIDS=${2:-10}
+BID_INTERVAL_MS=${3:-1000}
+
+startNode ${CUSTOMER_ID} ${NUM_OF_BIDS} ${BID_INTERVAL_MS}
+# end::start_jvm[]
 

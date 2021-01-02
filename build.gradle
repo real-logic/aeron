@@ -774,7 +774,7 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
         testImplementation project(path: ':aeron-cluster')
-        testCompile files("${System.properties['java.home']}/../lib/tools.jar")
+        testImplementation files("${System.properties['java.home']}/../lib/tools.jar")
     }
 
     test {

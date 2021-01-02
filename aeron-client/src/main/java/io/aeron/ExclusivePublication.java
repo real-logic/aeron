@@ -107,7 +107,7 @@ abstract class ExclusivePublicationValues extends ExclusivePublicationLhsPadding
  *
  * @see Aeron#addExclusivePublication(String, int)
  */
-public class ExclusivePublication extends ExclusivePublicationValues
+public final class ExclusivePublication extends ExclusivePublicationValues
 {
     byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
     byte p080, p081, p082, p083, p084, p085, p086, p087, p088, p089, p090, p091, p092, p093, p094, p095;

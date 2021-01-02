@@ -27,7 +27,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Counter stored in a file managed by the media driver which can be observed with AeronStat.
  */
-public class Counter extends AtomicCounter
+public final class Counter extends AtomicCounter
 {
     private static final AtomicIntegerFieldUpdater<Counter> IS_CLOSED_UPDATER = newUpdater(Counter.class, "isClosed");
 

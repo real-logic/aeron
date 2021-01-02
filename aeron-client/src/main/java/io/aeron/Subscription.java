@@ -90,7 +90,7 @@ abstract class SubscriptionFields extends SubscriptionLhsPadding
  * @see Aeron#addSubscription(String, int)
  * @see Aeron#addSubscription(String, int, AvailableImageHandler, UnavailableImageHandler)
  */
-public class Subscription extends SubscriptionFields implements AutoCloseable
+public final class Subscription extends SubscriptionFields implements AutoCloseable
 {
     byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
     byte p080, p081, p082, p083, p084, p085, p086, p087, p088, p089, p090, p091, p092, p093, p094, p095;

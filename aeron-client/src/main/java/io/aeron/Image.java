@@ -43,7 +43,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <p>
  * <b>Note:</b>Images are not threadsafe and should not be shared between subscribers.
  */
-public class Image
+public final class Image
 {
     private final long correlationId;
     private final long joinPosition;

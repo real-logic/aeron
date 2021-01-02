@@ -35,7 +35,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
  * @see Aeron#addPublication(String, int)
  * @see BufferClaim
  */
-public class ConcurrentPublication extends Publication
+public final class ConcurrentPublication extends Publication
 {
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
 

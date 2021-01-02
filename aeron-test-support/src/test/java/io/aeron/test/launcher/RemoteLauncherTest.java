@@ -30,11 +30,12 @@ public class RemoteLauncherTest
                 () ->
                 {
                     final ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    client.executeBlocking(out, "/usr/bin/echo", message);
+                    client.executeBlocking(out, "echo", message);
 
                     final byte[] expectedBytes = message.getBytes(StandardCharsets.UTF_8);
                     final byte[] actualBytes = Arrays.copyOf(out.toByteArray(), expectedBytes.length);
-                    assertArrayEquals(expectedBytes, actualBytes);
+                    assertArrayEquals(
+                        expectedBytes, actualBytes, out.toString() + " vs " + new String(actualBytes));
                 }
             );
         }

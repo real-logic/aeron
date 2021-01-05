@@ -380,8 +380,6 @@ void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
     if (endpoint->transport_bindings->poller_add_func(&receiver->poller, &destination->transport) < 0)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "on_add_destination, add to poller: %s", aeron_errmsg());
-
-        // Clean up earlier steps...
         aeron_receive_channel_endpoint_remove_destination(endpoint, destination->conductor_fields.udp_channel, NULL);
 
         return;
@@ -392,8 +390,6 @@ void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
         if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination) < 0)
         {
             AERON_DRIVER_RECEIVER_ERROR(receiver, "on_add_destination, pending_setup: %s", aeron_errmsg());
-
-            // Clean up earlier steps...
             aeron_receive_channel_endpoint_remove_destination(endpoint, destination->conductor_fields.udp_channel, NULL);
             endpoint->transport_bindings->poller_remove_func(&receiver->poller, &destination->transport);
             endpoint->transport_bindings->close_func(&destination->transport);
@@ -459,12 +455,14 @@ void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, receiver->images, aeron_driver_receiver_image_entry_t);
 
-    if (aeron_receive_channel_endpoint_on_add_publication_image(endpoint, cmd->image) < 0 || ensure_capacity_result < 0)
+    if (ensure_capacity_result < 0 || aeron_receive_channel_endpoint_on_add_publication_image(endpoint, cmd->image) < 0)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_publication_image: %s", aeron_errmsg());
     }
-
-    receiver->images.array[receiver->images.length++].image = cmd->image;
+    else
+    {
+        receiver->images.array[receiver->images.length++].image = cmd->image;
+    }
 }
 
 void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item)

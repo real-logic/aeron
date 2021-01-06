@@ -507,8 +507,6 @@ void aeron_driver_receiver_on_resolution_change(void *clientd, void *item)
     aeron_receive_channel_endpoint_t *endpoint = cmd->endpoint;
     aeron_receive_destination_t *destination = cmd->destination;
 
-    // MDS is not supported in the C driver yet, would need to look up transport index here.
-
     for (size_t i = 0; i < receiver->pending_setups.length; i++)
     {
         aeron_driver_receiver_pending_setup_entry_t *pending_setup = &receiver->pending_setups.array[i];

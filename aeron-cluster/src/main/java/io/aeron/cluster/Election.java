@@ -621,9 +621,6 @@ class Election
     {
         int workCount = 0;
 
-        final ElectionState nextState = NULL_POSITION != catchupPosition ?
-            FOLLOWER_CATCHUP_TRANSITION : FOLLOWER_TRANSITION;
-
         if (null == logReplay)
         {
             workCount += 1;
@@ -633,7 +630,7 @@ class Election
             }
             else
             {
-                state(nextState, nowNs);
+                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_TRANSITION : FOLLOWER_TRANSITION, nowNs);
             }
         }
         else
@@ -643,7 +640,7 @@ class Election
             {
                 cleanupReplay();
                 logPosition = appendPosition;
-                state(nextState, nowNs);
+                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_TRANSITION : FOLLOWER_TRANSITION, nowNs);
             }
         }
 
@@ -709,28 +706,24 @@ class Election
             state(FOLLOWER_TRANSITION, nowNs);
             workCount += 1;
         }
-        else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()) && sendCatchupPosition())
-        {
-            timeOfLastUpdateNs = nowNs;
-            workCount += 1;
-        }
 
         return workCount;
     }
 
     private int followerTransition(final long nowNs)
     {
-        ElectionState nextState = FOLLOWER_READY;
-
         if (null == logSubscription)
         {
             logSubscription = addFollowerSubscription();
             addLiveLogDestination();
-            nextState = FOLLOWER_JOIN;
+            state(FOLLOWER_JOIN, nowNs);
+        }
+        else
+        {
+            state(FOLLOWER_READY, nowNs);
         }
 
         consensusModuleAgent.leadershipTermId(leadershipTermId);
-        state(nextState, nowNs);
 
         return 1;
     }

@@ -384,7 +384,7 @@ public class ClusterBackupTest
             cluster.stopNode(leader);
 
             final TestNode nextLeader = cluster.awaitLeader();
-            cluster.awaitLeadershipEvent(1);
+            cluster.awaitNewLeadershipEvent(1);
 
             cluster.sendMessages(5);
             cluster.awaitResponseMessageCount(messageCount + 5);

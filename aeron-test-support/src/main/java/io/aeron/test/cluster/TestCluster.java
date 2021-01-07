@@ -748,7 +748,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    public void awaitLeadershipEvent(final int count)
+    public void awaitNewLeadershipEvent(final int count)
     {
         while (newLeaderEvent.get() < count)
         {

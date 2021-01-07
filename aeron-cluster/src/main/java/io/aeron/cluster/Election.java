@@ -709,8 +709,7 @@ class Election
             state(FOLLOWER_TRANSITION, nowNs);
             workCount += 1;
         }
-        else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()) &&
-            consensusModuleAgent.hasCatchupLogDestination() && sendCatchupPosition())
+        else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()) && sendCatchupPosition())
         {
             timeOfLastUpdateNs = nowNs;
             workCount += 1;

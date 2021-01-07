@@ -1366,11 +1366,6 @@ final class ConsensusModuleAgent implements Agent
         this.catchupLogDestination = catchupLogDestination;
     }
 
-    boolean hasCatchupLogDestination()
-    {
-        return null != catchupLogDestination;
-    }
-
     void followLog(final Image image, final boolean isLeaderStartup)
     {
         final Subscription logSubscription = image.subscription();
@@ -1630,9 +1625,9 @@ final class ConsensusModuleAgent implements Agent
         }
 
         final long appendPosition = logAdapter.position();
-        if (appendPosition != lastAppendPosition)
+        if (appendPosition != lastAppendPosition || nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs))
         {
-            commitPosition.setOrdered(appendPosition);
+            commitPosition.proposeMaxOrdered(appendPosition);
             final ExclusivePublication publication = election.leader().publication();
             if (consensusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
             {
@@ -1643,7 +1638,7 @@ final class ConsensusModuleAgent implements Agent
 
         workCount += consensusModuleAdapter.poll();
 
-        if ((nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatTimeoutNs)) && ConsensusModule.State.ACTIVE == state)
+        if (nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatTimeoutNs) && ConsensusModule.State.ACTIVE == state)
         {
             throw new ClusterException("no catchup progress", WARN);
         }

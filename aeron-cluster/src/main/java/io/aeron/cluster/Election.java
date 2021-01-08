@@ -677,10 +677,18 @@ class Election
             state(FOLLOWER_CATCHUP, nowNs);
             workCount += 1;
         }
-        else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()) && sendCatchupPosition())
+        else
         {
-            timeOfLastUpdateNs = nowNs;
-            workCount += 1;
+            if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()) && sendCatchupPosition())
+            {
+                timeOfLastUpdateNs = nowNs;
+                workCount += 1;
+            }
+
+            if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
+            {
+                state(INIT, nowNs);
+            }
         }
 
         return workCount;
@@ -740,6 +748,10 @@ class Election
             updateRecordingLog(nowNs);
             state(FOLLOWER_READY, nowNs);
             workCount += 1;
+        }
+        else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
+        {
+            state(INIT, nowNs);
         }
 
         return workCount;

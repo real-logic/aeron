@@ -1200,6 +1200,7 @@ public class ClusterTest
 
             final int numMessages = 3;
             cluster.sendMessages(numMessages);
+            cluster.awaitResponseMessageCount(numMessages);
             cluster.awaitServicesMessageCount(numMessages);
 
             cluster.stopNode(leader0);
@@ -1209,6 +1210,7 @@ public class ClusterTest
             cluster.startStaticNode(leader0.index(), false);
 
             cluster.sendMessages(numMessages);
+            cluster.awaitResponseMessageCount(numMessages * 2);
             cluster.awaitServicesMessageCount(numMessages * 2);
 
             cluster.takeSnapshot(leader1);
@@ -1221,6 +1223,7 @@ public class ClusterTest
             cluster.startStaticNode(leader1.index(), false);
 
             cluster.sendMessages(numMessages);
+            cluster.awaitResponseMessageCount(numMessages * 3);
             cluster.awaitServicesMessageCount(numMessages * 3);
 
             // No snapshot for Term 2

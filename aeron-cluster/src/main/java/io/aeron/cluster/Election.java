@@ -22,6 +22,8 @@ import io.aeron.Subscription;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -54,7 +56,7 @@ class Election
     private long logLeadershipTermId;
     private long candidateTermId = NULL_VALUE;
     private ClusterMember leaderMember = null;
-    private ElectionState state = ElectionState.INIT;
+    private ElectionState state = INIT;
     private Subscription logSubscription = null;
     private LogReplay logReplay = null;
     private ClusterMember[] clusterMembers;
@@ -90,7 +92,7 @@ class Election
         this.consensusModuleAgent = consensusModuleAgent;
 
         Objects.requireNonNull(thisMember);
-        ctx.electionStateCounter().setOrdered(ElectionState.INIT.code());
+        ctx.electionStateCounter().setOrdered(INIT.code());
     }
 
     ClusterMember leader()
@@ -115,7 +117,7 @@ class Election
 
     int doWork(final long nowNs)
     {
-        int workCount = ElectionState.INIT == state ? init(nowNs) : 0;
+        int workCount = INIT == state ? init(nowNs) : 0;
 
         try
         {
@@ -250,7 +252,7 @@ class Election
             }
             else if (logLeadershipTermId > leadershipTermId)
             {
-                state(INIT, ctx.clusterClock().timeNanos());
+                throw new ClusterException("new leader detected", AeronException.Category.WARN);
             }
         }
     }
@@ -382,7 +384,7 @@ class Election
         }
         else if (leadershipTermId > this.leadershipTermId && CANVASS != state)
         {
-            state(ElectionState.INIT, ctx.clusterClock().timeNanos());
+            throw new ClusterException("new leader detected", AeronException.Category.WARN);
         }
     }
 
@@ -687,7 +689,7 @@ class Election
 
             if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
             {
-                state(INIT, nowNs);
+                throw new TimeoutException("failed to join catchup log", AeronException.Category.WARN);
             }
         }
 
@@ -751,7 +753,7 @@ class Election
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
         {
-            state(INIT, nowNs);
+            throw new TimeoutException("failed to join live log", AeronException.Category.WARN);
         }
 
         return workCount;
@@ -769,7 +771,7 @@ class Election
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
         {
-            state(INIT, nowNs);
+            throw new TimeoutException("ready follower failed to notify leader", AeronException.Category.WARN);
         }
 
         return 1;

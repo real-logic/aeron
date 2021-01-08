@@ -995,7 +995,10 @@ final class ConsensusModuleAgent implements Agent
                         session.timeOfLastActivityNs(nowNs);
                     }
 
-                    ClusterControl.ToggleState.reset(controlToggle);
+                    if (Cluster.Role.LEADER == role)
+                    {
+                        ClusterControl.ToggleState.reset(controlToggle);
+                    }
                     state(ConsensusModule.State.ACTIVE);
                 }
                 else

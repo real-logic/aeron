@@ -2266,8 +2266,8 @@ final class ConsensusModuleAgent implements Agent
             final ServiceAck serviceAck = serviceAckQueues[id].pollFirst();
             if (null == serviceAck || serviceAck.logPosition() != logPosition)
             {
-                throw new ClusterException("invalid ack for serviceId=" + serviceId +
-                    " logPosition=" + logPosition + " " + serviceAck);
+                throw new ClusterException(
+                    "invalid ack for serviceId=" + serviceId + " logPosition=" + logPosition + " " + serviceAck);
             }
 
             serviceAcks[id] = serviceAck;
@@ -2852,8 +2852,7 @@ final class ConsensusModuleAgent implements Agent
                 ConsensusModule.State.TERMINATING != state &&
                 ConsensusModule.State.QUITTING != state)
             {
-                ctx.errorHandler().onError(new ClusterException(
-                    "Aeron client for service closed unexpectedly", AeronException.Category.WARN));
+                ctx.errorHandler().onError(new ClusterException("Aeron client for service closed unexpectedly", WARN));
                 closeAndTerminate();
             }
         }

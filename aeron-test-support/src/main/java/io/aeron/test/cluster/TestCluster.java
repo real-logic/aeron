@@ -954,7 +954,7 @@ public class TestCluster implements AutoCloseable
         {
             if (null != node)
             {
-                node.terminationExpected(isExpected);
+                node.isTerminationExpected(isExpected);
             }
         }
     }

@@ -34,7 +34,7 @@ public interface TestMediaDriver extends AutoCloseable
 
     static void notSupportedOnCMediaDriver(final String reason)
     {
-        assumeFalse(shouldRunCMediaDriver(), () -> "Functionality not support by C Media Driver: " + reason);
+        assumeFalse(shouldRunCMediaDriver(), () -> "not support by C Media Driver: " + reason);
     }
 
     static TestMediaDriver launch(final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)

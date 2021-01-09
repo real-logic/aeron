@@ -136,9 +136,9 @@ public class ClusterTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            cluster.node(0).terminationExpected(true);
-            cluster.node(1).terminationExpected(true);
-            cluster.node(2).terminationExpected(true);
+            cluster.node(0).isTerminationExpected(true);
+            cluster.node(1).isTerminationExpected(true);
+            cluster.node(2).isTerminationExpected(true);
 
             cluster.shutdownCluster(leader);
             cluster.awaitNodeTerminations();
@@ -170,9 +170,9 @@ public class ClusterTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            cluster.node(0).terminationExpected(true);
-            cluster.node(1).terminationExpected(true);
-            cluster.node(2).terminationExpected(true);
+            cluster.node(0).isTerminationExpected(true);
+            cluster.node(1).isTerminationExpected(true);
+            cluster.node(2).isTerminationExpected(true);
 
             cluster.abortCluster(leader);
             cluster.awaitNodeTerminations();
@@ -211,8 +211,8 @@ public class ClusterTest
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
 
-            leader.terminationExpected(true);
-            followerA.terminationExpected(true);
+            leader.isTerminationExpected(true);
+            followerA.isTerminationExpected(true);
 
             cluster.stopNode(followerB);
 
@@ -768,7 +768,7 @@ public class ClusterTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            leader.terminationExpected(true);
+            leader.isTerminationExpected(true);
             leader.container().close();
 
             while (!leader.hasMemberTerminated())
@@ -913,9 +913,9 @@ public class ClusterTest
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
 
-            leader.terminationExpected(true);
-            followerA.terminationExpected(true);
-            followerB.terminationExpected(true);
+            leader.isTerminationExpected(true);
+            followerA.isTerminationExpected(true);
+            followerB.isTerminationExpected(true);
 
             cluster.shutdownCluster(leader);
             cluster.awaitNodeTerminations();

@@ -163,9 +163,9 @@ public class ClusterBackupTest
             cluster.awaitResponseMessageCount(messageCount);
             cluster.awaitServicesMessageCount(messageCount);
 
-            cluster.node(0).terminationExpected(true);
-            cluster.node(1).terminationExpected(true);
-            cluster.node(2).terminationExpected(true);
+            cluster.node(0).isTerminationExpected(true);
+            cluster.node(1).isTerminationExpected(true);
+            cluster.node(2).isTerminationExpected(true);
 
             cluster.shutdownCluster(leader);
 

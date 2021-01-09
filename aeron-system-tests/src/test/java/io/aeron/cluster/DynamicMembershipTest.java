@@ -247,7 +247,7 @@ public class DynamicMembershipTest
             final TestNode leader = cluster.awaitLeader();
             final TestNode follower = cluster.followers().get(0);
 
-            follower.terminationExpected(true);
+            follower.isTerminationExpected(true);
             leader.removeMember(follower.index(), false);
 
             cluster.awaitNodeTermination(follower);
@@ -272,7 +272,7 @@ public class DynamicMembershipTest
         {
             final TestNode initialLeader = cluster.awaitLeader();
 
-            initialLeader.terminationExpected(true);
+            initialLeader.isTerminationExpected(true);
             initialLeader.removeMember(initialLeader.index(), false);
 
             cluster.awaitNodeTermination(initialLeader);
@@ -304,7 +304,7 @@ public class DynamicMembershipTest
             awaitElectionClosed(dynamicMember);
             awaitMembershipSize(initialLeader, 4);
 
-            initialLeader.terminationExpected(true);
+            initialLeader.isTerminationExpected(true);
             initialLeader.removeMember(initialLeader.index(), false);
 
             cluster.awaitNodeTermination(initialLeader);
@@ -337,7 +337,7 @@ public class DynamicMembershipTest
             awaitMembershipSize(initialLeader, 4);
 
             final int initialLeaderIndex = initialLeader.index();
-            initialLeader.terminationExpected(true);
+            initialLeader.isTerminationExpected(true);
             initialLeader.removeMember(initialLeaderIndex, false);
 
             cluster.awaitNodeTermination(initialLeader);

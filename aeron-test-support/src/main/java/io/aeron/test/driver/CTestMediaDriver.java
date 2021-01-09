@@ -95,8 +95,8 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     public CountersReader counters()
     {
-        final Aeron.Context context =
-            new Aeron.Context().aeronDirectoryName(this.context.aeronDirectoryName()).conclude();
+        final Aeron.Context context = new Aeron.Context()
+            .aeronDirectoryName(this.context.aeronDirectoryName()).conclude();
         return new CountersReader(context.countersMetaDataBuffer(), context.countersValuesBuffer());
     }
 

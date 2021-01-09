@@ -64,12 +64,12 @@ public class TestNode implements AutoCloseable
             mediaDriver.aeronDirectoryName(),
             context.archiveContext,
             context.consensusModuleContext.terminationHook(ClusterTests.dynamicTerminationHook(
-                context.terminationExpected, context.memberWasTerminated)));
+                context.isTerminationExpected, context.hasMemberTerminated)));
 
         container = ClusteredServiceContainer.launch(
             context.serviceContainerContext
                 .terminationHook(ClusterTests.dynamicTerminationHook(
-                    context.terminationExpected, context.serviceWasTerminated)));
+                    context.isTerminationExpected, context.hasServiceTerminated)));
 
         service = context.service;
         this.context = context;
@@ -244,19 +244,19 @@ public class TestNode implements AutoCloseable
         return role() == Cluster.Role.FOLLOWER;
     }
 
-    public void terminationExpected(final boolean terminationExpected)
+    public void isTerminationExpected(final boolean isTerminationExpected)
     {
-        context.terminationExpected.set(terminationExpected);
+        context.isTerminationExpected.set(isTerminationExpected);
     }
 
     boolean hasServiceTerminated()
     {
-        return context.serviceWasTerminated.get();
+        return context.hasServiceTerminated.get();
     }
 
     public boolean hasMemberTerminated()
     {
-        return context.memberWasTerminated.get();
+        return context.hasMemberTerminated.get();
     }
 
     public int index()
@@ -497,9 +497,9 @@ public class TestNode implements AutoCloseable
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context();
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context();
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context();
-        final AtomicBoolean terminationExpected = new AtomicBoolean(false);
-        final AtomicBoolean memberWasTerminated = new AtomicBoolean(false);
-        final AtomicBoolean serviceWasTerminated = new AtomicBoolean(false);
+        final AtomicBoolean isTerminationExpected = new AtomicBoolean();
+        final AtomicBoolean hasMemberTerminated = new AtomicBoolean();
+        final AtomicBoolean hasServiceTerminated = new AtomicBoolean();
         final TestService service;
 
         Context(final TestService service)

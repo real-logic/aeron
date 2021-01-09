@@ -9,27 +9,84 @@ import org.agrona.concurrent.status.AtomicCounter;
  */
 public enum ElectionState
 {
+    /**
+     * Consolidate local state and prepare for new leadership.
+     */
     INIT(0),
+
+    /**
+     * Canvass members to assess if a successful leadership attempt can be mounted.
+     */
     CANVASS(1),
 
+    /**
+     * Nominate member for new leadership by requesting votes.
+     */
     NOMINATE(2),
+
+    /**
+     * Await ballot outcome from members on candidacy for leadership.
+     */
     CANDIDATE_BALLOT(3),
+
+    /**
+     * Await ballot outcome after voting for a candidate.
+     */
     FOLLOWER_BALLOT(4),
 
+    /**
+     * Replay local appended log in preparation for new leadership term.
+     */
     LEADER_REPLAY(5),
-    LEADER_TRANSITION(6),
+
+    /**
+     * Initialise state for new leadership term.
+     */
+    LEADER_INIT(6),
+
+    /**
+     * Publish new leadership term and await followers ready.
+     */
     LEADER_READY(7),
 
+    /**
+     * Replay local appended log in preparation for following new leader.
+     */
     FOLLOWER_REPLAY(8),
 
-    FOLLOWER_CATCHUP_TRANSITION(9),
-    FOLLOWER_CATCHUP_JOIN(10),
+    /**
+     * Initialise catch-up in preparation of receiving a replay from the leader to catch up.
+     */
+    FOLLOWER_CATCHUP_INIT(9),
+
+    /**
+     * Await joining a replay from leader to catch-up.
+     */
+    FOLLOWER_CATCHUP_AWAIT(10),
+
+    /**
+     * Catch-up to leader until live log position is reached.
+     */
     FOLLOWER_CATCHUP(11),
 
-    FOLLOWER_TRANSITION(12),
-    FOLLOWER_JOIN(13),
+    /**
+     * Initialise follower in preparation for joining the live log.
+     */
+    FOLLOWER_LOG_INIT(12),
+
+    /**
+     * Await joining the live log from the leader.
+     */
+    FOLLOWER_LOG_AWAIT(13),
+
+    /**
+     * Publish append position to leader to signify ready for new term.
+     */
     FOLLOWER_READY(14),
 
+    /**
+     * Election is closed after new leader is established.
+     */
     CLOSED(15);
 
     static final ElectionState[] STATES = values();

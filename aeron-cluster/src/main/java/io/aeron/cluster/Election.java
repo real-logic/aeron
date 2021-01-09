@@ -143,8 +143,8 @@ class Election
                     workCount += leaderReplay(nowNs);
                     break;
 
-                case LEADER_TRANSITION:
-                    workCount += leaderTransition(nowNs);
+                case LEADER_INIT:
+                    workCount += leaderInit(nowNs);
                     break;
 
                 case LEADER_READY:
@@ -155,24 +155,24 @@ class Election
                     workCount += followerReplay(nowNs);
                     break;
 
-                case FOLLOWER_CATCHUP_TRANSITION:
-                    workCount += followerCatchupTransition(nowNs);
+                case FOLLOWER_CATCHUP_INIT:
+                    workCount += followerCatchupInit(nowNs);
                     break;
 
-                case FOLLOWER_CATCHUP_JOIN:
-                    workCount += followerCatchupJoin(nowNs);
+                case FOLLOWER_CATCHUP_AWAIT:
+                    workCount += followerCatchupAwait(nowNs);
                     break;
 
                 case FOLLOWER_CATCHUP:
                     workCount += followerCatchup(nowNs);
                     break;
 
-                case FOLLOWER_TRANSITION:
-                    workCount += followerTransition(nowNs);
+                case FOLLOWER_LOG_INIT:
+                    workCount += followerLogInit(nowNs);
                     break;
 
-                case FOLLOWER_JOIN:
-                    workCount += followerJoin(nowNs);
+                case FOLLOWER_LOG_AWAIT:
+                    workCount += followerLogAwait(nowNs);
                     break;
 
                 case FOLLOWER_READY:
@@ -236,7 +236,7 @@ class Election
                     logSessionId,
                     isLeaderStartup);
             }
-            else if ((LEADER_TRANSITION == state || LEADER_REPLAY == state) && logLeadershipTermId < leadershipTermId)
+            else if ((LEADER_INIT == state || LEADER_REPLAY == state) && logLeadershipTermId < leadershipTermId)
             {
                 final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
                 consensusPublisher.newLeadershipTerm(
@@ -568,7 +568,7 @@ class Election
             }
             else
             {
-                state(LEADER_TRANSITION, nowNs);
+                state(LEADER_INIT, nowNs);
             }
 
             workCount += 1;
@@ -584,7 +584,7 @@ class Election
             {
                 cleanupReplay();
                 logPosition = appendPosition;
-                state(LEADER_TRANSITION, nowNs);
+                state(LEADER_INIT, nowNs);
             }
         }
 
@@ -593,7 +593,7 @@ class Election
         return workCount;
     }
 
-    private int leaderTransition(final long nowNs)
+    private int leaderInit(final long nowNs)
     {
         consensusModuleAgent.becomeLeader(leadershipTermId, logPosition, logSessionId, isLeaderStartup);
         updateRecordingLog(nowNs);
@@ -632,7 +632,7 @@ class Election
             }
             else
             {
-                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_TRANSITION : FOLLOWER_TRANSITION, nowNs);
+                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
             }
         }
         else
@@ -642,14 +642,14 @@ class Election
             {
                 cleanupReplay();
                 logPosition = appendPosition;
-                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_TRANSITION : FOLLOWER_TRANSITION, nowNs);
+                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
             }
         }
 
         return workCount;
     }
 
-    private int followerCatchupTransition(final long nowNs)
+    private int followerCatchupInit(final long nowNs)
     {
         if (null == logSubscription)
         {
@@ -661,13 +661,13 @@ class Election
         {
             timeOfLastUpdateNs = nowNs;
             consensusModuleAgent.catchupInitiated(nowNs);
-            state(FOLLOWER_CATCHUP_JOIN, nowNs);
+            state(FOLLOWER_CATCHUP_AWAIT, nowNs);
         }
 
         return 1;
     }
 
-    private int followerCatchupJoin(final long nowNs)
+    private int followerCatchupAwait(final long nowNs)
     {
         int workCount = 0;
 
@@ -713,20 +713,20 @@ class Election
             appendPosition = catchupPosition;
             timeOfLastUpdateNs = 0;
             updateRecordingLog(nowNs);
-            state(FOLLOWER_TRANSITION, nowNs);
+            state(FOLLOWER_LOG_INIT, nowNs);
             workCount += 1;
         }
 
         return workCount;
     }
 
-    private int followerTransition(final long nowNs)
+    private int followerLogInit(final long nowNs)
     {
         if (null == logSubscription)
         {
             logSubscription = addFollowerSubscription();
             addLiveLogDestination();
-            state(FOLLOWER_JOIN, nowNs);
+            state(FOLLOWER_LOG_AWAIT, nowNs);
         }
         else
         {
@@ -738,7 +738,7 @@ class Election
         return 1;
     }
 
-    private int followerJoin(final long nowNs)
+    private int followerLogAwait(final long nowNs)
     {
         int workCount = 0;
 
@@ -887,10 +887,10 @@ class Election
                 case CANVASS:
                 case NOMINATE:
                 case FOLLOWER_BALLOT:
-                case FOLLOWER_CATCHUP_TRANSITION:
+                case FOLLOWER_CATCHUP_INIT:
                 case FOLLOWER_CATCHUP:
                 case FOLLOWER_REPLAY:
-                case FOLLOWER_TRANSITION:
+                case FOLLOWER_LOG_INIT:
                 case FOLLOWER_READY:
                     consensusModuleAgent.role(Cluster.Role.FOLLOWER);
                     break;
@@ -899,7 +899,7 @@ class Election
                     consensusModuleAgent.role(Cluster.Role.CANDIDATE);
                     break;
 
-                case LEADER_TRANSITION:
+                case LEADER_INIT:
                 case LEADER_READY:
                     consensusModuleAgent.role(Cluster.Role.LEADER);
                     break;

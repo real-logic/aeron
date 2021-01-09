@@ -228,11 +228,11 @@ public class ElectionTest
 
         final long t3 = 3;
         election.doWork(t3);
-        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_TRANSITION.code());
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_INIT.code());
 
         final long t4 = 4;
         election.doWork(t4);
-        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_JOIN.code());
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_AWAIT.code());
 
         final long t5 = 5;
         election.doWork(t5);

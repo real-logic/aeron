@@ -112,7 +112,7 @@ public class ClusterTests
         {
             if (null != warning)
             {
-                System.err.println("*** Warning captured before error ***");
+                System.err.println("*** Warning captured with error ***");
                 warning.printStackTrace();
             }
 

@@ -118,6 +118,12 @@ public class ClusterTests
 
             LangUtil.rethrowUnchecked(error);
         }
+
+        if (Thread.currentThread().isInterrupted() && null != warning)
+        {
+            System.err.println("*** Warning captured with interrupt ***");
+            warning.printStackTrace();
+        }
     }
 
     public static Thread startMessageThread(final TestCluster cluster, final long backoffIntervalNs)

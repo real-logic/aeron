@@ -15,11 +15,8 @@
  */
 package io.aeron.test.cluster;
 
-import io.aeron.Counter;
-import io.aeron.cluster.ElectionState;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.exceptions.AeronException;
-import io.aeron.test.Tests;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
@@ -41,7 +38,8 @@ public class ClusterTests
     public static final String UNEXPECTED_MSG =
         "Should never get this message because it is not going to be committed!";
 
-    private static final AtomicReference<Throwable> CLUSTER_ERROR = new AtomicReference<>();
+    private static final AtomicReference<Throwable> ERROR = new AtomicReference<>();
+    private static final AtomicReference<Throwable> WARNING = new AtomicReference<>();
 
     public static final Runnable TERMINATION_HOOK =
         () ->
@@ -71,15 +69,10 @@ public class ClusterTests
         return
             (ex) ->
             {
-                if (ex instanceof AeronException)
+                if (ex instanceof AeronException && ((AeronException)ex).category() == AeronException.Category.WARN)
                 {
-                    if (((AeronException)ex).category() == AeronException.Category.WARN)
-                    {
-                        // final String message = ex.getMessage();
-                        // final String name = ex.getClass().getName();
-                        // System.err.println("Warning in node " + memberId + " " + name + " : " + message);
-                        return;
-                    }
+                    WARNING.set(ex);
+                    return;
                 }
 
                 if (ex instanceof AgentTerminationException)
@@ -99,10 +92,10 @@ public class ClusterTests
 
     public static void addError(final Throwable ex)
     {
-        final Throwable error = CLUSTER_ERROR.get();
+        final Throwable error = ERROR.get();
         if (null == error)
         {
-            CLUSTER_ERROR.set(ex);
+            ERROR.set(ex);
         }
         else if (error != ex)
         {
@@ -112,18 +105,18 @@ public class ClusterTests
 
     public static void failOnClusterError()
     {
-        final Throwable error = CLUSTER_ERROR.getAndSet(null);
+        final Throwable error = ERROR.getAndSet(null);
+        final Throwable warning = WARNING.getAndSet(null);
+
         if (null != error)
         {
-            LangUtil.rethrowUnchecked(error);
-        }
-    }
+            if (null != warning)
+            {
+                System.err.println("*** Warning captured before error ***");
+                warning.printStackTrace();
+            }
 
-    public static void awaitElectionState(final Counter electionStateCounter, final ElectionState state)
-    {
-        while (ElectionState.get(electionStateCounter) != state)
-        {
-            Tests.yield();
+            LangUtil.rethrowUnchecked(error);
         }
     }
 

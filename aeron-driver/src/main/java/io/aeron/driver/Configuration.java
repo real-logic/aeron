@@ -669,7 +669,7 @@ public class Configuration
      * Default value for the receiver timeout used to determine if the receiver should still be monitored for
      * flow control purposes.
      */
-    public static final long FLOW_CONTROL_RECEIVER_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(2);
+    public static final long FLOW_CONTROL_RECEIVER_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
      * Property name for flow control timeout after which with no status messages the receiver is consider gone.

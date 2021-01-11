@@ -190,10 +190,7 @@ public class MinFlowControlSystemTest
         }
 
         verify(fragmentHandlerB, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+            any(DirectBuffer.class), anyInt(), eq(MESSAGE_LENGTH), any(Header.class));
     }
 
     @Test
@@ -245,10 +242,7 @@ public class MinFlowControlSystemTest
         }
 
         verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+            any(DirectBuffer.class), anyInt(), eq(MESSAGE_LENGTH), any(Header.class));
     }
 
     @SuppressWarnings("methodlength")

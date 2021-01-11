@@ -296,7 +296,7 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_RECEIVER_GROUP_TAG_VALUE_DEFAULT (-1)
 #define AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT (-1)
 #define AERON_FLOW_CONTROL_GROUP_MIN_SIZE_DEFAULT (0)
-#define AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT (2 * 1000 * 1000 * 1000LL)
+#define AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
 #define AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT (4)
 #define AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT (200 * 1000 * 1000LL)
 #define AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_max_multicast_flow_control_strategy_supplier")
@@ -2031,8 +2031,7 @@ uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver
     return NULL != context ? context->counter_free_to_reuse_ns : AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_NS_DEFAULT;
 }
 
-int aeron_driver_context_set_flow_control_receiver_timeout_ns(
-    aeron_driver_context_t *context,  uint64_t value)
+int aeron_driver_context_set_flow_control_receiver_timeout_ns(aeron_driver_context_t *context,  uint64_t value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
@@ -2042,8 +2041,7 @@ int aeron_driver_context_set_flow_control_receiver_timeout_ns(
 
 uint64_t aeron_driver_context_get_flow_control_receiver_timeout_ns(aeron_driver_context_t *context)
 {
-    return NULL != context ?
-        context->flow_control.receiver_timeout_ns : AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT;
+    return NULL != context ? context->flow_control.receiver_timeout_ns : AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT;
 }
 
 int aeron_driver_context_set_flow_control_group_tag(aeron_driver_context_t *context, int64_t value)

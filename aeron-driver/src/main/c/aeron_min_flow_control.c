@@ -146,9 +146,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
     {
         int ensure_capacity_result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(
-            ensure_capacity_result,
-            strategy_state->receivers,
-            aeron_min_flow_control_strategy_receiver_t);
+            ensure_capacity_result,strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t);
 
         if (ensure_capacity_result >= 0)
         {
@@ -173,7 +171,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
     {
         return snd_lmt;
     }
-    else if (strategy_state->receivers.length == 0)
+    else if (0 == strategy_state->receivers.length)
     {
         return snd_lmt > position_plus_window ? snd_lmt : position_plus_window;
     }
@@ -302,8 +300,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
         options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
     state->group_min_size = options.group_min_size.is_present ?
         options.group_min_size.value : context->flow_control.group_min_size;
-    state->group_tag = options.group_tag.is_present ?
-        options.group_tag.value : context->flow_control.group_tag;
+    state->group_tag = options.group_tag.is_present ? options.group_tag.value : context->flow_control.group_tag;
 
     state->error_log = context->error_log;
 

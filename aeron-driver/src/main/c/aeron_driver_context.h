@@ -125,7 +125,7 @@ typedef struct aeron_driver_context_stct
     struct
     {
         int32_t group_min_size;                             /* aeron.flow.control.receiver.group.min.size = 0 */
-        uint64_t receiver_timeout_ns;                       /* aeron.flow.control.receiver.timeout = 2s */
+        uint64_t receiver_timeout_ns;                       /* aeron.flow.control.receiver.timeout = 5s */
         int64_t group_tag;                                  /* aeron.flow.control.gtag = -1 */
     }
     flow_control;

@@ -26,6 +26,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.nio.TransportPoller;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -40,7 +41,7 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 /**
  * Encapsulates the polling of control {@link UdpChannelTransport}s using whatever means provides the lowest latency.
  */
-public class ControlTransportPoller extends UdpTransportPoller
+public final class ControlTransportPoller extends UdpTransportPoller
 {
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
         Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
@@ -50,6 +51,11 @@ public class ControlTransportPoller extends UdpTransportPoller
     private final RttMeasurementFlyweight rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
     private SendChannelEndpoint[] transports = new SendChannelEndpoint[0];
 
+    /**
+     * Construct a new {@link TransportPoller} with an {@link ErrorHandler} for logging.
+     *
+     * @param errorHandler which can be used to log errors and continue.
+     */
     public ControlTransportPoller(final ErrorHandler errorHandler)
     {
         super(errorHandler);
@@ -100,6 +106,12 @@ public class ControlTransportPoller extends UdpTransportPoller
         return registerForRead((SendChannelEndpoint)transport);
     }
 
+    /**
+     * Register a new transport to read for control messages.
+     *
+     * @param transport to register.
+     * @return {@link SelectionKey} for registration to cancel.
+     */
     public SelectionKey registerForRead(final SendChannelEndpoint transport)
     {
         SelectionKey key = null;
@@ -121,11 +133,22 @@ public class ControlTransportPoller extends UdpTransportPoller
         cancelRead((SendChannelEndpoint)transport);
     }
 
+    /**
+     * Cancel a previous read registration.
+     *
+     * @param transport to be cancelled and removed.
+     */
     public void cancelRead(final SendChannelEndpoint transport)
     {
         transports = ArrayUtil.remove(transports, transport);
     }
 
+    /**
+     * Check if any of the registered channels require re-resolution.
+     *
+     * @param nowNs          as the current time.
+     * @param conductorProxy for sending re-resolution requests.
+     */
     public void checkForReResolutions(final long nowNs, final DriverConductorProxy conductorProxy)
     {
         for (final SendChannelEndpoint transport : transports)

@@ -25,8 +25,16 @@ import java.nio.channels.SelectionKey;
  */
 public abstract class UdpTransportPoller extends TransportPoller
 {
+    /**
+     * {@link ErrorHandler} which can be used to log errors and continue.
+     */
     protected final ErrorHandler errorHandler;
 
+    /**
+     * Construct a new {@link TransportPoller} with an {@link ErrorHandler} for logging.
+     *
+     * @param errorHandler which can be used to log errors and continue.
+     */
     public UdpTransportPoller(final ErrorHandler errorHandler)
     {
         this.errorHandler = errorHandler;
@@ -42,8 +50,8 @@ public abstract class UdpTransportPoller extends TransportPoller
     /**
      * Register channel for read.
      *
-     * @param transport to associate with read
-     * @return SelectionKey for registration for cancel
+     * @param transport to associate with read.
+     * @return {@link SelectionKey} for registration to cancel.
      */
     public abstract SelectionKey registerForRead(UdpChannelTransport transport);
 

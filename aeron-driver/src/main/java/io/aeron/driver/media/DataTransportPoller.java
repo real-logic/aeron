@@ -26,6 +26,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.nio.TransportPoller;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -40,7 +41,7 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 /**
  * Encapsulates the polling of data {@link UdpChannelTransport}s using whatever means provides the lowest latency.
  */
-public class DataTransportPoller extends UdpTransportPoller
+public final class DataTransportPoller extends UdpTransportPoller
 {
     private static final ChannelAndTransport[] EMPTY_TRANSPORTS = new ChannelAndTransport[0];
 
@@ -52,6 +53,11 @@ public class DataTransportPoller extends UdpTransportPoller
     private final RttMeasurementFlyweight rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
     private ChannelAndTransport[] channelAndTransports = EMPTY_TRANSPORTS;
 
+    /**
+     * Construct a new {@link TransportPoller} with an {@link ErrorHandler} for logging.
+     *
+     * @param errorHandler which can be used to log errors and continue.
+     */
     public DataTransportPoller(final ErrorHandler errorHandler)
     {
         super(errorHandler);
@@ -107,6 +113,14 @@ public class DataTransportPoller extends UdpTransportPoller
         return registerForRead((ReceiveChannelEndpoint)transport, transport, 0);
     }
 
+    /**
+     * Register a new transport to be read.
+     *
+     * @param channelEndpoint to which the transport belongs.
+     * @param transport       new transport to be registered.
+     * @param transportIndex for the transport in the channel.
+     * @return {@link SelectionKey} for registration to cancel.
+     */
     public SelectionKey registerForRead(
         final ReceiveChannelEndpoint channelEndpoint, final UdpChannelTransport transport, final int transportIndex)
     {
@@ -132,6 +146,12 @@ public class DataTransportPoller extends UdpTransportPoller
         cancelRead((ReceiveChannelEndpoint)transport, transport);
     }
 
+    /**
+     * Cancel the reading of a given transport.
+     *
+     * @param channelEndpoint to which the transport belongs.
+     * @param transport       transport which was previously registered.
+     */
     public void cancelRead(final ReceiveChannelEndpoint channelEndpoint, final UdpChannelTransport transport)
     {
         final ChannelAndTransport[] transports = channelAndTransports;
@@ -152,6 +172,12 @@ public class DataTransportPoller extends UdpTransportPoller
         }
     }
 
+    /**
+     * Check if any of the registered channels or transports require re-resolution.
+     *
+     * @param nowNs          as the current time.
+     * @param conductorProxy for sending re-resolution requests.
+     */
     public void checkForReResolutions(final long nowNs, final DriverConductorProxy conductorProxy)
     {
         for (final ChannelAndTransport channelAndTransport : channelAndTransports)

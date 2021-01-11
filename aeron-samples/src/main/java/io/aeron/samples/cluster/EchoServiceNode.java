@@ -94,6 +94,13 @@ public class EchoServiceNode
             .build();
     }
 
+    /**
+     * String representing the cluster members configuration which can be used for
+     * {@link io.aeron.cluster.ClusterMember#parse(String)}.
+     *
+     * @param hostnames of the cluster members.
+     * @return the String which can be used for {@link io.aeron.cluster.ClusterMember#parse(String)}.
+     */
     public static String clusterMembers(final List<String> hostnames)
     {
         final StringBuilder sb = new StringBuilder();
@@ -165,7 +172,7 @@ public class EchoServiceNode
             .errorHandler(errorHandler("Consensus Module"))
             .clusterMemberId(nodeId)                                                                     // <1>
             .clusterMembers(clusterMembers(Arrays.asList(hostnames)))                                    // <2>
-            .clusterDir(new File(baseDir, "consensus-module"))                                           // <3>
+            .clusterDir(new File(baseDir, "consensus-module"))                                     // <3>
             .archiveContext(aeronArchiveContext.clone());                                                // <6>
         // end::consensus_module[]
 

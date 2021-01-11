@@ -46,57 +46,57 @@ class PendingSetupMessageFromSource
         this.controlAddress = controlAddress;
     }
 
-    public int sessionId()
+    int sessionId()
     {
         return sessionId;
     }
 
-    public int streamId()
+    int streamId()
     {
         return streamId;
     }
 
-    public int transportIndex()
+    int transportIndex()
     {
         return transportIndex;
     }
 
-    public ReceiveChannelEndpoint channelEndpoint()
+    ReceiveChannelEndpoint channelEndpoint()
     {
         return channelEndpoint;
     }
 
-    public boolean isPeriodic()
+    boolean isPeriodic()
     {
         return periodic;
     }
 
-    public boolean shouldElicitSetupMessage()
+    boolean shouldElicitSetupMessage()
     {
         return channelEndpoint.shouldElicitSetupMessage();
     }
 
-    public void controlAddress(final InetSocketAddress newControlAddress)
+    void controlAddress(final InetSocketAddress newControlAddress)
     {
         this.controlAddress = newControlAddress;
     }
 
-    public InetSocketAddress controlAddress()
+    InetSocketAddress controlAddress()
     {
         return controlAddress;
     }
 
-    public long timeOfStatusMessageNs()
+    long timeOfStatusMessageNs()
     {
         return timeOfStatusMessageNs;
     }
 
-    public void timeOfStatusMessageNs(final long nowNs)
+    void timeOfStatusMessageNs(final long nowNs)
     {
         timeOfStatusMessageNs = nowNs;
     }
 
-    public void removeFromDataPacketDispatcher()
+    void removeFromDataPacketDispatcher()
     {
         channelEndpoint.removePendingSetup(sessionId, streamId);
     }

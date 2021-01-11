@@ -89,7 +89,7 @@ class PublicationImagePadding3 extends PublicationImageReceiverFields
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class PublicationImage
+public final class PublicationImage
     extends PublicationImagePadding3
     implements LossHandler, DriverManagedResource, Subscribable
 {
@@ -474,7 +474,7 @@ public class PublicationImage
         trackConnection(transportIndex, remoteAddress, cachedNanoClock.nanoTime());
     }
 
-    final int trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
+    int trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
     {
         int workCount = 0;
 

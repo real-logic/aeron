@@ -96,7 +96,7 @@ class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
 /**
  * Publication to be sent to connected subscribers.
  */
-public class NetworkPublication
+public final class NetworkPublication
     extends NetworkPublicationPadding3
     implements RetransmitSender, DriverManagedResource, Subscribable
 {
@@ -303,6 +303,9 @@ public class NetworkPublication
         return streamId;
     }
 
+    /**
+     * Trigger the sending of a SETUP frame so a connection can be established.
+     */
     public void triggerSendSetupFrame()
     {
         if (!isEndOfStream)
@@ -348,11 +351,24 @@ public class NetworkPublication
         }
     }
 
+    /**
+     * Process a NAK message so a retransmit can occur.
+     *
+     * @param termId     in which the loss occurred.
+     * @param termOffset at which the loss begins.
+     * @param length     of the loss.
+     */
     public void onNak(final int termId, final int termOffset, final int length)
     {
         retransmitHandler.onNak(termId, termOffset, length, termBufferLength, this);
     }
 
+    /**
+     * Process a status message to track connectivity and apply flow control.
+     *
+     * @param msg        flyweight over the network packet.
+     * @param srcAddress that the setup message has come from.
+     */
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
         if (!hasReceivers)
@@ -378,6 +394,12 @@ public class NetworkPublication
         }
     }
 
+    /**
+     * Process a RTT (Round Trip Timing) message from a receiver.
+     *
+     * @param msg        flyweight over the network packet.
+     * @param srcAddress that the RTT message has come from.
+     */
     public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
     {
         if (RttMeasurementFlyweight.REPLY_FLAG == (msg.flags() & RttMeasurementFlyweight.REPLY_FLAG))
@@ -444,7 +466,7 @@ public class NetworkPublication
         }
     }
 
-    final int send(final long nowNs)
+    int send(final long nowNs)
     {
         final long senderPosition = this.senderPosition.get();
         final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
@@ -535,7 +557,7 @@ public class NetworkPublication
      *
      * @return 1 if the limit has been updated otherwise 0.
      */
-    final int updatePublisherLimit()
+    int updatePublisherLimit()
     {
         int workCount = 0;
 
@@ -575,7 +597,7 @@ public class NetworkPublication
         return hasSpies;
     }
 
-    final void updateHasReceivers(final long timeNs)
+    void updateHasReceivers(final long timeNs)
     {
         if (((timeOfLastStatusMessageNs + connectionTimeoutNs) - timeNs < 0) && hasReceivers)
         {
@@ -918,7 +940,7 @@ public class NetworkPublication
         ++refCount;
     }
 
-    final State state()
+    State state()
     {
         return state;
     }

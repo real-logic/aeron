@@ -33,7 +33,7 @@ import static io.aeron.driver.DataPacketDispatcher.SessionState.*;
  * <p>
  * All methods should be called from the {@link Receiver} thread.
  */
-public class DataPacketDispatcher
+public final class DataPacketDispatcher
 {
     enum SessionState
     {
@@ -71,12 +71,17 @@ public class DataPacketDispatcher
     private final DriverConductorProxy conductorProxy;
     private final Receiver receiver;
 
-    public DataPacketDispatcher(final DriverConductorProxy conductorProxy, final Receiver receiver)
+    DataPacketDispatcher(final DriverConductorProxy conductorProxy, final Receiver receiver)
     {
         this.conductorProxy = conductorProxy;
         this.receiver = receiver;
     }
 
+    /**
+     * Add a subscription to a channel for a given stream id and wildcard session id.
+     *
+     * @param streamId to capture within a channel.
+     */
     public void addSubscription(final int streamId)
     {
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
@@ -103,6 +108,12 @@ public class DataPacketDispatcher
         }
     }
 
+    /**
+     * Add a subscription to a channel for given stream and session ids.
+     *
+     * @param streamId  to capture within a channel.
+     * @param sessionId to capture within a stream id.
+     */
     public void addSubscription(final int streamId, final int sessionId)
     {
         StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
@@ -121,6 +132,11 @@ public class DataPacketDispatcher
         }
     }
 
+    /**
+     * Remove a subscription for a previously registered given stream id and wildcard session id.
+     *
+     * @param streamId to remove the capture for.
+     */
     public void removeSubscription(final int streamId)
     {
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
@@ -157,6 +173,12 @@ public class DataPacketDispatcher
         }
     }
 
+    /**
+     * Remove a subscription for a previously registered given stream id and session id.
+     *
+     * @param streamId  to remove the capture for.
+     * @param sessionId within the given stream id.
+     */
     public void removeSubscription(final int streamId, final int sessionId)
     {
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
@@ -182,6 +204,11 @@ public class DataPacketDispatcher
         }
     }
 
+    /**
+     * Add a {@link PublicationImage} to dispatch packets to.
+     *
+     * @param image to which the packets are dispatched.
+     */
     public void addPublicationImage(final PublicationImage image)
     {
         final StreamInterest streamInterest = streamInterestByIdMap.get(image.streamId());
@@ -201,6 +228,11 @@ public class DataPacketDispatcher
         image.activate();
     }
 
+    /**
+     * Remove a previously added {@link PublicationImage} so packets are not longer dispatched to it.
+     *
+     * @param image to which the packets are dispatched.
+     */
     public void removePublicationImage(final PublicationImage image)
     {
         final StreamInterest streamInterest = streamInterestByIdMap.get(image.streamId());
@@ -220,6 +252,12 @@ public class DataPacketDispatcher
         image.deactivate();
     }
 
+    /**
+     * Remove a pending setup message action once it has been handled.
+     *
+     * @param sessionId of the registered interest.
+     * @param streamId  of the registered interest.
+     */
     public void removePendingSetup(final int sessionId, final int streamId)
     {
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
@@ -233,6 +271,12 @@ public class DataPacketDispatcher
         }
     }
 
+    /**
+     * Remove a cool down action once it has expired
+     *
+     * @param sessionId of the registered interest.
+     * @param streamId  of the registered interest.
+     */
     public void removeCoolDown(final int sessionId, final int streamId)
     {
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
@@ -246,6 +290,17 @@ public class DataPacketDispatcher
         }
     }
 
+    /**
+     * Dispatch a data packet to the registered interest.
+     *
+     * @param channelEndpoint on which the packet was received.
+     * @param header          of the data first frame.
+     * @param buffer          containing the data packet.
+     * @param length          of the data packet.
+     * @param srcAddress      from which the data packet was received.
+     * @param transportIndex  on which the packet was received.
+     * @return number of bytes applied as a result of this action.
+     */
     public int onDataPacket(
         final ReceiveChannelEndpoint channelEndpoint,
         final DataHeaderFlyweight header,
@@ -287,18 +342,26 @@ public class DataPacketDispatcher
         return 0;
     }
 
+    /**
+     * Dispatch a setup message to registered interest.
+     *
+     * @param channelEndpoint of reception.
+     * @param msg             flyweight over the network packet.
+     * @param srcAddress      the message came from.
+     * @param transportIndex  on which the message was received.
+     */
     public void onSetupMessage(
         final ReceiveChannelEndpoint channelEndpoint,
-        final SetupFlyweight header,
+        final SetupFlyweight msg,
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
-        final int streamId = header.streamId();
+        final int streamId = msg.streamId();
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
 
         if (null != streamInterest)
         {
-            final int sessionId = header.sessionId();
+            final int sessionId = msg.sessionId();
             final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
             if (null != sessionInterest)
@@ -313,12 +376,12 @@ public class DataPacketDispatcher
                         srcAddress,
                         streamId,
                         sessionId,
-                        header.initialTermId(),
-                        header.activeTermId(),
-                        header.termOffset(),
-                        header.termLength(),
-                        header.mtuLength(),
-                        header.ttl());
+                        msg.initialTermId(),
+                        msg.activeTermId(),
+                        msg.termOffset(),
+                        msg.termLength(),
+                        msg.mtuLength(),
+                        msg.ttl());
                 }
                 else if (null != sessionInterest.image)
                 {
@@ -334,12 +397,12 @@ public class DataPacketDispatcher
                     srcAddress,
                     streamId,
                     sessionId,
-                    header.initialTermId(),
-                    header.activeTermId(),
-                    header.termOffset(),
-                    header.termLength(),
-                    header.mtuLength(),
-                    header.ttl());
+                    msg.initialTermId(),
+                    msg.activeTermId(),
+                    msg.termOffset(),
+                    msg.termLength(),
+                    msg.mtuLength(),
+                    msg.ttl());
             }
             else
             {
@@ -348,38 +411,51 @@ public class DataPacketDispatcher
         }
     }
 
+    /**
+     * Dispatch an RTT measurement message to registered interest.
+     *
+     * @param channelEndpoint of reception.
+     * @param msg             flyweight over the network packet.
+     * @param srcAddress      the message came from.
+     * @param transportIndex  on which the message was received.
+     */
     public void onRttMeasurement(
         final ReceiveChannelEndpoint channelEndpoint,
-        final RttMeasurementFlyweight header,
+        final RttMeasurementFlyweight msg,
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
-        final int streamId = header.streamId();
+        final int streamId = msg.streamId();
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
 
         if (null != streamInterest)
         {
-            final int sessionId = header.sessionId();
+            final int sessionId = msg.sessionId();
             final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
             if (null != sessionInterest && null != sessionInterest.image)
             {
-                if (RttMeasurementFlyweight.REPLY_FLAG == (header.flags() & RttMeasurementFlyweight.REPLY_FLAG))
+                if (RttMeasurementFlyweight.REPLY_FLAG == (msg.flags() & RttMeasurementFlyweight.REPLY_FLAG))
                 {
                     final InetSocketAddress controlAddress = channelEndpoint.isMulticast(transportIndex) ?
                         channelEndpoint.udpChannel(transportIndex).remoteControl() : srcAddress;
 
                     channelEndpoint.sendRttMeasurement(
-                        transportIndex, controlAddress, sessionId, streamId, header.echoTimestampNs(), 0, false);
+                        transportIndex, controlAddress, sessionId, streamId, msg.echoTimestampNs(), 0, false);
                 }
                 else
                 {
-                    sessionInterest.image.onRttMeasurement(header, transportIndex, srcAddress);
+                    sessionInterest.image.onRttMeasurement(msg, transportIndex, srcAddress);
                 }
             }
         }
     }
 
+    /**
+     * Should a setup message be elicited for a channel given interest.
+     *
+     * @return true if there is interest otherwise false.
+     */
     public boolean shouldElicitSetupMessage()
     {
         return !streamInterestByIdMap.isEmpty();

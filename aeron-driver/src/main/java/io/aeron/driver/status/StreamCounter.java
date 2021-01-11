@@ -100,6 +100,19 @@ public class StreamCounter
         return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);
     }
 
+    /**
+     * Allocate a counter id for tracking a position on a stream of messages.
+     *
+     * @param tempBuffer      to be used for labels and key.
+     * @param name            of the counter for the label.
+     * @param typeId          of the counter for classification.
+     * @param countersManager from which to allocated the underlying storage.
+     * @param registrationId  to be associated with the counter.
+     * @param sessionId       for the stream of messages.
+     * @param streamId        for the stream of messages.
+     * @param channel         for the stream of messages.
+     * @return the id of the allocated counter.
+     */
     public static int allocateCounterId(
         final MutableDirectBuffer tempBuffer,
         final String name,

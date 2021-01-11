@@ -245,7 +245,6 @@ public class MinFlowControlSystemTest
             any(DirectBuffer.class), anyInt(), eq(MESSAGE_LENGTH), any(Header.class));
     }
 
-    @SuppressWarnings("methodlength")
     @Test
     @Timeout(20)
     void shouldPreventConnectionUntilGroupMinSizeIsMet()
@@ -271,10 +270,8 @@ public class MinFlowControlSystemTest
         launch();
 
         final CountersReader countersReader = clientA.countersReader();
-
         TestMediaDriver driverC = null;
         Aeron clientC = null;
-
         Publication publication = null;
         Subscription subscription0 = null;
         Subscription subscription1 = null;
@@ -290,9 +287,7 @@ public class MinFlowControlSystemTest
                     .threadingMode(ThreadingMode.SHARED),
                 testWatcher);
 
-            clientC = Aeron.connect(
-                new Aeron.Context()
-                    .aeronDirectoryName(driverC.aeronDirectoryName()));
+            clientC = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverC.aeronDirectoryName()));
 
             subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
             subscription1 = clientB.addSubscription(uriPlain, STREAM_ID);

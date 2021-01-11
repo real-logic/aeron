@@ -36,6 +36,19 @@ public class SubscriberPos
      */
     public static final String NAME = "sub-pos";
 
+    /**
+     * Allocate a new subscriber position counter for a stream.
+     *
+     * @param tempBuffer      to build the label.
+     * @param countersManager to allocate the counter from.
+     * @param clientId        that owns the subscription.
+     * @param registrationId  associated with the counter.
+     * @param sessionId       associated with the counter.
+     * @param streamId        associated with the counter.
+     * @param channel         associated with the counter.
+     * @param joinPosition    for the stream.
+     * @return the allocated counter.
+     */
     public static UnsafeBufferPosition allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,

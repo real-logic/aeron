@@ -30,6 +30,15 @@ public class ReceiveLocalSocketAddress
      */
     public static final String NAME = "rcv-local-sockaddr";
 
+    /**
+     * Allocate a counter to represent a local socket address associated with a receive channel.
+     *
+     * @param tempBuffer      for building up the key and label.
+     * @param countersManager which will allocate the counter.
+     * @param registrationId  of the action the counter is associated with.
+     * @param channelStatusId with which the new counter is associated.
+     * @return the allocated counter.
+     */
     public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,

@@ -30,6 +30,15 @@ public class SendLocalSocketAddress
      */
     public static final String NAME = "snd-local-sockaddr";
 
+    /**
+     * Allocate a counter to represent a local socket address associated with a send channel.
+     *
+     * @param tempBuffer      for building up the key and label.
+     * @param countersManager which will allocate the counter.
+     * @param registrationId  of the action the counter is associated with.
+     * @param channelStatusId with which the new counter is associated.
+     * @return the allocated counter.
+     */
     public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,

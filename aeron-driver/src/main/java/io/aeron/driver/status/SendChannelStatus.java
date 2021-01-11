@@ -36,6 +36,15 @@ public class SendChannelStatus
      */
     public static final String NAME = "snd-channel";
 
+    /**
+     * Allocate a new channel status counter for a stream.
+     *
+     * @param tempBuffer      to build the label.
+     * @param countersManager to allocate the counter from.
+     * @param registrationId  associated with the counter.
+     * @param channel         associated with the counter.
+     * @return the allocated counter.
+     */
     public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,

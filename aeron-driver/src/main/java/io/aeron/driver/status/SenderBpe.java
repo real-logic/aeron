@@ -36,6 +36,17 @@ public class SenderBpe
      */
     public static final String NAME = "snd-bpe";
 
+    /**
+     * Allocate a new sender back-pressure counter for a stream.
+     *
+     * @param tempBuffer      to build the label.
+     * @param countersManager to allocate the counter from.
+     * @param registrationId  associated with the counter.
+     * @param sessionId       associated with the counter.
+     * @param streamId        associated with the counter.
+     * @param channel         associated with the counter.
+     * @return the allocated counter.
+     */
     public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,

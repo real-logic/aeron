@@ -52,6 +52,14 @@ public class UdpNameResolutionTransport extends UdpChannelTransport
     private final UnsafeBuffer unsafeBuffer;
     private final ByteBuffer byteBuffer;
 
+    /**
+     * Construct a new channel transport for name resolution.
+     *
+     * @param udpChannel      associated with the transport.
+     * @param resolverAddress to listen on.
+     * @param unsafeBuffer    for reading frames.
+     * @param context         for configuration.
+     */
     public UdpNameResolutionTransport(
         final UdpChannel udpChannel,
         final InetSocketAddress resolverAddress,

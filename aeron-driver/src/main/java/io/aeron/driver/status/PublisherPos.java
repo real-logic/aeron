@@ -37,6 +37,17 @@ public class PublisherPos
      */
     public static final String NAME = "pub-pos (sampled)";
 
+    /**
+     * Allocate a new publication position counter for a stream.
+     *
+     * @param tempBuffer      to build the label.
+     * @param countersManager to allocate the counter from.
+     * @param registrationId  associated with the counter.
+     * @param sessionId       associated with the counter.
+     * @param streamId        associated with the counter.
+     * @param channel         associated with the counter.
+     * @return the allocated counter.
+     */
     public static UnsafeBufferPosition allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,

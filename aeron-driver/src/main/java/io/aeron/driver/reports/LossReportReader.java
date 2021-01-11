@@ -42,6 +42,18 @@ public class LossReportReader
     @FunctionalInterface
     public interface EntryConsumer
     {
+        /**
+         * Accept an entry from the loss report so it can be consumed.
+         *
+         * @param observationCount          for the stream instance.
+         * @param totalBytesLost            for the stream instance.
+         * @param firstObservationTimestamp on the stream instance.
+         * @param lastObservationTimestamp  on the stream instance.
+         * @param sessionId                 identifying the stream.
+         * @param streamId                  identifying the stream.
+         * @param channel                   to which the stream belongs.
+         * @param source                    of the stream.
+         */
         void accept(
             long observationCount,
             long totalBytesLost,
@@ -53,6 +65,12 @@ public class LossReportReader
             String source);
     }
 
+    /**
+     * Create a default {@link EntryConsumer} which outputs to a provided {@link PrintStream}.
+     *
+     * @param out to write entries to.
+     * @return a new {@link EntryConsumer} which outputs to a provided {@link PrintStream}.
+     */
     public static EntryConsumer defaultEntryConsumer(final PrintStream out)
     {
         final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");

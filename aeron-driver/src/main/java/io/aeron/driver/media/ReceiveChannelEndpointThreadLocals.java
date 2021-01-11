@@ -33,7 +33,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * Thread local variables that will only be accessed in the context of the Receiver agent thread from within a
  * {@link ReceiveChannelEndpoint} subclass.
  */
-public class ReceiveChannelEndpointThreadLocals
+public final class ReceiveChannelEndpointThreadLocals
 {
     private final ByteBuffer smBuffer;
     private final StatusMessageFlyweight statusMessageFlyweight;
@@ -43,6 +43,9 @@ public class ReceiveChannelEndpointThreadLocals
     private final RttMeasurementFlyweight rttMeasurementFlyweight;
     private long nextReceiverId;
 
+    /**
+     * Construct a set of local state to be use by the receiver thread.
+     */
     public ReceiveChannelEndpointThreadLocals()
     {
         final int smLength = StatusMessageFlyweight.HEADER_LENGTH + SIZE_OF_LONG;
@@ -86,37 +89,72 @@ public class ReceiveChannelEndpointThreadLocals
             .frameLength(RttMeasurementFlyweight.HEADER_LENGTH);
     }
 
-    public ByteBuffer smBuffer()
+    /**
+     * Buffer for writing status messages to send.
+     *
+     * @return buffer for writing status messages to send.
+     */
+    public ByteBuffer statusMessageBuffer()
     {
         return smBuffer;
     }
 
+    /**
+     * Flyweight over the {@link #statusMessageBuffer()}.
+     *
+     * @return flyweight over the {@link #statusMessageBuffer()}.
+     */
     public StatusMessageFlyweight statusMessageFlyweight()
     {
         return statusMessageFlyweight;
     }
 
+    /**
+     * Buffer for writing NAK messages to send.
+     *
+     * @return buffer for writing NAK messages to send.
+     */
     public ByteBuffer nakBuffer()
     {
         return nakBuffer;
     }
 
+    /**
+     * Flyweight over the {@link #nakBuffer()}.
+     *
+     * @return flyweight over the {@link #nakBuffer()}.
+     */
     public NakFlyweight nakFlyweight()
     {
         return nakFlyweight;
     }
 
+    /**
+     * Buffer for writing RTT measurement messages to send.
+     *
+     * @return buffer for writing RTT measurement messages to send.
+     */
     public ByteBuffer rttMeasurementBuffer()
     {
         return rttMeasurementBuffer;
     }
 
+    /**
+     * Flyweight over the {@link #rttMeasurementBuffer()}.
+     *
+     * @return flyweight over the {@link #rttMeasurementBuffer()}.
+     */
     public RttMeasurementFlyweight rttMeasurementFlyweight()
     {
         return rttMeasurementFlyweight;
     }
 
-    public long receiverId()
+    /**
+     * Get the next receiver id to be used for a receiver channel identity.
+     *
+     * @return the next receiver id to be used for a receiver channel identity.
+     */
+    public long nextReceiverId()
     {
         return nextReceiverId++;
     }

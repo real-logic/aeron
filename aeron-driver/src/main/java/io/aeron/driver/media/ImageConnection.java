@@ -22,11 +22,32 @@ import java.net.InetSocketAddress;
  */
 public class ImageConnection
 {
+    /**
+     * Time of the last observed activity on this connection for tracking liveness.
+     */
     public long timeOfLastActivityNs;
+
+    /**
+     * Time of the last observed from from the source.
+     */
     public long timeOfLastFrameNs;
+
+    /**
+     * Is the end of the stream from source been observed.
+     */
     public boolean isEos;
+
+    /**
+     * Control address for the source.
+     */
     public final InetSocketAddress controlAddress;
 
+    /**
+     * Construct a representation of a connection to an image.
+     *
+     * @param timeOfLastActivityNs seen on this image.
+     * @param controlAddress for the source of the image.
+     */
     public ImageConnection(final long timeOfLastActivityNs, final InetSocketAddress controlAddress)
     {
         this.timeOfLastActivityNs = timeOfLastActivityNs;

@@ -19,7 +19,6 @@ import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
-import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.*;
 
@@ -217,9 +216,11 @@ final class ServiceProxy implements AutoCloseable
 
     private static void checkResult(final long result)
     {
-        if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
+        if (result == Publication.NOT_CONNECTED ||
+            result == Publication.CLOSED ||
+            result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new AeronException("unexpected publication state: " + result);
+            throw new ClusterException("unexpected publication state: " + result);
         }
     }
 }

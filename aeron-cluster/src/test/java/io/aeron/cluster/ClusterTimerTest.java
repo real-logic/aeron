@@ -208,7 +208,7 @@ public class ClusterTimerTest
     {
         final ClusteredService service = new StubClusteredService()
         {
-            int timerId = 1;
+            private int timerId = 1;
 
             public void onTimerEvent(final long correlationId, final long timestamp)
             {

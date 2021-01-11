@@ -30,7 +30,7 @@ import static org.agrona.SystemUtil.*;
  * @see Aeron#addSubscription(String, int)
  * @see ChannelUri
  */
-public class ChannelUriStringBuilder
+public final class ChannelUriStringBuilder
 {
     /**
      * Can be used when the likes of session-id wants to reference another entity such as a tagged publication.

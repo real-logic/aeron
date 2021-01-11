@@ -72,7 +72,6 @@ abstract class ArchiveConductor
     private final RecordingSummary recordingSummary = new RecordingSummary();
     private final ControlRequestDecoders decoders = new ControlRequestDecoders();
     private final ArrayDeque<Runnable> taskQueue = new ArrayDeque<>();
-    private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ReplicationSession> replicationSessionByIdMap = new Long2ObjectHashMap<>();
@@ -1374,10 +1373,9 @@ abstract class ArchiveConductor
         return workCount;
     }
 
-    private ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
+    private static ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
     {
-        channelBuilder
-            .clear()
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media(channelUri.media())
             .endpoint(channelUri)
             .networkInterface(channelUri)
@@ -1401,15 +1399,15 @@ abstract class ArchiveConductor
                 {
                     throw new IllegalArgumentException("invalid session id tag value: " + tag);
                 }
-                channelBuilder.isSessionIdTagged(true).sessionId((int)tag);
+                builder.isSessionIdTagged(true).sessionId((int)tag);
             }
             else
             {
-                channelBuilder.sessionId(Integer.valueOf(sessionIdStr));
+                builder.sessionId(Integer.valueOf(sessionIdStr));
             }
         }
 
-        return channelBuilder;
+        return builder;
     }
 
     private static String makeKey(final int streamId, final ChannelUri channelUri)

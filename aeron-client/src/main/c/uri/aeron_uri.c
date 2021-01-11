@@ -493,11 +493,10 @@ int aeron_uri_ipc_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
     char tag_buffer[64];
 
     aeron_ipc_channel_params_t *ipc_params = &uri->params.ipc;
-    int num_chars = 0;
 
     if (ctx.offset < buffer_len)
     {
-        num_chars = snprintf(ctx.buffer, ctx.buffer_len - ctx.offset, "aeron:ipc");
+        int num_chars = snprintf(ctx.buffer, ctx.buffer_len - ctx.offset, "aeron:ipc");
         ctx.offset += num_chars;
     }
 
@@ -539,11 +538,10 @@ int aeron_uri_udp_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
     const char *tags = NULL;
 
     aeron_udp_channel_params_t *udp_params = &uri->params.udp;
-    int num_chars = 0;
 
     if (ctx.offset < buffer_len)
     {
-        num_chars = snprintf(ctx.buffer, ctx.buffer_len - ctx.offset, "aeron:udp");
+        int num_chars = snprintf(ctx.buffer, ctx.buffer_len - ctx.offset, "aeron:udp");
         ctx.offset += num_chars;
     }
 

@@ -1696,7 +1696,7 @@ int aeron_subscription_local_sockaddrs(
  * @param address_len available length for the copied address.
  * @return -1 on error, 0 if address not found, 1 if address is found.
  */
-int aeron_subscription_resolved_endpoint(aeron_subscription_t *subscription, char *address, size_t address_len);
+int aeron_subscription_resolved_endpoint(aeron_subscription_t *subscription, const char *address, size_t address_len);
 
 /**
  * Retrieves the channel URI for this subscription with any wildcard ports filled in. If the channel is not UDP or

@@ -53,6 +53,13 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
     private InetSocketAddress currentControlAddress;
     private final AtomicCounter localSocketAddressIndicator;
 
+    /**
+     * Construct a new transport for a receive destination.
+     *
+     * @param udpChannel                  for the destination.
+     * @param context                     for configuration.
+     * @param localSocketAddressIndicator to indicate status of the transport.
+     */
     public ReceiveDestinationTransport(
         final UdpChannel udpChannel, final MediaDriver.Context context, final AtomicCounter localSocketAddressIndicator)
     {
@@ -63,6 +70,12 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
         this.localSocketAddressIndicator = localSocketAddressIndicator;
     }
 
+    /**
+     * Open the channel by the receiver.
+     *
+     * @param conductorProxy for sending instructions by to the driver conductor.
+     * @param statusIndicator for the channel.
+     */
     public void openChannel(final DriverConductorProxy conductorProxy, final AtomicCounter statusIndicator)
     {
         if (conductorProxy.notConcurrent())
@@ -87,49 +100,89 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
         localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
+    public void close()
+    {
+        CloseHelper.close(localSocketAddressIndicator);
+        super.close();
+    }
+
+    /**
+     * Has the channel explicit control address.
+     *
+     * @return true if the channel has explicit control address.
+     */
     public boolean hasExplicitControl()
     {
         return udpChannel.hasExplicitControl();
     }
 
+    /**
+     * Get the explicit control address for the channel.
+     *
+     * @return the explicit control address for the channel if set, otherwise null.
+     */
     public InetSocketAddress explicitControlAddress()
     {
         return udpChannel.hasExplicitControl() ? currentControlAddress : null;
     }
 
+    /**
+     * Store the {@link SelectionKey} for the registered transport.
+     *
+     * @param key the {@link SelectionKey} for the registered transport.
+     */
     public void selectionKey(final SelectionKey key)
     {
         selectionKey = key;
     }
 
+    /**
+     * Store the time of last activity for the destination.
+     *
+     * @param nowNs the time of last activity for the destination.
+     */
     public void timeOfLastActivityNs(final long nowNs)
     {
         this.timeOfLastActivityNs = nowNs;
     }
 
+    /**
+     * Get the time of last activity for the destination.
+     *
+     * @return the time of last activity for the destination.
+     */
     public long timeOfLastActivityNs()
     {
         return timeOfLastActivityNs;
     }
 
+    /**
+     * {@link UdpChannel} associated with the destination.
+     *
+     * @return the {@link UdpChannel} associated with the destination.
+     */
     public UdpChannel udpChannel()
     {
         return udpChannel;
     }
 
-    public InetSocketAddress currentControlAddress()
-    {
-        return currentControlAddress;
-    }
-
+    /**
+     * Store the time current control address for the destination.
+     *
+     * @param newAddress control address for the destination.
+     */
     public void currentControlAddress(final InetSocketAddress newAddress)
     {
         this.currentControlAddress = newAddress;
     }
 
-    public void close()
+    /**
+     * The current control address for the destination.
+     *
+     * @return the time current control address for the destination.
+     */
+    public InetSocketAddress currentControlAddress()
     {
-        CloseHelper.close(localSocketAddressIndicator);
-        super.close();
+        return currentControlAddress;
     }
 }

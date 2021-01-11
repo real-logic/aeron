@@ -27,7 +27,7 @@ import java.nio.channels.SelectionKey;
 
 abstract class ReceiveDestinationTransportHotFields extends UdpChannelTransport
 {
-    protected long timeOfLastActivityNs;
+    long timeOfLastActivityNs;
 
     ReceiveDestinationTransportHotFields(
         final UdpChannel udpChannel,

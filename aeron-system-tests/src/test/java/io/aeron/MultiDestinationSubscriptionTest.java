@@ -350,12 +350,11 @@ public class MultiDestinationSubscriptionTest
 
         launch();
 
-        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+        final String subscriptionChannel = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
             .tags(tags)
-            .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
-
-        final String subscriptionChannel = builder.build();
+            .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
+            .build();
 
         subscription = clientA.addSubscription(subscriptionChannel, STREAM_ID);
         final Subscription copySubscription = clientA.addSubscription(subscriptionChannel, STREAM_ID);
@@ -448,14 +447,11 @@ public class MultiDestinationSubscriptionTest
 
         launch();
 
-        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
-        builder
-            .clear()
+        final String publicationChannelA = new ChannelUriStringBuilder()
             .tags(tags)
             .media(CommonContext.UDP_MEDIA)
-            .endpoint(UNICAST_ENDPOINT_A);
-
-        final String publicationChannelA = builder.build();
+            .endpoint(UNICAST_ENDPOINT_A)
+            .build();
 
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
         subscription.addDestination(publicationChannelA);
@@ -480,26 +476,22 @@ public class MultiDestinationSubscriptionTest
         final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
         final int termOffset = (int)(position & (publicationA.termBufferLength() - 1));
 
-        builder
-            .clear()
+        final String publicationChannelB = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
             .isSessionIdTagged(true)
             .sessionId(pubTag)
             .initialTermId(initialTermId)
             .termId(termId)
             .termOffset(termOffset)
-            .endpoint(UNICAST_ENDPOINT_B);
-
-        final String publicationChannelB = builder.build();
+            .endpoint(UNICAST_ENDPOINT_B)
+            .build();
 
         publicationB = clientA.addExclusivePublication(publicationChannelB, STREAM_ID);
 
-        builder
-            .clear()
+        final String destinationChannel = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
-            .endpoint(UNICAST_ENDPOINT_B);
-
-        final String destinationChannel = builder.build();
+            .endpoint(UNICAST_ENDPOINT_B)
+            .build();
 
         subscription.addDestination(destinationChannel);
 
@@ -529,21 +521,15 @@ public class MultiDestinationSubscriptionTest
         launch();
         launchSecond();
 
-        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
-
-        builder
-            .clear()
+        final String publicationChannelA = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
-            .endpoint(UNICAST_ENDPOINT_A);
+            .endpoint(UNICAST_ENDPOINT_A)
+            .build();
 
-        final String publicationChannelA = builder.build();
-
-        builder
-            .clear()
+        final String destinationB = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
-            .endpoint(UNICAST_ENDPOINT_B);
-
-        final String destinationB = builder.build();
+            .endpoint(UNICAST_ENDPOINT_B)
+            .build();
 
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
         subscription.addDestination(publicationChannelA);
@@ -551,14 +537,12 @@ public class MultiDestinationSubscriptionTest
 
         publicationA = clientA.addExclusivePublication(publicationChannelA, STREAM_ID);
 
-        builder
-            .clear()
+        final String publicationChannelB = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
             .initialPosition(0L, publicationA.initialTermId(), publicationA.termBufferLength())
             .sessionId(publicationA.sessionId())
-            .endpoint(UNICAST_ENDPOINT_B);
-
-        final String publicationChannelB = builder.build();
+            .endpoint(UNICAST_ENDPOINT_B)
+            .build();
 
         publicationB = clientB.addExclusivePublication(publicationChannelB, STREAM_ID);
         final MutableLong position = new MutableLong(Long.MIN_VALUE);
@@ -614,9 +598,6 @@ public class MultiDestinationSubscriptionTest
     private void verifyFragments(final FragmentHandler fragmentHandler, final int numMessagesToSend)
     {
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+            any(DirectBuffer.class), anyInt(), eq(MESSAGE_LENGTH), any(Header.class));
     }
 }

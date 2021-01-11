@@ -24,7 +24,7 @@ import org.agrona.*;
 
 final class ServiceProxy implements AutoCloseable
 {
-    private static final int SEND_ATTEMPTS = 3;
+    private static final int SEND_ATTEMPTS = 5;
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
@@ -61,7 +61,7 @@ final class ServiceProxy implements AutoCloseable
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogEncoder.BLOCK_LENGTH +
             JoinLogEncoder.logChannelHeaderLength() + channel.length();
 
-        int attempts = SEND_ATTEMPTS * 2;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             final long result = publication.tryClaim(length, bufferClaim);
@@ -85,6 +85,10 @@ final class ServiceProxy implements AutoCloseable
             }
 
             checkResult(result);
+            if (Publication.BACK_PRESSURED == result)
+            {
+                Thread.yield();
+            }
         }
         while (--attempts > 0);
 
@@ -98,7 +102,7 @@ final class ServiceProxy implements AutoCloseable
             ClusterMembersResponseEncoder.activeMembersHeaderLength() + activeMembers.length() +
             ClusterMembersResponseEncoder.passiveFollowersHeaderLength() + passiveFollowers.length();
 
-        int attempts = SEND_ATTEMPTS * 2;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             final long result = publication.tryClaim(length, bufferClaim);
@@ -117,6 +121,10 @@ final class ServiceProxy implements AutoCloseable
             }
 
             checkResult(result);
+            if (Publication.BACK_PRESSURED == result)
+            {
+                Thread.yield();
+            }
         }
         while (--attempts > 0);
 
@@ -172,7 +180,7 @@ final class ServiceProxy implements AutoCloseable
 
         final int length = clusterMembersExtendedResponseEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
 
-        int attempts = SEND_ATTEMPTS * 2;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             final long result = publication.offer(expandableArrayBuffer, 0, length, null);
@@ -182,6 +190,10 @@ final class ServiceProxy implements AutoCloseable
             }
 
             checkResult(result);
+            if (Publication.BACK_PRESSURED == result)
+            {
+                Thread.yield();
+            }
         }
         while (--attempts > 0);
 
@@ -192,7 +204,7 @@ final class ServiceProxy implements AutoCloseable
     {
         final int length = MessageHeaderDecoder.ENCODED_LENGTH + ServiceTerminationPositionEncoder.BLOCK_LENGTH;
 
-        int attempts = SEND_ATTEMPTS * 2;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             final long result = publication.tryClaim(length, bufferClaim);
@@ -208,6 +220,10 @@ final class ServiceProxy implements AutoCloseable
             }
 
             checkResult(result);
+            if (Publication.BACK_PRESSURED == result)
+            {
+                Thread.yield();
+            }
         }
         while (--attempts > 0);
 

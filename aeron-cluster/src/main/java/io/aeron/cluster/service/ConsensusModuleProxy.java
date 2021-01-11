@@ -18,8 +18,8 @@ package io.aeron.cluster.service;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
-import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -271,7 +271,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new AeronException("unexpected publication state: " + result);
+            throw new ClusterException("unexpected publication state: " + result);
         }
     }
 }

@@ -16,6 +16,7 @@
 package io.aeron.driver.exceptions;
 
 import io.aeron.ErrorCode;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ControlProtocolException;
 
 /**
@@ -24,7 +25,7 @@ import io.aeron.exceptions.ControlProtocolException;
 public class InvalidChannelException extends ControlProtocolException
 {
     /**
-     * Exception with provided message and {@link Category#ERROR} and {@link ErrorCode#INVALID_CHANNEL}.
+     * Exception with provided message and {@link AeronException.Category#ERROR} and {@link ErrorCode#INVALID_CHANNEL}.
      *
      * @param message to detail the exception.
      */
@@ -34,7 +35,7 @@ public class InvalidChannelException extends ControlProtocolException
     }
 
     /**
-     * Exception with provided cause and {@link Category#ERROR} and {@link ErrorCode#INVALID_CHANNEL}.
+     * Exception with provided cause and {@link AeronException.Category#ERROR} and {@link ErrorCode#INVALID_CHANNEL}.
      *
      * @param cause of the exception.
      */

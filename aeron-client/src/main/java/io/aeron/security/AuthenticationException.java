@@ -23,7 +23,7 @@ import io.aeron.exceptions.AeronException;
 public class AuthenticationException extends AeronException
 {
     /**
-     * Default exception of {@link Category#ERROR}.
+     * Default exception of {@link AeronException.Category#ERROR}.
      */
     public AuthenticationException()
     {
@@ -31,7 +31,7 @@ public class AuthenticationException extends AeronException
     }
 
     /**
-     * Authentication exception with provided message and {@link Category#ERROR}.
+     * Authentication exception with provided message and {@link AeronException.Category#ERROR}.
      *
      * @param message to detail the exception.
      */
@@ -41,7 +41,7 @@ public class AuthenticationException extends AeronException
     }
 
     /**
-     * Authentication exception with provided cause and {@link Category#ERROR}.
+     * Authentication exception with provided cause and {@link AeronException.Category#ERROR}.
      *
      * @param cause of the error.
      */
@@ -63,7 +63,7 @@ public class AuthenticationException extends AeronException
 
     /**
      * Constructs a new Authentication exception with the a detail message, cause, suppression enabled or disabled,
-     * and writable stack trace enabled or disabled, in the category {@link Category#ERROR}.
+     * and writable stack trace enabled or disabled, in the category {@link AeronException.Category#ERROR}.
      *
      * @param message            providing detail on the error.
      * @param cause              of the error.

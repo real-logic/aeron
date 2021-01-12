@@ -1399,7 +1399,9 @@ abstract class ArchiveConductor
                 {
                     throw new IllegalArgumentException("invalid session id tag value: " + tag);
                 }
-                builder.isSessionIdTagged(true).sessionId((int)tag);
+
+                //noinspection UnnecessaryBoxing
+                builder.isSessionIdTagged(true).sessionId(Integer.valueOf((int)tag));
             }
             else
             {

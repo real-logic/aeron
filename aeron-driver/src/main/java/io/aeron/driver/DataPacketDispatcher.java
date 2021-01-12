@@ -386,7 +386,6 @@ public final class DataPacketDispatcher
                 else if (null != sessionInterest.image)
                 {
                     sessionInterest.image.addDestinationConnectionIfUnknown(transportIndex, srcAddress);
-                    sessionInterest.image.ensureImageLiveness();
                 }
             }
             else if (streamInterest.isAllSessions || streamInterest.subscribedSessionIds.contains(sessionId))

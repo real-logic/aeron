@@ -30,10 +30,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NoOpLock;
@@ -63,8 +60,8 @@ public class TestCluster implements AutoCloseable
     private static final String LOG_CHANNEL = "aeron:udp?term-length=512k";
     // Use for testing cluster with multicast
     // TODO: Parameterise tests with this.
-//    private static final String LOG_CHANNEL =
-//        "aeron:udp?term-length=512k|endpoint=224.20.30.39:24326|interface=localhost";
+    // private static final String LOG_CHANNEL =
+    //     "aeron:udp?term-length=512k|endpoint=224.20.30.39:24326|interface=localhost";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
@@ -104,7 +101,12 @@ public class TestCluster implements AutoCloseable
             }
             else if (EventCode.CLOSED == code && shouldErrorOnClientClose)
             {
-                throw new ClusterException("session closed due to " + detail);
+                final String msg = "session closed due to " + detail;
+
+                System.err.println("*** " + msg);
+                System.err.println(SystemUtil.threadDump());
+
+                throw new ClusterException(msg);
             }
         }
 

@@ -112,6 +112,11 @@ public class Tests
             sb.append(" - ").append(message);
         }
 
+        System.out.println(appendStackTrace(sb).toString());
+    }
+
+    public static StringBuilder appendStackTrace(final StringBuilder sb)
+    {
         sb.append(System.lineSeparator());
 
         final StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
@@ -120,7 +125,7 @@ public class Tests
             sb.append(stackTraceElements[i]).append(System.lineSeparator());
         }
 
-        System.out.println(sb.toString());
+        return sb;
     }
 
     /**

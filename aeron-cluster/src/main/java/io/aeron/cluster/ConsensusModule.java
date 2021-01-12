@@ -1995,7 +1995,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @param logFragmentLimit for this clustered service.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#LOG_FRAGMENT_LIMIT_DEFAULT
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#LOG_FRAGMENT_LIMIT_DEFAULT
          */
         public Context logFragmentLimit(final int logFragmentLimit)
         {
@@ -2007,7 +2007,7 @@ public final class ConsensusModule implements AutoCloseable
          * Get the fragment limit to be used when polling the log {@link Subscription}.
          *
          * @return the fragment limit to be used when polling the log {@link Subscription}.
-         * @see ClusteredServiceContainer.Configuration#LOG_FRAGMENT_LIMIT_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#LOG_FRAGMENT_LIMIT_PROP_NAME
          */
         public int logFragmentLimit()
         {

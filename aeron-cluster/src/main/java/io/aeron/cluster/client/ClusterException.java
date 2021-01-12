@@ -23,14 +23,14 @@ import io.aeron.exceptions.AeronException;
 public class ClusterException extends AeronException
 {
     /**
-     * Default Cluster exception of {@link AeronException.Category#ERROR}.
+     * Default Cluster exception of {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      */
     public ClusterException()
     {
     }
 
     /**
-     * Cluster exception with provided message and {@link AeronException.Category#ERROR}.
+     * Cluster exception with provided message and {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      *
      * @param message to detail the exception.
      */
@@ -40,7 +40,7 @@ public class ClusterException extends AeronException
     }
 
     /**
-     * Cluster exception with a detailed message and provided {@link AeronException.Category}.
+     * Cluster exception with a detailed message and provided {@link io.aeron.exceptions.AeronException.Category}.
      *
      * @param message  providing detail on the error.
      * @param category of the exception.
@@ -51,7 +51,7 @@ public class ClusterException extends AeronException
     }
 
     /**
-     * Cluster exception with a detailed message, cause, and {@link AeronException.Category#ERROR}.
+     * Cluster exception with a detailed message, cause, and {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      *
      * @param message providing detail on the error.
      * @param cause   of the error.
@@ -62,7 +62,7 @@ public class ClusterException extends AeronException
     }
 
     /**
-     * Cluster exception with provided cause and {@link AeronException.Category#ERROR}.
+     * Cluster exception with provided cause and {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      *
      * @param cause of the error.
      */
@@ -72,7 +72,7 @@ public class ClusterException extends AeronException
     }
 
     /**
-     * Cluster exception with cause and provided {@link AeronException.Category}.
+     * Cluster exception with cause and provided {@link io.aeron.exceptions.AeronException.Category}.
      *
      * @param cause    of the error.
      * @param category of the exception.
@@ -83,7 +83,7 @@ public class ClusterException extends AeronException
     }
 
     /**
-     * Cluster exception with a detailed message, cause, and {@link AeronException.Category}.
+     * Cluster exception with a detailed message, cause, and {@link io.aeron.exceptions.AeronException.Category}.
      *
      * @param message  providing detail on the error.
      * @param cause    of the error.
@@ -96,7 +96,8 @@ public class ClusterException extends AeronException
 
     /**
      * Constructs a new Cluster exception with the a detail message, cause, suppression enabled or disabled,
-     * and writable stack trace enabled or disabled, in the category {@link AeronException.Category#ERROR}.
+     * and writable stack trace enabled or disabled, in the category
+     * {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      *
      * @param message            providing detail on the error.
      * @param cause              of the error.

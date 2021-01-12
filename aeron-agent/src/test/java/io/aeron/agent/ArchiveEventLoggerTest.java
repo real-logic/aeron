@@ -68,7 +68,7 @@ class ArchiveEventLoggerTest
         value = ArchiveEventCode.class,
         mode = EXCLUDE,
         names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
-        "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
+            "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
     void logControlRequest(final ArchiveEventCode eventCode)
     {
         ARCHIVE_EVENT_CODES.add(eventCode);
@@ -77,8 +77,8 @@ class ArchiveEventLoggerTest
         new MessageHeaderEncoder().wrap(srcBuffer, srcOffset).templateId(eventCode.templateId());
         srcBuffer.setMemory(srcOffset + ENCODED_LENGTH, length, (byte)3);
         final int captureLength = MAX_CAPTURE_LENGTH;
-        logBuffer.putLong(CAPACITY + HEAD_CACHE_POSITION_OFFSET, CAPACITY * 3);
-        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, 128 + CAPACITY * 3);
+        logBuffer.putLong(CAPACITY + HEAD_CACHE_POSITION_OFFSET, CAPACITY * 3L);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, 128 + CAPACITY * 3L);
         final int recordOffset = 128;
 
         logger.logControlRequest(srcBuffer, srcOffset, length);
@@ -128,7 +128,7 @@ class ArchiveEventLoggerTest
         value = ArchiveEventCode.class,
         mode = EXCLUDE,
         names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
-        "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
+            "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
     void controlRequestEvents(final ArchiveEventCode eventCode)
     {
         assertTrue(CONTROL_REQUEST_EVENTS.contains(eventCode));
@@ -139,7 +139,7 @@ class ArchiveEventLoggerTest
         value = ArchiveEventCode.class,
         mode = INCLUDE,
         names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
-        "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
+            "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
     void nonControlRequestEvents(final ArchiveEventCode eventCode)
     {
         assertFalse(CONTROL_REQUEST_EVENTS.contains(eventCode));

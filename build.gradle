@@ -48,10 +48,10 @@ def aeronVersion = file('version.txt').text.trim()
 def agronaVersion = '1.9.0'
 def agronaVersionRange = '[1.9,1.10[' // allow any patch release of 1.9.x
 def sbeVersion = '1.20.4'
-def checkstyleVersion = '8.38'
+def checkstyleVersion = '8.39'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.7.0'
-def mockitoVersion = '3.6.28'
+def mockitoVersion = '3.7.0'
 def byteBuddyVersion = '1.10.19'
 def hdrHistogramVersion = '2.1.12'
 

@@ -116,11 +116,42 @@ public final class Receiver implements Agent
         final boolean periodic,
         final InetSocketAddress controlAddress)
     {
+        if (periodic)
+        {
+            for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
+            {
+                final PendingSetupMessageFromSource pendingSetupMessage = pendingSetupMessages.get(i);
+
+                if (pendingSetupMessage.isPeriodic() &&
+                    sessionId == pendingSetupMessage.sessionId() &&
+                    streamId == pendingSetupMessage.streamId() &&
+                    controlAddress.equals(pendingSetupMessage.controlAddress()))
+                {
+                    return;
+                }
+            }
+        }
+
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(
             sessionId, streamId, transportIndex, channelEndpoint, periodic, controlAddress);
 
         cmd.timeOfStatusMessageNs(cachedNanoClock.nanoTime());
         pendingSetupMessages.add(cmd);
+    }
+
+    private void removePendingSetupMessagesByEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    {
+        final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = this.pendingSetupMessages;
+        for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
+        {
+            final PendingSetupMessageFromSource pending = pendingSetupMessages.get(i);
+
+            if (pending.channelEndpoint() == channelEndpoint)
+            {
+                ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex--);
+                pending.removeFromDataPacketDispatcher();
+            }
+        }
     }
 
     void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
@@ -171,17 +202,7 @@ public final class Receiver implements Agent
 
     void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = this.pendingSetupMessages;
-        for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
-        {
-            final PendingSetupMessageFromSource pending = pendingSetupMessages.get(i);
-
-            if (pending.channelEndpoint() == channelEndpoint)
-            {
-                ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex--);
-                pending.removeFromDataPacketDispatcher();
-            }
-        }
+        removePendingSetupMessagesByEndpoint(channelEndpoint);
 
         channelEndpoint.closeMultiRcvDestination(dataTransportPoller);
         channelEndpoint.close();

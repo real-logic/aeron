@@ -589,6 +589,16 @@ public final class PublicationImage
     }
 
     /**
+     * To be call from the Data Packet Dispatcher to ensure that the image is keep alive when heartbeats are not
+     * being sent (e.g. if getting swamped by MDC setup messages)
+     */
+    public void ensureImageLiveness()
+    {
+        timeOfLastPacketNs = cachedNanoClock.nanoTime();
+    }
+
+
+    /**
      * To be called from the {@link Receiver} to see if a image should be retained.
      *
      * @param nowNs current time to check against for activity.

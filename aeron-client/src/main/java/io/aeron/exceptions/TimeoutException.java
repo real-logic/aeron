@@ -21,14 +21,14 @@ package io.aeron.exceptions;
 public class TimeoutException extends AeronException
 {
     /**
-     * Default timeout exception of {@link Category#ERROR}.
+     * Default timeout exception of {@link AeronException.Category#ERROR}.
      */
     public TimeoutException()
     {
     }
 
     /**
-     * Timeout exception with provided message and {@link Category#ERROR}.
+     * Timeout exception with provided message and {@link AeronException.Category#ERROR}.
      *
      * @param message to detail the exception.
      */
@@ -38,7 +38,7 @@ public class TimeoutException extends AeronException
     }
 
     /**
-     * Timeout Aeron exception with provided {@link Category}.
+     * Timeout Aeron exception with provided {@link AeronException.Category}.
      *
      * @param category of this exception.
      */
@@ -48,7 +48,7 @@ public class TimeoutException extends AeronException
     }
 
     /**
-     * Timeout exception with a detailed message and provided {@link Category}.
+     * Timeout exception with a detailed message and provided {@link AeronException.Category}.
      *
      * @param message  providing detail on the error.
      * @param category of the exception.
@@ -59,7 +59,7 @@ public class TimeoutException extends AeronException
     }
 
     /**
-     * AerTimeouton exception with cause and provided {@link Category}.
+     * AerTimeouton exception with cause and provided {@link AeronException.Category}.
      *
      * @param cause    of the error.
      * @param category of the exception.
@@ -70,7 +70,7 @@ public class TimeoutException extends AeronException
     }
 
     /**
-     * Timeout exception with a detailed message, cause, and {@link Category}.
+     * Timeout exception with a detailed message, cause, and {@link AeronException.Category}.
      *
      * @param message  providing detail on the error.
      * @param cause    of the error.
@@ -83,7 +83,7 @@ public class TimeoutException extends AeronException
 
     /**
      * Constructs a new timeout exception with the a detail message, cause, suppression enabled or disabled,
-     * writable stack trace enabled or disabled, an {@link Category}.
+     * writable stack trace enabled or disabled, an {@link AeronException.Category}.
      *
      * @param message            providing detail on the error.
      * @param cause              of the error.

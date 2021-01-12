@@ -44,12 +44,12 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * {@link Category} of the exception to help the client decide how they should proceed.
+     * {@link AeronException.Category} of the exception to help the client decide how they should proceed.
      */
     private final Category category;
 
     /**
-     * Default Aeron exception of {@link Category#ERROR}.
+     * Default Aeron exception of {@link AeronException.Category#ERROR}.
      */
     public AeronException()
     {
@@ -58,7 +58,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Default Aeron exception with provided {@link Category}.
+     * Default Aeron exception with provided {@link AeronException.Category}.
      *
      * @param category of this exception.
      */
@@ -69,7 +69,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Aeron exception with provided message and {@link Category#ERROR}.
+     * Aeron exception with provided message and {@link AeronException.Category#ERROR}.
      *
      * @param message to detail the exception.
      */
@@ -80,7 +80,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Aeron exception with provided cause and {@link Category#ERROR}.
+     * Aeron exception with provided cause and {@link AeronException.Category#ERROR}.
      *
      * @param cause of the error.
      */
@@ -91,7 +91,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Aeron exception with a detailed message and provided {@link Category}.
+     * Aeron exception with a detailed message and provided {@link AeronException.Category}.
      *
      * @param message  providing detail on the error.
      * @param category of the exception.
@@ -103,7 +103,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Aeron exception with a detailed message, cause, and {@link Category#ERROR}.
+     * Aeron exception with a detailed message, cause, and {@link AeronException.Category#ERROR}.
      *
      * @param message providing detail on the error.
      * @param cause   of the error.
@@ -115,7 +115,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Aeron exception with cause and provided {@link Category}.
+     * Aeron exception with cause and provided {@link AeronException.Category}.
      *
      * @param cause    of the error.
      * @param category of the exception.
@@ -127,7 +127,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Aeron exception with a detailed message, cause, and {@link Category}.
+     * Aeron exception with a detailed message, cause, and {@link AeronException.Category}.
      *
      * @param message  providing detail on the error.
      * @param cause    of the error.
@@ -141,7 +141,7 @@ public class AeronException extends RuntimeException
 
     /**
      * Constructs a new Aeron exception with the a detail message, cause, suppression enabled or disabled,
-     * and writable stack trace enabled or disabled, in the category {@link Category#ERROR}.
+     * and writable stack trace enabled or disabled, in the category {@link AeronException.Category#ERROR}.
      *
      * @param message            providing detail on the error.
      * @param cause              of the error.
@@ -157,7 +157,7 @@ public class AeronException extends RuntimeException
 
     /**
      * Constructs a new Aeron exception with the a detail message, cause, suppression enabled or disabled,
-     * writable stack trace enabled or disabled, an {@link Category}.
+     * writable stack trace enabled or disabled, an {@link AeronException.Category}.
      *
      * @param message            providing detail on the error.
      * @param cause              of the error.
@@ -177,9 +177,9 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * {@link Category} of exception for determining what follow up action can be taken.
+     * {@link AeronException.Category} of exception for determining what follow up action can be taken.
      *
-     * @return {@link Category} of exception for determining what follow up action can be taken.
+     * @return {@link AeronException.Category} of exception for determining what follow up action can be taken.
      */
     public Category category()
     {

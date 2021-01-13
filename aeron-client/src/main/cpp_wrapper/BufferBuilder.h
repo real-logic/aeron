@@ -73,7 +73,7 @@ public:
         return *this;
     }
 
-    this_t &append(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+    this_t &append(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &)
     {
         ensureCapacity(static_cast<std::uint32_t>(length));
 

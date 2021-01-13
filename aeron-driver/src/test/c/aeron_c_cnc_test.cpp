@@ -234,9 +234,9 @@ TEST_F(CncTest, shouldGetLossReport)
     const char *message = "hello world";
 
     poll_handler_t handler =
-            [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
-            {
-            };
+        [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
+        {
+        };
 
     aeron_counters_reader_t *counters = aeron_cnc_counters_reader(m_cnc);
     int64_t *retransmitsSentCounter = aeron_counters_reader_addr(counters, AERON_SYSTEM_COUNTER_RETRANSMITS_SENT);

@@ -624,7 +624,7 @@ void aeron_network_publication_on_status_message(
 
     if (!publication->has_initial_connection)
     {
-        AERON_PUT_ORDERED(publication->has_initial_connection, true);
+        publication->has_initial_connection = true;
     }
 
     aeron_counter_set_ordered(

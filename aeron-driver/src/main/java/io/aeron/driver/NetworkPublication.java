@@ -83,6 +83,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
     long timeOfLastStatusMessageNs;
     boolean trackSenderLimits = false;
     boolean shouldSendSetupFrame = true;
+    boolean isHeartbeating = false;
 }
 
 class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
@@ -374,6 +375,11 @@ public final class NetworkPublication
         if (!hasReceivers)
         {
             hasReceivers = true;
+        }
+
+        if (!isHeartbeating)
+        {
+            isHeartbeating = true;
         }
 
         final long timeNs = nanoClock.nanoTime();
@@ -679,7 +685,7 @@ public final class NetworkPublication
     {
         int bytesSent = 0;
 
-        if ((timeOfLastDataOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS) - nowNs < 0)
+        if (isHeartbeating && (timeOfLastDataOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS) - nowNs < 0)
         {
             heartbeatBuffer.clear();
             heartbeatDataHeader

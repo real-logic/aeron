@@ -1123,10 +1123,11 @@ public class ClusterTest
             cluster.stopNode(leader0);
             cluster.awaitLeader(leader0.index());
             cluster.awaitNewLeadershipEvent(1);
-            cluster.client().sendKeepAlive();
+            assertTrue(cluster.client().sendKeepAlive());
             cluster.startStaticNode(leader0.index(), false);
 
             cluster.sendMessages(numMessages);
+            cluster.awaitResponseMessageCount(numMessages * 3);
             cluster.awaitServicesMessageCount(numMessages * 3);
 
             cluster.terminationsExpected(true);
@@ -1136,8 +1137,7 @@ public class ClusterTest
 
             cluster.restartAllNodes(false);
             cluster.awaitLeader();
-
-            cluster.awaitServicesMessageCount(numMessages * 2);
+            cluster.awaitServicesMessageCount(numMessages * 3);
         }
         catch (final Throwable ex)
         {
@@ -1164,7 +1164,7 @@ public class ClusterTest
             cluster.stopNode(leader0);
             final TestNode leader1 = cluster.awaitLeader(leader0.index());
             cluster.awaitNewLeadershipEvent(1);
-            cluster.client().sendKeepAlive();
+            assertTrue(cluster.client().sendKeepAlive());
             cluster.startStaticNode(leader0.index(), false);
 
             cluster.sendMessages(numMessages);
@@ -1174,7 +1174,7 @@ public class ClusterTest
             cluster.stopNode(leader1);
             cluster.awaitLeader(leader1.index());
             cluster.awaitNewLeadershipEvent(2);
-            cluster.client().sendKeepAlive();
+            assertTrue(cluster.client().sendKeepAlive());
             cluster.startStaticNode(leader1.index(), false);
 
             cluster.sendMessages(numMessages);
@@ -1206,7 +1206,7 @@ public class ClusterTest
             cluster.stopNode(leader0);
             final TestNode leader1 = cluster.awaitLeader(leader0.index());
             cluster.awaitNewLeadershipEvent(1);
-            cluster.client().sendKeepAlive();
+            assertTrue(cluster.client().sendKeepAlive());
             cluster.startStaticNode(leader0.index(), false);
 
             cluster.sendMessages(numMessages);
@@ -1219,7 +1219,7 @@ public class ClusterTest
             cluster.stopNode(leader1);
             cluster.awaitLeader(leader1.index());
             cluster.awaitNewLeadershipEvent(2);
-            cluster.client().sendKeepAlive();
+            assertTrue(cluster.client().sendKeepAlive());
             cluster.startStaticNode(leader1.index(), false);
 
             cluster.sendMessages(numMessages);
@@ -1235,8 +1235,7 @@ public class ClusterTest
 
             cluster.restartAllNodes(false);
             cluster.awaitLeader();
-
-            cluster.awaitServicesMessageCount(numMessages * 2);
+            cluster.awaitServicesMessageCount(numMessages * 3);
         }
         catch (final Throwable ex)
         {

@@ -752,7 +752,7 @@ public class TestCluster implements AutoCloseable
 
     public void awaitNewLeadershipEvent(final int count)
     {
-        while (newLeaderEvent.get() < count)
+        while (newLeaderEvent.get() < count || !client.ingressPublication().isConnected())
         {
             Tests.sleep(1);
             client.pollEgress();

@@ -208,7 +208,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldNotSendSetupFrameAfterReceivingStatusMessage()
+    public void shouldSendSetupFrameOnlyOnceAfterReceivingStatusMessage()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -217,8 +217,13 @@ public class SenderTest
 
         publication.onStatusMessage(msg, rcvAddress);
         sender.doWork();
-        assertThat(receivedFrames.size(), is(1));
-        receivedFrames.remove();
+
+        assertThat(receivedFrames.size(), is(2));
+        dataHeader.wrap(receivedFrames.remove());
+        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP)); // setup
+        dataHeader.wrap(receivedFrames.remove());
+        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA)); // heartbeat
+        assertThat(dataHeader.frameLength(), is(0));
 
         nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10);
         sender.doWork();
@@ -226,7 +231,6 @@ public class SenderTest
         assertThat(receivedFrames.size(), is(1));
         dataHeader.wrap(receivedFrames.remove());
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA)); // heartbeat
-        assertThat(dataHeader.frameLength(), is(0));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
     }
 
@@ -258,10 +262,46 @@ public class SenderTest
         nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(1));
+        assertThat(receivedFrames.size(), is(2));
 
         setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
         assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
+        dataHeader.wrap(receivedFrames.remove());
+        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+        assertThat(dataHeader.frameLength(), is(0));
+    }
+
+    @Test
+    public void shouldSendHeartbeatsEvenIfSendingPeriodicSetupFrames()
+    {
+        final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
+        when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
+        when(msg.consumptionTermOffset()).thenReturn(0);
+        when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
+
+        publication.onStatusMessage(msg, rcvAddress);
+
+        sender.doWork();
+
+        assertThat(receivedFrames.size(), is(2)); // setup then heartbeat
+        receivedFrames.remove();
+        receivedFrames.remove();
+
+        publication.triggerSendSetupFrame();
+
+        sender.doWork();
+        assertThat(receivedFrames.size(), is(0)); // setup has been sent already, have to wait
+
+        nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10);
+        sender.doWork();
+
+        assertThat(receivedFrames.size(), is(2));
+
+        setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
+        assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
+        dataHeader.wrap(receivedFrames.remove());
+        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA)); // heartbeat is sent after setup
+        assertThat(dataHeader.frameLength(), is(0));
     }
 
     @Test

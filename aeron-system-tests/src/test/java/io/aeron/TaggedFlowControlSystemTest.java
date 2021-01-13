@@ -88,12 +88,14 @@ public class TaggedFlowControlSystemTest
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .flowControlReceiverTimeoutNs(TimeUnit.MILLISECONDS.toNanos(1000))
             .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .flowControlReceiverTimeoutNs(TimeUnit.MILLISECONDS.toNanos(1000))
             .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 

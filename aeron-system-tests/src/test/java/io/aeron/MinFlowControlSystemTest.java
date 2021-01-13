@@ -88,12 +88,14 @@ public class MinFlowControlSystemTest
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .flowControlReceiverTimeoutNs(TimeUnit.MILLISECONDS.toNanos(1000))
             .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .flowControlReceiverTimeoutNs(TimeUnit.MILLISECONDS.toNanos(1000))
             .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
@@ -200,7 +202,6 @@ public class MinFlowControlSystemTest
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
         int numFragmentsReadFromA = 0, numFragmentsReadFromB = 0;
-        boolean isBClosed = false;
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
         driverAContext.multicastFlowControlSupplier(new MinMulticastFlowControlSupplier());
@@ -216,6 +217,7 @@ public class MinFlowControlSystemTest
             Tests.yield();
         }
 
+        boolean isBClosed = false;
         while (numFragmentsReadFromA < numMessagesToSend)
         {
             if (numMessagesLeftToSend > 0)

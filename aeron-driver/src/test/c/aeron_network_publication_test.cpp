@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include <array>
 #include <gtest/gtest.h>
-
 
 extern "C"
 {
@@ -223,7 +223,7 @@ TEST_F(NetworkPublicationTest, shouldSendHeartbeatWhileSendingPeriodicSetups)
     auto *test_bindings_state =
         static_cast<aeron_test_udp_bindings_state_t *>(publication->endpoint->transport.bindings_clientd);
 
-    AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t data_buffer, 16) = {};
     sockaddr_storage sockaddr = {};
 
     aeron_network_publication_on_status_message(

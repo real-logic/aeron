@@ -201,7 +201,7 @@ int aeron_network_publication_create(
     _pub->linger_timeout_ns = (int64_t)params->linger_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->connection_timeout_ns = (int64_t)context->publication_connection_timeout_ns;
-    _pub->time_of_last_send_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
+    _pub->time_of_last_data_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
     _pub->time_of_last_setup_ns = now_ns - AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS - 1;
     _pub->status_message_deadline_ns = params->spies_simulate_connection ?
         now_ns : now_ns + (int64_t)context->publication_connection_timeout_ns;
@@ -304,7 +304,6 @@ int aeron_network_publication_setup_message_check(
         }
 
         publication->time_of_last_setup_ns = now_ns;
-        publication->time_of_last_send_or_heartbeat_ns = now_ns;
 
         if (publication->has_receivers)
         {
@@ -324,7 +323,8 @@ int aeron_network_publication_heartbeat_message_check(
 {
     int bytes_sent = 0;
 
-    if (now_ns > (publication->time_of_last_send_or_heartbeat_ns + AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS))
+    if (publication->has_receivers &&
+        now_ns > (publication->time_of_last_data_or_heartbeat_ns + AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS))
     {
         uint8_t heartbeat_buffer[sizeof(aeron_data_header_t)];
         aeron_data_header_t *data_header = (aeron_data_header_t *)heartbeat_buffer;
@@ -364,7 +364,7 @@ int aeron_network_publication_heartbeat_message_check(
         }
 
         aeron_counter_ordered_increment(publication->heartbeats_sent_counter, 1);
-        publication->time_of_last_send_or_heartbeat_ns = now_ns;
+        publication->time_of_last_data_or_heartbeat_ns = now_ns;
     }
 
     return bytes_sent;
@@ -426,7 +426,7 @@ int aeron_network_publication_send_data(
             }
         }
 
-        publication->time_of_last_send_or_heartbeat_ns = now_ns;
+        publication->time_of_last_data_or_heartbeat_ns = now_ns;
         publication->track_sender_limits = true;
         aeron_counter_set_ordered(publication->snd_pos_position.value_addr, highest_pos);
     }

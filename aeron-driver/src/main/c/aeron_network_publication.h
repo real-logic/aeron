@@ -78,7 +78,7 @@ typedef struct aeron_network_publication_stct
     int64_t linger_timeout_ns;
     int64_t unblock_timeout_ns;
     int64_t connection_timeout_ns;
-    int64_t time_of_last_send_or_heartbeat_ns;
+    int64_t time_of_last_data_or_heartbeat_ns;
     int64_t time_of_last_setup_ns;
     int64_t status_message_deadline_ns;
     int64_t tag;

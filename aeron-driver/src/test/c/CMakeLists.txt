@@ -85,3 +85,5 @@ set_tests_properties(c_cnc_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_cnc_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(congestion_control_test aeron_congestion_control_test.cpp)
+
+aeron_driver_test(network_publication_test aeron_network_publication_test.cpp)

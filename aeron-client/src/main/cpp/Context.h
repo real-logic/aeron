@@ -230,7 +230,7 @@ public:
      *
      * @return path of the CnC file
      */
-    inline std::string cncFileName()
+    inline std::string cncFileName() const
     {
         return m_dirName + std::string(1, AERON_FILE_SEP) + CncFileDescriptor::CNC_FILE;
     }

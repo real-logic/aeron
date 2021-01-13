@@ -679,7 +679,7 @@ public final class NetworkPublication
     {
         int bytesSent = 0;
 
-        if (hasReceivers && (timeOfLastDataOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS) - nowNs < 0)
+        if ((timeOfLastDataOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS) - nowNs < 0)
         {
             heartbeatBuffer.clear();
             heartbeatDataHeader

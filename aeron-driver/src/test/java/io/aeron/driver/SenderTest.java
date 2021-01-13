@@ -172,14 +172,14 @@ public class SenderTest
     public void shouldSendSetupFrameOnChannelWhenTimeoutWithoutStatusMessage()
     {
         sender.doWork();
-        assertThat(receivedFrames.size(), is(1));
+        assertThat(receivedFrames.size(), is(2)); // setup and heartbeat
         nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1);
         sender.doWork();
-        assertThat(receivedFrames.size(), is(1));
+        assertThat(receivedFrames.size(), is(2)); // setup and heartbeat
 
         nanoClock.advance(10);
         sender.doWork();
-        assertThat(receivedFrames.size(), is(2));
+        assertThat(receivedFrames.size(), is(4)); // setup and heartbeat
 
         setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
         assertThat(setupHeader.frameLength(), is(SetupFlyweight.HEADER_LENGTH));
@@ -196,7 +196,7 @@ public class SenderTest
     public void shouldSendMultipleSetupFramesOnChannelWhenTimeoutWithoutStatusMessage()
     {
         sender.doWork();
-        assertThat(receivedFrames.size(), is(1));
+        assertThat(receivedFrames.size(), is(2)); // setup and heartbeat
 
         nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1);
         sender.doWork();
@@ -204,7 +204,7 @@ public class SenderTest
         nanoClock.advance(10);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2));
+        assertThat(receivedFrames.size(), is(4)); // setup and heartbeat
     }
 
     @Test
@@ -218,11 +218,11 @@ public class SenderTest
         publication.onStatusMessage(msg, rcvAddress);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2));
+        assertThat(receivedFrames.size(), is(2)); // setup and heartbeat
         dataHeader.wrap(receivedFrames.remove());
-        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP)); // setup
+        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
         dataHeader.wrap(receivedFrames.remove());
-        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA)); // heartbeat
+        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.frameLength(), is(0));
 
         nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10);
@@ -230,7 +230,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), is(1));
         dataHeader.wrap(receivedFrames.remove());
-        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA)); // heartbeat
+        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
     }
 
@@ -374,40 +374,6 @@ public class SenderTest
         assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
-        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
-        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-    }
-
-    @Test
-    public void shouldNotSendUntilStatusMessageReceived()
-    {
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
-        buffer.putBytes(0, PAYLOAD);
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
-
-        sender.doWork();
-        assertThat(receivedFrames.size(), is(1));
-        setupHeader.wrap(receivedFrames.remove());
-        assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
-
-        final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
-        when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
-        when(msg.consumptionTermOffset()).thenReturn(0);
-        when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
-
-        publication.onStatusMessage(msg, rcvAddress);
-        sender.doWork();
-
-        assertThat(receivedFrames.size(), is(1));
-
-        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-
-        assertThat(dataHeader.frameLength(), is(FRAME_LENGTH));
-        assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.streamId(), is(STREAM_ID));
-        assertThat(dataHeader.sessionId(), is(SESSION_ID));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));

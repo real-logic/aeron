@@ -78,7 +78,7 @@ class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
 
 class NetworkPublicationSenderFields extends NetworkPublicationPadding2
 {
-    long timeOfLastSendOrHeartbeatNs;
+    long timeOfLastDataOrHeartbeatNs;
     long timeOfLastSetupNs;
     long timeOfLastStatusMessageNs;
     boolean trackSenderLimits = false;
@@ -225,7 +225,7 @@ public final class NetworkPublication
         termLengthMask = termLength - 1;
 
         final long nowNs = nanoClock.nanoTime();
-        timeOfLastSendOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
+        timeOfLastDataOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
         timeOfLastStatusMessageNs = nowNs;
 
@@ -623,7 +623,7 @@ public final class NetworkPublication
 
                 if (available == channelEndpoint.send(sendBuffer))
                 {
-                    timeOfLastSendOrHeartbeatNs = nowNs;
+                    timeOfLastDataOrHeartbeatNs = nowNs;
                     trackSenderLimits = true;
 
                     bytesSent = available;
@@ -650,7 +650,6 @@ public final class NetworkPublication
         if ((timeOfLastSetupNs + PUBLICATION_SETUP_TIMEOUT_NS) - nowNs < 0)
         {
             timeOfLastSetupNs = nowNs;
-            timeOfLastSendOrHeartbeatNs = nowNs;
 
             setupBuffer.clear();
             setupHeader
@@ -680,7 +679,7 @@ public final class NetworkPublication
     {
         int bytesSent = 0;
 
-        if ((timeOfLastSendOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS) - nowNs < 0)
+        if (hasReceivers && (timeOfLastDataOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS) - nowNs < 0)
         {
             heartbeatBuffer.clear();
             heartbeatDataHeader
@@ -696,7 +695,7 @@ public final class NetworkPublication
                 shortSends.increment();
             }
 
-            timeOfLastSendOrHeartbeatNs = nowNs;
+            timeOfLastDataOrHeartbeatNs = nowNs;
             heartbeatsSent.incrementOrdered();
         }
 

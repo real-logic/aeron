@@ -30,6 +30,7 @@ extern "C"
 }
 
 #define PUB_URI "aeron:udp?endpoint=127.0.0.1:24325"
+#define PUB_URI_2 "aeron:udp?endpoint=127.0.0.1:24326"
 #define STREAM_ID (117)
 
 using namespace aeron;
@@ -222,19 +223,28 @@ TEST_F(CncTest, shouldGetLossReport)
     aeron_async_add_subscription_t *async_sub;
     aeron_subscription_t *subscription;
     ASSERT_EQ(aeron_async_add_subscription(
-        &async_sub, m_aeron, PUB_URI, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+        &async_sub, m_aeron, PUB_URI_2, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
     ASSERT_TRUE((subscription = awaitSubscriptionOrError(async_sub))) << aeron_errmsg();
 
     aeron_async_add_publication_t *async_pub;
     aeron_publication_t *publication;
-    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, PUB_URI_2, STREAM_ID), 0);
     ASSERT_TRUE((publication = awaitPublicationOrError(async_pub))) << aeron_errmsg();
 
     const char *message = "hello world";
 
-    for (int i = 0; i < 100; i++)
+    poll_handler_t handler =
+            [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
+            {
+            };
+
+    aeron_counters_reader_t *counters = aeron_cnc_counters_reader(m_cnc);
+    int64_t *retransmitsSentCounter = aeron_counters_reader_addr(counters, AERON_SYSTEM_COUNTER_RETRANSMITS_SENT);
+
+    int64_t retransmits = 0;
+    for (int i = 0; i < 100 && 0 == retransmits; i++)
     {
-        int64_t offer = 0;
+        int64_t offer;
         do
         {
             offer = aeron_publication_offer(
@@ -247,19 +257,14 @@ TEST_F(CncTest, shouldGetLossReport)
             ASSERT_NE(AERON_PUBLICATION_ERROR, offer) << aeron_errmsg();
         }
         while (offer < 0);
-    }
 
-    poll_handler_t handler =
-        [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
+        while (poll(subscription, handler, 1) < 1)
         {
-        };
+        }
 
-    int total = 0;
-    while (total < 100)
-    {
-        total += poll(subscription, handler, 100);
+        AERON_GET_VOLATILE(retransmits, *retransmitsSentCounter);
     }
 
-    ASSERT_LT(0, aeron_cnc_loss_reporter_read(m_cnc, countingLossReader, &lossCallbackCounter)) << aeron_errmsg();
+    ASSERT_TRUE(0 < aeron_cnc_loss_reporter_read(m_cnc, countingLossReader, &lossCallbackCounter)) << aeron_errmsg();
     ASSERT_NE(0, lossCallbackCounter);
 }

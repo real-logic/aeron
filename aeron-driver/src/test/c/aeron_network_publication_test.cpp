@@ -231,20 +231,18 @@ TEST_F(NetworkPublicationTest, shouldSendHeartbeatWhileSendingPeriodicSetups)
     aeron_network_publication_send(publication, time_ns);
 
     ASSERT_TRUE(publication->has_receivers);
-    ASSERT_EQ(1, test_bindings_state->setup_count);
     ASSERT_EQ(1, test_bindings_state->heartbeat_count);
 
     time_ns += (AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS + 10);
 
     aeron_network_publication_send(publication, time_ns);
-    ASSERT_EQ(1, test_bindings_state->setup_count);
     ASSERT_EQ(2, test_bindings_state->heartbeat_count);
 
     time_ns += (AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS + 10);
 
     aeron_network_publication_trigger_send_setup_frame(publication);
     aeron_network_publication_send(publication, time_ns);
-    ASSERT_EQ(2, test_bindings_state->setup_count);
+    ASSERT_EQ(1, test_bindings_state->setup_count);
     ASSERT_EQ(3, test_bindings_state->heartbeat_count);
 }
 

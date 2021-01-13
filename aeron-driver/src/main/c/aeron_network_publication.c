@@ -208,7 +208,7 @@ int aeron_network_publication_create(
     _pub->is_exclusive = is_exclusive;
     _pub->spies_simulate_connection = params->spies_simulate_connection;
     _pub->signal_eos = params->signal_eos;
-    _pub->should_send_setup_frame = true;
+    _pub->is_setup_elicited = false;
     _pub->has_receivers = false;
     _pub->has_spies = false;
     _pub->is_connected = false;
@@ -307,7 +307,7 @@ int aeron_network_publication_setup_message_check(
 
         if (publication->has_receivers)
         {
-            publication->should_send_setup_frame = false;
+            publication->is_setup_elicited = false;
         }
     }
 
@@ -323,7 +323,7 @@ int aeron_network_publication_heartbeat_message_check(
 {
     int bytes_sent = 0;
 
-    if (publication->has_receivers &&
+    if (publication->has_initial_connection &&
         now_ns > (publication->time_of_last_data_or_heartbeat_ns + AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS))
     {
         uint8_t heartbeat_buffer[sizeof(aeron_data_header_t)];
@@ -447,7 +447,7 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
         snd_pos, publication->position_bits_to_shift, publication->initial_term_id);
     int32_t term_offset = (int32_t)(snd_pos & publication->term_length_mask);
 
-    if (publication->should_send_setup_frame)
+    if (!publication->has_initial_connection || publication->is_setup_elicited)
     {
         if (aeron_network_publication_setup_message_check(publication, now_ns, active_term_id, term_offset) < 0)
         {
@@ -620,6 +620,11 @@ void aeron_network_publication_on_status_message(
     if (!publication->has_receivers)
     {
         AERON_PUT_ORDERED(publication->has_receivers, true);
+    }
+
+    if (!publication->has_initial_connection)
+    {
+        AERON_PUT_ORDERED(publication->has_initial_connection, true);
     }
 
     aeron_counter_set_ordered(

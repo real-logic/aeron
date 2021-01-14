@@ -81,8 +81,8 @@ public final class DataCollector
      */
     public void dumpData(final TestInfo testInfo)
     {
-        final String testClass = testInfo.getTestClass().get().getName();
-        final String testMethod = testInfo.getTestMethod().get().getName();
+        final String testClass = testInfo.getTestClass().orElseThrow(IllegalStateException::new).getName();
+        final String testMethod = testInfo.getTestMethod().orElseThrow(IllegalStateException::new).getName();
         copyData(testClass + SEPARATOR + testMethod);
     }
 
@@ -269,25 +269,28 @@ public final class DataCollector
         }
         else
         {
-            Files.walkFileTree(src, new SimpleFileVisitor<Path>()
-            {
-                public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
-                    throws IOException
+            Files.walkFileTree(
+                src,
+                new SimpleFileVisitor<Path>()
                 {
-                    final Path dstDir = dst.resolve(src.relativize(dir));
-                    ensurePathExists(dstDir);
-                    Files.copy(dir, dstDir, COPY_ATTRIBUTES);
+                    public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
+                        throws IOException
+                    {
+                        final Path dstDir = dst.resolve(src.relativize(dir));
+                        ensurePathExists(dstDir);
+                        Files.copy(dir, dstDir, COPY_ATTRIBUTES);
 
-                    return FileVisitResult.CONTINUE;
-                }
+                        return FileVisitResult.CONTINUE;
+                    }
 
-                public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException
-                {
-                    Files.copy(file, dst.resolve(src.relativize(file)), COPY_ATTRIBUTES);
+                    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+                        throws IOException
+                    {
+                        Files.copy(file, dst.resolve(src.relativize(file)), COPY_ATTRIBUTES);
 
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
         }
     }
 

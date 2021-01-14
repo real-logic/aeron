@@ -84,7 +84,7 @@ protected:
         aeron_driver_context_close(m_context);
     }
 
-    aeron_send_channel_endpoint_t *createEndpoint(const char* uri)
+    aeron_send_channel_endpoint_t *createEndpoint(const char *uri)
     {
         aeron_udp_channel_t *channel = nullptr;
         if (0 != aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel, false))
@@ -98,10 +98,10 @@ protected:
             return nullptr;
         }
         m_endpoints.push_back(endpoint);
-        
+
         return endpoint;
     }
-    
+
     aeron_network_publication_t *createPublication(const char *uri)
     {
         aeron_send_channel_endpoint_t *endpoint = createEndpoint(uri);
@@ -136,7 +136,7 @@ protected:
             snd_pos_position.counter_id < 0 || snd_lmt_position.counter_id < 0 ||
             snd_bpe_counter.counter_id < 0)
         {
-            return NULL;
+            return nullptr;
         }
 
         aeron_counters_manager_counter_owner_id(
@@ -187,17 +187,17 @@ protected:
 
 private:
     aeron_clock_cache_t m_cached_clock = {};
-    aeron_udp_channel_transport_bindings_t m_transport_bindings;
-    aeron_driver_context_t *m_context;
-    aeron_counters_manager_t m_counters_manager;
-    aeron_system_counters_t m_system_counters;
+    aeron_udp_channel_transport_bindings_t m_transport_bindings = {};
+    aeron_driver_context_t *m_context = nullptr;
+    aeron_counters_manager_t m_counters_manager = {};
+    aeron_system_counters_t m_system_counters = {};
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16) = {};
     AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16) = {};
     std::vector<aeron_send_channel_endpoint_t *> m_endpoints;
     std::vector<aeron_network_publication_t *> m_publications;
-    aeron_name_resolver_t m_resolver;
-    aeron_driver_sender_t m_sender;
-    aeron_driver_sender_proxy_t m_sender_proxy;
+    aeron_name_resolver_t m_resolver = {};
+    aeron_driver_sender_t m_sender = {};
+    aeron_driver_sender_proxy_t m_sender_proxy = {};
 };
 
 TEST_F(NetworkPublicationTest, shouldSendSetupMessageInitially)
@@ -245,5 +245,3 @@ TEST_F(NetworkPublicationTest, shouldSendHeartbeatWhileSendingPeriodicSetups)
     ASSERT_EQ(1, test_bindings_state->setup_count);
     ASSERT_EQ(3, test_bindings_state->heartbeat_count);
 }
-
-

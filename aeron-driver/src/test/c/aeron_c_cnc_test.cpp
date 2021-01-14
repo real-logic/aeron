@@ -75,7 +75,7 @@ class CncTest : public CSystemTestBase, public testing::Test
 protected:
     CncTest() : CSystemTestBase(
         std::vector<std::pair<std::string, std::string>>{
-            { "AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", "loss" },
+            { "AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS",        "loss" },
             { "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", "rate=0.2|recv-msg-mask=0xF" }
         })
     {
@@ -185,7 +185,7 @@ TEST_F(CncTest, shouldGetCountersAndDistinctErrorLogs)
     int errorCallbackCounter = 0;
 
     aeron_counters_reader_t *counters = aeron_cnc_counters_reader(m_cnc);
-    CounterIdFilter filter{AERON_SYSTEM_COUNTER_ERRORS};
+    CounterIdFilter filter{ AERON_SYSTEM_COUNTER_ERRORS };
 
     aeron_counters_reader_foreach_counter(counters, counterFilterCallback, &filter);
     ASSERT_TRUE(filter.matches());
@@ -201,7 +201,7 @@ TEST_F(CncTest, shouldGetCountersAndDistinctErrorLogs)
         &async, m_aeron, PUB_URI, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0) << aeron_errmsg();
     ASSERT_EQ(nullptr, awaitSubscriptionOrError(async));
 
-    filter = CounterIdFilter{AERON_SYSTEM_COUNTER_ERRORS};
+    filter = CounterIdFilter{ AERON_SYSTEM_COUNTER_ERRORS };
 
     int64_t deadline_ms = aeron_epoch_clock() + 1000;
     while (filter.value() < 1)

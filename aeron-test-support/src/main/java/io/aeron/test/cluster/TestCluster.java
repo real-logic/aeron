@@ -291,6 +291,7 @@ public class TestCluster implements AutoCloseable
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
+            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .deleteDirOnStart(cleanStart);
 
         context.serviceContainerContext
@@ -359,6 +360,7 @@ public class TestCluster implements AutoCloseable
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
+            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .deleteDirOnStart(cleanStart);
 
         context.serviceContainerContext
@@ -427,6 +429,7 @@ public class TestCluster implements AutoCloseable
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
+            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .deleteDirOnStart(false);
 
         context.serviceContainerContext
@@ -548,6 +551,7 @@ public class TestCluster implements AutoCloseable
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
+            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .deleteDirOnStart(false);
 
         context.serviceContainerContext
@@ -1235,6 +1239,7 @@ public class TestCluster implements AutoCloseable
             .logChannel(LOG_CHANNEL)
             .archiveContext(nodeCtx.aeronArchiveCtx.clone())
             .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k")
+            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .deleteDirOnStart(cleanStart);
 
         return nodeCtx;

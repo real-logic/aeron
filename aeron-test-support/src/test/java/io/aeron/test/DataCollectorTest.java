@@ -132,8 +132,8 @@ class DataCollectorTest
 
             dataCollector.dumpData(testInfo);
 
-            final String testClass = testInfo.getTestClass().get().getName();
-            final String testMethod = testInfo.getTestMethod().get().getName();
+            final String testClass = testInfo.getTestClass().orElseThrow(IllegalStateException::new).getName();
+            final String testMethod = testInfo.getTestMethod().orElseThrow(IllegalStateException::new).getName();
             final Path destination = rootDir.resolve(testClass + "-" + testMethod);
 
             assertTrue(exists(destination));

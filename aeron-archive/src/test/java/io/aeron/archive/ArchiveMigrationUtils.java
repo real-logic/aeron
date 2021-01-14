@@ -135,7 +135,7 @@ final class ArchiveMigrationUtils
             final MappedByteBuffer mappedByteBuffer = channel.map(
                 READ_WRITE,
                 0,
-                RECORDING_FRAME_LENGTH_V2 + recordings.size() * RECORDING_FRAME_LENGTH_V2);
+                RECORDING_FRAME_LENGTH_V2 + (recordings.size() * (long)RECORDING_FRAME_LENGTH_V2));
             mappedByteBuffer.order(LITTLE_ENDIAN);
             try
             {

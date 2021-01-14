@@ -78,6 +78,7 @@ public class RecordingLogTest
             assertEquals(1, recordingLog.entries().size());
 
             final RecordingLog.Entry snapshot = recordingLog.getLatestSnapshot(SERVICE_ID);
+            assertNotNull(snapshot);
             assertEquals(entry.toString(), snapshot.toString());
         }
     }
@@ -183,6 +184,7 @@ public class RecordingLogTest
 
             final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
 
+            assertNotNull(lastTerm);
             assertEquals(5L, lastTerm.recordingId);
 
             recordingLog.invalidateEntry(11, 6);
@@ -199,6 +201,7 @@ public class RecordingLogTest
             assertEquals(666, recoveryPlan.log.termBaseLogPosition);
 
             final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
+            assertNotNull(lastTerm);
             assertEquals(0L, lastTerm.recordingId);
             assertEquals(0L, recordingLog.findLastTermRecordingId());
             assertTrue(recordingLog.isUnknown(removedLeadershipTerm));
@@ -330,8 +333,13 @@ public class RecordingLogTest
             assertFalse(recordingLog.entries().get(4).isValid);
             assertTrue(recordingLog.entries().get(5).isValid);
 
-            assertEquals(2L, recordingLog.getLatestSnapshot(0).recordingId);
-            assertEquals(3L, recordingLog.getLatestSnapshot(SERVICE_ID).recordingId);
+            final RecordingLog.Entry latestServiceSnapshot = recordingLog.getLatestSnapshot(0);
+            assertNotNull(latestServiceSnapshot);
+            assertEquals(2L, latestServiceSnapshot.recordingId);
+
+            final RecordingLog.Entry latestCmSnapshot = recordingLog.getLatestSnapshot(SERVICE_ID);
+            assertNotNull(latestCmSnapshot);
+            assertEquals(3L, latestCmSnapshot.recordingId);
 
             assertTrue(recordingLog.invalidateLatestSnapshot());
             assertEquals(6, recordingLog.entries().size());

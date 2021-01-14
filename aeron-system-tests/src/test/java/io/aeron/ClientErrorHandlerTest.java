@@ -43,7 +43,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.test.Tests.awaitConnected;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class ClientErrorHandlerTest

@@ -91,7 +91,7 @@ class CatalogWithJumboRecordingsAndGapsTest
                 recordingIds[i] = catalog.addNewRecording(
                     i,
                     NULL_POSITION,
-                    i * 100,
+                    i * 100L,
                     NULL_TIMESTAMP,
                     0,
                     SEGMENT_LENGTH,

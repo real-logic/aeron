@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-SOURCE_DIR="`pwd`"
-export BUILD_DIR="`pwd`/cppbuild/Release"
+SOURCE_DIR="$(pwd)"
+export BUILD_DIR="$(pwd)/cppbuild/Release"
 export BUILD_CONFIG=Release
 EXTRA_CMAKE_ARGS=""
 COVERAGE_BUILD=0
 
 ncpus=1
-case "`uname`" in
+case "$(uname)" in
   Darwin* )
-    ncpus=`sysctl -n hw.ncpu`
+    ncpus=$(sysctl -n hw.ncpu)
     ;;
   Linux*)
     ncpus=$(lscpu -p | egrep -v '^#' | wc -l)
@@ -40,7 +40,7 @@ do
       ;;
     -d|--debug-build)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
-      export BUILD_DIR="`pwd`/cppbuild/Debug"
+      export BUILD_DIR="$(pwd)/cppbuild/Debug"
       export BUILD_CONFIG=Debug
       shift
       ;;

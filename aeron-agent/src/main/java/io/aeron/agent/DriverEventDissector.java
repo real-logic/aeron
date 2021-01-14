@@ -21,7 +21,6 @@ import io.aeron.protocol.*;
 import org.agrona.MutableDirectBuffer;
 
 import static io.aeron.agent.CommonEventDissector.*;
-import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
 import static io.aeron.agent.DriverEventCode.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;

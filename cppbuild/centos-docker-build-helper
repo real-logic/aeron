@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SOURCE_DIR="`pwd`"
+SOURCE_DIR="$(pwd)"
 CMAKE_VERSION="3.6.1"
 
 # Install dev tools

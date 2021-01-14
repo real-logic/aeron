@@ -6,6 +6,6 @@ then echo "No GCC version provided!";
   exit 1;
 fi
 
-SOURCE_DIR="`pwd`"
+SOURCE_DIR="$(pwd)"
 
-docker run --rm --shm-size=1G --network host --volume="${SOURCE_DIR}":/opt/aeron --volume="`realpath ~/.gradle`":/root/.gradle -e "USER=root" -e "GCC_VERSION=${GCC_VERSION}" -w "/opt/aeron" centos:7 cppbuild/centos-docker-build-helper
+docker run --rm --shm-size=1G --network host --volume="${SOURCE_DIR}":/opt/aeron --volume="$(realpath ~/.gradle)":/root/.gradle -e "USER=root" -e "GCC_VERSION=${GCC_VERSION}" -w "/opt/aeron" centos:7 cppbuild/centos-docker-build-helper

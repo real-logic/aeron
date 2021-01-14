@@ -57,10 +57,10 @@ acknowledgements.
 Within Aeron Cluster, replication (ensuring that a follower node has the same state as the leader) and recovery
 (restoring a stopped node to its previous state)footnote:[Where stopping could include crashing or manually shutting
 down] are the same problem, or at least at similar enough, to use the same mechanism. They rely on three functions.
-Firstly, some known initial state, this could either be the state when first provisioned (a 'null' or empty state), or
+Firstly, for some known initial state, this could either be the state when first provisioned (a 'null' or empty state), or
 some snapshot of state at a point in time. Secondly, an ordered log of all input messages, this is handled by Cluster's
 Raft implementation. Thirdly, the application logic needs to be deterministic, i.e. it must derive all of its resulting
-state and output events from the initial state and the input messages, such that for the same inputs it will always get
+state and output events from the initial state, and the input messages, such that for the same inputs it will always get
 the same result. This can be a trickier than it first seems as it excludes some functionality that we may normally take
 for granted.
 
@@ -213,7 +213,7 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredService.java[tag=message]
 ----
 
-For our input message we have 3 fields, a `correlationId` which it the customer supplied identifier for the message,
+For our input message we have 3 fields, a `correlationId` which is the customer supplied identifier for the message,
 `customerId` to identify the customer placing the bid, and a `price` (we've used a long for this, which represents the
 value in cents).
 
@@ -254,7 +254,7 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 id and bid price.
 
 <2> Write the message to the publication, again we need to check the return from the `offer` call and use
-the Cluster's `IdleStrategy::idle` inside of the busy wait loop.
+the Cluster's `IdleStrategy::idle` inside the busy wait loop.
 
 === Loading State
 
@@ -324,7 +324,7 @@ While we don't really need 100 ports for each node (closer to 10), it does make 
 each service. Each endpoint will be an offset from the first port in a node's range. E.g. the archive control request
 port has an offset of 1, so for Node 2 it will have port 9201.
 
-To start the cluster node we are going define our own class with a main method. It will construct and start all of the
+To start the cluster node we are going define our own class with a main method. It will construct and start all the
 necessary components. As indicated above we are going to give each node of the cluster a unique id (0, 1, and 2). We are
 also going to use this value as the cluster member id.
 
@@ -542,7 +542,7 @@ cluster events (e.g. new elected leaders).
 <3> Specify the channel to receive egress responses back from the cluster. In our case we are using a UDP unicast
 response, which will limit responses to the session that sent the ingress message. We are using port 0 to allow for
 multiple clients on the same machine with multiple media drivers and to avoid having to specify an actual port per
-client.
+cluster client.
 
 +
 
@@ -587,8 +587,8 @@ up any messages that have been sent back from the cluster, including errors or s
 
 As was mentioned previously, our client must have a class which implements the `EgressListener` interface to receive
 messages that come back from the cluster. The responses can be application messages, session events (e.g. error
-messages), or notifications of a new leader. In this tutorial there is not a lot to do, we simple print out the
-responses that we receive.
+messages), or notifications of a new leader. In this tutorial there is not a lot to do, therefore we simply print out
+the responses that received.
 
 [source, Java, indent=0, options="nowrap"]
 ----
@@ -847,7 +847,7 @@ the service should start recovering from where it to use the new snapshot on re-
 Here are some exercises that you can try out.
 
 . Have multiple customers competing on the same auction.
-. Use multicast for the egress channel so that customers can see each others prices and make better bids.
+. Use multicast for the egress channel so that customers can see the others prices and make better bids.
 . Implement a second message type that will allow customers to query for the current bid price of the auction.
 
 //== Timers

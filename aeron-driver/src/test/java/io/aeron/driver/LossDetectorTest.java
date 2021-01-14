@@ -92,7 +92,7 @@ public class LossDetectorTest
     public void shouldNotNakIfNoMissingData()
     {
         final long rebuildPosition = ACTIVE_TERM_POSITION;
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(1));
@@ -109,7 +109,7 @@ public class LossDetectorTest
     public void shouldNakMissingData()
     {
         final long rebuildPosition = ACTIVE_TERM_POSITION;
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -125,7 +125,7 @@ public class LossDetectorTest
     public void shouldRetransmitNakForMissingData()
     {
         final long rebuildPosition = ACTIVE_TERM_POSITION;
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -143,7 +143,7 @@ public class LossDetectorTest
     public void shouldStopNakOnReceivingData()
     {
         long rebuildPosition = ACTIVE_TERM_POSITION;
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -151,7 +151,7 @@ public class LossDetectorTest
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         currentTime = TimeUnit.MILLISECONDS.toNanos(20);
         insertDataFrame(offsetOfMessage(1));
-        rebuildPosition += (ALIGNED_FRAME_LENGTH * 3);
+        rebuildPosition += (ALIGNED_FRAME_LENGTH * 3L);
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         currentTime = TimeUnit.MILLISECONDS.toNanos(100);
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
@@ -163,7 +163,7 @@ public class LossDetectorTest
     public void shouldHandleMoreThan2Gaps()
     {
         long rebuildPosition = ACTIVE_TERM_POSITION;
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 7);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 7L);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -174,7 +174,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(40);
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         insertDataFrame(offsetOfMessage(1));
-        rebuildPosition += (3 * ALIGNED_FRAME_LENGTH);
+        rebuildPosition += (ALIGNED_FRAME_LENGTH * 3L);
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         currentTime = TimeUnit.MILLISECONDS.toNanos(80);
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
@@ -189,7 +189,7 @@ public class LossDetectorTest
     public void shouldReplaceOldNakWithNewNak()
     {
         long rebuildPosition = ACTIVE_TERM_POSITION;
-        long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -200,8 +200,8 @@ public class LossDetectorTest
 
         insertDataFrame(offsetOfMessage(4));
         insertDataFrame(offsetOfMessage(1));
-        rebuildPosition += (ALIGNED_FRAME_LENGTH * 3);
-        hwmPosition = (ALIGNED_FRAME_LENGTH * 5);
+        rebuildPosition += (ALIGNED_FRAME_LENGTH * 3L);
+        hwmPosition = (ALIGNED_FRAME_LENGTH * 5L);
 
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         currentTime = TimeUnit.MILLISECONDS.toNanos(100);
@@ -216,7 +216,7 @@ public class LossDetectorTest
         lossDetector = getLossHandlerWithImmediate();
 
         final long rebuildPosition = ACTIVE_TERM_POSITION;
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -230,7 +230,7 @@ public class LossDetectorTest
     public void shouldNotNakImmediatelyByDefault()
     {
         final long rebuildPosition = ACTIVE_TERM_POSITION;
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -246,7 +246,7 @@ public class LossDetectorTest
         lossDetector = getLossHandlerWithImmediate();
 
         final long rebuildPosition = ACTIVE_TERM_POSITION;
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -278,8 +278,8 @@ public class LossDetectorTest
     {
         lossDetector = getLossHandlerWithImmediate();
 
-        final long rebuildPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 5);
+        final long rebuildPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 5L);
 
         insertDataFrame(offsetOfMessage(2));
         insertDataFrame(offsetOfMessage(4));

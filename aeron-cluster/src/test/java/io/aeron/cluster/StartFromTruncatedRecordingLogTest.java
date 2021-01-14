@@ -311,6 +311,8 @@ public class StartFromTruncatedRecordingLogTest
         final RecordingLog existingRecordingLog, final RecordingLog newRecordingLog, final int serviceId)
     {
         final RecordingLog.Entry snapshot = existingRecordingLog.getLatestSnapshot(serviceId);
+        assertNotNull(snapshot);
+
         newRecordingLog.appendSnapshot(
             snapshot.recordingId,
             snapshot.leadershipTermId,

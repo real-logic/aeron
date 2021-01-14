@@ -129,7 +129,7 @@ public class TermReaderTest
         inOrder
             .verify(handler)
             .onFragment(eq(termBuffer), eq(alignedFrameLength + HEADER_LENGTH), eq(msgLength), any(Header.class));
-        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength * 2);
+        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength * 2L);
     }
 
     @Test

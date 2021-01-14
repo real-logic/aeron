@@ -44,7 +44,7 @@ It is worth playing with different messages lengths and threading configurations
 ```
     
 
-3. Start a normal subscriber so the publication connects and can record.
+3. Start a normal subscriber so that the publication connects and can record.
 
 ```
     $ cd ..

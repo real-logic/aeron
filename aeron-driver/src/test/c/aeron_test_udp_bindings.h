@@ -28,6 +28,7 @@ typedef struct aeron_test_udp_bindings_state_stct
     int nak_count;
     int setup_count;
     int rttm_count;
+    int heartbeat_count;
 }
 aeron_test_udp_bindings_state_t;
 
@@ -110,6 +111,9 @@ int aeron_test_udp_channel_transport_sendmsg(
         case AERON_HDR_TYPE_RTTM:
             state->rttm_count++;
             break;
+
+        case AERON_HDR_TYPE_DATA:
+            state->heartbeat_count++;
 
         default:
             break;

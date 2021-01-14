@@ -78,7 +78,7 @@ typedef struct aeron_network_publication_stct
     int64_t linger_timeout_ns;
     int64_t unblock_timeout_ns;
     int64_t connection_timeout_ns;
-    int64_t time_of_last_send_or_heartbeat_ns;
+    int64_t time_of_last_data_or_heartbeat_ns;
     int64_t time_of_last_setup_ns;
     int64_t status_message_deadline_ns;
     int64_t tag;
@@ -92,7 +92,8 @@ typedef struct aeron_network_publication_stct
     bool is_exclusive;
     bool spies_simulate_connection;
     bool signal_eos;
-    bool should_send_setup_frame;
+    bool is_setup_elicited;
+    bool has_initial_connection;
     bool has_receivers;
     bool has_spies;
     bool is_connected;
@@ -224,7 +225,7 @@ inline void aeron_network_publication_trigger_send_setup_frame(aeron_network_pub
 
     if (!is_end_of_stream)
     {
-        publication->should_send_setup_frame = true;
+        publication->is_setup_elicited = true;
     }
 }
 

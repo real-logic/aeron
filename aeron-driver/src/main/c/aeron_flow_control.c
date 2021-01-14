@@ -112,6 +112,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     _strategy->on_idle = aeron_max_flow_control_strategy_on_idle;
     _strategy->on_status_message = aeron_max_flow_control_strategy_on_sm;
     _strategy->fini = aeron_max_flow_control_strategy_fini;
+    _strategy->has_required_receivers = aeron_flow_control_strategy_has_required_receivers_default;
 
     *strategy = _strategy;
 

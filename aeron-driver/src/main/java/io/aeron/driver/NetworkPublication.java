@@ -82,8 +82,8 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
     long timeOfLastSetupNs;
     long timeOfLastStatusMessageNs;
     boolean trackSenderLimits = false;
-    boolean shouldSendSetupFrame = true;
-    boolean isHeartbeating = false;
+    boolean isSetupElicited = false;
+    boolean hasInitialConnection = false;
 }
 
 class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
@@ -312,7 +312,7 @@ public final class NetworkPublication
         if (!isEndOfStream)
         {
             timeOfLastStatusMessageNs = nanoClock.nanoTime();
-            shouldSendSetupFrame = true;
+            isSetupElicited = true;
         }
     }
 
@@ -377,9 +377,9 @@ public final class NetworkPublication
             hasReceivers = true;
         }
 
-        if (!isHeartbeating)
+        if (!hasInitialConnection)
         {
-            isHeartbeating = true;
+            hasInitialConnection = true;
         }
 
         final long timeNs = nanoClock.nanoTime();
@@ -478,7 +478,7 @@ public final class NetworkPublication
         final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
         final int termOffset = (int)senderPosition & termLengthMask;
 
-        if (shouldSendSetupFrame)
+        if (!hasInitialConnection || isSetupElicited)
         {
             setupMessageCheck(nowNs, activeTermId, termOffset);
         }
@@ -673,9 +673,9 @@ public final class NetworkPublication
                 shortSends.increment();
             }
 
-            if (hasReceivers)
+            if (isSetupElicited && hasReceivers)
             {
-                shouldSendSetupFrame = false;
+                isSetupElicited = false;
             }
         }
     }
@@ -685,7 +685,7 @@ public final class NetworkPublication
     {
         int bytesSent = 0;
 
-        if (isHeartbeating && (timeOfLastDataOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS) - nowNs < 0)
+        if (hasInitialConnection && (timeOfLastDataOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS) - nowNs < 0)
         {
             heartbeatBuffer.clear();
             heartbeatDataHeader

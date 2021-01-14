@@ -208,7 +208,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendSetupFrameOnlyOnceAfterReceivingStatusMessage()
+    public void shouldNotSendSetupFrameOnlyOnceAfterReceivingStatusMessage()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -218,9 +218,7 @@ public class SenderTest
         publication.onStatusMessage(msg, rcvAddress);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2));
-        dataHeader.wrap(receivedFrames.remove());
-        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP)); // setup
+        assertThat(receivedFrames.size(), is(1));
         dataHeader.wrap(receivedFrames.remove());
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA)); // heartbeat
         assertThat(dataHeader.frameLength(), is(0));
@@ -242,6 +240,11 @@ public class SenderTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
+        sender.doWork();
+
+        assertThat(receivedFrames.size(), is(1)); // setup frame
+        receivedFrames.remove();
+
         publication.onStatusMessage(msg, rcvAddress);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
@@ -250,8 +253,7 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2)); // setup then data
-        receivedFrames.remove();
+        assertThat(receivedFrames.size(), is(1)); // data
         receivedFrames.remove();
 
         publication.triggerSendSetupFrame();
@@ -283,15 +285,10 @@ public class SenderTest
 
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2)); // setup then heartbeat
-        receivedFrames.remove();
+        assertThat(receivedFrames.size(), is(1)); // heartbeat
         receivedFrames.remove();
 
         publication.triggerSendSetupFrame();
-
-        sender.doWork();
-        assertThat(receivedFrames.size(), is(0)); // setup has been sent already, have to wait
-
         nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10);
         sender.doWork();
 
@@ -320,9 +317,7 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2));
-        setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-        assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
+        assertThat(receivedFrames.size(), is(1));
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
         assertThat(dataHeader.frameLength(), is(FRAME_LENGTH));
@@ -353,10 +348,7 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(3));
-
-        setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-        assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
+        assertThat(receivedFrames.size(), is(2));
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
         assertThat(dataHeader.frameLength(), is(FRAME_LENGTH));
@@ -429,8 +421,7 @@ public class SenderTest
 
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2));
-        receivedFrames.remove();                   // skip setup
+        assertThat(receivedFrames.size(), is(1));
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
         assertThat(dataHeader.frameLength(), is(FRAME_LENGTH));
@@ -464,9 +455,8 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2));  // should send ticks
-        receivedFrames.remove();                   // skip setup & data frame
-        receivedFrames.remove();
+        assertThat(receivedFrames.size(), is(1));  // should send ticks
+        receivedFrames.remove();                   // skip data frame
 
         nanoClock.advance(Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1);
         sender.doWork();
@@ -498,9 +488,8 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2));  // should send ticks
-        receivedFrames.remove();
-        receivedFrames.remove();                   // skip setup & data frame
+        assertThat(receivedFrames.size(), is(1));  // should send ticks
+        receivedFrames.remove();                   // skip data (heartbeat) frame
 
         nanoClock.advance(Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1);
         sender.doWork();

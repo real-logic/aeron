@@ -711,8 +711,9 @@ class Election
         {
             logPosition = catchupPosition;
             appendPosition = catchupPosition;
-            timeOfLastUpdateNs = 0;
             updateRecordingLog(nowNs);
+            consensusModuleAgent.leadershipTermId(leadershipTermId);
+            timeOfLastUpdateNs = 0;
             state(FOLLOWER_LOG_INIT, nowNs);
             workCount += 1;
         }
@@ -733,8 +734,6 @@ class Election
             state(FOLLOWER_READY, nowNs);
         }
 
-        consensusModuleAgent.leadershipTermId(leadershipTermId);
-
         return 1;
     }
 
@@ -746,6 +745,7 @@ class Election
         if (null != image)
         {
             verifyLogImage(image);
+            consensusModuleAgent.leadershipTermId(leadershipTermId);
             consensusModuleAgent.followLog(image, isLeaderStartup);
             updateRecordingLog(nowNs);
             state(FOLLOWER_READY, nowNs);

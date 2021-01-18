@@ -1275,7 +1275,6 @@ public class ClusterTest
             final int numMessages = 10;
             cluster.sendMessages(numMessages);
             cluster.awaitResponseMessageCount(numMessages);
-            cluster.awaitServicesMessageCount(numMessages);
         }
         catch (final Throwable ex)
         {

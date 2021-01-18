@@ -1116,7 +1116,8 @@ public class Aeron implements AutoCloseable
         /**
          * This is the error handler which will be used if an error occurs during the callback for poll operations
          * such as {@link Subscription#poll(FragmentHandler, int)}. The default will be {@link #errorHandler()} if not
-         * set.
+         * set. To have a {@link Subscription#poll(FragmentHandler, int)} directly throw then set with
+         * {@link RethrowingErrorHandler}.
          *
          * @return the error handler that will be called for errors reported back from the media driver.
          */

@@ -429,13 +429,14 @@ TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
         aeronArchive = asyncConnect->poll();
     }
 
-    aeronArchive->checkForErrorResponse();
+    EXPECT_FALSE(aeronArchive->tryStopRecording(0));
 }
 
 TEST_F(AeronArchiveTest, shouldConnectToArchive)
 {
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
-    aeronArchive->checkForErrorResponse();
+
+    EXPECT_FALSE(aeronArchive->tryStopRecording(0));
 }
 
 TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)

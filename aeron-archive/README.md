@@ -87,11 +87,8 @@ Persisted Format
 =====
 The Archive is backed by 3 file types, all of which are expected to reside in the `archiveDir`.
 
- -  **Catalog (one per archive):** The catalog contains fixed length (1k) records of recording
- descriptors. The descriptors can be queried as described above. Each descriptor entry is 1k aligned,
- and as the `recordingId` is a simple sequence, this means lookup is a dead reckoning operation.
- Each entry has a header (32 bytes) followed by the RecordingDescriptor, the header contains the encoded
- length of the RecordingDescriptor. See the codec schema for full descriptor details.
+ -  **Catalog (one per archive):** The catalog contains records of recording descriptors. The descriptors can
+ be queried as described above. See the codec schema for full descriptor details.
  
  - **Recording Segment Files (many per recorded stream):** This is where the recorded data is kept.
  Recording segments follow the naming convention of: `<recordingId>-<segment base position>.rec`
@@ -106,16 +103,12 @@ The Archive is backed by 3 file types, all of which are expected to reside in th
 Migration
 =====
 The Archive may need to be migrated between major versions. This migration will be evident if attempting
-to run `CatalogTool` with the `describe` command on the archive directory. A previous version will
-only be readable by a previous version of `CatalogTool`. To migrate the archive, please follow
+to run `ArchiveTool` with the `describe` command on the archive directory. A previous version will
+only be readable by a previous version of `ArchiveTool`. To migrate the archive, please follow
 the steps below.
 
 - Shutdown the Archive and ensure all recordings have a stop position.
 - Take a backup of the Archive directory.
-- Run `CatalogTool` command `migrate`. Information on versions, etc. will be displayed. Errors
+- Run `ArchiveTool` command `migrate`. Information on versions, etc. will be displayed. Errors
 will also be displayed.
-- Run `CatalogTool` command `verify` to check for validity.
-
-This is a list of Version that require migration are below.
-
-- Version previous to 1.0.0 must migrate due to the segment file name change.
+- Run `ArchiveTool` command `verify` to check for validity.

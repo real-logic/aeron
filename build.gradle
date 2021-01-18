@@ -51,7 +51,7 @@ def sbeVersion = '1.21.0'
 def checkstyleVersion = '8.39'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.7.0'
-def mockitoVersion = '3.7.0'
+def mockitoVersion = '3.7.7'
 def byteBuddyVersion = '1.10.19'
 def hdrHistogramVersion = '2.1.12'
 

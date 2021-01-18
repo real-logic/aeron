@@ -63,13 +63,12 @@ public final class DriverConductor implements Agent
     private static final long CLOCK_UPDATE_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
     private int nextSessionId = BitUtil.generateRandomisedId();
-
     private final long timerIntervalNs;
     private final long clientLivenessTimeoutNs;
     private final long statusMessageTimeoutNs;
     private long timeOfLastToDriverPositionChangeNs;
     private long lastConsumerCommandPosition;
-    private long timeOfLastTimerCheckNs;
+    private long timerCheckDeadlineNs;
     private long clockUpdateDeadlineNs;
 
     private final Context ctx;
@@ -147,7 +146,7 @@ public final class DriverConductor implements Agent
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
         cachedEpochClock.update(epochClock.time());
-        timeOfLastTimerCheckNs = nowNs;
+        timerCheckDeadlineNs = nowNs + timerIntervalNs;
         timeOfLastToDriverPositionChangeNs = nowNs;
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();
     }
@@ -1700,11 +1699,11 @@ public final class DriverConductor implements Agent
     {
         int workCount = 0;
 
-        if ((timeOfLastTimerCheckNs + timerIntervalNs) - nowNs < 0)
+        if (timerCheckDeadlineNs - nowNs < 0)
         {
+            timerCheckDeadlineNs = nowNs + timerIntervalNs;
             heartbeatAndCheckTimers(nowNs);
             checkForBlockedToDriverCommands(nowNs);
-            timeOfLastTimerCheckNs = nowNs;
             workCount = 1;
         }
 

@@ -68,11 +68,7 @@ class RecordingEventsProxy implements AutoCloseable
         do
         {
             final long result = publication.offer(buffer, 0, recordingStartedEncoder.encodedLength());
-            if (result > 0)
-            {
-                break;
-            }
-            else if (Publication.NOT_CONNECTED == result)
+            if (result > 0 || Publication.NOT_CONNECTED == result)
             {
                 break;
             }

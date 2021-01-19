@@ -97,7 +97,7 @@ final class LogPublisher
         return publication.sessionId();
     }
 
-    void addPassiveFollower(final boolean isLogChannelMultiDestination, final String followerLogEndpoint)
+    void addDestination(final boolean isLogChannelMultiDestination, final String followerLogEndpoint)
     {
         if (isLogChannelMultiDestination && null != publication)
         {
@@ -105,7 +105,7 @@ final class LogPublisher
         }
     }
 
-    void removePassiveFollower(final boolean isLogChannelMultiDestination, final String followerLogEndpoint)
+    void removeDestination(final boolean isLogChannelMultiDestination, final String followerLogEndpoint)
     {
         if (isLogChannelMultiDestination && null != publication)
         {

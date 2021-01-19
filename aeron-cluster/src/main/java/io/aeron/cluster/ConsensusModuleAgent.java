@@ -640,8 +640,7 @@ final class ConsensusModuleAgent implements Agent
 
                     ClusterMember.addConsensusPublication(
                         newMember, ChannelUri.parse(ctx.consensusChannel()), ctx.consensusStreamId(), aeron);
-
-                    logPublisher.addPassiveFollower(ctx.isLogChannelMultiDestination(), newMember.logEndpoint());
+                    logPublisher.addDestination(ctx.isLogMdc(), newMember.logEndpoint());
                 }
             }
             else if (Cluster.Role.FOLLOWER == role)
@@ -699,8 +698,7 @@ final class ConsensusModuleAgent implements Agent
                     final ChannelUri consensusUri = ChannelUri.parse(ctx.consensusChannel());
                     final int streamId = ctx.consensusStreamId();
                     ClusterMember.addConsensusPublication(member, consensusUri, streamId, aeron);
-
-                    logPublisher.addPassiveFollower(ctx.isLogChannelMultiDestination(), member.logEndpoint());
+                    logPublisher.addDestination(ctx.isLogMdc(), member.logEndpoint());
                 }
 
                 member.hasRequestedJoin(true);
@@ -796,7 +794,7 @@ final class ConsensusModuleAgent implements Agent
                     passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
                     member.closePublication(ctx.countedErrorHandler());
 
-                    logPublisher.removePassiveFollower(ctx.isLogChannelMultiDestination(), member.logEndpoint());
+                    logPublisher.removeDestination(ctx.isLogMdc(), member.logEndpoint());
 
                     clusterMemberByIdMap.remove(memberId);
                     clusterMemberByIdMap.compact();
@@ -1291,7 +1289,7 @@ final class ConsensusModuleAgent implements Agent
                 channelUri.put(FLOW_CONTROL_PARAM_NAME, "min,t:" + timeout + "s");
             }
 
-            if (ctx.isLogChannelMultiDestination())
+            if (ctx.isLogMdc())
             {
                 channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
             }
@@ -1309,7 +1307,7 @@ final class ConsensusModuleAgent implements Agent
         final String channel = channelUri.toString();
         final ExclusivePublication publication = aeron.addExclusivePublication(channel, ctx.logStreamId());
 
-        if (ctx.isLogChannelMultiDestination())
+        if (ctx.isLogMdc())
         {
             for (final ClusterMember member : activeMembers)
             {
@@ -2435,7 +2433,7 @@ final class ConsensusModuleAgent implements Agent
 
                 member.closePublication(ctx.countedErrorHandler());
 
-                logPublisher.removePassiveFollower(ctx.isLogChannelMultiDestination(), member.logEndpoint());
+                logPublisher.removeDestination(ctx.isLogMdc(), member.logEndpoint());
                 pendingMemberRemovals--;
             }
         }

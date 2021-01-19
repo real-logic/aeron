@@ -842,9 +842,7 @@ class Election
 
     private void addLiveLogDestination()
     {
-        final String destination = ctx.isLogChannelMultiDestination() ?
-            "aeron:udp?endpoint=" + thisMember.logEndpoint() : ctx.logChannel();
-
+        final String destination = ctx.isLogMdc() ? "aeron:udp?endpoint=" + thisMember.logEndpoint() : ctx.logChannel();
         logSubscription.asyncAddDestination(destination);
         consensusModuleAgent.liveLogDestination(destination);
     }

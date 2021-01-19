@@ -604,7 +604,7 @@ final class ConsensusModuleAgent implements Agent
                     .endpoint(follower.catchupEndpoint())
                     .sessionId(logPublisher.sessionId())
                     .linger(0L)
-                    .eos(false)
+                    .eos(Boolean.FALSE)
                     .build();
 
                 follower.catchupReplaySessionId(archive.startReplay(

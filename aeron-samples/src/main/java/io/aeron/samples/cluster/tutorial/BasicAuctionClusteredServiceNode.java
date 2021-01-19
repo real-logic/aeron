@@ -88,7 +88,7 @@ public class BasicAuctionClusteredServiceNode
         return new ChannelUriStringBuilder()
             .media("udp")
             .termLength(TERM_LENGTH)
-            .controlMode("manual")
+            .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .controlEndpoint(hostname + ":" + port)
             .build();
     }

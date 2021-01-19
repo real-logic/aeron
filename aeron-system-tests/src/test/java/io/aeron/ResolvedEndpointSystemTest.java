@@ -259,7 +259,7 @@ public class ResolvedEndpointSystemTest
             final String mdcSubUri = new ChannelUriStringBuilder()
                 .media("udp")
                 .controlEndpoint(bindAddressAndPort1.get(0))
-                .group(true)
+                .group(Boolean.TRUE)
                 .build();
 
             try (Subscription sub = client.addSubscription(mdcSubUri, STREAM_ID))

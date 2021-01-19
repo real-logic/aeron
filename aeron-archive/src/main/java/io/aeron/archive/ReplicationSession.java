@@ -401,7 +401,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             .media(channelUri)
             .sessionId(replaySessionId)
             .alias(channelUri)
-            .rejoin(false);
+            .rejoin(Boolean.FALSE);
 
         if (isMds)
         {

@@ -756,19 +756,16 @@ struct SubscriptionDescriptor
     const std::int64_t m_correlationId;
     const std::int64_t m_subscriptionId;
     const std::int32_t m_streamId;
-    const std::string m_strippedChannel;
 
     SubscriptionDescriptor(
         std::int64_t controlSessionId,
         std::int64_t correlationId,
         std::int64_t subscriptionId,
-        std::int32_t streamId,
-        const std::string &strippedChannel) :
+        std::int32_t streamId) :
         m_controlSessionId(controlSessionId),
         m_correlationId(correlationId),
         m_subscriptionId(subscriptionId),
-        m_streamId(streamId),
-        m_strippedChannel(strippedChannel)
+        m_streamId(streamId)
     {
     }
 };
@@ -784,7 +781,7 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
             std::int32_t streamId,
             const std::string &strippedChannel)
         {
-            descriptors.emplace_back(controlSessionId, correlationId, subscriptionId, streamId, strippedChannel);
+            descriptors.emplace_back(controlSessionId, correlationId, subscriptionId, streamId);
         };
 
     const std::int32_t expectedStreamId = 7;
@@ -827,12 +824,12 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
     EXPECT_EQ(1L, std::count_if(
         descriptors.begin(),
         descriptors.end(),
-        [=](const SubscriptionDescriptor &s){ return s.m_subscriptionId == subIdOne;}));
+        [=](const SubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdOne;}));
 
     EXPECT_EQ(1L, std::count_if(
         descriptors.begin(),
         descriptors.end(),
-        [=](const SubscriptionDescriptor &s){ return s.m_subscriptionId == subIdThree;}));
+        [=](const SubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdThree;}));
 }
 
 TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)

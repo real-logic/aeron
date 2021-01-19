@@ -22,8 +22,7 @@
 #include <spawn.h>
 #include <pthread.h>
 #elif defined(_WIN32)
-#include <process.h>
-#include <Windows.h>
+#include <windows.h>
 typedef intptr_t pid_t;
 #else
 #error "must spawn Java archive per test"
@@ -66,14 +65,14 @@ int aeron_delete_directory(const char *dir)
 
     SHFILEOPSTRUCT file_op =
         {
-            NULL,
+            nullptr,
             FO_DELETE,
             dir_buffer,
-            NULL,
+            nullptr,
             FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
             false,
-            NULL,
-            NULL
+            nullptr,
+            nullptr
         };
 
     return SHFileOperation(&file_op);
@@ -114,7 +113,7 @@ public:
         m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
 
         std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
-        char const * const argv[] =
+        const char * const argv[] =
         {
             "java",
 #if JAVA_MAJOR_VERSION >= 9
@@ -146,16 +145,16 @@ public:
             nullptr
         };
 
-        #if defined(_WIN32)
+#if defined(_WIN32)
         m_pid = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
-        #else
+#else
         m_pid = -1;
         if (0 != posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char * const *)&argv[0], nullptr))
         {
             perror("spawn");
             ::exit(EXIT_FAILURE);
         }
-        #endif
+#endif
 
         if (m_pid < 0)
         {
@@ -200,16 +199,16 @@ public:
                     std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
                 }
 
-                #if defined(_WIN32)
-                    WaitForSingleObject(reinterpret_cast<HANDLE>(m_pid), INFINITE);
-                #else
-                    int process_status = -1;
-                    do
-                    {
-                        waitpid(m_pid, &process_status, WUNTRACED);
-                    }
-                    while (0 >= WIFEXITED(process_status));
-                #endif
+#if defined(_WIN32)
+                WaitForSingleObject(reinterpret_cast<HANDLE>(m_pid), INFINITE);
+#else
+                int process_status = -1;
+                do
+                {
+                    waitpid(m_pid, &process_status, WUNTRACED);
+                }
+                while (0 >= WIFEXITED(process_status));
+#endif
                 m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
             }
             else
@@ -219,7 +218,7 @@ public:
                 m_stream << now_ms << " [TearDown] Deleting " << m_archiveDir << std::endl;
                 if (aeron_delete_directory(m_archiveDir.c_str()) != 0)
                 {
-                    m_stream << now_ms << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
+                    m_stream << currentTimeMillis() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
                 }
             }
         }
@@ -429,14 +428,14 @@ TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
         aeronArchive = asyncConnect->poll();
     }
 
-    EXPECT_FALSE(aeronArchive->tryStopRecording(0));
+    EXPECT_TRUE(aeronArchive->controlResponsePoller().subscription()->isConnected());
 }
 
 TEST_F(AeronArchiveTest, shouldConnectToArchive)
 {
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
-    EXPECT_FALSE(aeronArchive->tryStopRecording(0));
+    EXPECT_TRUE(aeronArchive->controlResponsePoller().subscription()->isConnected());
 }
 
 TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
@@ -489,7 +488,8 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](std::int64_t controlSessionId,
+        [&](
+            std::int64_t controlSessionId,
             std::int64_t correlationId,
             std::int64_t recordingId1,
             std::int64_t startTimestamp,
@@ -632,7 +632,8 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](std::int64_t controlSessionId,
+        [](
+            std::int64_t controlSessionId,
             std::int64_t correlationId,
             std::int64_t recordingId1,
             std::int64_t startTimestamp,
@@ -776,7 +777,8 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
 {
     std::vector<SubscriptionDescriptor> descriptors;
     recording_subscription_descriptor_consumer_t consumer =
-        [&](std::int64_t controlSessionId,
+        [&descriptors](
+            std::int64_t controlSessionId,
             std::int64_t correlationId,
             std::int64_t subscriptionId,
             std::int32_t streamId,
@@ -825,12 +827,12 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
     EXPECT_EQ(1L, std::count_if(
         descriptors.begin(),
         descriptors.end(),
-        [=](SubscriptionDescriptor s){ return s.m_subscriptionId == subIdOne;}));
+        [=](const SubscriptionDescriptor &s){ return s.m_subscriptionId == subIdOne;}));
 
     EXPECT_EQ(1L, std::count_if(
         descriptors.begin(),
         descriptors.end(),
-        [=](SubscriptionDescriptor s){ return s.m_subscriptionId == subIdThree;}));
+        [=](const SubscriptionDescriptor &s){ return s.m_subscriptionId == subIdThree;}));
 }
 
 TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
@@ -1086,7 +1088,8 @@ TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](std::int64_t controlSessionId,
+        [](
+            std::int64_t controlSessionId,
             std::int64_t correlationId,
             std::int64_t recordingId1,
             std::int64_t startTimestamp,
@@ -1157,7 +1160,8 @@ TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](std::int64_t controlSessionId,
+        [&](
+            std::int64_t controlSessionId,
             std::int64_t correlationId,
             std::int64_t recordingId1,
             std::int64_t startTimestamp,

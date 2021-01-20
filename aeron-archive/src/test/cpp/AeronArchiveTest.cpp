@@ -15,7 +15,6 @@
  */
 
 #if defined(__linux__) || defined(Darwin)
-
 #include <unistd.h>
 #include <ftw.h>
 #include <cstdio>
@@ -42,13 +41,19 @@ typedef intptr_t pid_t;
 #include "client/RecordingEventsAdapter.h"
 #include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
-#include "ArchiveTestUtil.h"
 
 using namespace aeron;
 using namespace aeron::util;
 using namespace aeron::archive::client;
 
 #ifdef _WIN32
+
+bool aeron_file_exists(const char *path)
+{
+    DWORD dwAttrib = GetFileAttributes(path);
+    return dwAttrib != INVALID_FILE_ATTRIBUTES;
+}
+
 int aeron_delete_directory(const char *dir)
 {
     char dir_buffer[1024] = { 0 };
@@ -80,7 +85,13 @@ int aeron_delete_directory(const char *dir)
 
 #else
 
-static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
+bool aeron_file_exists(const char *path)
+{
+    struct stat stat_info = {};
+    return stat(path, &stat_info) == 0;
+}
+
+static int aeron_unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
 {
     if (remove(path) != 0)
     {
@@ -92,7 +103,7 @@ static int unlink_func(const char *path, const struct stat *sb, int type_flag, s
 
 int aeron_delete_directory(const char *dirname)
 {
-    return nftw(dirname, unlink_func, 64, FTW_DEPTH | FTW_PHYS);
+    return nftw(dirname, aeron_unlink_func, 64, FTW_DEPTH | FTW_PHYS);
 }
 
 #endif
@@ -194,7 +205,7 @@ public:
                 m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
 
                 const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
-                while (test::fileExists(cncFilename.c_str()))
+                while (aeron_file_exists(cncFilename.c_str()))
                 {
                     std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
                 }

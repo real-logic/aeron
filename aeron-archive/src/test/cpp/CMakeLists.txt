@@ -22,9 +22,6 @@ add_definitions(-DARCHIVE_DIR="${CMAKE_CURRENT_BINARY_DIR}/archive")
 add_definitions(-DJAVA_MAJOR_VERSION=${Java_VERSION_MAJOR})
 add_definitions(-DJAVA_MINOR_VERSION=${Java_VERSION_MINOR})
 
-SET(SOURCE ArchiveTestUtil.cpp)
-SET(HEADERS ArchiveTestUtil.h)
-
 function(aeron_archive_client_test name file)
     add_executable(${name} ${file} ${SOURCE} ${HEADERS})
     target_include_directories(${name} PUBLIC ${AERON_CLIENT_SOURCE_PATH})

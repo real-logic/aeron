@@ -139,12 +139,10 @@ add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
 add_library(aeron_client_shared SHARED ${SOURCE} ${HEADERS})
 
 target_include_directories(aeron_client
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_include_directories(aeron_client_shared
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (MSVC)
     string(REPLACE "/" "\\\\" NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")
@@ -158,15 +156,13 @@ endif ()
 target_compile_definitions(aeron_client
     PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
     # relative file paths for use in exceptions
-    PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
-    )
+    PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\"")
 
 target_compile_definitions(aeron_client_shared
     PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
     # relative file paths for use in exceptions
     PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
-    PUBLIC CLIENT_SHARED DLL_EXPORT
-    )
+    PUBLIC CLIENT_SHARED DLL_EXPORT)
 
 if (NOT WIN32)
     set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -174,12 +170,10 @@ if (NOT WIN32)
 endif ()
 
 target_link_libraries(aeron_client
-    INTERFACE ${CMAKE_THREAD_LIBS_INIT}
-    )
+    INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(aeron_client_shared
-    INTERFACE ${CMAKE_THREAD_LIBS_INIT}
-    )
+    INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 if (AERON_INSTALL_TARGETS)
     install(TARGETS aeron_client_shared aeron_client

@@ -80,7 +80,6 @@ target_link_libraries(ErrorStat ${CLIENT_LINK_LIB})
 add_executable(LossStat loss_stat.c ${HEADERS})
 target_link_libraries(LossStat ${CLIENT_LINK_LIB})
 
-
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS

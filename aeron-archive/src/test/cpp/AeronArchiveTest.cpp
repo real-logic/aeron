@@ -324,32 +324,15 @@ public:
     }
 
     bool attemptReplayMerge(
-        std::shared_ptr<AeronArchive> aeronArchive,
-        std::shared_ptr<Publication> publication,
+        ReplayMerge &replayMerge,
+        Publication &publication,
         fragment_handler_t &handler,
         const std::string &messagePrefix,
-        ChannelUriStringBuilder &subscriptionChannel,
-        ChannelUriStringBuilder &replayChannel,
-        ChannelUriStringBuilder &replayDestination,
-        ChannelUriStringBuilder &liveDestination,
-        std::int64_t recordingId,
         std::size_t totalMessageCount,
         std::size_t &messagesPublished,
-        std::size_t &receivedMessageCount,
-        std::int64_t receivedPosition) const
+        std::size_t &receivedMessageCount) const
     {
         aeron::concurrent::YieldingIdleStrategy idleStrategy;
-        std::shared_ptr<Subscription> subscription = addSubscription(
-            *aeronArchive->context().aeron(), subscriptionChannel.build(), m_recordingStreamId);
-
-        ReplayMerge replayMerge(
-            subscription,
-            aeronArchive,
-            replayChannel.build(),
-            replayDestination.build(),
-            liveDestination.build(),
-            recordingId,
-            receivedPosition);
 
         for (std::size_t i = messagesPublished; i < totalMessageCount; i++)
         {
@@ -357,7 +340,7 @@ public:
             const std::string message = messagePrefix + std::to_string(i);
 
             idleStrategy.reset();
-            while (publication->tryClaim(static_cast<util::index_t>(message.length()), bufferClaim) < 0)
+            while (publication.tryClaim(static_cast<util::index_t>(message.length()), bufferClaim) < 0)
             {
                 idleStrategy.idle();
                 int fragments = replayMerge.poll(handler, m_fragmentLimit);
@@ -855,40 +838,31 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     const std::string liveEndpoint = "localhost:23267";
     const std::string replayEndpoint = "localhost:0";
 
-    ChannelUriStringBuilder publicationChannel, recordingChannel, subscriptionChannel;
-    ChannelUriStringBuilder liveDestination, replayDestination, replayChannel;
-
-    publicationChannel
+    const std::string publicationChannel = ChannelUriStringBuilder()
         .media(UDP_MEDIA)
         .tags("1,2")
         .controlEndpoint(controlEndpoint)
         .controlMode(MDC_CONTROL_MODE_DYNAMIC)
         .flowControl("tagged,g:99901/1,t:5s")
-        .termLength(termLength);
+        .termLength(termLength)
+        .build();
 
-    recordingChannel
-        .media(UDP_MEDIA)
-        .groupTag(99901)
-        .endpoint(recordingEndpoint)
-        .controlEndpoint(controlEndpoint);
-
-    subscriptionChannel
-        .media(UDP_MEDIA)
-        .controlMode(MDC_CONTROL_MODE_MANUAL);
-
-    liveDestination
+    const std::string liveDestination = ChannelUriStringBuilder()
         .media(UDP_MEDIA)
         .endpoint(liveEndpoint)
-        .controlEndpoint(controlEndpoint);
+        .controlEndpoint(controlEndpoint)
+        .build();
 
-    replayDestination
+    const std::string replayDestination = ChannelUriStringBuilder()
         .media(UDP_MEDIA)
-        .endpoint(replayEndpoint);
+        .endpoint(replayEndpoint)
+        .build();
 
-    replayChannel
+    const std::string replayChannel = ChannelUriStringBuilder()
         .media(UDP_MEDIA)
         .isSessionIdTagged(true)
-        .sessionId(2);
+        .sessionId(2)
+        .build();
 
     const std::size_t initialMessageCount = minMessagesPerTerm * 3;
     const std::size_t subsequentMessageCount = minMessagesPerTerm * 3;
@@ -897,14 +871,26 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
     std::shared_ptr<Publication> publication = addPublication(
-        *aeronArchive->context().aeron(), publicationChannel.build(), m_recordingStreamId);
+        *aeronArchive->context().aeron(), publicationChannel, m_recordingStreamId);
 
     const std::int32_t sessionId = publication->sessionId();
-    recordingChannel.sessionId(sessionId);
-    subscriptionChannel.sessionId(sessionId);
+
+    const std::string recordingChannel = ChannelUriStringBuilder()
+        .media(UDP_MEDIA)
+        .groupTag(99901)
+        .sessionId(sessionId)
+        .endpoint(recordingEndpoint)
+        .controlEndpoint(controlEndpoint)
+        .build();
+
+    const std::string subscriptionChannel = ChannelUriStringBuilder()
+        .media(UDP_MEDIA)
+        .controlMode(MDC_CONTROL_MODE_MANUAL)
+        .sessionId(sessionId)
+        .build();
 
     aeronArchive->startRecording(
-        recordingChannel.build(), m_recordingStreamId, AeronArchive::SourceLocation::REMOTE, true);
+        recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::REMOTE, true);
 
     CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
     const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
@@ -920,7 +906,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     std::size_t receivedMessageCount = 0;
     std::int64_t receivedPosition = 0;
 
-    fragment_handler_t handler =
+    fragment_handler_t fragment_handler =
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
             const std::string expected = messagePrefix + std::to_string(receivedMessageCount);
@@ -932,21 +918,32 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
             receivedPosition = header.position();
         };
 
-    while (!attemptReplayMerge(
-        aeronArchive,
-        publication,
-        handler,
-        messagePrefix,
-        subscriptionChannel,
-        replayChannel,
-        replayDestination,
-        liveDestination,
-        recordingId,
-        totalMessageCount,
-        messagesPublished,
-        receivedMessageCount,
-        receivedPosition))
+    while (true)
     {
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), subscriptionChannel, m_recordingStreamId);
+
+        ReplayMerge replayMerge(
+            subscription,
+            aeronArchive,
+            replayChannel,
+            replayDestination,
+            liveDestination,
+            recordingId,
+            receivedPosition);
+
+        if (attemptReplayMerge(
+            replayMerge,
+            *publication,
+            fragment_handler,
+            messagePrefix,
+            totalMessageCount,
+            messagesPublished,
+            receivedMessageCount))
+        {
+            break;
+        }
+
         idleStrategy.idle();
     }
 

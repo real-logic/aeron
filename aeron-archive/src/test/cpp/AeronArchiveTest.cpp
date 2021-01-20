@@ -48,13 +48,13 @@ using namespace aeron::archive::client;
 
 #ifdef _WIN32
 
-bool aeron_file_exists(const char *path)
+static bool aeron_file_exists(const char *path)
 {
     DWORD dwAttrib = GetFileAttributes(path);
     return dwAttrib != INVALID_FILE_ATTRIBUTES;
 }
 
-int aeron_delete_directory(const char *dir)
+static int aeron_delete_directory(const char *dir)
 {
     char dir_buffer[1024] = { 0 };
 
@@ -85,7 +85,7 @@ int aeron_delete_directory(const char *dir)
 
 #else
 
-bool aeron_file_exists(const char *path)
+static bool aeron_file_exists(const char *path)
 {
     struct stat stat_info = {};
     return stat(path, &stat_info) == 0;
@@ -101,7 +101,7 @@ static int aeron_unlink_func(const char *path, const struct stat *sb, int type_f
     return 0;
 }
 
-int aeron_delete_directory(const char *dirname)
+static int aeron_delete_directory(const char *dirname)
 {
     return nftw(dirname, aeron_unlink_func, 64, FTW_DEPTH | FTW_PHYS);
 }
@@ -209,6 +209,8 @@ public:
                 {
                     std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
                 }
+
+                m_stream << currentTimeMillis() << " [TearDown] CnC file no longer exists" << std::endl;
 
 #if defined(_WIN32)
                 WaitForSingleObject(reinterpret_cast<HANDLE>(m_pid), INFINITE);

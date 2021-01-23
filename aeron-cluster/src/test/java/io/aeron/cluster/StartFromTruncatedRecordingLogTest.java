@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -172,6 +173,7 @@ public class StartFromTruncatedRecordingLogTest
         awaitNeutralControlToggle(leaderMemberId);
         awaitConsensusModulesActive();
 
+        terminateCount.set(0);
         shutdown(leaderMemberId);
         awaitSnapshotCount(2);
         Tests.awaitValue(terminateCount, MEMBER_COUNT);
@@ -184,7 +186,6 @@ public class StartFromTruncatedRecordingLogTest
         truncateRecordingLogAndDeleteMarkFiles(followerMemberIdA);
         truncateRecordingLogAndDeleteMarkFiles(followerMemberIdB);
 
-        terminateCount.set(0);
         startNode(leaderMemberId, false);
         startNode(followerMemberIdA, false);
         startNode(followerMemberIdB, false);
@@ -358,6 +359,7 @@ public class StartFromTruncatedRecordingLogTest
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(index))
                 .terminationHook(terminateCount::incrementAndGet)
+                .terminationTimeoutNs(TimeUnit.SECONDS.toNanos(10))
                 .clusterMemberId(index)
                 .snapshotCounter(mockSnapshotCounters[index])
                 .clusterMembers(CLUSTER_MEMBERS)

@@ -26,7 +26,7 @@ LogBuffers::LogBuffers(const char *filename, bool preTouch)
 {
     const std::int64_t logLength = MemoryMappedFile::getFileSize(filename);
 
-    m_memoryMappedFiles = MemoryMappedFile::mapExisting(filename);
+    m_memoryMappedFiles = MemoryMappedFile::mapExisting(filename, false, preTouch);
 
     std::uint8_t *basePtr = m_memoryMappedFiles->getMemoryPtr();
 
@@ -47,6 +47,7 @@ LogBuffers::LogBuffers(const char *filename, bool preTouch)
         m_buffers[i].wrap(basePtr + (i * termLength), static_cast<std::size_t>(termLength));
     }
 
+#ifndef __linux__
     if (preTouch)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
@@ -59,6 +60,7 @@ LogBuffers::LogBuffers(const char *filename, bool preTouch)
             }
         }
     }
+#endif
 }
 
 LogBuffers::LogBuffers(std::uint8_t *address, std::int64_t logLength, std::int32_t termLength)

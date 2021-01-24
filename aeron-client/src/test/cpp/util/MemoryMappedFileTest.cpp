@@ -42,7 +42,7 @@ TEST(mmfileTest, createCheck)
     const std::string name(makeTempFileName());
 
     ASSERT_NO_THROW({
-        m = MemoryMappedFile::createNew(name.c_str(), 0, size);
+        m = MemoryMappedFile::createNew(name.c_str(), 0, size, true);
     });
 
     ASSERT_EQ(m->getMemorySize(), size);
@@ -64,7 +64,7 @@ TEST(mmfileTest, writeReadCheck)
     std::string name = makeTempFileName();
 
     ASSERT_NO_THROW({
-        m = MemoryMappedFile::createNew(name.c_str(), 0, size);
+        m = MemoryMappedFile::createNew(name.c_str(), 0, size, true);
     });
 
     for (size_t n = 0; n < size; n++)

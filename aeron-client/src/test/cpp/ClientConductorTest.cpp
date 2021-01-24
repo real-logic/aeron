@@ -53,9 +53,9 @@ public:
         m_toDriver.fill(0);
         m_toClients.fill(0);
         MemoryMappedFile::ptr_t logbuffer1 = MemoryMappedFile::createNew(
-            m_logFileName.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
+            m_logFileName.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH), false);
         MemoryMappedFile::ptr_t logbuffer2 = MemoryMappedFile::createNew(
-            m_logFileName2.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
+            m_logFileName2.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH), false);
         m_manyToOneRingBuffer.consumerHeartbeatTime(m_currentTime);
 
         AtomicBuffer logMetaDataBuffer;

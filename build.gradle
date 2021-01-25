@@ -447,6 +447,10 @@ project(':aeron-archive') {
         def markCodecsFile = 'src/main/resources/archive/aeron-archive-mark-codecs.xml'
         def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
 
+        javaLauncher = javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+        }
+
         inputs.files(codecsFile, markCodecsFile, sbeFile)
         outputs.dir generatedDir
 
@@ -570,6 +574,10 @@ project(':aeron-cluster') {
         def codecsFile = 'src/main/resources/cluster/aeron-cluster-codecs.xml'
         def markCodecsFile = 'src/main/resources/cluster/aeron-cluster-mark-codecs.xml'
         def sbeFile = 'src/main/resources/cluster/fpl/sbe.xsd'
+
+        javaLauncher = javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+        }
 
         inputs.files(codecsFile, markCodecsFile, sbeFile)
         outputs.dir generatedDir

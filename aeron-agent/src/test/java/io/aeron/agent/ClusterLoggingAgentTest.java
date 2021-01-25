@@ -113,20 +113,16 @@ public class ClusterLoggingAgentTest
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .aeronDirectoryName(aeronDirectoryName)
-            .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
-            .controlRequestStreamId(100)
-            .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
-            .controlResponseStreamId(101)
-            .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
+            .controlRequestChannel("aeron:ipc?term-length=64k")
+            .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
+            .controlResponseChannel("aeron:ipc?term-length=64k")
+            .controlResponseStreamId(AeronArchive.Configuration.localControlStreamId() + 1)
+            .controlResponseStreamId(101);
 
         final Archive.Context archiveCtx = new Archive.Context()
             .errorHandler(Tests::onError)
             .archiveDir(new File(testDir, "archive"))
             .deleteArchiveOnStart(true)
-            .controlChannel(aeronArchiveContext.controlRequestChannel())
-            .controlStreamId(aeronArchiveContext.controlRequestStreamId())
-            .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
-            .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
 

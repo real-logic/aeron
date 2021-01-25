@@ -726,6 +726,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
             }
 
+            if (!archiveContext.controlRequestChannel().startsWith(CommonContext.IPC_CHANNEL))
+            {
+                throw new ClusterException("archive control must be IPC");
+            }
+
+            if (!archiveContext.controlResponseChannel().startsWith(CommonContext.IPC_CHANNEL))
+            {
+                throw new ClusterException("archive control must be IPC");
+            }
+
             archiveContext
                 .aeron(aeron)
                 .ownsAeronClient(false)

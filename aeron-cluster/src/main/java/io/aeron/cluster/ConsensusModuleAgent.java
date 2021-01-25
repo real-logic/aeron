@@ -1867,6 +1867,7 @@ final class ConsensusModuleAgent implements Agent
             final ControlResponsePoller poller = archive.controlResponsePoller();
             if (!poller.subscription().isConnected())
             {
+                serviceProxy.terminationPosition(NULL_VALUE);
                 throw new AgentTerminationException("local archive not connected");
             }
             else if (poller.poll() != 0 && poller.isPollComplete())

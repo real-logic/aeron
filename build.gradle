@@ -42,6 +42,11 @@ static def getBuildJavaVersion() {
 }
 int buildJavaVersion = getBuildJavaVersion()
 
+println "[GRADLE] java.home=" + System.getProperty('java.home')
+println "[GRADLE] JAVA_HOME=" + System.getenv('JAVA_HOME')
+println "[GRADLE] BUILD_JAVA_HOME=" + System.getenv('BUILD_JAVA_HOME')
+println "[GRADLE] BUILD_JAVA_VERSION=" + System.getenv('BUILD_JAVA_VERSION')
+
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 

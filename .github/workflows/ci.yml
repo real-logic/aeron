@@ -318,7 +318,7 @@ jobs:
           java-version: 8
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
         run: |
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}/zulu-8.jdk/Contents/Home" >> $GITHUB_ENV
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install CMake
         run: |

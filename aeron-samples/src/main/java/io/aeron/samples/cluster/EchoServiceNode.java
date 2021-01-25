@@ -32,17 +32,13 @@ import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 
 import static java.lang.Integer.parseInt;
 
 /**
  * Node that launches the service for the {@link BasicAuctionClusteredService}.
  */
-// tag::new_service[]
 public class EchoServiceNode
-// end::new_service[]
 {
     private static ErrorHandler errorHandler(final String context)
     {
@@ -54,7 +50,6 @@ public class EchoServiceNode
             };
     }
 
-    // tag::ports[]
     private static final int PORT_BASE = 9000;
     private static final int PORTS_PER_NODE = 100;
     private static final int ARCHIVE_CONTROL_REQUEST_PORT_OFFSET = 1;
@@ -62,16 +57,13 @@ public class EchoServiceNode
     private static final int MEMBER_FACING_PORT_OFFSET = 3;
     private static final int LOG_PORT_OFFSET = 4;
     private static final int TRANSFER_PORT_OFFSET = 5;
-    private static final int LOG_CONTROL_PORT_OFFSET = 6;
     private static final int TERM_LENGTH = 64 * 1024;
 
     static int calculatePort(final int nodeId, final int offset)
     {
         return PORT_BASE + (nodeId * PORTS_PER_NODE) + offset;
     }
-    // end::ports[]
 
-    // tag::udp_channel[]
     private static String udpChannel(final int nodeId, final String hostname, final int portOffset)
     {
         final int port = calculatePort(nodeId, portOffset);
@@ -81,37 +73,26 @@ public class EchoServiceNode
             .endpoint(hostname + ":" + port)
             .build();
     }
-    // end::udp_channel[]
-
-    private static String logControlChannel(final int nodeId, final String hostname, final int portOffset)
-    {
-        final int port = calculatePort(nodeId, portOffset);
-        return new ChannelUriStringBuilder()
-            .media("udp")
-            .termLength(TERM_LENGTH)
-            .controlMode("manual")
-            .controlEndpoint(hostname + ":" + port)
-            .build();
-    }
 
     /**
      * String representing the cluster members configuration which can be used for
      * {@link io.aeron.cluster.ClusterMember#parse(String)}.
      *
      * @param hostnames of the cluster members.
+     * @param internalHostnames of the cluster members internal address (can be the same as {@see hostnames}).
      * @return the String which can be used for {@link io.aeron.cluster.ClusterMember#parse(String)}.
      */
-    public static String clusterMembers(final List<String> hostnames)
+    public static String clusterMembers(final String[] hostnames, final String[] internalHostnames)
     {
         final StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < hostnames.size(); i++)
+        for (int i = 0; i < hostnames.length; i++)
         {
             sb.append(i);
-            sb.append(',').append(hostnames.get(i)).append(':').append(calculatePort(i, CLIENT_FACING_PORT_OFFSET));
-            sb.append(',').append(hostnames.get(i)).append(':').append(calculatePort(i, MEMBER_FACING_PORT_OFFSET));
-            sb.append(',').append(hostnames.get(i)).append(':').append(calculatePort(i, LOG_PORT_OFFSET));
-            sb.append(',').append(hostnames.get(i)).append(':').append(calculatePort(i, TRANSFER_PORT_OFFSET));
-            sb.append(',').append(hostnames.get(i)).append(':')
+            sb.append(',').append(hostnames[i]).append(':').append(calculatePort(i, CLIENT_FACING_PORT_OFFSET));
+            sb.append(',').append(internalHostnames[i]).append(':').append(calculatePort(i, MEMBER_FACING_PORT_OFFSET));
+            sb.append(',').append(internalHostnames[i]).append(':').append(calculatePort(i, LOG_PORT_OFFSET));
+            sb.append(',').append(internalHostnames[i]).append(':').append(calculatePort(i, TRANSFER_PORT_OFFSET));
+            sb.append(',').append(internalHostnames[i]).append(':')
                 .append(calculatePort(i, ARCHIVE_CONTROL_REQUEST_PORT_OFFSET));
             sb.append('|');
         }
@@ -124,21 +105,22 @@ public class EchoServiceNode
      *
      * @param args passed to the process.
      */
-    // tag::main[]
     public static void main(final String[] args)
     {
-        final int nodeId = parseInt(System.getProperty("aeron.cluster.tutorial.nodeId"));               // <1>
-        final String[] hostnames = System.getProperty(
-            "aeron.cluster.tutorial.hostnames", "localhost,localhost,localhost").split(",");            // <2>
+        final int nodeId = parseInt(System.getProperty("aeron.cluster.tutorial.nodeId"));
+        final String hostnamesStr = System.getProperty(
+            "aeron.cluster.tutorial.hostnames", "localhost,localhost,localhost");
+        final String internalHostnamesStr = System.getProperty(
+            "aeron.cluster.tutorial.hostnames.internal", hostnamesStr);
+        final String[] hostnames = hostnamesStr.split(",");
+        final String[] internalHostnames = internalHostnamesStr.split(",");
         final String hostname = hostnames[nodeId];
 
-        final File baseDir = new File(System.getProperty("user.dir"), "node" + nodeId);                 // <3>
+        final File baseDir = new File(System.getProperty("user.dir"), "node" + nodeId);
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + nodeId + "-driver";
 
-        final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();                              // <4>
-        // end::main[]
+        final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
 
-        // tag::media_driver[]
         final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
@@ -146,9 +128,7 @@ public class EchoServiceNode
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .terminationHook(barrier::signal)
             .errorHandler(EchoServiceNode.errorHandler("Media Driver"));
-        // end::media_driver[]
 
-        // tag::archive[]
         final Archive.Context archiveContext = new Archive.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
@@ -156,47 +136,38 @@ public class EchoServiceNode
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
-        // end::archive[]
 
-        // tag::archive_client[]
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(archiveContext.localControlChannel())
             .controlRequestStreamId(archiveContext.localControlStreamId())
             .controlResponseChannel(archiveContext.localControlChannel())
             .aeronDirectoryName(aeronDirName);
-        // end::archive_client[]
 
-        // tag::consensus_module[]
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
             .errorHandler(errorHandler("Consensus Module"))
-            .clusterMemberId(nodeId)                                                                     // <1>
-            .clusterMembers(clusterMembers(Arrays.asList(hostnames)))                                    // <2>
-            .clusterDir(new File(baseDir, "consensus-module"))                                     // <3>
-            .archiveContext(aeronArchiveContext.clone());                                                // <6>
-        // end::consensus_module[]
+            .clusterMemberId(nodeId)
+            .clusterMembers(clusterMembers(hostnames, internalHostnames))
+            .clusterDir(new File(baseDir, "consensus-module"))
+            .archiveContext(aeronArchiveContext.clone());
 
-        // tag::clustered_service[]
         final ClusteredServiceContainer.Context clusteredServiceContext =
             new ClusteredServiceContainer.Context()
-            .aeronDirectoryName(aeronDirName)                                                            // <1>
-            .archiveContext(aeronArchiveContext.clone())                                                 // <2>
+            .aeronDirectoryName(aeronDirName)
+            .archiveContext(aeronArchiveContext.clone())
             .clusterDir(new File(baseDir, "service"))
-            .clusteredService(new EchoService())                                                         // <3>
+            .clusteredService(new EchoService())
             .errorHandler(errorHandler("Clustered Service"));
-        // end::clustered_service[]
 
-        // tag::running[]
         try (
             ClusteredMediaDriver clusteredMediaDriver = ClusteredMediaDriver.launch(
-                mediaDriverContext, archiveContext, consensusModuleContext);                             // <1>
+                mediaDriverContext, archiveContext, consensusModuleContext);
             ClusteredServiceContainer container = ClusteredServiceContainer.launch(
-                clusteredServiceContext))                                                                // <2>
+                clusteredServiceContext))
         {
             System.out.println("[" + nodeId + "] Started Cluster Node on " + hostname + "...");
-            barrier.await();                                                                             // <3>
+            barrier.await();
             System.out.println("[" + nodeId + "] Exiting");
         }
-        // end::running[]
     }
 }

@@ -1090,7 +1090,8 @@ public final class AeronCluster implements AutoCloseable
          * Set the channel parameter for the ingress channel.
          * <p>
          * The endpoints representing members for use with unicast are substituted from {@link #ingressEndpoints()}
-         * for endpoints. A null value can be used when multicast where this contains the multicast endpoint.
+         * for endpoints.  If this channel contains a multicast endpoint, then {@link #ingressEndpoints()} should
+         * be set to null.
          *
          * @param channel parameter for the ingress channel.
          * @return this for a fluent API.

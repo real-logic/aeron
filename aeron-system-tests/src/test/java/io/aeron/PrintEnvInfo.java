@@ -11,7 +11,7 @@ class PrintEnvInfo
         System.out.println("[PrintEnvInfo] System properties:");
         System.out.println("=========================");
         System.getProperties().entrySet().stream()
-            .filter(e -> ((String)e.getKey()).startsWith("java."))
+            .filter(e -> ((String)e.getKey()).contains("java."))
             .forEach(e -> System.out.println("- " + e.getKey() + ": " + e.getValue()));
 
         System.out.println("\n=========================");

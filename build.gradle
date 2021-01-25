@@ -43,6 +43,8 @@ static def getBuildJavaVersion() {
 int buildJavaVersion = getBuildJavaVersion()
 
 println "[GRADLE] java.home=" + System.getProperty('java.home')
+println "[GRADLE] org.gradle.java.installations.fromEnv=" + System.getProperty('org.gradle.java.installations.fromEnv')
+println "[GRADLE] org.gradle.java.installations.auto-download=" + System.getProperty('org.gradle.java.installations.auto-download')
 println "[GRADLE] JAVA_HOME=" + System.getenv('JAVA_HOME')
 println "[GRADLE] BUILD_JAVA_HOME=" + System.getenv('BUILD_JAVA_HOME')
 println "[GRADLE] BUILD_JAVA_VERSION=" + System.getenv('BUILD_JAVA_VERSION')
@@ -806,7 +808,6 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
         testImplementation project(path: ':aeron-cluster')
-        testImplementation files("${System.properties['java.home']}/../lib/tools.jar")
         testImplementation ("org.mockito:mockito-core:${mockitoVersion}") {
             exclude group: 'org.junit.jupiter'
         }

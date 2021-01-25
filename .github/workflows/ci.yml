@@ -316,8 +316,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
-      - name: Setup BUILD_JAVA_HOME
-        run: echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install CMake
         run: |
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz

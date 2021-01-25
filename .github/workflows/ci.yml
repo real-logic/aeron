@@ -53,7 +53,7 @@ jobs:
         with:
           java-version: 8
       - name: Build with Gradle
-        run: ./gradlew
+        run: java -version && ./gradlew
         env:
           BUILD_JAVA_VERSION: ${{ matrix.java }}
       - name: Copy test logs
@@ -99,6 +99,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+         echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+         echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
          sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ bionic main universe"
@@ -108,7 +112,7 @@ jobs:
          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
          echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+        run: cmake --version && java -version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -149,8 +153,12 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Build
-        run: cppbuild/centos-docker-build ${{ matrix.version }}
+        run: java -version && cppbuild/centos-docker-build ${{ matrix.version }}
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -194,6 +202,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
           curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -204,7 +216,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+        run: cmake --version && java -version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -248,6 +260,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
           curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -258,7 +274,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --debug-build
+        run: cmake --version && java -version && cppbuild/cppbuild --debug-build
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -300,13 +316,15 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
+      - name: Setup BUILD_JAVA_HOME
+        run: echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
       - name: Install CMake
         run: |
           curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Darwin-x86_64/CMake.app/Contents/bin" >> $GITHUB_PATH
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+        run: cmake --version && java -version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -348,6 +366,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          echo "BUILD_JAVA_HOME=$env:JAVA_HOME" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "BUILD_JAVA_VERSION=8" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Install CMake
         run: |
           $client = new-object System.Net.WebClient
@@ -355,7 +377,7 @@ jobs:
           7z x cmake-$Env:CMAKE_VERSION-win64-x64.zip
           echo "cmake-$Env:CMAKE_VERSION-win64-x64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
       - name: Build
-        run: cmake --version && cppbuild/cppbuild
+        run: cmake --version && java -version && cppbuild/cppbuild
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

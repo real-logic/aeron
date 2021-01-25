@@ -93,6 +93,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
           sudo apt-get update
@@ -141,6 +145,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Build
         run: cppbuild/cppbuild --slow-system-tests
       - name: Copy test logs
@@ -186,6 +194,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
           sudo apt-get update

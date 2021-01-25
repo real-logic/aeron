@@ -27,8 +27,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.TopologyTest;
 import io.aeron.test.launcher.FileResolveUtil;
 import io.aeron.test.launcher.RemoteLaunchClient;
-import org.agrona.IoUtil;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +76,7 @@ public class ClusterNetworkTopologyTest
             {
                 final List<VirtualMachineDescriptor> list = VirtualMachine.list();
                 final List<VirtualMachineDescriptor> echoServices = list.stream()
-                    .filter(vm -> EchoServiceNode.class.getName().equals(vm.displayName()))
+                    .filter((vm) -> EchoServiceNode.class.getName().equals(vm.displayName()))
                     .collect(Collectors.toList());
 
                 if (!echoServices.isEmpty())
@@ -161,12 +160,13 @@ public class ClusterNetworkTopologyTest
             final int length = messageBuffer.putStringAscii(0, message);
             final MutableReference<String> egressResponse = new MutableReference<>();
 
-            final EgressListener egressListener = (clusterSessionId, timestamp, buffer, offset, length1, header) ->
-            {
-                final String stringAscii = buffer.getStringAscii(offset);
-                System.out.println("Response: " + stringAscii);
-                egressResponse.set(stringAscii);
-            };
+            final EgressListener egressListener =
+                (clusterSessionId, timestamp, buffer, offset, length1, header) ->
+                {
+                    final String stringAscii = buffer.getStringAscii(offset);
+                    System.out.println("Response: " + stringAscii);
+                    egressResponse.set(stringAscii);
+                };
 
             try (
                 MediaDriver mediaDriver = MediaDriver.launchEmbedded(new MediaDriver.Context()
@@ -372,8 +372,11 @@ public class ClusterNetworkTopologyTest
 
     private static boolean isVersionAfterJdk8()
     {
-        String versionString = System.getProperty("java.specification.version");
-        versionString = versionString.startsWith("1.") ? versionString.substring(2) : versionString;
-        return Integer.parseInt(versionString) > 8;
+        final String str = System.getProperty("java.specification.version");
+        final int version = str.startsWith("1.") ?
+            AsciiEncoding.parseIntAscii(str, 2, str.length() - 2) :
+            AsciiEncoding.parseIntAscii(str, 0, str.length());
+
+        return version > 8;
     }
 }

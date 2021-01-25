@@ -63,37 +63,31 @@ public class ReplayMergeTest
     private static final int SUBSEQUENT_MESSAGE_COUNT = MIN_MESSAGES_PER_TERM * 3;
     private static final int TOTAL_MESSAGE_COUNT = INITIAL_MESSAGE_COUNT + SUBSEQUENT_MESSAGE_COUNT;
 
-    private final ChannelUriStringBuilder publicationChannel = new ChannelUriStringBuilder()
+    private final String publicationChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .tags("1," + PUBLICATION_TAG)
         .controlEndpoint(CONTROL_ENDPOINT)
         .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
         .termLength(TERM_LENGTH)
-        .taggedFlowControl(GROUP_TAG, 1, "5s");
+        .taggedFlowControl(GROUP_TAG, 1, "5s")
+        .build();
 
-    private final ChannelUriStringBuilder recordingChannel = new ChannelUriStringBuilder()
-        .media(CommonContext.UDP_MEDIA)
-        .endpoint(RECORDING_ENDPOINT)
-        .controlEndpoint(CONTROL_ENDPOINT)
-        .groupTag(GROUP_TAG);
-
-    private final ChannelUriStringBuilder subscriptionChannel = new ChannelUriStringBuilder()
-        .media(CommonContext.UDP_MEDIA)
-        .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
-
-    private final ChannelUriStringBuilder liveDestination = new ChannelUriStringBuilder()
+    private final String liveDestination = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .endpoint(LIVE_ENDPOINT)
-        .controlEndpoint(CONTROL_ENDPOINT);
+        .controlEndpoint(CONTROL_ENDPOINT)
+        .build();
 
-    private final ChannelUriStringBuilder replayDestination = new ChannelUriStringBuilder()
+    private final String replayDestination = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
-        .endpoint(REPLAY_ENDPOINT);
+        .endpoint(REPLAY_ENDPOINT)
+        .build();
 
-    private final ChannelUriStringBuilder replayChannel = new ChannelUriStringBuilder()
+    private final String replayChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .isSessionIdTagged(true)
-        .sessionId(PUBLICATION_TAG);
+        .sessionId(PUBLICATION_TAG)
+        .build();
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     private final MutableLong receivedMessageCount = new MutableLong();
@@ -153,6 +147,9 @@ public class ReplayMergeTest
         aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
                 .errorHandler(Tests::onError)
+                .controlRequestChannel(archive.context().localControlChannel())
+                .controlRequestStreamId(archive.context().localControlStreamId())
+                .controlResponseChannel(archive.context().localControlChannel())
                 .aeron(aeron));
 
         dataCollector.add(Paths.get(mediaDriverContext.aeronDirectoryName()));
@@ -179,11 +176,21 @@ public class ReplayMergeTest
     @Timeout(30)
     public void shouldMergeFromReplayToLive(final TestInfo testInfo)
     {
-        try (Publication publication = aeron.addPublication(publicationChannel.build(), STREAM_ID))
+        try (Publication publication = aeron.addPublication(publicationChannel, STREAM_ID))
         {
-            final int sessionId = publication.sessionId();
-            final String recordingChannel = this.recordingChannel.sessionId(sessionId).build();
-            final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
+            final String recordingChannel = new ChannelUriStringBuilder()
+                .media(CommonContext.UDP_MEDIA)
+                .endpoint(RECORDING_ENDPOINT)
+                .controlEndpoint(CONTROL_ENDPOINT)
+                .sessionId(publication.sessionId())
+                .groupTag(GROUP_TAG)
+                .build();
+
+            final String subscriptionChannel = new ChannelUriStringBuilder()
+                .media(CommonContext.UDP_MEDIA)
+                .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
+                .sessionId(publication.sessionId())
+                .build();
 
             aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE, true);
             final CountersReader counters = aeron.countersReader();
@@ -219,9 +226,9 @@ public class ReplayMergeTest
             ReplayMerge replayMerge = new ReplayMerge(
                 subscription,
                 aeronArchive,
-                replayChannel.build(),
-                replayDestination.build(),
-                liveDestination.build(),
+                replayChannel,
+                replayDestination,
+                liveDestination,
                 recordingId,
                 receivedPosition.get()))
         {

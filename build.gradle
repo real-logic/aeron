@@ -811,6 +811,13 @@ project(':aeron-system-tests') {
         testImplementation ("org.mockito:mockito-core:${mockitoVersion}") {
             exclude group: 'org.junit.jupiter'
         }
+        if (buildJavaVersion == 8) {
+            def javaLauncher = javaToolchains.launcherFor {
+                languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+            }
+            def jdkHome = javaLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath();
+            testImplementation files(jdkHome.resolve("lib/tools.jar").toFile())
+        }
     }
 
     test {

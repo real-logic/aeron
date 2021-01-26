@@ -372,6 +372,7 @@ public class ClusterNetworkTopologyTest
         command.add("-Djava.net.preferIPv4Stack=true");
         command.add("-Daeron.dir.delete.on.start=true");
         command.add("-Daeron.print.configuration=true");
+        command.add("-Daeron.driver.resolver.name=node" + nodeId);
 
         if (null != ingressChannel)
         {

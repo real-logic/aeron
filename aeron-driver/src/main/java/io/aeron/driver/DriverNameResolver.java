@@ -260,6 +260,23 @@ class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.Ud
         return canonicalName;
     }
 
+    static String getCanonicalName(final String fallback)
+    {
+        String canonicalName;
+
+        try
+        {
+            canonicalName = InetAddress.getLocalHost().getHostName();
+        }
+        catch (final UnknownHostException ex)
+        {
+            canonicalName = fallback;
+        }
+
+        return canonicalName;
+    }
+
+
     private void openDatagramChannel()
     {
         transport.openDatagramChannel(null);

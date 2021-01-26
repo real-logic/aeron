@@ -37,7 +37,7 @@ function startNode() {
         -XX:GuaranteedSafepointInterval=300000 \
         -XX:+UseParallelOldGC \
         ${JVM_OPTS:-} ${ADD_OPENS} \
-        io.aeron.test.launcher.RemoteLaunchServer > logs/launch-$1.log" &
+        io.aeron.test.launcher.RemoteLaunchServer > logs/launch-$1.log &" 
 }
 
 function startAll() {

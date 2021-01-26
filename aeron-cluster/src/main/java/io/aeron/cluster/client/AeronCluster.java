@@ -1563,30 +1563,9 @@ public final class AeronCluster implements AutoCloseable
 
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
-
-                boolean isConnected = false;
-                final boolean hasIngress = null != ingressPublication;
-                if (!hasIngress)
-                {
-                    for (final MemberIngress member : memberByIdMap.values())
-                    {
-                        if (member.publication.isConnected())
-                        {
-                            ingressPublication = member.publication;
-                            isConnected = true;
-                            break;
-                        }
-                    }
-                }
-                else if (ingressPublication.isConnected())
-                {
-                    isConnected = true;
-                }
-
                 throw new TimeoutException(
                     "connect timeout, step=" + step + " egress.isConnected=" + egressSubscription.isConnected() +
-                    " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort() + " hasIngress=" +
-                    hasIngress + " isConnected= " + isConnected,
+                    " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort(),
                     AeronException.Category.ERROR);
             }
         }

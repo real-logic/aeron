@@ -204,11 +204,12 @@ final class ServiceProxy implements AutoCloseable
     void terminationPosition(final long logPosition, final ErrorHandler errorHandler)
     {
         final int length = MessageHeaderDecoder.ENCODED_LENGTH + ServiceTerminationPositionEncoder.BLOCK_LENGTH;
+        long result;
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
                 serviceTerminationPositionEncoder
@@ -220,7 +221,6 @@ final class ServiceProxy implements AutoCloseable
                 return;
             }
 
-            checkResult(result);
             if (Publication.BACK_PRESSURED == result)
             {
                 Thread.yield();
@@ -228,8 +228,8 @@ final class ServiceProxy implements AutoCloseable
         }
         while (--attempts > 0);
 
-        errorHandler.onError(
-            new ClusterException("failed to send service termination position", AeronException.Category.WARN));
+        errorHandler.onError(new ClusterException(
+            "failed to send service termination position: result=" + result, AeronException.Category.WARN));
     }
 
     private static void checkResult(final long result)

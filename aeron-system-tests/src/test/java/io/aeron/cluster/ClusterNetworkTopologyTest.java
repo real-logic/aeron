@@ -369,8 +369,10 @@ public class ClusterNetworkTopologyTest
 
         command.add("-cp");
         command.add(FileResolveUtil.resolveAeronAllJar().getAbsolutePath());
+        command.add("-javaagent:" + FileResolveUtil.resolveAeronAgentJar().getAbsolutePath());
         command.add("-Djava.net.preferIPv4Stack=true");
         command.add("-Daeron.dir.delete.on.start=true");
+        command.add("-Daeron.event.cluster.log=all");
 //        command.add("-Daeron.print.configuration=true");
         command.add("-Daeron.driver.resolver.name=node" + nodeId);
 

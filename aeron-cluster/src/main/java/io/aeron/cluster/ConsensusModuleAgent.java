@@ -1001,7 +1001,7 @@ final class ConsensusModuleAgent implements Agent
                 }
                 else
                 {
-                    serviceProxy.terminationPosition(terminationPosition);
+                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
                     if (null != clusterTermination)
                     {
                         clusterTermination.deadlineNs(clusterClock.timeNanos() + ctx.terminationTimeoutNs());
@@ -1844,7 +1844,7 @@ final class ConsensusModuleAgent implements Agent
             {
                 if (NULL_POSITION != terminationPosition && logAdapter.position() >= terminationPosition)
                 {
-                    serviceProxy.terminationPosition(terminationPosition);
+                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
                     state(ConsensusModule.State.TERMINATING);
                 }
 
@@ -1867,7 +1867,7 @@ final class ConsensusModuleAgent implements Agent
             final ControlResponsePoller poller = archive.controlResponsePoller();
             if (!poller.subscription().isConnected())
             {
-                serviceProxy.terminationPosition(NULL_VALUE);
+                serviceProxy.terminationPosition(NULL_VALUE, ctx.countedErrorHandler());
                 throw new AgentTerminationException("local archive not connected");
             }
             else if (poller.poll() != 0 && poller.isPollComplete())
@@ -1998,7 +1998,7 @@ final class ConsensusModuleAgent implements Agent
                     clusterTermination.terminationPosition(
                         consensusPublisher, activeMembers, thisMember, leadershipTermId, position);
                     terminationPosition = position;
-                    serviceProxy.terminationPosition(terminationPosition);
+                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
                     state(ConsensusModule.State.TERMINATING);
                 }
                 break;

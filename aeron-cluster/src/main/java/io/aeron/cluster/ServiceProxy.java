@@ -19,6 +19,7 @@ import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.*;
 
@@ -200,7 +201,7 @@ final class ServiceProxy implements AutoCloseable
         throw new ClusterException("failed to send cluster members extended response");
     }
 
-    void terminationPosition(final long logPosition)
+    void terminationPosition(final long logPosition, final ErrorHandler errorHandler)
     {
         final int length = MessageHeaderDecoder.ENCODED_LENGTH + ServiceTerminationPositionEncoder.BLOCK_LENGTH;
 
@@ -227,7 +228,8 @@ final class ServiceProxy implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new ClusterException("failed to send service termination position");
+        errorHandler.onError(
+            new ClusterException("failed to send service termination position", AeronException.Category.WARN));
     }
 
     private static void checkResult(final long result)

@@ -51,6 +51,13 @@ final class EventConfiguration
     public static final String ENABLED_EVENT_CODES_PROP_NAME = "aeron.event.log";
 
     /**
+     * Disabled Driver Event tags system property name. Follows the format specified for
+     * {@link EventConfiguration#ENABLED_EVENT_CODES_PROP_NAME}.  This property will disable any codes in the set
+     * specified there.  Defined on its own has no effect.
+     */
+    public static final String DISABLED_EVENT_CODES_PROP_NAME = "aeron.event.log.disabled";
+
+    /**
      * Archive Event tags system property name. This is either:
      * <ul>
      * <li>A comma separated list of {@link ArchiveEventCode}s to enable</li>
@@ -60,6 +67,13 @@ final class EventConfiguration
     public static final String ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME = "aeron.event.archive.log";
 
     /**
+     * Disabled Archive Event tags system property name. Follows the format specified for
+     * {@link EventConfiguration#ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME}.  This property will disable any codes in the
+     * set specified there.  Defined on its own has no effect.
+     */
+    public static final String DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME = "aeron.event.archive.log.disabled";
+
+    /**
      * Cluster Event tags system property name. This is either:
      * <ul>
      * <li>A comma separated list of {@link ClusterEventCode}s to enable</li>
@@ -67,6 +81,13 @@ final class EventConfiguration
      * </ul>
      */
     public static final String ENABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log";
+
+    /**
+     * Disabled Cluster Event tags system property name. Follows the format specified for
+     * {@link EventConfiguration#ENABLED_CLUSTER_EVENT_CODES_PROP_NAME}.  This property will disable any codes in the
+     * set specified there.  Defined on its own has no effect.
+     */
+    public static final String DISABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log.disabled";
 
     /**
      * Event codes for admin events within the driver, i.e. does not include frame capture and name resolution
@@ -115,13 +136,16 @@ final class EventConfiguration
     static void init()
     {
         DRIVER_EVENT_CODES.clear();
-        DRIVER_EVENT_CODES.addAll(getEnabledDriverEventCodes(getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
+        DRIVER_EVENT_CODES.addAll(getDriverEventCodes(getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
+        DRIVER_EVENT_CODES.removeAll(getDriverEventCodes(getProperty(DISABLED_EVENT_CODES_PROP_NAME)));
 
         ARCHIVE_EVENT_CODES.clear();
-        ARCHIVE_EVENT_CODES.addAll(getEnabledArchiveEventCodes(getProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME)));
+        ARCHIVE_EVENT_CODES.addAll(getArchiveEventCodes(getProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME)));
+        ARCHIVE_EVENT_CODES.removeAll(getArchiveEventCodes(getProperty(DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME)));
 
         CLUSTER_EVENT_CODES.clear();
-        CLUSTER_EVENT_CODES.addAll(getEnabledClusterEventCodes(getProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME)));
+        CLUSTER_EVENT_CODES.addAll(getClusterEventCodes(getProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME)));
+        CLUSTER_EVENT_CODES.removeAll(getClusterEventCodes(getProperty(DISABLED_CLUSTER_EVENT_CODES_PROP_NAME)));
     }
 
     /**
@@ -141,7 +165,7 @@ final class EventConfiguration
      * @param enabledEventCodes that can be "all" or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link ArchiveEventCode}s that are enabled for the logger.
      */
-    static EnumSet<ArchiveEventCode> getEnabledArchiveEventCodes(final String enabledEventCodes)
+    static EnumSet<ArchiveEventCode> getArchiveEventCodes(final String enabledEventCodes)
     {
         if (Strings.isEmpty(enabledEventCodes))
         {
@@ -160,7 +184,7 @@ final class EventConfiguration
      * @param enabledEventCodes that can be "all" or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link ClusterEventCode}s that are enabled for the logger.
      */
-    static Set<ClusterEventCode> getEnabledClusterEventCodes(final String enabledEventCodes)
+    static Set<ClusterEventCode> getClusterEventCodes(final String enabledEventCodes)
     {
         if (Strings.isEmpty(enabledEventCodes))
         {
@@ -179,7 +203,7 @@ final class EventConfiguration
      * @param enabledEventCodes that can be "all", "admin", or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link DriverEventCode}s that are enabled for the logger.
      */
-    static EnumSet<DriverEventCode> getEnabledDriverEventCodes(final String enabledEventCodes)
+    static EnumSet<DriverEventCode> getDriverEventCodes(final String enabledEventCodes)
     {
         if (Strings.isEmpty(enabledEventCodes))
         {

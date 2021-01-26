@@ -105,7 +105,7 @@ jobs:
         with:
           java-version: 8
       - name: Setup virtual network interfaces
-        run: ./aeron-samples-scripts/cluster/setup-namespaces
+        run: ./aeron-samples/scripts/cluster/setup-namespaces
       - name: Build aeron with Gradle
         run: ./gradlew -x javadoc -x test
         env:
@@ -120,7 +120,7 @@ jobs:
       - name: Stop execution agents
         run: pkill -9 RemoteLaunchServer -u ${USER}
       - name: Remove virtual network interfaces
-        run: ./aeron-samples-scripts/cluster/remove-namespaces
+        run: ./aeron-samples/scripts/cluster/remove-namespaces
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

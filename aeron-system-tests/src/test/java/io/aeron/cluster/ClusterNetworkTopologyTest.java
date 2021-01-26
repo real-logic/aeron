@@ -47,6 +47,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -96,12 +97,17 @@ public class ClusterNetworkTopologyTest
     @Test
     void shouldGetNetworkInformationFromAgentNodes() throws IOException
     {
-        RemoteLaunchClient.connect(
-            HOSTNAMES.get(0), REMOTE_LAUNCH_PORT).executeBlocking(System.out, "/usr/sbin/ip", "a");
-        RemoteLaunchClient.connect(
-            HOSTNAMES.get(1), REMOTE_LAUNCH_PORT).executeBlocking(System.out, "/usr/sbin/ip", "a");
-        RemoteLaunchClient.connect(
-            HOSTNAMES.get(2), REMOTE_LAUNCH_PORT).executeBlocking(System.out, "/usr/sbin/ip", "a");
+        assertTimeoutPreemptively(
+            Duration.ofMillis(10_000),
+            () ->
+            {
+                RemoteLaunchClient.connect(
+                    HOSTNAMES.get(0), REMOTE_LAUNCH_PORT).executeBlocking(System.out, "/usr/sbin/ip", "a");
+                RemoteLaunchClient.connect(
+                    HOSTNAMES.get(1), REMOTE_LAUNCH_PORT).executeBlocking(System.out, "/usr/sbin/ip", "a");
+                RemoteLaunchClient.connect(
+                    HOSTNAMES.get(2), REMOTE_LAUNCH_PORT).executeBlocking(System.out, "/usr/sbin/ip", "a");
+            });
     }
 
     private static Stream<Arguments> provideTopologyConfigurations()

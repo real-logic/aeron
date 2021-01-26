@@ -238,6 +238,13 @@ subprojects {
         }
     }
 
+    task topologyTest(type: Test) {
+        maxParallelForks = 1
+        useJUnitPlatform {
+            includeTags 'topology'
+        }
+    }
+
     javadoc {
         failOnError false
         title = '<h1>Aeron Message Transport</h1>'

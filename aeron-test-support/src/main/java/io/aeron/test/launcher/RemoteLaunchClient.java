@@ -45,7 +45,8 @@ public final class RemoteLaunchClient implements AutoCloseable
 
     private void init() throws IOException
     {
-        clientChannel = SocketChannel.open(new InetSocketAddress(host, port));
+        clientChannel = SocketChannel.open();
+        clientChannel.socket().connect(new InetSocketAddress(host, port), 5_000);
     }
 
     public ReadableByteChannel execute(final String... command) throws IOException

@@ -44,8 +44,6 @@ function startAll() {
   startNode 0
   startNode 1
   startNode 2
-
-  tail -n 100 -F logs/launch-*.log
 }
 
 if [[ $# -lt 1 ]]; then

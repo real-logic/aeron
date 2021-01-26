@@ -116,6 +116,7 @@ jobs:
         run: ./agent-ns
       - name: Get network information
         run:  |
+          sudo sysctl -w net.ipv4.ip_forward=1
           ping -c 3 10.42.0.10
           ip route
           sudo iptables -L

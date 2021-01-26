@@ -102,9 +102,11 @@ public class ClusterNetworkTopologyTest
             () ->
             {
                 RemoteLaunchClient.connect(HOSTNAMES.get(0), REMOTE_LAUNCH_PORT)
-                    .executeBlocking(System.out, "/usr/bin/ping", "-c", "3", "-W", "1", HOSTNAMES.get(1));
-                RemoteLaunchClient.connect(HOSTNAMES.get(0), REMOTE_LAUNCH_PORT)
-                    .executeBlocking(System.out, "/usr/sbin/ip", "route");
+                    .executeBlocking(System.out, "/usr/sbin/ip", "a");
+                RemoteLaunchClient.connect(HOSTNAMES.get(1), REMOTE_LAUNCH_PORT)
+                    .executeBlocking(System.out, "/usr/sbin/ip", "a");
+                RemoteLaunchClient.connect(HOSTNAMES.get(2), REMOTE_LAUNCH_PORT)
+                    .executeBlocking(System.out, "/usr/sbin/ip", "a");
             });
     }
 
@@ -371,7 +373,6 @@ public class ClusterNetworkTopologyTest
         command.add("-Djava.net.preferIPv4Stack=true");
         command.add("-Daeron.dir.delete.on.start=true");
         command.add("-Daeron.event.cluster.log=all");
-//        command.add("-Daeron.print.configuration=true");
         command.add("-Daeron.driver.resolver.name=node" + nodeId);
 
         if (null != ingressChannel)

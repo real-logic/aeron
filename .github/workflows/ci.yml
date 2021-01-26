@@ -119,20 +119,10 @@ jobs:
           sudo sysctl -w net.ipv4.ip_forward=1
           sudo iptables -F FORWARD
           sudo iptables -P FORWARD ACCEPT
-          ping -c 3 10.42.0.10
-          ip route
-          sudo iptables -L
       - name: Run topology tests with Gradle
         run: ./gradlew topologyTest
         env:
           BUILD_JAVA_VERSION: ${{ matrix.java }}
-      - name: Stop execution agents
-        run: |
-          pkill RemoteLaunchServer -u ${USER}
-          sleep 1
-          pgrep -f RemoteLaunchServer
-      - name: Remove virtual network interfaces
-        run: ./aeron-samples/scripts/cluster/remove-namespaces
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

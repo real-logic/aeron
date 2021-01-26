@@ -127,7 +127,10 @@ jobs:
         env:
           BUILD_JAVA_VERSION: ${{ matrix.java }}
       - name: Stop execution agents
-        run: pkill -9 RemoteLaunchServer -u ${USER}
+        run: |
+          pkill RemoteLaunchServer -u ${USER}
+          sleep 1
+          pgrep -f RemoteLaunchServer
       - name: Remove virtual network interfaces
         run: ./aeron-samples/scripts/cluster/remove-namespaces
       - name: Copy test logs

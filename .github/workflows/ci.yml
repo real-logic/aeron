@@ -118,6 +118,7 @@ jobs:
         run:  |
           ping -c 3 10.42.0.10
           ip route
+          sudo iptables -L
       - name: Run topology tests with Gradle
         run: ./gradlew topologyTest
         env:

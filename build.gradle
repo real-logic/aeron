@@ -808,7 +808,7 @@ project(':aeron-system-tests') {
             def javaLauncher = javaToolchains.launcherFor {
                 languageVersion = JavaLanguageVersion.of(buildJavaVersion)
             }
-            def jdkHome = javaLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath();
+            def jdkHome = javaLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
             testImplementation files(jdkHome.resolve("lib/tools.jar").toFile())
         }
     }

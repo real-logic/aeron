@@ -117,6 +117,8 @@ jobs:
       - name: Get network information
         run:  |
           sudo sysctl -w net.ipv4.ip_forward=1
+          sudo iptables -F FORWARD
+          sudo iptables -P FORWARD ACCEPT
           ping -c 3 10.42.0.10
           ip route
           sudo iptables -L

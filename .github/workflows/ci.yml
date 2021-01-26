@@ -114,6 +114,10 @@ jobs:
       - name: Run execution agents
         working-directory: ./aeron-samples/scripts/cluster
         run: ./agent-ns
+      - name: Get network information
+        run:  |
+          ping -c 3 10.42.0.10
+          ip route
       - name: Run topology tests with Gradle
         run: ./gradlew topologyTest
         env:

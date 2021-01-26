@@ -69,36 +69,14 @@ final class EventConfiguration
     public static final String ENABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log";
 
     /**
-     * Event codes for admin events within the driver, i.e. does not include frame capture.
+     * Event codes for admin events within the driver, i.e. does not include frame capture and name resolution
+     * events.
      */
-    public static final Set<DriverEventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
-        CMD_IN_ADD_PUBLICATION,
-        CMD_IN_ADD_SUBSCRIPTION,
-        CMD_IN_KEEPALIVE_CLIENT,
-        CMD_IN_REMOVE_PUBLICATION,
-        CMD_IN_REMOVE_SUBSCRIPTION,
-        CMD_IN_ADD_COUNTER,
-        CMD_IN_REMOVE_COUNTER,
-        CMD_IN_CLIENT_CLOSE,
-        CMD_IN_ADD_RCV_DESTINATION,
-        CMD_IN_REMOVE_RCV_DESTINATION,
-        REMOVE_IMAGE_CLEANUP,
-        REMOVE_PUBLICATION_CLEANUP,
-        REMOVE_SUBSCRIPTION_CLEANUP,
-        CMD_OUT_PUBLICATION_READY,
-        CMD_OUT_AVAILABLE_IMAGE,
-        CMD_OUT_ON_UNAVAILABLE_IMAGE,
-        CMD_OUT_ON_OPERATION_SUCCESS,
-        CMD_OUT_ERROR,
-        CMD_OUT_SUBSCRIPTION_READY,
-        CMD_OUT_COUNTER_READY,
-        CMD_OUT_ON_UNAVAILABLE_COUNTER,
-        CMD_OUT_ON_CLIENT_TIMEOUT,
-        CMD_IN_TERMINATE_DRIVER,
-        SEND_CHANNEL_CREATION,
-        RECEIVE_CHANNEL_CREATION,
-        SEND_CHANNEL_CLOSE,
-        RECEIVE_CHANNEL_CLOSE);
+    public static final Set<DriverEventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.complementOf(EnumSet.of(
+        FRAME_IN,
+        FRAME_OUT,
+        NAME_RESOLUTION_NEIGHBOR_ADDED,
+        NAME_RESOLUTION_NEIGHBOR_REMOVED));
 
     /**
      * Event Buffer default length (in bytes).

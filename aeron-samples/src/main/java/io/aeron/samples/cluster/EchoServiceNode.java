@@ -79,7 +79,7 @@ public class EchoServiceNode
      * {@link io.aeron.cluster.ClusterMember#parse(String)}.
      *
      * @param hostnames of the cluster members.
-     * @param internalHostnames of the cluster members internal address (can be the same as {@see hostnames}).
+     * @param internalHostnames of the cluster members internal address (can be the same as 'hostnames'}).
      * @return the String which can be used for {@link io.aeron.cluster.ClusterMember#parse(String)}.
      */
     public static String clusterMembers(final String[] hostnames, final String[] internalHostnames)

@@ -16,6 +16,7 @@ env:
 
 jobs:
   java-build:
+    if: ${{ false }}  # disable for now
     name: Java ${{ matrix.java }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -136,6 +137,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-gcc-build:
+    if: ${{ false }}  # disable for now
     name: C++ GCC ${{ matrix.version }}
     runs-on: ubuntu-20.04
     strategy:
@@ -193,6 +195,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-gcc-centos-build:
+    if: ${{ false }}  # disable for now
     name: C++ CentOS devtoolset-${{ matrix.version }}
     runs-on: ubuntu-20.04
     strategy:
@@ -239,6 +242,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-clang-build:
+    if: ${{ false }}  # disable for now
     name: C++ Clang ${{ matrix.version }}
     runs-on: ubuntu-18.04
     strategy:
@@ -297,6 +301,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-clang-debug-build:
+    if: ${{ false }}  # disable for now
     name: C++ Clang ${{ matrix.version }} debug build
     runs-on: ubuntu-18.04
     strategy:
@@ -355,6 +360,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-xcode-build:
+    if: ${{ false }}  # disable for now
     name: C++ Xcode ${{ matrix.version }} (macOS)
     runs-on: macOS-latest
     strategy:
@@ -407,6 +413,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-msvc-build:
+    if: ${{ false }}  # disable for now
     name: C++ MSVC (Windows)
     runs-on: windows-latest
     strategy:

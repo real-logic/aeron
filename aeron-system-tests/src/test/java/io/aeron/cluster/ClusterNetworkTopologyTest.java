@@ -101,12 +101,10 @@ public class ClusterNetworkTopologyTest
             Duration.ofMillis(10_000),
             () ->
             {
-                RemoteLaunchClient.connect(
-                    HOSTNAMES.get(0), REMOTE_LAUNCH_PORT).executeBlocking(System.out, "/usr/sbin/ip", "a");
-                RemoteLaunchClient.connect(
-                    HOSTNAMES.get(1), REMOTE_LAUNCH_PORT).executeBlocking(System.out, "/usr/sbin/ip", "a");
-                RemoteLaunchClient.connect(
-                    HOSTNAMES.get(2), REMOTE_LAUNCH_PORT).executeBlocking(System.out, "/usr/sbin/ip", "a");
+                RemoteLaunchClient.connect(HOSTNAMES.get(0), REMOTE_LAUNCH_PORT)
+                    .executeBlocking(System.out, "/usr/bin/ping", "-c", "3", HOSTNAMES.get(1));
+                RemoteLaunchClient.connect(HOSTNAMES.get(0), REMOTE_LAUNCH_PORT)
+                    .executeBlocking(System.out, "/usr/sbin/ip", "route");
             });
     }
 

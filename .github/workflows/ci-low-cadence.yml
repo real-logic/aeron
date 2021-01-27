@@ -101,7 +101,7 @@ jobs:
         run: |
           sudo apt-get update
 
-          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
+          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
       - name: Build
         run: cppbuild/cppbuild --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
       - name: Copy test logs
@@ -202,7 +202,7 @@ jobs:
         run: |
           sudo apt-get update
 
-          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
+          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
       - name: Build
         run: cppbuild/cppbuild --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs

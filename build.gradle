@@ -42,6 +42,10 @@ static def getBuildJavaVersion() {
 }
 int buildJavaVersion = getBuildJavaVersion()
 
+def toolchainLauncher = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+}
+
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
@@ -141,6 +145,10 @@ allprojects {
         resolutionStrategy {
             failOnVersionConflict()
         }
+    }
+
+    tasks.withType(JavaExec).configureEach {
+        javaLauncher = toolchainLauncher
     }
 }
 
@@ -442,10 +450,6 @@ project(':aeron-archive') {
         def markCodecsFile = 'src/main/resources/archive/aeron-archive-mark-codecs.xml'
         def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
 
-        javaLauncher = javaToolchains.launcherFor {
-            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
-        }
-
         inputs.files(codecsFile, markCodecsFile, sbeFile)
         outputs.dir generatedDir
 
@@ -569,10 +573,6 @@ project(':aeron-cluster') {
         def codecsFile = 'src/main/resources/cluster/aeron-cluster-codecs.xml'
         def markCodecsFile = 'src/main/resources/cluster/aeron-cluster-mark-codecs.xml'
         def sbeFile = 'src/main/resources/cluster/fpl/sbe.xsd'
-
-        javaLauncher = javaToolchains.launcherFor {
-            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
-        }
 
         inputs.files(codecsFile, markCodecsFile, sbeFile)
         outputs.dir generatedDir
@@ -805,10 +805,7 @@ project(':aeron-system-tests') {
             exclude group: 'org.junit.jupiter'
         }
         if (buildJavaVersion == 8) {
-            def javaLauncher = javaToolchains.launcherFor {
-                languageVersion = JavaLanguageVersion.of(buildJavaVersion)
-            }
-            def jdkHome = javaLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
+            def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
             testImplementation files(jdkHome.resolve("lib/tools.jar").toFile())
         }
     }

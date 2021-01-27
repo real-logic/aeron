@@ -126,7 +126,7 @@ public class ClusterTests
         }
     }
 
-    public static Thread startMessageThread(final TestCluster cluster, final long backoffIntervalNs)
+    public static Thread startPublisherThread(final TestCluster cluster, final long backoffIntervalNs)
     {
         final Thread thread = new Thread(
             () ->

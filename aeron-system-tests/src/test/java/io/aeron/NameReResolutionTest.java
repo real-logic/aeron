@@ -23,7 +23,6 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.*;
 import io.aeron.test.driver.DistinctErrorLogTestWatcher;
-import io.aeron.test.driver.ErrorReportTestUtil;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
@@ -400,7 +399,7 @@ public class NameReResolutionTest
             containsString("endpoint=" + ENDPOINT_WITH_ERROR_NAME),
             containsString("name-and-port=" + BAD_ADDRESS));
 
-        ErrorReportTestUtil.waitForErrorToOccur(
+        SystemTests.waitForErrorToOccur(
             client.context().aeronDirectoryName(),
             exceptionMessageMatcher,
             new SleepingMillisIdleStrategy(100));

@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.test.driver.LossReportTestUtil.verifyLossOccurredForStream;
+import static io.aeron.SystemTests.verifyLossOccurredForStream;
 import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;

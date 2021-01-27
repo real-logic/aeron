@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.test.driver;
+package io.aeron;
 
-import io.aeron.CommonContext;
+import io.aeron.driver.reports.LossReportReader;
+import io.aeron.driver.reports.LossReportUtil;
 import io.aeron.test.Tests;
 import org.agrona.IoUtil;
-import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.ErrorConsumer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 import org.hamcrest.Matcher;
 import org.hamcrest.StringDescription;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -36,9 +34,45 @@ import java.util.List;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
-public class ErrorReportTestUtil
+class SystemTests
 {
+    static void verifyLossOccurredForStream(final String aeronDirectoryName, final int streamId)
+        throws IOException
+    {
+        final File lossReportFile = LossReportUtil.file(aeronDirectoryName);
+        assertTrue(lossReportFile.exists());
+
+        MappedByteBuffer mappedByteBuffer = null;
+
+        try (RandomAccessFile file = new RandomAccessFile(lossReportFile, "r");
+            FileChannel channel = file.getChannel())
+        {
+            mappedByteBuffer = channel.map(READ_ONLY, 0, channel.size());
+            final AtomicBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
+
+            final LossReportReader.EntryConsumer lossEntryConsumer = mock(LossReportReader.EntryConsumer.class);
+            LossReportReader.read(buffer, lossEntryConsumer);
+
+            verify(lossEntryConsumer).accept(
+                longThat((l) -> l > 0),
+                longThat((l) -> l > 0),
+                anyLong(),
+                anyLong(),
+                anyInt(),
+                eq(streamId),
+                any(),
+                any());
+        }
+        finally
+        {
+            IoUtil.unmap(mappedByteBuffer);
+        }
+    }
+
     public static void waitForErrorToOccur(
         final String aeronDirectoryName,
         final Matcher<String> matcher,
@@ -83,7 +117,7 @@ public class ErrorReportTestUtil
         }
     }
 
-    private static class MatcherErrorConsumer implements ErrorConsumer
+    static final class MatcherErrorConsumer implements ErrorConsumer
     {
         private final Matcher<String> matcher;
         private final List<String> encodedExceptions = new ArrayList<>();

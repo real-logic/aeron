@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.aeron.test.driver.LossReportTestUtil.verifyLossOccurredForStream;
+import static io.aeron.SystemTests.verifyLossOccurredForStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 

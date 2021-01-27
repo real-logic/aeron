@@ -829,7 +829,7 @@ public class ClusterTest
 
             cluster.connectClient();
             final long backoffIntervalNs = MICROSECONDS.toNanos(500);
-            final Thread messageThread = startMessageThread(cluster, backoffIntervalNs);
+            final Thread messageThread = startPublisherThread(cluster, backoffIntervalNs);
 
             try
             {

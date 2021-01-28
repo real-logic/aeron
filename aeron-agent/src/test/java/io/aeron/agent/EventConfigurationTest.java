@@ -26,6 +26,7 @@ import static io.aeron.agent.EventConfiguration.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class EventConfigurationTest
 {
@@ -98,5 +99,42 @@ public class EventConfigurationTest
     {
         assertEquals(EnumSet.of(ArchiveEventCode.CATALOG_RESIZE, ArchiveEventCode.CMD_IN_TAGGED_REPLICATE),
             getArchiveEventCodes("CATALOG_RESIZE,CMD_IN_TAGGED_REPLICATE,"));
+    }
+
+    @Test
+    void shouldDisableSpecificDriverEvents()
+    {
+        System.setProperty("aeron.event.log", "all");
+        System.setProperty("aeron.event.log.disabled", "FRAME_IN,FRAME_OUT");
+        EventConfiguration.init();
+        assertEquals(DriverEventCode.values().length - 2, DRIVER_EVENT_CODES.size());
+        assertFalse(DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_IN));
+        assertFalse(DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_OUT));
+    }
+
+    @Test
+    void shouldDisableSpecificArchiverEvents()
+    {
+        System.setProperty("aeron.event.archive.log", "all");
+        System.setProperty(
+            "aeron.event.archive.log.disabled",
+            ArchiveEventCode.CMD_IN_ATTACH_SEGMENTS.name() + "," + ArchiveEventCode.CMD_IN_CONNECT);
+        EventConfiguration.init();
+        assertEquals(ArchiveEventCode.values().length - 2, ARCHIVE_EVENT_CODES.size());
+        assertFalse(ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CMD_IN_ATTACH_SEGMENTS));
+        assertFalse(ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CMD_IN_CONNECT));
+    }
+
+    @Test
+    void shouldDisableSpecificClusterEvents()
+    {
+        System.setProperty("aeron.event.cluster.log", "all");
+        System.setProperty(
+            "aeron.event.cluster.log.disabled",
+            ClusterEventCode.ROLE_CHANGE.name() + "," + ClusterEventCode.ELECTION_STATE_CHANGE);
+        EventConfiguration.init();
+        assertEquals(ClusterEventCode.values().length - 2, CLUSTER_EVENT_CODES.size());
+        assertFalse(CLUSTER_EVENT_CODES.contains(ClusterEventCode.ROLE_CHANGE));
+        assertFalse(CLUSTER_EVENT_CODES.contains(ClusterEventCode.ELECTION_STATE_CHANGE));
     }
 }

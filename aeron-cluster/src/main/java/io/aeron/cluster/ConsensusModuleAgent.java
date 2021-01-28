@@ -1138,11 +1138,10 @@ final class ConsensusModuleAgent implements Agent
 
         leadershipTermId(leadershipTermId);
 
-        if (null != election && null != appendPosition)
+        if (null != election)
         {
-            final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendPosition.counterId());
             election.onReplayNewLeadershipTermEvent(
-                recordingId, leadershipTermId, logPosition, timestamp, termBaseLogPosition);
+                logRecordingId(), leadershipTermId, logPosition, timestamp, termBaseLogPosition);
         }
     }
 

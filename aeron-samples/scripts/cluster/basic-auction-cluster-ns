@@ -36,7 +36,7 @@ function startNode() {
         -XX:+TrustFinalNonStaticFields \
         -XX:+UnlockDiagnosticVMOptions \
         -XX:GuaranteedSafepointInterval=300000 \
-        -XX:+UseParallelOldGC \
+        -XX:+UseParallelGC \
         -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.ssl.need.client.auth=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
         -Daeron.event.cluster.log=all \
         -Daeron.cluster.tutorial.hostnames=10.42.0.10,10.42.0.11,10.42.0.12 \

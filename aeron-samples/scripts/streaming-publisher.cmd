@@ -23,7 +23,7 @@ set /p VERSION=<..\..\version.txt
     -XX:BiasedLockingStartupDelay=0 ^
     -XX:+UnlockExperimentalVMOptions ^
     -XX:+TrustFinalNonStaticFields ^
-    -XX:+UseParallelOldGC ^
+    -XX:+UseParallelGC ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.sample.messageLength=32 ^
     -Daeron.sample.messages=500000000 ^

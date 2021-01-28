@@ -25,6 +25,6 @@ ${JAVA_HOME}/bin/java \
     -XX:+TrustFinalNonStaticFields \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:GuaranteedSafepointInterval=300000 \
-    -XX:+UseParallelOldGC \
+    -XX:+UseParallelGC \
     -Djava.net.preferIPv4Stack=true \
     ${JVM_OPTS} io.aeron.samples.raw.ReceiveSendUdpPong "$@"

@@ -25,5 +25,5 @@ set /p VERSION=<..\..\..\version.txt
     -XX:+TrustFinalNonStaticFields ^
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
-    -XX:+UseParallelOldGC ^
+    -XX:+UseParallelGC ^
     %JVM_OPTS% io.aeron.archive.ArchivingMediaDriver %*

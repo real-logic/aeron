@@ -23,7 +23,7 @@ set /p VERSION=<..\..\version.txt
     -XX:+TrustFinalNonStaticFields ^
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
-    -XX:+UseParallelOldGC ^
+    -XX:+UseParallelGC ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.pre.touch.mapped.memory=true ^
     -Daeron.sample.exclusive.publications=true ^

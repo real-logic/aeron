@@ -30,7 +30,7 @@ function startNode() {
         -XX:+TrustFinalNonStaticFields \
         -XX:+UnlockDiagnosticVMOptions \
         -XX:GuaranteedSafepointInterval=300000 \
-        -XX:+UseParallelOldGC \
+        -XX:+UseParallelGC \
         -Daeron.event.cluster.log=all \
         -Daeron.cluster.tutorial.nodeId=$1 \
         ${JVM_OPTS} ${ADD_OPENS} \

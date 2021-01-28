@@ -23,7 +23,7 @@ set /p VERSION=<..\..\version.txt
     -XX:+TrustFinalNonStaticFields ^
     -XX:+UseBiasedLocking ^
     -XX:BiasedLockingStartupDelay=0 ^
-    -XX:+UseParallelOldGC ^
+    -XX:+UseParallelGC ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.sample.messageLength=32 ^
     %JVM_OPTS% io.aeron.samples.EmbeddedBufferClaimIpcThroughput %*

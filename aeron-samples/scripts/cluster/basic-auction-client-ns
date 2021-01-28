@@ -29,7 +29,7 @@ function startNode() {
         -XX:+TrustFinalNonStaticFields \
         -XX:+UnlockDiagnosticVMOptions \
         -XX:GuaranteedSafepointInterval=300000 \
-        -XX:+UseParallelOldGC \
+        -XX:+UseParallelGC \
         -Daeron.cluster.tutorial.customerId="$1" \
         -Daeron.cluster.tutorial.numOfBids="$2" \
         -Daeron.cluster.tutorial.bidIntervalMs="$3" \

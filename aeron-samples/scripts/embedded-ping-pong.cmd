@@ -25,7 +25,7 @@ set /p VERSION=<..\..\version.txt
     -XX:GuaranteedSafepointInterval=300000 ^
     -XX:+UseBiasedLocking ^
     -XX:BiasedLockingStartupDelay=0 ^
-    -XX:+UseParallelOldGC ^
+    -XX:+UseParallelGC ^
     -Djava.net.preferIPv4Stack=true ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.pre.touch.mapped.memory=true ^

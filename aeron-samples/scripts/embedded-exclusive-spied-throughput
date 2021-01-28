@@ -23,7 +23,7 @@ ${JAVA_HOME}/bin/java \
     -XX:+TrustFinalNonStaticFields \
     -XX:+UseBiasedLocking \
     -XX:BiasedLockingStartupDelay=0 \
-    -XX:+UseParallelOldGC \
+    -XX:+UseParallelGC \
     -Djava.net.preferIPv4Stack=true \
     -Dagrona.disable.bounds.checks=true \
     -Daeron.sample.messageLength=32 \

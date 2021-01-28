@@ -2862,10 +2862,10 @@ final class ConsensusModuleAgent implements Agent
 
     private void closeAndTerminate()
     {
-        state(ConsensusModule.State.CLOSED);
         tryStopLogRecording();
+        state(ConsensusModule.State.CLOSED);
         ctx.terminationHook().run();
-        throw new AgentTerminationException();
+        throw new ClusterTerminationException();
     }
 
     private void tryStopLogRecording()

@@ -210,7 +210,6 @@ subprojects {
         }
 
         testLogging {
-            showStandardStreams = true
             exceptionFormat = 'full'
         }
 

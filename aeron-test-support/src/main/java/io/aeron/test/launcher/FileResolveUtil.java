@@ -42,22 +42,33 @@ public class FileResolveUtil
 
     public static File resolveAeronAllJar()
     {
+        return resolveAeronJar("aeron-all", false);
+    }
+
+    public static File resolveAeronAgentJar()
+    {
+        return resolveAeronJar("aeron-agent", true);
+    }
+
+    private static File resolveAeronJar(final String moduleName, final boolean allowMultipleFiles)
+    {
         final File projectRoot = resolveProjectRoot();
-        final File allBuildLibs = new File(projectRoot, "aeron-all/build/libs");
+
+        final File allBuildLibs = new File(projectRoot, moduleName + "/build/libs");
         if (!allBuildLibs.exists())
         {
             throw new RuntimeException("Directory: " + allBuildLibs + " does not exist");
         }
 
         final File[] aeronAllJarFiles = allBuildLibs.listFiles(
-            (dir, name) -> name.startsWith("aeron-all-") && name.endsWith(".jar"));
+            (dir, name) -> name.startsWith(moduleName + "-") && name.endsWith(".jar"));
 
         if (null == aeronAllJarFiles || 0 == aeronAllJarFiles.length)
         {
             throw new RuntimeException("Unable to find aeron jar files in directory: " + allBuildLibs);
         }
 
-        if (1 != aeronAllJarFiles.length)
+        if (!allowMultipleFiles && 1 != aeronAllJarFiles.length)
         {
             throw new RuntimeException(
                 "Multiple libs found, run './gradlew clean': " + Arrays.toString(aeronAllJarFiles));

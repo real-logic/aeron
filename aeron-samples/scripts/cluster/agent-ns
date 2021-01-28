@@ -21,10 +21,9 @@ source ./script-common
 
 mkdir -p logs
 
-# tag::start_jvm[]
 function startNode() {
 
-    namespace=ns_cluster$1
+    namespace=ns_node$1
 
     sudo ip netns exec ${namespace} su - ${USER} -c "cd ${PWD} && \
     ${JAVA_HOME}/bin/java \
@@ -38,17 +37,14 @@ function startNode() {
         -XX:GuaranteedSafepointInterval=300000 \
         -XX:+UseParallelOldGC \
         ${JVM_OPTS:-} ${ADD_OPENS} \
-        io.aeron.test.launcher.RemoteLaunchServer > logs/launch-$1.log" &
+        io.aeron.test.launcher.RemoteLaunchServer > logs/launch-$1.log &" 
 }
 
 function startAll() {
   startNode 0
   startNode 1
   startNode 2
-
-  tail -n 100 -F logs/launch-*.log
 }
-# end::start_jvm[]
 
 if [[ $# -lt 1 ]]; then
   startAll
@@ -56,7 +52,7 @@ elif [[ $1 == 0 ]] || [[ $1 == 1 ]] || [[ $1 == 2 ]]; then
   echo "starting node $1"
   startNode $1
 else
-  echo "Usage: ./basic-auction-cluster [0,1,2]"
+  echo "Usage: ./agent-ns [0,1,2]"
   exit 1
 fi
 

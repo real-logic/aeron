@@ -141,7 +141,7 @@ public final class DriverConductor implements Agent
 
         ctx.systemCounters().get(RESOLUTION_CHANGES)
             .appendToLabel(": driverName=").appendToLabel(ctx.resolverName())
-            .appendToLabel(" hostname=").appendToLabel(DriverNameResolver.getCanonicalName());
+            .appendToLabel(" hostname=").appendToLabel(DriverNameResolver.getCanonicalName("<unresolved>"));
 
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);

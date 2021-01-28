@@ -15,6 +15,10 @@
 ## limitations under the License.
 ##
 
-sudo ip -all netns delete
-sudo ip link delete br_c
+sudo ip netns delete ns_node0
+sudo ip netns delete ns_node1
+sudo ip netns delete ns_node2
+sudo ip link delete br_a
+sudo ip link delete br_b
+
 

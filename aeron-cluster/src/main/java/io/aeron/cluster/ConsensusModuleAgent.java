@@ -2337,7 +2337,7 @@ final class ConsensusModuleAgent implements Agent
             {
                 throw new ClusterException(
                     "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
-                    " snapshot=" + SemanticVersion.toString(appVersion));
+                        " snapshot=" + SemanticVersion.toString(appVersion));
             }
 
             final TimeUnit timeUnit = snapshotLoader.timeUnit();
@@ -2862,8 +2862,17 @@ final class ConsensusModuleAgent implements Agent
     {
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
-        ctx.terminationHook().run();
-        throw new ClusterTerminationException();
+
+        final ClusterTerminationException exception = new ClusterTerminationException();
+        try
+        {
+            ctx.terminationHook().run();
+        }
+        catch (final Throwable t)
+        {
+            exception.addSuppressed(t);
+        }
+        throw exception;
     }
 
     private void unexpectedTermination()

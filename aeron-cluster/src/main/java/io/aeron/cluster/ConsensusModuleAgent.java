@@ -863,7 +863,10 @@ final class ConsensusModuleAgent implements Agent
         {
             roleChange(role, newRole, memberId);
             role = newRole;
-            clusterRoleCounter.setOrdered(newRole.code());
+            if (!clusterRoleCounter.isClosed())
+            {
+                clusterRoleCounter.set(newRole.code());
+            }
         }
     }
 

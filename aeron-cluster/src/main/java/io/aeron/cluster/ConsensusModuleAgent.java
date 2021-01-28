@@ -1122,7 +1122,7 @@ final class ConsensusModuleAgent implements Agent
             ctx.errorHandler().onError(new ClusterException(
                 "incompatible timestamp units: " + clusterTimeUnit + " log=" + timeUnit,
                 AeronException.Category.FATAL));
-            closeAndTerminate();
+            unexpectedTermination();
             return;
         }
 
@@ -1132,7 +1132,7 @@ final class ConsensusModuleAgent implements Agent
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " log=" + SemanticVersion.toString(appVersion),
                 AeronException.Category.FATAL));
-            closeAndTerminate();
+            unexpectedTermination();
             return;
         }
 
@@ -1867,8 +1867,7 @@ final class ConsensusModuleAgent implements Agent
             final ControlResponsePoller poller = archive.controlResponsePoller();
             if (!poller.subscription().isConnected())
             {
-                serviceProxy.terminationPosition(NULL_VALUE, ctx.countedErrorHandler());
-                throw new AgentTerminationException("local archive not connected");
+                unexpectedTermination();
             }
             else if (poller.poll() != 0 && poller.isPollComplete())
             {
@@ -2604,7 +2603,7 @@ final class ConsensusModuleAgent implements Agent
         aeronClientInvoker.invoke();
         if (aeron.isClosed())
         {
-            throw new AgentTerminationException();
+            throw new AgentTerminationException("unexpected Aeron close");
         }
 
         idleStrategy.idle();
@@ -2617,7 +2616,7 @@ final class ConsensusModuleAgent implements Agent
         aeronClientInvoker.invoke();
         if (aeron.isClosed())
         {
-            throw new AgentTerminationException();
+            throw new AgentTerminationException("unexpected Aeron close");
         }
 
         idleStrategy.idle(workCount);
@@ -2855,7 +2854,7 @@ final class ConsensusModuleAgent implements Agent
                 ConsensusModule.State.QUITTING != state)
             {
                 ctx.errorHandler().onError(new ClusterException("Aeron client for service closed unexpectedly", WARN));
-                closeAndTerminate();
+                unexpectedTermination();
             }
         }
     }
@@ -2866,6 +2865,16 @@ final class ConsensusModuleAgent implements Agent
         state(ConsensusModule.State.CLOSED);
         ctx.terminationHook().run();
         throw new ClusterTerminationException();
+    }
+
+    private void unexpectedTermination()
+    {
+        aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
+        serviceProxy.terminationPosition(NULL_POSITION, ctx.countedErrorHandler());
+        tryStopLogRecording();
+        state(ConsensusModule.State.CLOSED);
+        ctx.terminationHook().run();
+        throw new AgentTerminationException();
     }
 
     private void tryStopLogRecording()

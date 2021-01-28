@@ -227,7 +227,7 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        else if (result == 0)
+        else if (0 == result)
         {
             return nullptr;
         }
@@ -340,7 +340,7 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        else if (result == 0)
+        else if (0 == result)
         {
             return nullptr;
         }
@@ -464,6 +464,7 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return addSubscription;
     }
 
@@ -507,7 +508,7 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        else if (result == 0)
+        else if (0 == result)
         {
             return nullptr;
         }
@@ -556,7 +557,6 @@ public:
         m_pendingCounters[registrationId] = addCounter;
         return registrationId;
     }
-
 
     /**
      * Retrieve the Counter associated with the given registrationId.
@@ -616,6 +616,7 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
         return addCounter;
     }
 
@@ -645,7 +646,7 @@ public:
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-        else if (result == 0)
+        else if (0 == result)
         {
             return nullptr;
         }
@@ -914,7 +915,7 @@ public:
 
 private:
     Context m_context;
-    aeron_t *m_aeron;
+    aeron_t *m_aeron = nullptr;
     CountersReader m_countersReader;
     std::unordered_map<std::int64_t, AsyncAddPublication *> m_pendingPublications;
     std::unordered_map<std::int64_t, AsyncAddExclusivePublication *> m_pendingExclusivePublications;

@@ -45,9 +45,8 @@ import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 public class DriverLoggingAgentTest
@@ -189,7 +188,7 @@ public class DriverLoggingAgentTest
             latch.await();
         }
 
-        assertThat(LOGGED_EVENTS, containsInAnyOrder(expectedEvents.toArray()));
+        assertTrue(LOGGED_EVENTS.containsAll(expectedEvents));
     }
 
     private void before(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)

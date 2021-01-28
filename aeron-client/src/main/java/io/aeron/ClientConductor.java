@@ -808,7 +808,15 @@ class ClientConductor implements Agent
 
     boolean removeAvailableCounterHandler(final long registrationId)
     {
-        return availableCounterHandlerById.remove(registrationId) != null;
+        clientLock.lock();
+        try
+        {
+            return availableCounterHandlerById.remove(registrationId) != null;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     boolean removeAvailableCounterHandler(final AvailableCounterHandler handler)
@@ -862,7 +870,15 @@ class ClientConductor implements Agent
 
     boolean removeUnavailableCounterHandler(final long registrationId)
     {
-        return unavailableCounterHandlerById.remove(registrationId) != null;
+        clientLock.lock();
+        try
+        {
+            return unavailableCounterHandlerById.remove(registrationId) != null;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     boolean removeUnavailableCounterHandler(final UnavailableCounterHandler handler)
@@ -916,7 +932,15 @@ class ClientConductor implements Agent
 
     boolean removeCloseHandler(final long registrationId)
     {
-        return closeHandlerByIdMap.remove(registrationId) != null;
+        clientLock.lock();
+        try
+        {
+            return closeHandlerByIdMap.remove(registrationId) != null;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     boolean removeCloseHandler(final Runnable handler)

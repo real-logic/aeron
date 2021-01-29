@@ -1,16 +1,15 @@
 Aeron Cluster
 ===
 
-**Note:** Aeron Cluster is currently a preview feature, commercial support is available from
- [sales@real-logic.co.uk](mailto:sales@real-logic.co.uk?subject=Aeron%20Cluster).
+Aeron provides support for fault-tolerant services as replicated state machines based on the 
+[Raft](https://raft.github.io/) consensus algorithm.
 
 The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log. This log is
 replicated and archived on a number of nodes to achieve fault tolerance. Cluster services process this log and respond
 to cluster clients.
 
-Aeron Cluster works on the concept of a strong leader using an adaptation of the [Raft](https://raft.github.io/raft.pdf)
-protocol. The leader sequences the log and is responsible for replicating it to other cluster members known as
-followers.
+Aeron Cluster works on the concept of a strong leader. The leader sequences the log and is responsible for replicating
+the log to other cluster members known as followers.
 
 Aeron Cluster is composed of a number of components. Central is the Consensus Module which sequences the log and
 coordinates consensus on the recording of the sequenced log to persistent storage, and the services consuming the log
@@ -20,6 +19,9 @@ consume the log once a majority of the cluster members have safely recorded the 
 To enable fast recovery the services and consensus module can take a snapshot of their state as of a given log position
 thus enabling recovery by loading the most recent snapshot and replaying logs from that point forward. Snapshots are
 recorded as streams in the Archive for local and remote replay so that a distributed file system is not required.
+
+Unique features to Aeron Cluster include support for reliable distributed timers, inter-service messaging, remote data
+centre backup, and unparalleled performance.
 
 [Cluster Tutorial](https://github.com/real-logic/aeron/wiki/Cluster-Tutorial) is a good place to start.
 
@@ -37,10 +39,10 @@ The cluster can run in various configurations:
     with membership changes recorded in the log.
        
 Based on the membership size, consensus is determined by the majority of the cluster members. Clusters should be 3 or 5
-in population size. However, 2 node clusters are supported whereby both members must agree the log 
-and in the event of failure the remaining member must be manually reconfigured as a single node cluster.
+in population size. However, 2 node clusters are supported whereby both members must agree the log and in the event of
+failure the remaining member must be manually reconfigured as a single node cluster to progress.
 
-Protocol
+Aeron Cluster Protocol
 =====
 
 Messages specification is in SBE in [aeron-cluster-codecs.xml](https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/cluster/aeron-cluster-codecs.xml).

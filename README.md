@@ -13,7 +13,9 @@ Efficient reliable UDP unicast, UDP multicast, and IPC message transport. Java a
 repository, and a [.NET client](https://github.com/AdaptiveConsulting/Aeron.NET) is available from a 3rd party. All
 three clients can exchange messages across machines, or on the same machine via IPC, very efficiently. Message streams
 can be recorded by the [Archive](https://github.com/real-logic/aeron/tree/master/aeron-archive) module to persistent
-storage for later, or real-time, replay.
+storage for later, or real-time, replay. Aeron [Cluster](https://github.com/real-logic/aeron/tree/master/aeron-cluster)
+provides support for fault-tolerant services as replicated state machines based on the
+[Raft](https://raft.github.io/) consensus algorithm.
 
 Performance is the key focus. A design goal for Aeron is to be the highest throughput with the lowest and most
 predictable latency of any messaging system. Aeron integrates with

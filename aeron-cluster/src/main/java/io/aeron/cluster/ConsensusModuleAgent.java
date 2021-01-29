@@ -2881,7 +2881,7 @@ final class ConsensusModuleAgent implements Agent
     private void unexpectedTermination()
     {
         aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
-        serviceProxy.terminationPosition(NULL_POSITION, ctx.countedErrorHandler());
+        serviceProxy.terminationPosition(0, ctx.countedErrorHandler());
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
 

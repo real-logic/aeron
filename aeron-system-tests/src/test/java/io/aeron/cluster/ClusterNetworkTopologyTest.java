@@ -85,8 +85,7 @@ public class ClusterNetworkTopologyTest
 
                 return echoServices.isEmpty();
             },
-            SECONDS.toNanos(5)
-        );
+            SECONDS.toNanos(5));
 
         final File scriptDir = FileResolveUtil.resolveClusterScriptDir();
         IoUtil.delete(new File(scriptDir, "node0"), true);
@@ -95,7 +94,7 @@ public class ClusterNetworkTopologyTest
     }
 
     @Test
-    void shouldGetNetworkInformationFromAgentNodes() throws IOException
+    void shouldGetNetworkInformationFromAgentNodes()
     {
         assertTimeoutPreemptively(
             Duration.ofMillis(10_000),
@@ -122,8 +121,7 @@ public class ClusterNetworkTopologyTest
             Arguments.of(
                 HOSTNAMES, null, "aeron:udp", "aeron:udp?endpoint=239.20.90.13:9152|interface=10.42.1.0/24"),
             Arguments.of(
-                HOSTNAMES, INTERNAL_HOSTNAMES, "aeron:udp", null)
-        );
+                HOSTNAMES, INTERNAL_HOSTNAMES, "aeron:udp", null));
     }
 
     @ParameterizedTest
@@ -206,8 +204,7 @@ public class ClusterNetworkTopologyTest
                         pollSelector(selector);
                         return 0 < position;
                     },
-                    SECONDS.toNanos(5)
-                );
+                    SECONDS.toNanos(5));
 
                 Tests.await(
                     () ->
@@ -216,8 +213,7 @@ public class ClusterNetworkTopologyTest
                         pollSelector(selector);
                         return message.equals(egressResponse.get());
                     },
-                    SECONDS.toNanos(5)
-                );
+                    SECONDS.toNanos(5));
             }
         }
     }
@@ -345,9 +341,9 @@ public class ClusterNetworkTopologyTest
             }
             selectionKeys.clear();
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 

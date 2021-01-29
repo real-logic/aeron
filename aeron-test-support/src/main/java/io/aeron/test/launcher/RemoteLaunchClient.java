@@ -64,7 +64,7 @@ public final class RemoteLaunchClient implements AutoCloseable
         return clientChannel;
     }
 
-    public RemoteLaunchClient executeBlocking(final OutputStream out, final String... command) throws IOException
+    public void executeBlocking(final OutputStream out, final String... command) throws IOException
     {
         try (ReadableByteChannel commandResponse = execute(command))
         {
@@ -82,8 +82,6 @@ public final class RemoteLaunchClient implements AutoCloseable
                 buffer.clear();
             }
         }
-
-        return this;
     }
 
     public void close() throws Exception

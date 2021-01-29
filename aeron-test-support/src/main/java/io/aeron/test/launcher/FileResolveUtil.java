@@ -37,7 +37,7 @@ public class FileResolveUtil
         }
         while (null != parent);
 
-        throw new RuntimeException("Unable to find project root directory from: " + workingDir);
+        throw new RuntimeException("unable to find project root directory from: " + workingDir);
     }
 
     public static File resolveAeronAllJar()
@@ -57,7 +57,7 @@ public class FileResolveUtil
         final File allBuildLibs = new File(projectRoot, moduleName + "/build/libs");
         if (!allBuildLibs.exists())
         {
-            throw new RuntimeException("Directory: " + allBuildLibs + " does not exist");
+            throw new RuntimeException("directory: " + allBuildLibs + " does not exist");
         }
 
         final File[] aeronAllJarFiles = allBuildLibs.listFiles(
@@ -65,13 +65,13 @@ public class FileResolveUtil
 
         if (null == aeronAllJarFiles || 0 == aeronAllJarFiles.length)
         {
-            throw new RuntimeException("Unable to find aeron jar files in directory: " + allBuildLibs);
+            throw new RuntimeException("unable to find aeron jar files in directory: " + allBuildLibs);
         }
 
         if (!allowMultipleFiles && 1 != aeronAllJarFiles.length)
         {
             throw new RuntimeException(
-                "Multiple libs found, run './gradlew clean': " + Arrays.toString(aeronAllJarFiles));
+                "multiple libs found, run './gradlew clean': " + Arrays.toString(aeronAllJarFiles));
         }
 
         return aeronAllJarFiles[0];

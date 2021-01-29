@@ -38,7 +38,7 @@ import static java.lang.Integer.parseInt;
 /**
  * Node that launches the service for the {@link BasicAuctionClusteredService}.
  */
-public class EchoServiceNode
+public final class EchoServiceNode
 {
     private static ErrorHandler errorHandler(final String context)
     {
@@ -53,7 +53,7 @@ public class EchoServiceNode
     private static final int PORT_BASE = 9000;
     private static final int PORTS_PER_NODE = 100;
     private static final int ARCHIVE_CONTROL_REQUEST_PORT_OFFSET = 1;
-    static final int CLIENT_FACING_PORT_OFFSET = 2;
+    private static final int CLIENT_FACING_PORT_OFFSET = 2;
     private static final int MEMBER_FACING_PORT_OFFSET = 3;
     private static final int LOG_PORT_OFFSET = 4;
     private static final int TRANSFER_PORT_OFFSET = 5;
@@ -64,11 +64,11 @@ public class EchoServiceNode
         return PORT_BASE + (nodeId * PORTS_PER_NODE) + offset;
     }
 
-    private static String udpChannel(final int nodeId, final String hostname, final int portOffset)
+    private static String udpChannel(final int nodeId, final String hostname)
     {
-        final int port = calculatePort(nodeId, portOffset);
+        final int port = calculatePort(nodeId, ARCHIVE_CONTROL_REQUEST_PORT_OFFSET);
         return new ChannelUriStringBuilder()
-            .media("udp")
+            .media(CommonContext.UDP_MEDIA)
             .termLength(TERM_LENGTH)
             .endpoint(hostname + ":" + port)
             .build();
@@ -132,7 +132,7 @@ public class EchoServiceNode
         final Archive.Context archiveContext = new Archive.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
-            .controlChannel(udpChannel(nodeId, hostname, ARCHIVE_CONTROL_REQUEST_PORT_OFFSET))
+            .controlChannel(udpChannel(nodeId, hostname))
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);

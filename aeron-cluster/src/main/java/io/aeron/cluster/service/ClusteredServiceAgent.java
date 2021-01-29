@@ -51,13 +51,13 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private boolean isServiceActive;
     private final int serviceId;
     private int memberId = NULL_VALUE;
+    private long closeHandlerRegistrationId;
     private long ackId = 0;
     private long terminationPosition = NULL_POSITION;
-    private long timeOfLastMarkFileUpdateMs;
+    private long markFileUpdateDeadlineMs;
     private long cachedTimeMs;
     private long clusterTime;
     private long logPosition = NULL_POSITION;
-    private long closeHandlerRegistrationId;
 
     private final IdleStrategy idleStrategy;
     private final ClusteredServiceContainer.Context ctx;
@@ -887,10 +887,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 }
             }
 
-            if (nowMs >= (timeOfLastMarkFileUpdateMs + MARK_FILE_UPDATE_INTERVAL_MS))
+            if (nowMs >= markFileUpdateDeadlineMs)
             {
                 ctx.clusterMarkFile().updateActivityTimestamp(nowMs);
-                timeOfLastMarkFileUpdateMs = nowMs;
+                markFileUpdateDeadlineMs = nowMs + MARK_FILE_UPDATE_INTERVAL_MS;
             }
 
             return true;

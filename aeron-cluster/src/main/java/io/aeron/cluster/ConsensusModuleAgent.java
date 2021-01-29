@@ -77,8 +77,8 @@ final class ConsensusModuleAgent implements Agent
     private long lastAppendPosition = 0;
     private long timeOfLastLogUpdateNs = 0;
     private long timeOfLastAppendPositionNs = 0;
-    private long timeOfLastMarkFileUpdateNs;
-    private long timeOfLastSlowTickNs;
+    private long slowTickDeadlineNs = 0;
+    private long markFileUpdateDeadlineNs = 0;
     private int pendingServiceMessageHeadOffset = 0;
     private int uncommittedServiceMessages = 0;
     private int memberId;
@@ -294,9 +294,9 @@ final class ConsensusModuleAgent implements Agent
         final long now = clusterClock.time();
         final long nowNs = clusterTimeUnit.toNanos(now);
 
-        if (nowNs >= (timeOfLastSlowTickNs + SLOW_TICK_INTERVAL_NS))
+        if (nowNs >= slowTickDeadlineNs)
         {
-            timeOfLastSlowTickNs = nowNs;
+            slowTickDeadlineNs = nowNs + SLOW_TICK_INTERVAL_NS;
             workCount += slowTickWork(clusterTimeUnit.toMillis(now), nowNs);
         }
 
@@ -1805,10 +1805,10 @@ final class ConsensusModuleAgent implements Agent
             checkForArchiveError(true);
         }
 
-        if (nowNs >= (timeOfLastMarkFileUpdateNs + MARK_FILE_UPDATE_INTERVAL_NS))
+        if (nowNs >= markFileUpdateDeadlineNs)
         {
             markFile.updateActivityTimestamp(nowMs);
-            timeOfLastMarkFileUpdateNs = nowMs;
+            markFileUpdateDeadlineNs = nowNs + MARK_FILE_UPDATE_INTERVAL_NS;
         }
 
         workCount += sendRedirects(redirectSessions, nowNs);

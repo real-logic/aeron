@@ -737,13 +737,13 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             try (Subscription subscription = aeron.addSubscription(replaySessionChannel, streamId))
             {
                 final Image image = awaitImage(sessionId, subscription);
-                loadState(image);
+                loadState(image, archive);
                 service.onStart(this, image);
             }
         }
     }
 
-    private void loadState(final Image image)
+    private void loadState(final Image image, final AeronArchive archive)
     {
         final ServiceSnapshotLoader snapshotLoader = new ServiceSnapshotLoader(image, this);
         while (true)
@@ -760,6 +760,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 {
                     throw new ClusterException("snapshot ended unexpectedly");
                 }
+
+                archive.checkForErrorResponse();
             }
 
             idle(fragments);
@@ -790,6 +792,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             snapshotState(publication, logPosition, leadershipTermId);
             checkForClockTick();
+            archive.checkForErrorResponse();
             service.onTakeSnapshot(publication);
             awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
 

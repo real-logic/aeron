@@ -69,6 +69,16 @@ abstract class ArchiveConductor
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
+    private final long closeHandlerRegistrationId;
+    private final long unavailableCounterHandlerRegistrationId;
+    private final long connectTimeoutMs;
+    private long nextSessionId = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
+    private long markFileUpdateDeadlineMs = 0;
+    private final int maxConcurrentRecordings;
+    private final int maxConcurrentReplays;
+    private int replayId = 1;
+    private volatile boolean isAbort;
+
     private final RecordingSummary recordingSummary = new RecordingSummary();
     private final ControlRequestDecoders decoders = new ControlRequestDecoders();
     private final ArrayDeque<Runnable> taskQueue = new ArrayDeque<>();
@@ -96,16 +106,6 @@ abstract class ArchiveConductor
     private final RecordingEventsProxy recordingEventsProxy;
     private final Authenticator authenticator;
     private final ControlSessionProxy controlSessionProxy;
-    private final long closeHandlerRegistrationId;
-    private final long unavailableCounterHandlerRegistrationId;
-    private final long connectTimeoutMs;
-    private long timeOfLastMarkFileUpdateMs;
-    private long nextSessionId = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
-    private final int maxConcurrentRecordings;
-    private final int maxConcurrentReplays;
-    private int replayId = 1;
-    private volatile boolean isAbort;
-
     final Archive.Context ctx;
     SessionWorker<ReplaySession> replayer;
     SessionWorker<RecordingSession> recorder;
@@ -262,10 +262,10 @@ abstract class ArchiveConductor
             cachedEpochClock.update(nowMs);
             workCount += invokeAeronInvoker();
 
-            if (nowMs >= (timeOfLastMarkFileUpdateMs + MARK_FILE_UPDATE_INTERVAL_MS))
+            if (nowMs >= markFileUpdateDeadlineMs)
             {
                 markFile.updateActivityTimestamp(nowMs);
-                timeOfLastMarkFileUpdateMs = nowMs;
+                markFileUpdateDeadlineMs = nowMs + MARK_FILE_UPDATE_INTERVAL_MS;
             }
         }
 
@@ -980,6 +980,7 @@ abstract class ArchiveConductor
 
             catalog.recordingStopped(recordingId, position, epochClock.time());
 
+            session.sendPendingError(controlResponseProxy);
             session.controlSession().attemptSignal(
                 session.correlationId(),
                 recordingId,

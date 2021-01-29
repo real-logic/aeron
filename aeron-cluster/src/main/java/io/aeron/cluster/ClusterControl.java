@@ -256,7 +256,7 @@ public class ClusterControl
         if (1 != args.length)
         {
             System.out.format("Usage: [-Daeron.dir=<directory containing CnC file> -Daeron.cluster.id=<id>] " +
-                ClusterControl.class.getSimpleName() + " <action>%n");
+                ClusterControl.class.getName() + " <action>%n");
 
             System.exit(0);
         }

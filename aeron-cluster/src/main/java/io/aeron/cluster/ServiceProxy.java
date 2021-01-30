@@ -203,33 +203,36 @@ final class ServiceProxy implements AutoCloseable
 
     void terminationPosition(final long logPosition, final ErrorHandler errorHandler)
     {
-        final int length = MessageHeaderDecoder.ENCODED_LENGTH + ServiceTerminationPositionEncoder.BLOCK_LENGTH;
-        long result;
-
-        int attempts = SEND_ATTEMPTS;
-        do
+        if (!publication.isClosed())
         {
-            result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final int length = MessageHeaderDecoder.ENCODED_LENGTH + ServiceTerminationPositionEncoder.BLOCK_LENGTH;
+            long result;
+
+            int attempts = SEND_ATTEMPTS;
+            do
             {
-                serviceTerminationPositionEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .logPosition(logPosition);
+                result = publication.tryClaim(length, bufferClaim);
+                if (result > 0)
+                {
+                    serviceTerminationPositionEncoder
+                        .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                        .logPosition(logPosition);
 
-                bufferClaim.commit();
+                    bufferClaim.commit();
 
-                return;
+                    return;
+                }
+
+                if (Publication.BACK_PRESSURED == result)
+                {
+                    Thread.yield();
+                }
             }
+            while (--attempts > 0);
 
-            if (Publication.BACK_PRESSURED == result)
-            {
-                Thread.yield();
-            }
+            errorHandler.onError(new ClusterException(
+                "failed to send service termination position: result=" + result, AeronException.Category.WARN));
         }
-        while (--attempts > 0);
-
-        errorHandler.onError(new ClusterException(
-            "failed to send service termination position: result=" + result, AeronException.Category.WARN));
     }
 
     private static void checkResult(final long result)

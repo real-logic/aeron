@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
@@ -760,13 +761,14 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @Timeout(30)
     public void shouldTerminateLeaderWhenServiceStops(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);
         try
         {
             final TestNode leader = cluster.awaitLeader();
+            cluster.connectClient();
 
             leader.isTerminationExpected(true);
             leader.container().close();
@@ -775,6 +777,35 @@ public class ClusterTest
             {
                 Tests.sleep(1);
             }
+
+            cluster.awaitNewLeadershipEvent(1);
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo);
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void shouldEnterElectionWhenRecordingStopsOnLeader(final TestInfo testInfo)
+    {
+        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        try
+        {
+            final TestNode leader = cluster.awaitLeader();
+            cluster.connectClient();
+
+            final AeronArchive.Context archiveCtx = leader.container().context().archiveContext().clone()
+                .aeron(leader.container().context().aeron());
+            try (AeronArchive archive = AeronArchive.connect(archiveCtx))
+            {
+                final int firstRecordingIdIsTheClusterLog = 0;
+                assertTrue(archive.tryStopRecordingByIdentity(firstRecordingIdIsTheClusterLog));
+            }
+
+            cluster.awaitNewLeadershipEvent(1);
         }
         catch (final Throwable ex)
         {

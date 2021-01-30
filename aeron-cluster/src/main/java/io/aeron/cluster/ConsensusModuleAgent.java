@@ -925,11 +925,6 @@ final class ConsensusModuleAgent implements Agent
         return appendPosition;
     }
 
-    void appendPositionCounter(final ReadableCounter appendPositionCounter)
-    {
-        appendPosition = appendPositionCounter;
-    }
-
     void onServiceCloseSession(final long clusterSessionId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);

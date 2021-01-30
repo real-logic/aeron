@@ -28,6 +28,7 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
@@ -36,9 +37,36 @@ import java.util.function.Supplier;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 
+/**
+ * Utilities to help with writing tests.
+ */
 public class Tests
 {
     public static final IdleStrategy SLEEP_1_MS = new SleepingMillisIdleStrategy(1);
+
+    /**
+     * Set a private field in a class for testing.
+     *
+     * @param instance  of the object to set the field value.
+     * @param fieldName to be set.
+     * @param value     to be set on the field.
+     */
+    public static void setField(final Object instance, final String fieldName, final Object value)
+    {
+        try
+        {
+            final Field field = instance.getClass().getDeclaredField(fieldName);
+            if (!field.isAccessible())
+            {
+                field.setAccessible(true);
+            }
+            field.set(instance, value);
+        }
+        catch (final Throwable t)
+        {
+            LangUtil.rethrowUnchecked(t);
+        }
+    }
 
     /**
      * Check if the interrupt flag has been set on the current thread and fail the test if it has.

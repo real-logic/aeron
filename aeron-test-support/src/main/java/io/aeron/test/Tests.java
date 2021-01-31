@@ -56,10 +56,7 @@ public class Tests
         try
         {
             final Field field = instance.getClass().getDeclaredField(fieldName);
-            if (!field.isAccessible())
-            {
-                field.setAccessible(true);
-            }
+            field.setAccessible(true);
             field.set(instance, value);
         }
         catch (final Throwable t)

@@ -797,8 +797,12 @@ public class ClusterTest
             final TestNode leader = cluster.awaitLeader();
             cluster.connectClient();
 
-            final AeronArchive.Context archiveCtx = leader.container().context().archiveContext().clone()
-                .aeron(leader.container().context().aeron());
+            final AeronArchive.Context archiveCtx = new AeronArchive.Context()
+                .controlRequestChannel(leader.archive().context().localControlChannel())
+                .controlResponseChannel(leader.archive().context().localControlChannel())
+                .controlRequestStreamId(leader.archive().context().localControlStreamId())
+                .aeronDirectoryName(leader.mediaDriver().aeronDirectoryName());
+
             try (AeronArchive archive = AeronArchive.connect(archiveCtx))
             {
                 final int firstRecordingIdIsTheClusterLog = 0;

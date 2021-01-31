@@ -80,6 +80,16 @@ public class TestNode implements AutoCloseable
         dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
     }
 
+    public TestMediaDriver mediaDriver()
+    {
+        return mediaDriver;
+    }
+
+    public Archive archive()
+    {
+        return clusteredArchive.archive();
+    }
+
     public ConsensusModule consensusModule()
     {
         return clusteredArchive.consensusModule();

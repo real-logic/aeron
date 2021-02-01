@@ -71,8 +71,8 @@ public class StartFromTruncatedRecordingLogTest
 
     private static final String CLUSTER_MEMBERS = clusterMembersString();
     private static final String LOG_CHANNEL = "aeron:udp?term-length=256k";
-    private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL = "aeron:ipc?term-length=64k";
-    private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL = "aeron:ipc?term-length=64k";
+    private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL = "aeron:udp?term-length=64k|endpoint=localhost:801";
+    private static final String LOCAL_ARCHIVE_CONTROL_CHANNEL = "aeron:ipc?term-length=64k";
 
     private final AtomicLong[] snapshotCounters = new AtomicLong[MEMBER_COUNT];
     private final Counter[] mockSnapshotCounters = new Counter[MEMBER_COUNT];
@@ -300,8 +300,9 @@ public class StartFromTruncatedRecordingLogTest
 
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(ARCHIVE_CONTROL_REQUEST_CHANNEL)
-            .controlResponseChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
+            .controlRequestChannel(LOCAL_ARCHIVE_CONTROL_CHANNEL)
+            .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
+            .controlResponseChannel(LOCAL_ARCHIVE_CONTROL_CHANNEL)
             .aeronDirectoryName(baseDirName);
 
         clusteredMediaDrivers[index] = ClusteredMediaDriver.launch(
@@ -316,13 +317,12 @@ public class StartFromTruncatedRecordingLogTest
             new Archive.Context()
                 .catalogCapacity(CATALOG_CAPACITY)
                 .archiveDir(new File(baseDirName, "archive"))
-                .controlChannel(archiveCtx.controlRequestChannel())
-                .controlStreamId(archiveCtx.controlRequestStreamId())
-                .localControlChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
+                .controlChannel(ARCHIVE_CONTROL_REQUEST_CHANNEL + index)
+                .localControlChannel(LOCAL_ARCHIVE_CONTROL_CHANNEL)
                 .localControlStreamId(archiveCtx.controlRequestStreamId())
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
+                .errorHandler(ClusterTests.errorHandler(index))
                 .deleteArchiveOnStart(cleanStart),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(index))

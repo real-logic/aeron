@@ -52,10 +52,10 @@ final class EventConfiguration
 
     /**
      * Disabled Driver Event tags system property name. Follows the format specified for
-     * {@link EventConfiguration#ENABLED_EVENT_CODES_PROP_NAME}.  This property will disable any codes in the set
-     * specified there.  Defined on its own has no effect.
+     * {@link EventConfiguration#ENABLED_EVENT_CODES_PROP_NAME}. This property will disable any codes in the set
+     * specified there. Defined on its own has no effect.
      */
-    public static final String DISABLED_EVENT_CODES_PROP_NAME = "aeron.event.log.disabled";
+    public static final String DISABLED_EVENT_CODES_PROP_NAME = "aeron.event.log.disable";
 
     /**
      * Archive Event tags system property name. This is either:
@@ -68,10 +68,10 @@ final class EventConfiguration
 
     /**
      * Disabled Archive Event tags system property name. Follows the format specified for
-     * {@link EventConfiguration#ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME}.  This property will disable any codes in the
-     * set specified there.  Defined on its own has no effect.
+     * {@link EventConfiguration#ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME}. This property will disable any codes in the
+     * set specified there. Defined on its own has no effect.
      */
-    public static final String DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME = "aeron.event.archive.log.disabled";
+    public static final String DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME = "aeron.event.archive.log.disable";
 
     /**
      * Cluster Event tags system property name. This is either:
@@ -84,10 +84,10 @@ final class EventConfiguration
 
     /**
      * Disabled Cluster Event tags system property name. Follows the format specified for
-     * {@link EventConfiguration#ENABLED_CLUSTER_EVENT_CODES_PROP_NAME}.  This property will disable any codes in the
-     * set specified there.  Defined on its own has no effect.
+     * {@link EventConfiguration#ENABLED_CLUSTER_EVENT_CODES_PROP_NAME}. This property will disable any codes in the
+     * set specified there. Defined on its own has no effect.
      */
-    public static final String DISABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log.disabled";
+    public static final String DISABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log.disable";
 
     /**
      * Event codes for admin events within the driver, i.e. does not include frame capture and name resolution

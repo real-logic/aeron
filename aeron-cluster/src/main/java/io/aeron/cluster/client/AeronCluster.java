@@ -106,9 +106,9 @@ public final class AeronCluster implements AutoCloseable
             ctx.conclude();
 
             final Aeron aeron = ctx.aeron();
-            final long deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
 
+            final long deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
             final IdleStrategy idleStrategy = ctx.idleStrategy();
             asyncConnect = new AsyncConnect(ctx, subscription, deadlineNs);
             final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();

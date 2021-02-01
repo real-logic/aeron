@@ -192,12 +192,12 @@ public final class AeronArchive implements AutoCloseable
 
             final Aeron aeron = ctx.aeron();
             final long messageTimeoutNs = ctx.messageTimeoutNs();
-            final long deadlineNs = aeron.context().nanoClock().nanoTime() + messageTimeoutNs;
 
             subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
+            publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
             final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(subscription);
 
-            publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
+            final long deadlineNs = aeron.context().nanoClock().nanoTime() + messageTimeoutNs;
             final ArchiveProxy archiveProxy = new ArchiveProxy(
                 publication,
                 ctx.idleStrategy(),

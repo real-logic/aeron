@@ -73,7 +73,7 @@ public class Tests
      */
     public static void checkInterruptStatus()
     {
-        if (Thread.interrupted())
+        if (Thread.currentThread().isInterrupted())
         {
             unexpectedInterruptStackTrace(null);
             fail("unexpected interrupt");
@@ -90,7 +90,7 @@ public class Tests
      */
     public static void checkInterruptStatus(final Supplier<String> messageSupplier)
     {
-        if (Thread.interrupted())
+        if (Thread.currentThread().isInterrupted())
         {
             final String message = messageSupplier.get();
             unexpectedInterruptStackTrace(message);
@@ -110,7 +110,7 @@ public class Tests
      */
     public static void checkInterruptStatus(final String format, final Object... args)
     {
-        if (Thread.interrupted())
+        if (Thread.currentThread().isInterrupted())
         {
             final String message = String.format(format, args);
             unexpectedInterruptStackTrace(message);
@@ -120,7 +120,7 @@ public class Tests
 
     public static void checkInterruptStatus(final String message)
     {
-        if (Thread.interrupted())
+        if (Thread.currentThread().isInterrupted())
         {
             unexpectedInterruptStackTrace(message);
             fail("unexpected interrupt - " + message);
@@ -370,10 +370,7 @@ public class Tests
     }
 
     public static void awaitCounterDelta(
-        final CountersReader reader,
-        final int counterId,
-        final long initialValue,
-        final long delta)
+        final CountersReader reader, final int counterId, final long initialValue, final long delta)
     {
         final long expectedValue = initialValue + delta;
         final Supplier<String> counterMessage = () ->

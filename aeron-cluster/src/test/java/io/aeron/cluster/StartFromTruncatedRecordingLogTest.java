@@ -263,14 +263,15 @@ public class StartFromTruncatedRecordingLogTest
 
             try (Stream<Path> segments = Files.list(archiveDataDir.toPath()).filter(filterPredicate))
             {
-                segments.filter(
-                    (p) ->
-                    {
-                        final String fileName = p.getFileName().toString();
-                        final long recording = Long.parseLong(fileName.split("-")[0]);
+                segments
+                    .filter(
+                        (p) ->
+                        {
+                            final String fileName = p.getFileName().toString();
+                            final long recording = Long.parseLong(fileName.split("-")[0]);
 
-                        return !recordingIds.contains(recording);
-                    })
+                            return !recordingIds.contains(recording);
+                        })
                     .map(Path::toFile).forEach(this::deleteFile);
             }
 

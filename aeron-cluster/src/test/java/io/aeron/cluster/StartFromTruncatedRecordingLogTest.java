@@ -300,9 +300,7 @@ public class StartFromTruncatedRecordingLogTest
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(ARCHIVE_CONTROL_REQUEST_CHANNEL)
-            .controlRequestStreamId(100 + index)
             .controlResponseChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
-            .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
 
         clusteredMediaDrivers[index] = ClusteredMediaDriver.launch(

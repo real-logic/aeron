@@ -213,8 +213,6 @@ public class StartFromTruncatedRecordingLogTest
         final int initialCount = responseCount.get();
         sendMessages(msgBuffer);
         awaitResponses(MESSAGE_COUNT + initialCount);
-
-        closeClient();
     }
 
     private void truncateRecordingLogAndDeleteMarkFiles(final int index) throws IOException
@@ -272,40 +270,10 @@ public class StartFromTruncatedRecordingLogTest
 
                             return !recordingIds.contains(recordingId);
                         })
-                    .map(Path::toFile).forEach(this::deleteFile);
+                    .map(Path::toFile).forEach(StartFromTruncatedRecordingLogTest::deleteFile);
             }
 
             assertTrue(copiedRecordingLog.entries().size() <= 3);
-        }
-    }
-
-    private String baseDirName(final int index)
-    {
-        return CommonContext.getAeronDirectoryName() + "-" + index;
-    }
-
-    private String aeronDirName(final int index)
-    {
-        return CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-    }
-
-    private void deleteFile(final File file)
-    {
-        if (file.exists())
-        {
-            try
-            {
-                Files.delete(file.toPath());
-            }
-            catch (final IOException e)
-            {
-                fail("failed to delete file: " + file);
-            }
-        }
-
-        if (file.exists())
-        {
-            fail("failed to delete file: " + file);
         }
     }
 
@@ -389,7 +357,7 @@ public class StartFromTruncatedRecordingLogTest
 
     private void connectClient()
     {
-        closeClient();
+        CloseHelper.close(client);
 
         client = AeronCluster.connect(
             new AeronCluster.Context()
@@ -399,21 +367,22 @@ public class StartFromTruncatedRecordingLogTest
                 .ingressEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
     }
 
-    private void closeClient()
-    {
-        if (null != client)
-        {
-            client.close();
-            client = null;
-        }
-    }
-
     private void sendMessages(final ExpandableArrayBuffer msgBuffer)
     {
         for (int i = 0; i < MESSAGE_COUNT; i++)
         {
-            while (client.offer(msgBuffer, 0, ClusterTests.HELLO_WORLD_MSG.length()) < 0)
+            while (true)
             {
+                final long result = client.offer(msgBuffer, 0, ClusterTests.HELLO_WORLD_MSG.length());
+                if (result > 0)
+                {
+                    break;
+                }
+                else if (Publication.NOT_CONNECTED == result || Publication.CLOSED == result)
+                {
+                    fail("publication in unexpected state: " + result);
+                }
+
                 Tests.yield();
                 client.pollEgress();
             }
@@ -475,7 +444,22 @@ public class StartFromTruncatedRecordingLogTest
         return builder.toString();
     }
 
-    static class EchoService extends StubClusteredService
+    private static String baseDirName(final int index)
+    {
+        return CommonContext.getAeronDirectoryName() + "-" + index;
+    }
+
+    private static String aeronDirName(final int index)
+    {
+        return CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
+    }
+
+    private static void deleteFile(final File file)
+    {
+        IoUtil.delete(file, false);
+    }
+
+    static final class EchoService extends StubClusteredService
     {
         private volatile int messageCount;
 

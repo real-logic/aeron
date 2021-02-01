@@ -93,7 +93,7 @@ public:
          *
          * @return the step in the connect process this connect attempt has reached.
          */
-        inline std::uint8_t step()
+        inline std::uint8_t step() const
         {
             return m_step;
         }

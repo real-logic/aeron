@@ -114,6 +114,7 @@ int aeron_publication_image_create(
         treat_as_multicast ? &context->multicast_delay_feedback_generator : &context->unicast_delay_feedback_generator,
         aeron_publication_image_on_gap_detected, _image) < 0)
     {
+        aeron_free(_image->log_file_name);
         aeron_free(_image);
         aeron_set_err(ENOMEM, "%s", "Could not init publication image loss detector");
         return -1;

@@ -72,6 +72,7 @@ int aeron_ipc_publication_create(
     _pub->channel = NULL;
     if (aeron_alloc((void **)(&_pub->channel), (size_t)channel_length + 1) < 0)
     {
+        aeron_free(_pub->log_file_name);
         aeron_free(_pub);
         aeron_set_err(ENOMEM, "%s", "Could not allocate IPC publication channel");
         return -1;
@@ -81,6 +82,7 @@ int aeron_ipc_publication_create(
         &_pub->mapped_raw_log, path, params->is_sparse, params->term_length, context->file_page_size) < 0)
     {
         aeron_free(_pub->log_file_name);
+        aeron_free(_pub->channel);
         aeron_free(_pub);
         aeron_set_err(aeron_errcode(), "error mapping IPC raw log %s: %s", path, aeron_errmsg());
         return -1;
@@ -197,7 +199,6 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
 
         publication->raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
         aeron_free(publication->log_file_name);
-
         aeron_free(publication->channel);
     }
 

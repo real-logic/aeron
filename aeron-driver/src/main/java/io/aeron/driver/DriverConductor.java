@@ -205,8 +205,6 @@ public final class DriverConductor implements Agent
 
         if (subscriberPositions.size() > 0)
         {
-            final UdpChannel udpChannel = channelEndpoint.udpChannel();
-            final String channel = udpChannel.originalUriString();
             final long registrationId = toDriverCommands.nextCorrelationId();
             final RawLog rawLog = newPublicationImageLog(
                 sessionId,
@@ -217,6 +215,7 @@ public final class DriverConductor implements Agent
                 senderMtuLength,
                 registrationId);
 
+            final UdpChannel udpChannel = channelEndpoint.udpChannel();
             final CongestionControl congestionControl = ctx.congestionControlSupplier().newInstance(
                 registrationId,
                 udpChannel,
@@ -237,6 +236,7 @@ public final class DriverConductor implements Agent
             final FeedbackDelayGenerator feedbackDelayGenerator = treatAsMulticast ?
                 ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator();
 
+            final String channel = udpChannel.originalUriString();
             final PublicationImage image = new PublicationImage(
                 registrationId,
                 ctx,
@@ -1063,6 +1063,7 @@ public final class DriverConductor implements Agent
         final String canonicalForm = udpChannel.canonicalForm();
         final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, canonicalForm);
         final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
+        final RawLog rawLog = newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
 
         final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.isMultiDestination() ?
             ctx.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
@@ -1101,7 +1102,7 @@ public final class DriverConductor implements Agent
             ctx,
             params,
             channelEndpoint,
-            newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, params),
+            rawLog,
             Configuration.producerWindowLength(params.termLength, ctx.publicationTermWindowLength()),
             publisherPosition,
             publisherLimit,

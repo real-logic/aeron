@@ -268,9 +268,9 @@ public class StartFromTruncatedRecordingLogTest
                         (p) ->
                         {
                             final String fileName = p.getFileName().toString();
-                            final long recording = Long.parseLong(fileName.split("-")[0]);
+                            final long recordingId = Long.parseLong(fileName.split("-")[0]);
 
-                            return !recordingIds.contains(recording);
+                            return !recordingIds.contains(recordingId);
                         })
                     .map(Path::toFile).forEach(this::deleteFile);
             }

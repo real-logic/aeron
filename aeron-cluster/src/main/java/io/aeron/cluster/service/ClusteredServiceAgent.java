@@ -303,9 +303,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     public void idle()
     {
         idleStrategy.idle();
-        if (Thread.interrupted())
+        if (Thread.currentThread().isInterrupted())
         {
-            LangUtil.rethrowUnchecked(new InterruptedException());
+            throw new AgentTerminationException("interrupted");
         }
         checkForClockTick();
     }
@@ -315,9 +315,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         idleStrategy.idle(workCount);
         if (workCount <= 0)
         {
-            if (Thread.interrupted())
+            if (Thread.currentThread().isInterrupted())
             {
-                LangUtil.rethrowUnchecked(new InterruptedException());
+                throw new AgentTerminationException("interrupted");
             }
             checkForClockTick();
         }

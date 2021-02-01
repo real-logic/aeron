@@ -337,7 +337,7 @@ public class Tests
         while ((counterValue = counter.get()) < value)
         {
             Thread.yield();
-            if (Thread.interrupted())
+            if (Thread.currentThread().isInterrupted())
             {
                 unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counterValue);
                 fail("unexpected interrupt");
@@ -351,7 +351,7 @@ public class Tests
         while ((counterValue = counter.get()) < value)
         {
             Thread.yield();
-            if (Thread.interrupted())
+            if (Thread.currentThread().isInterrupted())
             {
                 unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counterValue);
                 fail("unexpected interrupt");

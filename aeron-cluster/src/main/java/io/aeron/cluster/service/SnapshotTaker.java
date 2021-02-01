@@ -22,8 +22,8 @@ import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SnapshotMark;
 import io.aeron.cluster.codecs.SnapshotMarkerEncoder;
 import io.aeron.logbuffer.BufferClaim;
-import org.agrona.LangUtil;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.TimeUnit;
@@ -162,13 +162,13 @@ public class SnapshotTaker
     }
 
     /**
-     * Check for thread interrupt and throw an {@link InterruptedException} if interrupted.
+     * Check for thread interrupt and throw an {@link AgentTerminationException} if interrupted.
      */
     protected static void checkInterruptStatus()
     {
-        if (Thread.interrupted())
+        if (Thread.currentThread().isInterrupted())
         {
-            LangUtil.rethrowUnchecked(new InterruptedException());
+            throw new AgentTerminationException("interrupted");
         }
     }
 

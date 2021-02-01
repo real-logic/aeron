@@ -77,6 +77,7 @@ public class ClusterTests
 
                 if (ex instanceof AgentTerminationException)
                 {
+                    addWarning(ex);
                     return;
                 }
 

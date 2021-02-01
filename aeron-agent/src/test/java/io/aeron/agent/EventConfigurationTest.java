@@ -104,8 +104,8 @@ public class EventConfigurationTest
     @Test
     void shouldDisableSpecificDriverEvents()
     {
-        System.setProperty("aeron.event.log", "all");
-        System.setProperty("aeron.event.log.disabled", "FRAME_IN,FRAME_OUT");
+        System.setProperty(ENABLED_EVENT_CODES_PROP_NAME, "all");
+        System.setProperty(DISABLED_EVENT_CODES_PROP_NAME, "FRAME_IN,FRAME_OUT");
         EventConfiguration.init();
         assertEquals(DriverEventCode.values().length - 2, DRIVER_EVENT_CODES.size());
         assertFalse(DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_IN));
@@ -115,9 +115,9 @@ public class EventConfigurationTest
     @Test
     void shouldDisableSpecificArchiverEvents()
     {
-        System.setProperty("aeron.event.archive.log", "all");
+        System.setProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, "all");
         System.setProperty(
-            "aeron.event.archive.log.disabled",
+            DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME,
             ArchiveEventCode.CMD_IN_ATTACH_SEGMENTS.name() + "," + ArchiveEventCode.CMD_IN_CONNECT);
         EventConfiguration.init();
         assertEquals(ArchiveEventCode.values().length - 2, ARCHIVE_EVENT_CODES.size());
@@ -128,9 +128,9 @@ public class EventConfigurationTest
     @Test
     void shouldDisableSpecificClusterEvents()
     {
-        System.setProperty("aeron.event.cluster.log", "all");
+        System.setProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, "all");
         System.setProperty(
-            "aeron.event.cluster.log.disabled",
+            DISABLED_CLUSTER_EVENT_CODES_PROP_NAME,
             ClusterEventCode.ROLE_CHANGE.name() + "," + ClusterEventCode.ELECTION_STATE_CHANGE);
         EventConfiguration.init();
         assertEquals(ClusterEventCode.values().length - 2, CLUSTER_EVENT_CODES.size());

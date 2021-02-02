@@ -26,7 +26,7 @@ import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 
-class ClusterSession
+final class ClusterSession
 {
     static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;

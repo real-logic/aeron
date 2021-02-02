@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * A sample {@link Authenticator} to demonstrate usage based on some hardcoded credentials.
  */
-public class SampleAuthenticator implements Authenticator
+public final class SampleAuthenticator implements Authenticator
 {
     private static final String CREDENTIALS_STRING_NO_CHALLENGE = "admin:admin";
     private static final String CREDENTIALS_STRING_REQUIRING_CHALLENGE = "admin:adminC";

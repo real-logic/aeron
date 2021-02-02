@@ -37,7 +37,7 @@ public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
         return DEFAULT_AUTHENTICATOR;
     }
 
-    static class DefaultAuthenticator implements Authenticator
+    static final class DefaultAuthenticator implements Authenticator
     {
         public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
         {

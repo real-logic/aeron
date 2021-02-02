@@ -73,11 +73,6 @@ class EgressPublisher
 
     boolean sendChallenge(final ClusterSession session, final byte[] encodedChallenge)
     {
-        if (!session.isResponsePublicationConnected())
-        {
-            return false;
-        }
-
         challengeEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .clusterSessionId(session.id())

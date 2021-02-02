@@ -130,7 +130,7 @@ jobs:
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
+          name: crash-logs-topology-${{ matrix.os }}-java-${{ matrix.java }}
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-gcc-build:
@@ -353,7 +353,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-xcode-build:
-    name: C++ Xcode ${{ matrix.version }} (macOS)
+    name: C++ Xcode (macOS)
     runs-on: macOS-latest
     strategy:
       fail-fast: false

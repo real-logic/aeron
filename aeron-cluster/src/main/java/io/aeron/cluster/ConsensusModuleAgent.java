@@ -338,9 +338,10 @@ final class ConsensusModuleAgent implements Agent
     {
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
+        session.connect(aeron);
+
         final long now = clusterClock.time();
         session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
-        session.connect(aeron);
 
         if (Cluster.Role.LEADER != role)
         {

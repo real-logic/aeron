@@ -1901,6 +1901,12 @@ final class ConsensusModuleAgent implements Agent
                     final ArchiveException ex = new ArchiveException(
                         poller.errorMessage(), (int)poller.relevantId(), poller.correlationId());
 
+                    if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
+                    {
+                        ctx.countedErrorHandler().onError(ex);
+                        unexpectedTermination();
+                    }
+
                     if (null != election && isSlowTick)
                     {
                         election.handleError(clusterClock.timeNanos(), ex);

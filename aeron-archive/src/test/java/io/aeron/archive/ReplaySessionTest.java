@@ -126,7 +126,7 @@ public class ReplaySessionTest
         recordingSummary.sessionId = SESSION_ID;
 
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL, null, null);
+            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context);
 
         writer.init();
 
@@ -348,16 +348,9 @@ public class ReplaySessionTest
         when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
         recordingPosition = START_POSITION;
 
-        final UnsafeBuffer recordingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+        context.recordChecksumBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
         final RecordingWriter writer = new RecordingWriter(
-            recordingId,
-            START_POSITION,
-            SEGMENT_LENGTH,
-            mockImage,
-            context,
-            ARCHIVE_DIR_CHANNEL,
-            recordingBuffer,
-            null);
+            recordingId, START_POSITION, SEGMENT_LENGTH, mockImage, context);
 
         writer.init();
 
@@ -459,17 +452,10 @@ public class ReplaySessionTest
     @Test
     public void shouldDoCrcForEachDataFrame() throws IOException
     {
-        final Checksum checksum = crc32();
-        final UnsafeBuffer recordingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+        context.recordChecksum(crc32());
+        context.recordChecksumBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID,
-            START_POSITION,
-            SEGMENT_LENGTH,
-            mockImage,
-            context,
-            ARCHIVE_DIR_CHANNEL,
-            recordingBuffer,
-            checksum);
+            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context);
 
         writer.init();
 
@@ -501,7 +487,7 @@ public class ReplaySessionTest
             mockReplayPub,
             mockControlSession,
             null,
-            checksum))
+            context.recordChecksum()))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -581,16 +567,9 @@ public class ReplaySessionTest
     @Test
     public void shouldCalculateBlockSizeBasedOnFullFragments() throws IOException
     {
-        final UnsafeBuffer recordingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+        context.recordChecksumBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID,
-            START_POSITION,
-            SEGMENT_LENGTH,
-            mockImage,
-            context,
-            ARCHIVE_DIR_CHANNEL,
-            recordingBuffer,
-            null);
+            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context);
 
         writer.init();
 

@@ -71,13 +71,10 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         final long startPosition,
         final int segmentLength,
         final Image image,
-        final Archive.Context ctx,
-        final FileChannel archiveDirChannel,
-        final UnsafeBuffer checksumBuffer,
-        final Checksum checksum)
+        final Archive.Context ctx)
     {
         this.recordingId = recordingId;
-        this.archiveDirChannel = archiveDirChannel;
+        this.archiveDirChannel = ctx.archiveDirChannel();
         this.segmentLength = segmentLength;
 
         archiveDir = ctx.archiveDir();
@@ -85,9 +82,8 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         forceMetadata = ctx.fileSyncLevel() > 1;
 
         countedErrorHandler = ctx.countedErrorHandler();
-
-        this.checksumBuffer = checksumBuffer;
-        this.checksum = checksum;
+        checksumBuffer = ctx.recordChecksumBuffer();
+        checksum = ctx.recordChecksum();
 
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();

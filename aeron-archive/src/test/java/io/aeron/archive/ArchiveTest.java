@@ -22,6 +22,7 @@ import io.aeron.Publication;
 import io.aeron.archive.Archive.Context;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingSubscriptionDescriptorConsumer;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
@@ -42,7 +43,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileStore;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -58,6 +61,7 @@ import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Timeout(10)
 public class ArchiveTest
@@ -148,15 +152,13 @@ public class ArchiveTest
                     });
             }
 
-            latch.await(driver.archive().context().connectTimeoutNs() * 2, TimeUnit.NANOSECONDS);
+            assertTrue(latch.await(driver.archive().context().connectTimeoutNs() * 2, TimeUnit.NANOSECONDS));
 
             AeronArchive archiveClient;
             while (null != (archiveClient = archiveClientQueue.poll()))
             {
                 archiveClient.close();
             }
-
-            assertEquals(0L, latch.getCount());
         }
         finally
         {
@@ -302,6 +304,48 @@ public class ArchiveTest
 
             assertEquals(1L, descriptors.stream().filter((sd) -> sd.subscriptionId == subIdOne).count());
             assertEquals(1L, descriptors.stream().filter((sd) -> sd.subscriptionId == subOdThree).count());
+        }
+        finally
+        {
+            archiveCtx.deleteDirectory();
+            driverCtx.deleteDirectory();
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldErrorOnLowSpace() throws IOException
+    {
+        final int streamId = 7;
+        final String channel = "aeron:ipc";
+        final long usableSpace = 100;
+        final long threshold = 101;
+        final FileStore fileStore = mock(FileStore.class);
+        when(fileStore.getUsableSpace()).thenReturn(usableSpace);
+
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED);
+        final Context archiveCtx = new Context()
+            .archiveFileStore(fileStore)
+            .lowStorageSpaceThreshold(threshold)
+            .deleteArchiveOnStart(true)
+            .threadingMode(SHARED);
+
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
+            AeronArchive archive = AeronArchive.connect())
+        {
+            try
+            {
+                archive.startRecording(channel, streamId, LOCAL);
+            }
+            catch (final ArchiveException ex)
+            {
+                assertEquals(ArchiveException.STORAGE_SPACE, ex.errorCode());
+                return;
+            }
+
+            fail("Expected exception");
         }
         finally
         {

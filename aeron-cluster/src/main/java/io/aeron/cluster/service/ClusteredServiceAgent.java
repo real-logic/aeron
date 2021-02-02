@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
@@ -797,6 +798,15 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
 
             return recordingId;
+        }
+        catch (final ArchiveException ex)
+        {
+            if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
+            {
+                throw new AgentTerminationException(ex);
+            }
+
+            throw ex;
         }
     }
 

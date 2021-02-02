@@ -126,11 +126,8 @@ public class RecordingSessionTest
             recordingEventsProxy,
             image,
             mockPosition,
-            ARCHIVE_CHANNEL,
             context,
             CONTROL_SESSION,
-            null,
-            null,
             false);
 
         assertEquals(RECORDING_ID, session.sessionId());

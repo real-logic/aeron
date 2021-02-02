@@ -1730,14 +1730,26 @@ final class ConsensusModuleAgent implements Agent
 
     private void startLogRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
     {
-        final long logRecordingId = recordingLog.findLastTermRecordingId();
-        if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
+        try
         {
-            logSubscriptionId = archive.startRecording(channel, streamId, sourceLocation, true);
+            final long logRecordingId = recordingLog.findLastTermRecordingId();
+            if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
+            {
+                logSubscriptionId = archive.startRecording(channel, streamId, sourceLocation, true);
+            }
+            else
+            {
+                logSubscriptionId = archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
+            }
         }
-        else
+        catch (final ArchiveException ex)
         {
-            logSubscriptionId = archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
+            if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
+            {
+                unexpectedTermination();
+            }
+
+            throw ex;
         }
     }
 
@@ -2634,42 +2646,45 @@ final class ConsensusModuleAgent implements Agent
 
     private void takeSnapshot(final long timestamp, final long logPosition, final ServiceAck[] serviceAcks)
     {
-        try
+        final long recordingId;
+        try (ExclusivePublication publication = aeron.addExclusivePublication(
+            ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
-            final long recordingId;
-            try (ExclusivePublication publication = aeron.addExclusivePublication(
-                ctx.snapshotChannel(), ctx.snapshotStreamId()))
-            {
-                final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
-                archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL, true);
-                final CountersReader counters = aeron.countersReader();
-                final int counterId = awaitRecordingCounter(counters, publication.sessionId());
-                recordingId = RecordingPos.getRecordingId(counters, counterId);
+            final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
+            archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL, true);
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = awaitRecordingCounter(counters, publication.sessionId());
+            recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                snapshotState(publication, logPosition, replayLeadershipTermId);
-                awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
+            snapshotState(publication, logPosition, replayLeadershipTermId);
+            awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
+        }
+        catch (final ArchiveException ex)
+        {
+            if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
+            {
+                ctx.countedErrorHandler().onError(ex);
+                unexpectedTermination();
             }
 
-            final long termBaseLogPosition = recordingLog.getTermEntry(replayLeadershipTermId).termBaseLogPosition;
+            throw ex;
+        }
 
-            for (int serviceId = serviceAcks.length - 1; serviceId >= 0; serviceId--)
-            {
-                final long snapshotId = serviceAcks[serviceId].relevantId();
-                recordingLog.appendSnapshot(
-                    snapshotId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
-            }
+        final long termBaseLogPosition = recordingLog.getTermEntry(replayLeadershipTermId).termBaseLogPosition;
 
+        for (int serviceId = serviceAcks.length - 1; serviceId >= 0; serviceId--)
+        {
+            final long snapshotId = serviceAcks[serviceId].relevantId();
             recordingLog.appendSnapshot(
-                recordingId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
+                snapshotId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
+        }
 
-            recordingLog.force(ctx.fileSyncLevel());
-            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
-            ctx.snapshotCounter().incrementOrdered();
-        }
-        catch (final Exception ex)
-        {
-            ctx.countedErrorHandler().onError(ex);
-        }
+        recordingLog.appendSnapshot(
+            recordingId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
+
+        recordingLog.force(ctx.fileSyncLevel());
+        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+        ctx.snapshotCounter().incrementOrdered();
     }
 
     private void awaitRecordingComplete(

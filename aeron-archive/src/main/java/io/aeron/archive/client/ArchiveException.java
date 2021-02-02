@@ -78,6 +78,11 @@ public class ArchiveException extends AeronException
      */
     public static final int AUTHENTICATION_REJECTED = 10;
 
+    /**
+     * The archive storage is at minimum threshold or exhausted.
+     */
+    public static final int STORAGE_SPACE = 11;
+
     private final int errorCode;
     private final long correlationId;
 

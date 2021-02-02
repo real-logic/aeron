@@ -31,6 +31,8 @@ constexpr const std::int32_t ARCHIVE_ERROR_CODE_UNKNOWN_REPLAY = 6;
 constexpr const std::int32_t ARCHIVE_ERROR_CODE_MAX_REPLAYS = 7;
 constexpr const std::int32_t ARCHIVE_ERROR_CODE_MAX_RECORDINGS = 8;
 constexpr const std::int32_t ARCHIVE_ERROR_CODE_INVALID_EXTENSION = 9;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_AUTHENTICATION_REJECTED = 10;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_STORAGE_SPACE = 11;
 
 /**
  * Exception raised when communicating with the AeronArchive.

@@ -23,7 +23,7 @@
 #define restrict __restrict
 #endif
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
@@ -45,7 +45,7 @@ inline int aeron_array_ensure_capacity(uint8_t **array, size_t element_size, siz
 {
     if (aeron_reallocf((void **)array, new_capacity * element_size) < 0)
     {
-        aeron_set_err(ENOMEM, "%s", "could not ensure capacity");
+        AERON_SET_ERR(ENOMEM, "could not ensure capacity of: %" PRIu64, (uint64_t)(new_capacity * element_size));
         return -1;
     }
 
@@ -63,7 +63,7 @@ inline int aeron_array_add(uint8_t **array, size_t element_size, size_t new_leng
 {
     if (aeron_reallocf((void **)array, element_size * new_length) < 0)
     {
-        aeron_set_err(ENOMEM, "%s", "could not array add");
+        AERON_SET_ERR(ENOMEM, "%s", "could not array add");
         return -1;
     }
 
@@ -80,7 +80,7 @@ inline int aeron_array_remove(uint8_t **array, size_t element_size, size_t index
 
     if (aeron_reallocf((void **)array, (old_length - 1) * element_size) < 0)
     {
-        aeron_set_err(ENOMEM, "%s", "could not array remove realloc");
+        AERON_SET_ERR(ENOMEM, "%s", "could not array remove realloc");
         return -1;
     }
 

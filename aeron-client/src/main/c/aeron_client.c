@@ -51,14 +51,17 @@ int aeron_init(aeron_t **client, aeron_context_t *context)
 
     if (NULL == client || NULL == context)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_init: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, client: %s, context: %d",
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(context));
         goto error;
     }
 
     if (aeron_alloc((void **)&_client, sizeof(aeron_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Failed to allocate aeron_client");
         goto error;
     }
 
@@ -107,11 +110,9 @@ int aeron_init(aeron_t **client, aeron_context_t *context)
 
 int aeron_start(aeron_t *client)
 {
-
     if (NULL == client)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_start: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "client must not be null");
         return -1;
     }
 
@@ -137,10 +138,15 @@ int aeron_start(aeron_t *client)
 
 int aeron_main_do_work(aeron_t *client)
 {
-    if (NULL == client || !client->context->use_conductor_agent_invoker)
+    if (NULL == client)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_dmain_do_work: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "client is null");
+        return -1;
+    }
+
+    if (!client->context->use_conductor_agent_invoker)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "client is not configured to use agent invoker");
         return -1;
     }
 
@@ -221,7 +227,7 @@ aeron_context_t *aeron_context(aeron_t *client)
     if (NULL == client)
     {
         errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_context(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "aeron_context(NULL): %s", strerror(EINVAL));
         return NULL;
     }
 
@@ -233,7 +239,7 @@ int64_t aeron_client_id(aeron_t *client)
     if (NULL == client)
     {
         errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_client_id(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "aeron_client_id(NULL): %s", strerror(EINVAL));
         return -1;
     }
 
@@ -244,8 +250,7 @@ int64_t aeron_next_correlation_id(aeron_t *client)
 {
     if (NULL == client)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_next_correlation_id(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "client is null");
         return -1;
     }
 
@@ -257,7 +262,7 @@ aeron_counters_reader_t *aeron_counters_reader(aeron_t *client)
     if (NULL == client)
     {
         errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_counters_reader(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "aeron_counters_reader(NULL): %s", strerror(EINVAL));
         return NULL;
     }
 
@@ -312,8 +317,11 @@ int aeron_async_add_publication(
 {
     if (NULL == async || NULL == client || NULL == uri)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_async_add_publication: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL, "Parameters must not be null, async: %s, client: %s, uri: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(uri));
         return -1;
     }
 
@@ -322,11 +330,22 @@ int aeron_async_add_publication(
 
 int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_async_add_publication_t *async)
 {
-    if (NULL == publication || NULL == async || AERON_CLIENT_TYPE_PUBLICATION != async->type)
+    if (NULL == publication || NULL == async)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_async_add_publication_poll: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, publication: %s, async: %s",
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(async));
         return -1;
+    }
+    if (AERON_CLIENT_TYPE_PUBLICATION != async->type)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must be valid, async->type: %d (expected: %d)",
+            (int)(async->type),
+            (int)AERON_CLIENT_TYPE_COUNTER);
     }
 
     *publication = NULL;
@@ -343,8 +362,11 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
 
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
-            aeron_set_err(EINVAL, "async_add_publication registration (error code %" PRId32 "): %*s",
-                async->error_code, async->error_message_length, async->error_message);
+            AERON_SET_ERR(
+                -async->error_code,
+                "async_add_publication registration\n== Driver Error ==\n%*s",
+                (int)async->error_message_length,
+                async->error_message);
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -358,7 +380,7 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
@@ -366,7 +388,7 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
 
         default:
         {
-            aeron_set_err(EINVAL, "async_add_publication async status %s", "unknown");
+            AERON_SET_ERR(EINVAL, "async_add_publication async status %s", "unknown");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -378,8 +400,7 @@ int aeron_async_add_exclusive_publication(
 {
     if (NULL == async || NULL == client || NULL == uri)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_async_add_exclusive_publication: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "aeron_async_add_exclusive_publication: %s", strerror(EINVAL));
         return -1;
     }
 
@@ -391,8 +412,7 @@ int aeron_async_add_exclusive_publication_poll(
 {
     if (NULL == publication || NULL == async || AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION != async->type)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_async_add_exclusive_publication_poll: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "aeron_async_add_exclusive_publication_poll: %s", strerror(EINVAL));
         return -1;
     }
 
@@ -410,8 +430,11 @@ int aeron_async_add_exclusive_publication_poll(
 
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
-            aeron_set_err(EINVAL, "async_add_exclusive_publication registration (error code %" PRId32 "): %*s",
-                async->error_code, async->error_message_length, async->error_message);
+            AERON_SET_ERR(
+                -async->error_code,
+                "async_add_exclusive_publication registration\n== Driver Error ==\n%*s",
+                (int)async->error_message_length,
+                async->error_message);
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -425,7 +448,7 @@ int aeron_async_add_exclusive_publication_poll(
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
@@ -433,7 +456,7 @@ int aeron_async_add_exclusive_publication_poll(
 
         default:
         {
-            aeron_set_err(EINVAL, "async_add_exclusive_publication async status %s", "unknown");
+            AERON_SET_ERR(EINVAL, "async_add_exclusive_publication async status %s", "unknown");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -452,8 +475,12 @@ int aeron_async_add_subscription(
 {
     if (NULL == async || NULL == client || NULL == uri)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_async_add_subscription: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must be valid, async: %s, client: %s, uri: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(uri));
         return -1;
     }
 
@@ -470,10 +497,22 @@ int aeron_async_add_subscription(
 
 int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron_async_add_subscription_t *async)
 {
-    if (NULL == subscription || NULL == async || AERON_CLIENT_TYPE_SUBSCRIPTION != async->type)
+    if (NULL == subscription || NULL == async)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_async_add_subscription_poll: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, subscription: %s, async: %s",
+            AERON_NULL_STR(subscription),
+            AERON_NULL_STR(async));
+        return -1;
+    }
+    if (AERON_CLIENT_TYPE_SUBSCRIPTION != async->type)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must be valid, async->type: %d (expected: %d)",
+            (int)async->type,
+            (int)AERON_CLIENT_TYPE_COUNTER);
         return -1;
     }
 
@@ -491,8 +530,11 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
 
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
-            aeron_set_err(EINVAL, "async_add_subscription registration (error code %" PRId32 "): %*s",
-                async->error_code, async->error_message_length, async->error_message);
+            AERON_SET_ERR(
+                -async->error_code,
+                "async_add_subscription registration\n== Driver Error ==\n%.*s",
+                (int)async->error_message_length,
+                async->error_message);
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -506,7 +548,7 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
@@ -514,7 +556,7 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
 
         default:
         {
-            aeron_set_err(EINVAL, "async_add_subscription async status %s", "unknown");
+            AERON_SET_ERR(EINVAL, "async_add_subscription async status %s", "unknown");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -532,8 +574,11 @@ int aeron_async_add_counter(
 {
     if (NULL == async || NULL == client)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_async_add_counter: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client));
         return -1;
     }
 
@@ -549,10 +594,22 @@ int aeron_async_add_counter(
 
 int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async)
 {
-    if (NULL == counter || NULL == async || AERON_CLIENT_TYPE_COUNTER != async->type)
+    if (NULL == counter || NULL == async)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_async_add_counter_poll: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, counter: %s, async: %s",
+            AERON_NULL_STR(counter),
+            AERON_NULL_STR(async));
+        return -1;
+    }
+    if (AERON_CLIENT_TYPE_COUNTER != async->type)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must be valid, async->type: %d (expected: %d)",
+            (int)async->type,
+            (int)AERON_CLIENT_TYPE_COUNTER);
         return -1;
     }
 
@@ -570,8 +627,11 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
 
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
-            aeron_set_err(EINVAL, "async_add_counter registration (error code %" PRId32 "): %*s",
-                async->error_code, async->error_message_length, async->error_message);
+            AERON_SET_ERR(
+                -async->error_code,
+                "async_add_counter registration\n== Driver Error ==\n%*s",
+                (int)async->error_message_length,
+                async->error_message);
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -585,7 +645,7 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
@@ -593,7 +653,7 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
 
         default:
         {
-            aeron_set_err(EINVAL, "async_add_counter async status %s", "unknown");
+            AERON_SET_ERR(EINVAL, "async_add_counter async status %s", "unknown");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -602,10 +662,21 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
 
 static int aeron_async_destination_poll(aeron_async_destination_t *async)
 {
-    if (NULL == async || AERON_CLIENT_TYPE_DESTINATION != async->type)
+    if (NULL == async)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_async_add_counter_poll: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s",
+            AERON_NULL_STR(async));
+        return -1;
+    }
+    if (AERON_CLIENT_TYPE_DESTINATION != async->type)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must be valid, async->type: %d (expected: %d)",
+            (int)async->type,
+            (int)AERON_CLIENT_TYPE_COUNTER);
         return -1;
     }
 
@@ -621,8 +692,11 @@ static int aeron_async_destination_poll(aeron_async_destination_t *async)
 
         case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
         {
-            aeron_set_err(EINVAL, "async_add_counter registration (error code %" PRId32 "): %*s",
-                async->error_code, async->error_message_length, async->error_message);
+            AERON_SET_ERR(
+                -async->error_code,
+                "async_add_destination registration\n== Driver Error ==\n%*s",
+                (int)async->error_message_length,
+                async->error_message);
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -635,7 +709,7 @@ static int aeron_async_destination_poll(aeron_async_destination_t *async)
 
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
@@ -643,7 +717,7 @@ static int aeron_async_destination_poll(aeron_async_destination_t *async)
 
         default:
         {
-            aeron_set_err(EINVAL, "async_add_counter async status %s", "unknown");
+            AERON_SET_ERR(EINVAL, "async_add_counter async status %s", "unknown");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -653,10 +727,15 @@ static int aeron_async_destination_poll(aeron_async_destination_t *async)
 int aeron_publication_async_add_destination(
     aeron_async_destination_t **async, aeron_t *client, aeron_publication_t *publication, const char *uri)
 {
-    if (NULL == publication || uri == NULL)
+    if (NULL == async || NULL == client || NULL == publication || uri == NULL)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %d, publication: %s, uri: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(uri));
         return -1;
     }
 
@@ -674,10 +753,15 @@ int aeron_publication_async_remove_destination(
     aeron_publication_t *publication,
     const char *uri)
 {
-    if (NULL == publication || uri == NULL)
+    if (NULL == async || NULL == client || NULL == publication || uri == NULL)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %s, publication: %s, uri: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(uri));
         return -1;
     }
 
@@ -687,10 +771,15 @@ int aeron_publication_async_remove_destination(
 int aeron_subscription_async_add_destination(
     aeron_async_destination_t **async, aeron_t *client, aeron_subscription_t *subscription, const char *uri)
 {
-    if (NULL == subscription || uri == NULL)
+    if (NULL == async || NULL == client || NULL == subscription || uri == NULL)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %d, subscription: %s, uri: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(subscription),
+            AERON_NULL_STR(uri));
         return -1;
     }
 
@@ -708,10 +797,15 @@ int aeron_subscription_async_remove_destination(
     aeron_subscription_t *subscription,
     const char *uri)
 {
-    if (NULL == subscription || uri == NULL)
+    if (NULL == async || NULL == client || NULL == subscription || uri == NULL)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %d, subscription: %s, uri: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(subscription),
+            AERON_NULL_STR(uri));
         return -1;
     }
 
@@ -724,10 +818,15 @@ int aeron_exclusive_publication_async_add_destination(
     aeron_exclusive_publication_t *publication,
     const char *uri)
 {
-    if (NULL == publication || uri == NULL)
+    if (NULL == async || NULL == client || NULL == publication || uri == NULL)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %s, publication: %s, uri: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(uri));
         return -1;
     }
 
@@ -746,10 +845,15 @@ int aeron_exclusive_publication_async_remove_destination(
     aeron_exclusive_publication_t *publication,
     const char *uri)
 {
-    if (NULL == publication || uri == NULL)
+    if (NULL == async || NULL == client || NULL == publication || uri == NULL)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %s, publication: %s, uri: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(uri));
         return -1;
     }
 
@@ -776,8 +880,8 @@ int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_coun
 
     if (NULL == client || NULL == pair)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_add_available_counter_handler: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL, "Parameters must not be null, client: %s, pair: %s", AERON_NULL_STR(client), AERON_NULL_STR(pair));
         return -1;
     }
 
@@ -800,8 +904,8 @@ int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_c
 
     if (NULL == client || NULL == pair)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_remove_available_counter_handler: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL, "Parameters must not be null, client: %s, pair: %s", AERON_NULL_STR(client), AERON_NULL_STR(pair));
         return -1;
     }
 
@@ -824,8 +928,8 @@ int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_
 
     if (NULL == client || NULL == pair)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_add_unavailable_counter_handler: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL, "Parameters must not be null, client: %s, pair: %s", AERON_NULL_STR(client), AERON_NULL_STR(pair));
         return -1;
     }
 
@@ -848,8 +952,8 @@ int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailab
 
     if (NULL == client || NULL == pair)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_remove_unavailable_counter_handler: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL, "Parameters must not be null, client: %s, pair: %s", AERON_NULL_STR(client), AERON_NULL_STR(pair));
         return -1;
     }
 
@@ -872,8 +976,8 @@ int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair)
 
     if (NULL == client || NULL == pair)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_add_close_handler: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL, "Parameters must not be null, client: %s, pair: %s", AERON_NULL_STR(client), AERON_NULL_STR(pair));
         return -1;
     }
 
@@ -896,8 +1000,8 @@ int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pa
 
     if (NULL == client || NULL == pair)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_remove_close_handler: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL, "Parameters must not be null, client: %s, pair: %s", AERON_NULL_STR(client), AERON_NULL_STR(pair));
         return -1;
     }
 

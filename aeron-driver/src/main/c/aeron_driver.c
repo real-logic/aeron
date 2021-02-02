@@ -164,7 +164,7 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
         }
         else
         {
-            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+            AERON_SET_ERR(errno, "Failed to open saved_error_file: %s", buffer);
             result = -1;
         }
     }
@@ -236,31 +236,31 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
 
     if (aeron_mkdir(context->aeron_dir, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
-        aeron_set_err_from_last_err_code("mkdir %s", context->aeron_dir);
+        AERON_SET_ERR(errno, "Failed to mkdir aeron directory: %s", context->aeron_dir);
         return -1;
     }
 
     if (aeron_file_resolve(dirname, AERON_PUBLICATIONS_DIR, filename, sizeof(filename)) < 0)
     {
-        aeron_set_err_from_last_err_code("Unable to get publications directory filename");
+        AERON_APPEND_ERR("%s", "Unable to get publications directory filename");
         return -1;
     }
 
     if (aeron_mkdir(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
-        aeron_set_err_from_last_err_code("mkdir %s", filename);
+        AERON_SET_ERR(errno, "Failed to mkdir publications directory: %s", context->aeron_dir);
         return -1;
     }
 
     if (aeron_file_resolve(dirname, AERON_IMAGES_DIR, filename, sizeof(filename)) < 0)
     {
-        aeron_set_err_from_last_err_code("Unable to get images directory filename");
+        AERON_APPEND_ERR("%s", "Unable to get images directory filename");
         return -1;
     }
 
     if (aeron_mkdir(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
-        aeron_set_err_from_last_err_code("mkdir %s", filename);
+        AERON_SET_ERR(errno, "Failed to mkdir images directory: %s", context->aeron_dir);
         return -1;
     }
 
@@ -299,7 +299,7 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
 
     if (aeron_map_new_file(&driver->context->cnc_map, buffer, true) < 0)
     {
-        aeron_set_err(aeron_errcode(), "could not map CnC file: %s", aeron_errmsg());
+        AERON_APPEND_ERR("CnC file: %s", buffer);
         return -1;
     }
 
@@ -318,13 +318,13 @@ int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
 
     if (aeron_loss_reporter_resolve_filename(driver->context->aeron_dir, buffer, sizeof(buffer)) < 0)
     {
-        aeron_set_err_from_last_err_code("Unable to get loss report filename");
+        AERON_APPEND_ERR("%s", "Unable to get loss report filename");
         return -1;
     }
 
     if (aeron_map_new_file(&driver->context->loss_report, buffer, true) < 0)
     {
-        aeron_set_err(aeron_errcode(), "could not map loss report file: %s", aeron_errmsg());
+        AERON_APPEND_ERR("could not map loss report file: %s", buffer);
         return -1;
     }
 
@@ -338,7 +338,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     if ((probe_fd = aeron_socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-        aeron_set_err_from_last_err_code("socket %s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "%s", "aeron_socket(AF_INET, SOCK_DGRAM, 0)");
         goto cleanup;
     }
 
@@ -346,7 +346,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     socklen_t len = sizeof(default_sndbuf);
     if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
     {
-        aeron_set_err_from_last_err_code("getsockopt(SO_SNDBUF) %s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF,...)");
         goto cleanup;
     }
 
@@ -354,7 +354,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     len = sizeof(default_rcvbuf);
     if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &default_rcvbuf, &len) < 0)
     {
-        aeron_set_err_from_last_err_code("getsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF,...)");
         goto cleanup;
     }
 
@@ -367,14 +367,15 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
         if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
         {
-            aeron_set_err_from_last_err_code("setsockopt(SO_SNDBUF) %s:%d", __FILE__, __LINE__);
+            AERON_SET_ERR(
+                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, %" PRIu64 ")", (uint64_t)socket_sndbuf);
             goto cleanup;
         }
 
         len = sizeof(socket_sndbuf);
         if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, &len) < 0)
         {
-            aeron_set_err_from_last_err_code("getsockopt(SO_SNDBUF) %s:%d", __FILE__, __LINE__);
+            AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF,...)");
             goto cleanup;
         }
 
@@ -397,14 +398,15 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
         if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
-            aeron_set_err_from_last_err_code("setsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
+            AERON_SET_ERR(
+                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, %" PRIu64 ")", (uint64_t)socket_rcvbuf);
             goto cleanup;
         }
 
         len = sizeof(socket_rcvbuf);
         if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, &len) < 0)
         {
-            aeron_set_err_from_last_err_code("getsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
+            AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF,...)");
             goto cleanup;
         }
 
@@ -423,7 +425,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     if (driver->context->mtu_length > max_sndbuf)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "MTU greater than socket SO_SNDBUF, adjust %s to match MTU: mtuLength=%" PRIu64 ", SO_SNDBUF=%" PRIu64 "\n",
             AERON_SOCKET_SO_SNDBUF_ENV_VAR,
@@ -434,7 +436,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     if (driver->context->initial_window_length > max_rcvbuf)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "Window length greater than socket SO_RCVBUF, increase %s to match window: windowLength=%" PRIu64 ", SO_RCVBUF=%" PRIu64 "\n",
             AERON_RCV_INITIAL_WINDOW_LENGTH_ENV_VAR,
@@ -455,7 +457,7 @@ int aeron_driver_validate_page_size(aeron_driver_t *driver)
 {
     if (driver->context->file_page_size < AERON_PAGE_MIN_SIZE)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "Page size less than min size of %" PRIu64 ": page size=%" PRIu64,
             AERON_PAGE_MIN_SIZE, driver->context->file_page_size);
@@ -464,7 +466,7 @@ int aeron_driver_validate_page_size(aeron_driver_t *driver)
 
     if (driver->context->file_page_size > AERON_PAGE_MAX_SIZE)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "Page size greater than max size of %" PRIu64 ": page size=%" PRIu64,
             AERON_PAGE_MAX_SIZE, driver->context->file_page_size);
@@ -473,7 +475,7 @@ int aeron_driver_validate_page_size(aeron_driver_t *driver)
 
     if (!AERON_IS_POWER_OF_TWO(driver->context->file_page_size))
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "Page size not a power of 2: page size=%" PRIu64,
             driver->context->file_page_size);
@@ -720,14 +722,13 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (NULL == driver || NULL == context)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_driver_init: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "driver or context are null");
         goto error;
     }
 
     if (aeron_alloc((void **)&_driver, sizeof(aeron_driver_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Unable to allocate driver");
         goto error;
     }
 
@@ -769,8 +770,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (aeron_driver_ensure_dir_is_recreated(_driver->context) < 0)
     {
-        aeron_set_err(
-            aeron_errcode(), "could not recreate aeron dir %s: %s", _driver->context->aeron_dir, aeron_errmsg());
+        AERON_APPEND_ERR("could not recreate aeron dir: %s", _driver->context->aeron_dir);
         goto error;
     }
 
@@ -960,8 +960,7 @@ int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
 {
     if (NULL == driver)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_driver_start: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "driver is null");
         return -1;
     }
 
@@ -969,8 +968,7 @@ int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
     {
         if (AERON_THREADING_MODE_INVOKER == driver->context->threading_mode)
         {
-            errno = EINVAL;
-            aeron_set_err(EINVAL, "aeron_driver_start: %s", "INVOKER threading mode requires manual_main_loop");
+            AERON_SET_ERR(EINVAL, "%s", "INVOKER threading mode requires manual_main_loop");
             return -1;
         }
 
@@ -1007,8 +1005,7 @@ int aeron_driver_main_do_work(aeron_driver_t *driver)
 {
     if (NULL == driver)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_driver_main_do_work: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "driver is null");
         return -1;
     }
 
@@ -1019,8 +1016,7 @@ void aeron_driver_main_idle_strategy(aeron_driver_t *driver, int work_count)
 {
     if (NULL == driver)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_driver_main_idle_strategy: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "driver is null");
         return;
     }
 
@@ -1031,8 +1027,7 @@ int aeron_driver_close(aeron_driver_t *driver)
 {
     if (NULL == driver)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_driver_close: %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "driver is null");
         return -1;
     }
 

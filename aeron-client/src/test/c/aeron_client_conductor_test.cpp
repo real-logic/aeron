@@ -452,7 +452,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverError)
     doWork();
 
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), -1);
-    ASSERT_EQ(EINVAL, aeron_errcode());
+    ASSERT_EQ(-AERON_ERROR_CODE_INVALID_CHANNEL, aeron_errcode());
 }
 
 TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverTimeout)

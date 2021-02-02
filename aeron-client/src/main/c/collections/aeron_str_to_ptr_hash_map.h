@@ -72,13 +72,13 @@ inline int aeron_str_to_ptr_hash_map_init(aeron_str_to_ptr_hash_map_t *map, size
 
     if (aeron_alloc((void **)&map->keys, (capacity * sizeof(aeron_str_to_ptr_hash_map_key_t))) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Unable to allocate keys");
         return -1;
     }
 
     if (aeron_alloc((void **)&map->values, (capacity * sizeof(void *))) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Unable to allocate values");
         return -1;
     }
 
@@ -108,13 +108,13 @@ inline int aeron_str_to_ptr_hash_map_rehash(aeron_str_to_ptr_hash_map_t *map, si
 
     if (aeron_alloc((void **)&tmp_keys, (new_capacity * sizeof(aeron_str_to_ptr_hash_map_key_t))) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Unable to allocate new keys");
         return -1;
     }
 
     if (aeron_alloc((void **)&tmp_values, (new_capacity * sizeof(void *))) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Unable to allocate new values");
         return -1;
     }
 
@@ -153,7 +153,7 @@ inline int aeron_str_to_ptr_hash_map_put(aeron_str_to_ptr_hash_map_t *map, const
 {
     if (NULL == value)
     {
-        aeron_set_errno(EINVAL);
+        AERON_SET_ERR(EINVAL, "%s", "value is null");
         return -1;
     }
 

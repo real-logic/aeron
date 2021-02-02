@@ -22,7 +22,7 @@
 #endif
 #endif
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "aeron_common.h"
 #include "util/aeron_fileutil.h"
@@ -51,7 +51,7 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
             case AERON_CNC_LOAD_AWAIT_FILE:
                 if (context->epoch_clock() > deadline_ms)
                 {
-                    aeron_set_err(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "CnC file not created: %s", filename);
+                    AERON_SET_ERR(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "CnC file not created: %s", filename);
                     return -1;
                 }
                 aeron_micro_sleep(16 * 1000);
@@ -64,7 +64,8 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
             case AERON_CNC_LOAD_AWAIT_VERSION:
                 if (context->epoch_clock() > deadline_ms)
                 {
-                    aeron_set_err(AERON_CLIENT_ERROR_CLIENT_TIMEOUT, "CnC file is created but not initialised");
+                    AERON_SET_ERR(
+                        AERON_CLIENT_ERROR_CLIENT_TIMEOUT, "CnC file is created but not initialised: %s", filename);
                     aeron_unmap(cnc_mmap);
                     return -1;
                 }
@@ -85,7 +86,7 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
         if (aeron_mpsc_rb_init(
             &rb, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) != 0)
         {
-            aeron_set_err(aeron_errcode(), "CnC file to-driver ring buffer: %s", aeron_errmsg());
+            AERON_APPEND_ERR("%s", "Unable to initialise to_driver_buffer");
             aeron_unmap(cnc_mmap);
             return -1;
         }
@@ -94,7 +95,10 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
         {
             if (context->epoch_clock() > deadline_ms)
             {
-                aeron_set_err(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "no driver heartbeat detected");
+                AERON_SET_ERR(
+                    AERON_CLIENT_ERROR_DRIVER_TIMEOUT,
+                    "no driver heartbeat detected after: %" PRIu64 "ms",
+                    context->driver_timeout_ms);
                 aeron_unmap(cnc_mmap);
                 return -1;
             }
@@ -107,7 +111,10 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
         {
             if (now_ms > deadline_ms)
             {
-                aeron_set_err(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "no driver heartbeat detected");
+                AERON_SET_ERR(
+                    AERON_CLIENT_ERROR_DRIVER_TIMEOUT,
+                    "no driver heartbeat detected after: %" PRIu64 "ms",
+                    context->driver_timeout_ms);
                 aeron_unmap(cnc_mmap);
                 return -1;
             }

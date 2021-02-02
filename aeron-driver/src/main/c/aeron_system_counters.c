@@ -63,14 +63,15 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
 {
     if (NULL == counters || NULL == manager)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL, "counters = %s, manager = %s", NULL == counters ? "NULL" : "OK", NULL == manager ? "NULL" : "OK");
         return -1;
     }
 
     counters->manager = manager;
     if (aeron_alloc((void **)&counters->counter_ids, sizeof(int32_t) * num_system_counters) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Failed to allocate counter ids");
         return -1;
     }
 

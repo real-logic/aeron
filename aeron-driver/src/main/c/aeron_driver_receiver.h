@@ -88,17 +88,12 @@ typedef struct aeron_driver_receiver_stct
 }
 aeron_driver_receiver_t;
 
-#define AERON_DRIVER_RECEIVER_ERROR(receiver, format, ...) \
-do \
-{ \
-    char error_buffer[AERON_MAX_PATH]; \
-    int err_code = aeron_errcode(); \
-    snprintf(error_buffer, sizeof(error_buffer) - 1, format, __VA_ARGS__); \
-    aeron_distinct_error_log_record(receiver->error_log, err_code, aeron_errmsg(), error_buffer); \
-    aeron_counter_increment(receiver->errors_counter, 1); \
-    aeron_set_err(0, "%s", "no error"); \
-} \
-while(0)
+inline void aeron_driver_receiver_log_error(aeron_driver_receiver_t *receiver)
+{
+    aeron_distinct_error_log_record(receiver->error_log, aeron_errcode(), aeron_errmsg());
+    aeron_counter_increment(receiver->errors_counter, 1);
+    aeron_err_clear();
+}
 
 int aeron_driver_receiver_init(
     aeron_driver_receiver_t *receiver,

@@ -43,7 +43,7 @@ typedef struct aeron_header_stct aeron_header_t;
 
 #pragma pack(push)
 #pragma pack(4)
-typedef struct aeron_header_values_frame_stct
+struct aeron_header_values_frame_stct
 {
     int32_t frame_length;
     int8_t version;
@@ -54,8 +54,8 @@ typedef struct aeron_header_values_frame_stct
     int32_t stream_id;
     int32_t term_id;
     int64_t reserved_value;
-}
-aeron_header_values_frame_t;
+};
+typedef struct aeron_header_values_frame_stct aeron_header_values_frame_t;
 
 typedef struct aeron_header_values_stct
 {
@@ -1069,11 +1069,7 @@ int aeron_publication_async_add_destination(
  * @param uri for the destination to remove.
  * @return 0 for success and -1 for error.
  */
-int aeron_publication_async_remove_destination(
-    aeron_async_destination_t **async,
-    aeron_t *client,
-    aeron_publication_t *publication,
-    const char *uri);
+int aeron_publication_async_remove_destination(aeron_async_destination_t **async, aeron_t *client, aeron_publication_t *publication, const char *uri);
 
 /**
  * Poll the completion of the add/remove of a destination to/from a publication.

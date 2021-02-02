@@ -57,7 +57,7 @@ protected:
 
     void SetUp() override
     {
-        aeron_set_err(0, "No error");
+        aeron_err_clear();
     }
 
     void TearDown() override

@@ -25,6 +25,8 @@
 #include "aeron_alloc.h"
 #include "command/aeron_control_protocol.h"
 
+#define AERON_ERR_TRAILER "...\n"
+
 #if defined(AERON_COMPILER_MSVC)
 #include <windows.h>
 #endif
@@ -76,16 +78,16 @@ int aeron_errcode()
 const char *aeron_errmsg()
 {
     initialize_error();
-
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
-    const char *result = "";
 
     if (NULL != error_state)
     {
-        result = error_state->errmsg;
+        return error_state->errmsg;
     }
-
-    return result;
+    else
+    {
+        return "no error";
+    }
 }
 
 static aeron_per_thread_error_t *get_required_error_state()
@@ -112,22 +114,6 @@ static aeron_per_thread_error_t *get_required_error_state()
     return error_state;
 }
 
-void aeron_set_err(int errcode, const char *format, ...)
-{
-    aeron_per_thread_error_t *error_state = get_required_error_state();
-
-    error_state->errcode = errcode;
-    aeron_set_errno(errcode);
-
-    va_list args;
-    char stack_message[sizeof(error_state->errmsg)];
-
-    va_start(args, format);
-    vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
-    va_end(args);
-    strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
-}
-
 void aeron_set_errno(int errcode)
 {
     errno = errcode;
@@ -152,61 +138,11 @@ void aeron_set_errno(int errcode)
 #endif
 }
 
-void aeron_set_err_from_last_err_code(const char *format, ...)
-{
-#if defined(AERON_COMPILER_MSVC)
-    int errcode = (int)GetLastError();
-#else
-    int errcode = errno;
-#endif
-
-    aeron_per_thread_error_t *error_state = get_required_error_state();
-
-    error_state->errcode = errcode;
-    va_list args;
-    char stack_message[sizeof(error_state->errmsg)];
-
-    va_start(args, format);
-    int written = vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
-    va_end(args);
-
-    if (written < 0)
-    {
-        error_state->errmsg[0] = '\0';
-        return;
-    }
-
-    strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
-
-#if defined(AERON_COMPILER_MSVC)
-    int length = (int)FormatMessageA(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        errcode,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        stack_message,
-        sizeof(stack_message),
-        NULL);
-
-    if (length >= 2 && stack_message[length - 1] == '\n' && stack_message[length - 2] == '\r')
-    {
-        stack_message[length - 2] = '\0';
-    }
-    else if (!length)
-    {
-        snprintf(stack_message, sizeof(stack_message), "error %d", errcode);
-    }
-
-    snprintf(error_state->errmsg + written, sizeof(error_state->errmsg) - written, ": %s", stack_message);
-#else
-    snprintf(error_state->errmsg + written, sizeof(error_state->errmsg) - written, ": %s", strerror(errcode));
-#endif
-}
-
 const char *aeron_error_code_str(int errcode)
 {
     switch (errcode)
     {
+        case AERON_ERROR_CODE_UNUSED:
         case AERON_ERROR_CODE_GENERIC_ERROR:
             return "generic error, see message";
 
@@ -243,6 +179,83 @@ const char *aeron_error_code_str(int errcode)
         default:
             return "unknown error code";
     }
+}
+
+static void aeron_err_vprintf(
+    aeron_per_thread_error_t *error_state,
+    const char *format,
+    va_list args)
+{
+    if (error_state->offset >= sizeof(error_state->errmsg))
+    {
+        return;
+    }
+
+    int result = vsnprintf(
+        &error_state->errmsg[(int)error_state->offset], sizeof(error_state->errmsg) - error_state->offset, format, args);
+
+    if (result < 0)
+    {
+        fprintf(stderr, "Failed to update err_msg: %d\n", result);
+    }
+
+    error_state->offset += result;
+}
+
+static void aeron_err_printf(aeron_per_thread_error_t *error_state, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    aeron_err_vprintf(error_state, format, args);
+    va_end(args);
+}
+
+static void aeron_err_update_entry(
+    aeron_per_thread_error_t *error_state,
+    const char *function,
+    const char *filename,
+    int line_number,
+    const char *format,
+    va_list args)
+{
+    aeron_err_printf(error_state, "[%s, %s:%d] ", function, filename, line_number);
+    aeron_err_vprintf(error_state, format, args);
+    aeron_err_printf(error_state, "%s", "\n");
+    strcpy(error_state->errmsg + (sizeof(error_state->errmsg) - (strlen(AERON_ERR_TRAILER) + 2)), AERON_ERR_TRAILER);
+}
+
+void aeron_err_set(int errcode, const char *function, const char *filename, int line_number, const char *format, ...)
+{
+    aeron_per_thread_error_t *error_state = get_required_error_state();
+
+    error_state->errcode = errcode;
+    aeron_set_errno(errcode);
+    error_state->offset = 0;
+
+    const char *err_str = aeron_errcode() <= 0 ? aeron_error_code_str(-aeron_errcode()) : strerror(aeron_errcode());
+    aeron_err_printf(error_state, "(%d) %s\n", aeron_errcode(), err_str);
+    va_list args;
+    va_start(args, format);
+    aeron_err_update_entry(error_state, function, filename, line_number, format, args);
+    va_end(args);
+}
+
+void aeron_err_append(const char *function, const char *filename, int line_number, const char *format, ...)
+{
+    aeron_per_thread_error_t *error_state = get_required_error_state();
+    va_list args;
+    va_start(args, format);
+    aeron_err_update_entry(error_state, function, filename, line_number, format, args);
+    va_end(args);
+}
+
+void aeron_err_clear()
+{
+    aeron_per_thread_error_t *error_state = get_required_error_state();
+
+    aeron_set_errno(0);
+    error_state->errcode = 0;
+    strcpy(error_state->errmsg, "no error");
 }
 
 #if defined(AERON_COMPILER_MSVC)

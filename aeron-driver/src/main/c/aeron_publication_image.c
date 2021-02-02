@@ -89,15 +89,17 @@ int aeron_publication_image_create(
 
     if (usable_fs_space < log_length)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             ENOSPC,
-            "Insufficient usable storage for new log of length=%" PRId64 " in %s", log_length, context->aeron_dir);
+            "Insufficient usable storage for new log of length=%" PRId64 " in %s",
+            log_length,
+            context->aeron_dir);
         return -1;
     }
 
     if (aeron_alloc((void **)&_image, sizeof(aeron_publication_image_t)) < 0)
     {
-        aeron_set_err(ENOMEM, "%s", "Could not allocate publication image");
+        AERON_APPEND_ERR("%s", "Could not allocate publication image");
         return -1;
     }
 
@@ -105,7 +107,7 @@ int aeron_publication_image_create(
     if (aeron_alloc((void **)(&_image->log_file_name), (size_t)path_length + 1) < 0)
     {
         aeron_free(_image);
-        aeron_set_err(ENOMEM, "%s", "Could not allocate publication image log_file_name");
+        AERON_APPEND_ERR("%s", "Could not allocate publication image log_file_name");
         return -1;
     }
 
@@ -116,7 +118,7 @@ int aeron_publication_image_create(
     {
         aeron_free(_image->log_file_name);
         aeron_free(_image);
-        aeron_set_err(ENOMEM, "%s", "Could not init publication image loss detector");
+        AERON_APPEND_ERR("%s", "Could not init publication image loss detector");
         return -1;
     }
 
@@ -125,7 +127,7 @@ int aeron_publication_image_create(
     {
         aeron_free(_image->log_file_name);
         aeron_free(_image);
-        aeron_set_err(aeron_errcode(), "error mapping network raw log %s: %s", path, aeron_errmsg());
+        AERON_APPEND_ERR("error mapping network raw log: %s", path);
         return -1;
     }
     _image->raw_log_close_func = context->raw_log_close_func;
@@ -718,7 +720,7 @@ int aeron_publication_image_add_destination(aeron_publication_image_t *image, ae
 
     if (capacity_result < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d - %s", __FILE__, __LINE__, aeron_errmsg());
+        AERON_APPEND_ERR("%s", "Failed to ensure space for image->connections");
         return -1;
     }
 

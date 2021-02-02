@@ -49,7 +49,7 @@ int aeron_ipc_publication_create(
 
     if (usable_fs_space < log_length)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             ENOSPC,
             "Insufficient usable storage for new log of length=%" PRId64 " in %s", log_length, context->aeron_dir);
         return -1;
@@ -57,7 +57,7 @@ int aeron_ipc_publication_create(
 
     if (aeron_alloc((void **)&_pub, sizeof(aeron_ipc_publication_t)) < 0)
     {
-        aeron_set_err(ENOMEM, "%s", "Could not allocate IPC publication");
+        AERON_APPEND_ERR("%s", "Could not allocate IPC publication");
         return -1;
     }
 
@@ -65,7 +65,7 @@ int aeron_ipc_publication_create(
     if (aeron_alloc((void **)(&_pub->log_file_name), (size_t)path_length + 1) < 0)
     {
         aeron_free(_pub);
-        aeron_set_err(ENOMEM, "%s", "Could not allocate IPC publication log_file_name");
+        AERON_APPEND_ERR("%s", "Could not allocate IPC publication log_file_name");
         return -1;
     }
 
@@ -74,7 +74,7 @@ int aeron_ipc_publication_create(
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);
-        aeron_set_err(ENOMEM, "%s", "Could not allocate IPC publication channel");
+        AERON_APPEND_ERR("%s", "Could not allocate IPC publication channel");
         return -1;
     }
 
@@ -84,7 +84,7 @@ int aeron_ipc_publication_create(
         aeron_free(_pub->log_file_name);
         aeron_free(_pub->channel);
         aeron_free(_pub);
-        aeron_set_err(aeron_errcode(), "error mapping IPC raw log %s: %s", path, aeron_errmsg());
+        AERON_APPEND_ERR("error mapping IPC raw log: %s", path);
         return -1;
     }
     _pub->raw_log_close_func = context->raw_log_close_func;

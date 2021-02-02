@@ -181,7 +181,7 @@ int aeron_udp_channel_interceptor_loss_parse_callback(void *clientd, const char 
 
         if (errno != 0 || value == endptr)
         {
-            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
+            AERON_SET_ERR(EINVAL, "Could not parse loss %s from: %s:", key, value);
             result = -1;
         }
     }
@@ -193,7 +193,7 @@ int aeron_udp_channel_interceptor_loss_parse_callback(void *clientd, const char 
 
         if (errno != 0 || value == endptr)
         {
-            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
+            AERON_SET_ERR(EINVAL, "Could not parse seed %s from: %s:", key, value);
             result = -1;
         }
     }
@@ -205,7 +205,7 @@ int aeron_udp_channel_interceptor_loss_parse_callback(void *clientd, const char 
 
         if (errno != 0 || value == endptr)
         {
-            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
+            AERON_SET_ERR(EINVAL, "Could not parse recv-msg-mask %s from: %s:", key, value);
             result = -1;
         }
     }

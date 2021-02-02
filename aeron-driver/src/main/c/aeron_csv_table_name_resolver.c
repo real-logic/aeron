@@ -99,21 +99,21 @@ int aeron_csv_table_name_resolver_supplier(
 
     if (NULL == args)
     {
-        aeron_set_err(EINVAL, "No CSV configuration, please specify: %s", AERON_NAME_RESOLVER_INIT_ARGS_ENV_VAR);
+        AERON_SET_ERR(EINVAL, "No CSV configuration, please specify: %s", AERON_NAME_RESOLVER_INIT_ARGS_ENV_VAR);
         return -1;
     }
     
     char *config_csv = strdup(args);
     if (NULL == config_csv)
     {
-        aeron_set_err_from_last_err_code("Duplicating config string - %s:%d", __FILE__, __LINE__);
+        AERON_SET_ERR(errno, "%s", "Duplicating config string");
         return -1;
     }
 
     aeron_csv_table_name_resolver_t *lookup_table;
     if (aeron_alloc((void **)&lookup_table, sizeof(aeron_csv_table_name_resolver_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("Allocating lookup table - %s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Allocating lookup table");
         aeron_free(config_csv);
         return -1;
     }
@@ -121,7 +121,7 @@ int aeron_csv_table_name_resolver_supplier(
     int num_rows = aeron_tokenise(config_csv, '|', AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE, rows);
     if (num_rows < 0)
     {
-        aeron_set_err(num_rows, "%s", "Failed to parse rows for lookup table");
+        AERON_SET_ERR(num_rows, "%s", "Failed to parse rows for lookup table");
         return -1;
     }
 
@@ -133,9 +133,10 @@ int aeron_csv_table_name_resolver_supplier(
         AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, (*lookup_table), aeron_csv_table_name_resolver_row_t)
         if (ensure_capacity_result < 0)
         {
-            aeron_set_err_from_last_err_code(
-                "Failed to allocate rows for lookup table (%" PRIu32 ",%" PRIu32 ") - %s:%d",
-                (uint32_t)lookup_table->length, (uint32_t)lookup_table->capacity, __FILE__, __LINE__);
+            AERON_APPEND_ERR(
+                "Failed to allocate rows for lookup table (%" PRIu64 ",%" PRIu64 ")",
+                (uint64_t)lookup_table->length,
+                (uint64_t)lookup_table->capacity);
             aeron_free(lookup_table->array);
             aeron_free(lookup_table);
             return -1;

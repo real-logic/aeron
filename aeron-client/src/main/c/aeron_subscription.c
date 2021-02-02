@@ -39,9 +39,7 @@ int aeron_subscription_create(
     *subscription = NULL;
     if (aeron_alloc((void **)&_subscription, sizeof(aeron_subscription_t)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_subscription_create (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("Unable to allocate subscription, registration_id: %" PRId64, registration_id);
         return -1;
     }
 
@@ -128,9 +126,7 @@ int aeron_subscription_alloc_image_list(volatile aeron_image_list_t **image_list
     *image_list = NULL;
     if (aeron_alloc((void **)&_image_list, AERON_IMAGE_LIST_ALLOC_SIZE(length)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_subscription_create (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("Unable to allocate image list, length: %" PRIu64, (uint64_t)length);
         return -1;
     }
 
@@ -265,8 +261,11 @@ int aeron_subscription_constants(aeron_subscription_t *subscription, aeron_subsc
 {
     if (NULL == subscription || NULL == constants)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, subscription: %s, constants: %s",
+            AERON_NULL_STR(subscription),
+            AERON_NULL_STR(constants));
         return -1;
     }
 
@@ -356,8 +355,11 @@ int aeron_subscription_image_retain(aeron_subscription_t *subscription, aeron_im
 {
     if (NULL == subscription || NULL == image)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_subscription_image_retain: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, subscription: %s, image: %s",
+            AERON_NULL_STR(subscription),
+            AERON_NULL_STR(image));
         return -1;
     }
 
@@ -377,8 +379,11 @@ int aeron_subscription_image_release(aeron_subscription_t *subscription, aeron_i
 {
     if (NULL == subscription || NULL == image)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_subscription_image_release: %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, subscription: %s, image: %s",
+            AERON_NULL_STR(subscription),
+            AERON_NULL_STR(image));
         return -1;
     }
 
@@ -509,8 +514,11 @@ int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values)
 {
     if (NULL == header || NULL == values)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, header: %s, values: %s",
+            AERON_NULL_STR(header),
+            AERON_NULL_STR(values));
         return -1;
     }
 
@@ -532,11 +540,19 @@ int64_t aeron_header_position(aeron_header_t *header)
 int aeron_subscription_local_sockaddrs(
     aeron_subscription_t *subscription, aeron_iovec_t *address_vec, size_t address_vec_len)
 {
-    if (NULL == subscription || NULL == address_vec || address_vec_len < 1)
+    if (NULL == subscription || NULL == address_vec)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, subscription: %s, address_vec: %s",
+            AERON_NULL_STR(subscription),
+            AERON_NULL_STR(address_vec));
         return -1;
+    }
+    if (address_vec_len < 1)
+    {
+        AERON_SET_ERR(
+            EINVAL, "Parameters must be valid, address_vec_len (%" PRIu64 ") < 1", (uint64_t)address_vec_len);
     }
 
     return aeron_local_sockaddr_find_addrs(
@@ -549,11 +565,19 @@ int aeron_subscription_local_sockaddrs(
 int aeron_subscription_resolved_endpoint(
     aeron_subscription_t *subscription, const char *address, size_t address_len)
 {
-    if (NULL == subscription || NULL == address || address_len < 1)
+    if (NULL == subscription || NULL == address)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, subscription: %s, address: %s",
+            AERON_NULL_STR(subscription),
+            AERON_NULL_STR(address));
         return -1;
+    }
+    if (address_len < 1)
+    {
+        AERON_SET_ERR(
+            EINVAL, "Parameters must be valid, address_len (%" PRIu64 ") < 1", (uint64_t)address_len);
     }
 
     aeron_iovec_t addr_vec =
@@ -603,11 +627,19 @@ static int aeron_subscription_update_uri_with_resolved_endpoint(
 int aeron_subscription_try_resolve_channel_endpoint_port(
     aeron_subscription_t *subscription, char *uri, size_t uri_len)
 {
-    if (NULL == subscription || NULL == uri || uri_len < 1)
+    if (NULL == subscription || NULL == uri)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, subscription: %s, uri: %s",
+            AERON_NULL_STR(subscription),
+            AERON_NULL_STR(uri));
         return -1;
+    }
+    if (uri_len < 1)
+    {
+        AERON_SET_ERR(
+            EINVAL, "Parameters must be valid, uri_len (%" PRIu64 ") < 1", (uint64_t)uri_len);
     }
 
     int result = -1;

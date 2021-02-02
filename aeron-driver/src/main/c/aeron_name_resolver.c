@@ -29,11 +29,12 @@
 #include "util/aeron_strutil.h"
 #include "aeron_name_resolver.h"
 
-static void aeron_name_resolver_set_err(
+static void aeron_name_resolver_load_function_info(
     aeron_name_resolver_t *resolver,
-    const char *name,
-    const char *uri_param_name,
-    const char *address_str);
+    char *lookup_name_buffer,
+    size_t lookup_name_buffer_len,
+    char *resolve_name_buffer,
+    size_t resolve_name_buffer_len);
 
 int aeron_name_resolver_init(aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context)
 {
@@ -143,7 +144,18 @@ int aeron_name_resolver_resolve_host_and_port(
 exit:
     if (result < 0)
     {
-        aeron_name_resolver_set_err(resolver, name, uri_param_name, address_str);
+        char lookup_info[128];
+        char resolve_info[128];
+
+        const char *address_or_null = NULL != address_str ? address_str : "null";
+        aeron_name_resolver_load_function_info(
+            resolver, lookup_info, sizeof(resolve_info), resolve_info, sizeof(resolve_info));
+
+        AERON_APPEND_ERR(
+            "Unresolved - %s=%s, name-and-port=%s",
+            uri_param_name,
+            name,
+            address_or_null);
     }
 
     return result;
@@ -155,7 +167,7 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
 
     if (NULL == name)
     {
-        aeron_set_err(EINVAL, "%s", "invalid name_resolver supplier function name");
+        AERON_SET_ERR(EINVAL, "%s", "invalid name_resolver supplier function name");
         return NULL;
     }
 
@@ -179,7 +191,7 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
 #endif
         if ((supplier_func = (aeron_name_resolver_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 EINVAL, "could not find name resolver %s: dlsym - %s", name, aeron_dlerror());
         }
 #if defined(AERON_COMPILER_GCC)
@@ -190,24 +202,19 @@ aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char
     return supplier_func;
 }
 
-static void aeron_name_resolver_set_err(
-    aeron_name_resolver_t *resolver, const char *name, const char *uri_param_name, const char *address_str)
+static void aeron_name_resolver_load_function_info(
+    aeron_name_resolver_t *resolver,
+    char *lookup_name_buffer,
+    size_t lookup_name_buffer_len,
+    char *resolve_name_buffer,
+    size_t resolve_name_buffer_len)
 {
 #if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
-    char dl_name_buffer[128];
-    const char *address_or_null = NULL != address_str ? address_str : "null";
-
-    aeron_set_err(
-        EINVAL,
-        "Unresolved - %s=%s, name-and-port=%s, name-resolver-lookup=%s, name-resolver-resolve=%s",
-        uri_param_name,
-        name,
-        address_or_null,
-        aeron_dlinfo((const void *)resolver->lookup_func, dl_name_buffer, sizeof(dl_name_buffer)),
-        aeron_dlinfo((const void *)resolver->resolve_func, dl_name_buffer, sizeof(dl_name_buffer)));
+    aeron_dlinfo((const void *)resolver->lookup_func, lookup_name_buffer, lookup_name_buffer_len);
+    aeron_dlinfo((const void *)resolver->resolve_func, resolve_name_buffer, resolve_name_buffer_len);
 #if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
 #endif

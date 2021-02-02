@@ -69,7 +69,7 @@ int aeron_network_publication_create(
 
     if (usable_fs_space < log_length)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             ENOSPC,
             "Insufficient usable storage for new log of length=%" PRId64 " in %s", log_length, context->aeron_dir);
         return -1;
@@ -77,7 +77,7 @@ int aeron_network_publication_create(
 
     if (aeron_alloc((void **)&_pub, sizeof(aeron_network_publication_t)) < 0)
     {
-        aeron_set_err(ENOMEM, "%s", "Could not allocate network publication");
+        AERON_APPEND_ERR("%s", "Could not allocate network publication");
         return -1;
     }
 
@@ -85,7 +85,7 @@ int aeron_network_publication_create(
     if (aeron_alloc((void **)(&_pub->log_file_name), (size_t)path_length + 1) < 0)
     {
         aeron_free(_pub);
-        aeron_set_err(ENOMEM, "%s", "Could not allocate network publication log_file_name");
+        AERON_APPEND_ERR("%s", "Could not allocate network publication log_file_name");
         return -1;
     }
 
@@ -97,7 +97,11 @@ int aeron_network_publication_create(
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);
-        aeron_set_err(aeron_errcode(), "Could not init network publication retransmit handler: %s", aeron_errmsg());
+        AERON_APPEND_ERR(
+            "%s",
+            "Could not init network publication retransmit handler, delay: %" PRIu64 ", linger: %" PRIu64,
+            context->retransmit_unicast_delay_ns,
+            context->retransmit_unicast_linger_ns);
         return -1;
     }
 
@@ -106,7 +110,7 @@ int aeron_network_publication_create(
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);
-        aeron_set_err(aeron_errcode(), "error mapping network raw log %s: %s", path, aeron_errmsg());
+        AERON_APPEND_ERR("error mapping network raw log: %s", path);
         return -1;
     }
     _pub->raw_log_close_func = context->raw_log_close_func;

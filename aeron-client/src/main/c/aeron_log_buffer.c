@@ -15,6 +15,7 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 
 #include "aeron_log_buffer.h"
 #include "aeron_alloc.h"
@@ -28,16 +29,14 @@ int aeron_log_buffer_create(
     *log_buffer = NULL;
     if (aeron_alloc((void **)&_log_buffer, sizeof(aeron_log_buffer_t)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_log_buffer_create (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR(
+            "Unable to allocate log buffer, log_file: %s, correlation_id: %" PRId64, log_file, correlation_id);
         return -1;
     }
 
     if (aeron_raw_log_map_existing(&_log_buffer->mapped_raw_log, log_file, pre_touch) < 0)
     {
-        aeron_set_err(aeron_errcode(), "could not map existing file %s: %s", log_file, aeron_errmsg());
-        aeron_free(_log_buffer);
+        AERON_APPEND_ERR("Unable to map raw log for log buffer, correlation_id: %" PRId64, correlation_id);
         return -1;
     }
 

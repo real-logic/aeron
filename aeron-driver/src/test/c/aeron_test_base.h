@@ -55,7 +55,7 @@ public:
         m_driver.stop();
     }
 
-    aeron_t *connect()
+    virtual aeron_t *connect()
     {
         if (aeron_context_init(&m_context) < 0)
         {

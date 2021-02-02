@@ -59,7 +59,7 @@ int aeron_properties_parse_line(
 
     if (length >= (sizeof(state->property_str) - state->value_end))
     {
-        aeron_set_err(EINVAL, "line length " PRIu64 " too long for parser state", (uint64_t)(length + state->value_end));
+        AERON_SET_ERR(EINVAL, "line length " PRIu64 " too long for parser state", (uint64_t)(length + state->value_end));
         return -1;
     }
 
@@ -101,7 +101,7 @@ int aeron_properties_parse_line(
 
         if (0 == state->value_end || 0 == state->name_end)
         {
-            aeron_set_err(EINVAL, "%s", "malformed line");
+            AERON_SET_ERR(EINVAL, "%s", "malformed line");
             aeron_properties_parse_init(state);
             return -1;
         }
@@ -201,7 +201,7 @@ int aeron_properties_parse_file(const char *filename, aeron_properties_file_hand
 
     if ((fpin = fopen(filename, "r")) == NULL)
     {
-        aeron_set_err(EINVAL, "could not open filename %s", filename);
+        AERON_SET_ERR(errno, "could not open properties file: %s", filename);
         return -1;
     }
 
@@ -224,13 +224,13 @@ int aeron_properties_parse_file(const char *filename, aeron_properties_file_hand
 
             if (aeron_properties_parse_line(&state, line, length, handler, clientd) < 0)
             {
-                aeron_set_err(EINVAL, "properties file line %" PRId32 " malformed", lineno);
+                AERON_SET_ERR(EINVAL, "properties file line %" PRId32 " malformed", lineno);
                 goto cleanup;
             }
         }
         else
         {
-            aeron_set_err(EINVAL, "properties file line %" PRId32 " too long or does not end with newline", lineno);
+            AERON_SET_ERR(EINVAL, "properties file line %" PRId32 " too long or does not end with newline", lineno);
             goto cleanup;
         }
 
@@ -239,7 +239,7 @@ int aeron_properties_parse_file(const char *filename, aeron_properties_file_hand
 
     if (!feof(fpin))
     {
-        aeron_set_err_from_last_err_code("error reading file");
+        AERON_SET_ERR(errno, "error reading file: %s", filename);
         goto cleanup;
     }
     else
@@ -276,15 +276,16 @@ int aeron_properties_buffer_load(const char *buffer)
                 line_length--;
             }
 
-            if (aeron_properties_parse_line(&state, line, (size_t)line_length, aeron_properties_setenv_property, NULL) < 0)
+            if (aeron_properties_parse_line(
+                &state, line, (size_t)line_length, aeron_properties_setenv_property, NULL) < 0)
             {
-                aeron_set_err(EINVAL, "properties buffer line %" PRId32 " malformed", lineno);
+                AERON_SET_ERR(EINVAL, "properties buffer line %" PRId32 " malformed", lineno);
                 return -1;
             }
         }
         else
         {
-            aeron_set_err(EINVAL, "properties buffer line %" PRId32 " too long or does not end with newline", lineno);
+            AERON_SET_ERR(EINVAL, "properties buffer line %" PRId32 " too long or does not end with newline", lineno);
             return -1;
         }
 
@@ -327,7 +328,7 @@ int aeron_properties_http_load(const char *url)
                         goto cleanup;
 
                     case 0:
-                        aeron_set_err(EINVAL, "%s", "redirect specified, but no Location header found");
+                        AERON_SET_ERR(EINVAL, "%s", "redirect specified, but no Location header found");
                         goto cleanup;
 
                     default:
@@ -347,13 +348,13 @@ int aeron_properties_http_load(const char *url)
             }
             else
             {
-                aeron_set_err(EINVAL, "%s", "too many redirects for URL");
+                AERON_SET_ERR(EINVAL, "%s", "too many redirects for URL");
                 goto cleanup;
             }
         }
         else
         {
-            aeron_set_err(EINVAL, "status code %" PRIu32 " from HTTP GET", (uint32_t)response->status_code);
+            AERON_SET_ERR(EINVAL, "status code %" PRIu64 " from HTTP GET", (uint64_t)response->status_code);
             goto cleanup;
         }
     }

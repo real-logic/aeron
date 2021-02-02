@@ -182,10 +182,10 @@ int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
 
     if (libs_length >= (size_t)AERON_MAX_DL_LIBS_LEN)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
-            "dl libs list too long, must have: %" PRIu32 " < %d",
-            (uint32_t)libs_length, AERON_MAX_DL_LIBS_LEN);
+            "dl libs list too long, must have: %" PRIu64 " < %d",
+            (uint64_t)libs_length, AERON_MAX_DL_LIBS_LEN);
         return -1;
     }
 
@@ -195,19 +195,19 @@ int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
 
     if (-ERANGE == num_libs)
     {
-        aeron_set_err(EINVAL, "Too many dl libs defined, limit %d: %s", AERON_MAX_DL_LIB_NAMES, libs);
+        AERON_SET_ERR(EINVAL, "Too many dl libs defined, limit %d: %s", AERON_MAX_DL_LIB_NAMES, libs);
         return -1;
     }
     else if (num_libs < 0)
     {
-        aeron_set_err(EINVAL, "Failed to parse dl libs: %s", libs != NULL ? libs : "(null)");
+        AERON_SET_ERR(EINVAL, "Failed to parse dl libs: %s", libs != NULL ? libs : "(null)");
         return -1;
     }
 
     if (aeron_alloc((void **)&_state, sizeof(aeron_dl_loaded_libs_state_t)) < 0 ||
         aeron_alloc((void **)&_state->libs, sizeof(aeron_dl_loaded_lib_state_t) * num_libs) < 0)
     {
-        aeron_set_err(aeron_errcode(), "could not allocate dl_loaded_libs: %s", aeron_errmsg());
+        AERON_APPEND_ERR("could not allocate dl_loaded_libs, num_libs: %d", num_libs);
         return -1;
     }
     _state->num_libs = (size_t)num_libs;
@@ -219,7 +219,7 @@ int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
 
         if (NULL == (lib->handle = aeron_dlopen(lib_name)))
         {
-            aeron_set_err(EINVAL, "failed to load dl_lib %s: %s", lib_name, aeron_dlerror());
+            AERON_SET_ERR(EINVAL, "failed to load dl_lib %s: %s", lib_name, aeron_dlerror());
             return -1;
         }
     }

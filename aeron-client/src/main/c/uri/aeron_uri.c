@@ -46,7 +46,7 @@ int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, voi
                     case '=':
                         if (NULL == param_key)
                         {
-                            aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "empty key not allowed");
+                            AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "empty key not allowed");
                             return -1;
                         }
                         uri[i] = '\0';
@@ -55,7 +55,7 @@ int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, voi
                         break;
 
                     case '|':
-                        aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "invalid end of key");
+                        AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "invalid end of key");
                         return -1;
 
                     default:
@@ -73,7 +73,7 @@ int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, voi
                     case '|':
                         if (NULL == param_value)
                         {
-                            aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "empty value not allowed");
+                            AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "empty value not allowed");
                             return -1;
                         }
                         uri[i] = '\0';
@@ -276,7 +276,7 @@ int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
                 int result = aeron_udp_uri_parse(ptr, &params->params.udp);
                 if (result < 0)
                 {
-                    aeron_set_err(EINVAL, "%s: %.*s", aeron_errmsg(), (int)uri_length, uri);
+                    AERON_APPEND_ERR("%.*s", (int)uri_length, uri);
                 }
                 return result;
             }
@@ -291,14 +291,14 @@ int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
                 int result = aeron_ipc_uri_parse(ptr, &params->params.ipc);
                 if (result < 0)
                 {
-                    aeron_set_err(EINVAL, "%s: %.*s", aeron_errmsg(), (int)uri_length, uri);
+                    AERON_APPEND_ERR("%.*s", (int)uri_length, uri);
                 }
                 return result;
             }
         }
     }
 
-    aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "invalid URI scheme or transport: %s", uri);
+    AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "invalid URI scheme or transport: %s", uri);
 
     return -1;
 }
@@ -348,12 +348,12 @@ int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t
 
     if (0 != errno || '\0' != *end_ptr)
     {
-        aeron_set_err(EINVAL, "could not parse %s=%s as int32_t in URI: %s", key, value_str, strerror(errno));
+        AERON_SET_ERR(EINVAL, "could not parse %s=%s as int32_t in URI: %s", key, value_str, strerror(errno));
         return -1;
     }
     else if (value < INT32_MIN || INT32_MAX < value)
     {
-        aeron_set_err(
+        AERON_SET_ERR(
             EINVAL,
             "could not parse %s=%s as int32_t in URI: Numerical result out of range", key, value_str);
         return -1;
@@ -380,8 +380,9 @@ int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t
     value = strtoll(value_str, &end_ptr, 0);
     if (0 != errno || '\0' != *end_ptr)
     {
-        aeron_set_err(EINVAL, "could not parse %s=%s as int64_t in URI: ", key, value_str, strerror(errno));
+        int system_errno = errno;
         return -1;
+        AERON_SET_ERR(EINVAL, "could not parse %s=%s as int64_t in URI: %s", key, value_str, strerror(system_errno));
     }
 
     *retval = value;
@@ -404,7 +405,7 @@ int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *re
         }
         else
         {
-            aeron_set_err(EINVAL, "could not parse %s=%s as bool from URI", key, value_str);
+            AERON_SET_ERR(EINVAL, "could not parse %s=%s as bool from URI", key, value_str);
             return -1;
         }
     }
@@ -428,7 +429,7 @@ int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *ur
         }
         else
         {
-            aeron_set_err(EINVAL, "could not parse %s=%s as bool from URI", AERON_URI_ATS_KEY, value_str);
+            AERON_SET_ERR(EINVAL, "could not parse %s=%s as bool from URI", AERON_URI_ATS_KEY, value_str);
             return -1;
         }
     }
@@ -475,7 +476,7 @@ static int aeron_uri_print_next(aeron_uri_print_context_t *print_ctx, const char
         }
         else if (result < 0)
         {
-            aeron_set_err(result, "Failed to print next uri item: %s", key);
+            AERON_SET_ERR(result, "Failed to print next uri item: %s", key);
         }
     }
 
@@ -608,7 +609,7 @@ int aeron_uri_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
         case AERON_URI_UNKNOWN:
             return snprintf(buffer, buffer_len, "aeron:unknown");
         default:
-            aeron_set_err(EINVAL, "Invalid URI type");
+            AERON_SET_ERR(EINVAL, "Invalid URI type: %d", (int)uri->type);
             return -1;
     }
 }

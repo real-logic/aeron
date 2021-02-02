@@ -38,14 +38,14 @@ public:
 
 TEST_F(ExceptionsTest, shouldThrowAppropriateType)
 {
-    aeron_set_err(EINVAL, "Invalid argument");
+    AERON_SET_ERR(EINVAL, "%s", "Invalid argument");
     ASSERT_THROW(
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         },
         IllegalArgumentException);
 
-    aeron_set_err(EPERM, "Invalid argument");
+    AERON_SET_ERR(EPERM, "%s", "Invalid argument");
     ASSERT_THROW(
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;

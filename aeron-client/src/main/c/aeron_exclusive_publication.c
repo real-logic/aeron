@@ -43,9 +43,7 @@ int aeron_exclusive_publication_create(
     *publication = NULL;
     if (aeron_alloc((void **)&_publication, sizeof(aeron_exclusive_publication_t)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "aeron_exclusive_publication_create (%d): %s", errcode, strerror(errcode));
+        AERON_APPEND_ERR("%s", "Unable to allocate exclusive_publication");
         return -1;
     }
 
@@ -138,8 +136,11 @@ int64_t aeron_exclusive_publication_offer(
 
     if (NULL == publication || NULL == buffer)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_exclusive_publication_offer(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, publication: %s, buffer: %s",
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(buffer));
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -172,11 +173,11 @@ int64_t aeron_exclusive_publication_offer(
             {
                 if (length > publication->max_message_length)
                 {
-                    errno = EINVAL;
-                    aeron_set_err(
-                        EINVAL, "aeron_exclusive_publication_offer: length=%" PRIu32 " > max_message_length=%" PRIu32,
-                        (uint32_t)length,
-                        (uint32_t)publication->max_message_length);
+                    AERON_SET_ERR(
+                        EINVAL,
+                        "aeron_exclusive_publication_offer: length=%" PRIu64 " > max_message_length=%" PRIu64,
+                        (uint64_t)length,
+                        (uint64_t)publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
                 }
 
@@ -217,8 +218,11 @@ int64_t aeron_exclusive_publication_offerv(
 
     if (NULL == publication || NULL == iov)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_exclusive_publication_offerv(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "%s", "Parameters must not be null, publication: %s, iov: %s",
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(iov));
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -258,11 +262,11 @@ int64_t aeron_exclusive_publication_offerv(
             {
                 if (length > publication->max_message_length)
                 {
-                    errno = EINVAL;
-                    aeron_set_err(
-                        EINVAL, "aeron_exclusive_publication_offerv: length=%" PRIu32 " > max_message_length=%" PRIu32,
-                        (uint32_t)length,
-                        (uint32_t)publication->max_message_length);
+                    AERON_SET_ERR(
+                        EINVAL,
+                        "aeron_exclusive_publication_offerv: length=%" PRIu64 " > max_message_length=%" PRIu64,
+                        (uint64_t)length,
+                        (uint64_t)publication->max_message_length);
                     return AERON_PUBLICATION_ERROR;
                 }
 
@@ -300,15 +304,20 @@ int64_t aeron_exclusive_publication_try_claim(
 
     if (NULL == publication || NULL == buffer_claim)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_exclusive_publication_try_claim(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, publication: %s, buffer_claim: %s",
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(buffer_claim));
         return AERON_PUBLICATION_ERROR;
     }
     else if (length > publication->max_payload_length)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_exclusive_publication_try_claim: length=%" PRIu32 " > max_payload_length=%" PRIu32,
-            (uint32_t)length, (uint32_t)publication->max_payload_length);
+        AERON_SET_ERR(
+            EINVAL,
+            "aeron_exclusive_publication_try_claim: length=%" PRIu64 " > max_payload_length=%" PRIu64,
+            (uint64_t)length,
+            (uint64_t)publication->max_payload_length);
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -350,18 +359,16 @@ int64_t aeron_exclusive_publication_append_padding(aeron_exclusive_publication_t
 
     if (NULL == publication)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_exclusive_publication_append_padding(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "aeron_exclusive_publication_append_padding(NULL)");
         return AERON_PUBLICATION_ERROR;
     }
 
     if (length > publication->max_message_length)
     {
-        errno = EINVAL;
-        aeron_set_err(
-            EINVAL, "aeron_exclusive_publication_append_padding: length=%" PRIu32 " > max_message_length=%" PRIu32,
-            (uint32_t)length,
-            (uint32_t)publication->max_message_length);
+        AERON_SET_ERR(
+            EINVAL, "aeron_exclusive_publication_append_padding: length=%" PRIu64 " > max_message_length=%" PRIu64,
+            (uint64_t)length,
+            (uint64_t)publication->max_message_length);
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -402,8 +409,7 @@ int64_t aeron_exclusive_publication_offer_block(
 
     if (NULL == publication)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_exclusive_publication_offer_block(NULL): %s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "%s", "aeron_exclusive_publication_offer_block(NULL)");
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -429,12 +435,11 @@ int64_t aeron_exclusive_publication_offer_block(
 
         if (length > (size_t)(publication->term_buffer_length - publication->term_offset))
         {
-            errno = EINVAL;
-            aeron_set_err(
+            AERON_SET_ERR(
                 EINVAL,
-                "aeron_exclusive_publication_offer_block: invalid block length %" PRIu32 ", remaining space in term is %" PRIu32,
-                (uint32_t)length,
-                (uint32_t)(publication->term_buffer_length - publication->term_offset));
+                "aeron_exclusive_publication_offer_block: invalid block length %" PRIu64 ", remaining space in term is %" PRIu64,
+                (uint64_t)length,
+                (uint64_t)(publication->term_buffer_length - publication->term_offset));
             return AERON_PUBLICATION_ERROR;
         }
 
@@ -444,8 +449,7 @@ int64_t aeron_exclusive_publication_offer_block(
             first_frame->term_id != publication->term_id ||
             first_frame->frame_header.type != AERON_HDR_TYPE_DATA)
         {
-            errno = EINVAL;
-            aeron_set_err(
+            AERON_SET_ERR(
                 EINVAL,
                 "aeron_exclusive_publication_offer_block improperly formatted block:"
                 " term_offset=%" PRId32 " (expected=%" PRId32 "),"
@@ -507,8 +511,11 @@ int aeron_exclusive_publication_constants(
 {
     if (NULL == publication || NULL == constants)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, publication: %s, constants: %s",
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(constants));
         return -1;
     }
 
@@ -548,8 +555,7 @@ int64_t aeron_exclusive_publication_position(aeron_exclusive_publication_t *publ
 
     if (NULL == publication)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Parameters must not be null, publication: %s", AERON_NULL_STR(publication));
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -568,8 +574,7 @@ int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t
 
     if (NULL == publication)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Parameters must not be null, publication: %s", AERON_NULL_STR(publication));
         return AERON_PUBLICATION_ERROR;
     }
 
@@ -587,8 +592,12 @@ int aeron_exclusive_publication_local_sockaddrs(
 {
     if (NULL == publication || NULL == address_vec || address_vec_len < 1)
     {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must correct, publication: %s, address_vec: %s, address_vec_len: (%" PRIu64 ") < 1",
+            AERON_NULL_STR(publication),
+            AERON_NULL_STR(address_vec),
+            (uint64_t)address_vec_len);
         return -1;
     }
 

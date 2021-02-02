@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_atomic.h"
 #include "util/aeron_error.h"
@@ -35,7 +36,7 @@ int aeron_broadcast_transmitter_init(aeron_broadcast_transmitter_t *transmitter,
     }
     else
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Capacity: %" PRIu64 " invalid, must be power of two", (uint64_t)capacity);
     }
 
     return result;
@@ -58,6 +59,12 @@ int aeron_broadcast_transmitter_transmit(
 {
     if (length > transmitter->max_message_length || AERON_BROADCAST_INVALID_MSG_TYPE_ID(msg_type_id))
     {
+        AERON_SET_ERR(
+            EINVAL,
+            "length (%" PRIu64 ") > transmitter->max_message_length (%" PRIu64 ") || msg_type_id (%" PRId32 ") < 1",
+            (uint64_t)length,
+            (uint64_t)transmitter->max_message_length,
+            msg_type_id);
         return -1;
     }
 

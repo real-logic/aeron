@@ -36,7 +36,7 @@ int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
 
     if (strncmp(url, "http://", strlen("http://")) != 0)
     {
-        aeron_set_err(EINVAL, "URL %s does not have supported scheme", url);
+        AERON_SET_ERR(EINVAL, "URL %s does not have supported scheme", url);
         return -1;
     }
 
@@ -68,7 +68,7 @@ int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
 
         if (length > (int)sizeof(parsed_url->path_and_query))
         {
-            aeron_set_err(EINVAL, "URL %s has too long path", url);
+            AERON_SET_ERR(EINVAL, "URL %s has too long path", url);
             return -1;
         }
 
@@ -83,7 +83,7 @@ int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
 
         if (length > (int)sizeof(parsed_url->userinfo))
         {
-            aeron_set_err(EINVAL, "URL %s has too long userinfo", url);
+            AERON_SET_ERR(EINVAL, "URL %s has too long userinfo", url);
             return -1;
         }
 
@@ -96,7 +96,7 @@ int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
 
     if (length > (int)sizeof(parsed_url->host_and_port))
     {
-        aeron_set_err(EINVAL, "URL %s has too long host and port", url);
+        AERON_SET_ERR(EINVAL, "URL %s has too long host and port", url);
         return -1;
     }
 
@@ -175,7 +175,7 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
 
                 if (0 == code)
                 {
-                    aeron_set_err(EINVAL, "http response code <%s> parsed to 0, errno=%d", code_str, errno);
+                    AERON_SET_ERR(EINVAL, "http response code <%s> parsed to 0, errno=%d", code_str, errno);
                     return true;
                 }
 
@@ -185,7 +185,7 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
             }
             else
             {
-                aeron_set_err(EINVAL, "could not parse response line: <%s>", line);
+                AERON_SET_ERR(EINVAL, "could not parse response line: <%s>", line);
                 response->parse_err = true;
             }
         }
@@ -210,7 +210,7 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
 
                 if (0 == content_length)
                 {
-                    aeron_set_err(EINVAL, "http Content-Length <%s> parsed to 0, errno=%d", line, errno);
+                    AERON_SET_ERR(EINVAL, "http Content-Length <%s> parsed to 0, errno=%d", line, errno);
                     return true;
                 }
 
@@ -260,7 +260,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
     if (connect(sock, (struct sockaddr *)&parsed_url.address, addr_len) < 0)
     {
-        aeron_set_err_from_last_err_code("http connect");
+        AERON_SET_ERR(errno, "http connect: %s", url);
         goto error;
     }
 
@@ -271,19 +271,19 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
     if (length < 0 || (sent_length = send(sock, request, (size_t)length, 0)) < length)
     {
-        aeron_set_err_from_last_err_code("http sent %" PRId64 "/%d bytes", (uint64_t)sent_length, length);
+        AERON_SET_ERR(errno, "http sent %" PRIu64 "/%d bytes", (uint64_t)sent_length, length);
         goto error;
     }
 
     if (set_socket_non_blocking(sock) < 0)
     {
-        aeron_set_err_from_last_err_code("http set_socket_non_blocking");
+        AERON_SET_ERR(errno, "%s", "http set_socket_non_blocking");
         goto error;
     }
 
     if (aeron_alloc((void **)&_response, sizeof(aeron_http_response_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("http alloc response");
+        AERON_APPEND_ERR("Failed to allocate response for url: %s", url);
         goto error;
     }
 
@@ -305,7 +305,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
         if (-1 != timeout_ns && now_ns > (start_ns + timeout_ns))
         {
-            aeron_set_err(ETIMEDOUT, "http recv timeout: %s", strerror(ETIMEDOUT));
+            AERON_SET_ERR(ETIMEDOUT, "http recv timeout: %s", strerror(ETIMEDOUT));
             goto error;
         }
 
@@ -325,7 +325,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
                 continue;
             }
 
-            aeron_set_err_from_last_err_code("http recv");
+            AERON_SET_ERR(errno, "http recv: %s", url);
             goto error;
         }
 

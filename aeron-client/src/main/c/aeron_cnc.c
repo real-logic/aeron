@@ -15,6 +15,7 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 
 #include "aeron_alloc.h"
 #include "concurrent/aeron_thread.h"
@@ -42,7 +43,7 @@ int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeo
 
     if (aeron_alloc((void **)&_aeron_cnc, sizeof(aeron_cnc_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("allocate aeron_cnc_t, %s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("Failed to allocate aeron_cnc, cnc filename: %s", base_path);
         return AERON_CNC_LOAD_FAILED;
     }
 
@@ -61,14 +62,17 @@ int aeron_cnc_init(aeron_cnc_t **aeron_cnc, const char *base_path, int64_t timeo
         }
         else if (AERON_CNC_LOAD_FAILED == result)
         {
-            aeron_set_err_from_last_err_code("Failed to load aeron_cnc_t, %s:%d", __FILE__, __LINE__);
+            AERON_APPEND_ERR("%s", "Failed to load aeron_cnc_t");
             goto error;
         }
         else
         {
             if (deadline_ms <= aeron_epoch_clock())
             {
-                aeron_set_err(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "Timed out waiting for CnC file to become available");
+                AERON_SET_ERR(
+                    AERON_CLIENT_ERROR_DRIVER_TIMEOUT,
+                    "Timed out waiting for CnC file to become available after %" PRId64 "ms",
+                    timeout_ms);
                 goto error;
             }
 
@@ -100,7 +104,11 @@ int aeron_cnc_constants(aeron_cnc_t *aeron_cnc, aeron_cnc_constants_t *constants
 {
     if (NULL == aeron_cnc || NULL == constants)
     {
-        aeron_set_err(EINVAL, "Both aeron_cnc and constants must not be null");
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, aeron_cnc: %s, constants: %s",
+            AERON_NULL_STR(aeron_cnc),
+            AERON_NULL_STR(constants));
         return -1;
     }
 
@@ -158,13 +166,14 @@ int aeron_cnc_loss_reporter_read(
     if (aeron_loss_reporter_resolve_filename(
         aeron_cnc->base_path, loss_report_filename, sizeof(loss_report_filename)) < 0)
     {
-        aeron_set_err_from_last_err_code("Failed to resolve loss report file name");
+        AERON_APPEND_ERR("%s", "Failed to resolve loss report file name");
+        return -1;
     }
 
     aeron_mapped_file_t loss_mmap;
     if (aeron_map_existing_file(&loss_mmap, loss_report_filename) < 0) 
     {
-        aeron_set_err_from_last_err_code("Failed to map loss report");
+        AERON_APPEND_ERR("%s", "Failed to map loss report");
         return -1;
     }
 
@@ -177,6 +186,9 @@ int aeron_cnc_loss_reporter_read(
 
 void aeron_cnc_close(aeron_cnc_t *aeron_cnc)
 {
-    aeron_unmap(&aeron_cnc->cnc_mmap);
-    aeron_free(aeron_cnc);
+    if (NULL != aeron_cnc)
+    {
+        aeron_unmap(&aeron_cnc->cnc_mmap);
+        aeron_free(aeron_cnc);
+    }
 }

@@ -15,6 +15,7 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 #include "aeron_mpsc_rb.h"
 #include "util/aeron_error.h"
 
@@ -33,7 +34,7 @@ int aeron_mpsc_rb_init(aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length
     }
     else
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        AERON_SET_ERR(EINVAL, "Invalid capacity: %" PRIu64, (uint64_t)capacity);
     }
 
     return result;

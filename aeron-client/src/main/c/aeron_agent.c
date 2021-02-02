@@ -47,7 +47,7 @@ int aeron_idle_strategy_sleeping_init_args(void **state, const char *env_var, co
 {
     if (aeron_alloc(state, sizeof(uint64_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Failed to allocate sleeping state");
         return -1;
     }
 
@@ -166,7 +166,7 @@ int aeron_idle_strategy_backoff_state_init(
 {
     if (aeron_alloc(state, sizeof(aeron_idle_strategy_backoff_state_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Failed to allocate backoff state");
         return -1;
     }
 
@@ -207,7 +207,7 @@ static int aeron_idle_strategy_backoff_state_init_args(void **state, const char 
 
     if (4 != matches)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, "init args malformed");
+        AERON_SET_ERR(EINVAL, "init args malformed, 4 values required, found: %d for args: %s", matches, init_args);
         return -1;
     }
 
@@ -216,9 +216,7 @@ static int aeron_idle_strategy_backoff_state_init_args(void **state, const char 
     uint64_t max_spins = strtoull(spins_str, &end_ptr, 10);
     if ((0 == max_spins && 0 != errno) || end_ptr == spins_str)
     {
-        int err_code = errno;
-
-        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, "max spins not parseable");
+        AERON_SET_ERR(errno, "max spins not parseable: %s", spins_str);
         return -1;
     }
 
@@ -227,23 +225,21 @@ static int aeron_idle_strategy_backoff_state_init_args(void **state, const char 
     uint64_t max_yields = strtoull(yields_str, &end_ptr, 10);
     if ((0 == max_yields && 0 != errno) || end_ptr == yields_str)
     {
-        int err_code = errno;
-
-        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, "max yields not parseable");
+        AERON_SET_ERR(errno, "max yields not parseable: %s", max_yields);
         return -1;
     }
 
     uint64_t min_park_ns;
     if (aeron_parse_duration_ns(min_park_str, &min_park_ns) < 0)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, "min park period ns not parseable");
+        AERON_SET_ERR(EINVAL, "min park period ns not parseable: %s", min_park_str);
         return -1;
     }
 
     uint64_t max_park_ns;
     if (aeron_parse_duration_ns(max_park_str, &max_park_ns) < 0)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, "max park period ns not parseable");
+        AERON_SET_ERR(EINVAL, "max park period ns not parseable: %s", max_park_str);
         return -1;
     }
 
@@ -296,7 +292,7 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 
     if (NULL == idle_strategy_name || NULL == idle_strategy_state)
     {
-        aeron_set_err(EINVAL, "%s", "invalid idle strategy name or state");
+        AERON_SET_ERR(EINVAL, "%s", "invalid idle strategy name or state");
         return NULL;
     }
 
@@ -331,7 +327,7 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
         snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s", idle_strategy_name);
         if ((idle_strategy = (aeron_idle_strategy_t *)aeron_dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
         {
-            aeron_set_err(EINVAL, "could not find idle strategy %s: dlsym - %s", idle_func_name, aeron_dlerror());
+            AERON_SET_ERR(EINVAL, "could not find idle strategy %s: dlsym - %s", idle_func_name, aeron_dlerror());
             return NULL;
         }
         idle_func = idle_strategy->idle;
@@ -358,7 +354,7 @@ aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name)
 #endif
     if ((func = (aeron_agent_on_start_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
     {
-        aeron_set_err(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, aeron_dlerror());
+        AERON_SET_ERR(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, aeron_dlerror());
         return NULL;
     }
 #if defined(AERON_COMPILER_GCC)
@@ -381,7 +377,12 @@ int aeron_agent_init(
 {
     if (NULL == runner || NULL == do_work || NULL == idle_strategy_func)
     {
-        aeron_set_err(EINVAL, "%s", "invalid argument");
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, runner: %s, do_work: %s, idle_strategy_func: %s",
+            AERON_NULL_STR(runner),
+            AERON_NULL_STR(do_work),
+            AERON_NULL_STR(idle_strategy_func));
         return -1;
     }
 
@@ -394,7 +395,7 @@ int aeron_agent_init(
     size_t role_name_length = strlen(role_name);
     if (aeron_alloc((void **)&runner->role_name, role_name_length + 1) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("Failed to allocate role_name for runner: %s", role_name);
         return -1;
     }
     memcpy((char *)runner->role_name, role_name, role_name_length);
@@ -430,7 +431,7 @@ int aeron_agent_start(aeron_agent_runner_t *runner)
 {
     if (NULL == runner)
     {
-        aeron_set_err(EINVAL, "%s", "invalid argument");
+        AERON_SET_ERR(EINVAL, "%s", "runner is null");
         return -1;
     }
 
@@ -438,13 +439,13 @@ int aeron_agent_start(aeron_agent_runner_t *runner)
     int pthread_result;
     if ((pthread_result = aeron_thread_attr_init(&attr)) != 0)
     {
-        aeron_set_err(pthread_result, "aeron_thread_attr_init: %s", strerror(pthread_result));
+        AERON_SET_ERR(pthread_result, "%s", "Failed aeron_thread_attr_init");
         return -1;
     }
 
     if ((pthread_result = aeron_thread_create(&runner->thread, &attr, agent_main, runner)) != 0)
     {
-        aeron_set_err(pthread_result, "aeron_thread_create: %s", strerror(pthread_result));
+        AERON_SET_ERR(pthread_result, "%s", "Failed aeron_thread_create");
         return -1;
     }
 
@@ -457,7 +458,7 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
 {
     if (NULL == runner)
     {
-        aeron_set_err(EINVAL, "%s", "invalid argument");
+        AERON_SET_ERR(EINVAL, "%s", "invalid argument");
         return -1;
     }
 
@@ -470,7 +471,7 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
         int pthread_result;
         if ((pthread_result = aeron_thread_join(runner->thread, NULL)))
         {
-            aeron_set_err(pthread_result, "aeron_thread_join: %s", strerror(pthread_result));
+            AERON_SET_ERR(pthread_result, "aeron_thread_join: %s", strerror(pthread_result));
             return -1;
         }
 
@@ -488,7 +489,7 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
 {
     if (NULL == runner)
     {
-        aeron_set_err(EINVAL, "%s", "invalid argument");
+        AERON_SET_ERR(EINVAL, "%s", "runner is null");
         return -1;
     }
 

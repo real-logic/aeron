@@ -184,11 +184,11 @@ int main(int argc, char **argv)
     for (size_t i = 0; i < messages && is_running(); i++)
     {
 #if defined(_MSC_VER)
-        const int message_len = sprintf_s(message, sizeof(message) - 1, "Hello World! %" PRIu32, (uint32_t)i);
+        const int message_len = sprintf_s(message, sizeof(message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
 #else
-        const int message_len = snprintf(message, sizeof(message) - 1, "Hello World! %" PRIu32, (uint32_t)i);
+        const int message_len = snprintf(message, sizeof(message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
 #endif
-        printf("offering %" PRIu32 "/%" PRIu32 " - ", (uint32_t)i, (uint32_t)messages);
+        printf("offering %" PRIu64 "/%" PRIu64 " - ", (uint64_t)i, (uint64_t)messages);
         fflush(stdout);
 
         int64_t result = aeron_publication_offer(

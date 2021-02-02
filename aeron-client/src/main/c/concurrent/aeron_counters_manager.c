@@ -17,6 +17,7 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include "aeron_alloc.h"
 #include "concurrent/aeron_counters_manager.h"
@@ -49,7 +50,11 @@ int aeron_counters_manager_init(
     }
     else
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Counter buffer lengths invalid, metadata_length: %" PRIu64 ", values_length: %" PRIu64,
+            (uint64_t)metadata_length,
+            (uint64_t)values_length);
     }
 
     return result;
@@ -71,7 +76,11 @@ int32_t aeron_counters_manager_allocate(
     const int32_t counter_id = aeron_counters_manager_next_counter_id(manager);
     if (counter_id < 0)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        AERON_APPEND_ERR(
+            "Unable to allocate counter: type: %" PRId32 ", label: %.*s",
+            type_id,
+            (int)label_length,
+            label);
         return -1;
     }
 
@@ -194,6 +203,7 @@ int32_t aeron_counters_manager_next_counter_id(aeron_counters_manager_t *manager
 
     if ((manager->id_high_water_mark + 1) > manager->max_counter_id)
     {
+        AERON_SET_ERR(ENOMEM, "Max counter id (%" PRId32 ") exceeded", manager->max_counter_id);
         return -1;
     }
 

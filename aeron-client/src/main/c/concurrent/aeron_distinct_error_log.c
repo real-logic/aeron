@@ -37,13 +37,18 @@ int aeron_distinct_error_log_init(
 {
     if (NULL == log || NULL == clock || NULL == linger)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters can not be null, log: %s, clock: %s, linger: %s",
+            NULL == log ? "NULL" : "OK",
+            NULL == clock ? "NULL" : "OK",
+            NULL == linger ? "NULL" : "OK");
         return -1;
     }
 
     if (aeron_alloc((void **)&log->observation_list, sizeof(aeron_distinct_error_log_observation_list_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
+        AERON_APPEND_ERR("%s", "Unable to allocate distinct error log");
         return -1;
     }
 
@@ -95,8 +100,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     size_t existing_num_observations,
     int64_t timestamp,
     int error_code,
-    const char *description,
-    const char *message)
+    const char *description)
 {
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
     size_t num_observations = (size_t)list->num_observations;
@@ -106,13 +110,8 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
 
     if (NULL == observation)
     {
-        char encoded_error[AERON_MAX_PATH];
-
-        snprintf(encoded_error, sizeof(encoded_error) - 1, "%d: %s %s", error_code, description, message);
-
         size_t description_length = strlen(description);
-        size_t encoded_error_length = strlen(encoded_error);
-        size_t length = AERON_ERROR_LOG_HEADER_LENGTH + encoded_error_length;
+        size_t length = AERON_ERROR_LOG_HEADER_LENGTH + description_length;
         aeron_distinct_error_log_observation_list_t *new_list = NULL;
         char *new_description = NULL;
         size_t offset = log->next_offset;
@@ -125,7 +124,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
             return NULL;
         }
 
-        memcpy(log->buffer + offset + AERON_ERROR_LOG_HEADER_LENGTH, encoded_error, encoded_error_length);
+        memcpy(log->buffer + offset + AERON_ERROR_LOG_HEADER_LENGTH, description, description_length);
         entry->first_observation_timestamp = timestamp;
         entry->observation_count = 0;
 
@@ -159,12 +158,11 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     return observation;
 }
 
-int aeron_distinct_error_log_record(
-    aeron_distinct_error_log_t *log, int error_code, const char *description, const char *message)
+int aeron_distinct_error_log_record(aeron_distinct_error_log_t *log, int error_code, const char *description)
 {
     if (NULL == log)
     {
-        aeron_set_err(EINVAL, "%s", "invalid argument");
+        AERON_SET_ERR(EINVAL, "%s", "log is null");
         return -1;
     }
 
@@ -179,16 +177,16 @@ int aeron_distinct_error_log_record(
         aeron_mutex_lock(&log->mutex);
 
         observation = aeron_distinct_error_log_new_observation(
-            log, num_observations, timestamp, error_code, description, message);
+            log, num_observations, timestamp, error_code, description);
 
         aeron_mutex_unlock(&log->mutex);
 
         if (NULL == observation)
         {
-            char buffer[AERON_MAX_PATH];
+            char buffer[AERON_ERROR_MAX_TOTAL_LENGTH];
 
             aeron_format_date(buffer, sizeof(buffer), timestamp);
-            fprintf(stderr, "%s - unrecordable error %d: %s %s\n", buffer, error_code, description, message);
+            fprintf(stderr, "%s - unrecordable error %s\n", buffer, description);
             aeron_set_errno(ENOMEM);
             return -1;
         }

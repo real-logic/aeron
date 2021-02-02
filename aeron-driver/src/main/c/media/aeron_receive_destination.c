@@ -31,7 +31,7 @@ int aeron_receive_destination_create(
 
     if (aeron_alloc((void **)&_destination, sizeof(aeron_receive_destination_t)) < 0)
     {
-        aeron_set_err_from_last_err_code("could not allocate receive_channel_endpoint");
+        AERON_APPEND_ERR("%s", "could not allocate receive_channel_endpoint");
         return -1;
     }
 
@@ -52,7 +52,7 @@ int aeron_receive_destination_create(
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {
-        aeron_set_err(aeron_errcode(), "%s: uri=%s", aeron_errmsg(), channel->original_uri);
+        AERON_APPEND_ERR("uri = %s", channel->original_uri);
         aeron_receive_destination_delete(_destination, counters_manager);
         return -1;
     }

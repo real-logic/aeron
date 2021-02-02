@@ -55,7 +55,7 @@ aeron_driver_termination_validator_func_t aeron_driver_termination_validator_loa
 #endif
         if ((func = (aeron_driver_termination_validator_func_t)aeron_dlsym(RTLD_DEFAULT, validator_name)) == NULL)
         {
-            aeron_set_err(
+            AERON_SET_ERR(
                 EINVAL, "could not find termination validator %s: dlsym - %s", validator_name, aeron_dlerror());
             return NULL;
         }

@@ -80,9 +80,10 @@ int aeron_name_resolver_cache_add_or_update(
 
         if (ensure_capacity_result < 0)
         {
-            aeron_set_err_from_last_err_code(
-                "Failed to allocate rows for lookup table (%" PRIu32 ",%" PRIu32 ") - %s:%d",
-                (uint32_t)cache->entries.length, (uint32_t)cache->entries.capacity, __FILE__, __LINE__);
+            AERON_APPEND_ERR(
+                "Failed to allocate rows for lookup table (%" PRIu64 ",%" PRIu64 ")",
+                (uint64_t)cache->entries.length,
+                (uint64_t)cache->entries.capacity);
             return -1;
         }
 
@@ -90,7 +91,7 @@ int aeron_name_resolver_cache_add_or_update(
 
         if (aeron_alloc((void **)&entry->name, name_length + 1) < 0) // NULL terminate, just to be safe.
         {
-            aeron_set_err_from_last_err_code("Failed copy name string for cache - %s:%d", __FILE__, __LINE__);
+            AERON_APPEND_ERR("%s", "Failed allocate name for resolver cache");
             return -1;
         }
 

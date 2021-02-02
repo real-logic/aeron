@@ -21,21 +21,20 @@ import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.*;
+import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.IoUtil;
+import org.agrona.*;
 import org.agrona.collections.LongHashSet;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.NoOpLock;
@@ -82,10 +81,44 @@ public class StartFromTruncatedRecordingLogTest
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
 
-    private final MutableInteger responseCount = new MutableInteger();
-    private final EgressListener egressMessageListener =
-        (clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
     private final AtomicLong terminateCount = new AtomicLong();
+    private final MutableInteger responseCount = new MutableInteger();
+    private final EgressListener egressMessageListener = new EgressListener()
+    {
+        public void onMessage(
+            final long clusterSessionId,
+            final long timestamp,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
+        {
+            responseCount.increment();
+        }
+
+        public void onSessionEvent(
+            final long correlationId,
+            final long clusterSessionId,
+            final long leadershipTermId,
+            final int leaderMemberId,
+            final EventCode code,
+            final String detail)
+        {
+            if (EventCode.ERROR == code)
+            {
+                throw new ClusterException(detail);
+            }
+            else if (EventCode.CLOSED == code)
+            {
+                final String msg = "session closed due to " + detail;
+
+                System.err.println("*** " + msg);
+                System.err.println(SystemUtil.threadDump());
+
+                throw new ClusterException(msg);
+            }
+        }
+    };
 
     @BeforeEach
     public void before()
@@ -356,14 +389,28 @@ public class StartFromTruncatedRecordingLogTest
 
     private void connectClient()
     {
-        CloseHelper.close(client);
+        try
+        {
+            CloseHelper.close(client);
+            client = AeronCluster.connect(
+                new AeronCluster.Context()
+                    .egressListener(egressMessageListener)
+                    .ingressChannel("aeron:udp?term-length=64k")
+                    .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
+                    .ingressEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
+        }
+        catch (final TimeoutException ex)
+        {
+            System.out.println("Warning: " + ex);
 
-        client = AeronCluster.connect(
-            new AeronCluster.Context()
-                .egressListener(egressMessageListener)
-                .ingressChannel("aeron:udp?term-length=64k")
-                .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
-                .ingressEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
+            CloseHelper.close(client);
+            client = AeronCluster.connect(
+                new AeronCluster.Context()
+                    .egressListener(egressMessageListener)
+                    .ingressChannel("aeron:udp?term-length=64k")
+                    .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
+                    .ingressEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
+        }
     }
 
     private void sendMessages(final ExpandableArrayBuffer msgBuffer)

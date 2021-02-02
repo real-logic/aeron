@@ -27,6 +27,7 @@ import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
@@ -67,7 +68,7 @@ public class TestCluster implements AutoCloseable
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
     private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc?term-length=64k";
-    private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:9020";
+    private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
     private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k";
 
     private final DataCollector dataCollector = new DataCollector();
@@ -615,14 +616,7 @@ public class TestCluster implements AutoCloseable
             throw new IllegalStateException("Aeron client not previously connected");
         }
 
-        client.close();
-
-        client = AeronCluster.connect(
-            new AeronCluster.Context()
-                .egressListener(egressMessageListener)
-                .ingressChannel(INGRESS_CHANNEL)
-                .egressChannel(EGRESS_CHANNEL)
-                .ingressEndpoints(staticClusterMemberEndpoints));
+        connectClient();
     }
 
     public AeronCluster connectClient()
@@ -649,12 +643,27 @@ public class TestCluster implements AutoCloseable
                     .aeronDirectoryName(aeronDirName));
         }
 
-        CloseHelper.close(client);
-        client = AeronCluster.connect(
-            clientCtx
-                .aeronDirectoryName(aeronDirName)
-                .egressListener(egressMessageListener)
-                .ingressEndpoints(staticClusterMemberEndpoints));
+        try
+        {
+            CloseHelper.close(client);
+            client = AeronCluster.connect(
+                clientCtx
+                    .aeronDirectoryName(aeronDirName)
+                    .egressListener(egressMessageListener)
+                    .ingressEndpoints(staticClusterMemberEndpoints)
+                    .clone());
+        }
+        catch (final TimeoutException ex)
+        {
+            System.out.println("Warning: " + ex);
+
+            CloseHelper.close(client);
+            client = AeronCluster.connect(
+                clientCtx
+                    .aeronDirectoryName(aeronDirName)
+                    .egressListener(egressMessageListener)
+                    .ingressEndpoints(staticClusterMemberEndpoints));
+        }
 
         return client;
     }

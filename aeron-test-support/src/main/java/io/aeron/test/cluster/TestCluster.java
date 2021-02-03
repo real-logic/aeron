@@ -847,8 +847,19 @@ public class TestCluster implements AutoCloseable
             throw new IllegalStateException("no backup node present");
         }
 
-        while (backupNode.backupState() != targetState)
+        while (true)
         {
+            final ClusterBackup.State state = backupNode.backupState();
+            if (targetState == state)
+            {
+                break;
+            }
+
+            if (ClusterBackup.State.CLOSED == state)
+            {
+                throw new IllegalStateException("backup is closed");
+            }
+
             Tests.sleep(10);
         }
     }
@@ -865,7 +876,7 @@ public class TestCluster implements AutoCloseable
             final long livePosition = backupNode.liveLogPosition();
             if (livePosition >= position)
             {
-                return;
+                break;
             }
 
             if (NULL_POSITION == livePosition)

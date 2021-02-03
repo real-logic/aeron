@@ -660,6 +660,14 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     private void joinActiveLog(final ActiveLogEvent activeLog)
     {
+        if (Role.LEADER != activeLog.role)
+        {
+            for (final ClientSession session : sessionByIdMap.values())
+            {
+                session.disconnect(ctx.countedErrorHandler());
+            }
+        }
+
         Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
         try
         {
@@ -679,9 +687,12 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             CloseHelper.quietClose(logSubscription);
         }
 
-        for (final ClientSession session : sessionByIdMap.values())
+        memberId = activeLog.memberId;
+        ctx.clusterMarkFile().memberId(memberId);
+
+        if (Role.LEADER == activeLog.role)
         {
-            if (Role.LEADER == activeLog.role)
+            for (final ClientSession session : sessionByIdMap.values())
             {
                 if (ctx.isRespondingService() && !activeLog.isStartup)
                 {
@@ -690,14 +701,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
                 session.resetClosing();
             }
-            else
-            {
-                session.disconnect(ctx.countedErrorHandler());
-            }
         }
 
-        memberId = activeLog.memberId;
-        ctx.clusterMarkFile().memberId(memberId);
         role(activeLog.role);
     }
 

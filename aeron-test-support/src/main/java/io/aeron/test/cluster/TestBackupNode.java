@@ -69,13 +69,7 @@ public class TestBackupNode implements AutoCloseable
 
     ClusterBackup.State backupState()
     {
-        final Counter counter = clusterBackupMediaDriver.clusterBackup().context().stateCounter();
-        if (counter.isClosed())
-        {
-            return null;
-        }
-
-        return ClusterBackup.State.get(counter.get());
+        return ClusterBackup.State.get(clusterBackupMediaDriver.clusterBackup().context().stateCounter());
     }
 
     long liveLogPosition()

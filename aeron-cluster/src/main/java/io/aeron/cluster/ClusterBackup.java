@@ -80,7 +80,8 @@ public final class ClusterBackup implements AutoCloseable
         LIVE_LOG_REPLAY(4),
         UPDATE_RECORDING_LOG(5),
         RESET_BACKUP(6),
-        BACKING_UP(7);
+        BACKING_UP(7),
+        CLOSED(8);
 
         static final State[] STATES = values();
 
@@ -107,10 +108,27 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
+         * Get the {@link State} encoded in an {@link AtomicCounter}.
+         *
+         * @param counter to get the current state for.
+         * @return the state for the {@link ClusterBackup}.
+         * @throws ClusterException if the counter is not one of the valid values.
+         */
+        public static State get(final AtomicCounter counter)
+        {
+            if (counter.isClosed())
+            {
+                return CLOSED;
+            }
+
+            return get(counter.get());
+        }
+
+        /**
          * Get the {@link State} with matching {@link #code()}.
          *
          * @param code to lookup.
-         * @return the {@link State} with matching {@link #code()}.
+         * @return the {@link State} matching {@link #code()}.
          */
         public static State get(final long code)
         {

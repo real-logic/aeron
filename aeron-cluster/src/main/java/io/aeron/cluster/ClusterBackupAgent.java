@@ -137,13 +137,13 @@ public class ClusterBackupAgent implements Agent
     {
         recordingLog = new RecordingLog(ctx.clusterDir());
         backupArchive = AeronArchive.connect(ctx.archiveContext().clone());
-        stateCounter.setOrdered(INIT.code());
         nextQueryDeadlineMsCounter.setOrdered(epochClock.time() - 1);
     }
 
     public void onClose()
     {
         aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
+        state(CLOSED, epochClock.time());
 
         if (!ctx.ownsAeronClient())
         {
@@ -842,7 +842,10 @@ public class ClusterBackupAgent implements Agent
             eventsListener.onBackupQuery();
         }
 
-        stateCounter.setOrdered(newState.code());
+        if (!stateCounter.isClosed())
+        {
+            stateCounter.setOrdered(newState.code());
+        }
         state = newState;
     }
 

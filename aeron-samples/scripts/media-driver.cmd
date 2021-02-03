@@ -15,8 +15,6 @@
 ::
 
 @echo off
-set /p VERSION=<..\..\version.txt
+set "DIR=%~dp0"
 
-"%JAVA_HOME%\bin\java" ^
-    -cp ..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
-    %JVM_OPTS% io.aeron.driver.MediaDriver %*
+call "%DIR%\run-java" io.aeron.driver.MediaDriver %*

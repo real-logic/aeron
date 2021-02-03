@@ -15,16 +15,8 @@
 ::
 
 @echo off
-set /p VERSION=<..\..\..\version.txt
+set "DIR=%~dp0"
 
-"%JAVA_HOME%\bin\java" ^
-    -cp ..\..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
-    -XX:+UseBiasedLocking ^
-    -XX:BiasedLockingStartupDelay=0 ^
-    -XX:+UnlockExperimentalVMOptions ^
-    -XX:+TrustFinalNonStaticFields ^
-    -XX:+UnlockDiagnosticVMOptions ^
-    -XX:GuaranteedSafepointInterval=300000 ^
-    -XX:+UseParallelGC ^
+call "%DIR%\..\run-java" ^
     -Djava.net.preferIPv4Stack=true ^
     %JVM_OPTS% io.aeron.samples.raw.ReceiveSendUdpPong %*

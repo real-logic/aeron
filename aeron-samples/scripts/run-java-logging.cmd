@@ -13,11 +13,17 @@
 :: See the License for the specific language governing permissions and
 :: limitations under the License.
 ::
-
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
+
 set "DIR=%~dp0"
 
-call "%DIR%\run-java" ^
-    -Dagrona.disable.bounds.checks=true ^
-    -Daeron.sample.messageLength=32 ^
-    %JVM_OPTS% io.aeron.samples.EmbeddedBufferClaimIpcThroughput %*
+call "%DIR%\java-common"
+
+"%JAVA_HOME%\bin\java" ^
+  -cp "%DIR%\..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar" ^
+  -javaagent:"%DIR%\..\..\aeron-agent\build\libs\aeron-agent-${VERSION}.jar" ^
+  !JAVA_OPTIONS! ^
+  !ADD_OPENS! ^
+  %JVM_OPTS% ^
+  %*

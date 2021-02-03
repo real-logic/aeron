@@ -15,16 +15,8 @@
 ## limitations under the License.
 ##
 
-VERSION=$(cat ../../../version.txt)
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-${JAVA_HOME}/bin/java \
-    -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
-    -XX:+UseBiasedLocking \
-    -XX:BiasedLockingStartupDelay=0 \
-    -XX:+UnlockExperimentalVMOptions \
-    -XX:+TrustFinalNonStaticFields \
-    -XX:+UnlockDiagnosticVMOptions \
-    -XX:GuaranteedSafepointInterval=300000 \
-    -XX:+UseParallelGC \
+exec "${DIR}/../run-java" \
     -Djava.net.preferIPv4Stack=true \
     ${JVM_OPTS} io.aeron.samples.raw.SendReceiveUdpPing "$@"

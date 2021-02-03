@@ -15,8 +15,6 @@
 ## limitations under the License.
 ##
 
-VERSION=$(cat ../../version.txt)
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-${JAVA_HOME}/bin/java \
-    -cp ../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
-    ${JVM_OPTS} io.aeron.samples.StreamStat "$@"
+exec "${DIR}/run-java" io.aeron.samples.StreamStat "$@"

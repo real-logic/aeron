@@ -15,8 +15,6 @@
 ::
 
 @echo off
-set /p VERSION=<..\..\version.txt
+set "DIR=%~dp0"
 
-"%JAVA_HOME%\bin\java" ^
-    -cp ..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
-    %JVM_OPTS% io.aeron.samples.LossStat
+call "%DIR%\run-java" io.aeron.samples.LossStat

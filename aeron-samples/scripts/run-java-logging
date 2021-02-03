@@ -17,14 +17,12 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-exec "${DIR}/run-java" \
-    -Djava.net.preferIPv4Stack=true \
-    -Dagrona.disable.bounds.checks=true \
-    -Daeron.sample.messageLength=32 \
-    -Daeron.sample.messages=500000000 \
-    -Daeron.term.buffer.sparse.file=false \
-    -Daeron.mtu.length=8k \
-    -Daeron.socket.so_sndbuf=2m \
-    -Daeron.socket.so_rcvbuf=2m \
-    -Daeron.rcv.initial.window.length=2m \
-    ${JVM_OPTS} io.aeron.samples.EmbeddedExclusiveSpiedThroughput "$@"
+source "$DIR/java-common"
+
+exec "${JAVA_HOME}/bin/java" \
+  -cp "$DIR/../../aeron-all/build/libs/aeron-all-${VERSION}.jar" \
+  -javaagent:"$DIR/../../aeron-agent/build/libs/aeron-agent-${VERSION}.jar" \
+  $JAVA_OPTIONS \
+  $ADD_OPENS \
+  $JVM_OPTS \
+  "$@"

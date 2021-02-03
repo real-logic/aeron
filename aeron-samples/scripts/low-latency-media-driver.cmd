@@ -15,16 +15,7 @@
 ::
 
 @echo off
-set /p VERSION=<..\..\version.txt
+set "DIR=%~dp0"
 
-"%JAVA_HOME%\bin\java" ^
-    -cp ..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
-    -XX:+UseBiasedLocking ^
-    -XX:BiasedLockingStartupDelay=0 ^
-    -XX:+UnlockExperimentalVMOptions ^
-    -XX:+TrustFinalNonStaticFields ^
-    -XX:+UnlockDiagnosticVMOptions ^
-    -XX:GuaranteedSafepointInterval=300000 ^
-    -XX:+UseParallelGC ^
-    %JVM_OPTS% io.aeron.driver.MediaDriver ^
+call "%DIR%\run-java" io.aeron.driver.MediaDriver ^
     low-latency.properties %*

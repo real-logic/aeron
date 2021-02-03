@@ -15,15 +15,9 @@
 ::
 
 @echo off
-set /p VERSION=<..\..\version.txt
+set "DIR=%~dp0"
 
-"%JAVA_HOME%\bin\java" ^
-    -cp ..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
-    -XX:+UnlockExperimentalVMOptions ^
-    -XX:+TrustFinalNonStaticFields ^
-    -XX:+UnlockDiagnosticVMOptions ^
-    -XX:GuaranteedSafepointInterval=300000 ^
-    -XX:+UseParallelGC ^
+call "%DIR%\run-java" ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.pre.touch.mapped.memory=true ^
     -Daeron.sample.messages=1000000 ^

@@ -15,16 +15,6 @@
 ## limitations under the License.
 ##
 
-VERSION=$(cat ../../version.txt)
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-${JAVA_HOME}/bin/java \
-    -cp ../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
-    -XX:+UnlockExperimentalVMOptions \
-    -XX:+TrustFinalNonStaticFields \
-    -XX:+UseBiasedLocking \
-    -XX:BiasedLockingStartupDelay=0 \
-    -XX:+UseParallelGC \
-    -Dagrona.disable.bounds.checks=true \
-    -Daeron.sample.messageLength=32 \
-    -Daeron.sample.messages=500000000 \
-    ${JVM_OPTS} io.aeron.samples.StreamingPublisher
+exec "${DIR}/run-java" io.aeron.samples.StreamingPublisher

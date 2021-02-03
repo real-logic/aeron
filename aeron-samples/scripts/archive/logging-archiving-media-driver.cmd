@@ -15,13 +15,9 @@
 ::
 
 @echo off
-set /p VERSION=<..\..\..\version.txt
+set "DIR=%~dp0"
 
-"%JAVA_HOME%\bin\java" ^
-    -cp ..\..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
-    -javaagent:..\..\..\aeron-agent\build\libs\aeron-agent-%VERSION%.jar ^
-    -XX:+UseBiasedLocking ^
-    -XX:BiasedLockingStartupDelay=0 ^
+call "%DIR%\..\run-java-logging" ^
     -Daeron.event.log=admin ^
     -Daeron.event.archive.log=all ^
     %JVM_OPTS% io.aeron.archive.ArchivingMediaDriver %*

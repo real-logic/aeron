@@ -15,23 +15,14 @@
 ## limitations under the License.
 ##
 
-source ./script-common
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 # tag::start_jvm[]
 function startNode() {
-    ${JAVA_HOME}/bin/java \
-        -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
-        -XX:+UseBiasedLocking \
-        -XX:BiasedLockingStartupDelay=0 \
-        -XX:+UnlockExperimentalVMOptions \
-        -XX:+TrustFinalNonStaticFields \
-        -XX:+UnlockDiagnosticVMOptions \
-        -XX:GuaranteedSafepointInterval=300000 \
-        -XX:+UseParallelGC \
+     "${DIR}/../run-java" \
         -Daeron.cluster.tutorial.customerId="$1" \
         -Daeron.cluster.tutorial.numOfBids="$2" \
         -Daeron.cluster.tutorial.bidIntervalMs="$3" \
-        ${JVM_OPTS} ${ADD_OPENS} \
         io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient
 }
 

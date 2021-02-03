@@ -960,7 +960,7 @@ public final class AeronCluster implements AutoCloseable
         private Aeron aeron;
         private CredentialsSupplier credentialsSupplier;
         private boolean ownsAeronClient = false;
-        private boolean isIngressExclusive = false;
+        private boolean isIngressExclusive = true;
         private ErrorHandler errorHandler = Aeron.Configuration.DEFAULT_ERROR_HANDLER;
         private boolean isDirectAssemblers = false;
         private EgressListener egressListener;
@@ -1090,7 +1090,7 @@ public final class AeronCluster implements AutoCloseable
          * Set the channel parameter for the ingress channel.
          * <p>
          * The endpoints representing members for use with unicast are substituted from {@link #ingressEndpoints()}
-         * for endpoints.  If this channel contains a multicast endpoint, then {@link #ingressEndpoints()} should
+         * for endpoints. If this channel contains a multicast endpoint, then {@link #ingressEndpoints()} should
          * be set to null.
          *
          * @param channel parameter for the ingress channel.
@@ -1285,9 +1285,9 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Is ingress to the cluster exclusively from a single thread to this client? Only set this if you are sure
-         * the client will not be used from another thread, e.g. a separate thread calling
-         * {@link AeronCluster#sendKeepAlive()} - which is a really bad design by the way!
+         * Is ingress to the cluster exclusively from a single thread to this client? The client should not be used
+         * from another thread, e.g. a separate thread calling {@link AeronCluster#sendKeepAlive()} - which is a really
+         * bad design by the way!
          *
          * @param isIngressExclusive true if ingress to the cluster is exclusively from a single thread for this client?
          * @return this for a fluent API.
@@ -1299,9 +1299,9 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Is ingress to the cluster exclusively from a single thread to this client?
+         * Is ingress the {@link Publication} to the cluster used exclusively from a single thread to this client?
          *
-         * @return true if ingress to the cluster exclusively from a single thread to this client?
+         * @return true if the ingress {@link Publication} is to be used exclusively from a single thread?
          */
         public boolean isIngressExclusive()
         {

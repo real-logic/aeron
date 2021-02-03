@@ -643,26 +643,23 @@ public class TestCluster implements AutoCloseable
                     .aeronDirectoryName(aeronDirName));
         }
 
+        clientCtx
+            .aeronDirectoryName(aeronDirName)
+            .isIngressExclusive(true)
+            .egressListener(egressMessageListener)
+            .ingressEndpoints(staticClusterMemberEndpoints);
+
         try
         {
             CloseHelper.close(client);
-            client = AeronCluster.connect(
-                clientCtx
-                    .aeronDirectoryName(aeronDirName)
-                    .egressListener(egressMessageListener)
-                    .ingressEndpoints(staticClusterMemberEndpoints)
-                    .clone());
+            client = AeronCluster.connect(clientCtx.clone());
         }
         catch (final TimeoutException ex)
         {
             System.out.println("Warning: " + ex);
 
             CloseHelper.close(client);
-            client = AeronCluster.connect(
-                clientCtx
-                    .aeronDirectoryName(aeronDirName)
-                    .egressListener(egressMessageListener)
-                    .ingressEndpoints(staticClusterMemberEndpoints));
+            client = AeronCluster.connect(clientCtx);
         }
 
         return client;

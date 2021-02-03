@@ -714,7 +714,7 @@ public class ClusterTool
         final File cncFile = new File(clusterNodeControlProperties.aeronDirectoryName, CncFileDescriptor.CNC_FILE);
         if (!cncFile.exists())
         {
-            out.println(prefix + "Unable to locate media driver.  C`n`C file [" + cncFile.getAbsolutePath() +
+            out.println(prefix + "Unable to locate media driver. C`n`C file [" + cncFile.getAbsolutePath() +
                 "] does not exist.");
             return false;
         }

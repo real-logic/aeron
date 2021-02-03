@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This is a Basic Aeron subscriber application.
  * <p>
- * The application subscribes to a default channel and stream ID.  These defaults can
+ * The application subscribes to a default channel and stream ID. These defaults can
  * be overwritten by changing their value in {@link SampleConfiguration} or by
  * setting their corresponding Java system properties at the command line, e.g.:
  * -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20

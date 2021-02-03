@@ -307,7 +307,7 @@ static void aeron_data_packet_dispatcher_mark_as_no_interest_to_prevent_repeated
     aeron_int64_to_tagged_ptr_hash_map_t *image_by_session_id_map, int32_t session_id)
 {
     // This is here as an optimisation so that streams that we don't care about don't trigger the slow
-    // path and require checking for interest.  As it is an optimisation, we are ignoring the possible
+    // path and require checking for interest. As it is an optimisation, we are ignoring the possible
     // put failure from the hash map (occurs if a rehash fails to allocation memory).
     aeron_int64_to_tagged_ptr_hash_map_put(
         image_by_session_id_map, session_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_NO_INTEREST, NULL);

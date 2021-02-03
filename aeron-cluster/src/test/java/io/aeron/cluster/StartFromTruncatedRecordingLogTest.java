@@ -389,27 +389,23 @@ public class StartFromTruncatedRecordingLogTest
 
     private void connectClient()
     {
+        final AeronCluster.Context ctx = new AeronCluster.Context()
+            .egressListener(egressMessageListener)
+            .ingressChannel("aeron:udp?term-length=64k")
+            .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
+            .ingressEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112");
+
         try
         {
             CloseHelper.close(client);
-            client = AeronCluster.connect(
-                new AeronCluster.Context()
-                    .egressListener(egressMessageListener)
-                    .ingressChannel("aeron:udp?term-length=64k")
-                    .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
-                    .ingressEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
+            client = AeronCluster.connect(ctx.clone());
         }
         catch (final TimeoutException ex)
         {
             System.out.println("Warning: " + ex);
 
             CloseHelper.close(client);
-            client = AeronCluster.connect(
-                new AeronCluster.Context()
-                    .egressListener(egressMessageListener)
-                    .ingressChannel("aeron:udp?term-length=64k")
-                    .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:0")
-                    .ingressEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
+            client = AeronCluster.connect(ctx);
         }
     }
 

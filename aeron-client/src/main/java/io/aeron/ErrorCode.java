@@ -23,7 +23,7 @@ import io.aeron.exceptions.AeronException;
 public enum ErrorCode
 {
     /**
-     * Old generic value, no longer used (0 value clashes with success).  Retained for version compatibility.
+     * Old generic value, no longer used (0 value clashes with success). Retained for version compatibility.
      */
     UNUSED(0),
 

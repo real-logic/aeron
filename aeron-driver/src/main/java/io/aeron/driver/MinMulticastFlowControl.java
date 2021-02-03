@@ -20,7 +20,7 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import java.net.InetSocketAddress;
 
 /**
- * Minimum multicast sender flow control strategy.  Uses the {@link AbstractMinMulticastFlowControl}, but specifies that
+ * Minimum multicast sender flow control strategy. Uses the {@link AbstractMinMulticastFlowControl}, but specifies that
  * the group membership for a given receiver is always <code>true</code>, so it tracks the minimum for all receivers.
  */
 public class MinMulticastFlowControl extends AbstractMinMulticastFlowControl

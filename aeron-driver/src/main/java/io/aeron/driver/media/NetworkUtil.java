@@ -36,7 +36,7 @@ public class NetworkUtil
     /**
      * Search for a list of network interfaces that match the specified address and subnet prefix.
      * The results will be ordered by the length of the subnet prefix
-     * ({@link InterfaceAddress#getNetworkPrefixLength()}).  If no results match, then the collection
+     * ({@link InterfaceAddress#getNetworkPrefixLength()}). If no results match, then the collection
      * will be empty.
      *
      * @param address      to search for on the {@link NetworkInterface}s.

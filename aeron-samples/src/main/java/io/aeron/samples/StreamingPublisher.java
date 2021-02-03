@@ -109,7 +109,7 @@ public class StreamingPublisher
                     while (publication.offer(OFFER_BUFFER, 0, length, null) < 0L)
                     {
                         // The offer failed, which is usually due to the publication
-                        // being temporarily blocked.  Retry the offer after a short
+                        // being temporarily blocked. Retry the offer after a short
                         // spin/yield/sleep, depending on the chosen IdleStrategy.
                         backPressureCount++;
                         idleStrategy.idle();

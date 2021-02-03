@@ -238,7 +238,7 @@ public final class Archive implements AutoCloseable
          *
          * @see #LOW_STORAGE_SPACE_THRESHOLD_PROP_NAME
          */
-        public static final int LOW_STORAGE_SPACE_THRESHOLD_DEFAULT = TERM_MIN_LENGTH;
+        public static final int LOW_STORAGE_SPACE_THRESHOLD_DEFAULT = SEGMENT_FILE_LENGTH_DEFAULT;
 
         /**
          * The level at which recording files should be sync'ed to disk.

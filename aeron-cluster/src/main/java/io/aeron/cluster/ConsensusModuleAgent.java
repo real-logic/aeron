@@ -890,8 +890,8 @@ final class ConsensusModuleAgent implements Agent
     {
         long appendPosition = 0;
 
-        ClusterControl.ToggleState.deactivate(controlToggle);
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
+        ClusterControl.ToggleState.deactivate(controlToggle);
 
         if (RecordingPos.NULL_RECORDING_ID != logRecordingId)
         {
@@ -1516,26 +1516,14 @@ final class ConsensusModuleAgent implements Agent
             timeOfLastAppendPositionNs = nowNs;
         }
 
-        if (!ctx.ingressChannel().contains(ENDPOINT_PARAM_NAME))
-        {
-            final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
-
-            ingressAdapter.connect(aeron.addSubscription(
-                ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
-        }
-        else if (Cluster.Role.LEADER == role)
-        {
-            ingressAdapter.connect(aeron.addSubscription(
-                ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
-        }
-
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
         notifiedCommitPosition = termBaseLogPosition;
         commitPosition.setOrdered(termBaseLogPosition);
         pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
         updateMemberDetails(election.leader());
         election = null;
+
+        connectIngress();
 
         return true;
     }
@@ -2965,6 +2953,23 @@ final class ConsensusModuleAgent implements Agent
             }
 
             dynamicJoinSnapshots.clear();
+        }
+    }
+
+    private void connectIngress()
+    {
+        if (!ctx.ingressChannel().contains(ENDPOINT_PARAM_NAME))
+        {
+            final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
+            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
+
+            ingressAdapter.connect(aeron.addSubscription(
+                ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
+        }
+        else if (Cluster.Role.LEADER == role)
+        {
+            ingressAdapter.connect(aeron.addSubscription(
+                ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
     }
 }

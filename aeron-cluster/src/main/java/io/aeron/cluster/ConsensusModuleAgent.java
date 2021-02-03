@@ -1340,6 +1340,9 @@ final class ConsensusModuleAgent implements Agent
         final String channel = (isIpc ? "aeron:ipc" : "aeron:udp") +
             "?tags=" + logPublicationChannelTag + "|session-id=" + logSessionId + "|alias=log";
 
+        startLogRecording(channel, ctx.logStreamId(), SourceLocation.LOCAL);
+        createAppendPosition(logSessionId);
+
         awaitServicesReady(
             isIpc ? channel : SPY_PREFIX + channel,
             ctx.logStreamId(),
@@ -1349,9 +1352,6 @@ final class ConsensusModuleAgent implements Agent
             Long.MAX_VALUE,
             isStartup,
             Cluster.Role.LEADER);
-
-        startLogRecording(channel, ctx.logStreamId(), SourceLocation.LOCAL);
-        createAppendPosition(logSessionId);
 
         leadershipTermId(leadershipTermId);
     }
@@ -1377,6 +1377,12 @@ final class ConsensusModuleAgent implements Agent
         final int streamId = logSubscription.streamId();
         final String channel = logSubscription.channel();
 
+        startLogRecording(channel, streamId, SourceLocation.REMOTE);
+        createAppendPosition(image.sessionId());
+
+        logAdapter.image(image);
+        lastAppendPosition = 0;
+
         awaitServicesReady(
             channel,
             streamId,
@@ -1386,12 +1392,6 @@ final class ConsensusModuleAgent implements Agent
             Long.MAX_VALUE,
             isLeaderStartup,
             Cluster.Role.FOLLOWER);
-
-        startLogRecording(channel, streamId, SourceLocation.REMOTE);
-        createAppendPosition(image.sessionId());
-
-        logAdapter.image(image);
-        lastAppendPosition = 0;
 
         appendDynamicJoinTermAndSnapshots();
     }

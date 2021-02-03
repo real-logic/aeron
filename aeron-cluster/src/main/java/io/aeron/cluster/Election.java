@@ -712,9 +712,9 @@ class Election
         {
             logPosition = catchupPosition;
             appendPosition = catchupPosition;
-            updateRecordingLog(nowNs);
             consensusModuleAgent.leadershipTermId(leadershipTermId);
             timeOfLastUpdateNs = 0;
+            updateRecordingLog(nowNs);
             state(FOLLOWER_LOG_INIT, nowNs);
             workCount += 1;
         }

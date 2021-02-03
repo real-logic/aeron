@@ -26,13 +26,14 @@ import static io.aeron.agent.EventConfiguration.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class EventConfigurationTest
 {
     @Test
     public void nullValueMeansNoEventsEnabled()
     {
-        assertEquals(getEnabledDriverEventCodes(null), EnumSet.noneOf(DriverEventCode.class));
+        assertEquals(getDriverEventCodes(null), EnumSet.noneOf(DriverEventCode.class));
     }
 
     @Test
@@ -43,7 +44,7 @@ public class EventConfigurationTest
         System.setErr(new PrintStream(stderr));
         try
         {
-            final Set<DriverEventCode> enabledEventCodes = getEnabledDriverEventCodes("list of invalid options");
+            final Set<DriverEventCode> enabledEventCodes = getDriverEventCodes("list of invalid options");
             assertEquals(EnumSet.noneOf(DriverEventCode.class), enabledEventCodes);
             assertThat(stderr.toString(), startsWith("unknown event code: list of invalid options"));
         }
@@ -56,7 +57,7 @@ public class EventConfigurationTest
     @Test
     public void allDriverEventsShouldBeEnabled()
     {
-        assertEquals(EnumSet.allOf(DriverEventCode.class), getEnabledDriverEventCodes("all"));
+        assertEquals(EnumSet.allOf(DriverEventCode.class), getDriverEventCodes("all"));
     }
 
     @Test
@@ -68,13 +69,13 @@ public class EventConfigurationTest
             DriverEventCode.CMD_IN_CLIENT_CLOSE,
             DriverEventCode.UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
         assertEquals(expectedCodes,
-            getEnabledDriverEventCodes("FRAME_OUT,FRAME_IN,CMD_IN_CLIENT_CLOSE,UNTETHERED_SUBSCRIPTION_STATE_CHANGE,"));
+            getDriverEventCodes("FRAME_OUT,FRAME_IN,CMD_IN_CLIENT_CLOSE,UNTETHERED_SUBSCRIPTION_STATE_CHANGE,"));
     }
 
     @Test
     public void allClusterEventsShouldBeEnabled()
     {
-        assertEquals(EnumSet.allOf(ClusterEventCode.class), getEnabledClusterEventCodes("all"));
+        assertEquals(EnumSet.allOf(ClusterEventCode.class), getClusterEventCodes("all"));
     }
 
     @Test
@@ -84,19 +85,56 @@ public class EventConfigurationTest
             ClusterEventCode.STATE_CHANGE,
             ClusterEventCode.NEW_LEADERSHIP_TERM,
             ClusterEventCode.ROLE_CHANGE),
-            getEnabledClusterEventCodes("STATE_CHANGE,NEW_LEADERSHIP_TERM,ROLE_CHANGE,"));
+            getClusterEventCodes("STATE_CHANGE,NEW_LEADERSHIP_TERM,ROLE_CHANGE,"));
     }
 
     @Test
     public void allArchiveEventsShouldBeEnabled()
     {
-        assertEquals(EnumSet.allOf(ArchiveEventCode.class), getEnabledArchiveEventCodes("all"));
+        assertEquals(EnumSet.allOf(ArchiveEventCode.class), getArchiveEventCodes("all"));
     }
 
     @Test
     public void archiveEventsShouldBeParsedAsListOfEventCodes()
     {
         assertEquals(EnumSet.of(ArchiveEventCode.CATALOG_RESIZE, ArchiveEventCode.CMD_IN_TAGGED_REPLICATE),
-            getEnabledArchiveEventCodes("CATALOG_RESIZE,CMD_IN_TAGGED_REPLICATE,"));
+            getArchiveEventCodes("CATALOG_RESIZE,CMD_IN_TAGGED_REPLICATE,"));
+    }
+
+    @Test
+    void shouldDisableSpecificDriverEvents()
+    {
+        System.setProperty(ENABLED_EVENT_CODES_PROP_NAME, "all");
+        System.setProperty(DISABLED_EVENT_CODES_PROP_NAME, "FRAME_IN,FRAME_OUT");
+        EventConfiguration.init();
+        assertEquals(DriverEventCode.values().length - 2, DRIVER_EVENT_CODES.size());
+        assertFalse(DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_IN));
+        assertFalse(DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_OUT));
+    }
+
+    @Test
+    void shouldDisableSpecificArchiverEvents()
+    {
+        System.setProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, "all");
+        System.setProperty(
+            DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME,
+            ArchiveEventCode.CMD_IN_ATTACH_SEGMENTS.name() + "," + ArchiveEventCode.CMD_IN_CONNECT);
+        EventConfiguration.init();
+        assertEquals(ArchiveEventCode.values().length - 2, ARCHIVE_EVENT_CODES.size());
+        assertFalse(ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CMD_IN_ATTACH_SEGMENTS));
+        assertFalse(ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CMD_IN_CONNECT));
+    }
+
+    @Test
+    void shouldDisableSpecificClusterEvents()
+    {
+        System.setProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, "all");
+        System.setProperty(
+            DISABLED_CLUSTER_EVENT_CODES_PROP_NAME,
+            ClusterEventCode.ROLE_CHANGE.name() + "," + ClusterEventCode.ELECTION_STATE_CHANGE);
+        EventConfiguration.init();
+        assertEquals(ClusterEventCode.values().length - 2, CLUSTER_EVENT_CODES.size());
+        assertFalse(CLUSTER_EVENT_CODES.contains(ClusterEventCode.ROLE_CHANGE));
+        assertFalse(CLUSTER_EVENT_CODES.contains(ClusterEventCode.ELECTION_STATE_CHANGE));
     }
 }

@@ -1354,7 +1354,6 @@ final class ConsensusModuleAgent implements Agent
         createAppendPosition(logSessionId);
 
         leadershipTermId(leadershipTermId);
-        prepareSessionsForNewTerm(isStartup);
     }
 
     void liveLogDestination(final String liveLogDestination)
@@ -1509,6 +1508,7 @@ final class ConsensusModuleAgent implements Agent
             timeOfLastLogUpdateNs = nowNs - leaderHeartbeatIntervalNs;
             timerService.currentTickTime(now);
             ClusterControl.ToggleState.activate(controlToggle);
+            prepareSessionsForNewTerm(election.isLeaderStartup());
         }
         else
         {

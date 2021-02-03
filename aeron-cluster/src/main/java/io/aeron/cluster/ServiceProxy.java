@@ -61,11 +61,12 @@ final class ServiceProxy implements AutoCloseable
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogEncoder.BLOCK_LENGTH +
             JoinLogEncoder.logChannelHeaderLength() + channel.length();
+        long result;
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
                 joinLogEncoder
@@ -93,7 +94,7 @@ final class ServiceProxy implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new ClusterException("failed to send join log request");
+        throw new ClusterException("failed to send join log request: result=" + result);
     }
 
     void clusterMembersResponse(

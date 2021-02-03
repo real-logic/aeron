@@ -1734,6 +1734,7 @@ final class ConsensusModuleAgent implements Agent
         {
             if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
             {
+                ctx.countedErrorHandler().onError(ex);
                 unexpectedTermination();
             }
 

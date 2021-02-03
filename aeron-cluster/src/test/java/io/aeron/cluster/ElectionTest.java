@@ -84,7 +84,7 @@ public class ElectionTest
         election.doWork(t1);
 
         verify(clusterMarkFile).candidateTermId();
-        verify(consensusModuleAgent).becomeLeader(eq(newLeadershipTermId), eq(logPosition), anyInt(), eq(true));
+        verify(consensusModuleAgent).joinLogAsLeader(eq(newLeadershipTermId), eq(logPosition), anyInt(), eq(true));
         verify(recordingLog).isUnknown(newLeadershipTermId);
         verify(recordingLog).appendTerm(RECORDING_ID, newLeadershipTermId, logPosition, t1);
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_READY.code());
@@ -169,7 +169,7 @@ public class ElectionTest
 
         election.doWork(t5);
 
-        verify(consensusModuleAgent).becomeLeader(eq(candidateTermId), eq(logPosition), anyInt(), eq(true));
+        verify(consensusModuleAgent).joinLogAsLeader(eq(candidateTermId), eq(logPosition), anyInt(), eq(true));
         verify(recordingLog).appendTerm(RECORDING_ID, candidateTermId, logPosition, t5);
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_READY.code());
 
@@ -372,7 +372,7 @@ public class ElectionTest
     @CsvSource(value = {"true,true", "true,false", "false,false", "false,true"})
     public void shouldBaseStartupValueOnLeader(final boolean isLeaderStart, final boolean isNodeStart)
     {
-        final long leadershipTermId = Aeron.NULL_VALUE;
+        final long leadershipTermId = 0;
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
@@ -396,7 +396,7 @@ public class ElectionTest
         final long t4 = t3 + 1;
         election.doWork(t4);
 
-        verify(consensusModuleAgent).followLog(logImage, isLeaderStart);
+        verify(consensusModuleAgent).joinLogAsFollower(logImage, leadershipTermId, isLeaderStart);
     }
 
     @Test

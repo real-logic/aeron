@@ -1333,7 +1333,7 @@ final class ConsensusModuleAgent implements Agent
         return publication.sessionId();
     }
 
-    void becomeLeader(
+    void joinLogAsLeader(
         final long leadershipTermId, final long logPosition, final int logSessionId, final boolean isStartup)
     {
         final boolean isIpc = ctx.logChannel().startsWith(IPC_CHANNEL);
@@ -1352,8 +1352,6 @@ final class ConsensusModuleAgent implements Agent
             Long.MAX_VALUE,
             isStartup,
             Cluster.Role.LEADER);
-
-        leadershipTermId(leadershipTermId);
     }
 
     void liveLogDestination(final String liveLogDestination)
@@ -1371,8 +1369,10 @@ final class ConsensusModuleAgent implements Agent
         this.catchupLogDestination = catchupLogDestination;
     }
 
-    void followLog(final Image image, final boolean isLeaderStartup)
+    void joinLogAsFollower(final Image image, final long leadershipTermId, final boolean isLeaderStartup)
     {
+        appendDynamicJoinTermAndSnapshots();
+
         final Subscription logSubscription = image.subscription();
         final int streamId = logSubscription.streamId();
         final String channel = logSubscription.channel();
@@ -1392,8 +1392,6 @@ final class ConsensusModuleAgent implements Agent
             Long.MAX_VALUE,
             isLeaderStartup,
             Cluster.Role.FOLLOWER);
-
-        appendDynamicJoinTermAndSnapshots();
     }
 
     void awaitServicesReady(

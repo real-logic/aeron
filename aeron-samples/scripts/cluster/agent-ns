@@ -17,17 +17,27 @@
 
 set -euo pipefail
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+source ./script-common
 
-mkdir -p "$DIR/logs"
+mkdir -p logs
 
 function startNode() {
 
     namespace=ns_node$1
 
     sudo ip netns exec ${namespace} su - ${USER} -c "cd ${PWD} && \
-    ${DIR}/../run-java-logging \
-        io.aeron.test.launcher.RemoteLaunchServer > $DIR/logs/launch-$1.log &"
+    ${JAVA_HOME}/bin/java \
+        -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar:../../../aeron-test-support/build/libs/aeron-test-support-${VERSION}.jar \
+        -javaagent:../../../aeron-agent/build/libs/aeron-agent-${VERSION}.jar \
+        -XX:+UseBiasedLocking \
+        -XX:BiasedLockingStartupDelay=0 \
+        -XX:+UnlockExperimentalVMOptions \
+        -XX:+TrustFinalNonStaticFields \
+        -XX:+UnlockDiagnosticVMOptions \
+        -XX:GuaranteedSafepointInterval=300000 \
+        -XX:+UseParallelGC \
+        ${JVM_OPTS:-} ${ADD_OPENS} \
+        io.aeron.test.launcher.RemoteLaunchServer > logs/launch-$1.log &"
 }
 
 function startAll() {

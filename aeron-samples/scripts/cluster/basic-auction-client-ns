@@ -17,15 +17,24 @@
 
 set -euo pipefail
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+source ./script-common
 
 # tag::start_jvm[]
 function startNode() {
-     "${DIR}/../run-java" \
+    ${JAVA_HOME}/bin/java \
+        -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
+        -XX:+UseBiasedLocking \
+        -XX:BiasedLockingStartupDelay=0 \
+        -XX:+UnlockExperimentalVMOptions \
+        -XX:+TrustFinalNonStaticFields \
+        -XX:+UnlockDiagnosticVMOptions \
+        -XX:GuaranteedSafepointInterval=300000 \
+        -XX:+UseParallelGC \
         -Daeron.cluster.tutorial.customerId="$1" \
         -Daeron.cluster.tutorial.numOfBids="$2" \
         -Daeron.cluster.tutorial.bidIntervalMs="$3" \
         -Daeron.cluster.tutorial.hostnames=10.42.0.10,10.42.0.11,10.42.0.12 \
+        ${JVM_OPTS:-} ${ADD_OPENS} \
         io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient
 }
 

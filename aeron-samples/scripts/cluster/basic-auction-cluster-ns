@@ -17,9 +17,9 @@
 
 set -euo pipefail
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+source ./script-common
 
-mkdir -p "$DIR/logs"
+mkdir -p logs
 
 # tag::start_jvm[]
 function startNode() {
@@ -27,15 +27,22 @@ function startNode() {
     namespace=ns_cluster$1
 
     sudo ip netns exec ${namespace} su - ${USER} -c "cd ${PWD} && \
-    ${DIR}/../run-java-logging \
-      -Dcom.sun.management.jmxremote.port=9999 \
-      -Dcom.sun.management.jmxremote.ssl.need.client.auth=false \
-      -Dcom.sun.management.jmxremote.authenticate=false \
-      -Dcom.sun.management.jmxremote.ssl=false \
-      -Daeron.event.cluster.log=all \
-      -Daeron.cluster.tutorial.hostnames=10.42.0.10,10.42.0.11,10.42.0.12 \
-      -Daeron.cluster.tutorial.nodeId=$1 \
-      io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode > $DIR/logs/cluster-$1.log" &
+    ${JAVA_HOME}/bin/java \
+        -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
+        -javaagent:../../../aeron-agent/build/libs/aeron-agent-${VERSION}.jar \
+        -XX:+UseBiasedLocking \
+        -XX:BiasedLockingStartupDelay=0 \
+        -XX:+UnlockExperimentalVMOptions \
+        -XX:+TrustFinalNonStaticFields \
+        -XX:+UnlockDiagnosticVMOptions \
+        -XX:GuaranteedSafepointInterval=300000 \
+        -XX:+UseParallelGC \
+        -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.ssl.need.client.auth=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
+        -Daeron.event.cluster.log=all \
+        -Daeron.cluster.tutorial.hostnames=10.42.0.10,10.42.0.11,10.42.0.12 \
+        -Daeron.cluster.tutorial.nodeId=$1 \
+        ${JVM_OPTS:-} ${ADD_OPENS} \
+        io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode > logs/cluster-$1.log" &
 }
 
 function startAll() {

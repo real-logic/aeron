@@ -15,17 +15,26 @@
 ## limitations under the License.
 ##
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+source ./script-common
 
-mkdir -p "$DIR/logs"
+mkdir -p logs
 
 # tag::start_jvm[]
 function startNode() {
-     "${DIR}/../run-java-logging" \
+    ${JAVA_HOME}/bin/java \
+        -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
+        -javaagent:../../../aeron-agent/build/libs/aeron-agent-${VERSION}.jar \
+        -XX:+UseBiasedLocking \
+        -XX:BiasedLockingStartupDelay=0 \
+        -XX:+UnlockExperimentalVMOptions \
+        -XX:+TrustFinalNonStaticFields \
+        -XX:+UnlockDiagnosticVMOptions \
+        -XX:GuaranteedSafepointInterval=300000 \
+        -XX:+UseParallelGC \
         -Daeron.event.cluster.log=all \
         -Daeron.cluster.tutorial.nodeId=$1 \
         ${JVM_OPTS} ${ADD_OPENS} \
-        io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode > $DIR/logs/cluster-$1.log &
+        io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode > logs/cluster-$1.log &
 }
 
 function startAll() {

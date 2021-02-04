@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.ClusterTerminationException;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.driver.Configuration;
@@ -956,6 +957,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         terminationPosition = NULL_VALUE;
         ctx.terminationHook().run();
+        throw new ClusterTerminationException();
     }
 
     private void checkForLifecycleCallback()

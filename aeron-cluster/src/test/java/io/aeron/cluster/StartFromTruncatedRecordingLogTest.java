@@ -197,24 +197,19 @@ public class StartFromTruncatedRecordingLogTest
 
     private void stopAndStartClusterWithTruncationOfRecordingLog() throws Exception
     {
-        final int leaderMemberId = awaitLeaderMemberId();
+        final int leaderMemberId = awaitLeader();
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
         final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
 
         takeSnapshot(leaderMemberId);
         awaitSnapshotCount(1);
-
         awaitNeutralControlToggle(leaderMemberId);
-        awaitConsensusModulesActive();
 
         terminateCount.set(0);
         shutdown(leaderMemberId);
         awaitSnapshotCount(2);
         Tests.awaitValue(terminateCount, MEMBER_COUNT);
-
-        stopNode(leaderMemberId);
-        stopNode(followerMemberIdA);
-        stopNode(followerMemberIdB);
+        closeNodes();
 
         truncateRecordingLogAndDeleteMarkFiles(leaderMemberId);
         truncateRecordingLogAndDeleteMarkFiles(followerMemberIdA);
@@ -225,7 +220,7 @@ public class StartFromTruncatedRecordingLogTest
         startNode(followerMemberIdB, false);
     }
 
-    private int awaitLeaderMemberId()
+    private int awaitLeader()
     {
         int leaderMemberId;
         while (NULL_VALUE == (leaderMemberId = findLeaderId()))
@@ -238,7 +233,7 @@ public class StartFromTruncatedRecordingLogTest
 
     private void assertClusterIsFunctioningCorrectly()
     {
-        awaitLeaderMemberId();
+        awaitLeader();
         connectClient();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -312,9 +307,9 @@ public class StartFromTruncatedRecordingLogTest
     }
 
     private void appendServiceSnapshot(
-        final RecordingLog existingRecordingLog, final RecordingLog newRecordingLog, final int serviceId)
+        final RecordingLog oldRecordingLog, final RecordingLog newRecordingLog, final int serviceId)
     {
-        final RecordingLog.Entry snapshot = existingRecordingLog.getLatestSnapshot(serviceId);
+        final RecordingLog.Entry snapshot = oldRecordingLog.getLatestSnapshot(serviceId);
         assertNotNull(snapshot);
 
         newRecordingLog.appendSnapshot(
@@ -379,12 +374,15 @@ public class StartFromTruncatedRecordingLogTest
                 .errorHandler(ClusterTests.errorHandler(index)));
     }
 
-    private void stopNode(final int index)
+    private void closeNodes()
     {
-        containers[index].close();
-        containers[index] = null;
-        clusteredMediaDrivers[index].close();
-        clusteredMediaDrivers[index] = null;
+        for (int i = 0; i < MEMBER_COUNT; i++)
+        {
+            containers[i].close();
+            containers[i] = null;
+            clusteredMediaDrivers[i].close();
+            clusteredMediaDrivers[i] = null;
+        }
     }
 
     private void connectClient()
@@ -531,8 +529,6 @@ public class StartFromTruncatedRecordingLogTest
 
     private int findLeaderId()
     {
-        int leaderMemberId = NULL_VALUE;
-
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
             final ConsensusModule.Context context = clusteredMediaDrivers[i].consensusModule().context();
@@ -541,11 +537,11 @@ public class StartFromTruncatedRecordingLogTest
 
             if (Cluster.Role.LEADER == role && ElectionState.CLOSED == ElectionState.get(electionStateCounter))
             {
-                leaderMemberId = context.clusterMemberId();
+                return context.clusterMemberId();
             }
         }
 
-        return leaderMemberId;
+        return NULL_VALUE;
     }
 
     private void takeSnapshot(final int index)
@@ -594,20 +590,6 @@ public class StartFromTruncatedRecordingLogTest
             }
 
             Tests.yield();
-        }
-    }
-
-    private void awaitConsensusModulesActive()
-    {
-        for (int i = 0; i < MEMBER_COUNT; i++)
-        {
-            final ConsensusModule.Context context = clusteredMediaDrivers[i].consensusModule().context();
-            final Counter moduleStateCounter = context.moduleStateCounter();
-
-            while (ConsensusModule.State.ACTIVE != ConsensusModule.State.get(moduleStateCounter))
-            {
-                Tests.yield();
-            }
         }
     }
 

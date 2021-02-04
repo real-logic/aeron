@@ -101,6 +101,8 @@ final class LogReplay
 
     boolean isDone()
     {
-        return logAdapter.image() != null && logAdapter.position() >= stopPosition;
+        return logAdapter.image() != null &&
+            logAdapter.position() >= stopPosition &&
+            consensusModuleAgent.state() != ConsensusModule.State.SNAPSHOT;
     }
 }

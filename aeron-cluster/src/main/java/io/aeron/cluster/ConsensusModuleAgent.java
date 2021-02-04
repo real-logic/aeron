@@ -858,6 +858,11 @@ final class ConsensusModuleAgent implements Agent
         }
     }
 
+    ConsensusModule.State state()
+    {
+        return state;
+    }
+
     void stateChange(final ConsensusModule.State oldState, final ConsensusModule.State newState, final int memberId)
     {
         //System.out.println("CM State memberId=" + memberId + " " + oldState + " -> " + newState);
@@ -1340,6 +1345,7 @@ final class ConsensusModuleAgent implements Agent
         final String channel = (isIpc ? "aeron:ipc" : "aeron:udp") +
             "?tags=" + logPublicationChannelTag + "|session-id=" + logSessionId + "|alias=log";
 
+        leadershipTermId(leadershipTermId);
         startLogRecording(channel, ctx.logStreamId(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
 

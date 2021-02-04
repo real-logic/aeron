@@ -485,6 +485,7 @@ final class ConsensusPublisher
             }
 
             checkResult(result);
+            Thread.yield();
         }
         while (--attempts > 0);
 
@@ -514,6 +515,7 @@ final class ConsensusPublisher
             }
 
             checkResult(result);
+            Thread.yield();
         }
         while (--attempts > 0);
 

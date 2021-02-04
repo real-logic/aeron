@@ -996,7 +996,7 @@ final class ConsensusModuleAgent implements Agent
                 ++serviceAckId;
                 takeSnapshot(timestamp, logPosition, serviceAcks);
 
-                if (NULL_POSITION == terminationPosition)
+                if (NULL_POSITION == terminationPosition || logPosition < terminationPosition)
                 {
                     final long nowNs = clusterClock.timeNanos();
                     for (final ClusterSession session : sessionByIdMap.values())
@@ -1004,11 +1004,11 @@ final class ConsensusModuleAgent implements Agent
                         session.timeOfLastActivityNs(nowNs);
                     }
 
+                    state(ConsensusModule.State.ACTIVE);
                     if (Cluster.Role.LEADER == role)
                     {
                         ClusterControl.ToggleState.reset(controlToggle);
                     }
-                    state(ConsensusModule.State.ACTIVE);
                 }
                 else
                 {
@@ -1991,10 +1991,11 @@ final class ConsensusModuleAgent implements Agent
             case SHUTDOWN:
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT))
                 {
+                    final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
                     final long position = logPublisher.position();
                     clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
                     clusterTermination.terminationPosition(
-                        consensusPublisher, activeMembers, thisMember, leadershipTermId, position);
+                        errorHandler, consensusPublisher, activeMembers, thisMember, leadershipTermId, position);
                     terminationPosition = position;
                     state(ConsensusModule.State.SNAPSHOT);
                 }
@@ -2003,12 +2004,13 @@ final class ConsensusModuleAgent implements Agent
             case ABORT:
                 if (ConsensusModule.State.ACTIVE == state)
                 {
+                    final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
                     final long position = logPublisher.position();
                     clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
                     clusterTermination.terminationPosition(
-                        consensusPublisher, activeMembers, thisMember, leadershipTermId, position);
+                        errorHandler, consensusPublisher, activeMembers, thisMember, leadershipTermId, position);
                     terminationPosition = position;
-                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
+                    serviceProxy.terminationPosition(terminationPosition, errorHandler);
                     state(ConsensusModule.State.TERMINATING);
                 }
                 break;

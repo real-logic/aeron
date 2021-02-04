@@ -15,6 +15,11 @@
  */
 package io.aeron.cluster;
 
+
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.AeronException;
+import org.agrona.ErrorHandler;
+
 class ClusterTermination
 {
     private long deadlineNs;
@@ -46,6 +51,7 @@ class ClusterTermination
     }
 
     void terminationPosition(
+        final ErrorHandler errorHandler,
         final ConsensusPublisher consensusPublisher,
         final ClusterMember[] members,
         final ClusterMember thisMember,
@@ -58,7 +64,11 @@ class ClusterTermination
 
             if (member != thisMember)
             {
-                consensusPublisher.terminationPosition(member.publication(), leadershipTermId, position);
+                if (!consensusPublisher.terminationPosition(member.publication(), leadershipTermId, position))
+                {
+                    errorHandler.onError(new ClusterException(
+                        "failed to send termination position to member=" + member.id(), AeronException.Category.WARN));
+                }
             }
         }
     }

@@ -22,6 +22,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.LangUtil;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -137,7 +138,10 @@ public class Tests
             sb.append(" - ").append(message);
         }
 
-        System.out.println(appendStackTrace(sb).toString());
+        appendStackTrace(sb).append('\n');
+
+        System.out.println(sb.toString());
+        System.out.println(SystemUtil.threadDump());
     }
 
     public static StringBuilder appendStackTrace(final StringBuilder sb)

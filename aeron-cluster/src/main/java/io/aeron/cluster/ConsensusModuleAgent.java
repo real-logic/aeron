@@ -1596,12 +1596,11 @@ final class ConsensusModuleAgent implements Agent
 
         if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
         {
-            final int fragmentsPolled = logAdapter.poll(Math.min(appendPosition.get(), limitPosition));
-            workCount += fragmentsPolled;
-            final Image image = logAdapter.image();
-            if (fragmentsPolled == 0 && image.isClosed())
+            final int fragments = logAdapter.poll(Math.min(appendPosition.get(), limitPosition));
+            workCount += fragments;
+            if (fragments == 0 && logAdapter.image().isClosed())
             {
-                throw new ClusterException("unexpected image close replaying log at position " + image.position());
+                throw new ClusterException("unexpected close replaying log: position=" + logAdapter.image().position());
             }
         }
 

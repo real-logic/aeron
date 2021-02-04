@@ -251,7 +251,7 @@ final class LogAdapter implements ControlledFragmentHandler
                     membershipChangeEventDecoder.changeType(),
                     membershipChangeEventDecoder.memberId(),
                     membershipChangeEventDecoder.clusterMembers());
-                break;
+                return Action.BREAK;
 
             case ClusterActionRequestDecoder.TEMPLATE_ID:
                 clusterActionRequestDecoder.wrap(

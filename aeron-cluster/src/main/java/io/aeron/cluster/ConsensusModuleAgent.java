@@ -724,7 +724,7 @@ final class ConsensusModuleAgent implements Agent
     {
         if (Cluster.Role.LEADER == role &&
             leadershipTermId == this.leadershipTermId &&
-            logPosition == terminationPosition)
+            logPosition >= terminationPosition)
         {
             final ClusterMember member = clusterMemberByIdMap.get(memberId);
             if (null != member)
@@ -733,7 +733,7 @@ final class ConsensusModuleAgent implements Agent
 
                 if (clusterTermination.canTerminate(activeMembers, terminationPosition, clusterClock.timeNanos()))
                 {
-                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                    recordingLog.commitLogPosition(leadershipTermId, terminationPosition);
                     closeAndTerminate();
                 }
             }
@@ -1030,8 +1030,11 @@ final class ConsensusModuleAgent implements Agent
                 final boolean canTerminate;
                 if (null == clusterTermination)
                 {
-                    consensusPublisher.terminationAck(
-                        leaderMember.publication(), leadershipTermId, logPosition, memberId);
+                    if (!consensusPublisher.terminationAck(
+                        leaderMember.publication(), leadershipTermId, logPosition, memberId))
+                    {
+                        ctx.countedErrorHandler().onError(new ClusterException("failed to send termination ack", WARN));
+                    }
                     canTerminate = true;
                 }
                 else
@@ -2857,22 +2860,24 @@ final class ConsensusModuleAgent implements Agent
 
     private void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)
     {
-        for (final long clientId : serviceClientIds)
+        if (ConsensusModule.State.TERMINATING != state && ConsensusModule.State.QUITTING != state)
         {
-            if (registrationId == clientId &&
-                ConsensusModule.State.TERMINATING != state &&
-                ConsensusModule.State.QUITTING != state)
+            for (final long clientId : serviceClientIds)
             {
-                ctx.errorHandler().onError(new ClusterException("Aeron client in service closed unexpectedly", WARN));
-                unexpectedTermination();
+                if (registrationId == clientId)
+                {
+                    ctx.errorHandler().onError(new ClusterException(
+                        "Aeron client in service closed unexpectedly", WARN));
+                    unexpectedTermination();
+                }
             }
-        }
 
-        if (null != appendPosition && appendPosition.registrationId() == registrationId)
-        {
-            ctx.errorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
-            appendPosition = null;
-            enterElection();
+            if (null != appendPosition && appendPosition.registrationId() == registrationId)
+            {
+                ctx.errorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
+                appendPosition = null;
+                enterElection();
+            }
         }
     }
 

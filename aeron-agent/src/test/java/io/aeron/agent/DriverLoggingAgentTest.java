@@ -37,7 +37,6 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
@@ -56,7 +55,6 @@ public class DriverLoggingAgentTest
 
     private static final Set<DriverEventCode> LOGGED_EVENTS = synchronizedSet(EnumSet.noneOf(DriverEventCode.class));
     private static final Set<DriverEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(DriverEventCode.class));
-    private static CountDownLatch latch;
 
     private File testDir;
 
@@ -64,9 +62,6 @@ public class DriverLoggingAgentTest
     public void after()
     {
         AgentTests.afterAgent();
-
-        LOGGED_EVENTS.clear();
-        WAIT_LIST.clear();
 
         if (testDir != null && testDir.exists())
         {
@@ -185,7 +180,7 @@ public class DriverLoggingAgentTest
                 assertEquals(counter.get(), 1);
             }
 
-            latch.await();
+            Tests.await(WAIT_LIST::isEmpty);
         }
 
         assertTrue(LOGGED_EVENTS.containsAll(expectedEvents));
@@ -197,8 +192,9 @@ public class DriverLoggingAgentTest
         System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, enabledEvents);
         AgentTests.beforeAgent();
 
+        LOGGED_EVENTS.clear();
+        WAIT_LIST.clear();
         WAIT_LIST.addAll(expectedEvents);
-        latch = new CountDownLatch(expectedEvents.size());
 
         testDir = Paths.get(IoUtil.tmpDirName(), "driver-test").toFile();
         if (testDir.exists())
@@ -223,11 +219,7 @@ public class DriverLoggingAgentTest
         {
             final DriverEventCode code = DriverEventCode.get(msgTypeId);
             LOGGED_EVENTS.add(code);
-
-            if (WAIT_LIST.remove(code))
-            {
-                latch.countDown();
-            }
+            WAIT_LIST.remove(code);
         }
     }
 }

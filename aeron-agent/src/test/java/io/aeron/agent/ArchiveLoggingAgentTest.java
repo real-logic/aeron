@@ -35,7 +35,6 @@ import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
@@ -47,7 +46,6 @@ public class ArchiveLoggingAgentTest
 {
     private static final Set<Integer> LOGGED_EVENTS = synchronizedSet(new HashSet<>());
     private static final Set<Integer> WAIT_LIST = synchronizedSet(new HashSet<>());
-    private static CountDownLatch latch;
 
     private File testDir;
 
@@ -55,9 +53,6 @@ public class ArchiveLoggingAgentTest
     public void after()
     {
         AgentTests.afterAgent();
-
-        LOGGED_EVENTS.clear();
-        WAIT_LIST.clear();
 
         if (testDir != null && testDir.exists())
         {
@@ -122,7 +117,7 @@ public class ArchiveLoggingAgentTest
         {
             try (AeronArchive ignore2 = AeronArchive.connect(aeronArchiveContext))
             {
-                latch.await();
+                Tests.await(WAIT_LIST::isEmpty);
             }
         }
     }
@@ -134,8 +129,8 @@ public class ArchiveLoggingAgentTest
         AgentTests.beforeAgent();
 
         LOGGED_EVENTS.clear();
+        WAIT_LIST.clear();
         WAIT_LIST.addAll(expectedEvents.stream().map(ArchiveEventLogger::toEventCodeId).collect(toSet()));
-        latch = new CountDownLatch(expectedEvents.size());
 
         testDir = Paths.get(IoUtil.tmpDirName(), "archive-test").toFile();
         if (testDir.exists())
@@ -159,11 +154,7 @@ public class ArchiveLoggingAgentTest
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
             LOGGED_EVENTS.add(msgTypeId);
-
-            if (WAIT_LIST.contains(msgTypeId) && WAIT_LIST.remove(msgTypeId))
-            {
-                latch.countDown();
-            }
+            WAIT_LIST.remove(msgTypeId);
         }
     }
 }

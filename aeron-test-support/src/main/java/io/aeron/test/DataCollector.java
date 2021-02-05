@@ -16,6 +16,7 @@
 package io.aeron.test;
 
 import org.agrona.LangUtil;
+import org.agrona.SystemUtil;
 import org.junit.jupiter.api.TestInfo;
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Collections.singleton;
@@ -36,6 +38,7 @@ import static org.agrona.Strings.isEmpty;
  */
 public final class DataCollector
 {
+    static final String THREAD_DUMP_FILE_NAME = "thread_dump.txt";
     static final AtomicInteger UNIQUE_ID = new AtomicInteger(0);
     private static final String SEPARATOR = "-";
     private final Path rootDir;
@@ -77,13 +80,14 @@ public final class DataCollector
      * </ul>
      *
      * @param testInfo test info from JUnit.
+     * @return {@code null} if no data was copied or an actual destination directory used.
      * @see #dumpData(String)
      */
-    public void dumpData(final TestInfo testInfo)
+    public Path dumpData(final TestInfo testInfo)
     {
         final String testClass = testInfo.getTestClass().orElseThrow(IllegalStateException::new).getName();
         final String testMethod = testInfo.getTestMethod().orElseThrow(IllegalStateException::new).getName();
-        copyData(testClass + SEPARATOR + testMethod);
+        return copyData(testClass + SEPARATOR + testMethod);
     }
 
     /**
@@ -102,15 +106,16 @@ public final class DataCollector
      * </p>
      *
      * @param destinationDir destination directory where the data should be copied into.
+     * @return {@code null} if no data was copied or an actual destination directory used.
      */
-    public void dumpData(final String destinationDir)
+    public Path dumpData(final String destinationDir)
     {
         if (isEmpty(destinationDir))
         {
             throw new IllegalArgumentException("destination dir is required");
         }
 
-        copyData(destinationDir);
+        return copyData(destinationDir);
     }
 
     public String toString()
@@ -121,12 +126,12 @@ public final class DataCollector
             '}';
     }
 
-    private void copyData(final String destinationDir)
+    private Path copyData(final String destinationDir)
     {
         final List<Path> locations = this.locations.stream().filter(Files::exists).collect(toList());
         if (locations.isEmpty())
         {
-            return;
+            return null;
         }
 
         try
@@ -143,11 +148,16 @@ public final class DataCollector
                     copyFiles(srcFile, dstFile);
                 }
             }
+
+            final Path threadDump = destination.resolve(THREAD_DUMP_FILE_NAME);
+            Files.write(threadDump, SystemUtil.threadDump().getBytes(UTF_8));
+            return destination;
         }
         catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
+        return null;
     }
 
     private Path createUniqueDirectory(final String name) throws IOException

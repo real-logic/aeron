@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.cluster.service;
 
 import org.agrona.concurrent.AgentTerminationException;
 
 /**
- * Used to terminate the {@link org.agrona.concurrent.Agent} of the {@link ConsensusModule} as the result of a
- * {@link ClusterControl.ToggleState#SHUTDOWN} or {@link ClusterControl.ToggleState#ABORT} action.
+ * Used to terminate the {@link org.agrona.concurrent.Agent} within a cluster in an expected fashion.
  */
 public class ClusterTerminationException extends AgentTerminationException
 {

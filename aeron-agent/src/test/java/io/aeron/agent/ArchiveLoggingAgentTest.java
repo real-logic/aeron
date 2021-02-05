@@ -133,9 +133,9 @@ public class ArchiveLoggingAgentTest
         System.setProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, enabledEvents);
         AgentTests.beforeAgent();
 
-        latch = new CountDownLatch(expectedEvents.size());
         LOGGED_EVENTS.clear();
         WAIT_LIST.addAll(expectedEvents.stream().map(ArchiveEventLogger::toEventCodeId).collect(toSet()));
+        latch = new CountDownLatch(expectedEvents.size());
 
         testDir = Paths.get(IoUtil.tmpDirName(), "archive-test").toFile();
         if (testDir.exists())
@@ -144,7 +144,7 @@ public class ArchiveLoggingAgentTest
         }
     }
 
-    static class StubEventLogReaderAgent implements Agent, MessageHandler
+    static final class StubEventLogReaderAgent implements Agent, MessageHandler
     {
         public String roleName()
         {

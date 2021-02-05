@@ -197,8 +197,8 @@ public class DriverLoggingAgentTest
         System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, enabledEvents);
         AgentTests.beforeAgent();
 
-        latch = new CountDownLatch(expectedEvents.size());
         WAIT_LIST.addAll(expectedEvents);
+        latch = new CountDownLatch(expectedEvents.size());
 
         testDir = Paths.get(IoUtil.tmpDirName(), "driver-test").toFile();
         if (testDir.exists())
@@ -207,7 +207,7 @@ public class DriverLoggingAgentTest
         }
     }
 
-    static class StubEventLogReaderAgent implements Agent, MessageHandler
+    static final class StubEventLogReaderAgent implements Agent, MessageHandler
     {
         public String roleName()
         {

@@ -15,11 +15,11 @@
  */
 package io.aeron.agent;
 
+import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.ClusteredMediaDriver;
-import io.aeron.cluster.ConsensusModule;
+import io.aeron.cluster.*;
 import io.aeron.cluster.service.*;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
@@ -28,9 +28,7 @@ import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 
 import java.io.File;
 import java.util.EnumSet;
@@ -52,7 +50,7 @@ import static org.mockito.Mockito.*;
 public class ClusterLoggingAgentTest
 {
     private static final Set<Integer> LOGGED_EVENTS = synchronizedSet(new HashSet<>());
-    private static CountDownLatch latch;
+    private static volatile CountDownLatch latch;
 
     private File testDir;
     private ClusteredMediaDriver clusteredMediaDriver;
@@ -146,7 +144,12 @@ public class ClusterLoggingAgentTest
         container = ClusteredServiceContainer.launch(clusteredServiceCtx);
 
         latch.await();
-        verify(clusteredService, timeout(5000)).onRoleChange(eq(Cluster.Role.LEADER));
+
+        final Counter state = clusteredMediaDriver.consensusModule().context().electionStateCounter();
+        while (ElectionState.CLOSED != ElectionState.get(state))
+        {
+            Tests.sleep(1);
+        }
 
         final Set<Integer> expected = expectedEvents
             .stream()
@@ -172,7 +175,7 @@ public class ClusterLoggingAgentTest
         }
     }
 
-    static class StubEventLogReaderAgent implements Agent, MessageHandler
+    static final class StubEventLogReaderAgent implements Agent, MessageHandler
     {
         public String roleName()
         {

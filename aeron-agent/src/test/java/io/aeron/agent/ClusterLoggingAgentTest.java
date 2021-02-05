@@ -70,37 +70,36 @@ public class ClusterLoggingAgentTest
 
     @Test
     @Timeout(20)
-    public void logAll() throws InterruptedException
+    public void logAll()
     {
         testClusterEventsLogging("all", EnumSet.of(ROLE_CHANGE, STATE_CHANGE, ELECTION_STATE_CHANGE));
     }
 
     @Test
     @Timeout(20)
-    public void logRoleChange() throws InterruptedException
+    public void logRoleChange()
     {
         testClusterEventsLogging(ROLE_CHANGE.name(), EnumSet.of(ROLE_CHANGE));
     }
 
     @Test
     @Timeout(20)
-    public void logStateChange() throws InterruptedException
+    public void logStateChange()
     {
         testClusterEventsLogging(STATE_CHANGE.name(), EnumSet.of(STATE_CHANGE));
     }
 
     @Test
     @Timeout(20)
-    public void logElectionStateChange() throws InterruptedException
+    public void logElectionStateChange()
     {
         testClusterEventsLogging(ELECTION_STATE_CHANGE.name(), EnumSet.of(ELECTION_STATE_CHANGE));
     }
 
     private void testClusterEventsLogging(
-        final String enabledEvents, final EnumSet<ClusterEventCode> expectedEvents) throws InterruptedException
+        final String enabledEvents, final EnumSet<ClusterEventCode> expectedEvents)
     {
-        final int numberOfExpectedEvents = expectedEvents.size();
-        before(enabledEvents, numberOfExpectedEvents);
+        before(enabledEvents);
 
         final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
 
@@ -144,6 +143,7 @@ public class ClusterLoggingAgentTest
         clusteredMediaDriver = ClusteredMediaDriver.launch(mediaDriverCtx, archiveCtx, consensusModuleCtx);
         container = ClusteredServiceContainer.launch(clusteredServiceCtx);
 
+        final int numberOfExpectedEvents = expectedEvents.size();
         Tests.await(() -> numberOfExpectedEvents == CLUSTER_EVENTS_LOGGED.get());
 
         final Counter state = clusteredMediaDriver.consensusModule().context().electionStateCounter();
@@ -160,7 +160,7 @@ public class ClusterLoggingAgentTest
         assertEquals(expected, LOGGED_EVENTS);
     }
 
-    private void before(final String enabledEvents, final int expectedEvents)
+    private void before(final String enabledEvents)
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         System.setProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, enabledEvents);

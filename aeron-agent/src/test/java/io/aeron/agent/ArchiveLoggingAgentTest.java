@@ -62,14 +62,14 @@ public class ArchiveLoggingAgentTest
 
     @Test
     @Timeout(10)
-    public void logAll() throws InterruptedException
+    public void logAll()
     {
         testArchiveLogging("all", EnumSet.of(CMD_OUT_RESPONSE, CMD_IN_AUTH_CONNECT, CMD_IN_KEEP_ALIVE));
     }
 
     @Test
     @Timeout(10)
-    public void logControlSessionDemuxerOnFragment() throws InterruptedException
+    public void logControlSessionDemuxerOnFragment()
     {
         testArchiveLogging(CMD_IN_KEEP_ALIVE.name() + "," + CMD_IN_AUTH_CONNECT.id(),
             EnumSet.of(CMD_IN_AUTH_CONNECT, CMD_IN_KEEP_ALIVE));
@@ -77,13 +77,12 @@ public class ArchiveLoggingAgentTest
 
     @Test
     @Timeout(10)
-    public void logControlResponseProxySendResponseHook() throws InterruptedException
+    public void logControlResponseProxySendResponseHook()
     {
         testArchiveLogging(CMD_OUT_RESPONSE.name(), EnumSet.of(CMD_OUT_RESPONSE));
     }
 
     private void testArchiveLogging(final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents)
-        throws InterruptedException
     {
         before(enabledEvents, expectedEvents);
 

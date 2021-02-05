@@ -71,7 +71,7 @@ public class DriverLoggingAgentTest
 
     @Test
     @Timeout(10)
-    public void logAllNetworkChannel() throws InterruptedException
+    public void logAllNetworkChannel()
     {
         testLogMediaDriverEvents(NETWORK_CHANNEL, "all", EnumSet.of(
             FRAME_IN,
@@ -97,7 +97,7 @@ public class DriverLoggingAgentTest
 
     @Test
     @Timeout(10)
-    public void logAllIpcChannel() throws InterruptedException
+    public void logAllIpcChannel()
     {
         testLogMediaDriverEvents(IPC_CHANNEL, "all", EnumSet.of(
             CMD_IN_ADD_PUBLICATION,
@@ -128,7 +128,7 @@ public class DriverLoggingAgentTest
         "CMD_OUT_AVAILABLE_IMAGE"
     })
     @Timeout(10)
-    public void logIndividualEvents(final DriverEventCode eventCode) throws InterruptedException
+    public void logIndividualEvents(final DriverEventCode eventCode)
     {
         try
         {
@@ -142,7 +142,6 @@ public class DriverLoggingAgentTest
 
     private void testLogMediaDriverEvents(
         final String channel, final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
-        throws InterruptedException
     {
         before(enabledEvents, expectedEvents);
 

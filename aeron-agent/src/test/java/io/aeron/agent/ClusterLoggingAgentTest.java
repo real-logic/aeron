@@ -101,16 +101,12 @@ public class ClusterLoggingAgentTest
     {
         before(enabledEvents);
 
-        final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
-
         final Context mediaDriverCtx = new Context()
             .errorHandler(Tests::onError)
-            .aeronDirectoryName(aeronDirectoryName)
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
-            .aeronDirectoryName(aeronDirectoryName)
             .controlRequestChannel("aeron:ipc?term-length=64k")
             .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
             .controlResponseChannel("aeron:ipc?term-length=64k")
@@ -134,7 +130,6 @@ public class ClusterLoggingAgentTest
 
         final ClusteredService clusteredService = mock(ClusteredService.class);
         final ClusteredServiceContainer.Context clusteredServiceCtx = new ClusteredServiceContainer.Context()
-            .aeronDirectoryName(aeronDirectoryName)
             .errorHandler(Tests::onError)
             .archiveContext(aeronArchiveContext.clone())
             .clusterDir(new File(testDir, "service"))

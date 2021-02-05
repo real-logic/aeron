@@ -86,16 +86,12 @@ public class ArchiveLoggingAgentTest
     {
         before(enabledEvents, expectedEvents);
 
-        final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
-
         final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
             .errorHandler(Tests::onError)
-            .aeronDirectoryName(aeronDirectoryName)
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
-            .aeronDirectoryName(aeronDirectoryName)
             .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
             .controlRequestStreamId(100)
             .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:0")

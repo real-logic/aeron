@@ -145,13 +145,10 @@ public class DriverLoggingAgentTest
     {
         before(enabledEvents, expectedEvents);
 
-        final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
-
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .errorHandler(Tests::onError)
             .publicationLingerTimeoutNs(0)
-            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(1))
-            .aeronDirectoryName(aeronDirectoryName);
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(1));
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx))
         {

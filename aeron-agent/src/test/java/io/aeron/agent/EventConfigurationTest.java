@@ -15,7 +15,7 @@
  */
 package io.aeron.agent;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -30,6 +30,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class EventConfigurationTest
 {
+    @AfterEach
+    void after()
+    {
+        System.clearProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME);
+        System.clearProperty(DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME);
+        System.clearProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME);
+        System.clearProperty(DISABLED_CLUSTER_EVENT_CODES_PROP_NAME);
+        System.clearProperty(ENABLED_EVENT_CODES_PROP_NAME);
+        System.clearProperty(DISABLED_EVENT_CODES_PROP_NAME);
+    }
+
     @Test
     public void nullValueMeansNoEventsEnabled()
     {

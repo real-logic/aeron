@@ -39,11 +39,9 @@ import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ArchiveLoggingAgentTest
 {
-    private static final Set<ArchiveEventCode> LOGGED_EVENTS = synchronizedSet(EnumSet.noneOf(ArchiveEventCode.class));
     private static final Set<ArchiveEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(ArchiveEventCode.class));
 
     private File testDir;
@@ -112,7 +110,6 @@ public class ArchiveLoggingAgentTest
             try (AeronArchive ignore2 = AeronArchive.connect(aeronArchiveContext))
             {
                 Tests.await(WAIT_LIST::isEmpty);
-                assertTrue(LOGGED_EVENTS.containsAll(expectedEvents), LOGGED_EVENTS::toString);
             }
         }
     }
@@ -123,7 +120,6 @@ public class ArchiveLoggingAgentTest
         System.setProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, enabledEvents);
         AgentTests.beforeAgent();
 
-        LOGGED_EVENTS.clear();
         WAIT_LIST.clear();
         WAIT_LIST.addAll(expectedEvents);
 
@@ -148,9 +144,7 @@ public class ArchiveLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            final ArchiveEventCode eventCode = ArchiveEventCode.fromEventCodeId(msgTypeId);
-            LOGGED_EVENTS.add(eventCode);
-            WAIT_LIST.remove(eventCode);
+            WAIT_LIST.remove(ArchiveEventCode.fromEventCodeId(msgTypeId));
         }
     }
 }

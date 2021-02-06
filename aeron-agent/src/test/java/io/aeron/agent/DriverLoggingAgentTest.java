@@ -45,7 +45,6 @@ import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 public class DriverLoggingAgentTest
@@ -53,7 +52,6 @@ public class DriverLoggingAgentTest
     private static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:24325";
     private static final int STREAM_ID = 1777;
 
-    private static final Set<DriverEventCode> LOGGED_EVENTS = synchronizedSet(EnumSet.noneOf(DriverEventCode.class));
     private static final Set<DriverEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(DriverEventCode.class));
 
     private File testDir;
@@ -178,8 +176,6 @@ public class DriverLoggingAgentTest
 
             Tests.await(WAIT_LIST::isEmpty);
         }
-
-        assertTrue(LOGGED_EVENTS.containsAll(expectedEvents));
     }
 
     private void before(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
@@ -188,7 +184,6 @@ public class DriverLoggingAgentTest
         System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, enabledEvents);
         AgentTests.beforeAgent();
 
-        LOGGED_EVENTS.clear();
         WAIT_LIST.clear();
         WAIT_LIST.addAll(expectedEvents);
 
@@ -213,9 +208,7 @@ public class DriverLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            final DriverEventCode code = DriverEventCode.get(msgTypeId);
-            LOGGED_EVENTS.add(code);
-            WAIT_LIST.remove(code);
+            WAIT_LIST.remove(DriverEventCode.get(msgTypeId));
         }
     }
 }

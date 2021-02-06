@@ -46,12 +46,10 @@ import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class ClusterLoggingAgentTest
 {
-    private static final Set<ClusterEventCode> LOGGED_EVENTS = synchronizedSet(EnumSet.noneOf(ClusterEventCode.class));
     private static final Set<ClusterEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(ClusterEventCode.class));
 
     private File testDir;
@@ -147,8 +145,6 @@ public class ClusterLoggingAgentTest
         {
             Tests.sleep(1);
         }
-
-        assertTrue(LOGGED_EVENTS.containsAll(expectedEvents), LOGGED_EVENTS::toString);
     }
 
     private void before(final String enabledEvents, final EnumSet<ClusterEventCode> expectedEvents)
@@ -157,7 +153,6 @@ public class ClusterLoggingAgentTest
         System.setProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, enabledEvents);
         AgentTests.beforeAgent();
 
-        LOGGED_EVENTS.clear();
         WAIT_LIST.clear();
         WAIT_LIST.addAll(expectedEvents);
 
@@ -183,8 +178,6 @@ public class ClusterLoggingAgentTest
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
             final ClusterEventCode eventCode = fromEventCodeId(msgTypeId);
-            LOGGED_EVENTS.add(eventCode);
-
             final int offset = LOG_HEADER_LENGTH + index + SIZE_OF_INT;
             switch (eventCode)
             {

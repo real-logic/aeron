@@ -61,9 +61,9 @@ public enum ClusterEventCode implements EventCode
         this.dissector = dissector;
     }
 
-    static ClusterEventCode get(final int eventCodeId)
+    static ClusterEventCode get(final int id)
     {
-        return EVENT_CODE_BY_ID[eventCodeId];
+        return id >= 0 && id < EVENT_CODE_BY_ID.length ? EVENT_CODE_BY_ID[id] : null;
     }
 
     /**
@@ -72,6 +72,16 @@ public enum ClusterEventCode implements EventCode
     public int id()
     {
         return id;
+    }
+
+    public int toEventCodeId()
+    {
+        return EVENT_CODE_TYPE << 16 | (id() & 0xFFFF);
+    }
+
+    public static ClusterEventCode fromEventCodeId(final int eventCodeId)
+    {
+        return get(eventCodeId - (EVENT_CODE_TYPE << 16));
     }
 
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)

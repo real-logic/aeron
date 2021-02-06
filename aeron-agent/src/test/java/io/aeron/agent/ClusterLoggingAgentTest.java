@@ -19,38 +19,40 @@ import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.*;
-import io.aeron.cluster.service.*;
+import io.aeron.cluster.ClusteredMediaDriver;
+import io.aeron.cluster.ConsensusModule;
+import io.aeron.cluster.ElectionState;
+import io.aeron.cluster.service.ClusteredService;
+import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.*;
-import org.junit.jupiter.api.*;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.MessageHandler;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.agent.ClusterEventCode.*;
-import static io.aeron.agent.ClusterEventLogger.toEventCodeId;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
-import static java.util.stream.Collectors.toSet;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class ClusterLoggingAgentTest
 {
-    private static final Set<Integer> LOGGED_EVENTS = synchronizedSet(new HashSet<>());
-    private static final AtomicInteger CLUSTER_EVENTS_LOGGED = new AtomicInteger();
+    private static final Set<ClusterEventCode> LOGGED_EVENTS = synchronizedSet(EnumSet.noneOf(ClusterEventCode.class));
+    private static final Set<ClusterEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(ClusterEventCode.class));
 
     private File testDir;
     private ClusteredMediaDriver clusteredMediaDriver;
@@ -99,7 +101,7 @@ public class ClusterLoggingAgentTest
     private void testClusterEventsLogging(
         final String enabledEvents, final EnumSet<ClusterEventCode> expectedEvents)
     {
-        before(enabledEvents);
+        before(enabledEvents, expectedEvents);
 
         final Context mediaDriverCtx = new Context()
             .errorHandler(Tests::onError)
@@ -138,8 +140,7 @@ public class ClusterLoggingAgentTest
         clusteredMediaDriver = ClusteredMediaDriver.launch(mediaDriverCtx, archiveCtx, consensusModuleCtx);
         container = ClusteredServiceContainer.launch(clusteredServiceCtx);
 
-        final int numberOfExpectedEvents = expectedEvents.size();
-        Tests.await(() -> numberOfExpectedEvents == CLUSTER_EVENTS_LOGGED.get());
+        Tests.await(WAIT_LIST::isEmpty);
 
         final Counter state = clusteredMediaDriver.consensusModule().context().electionStateCounter();
         while (ElectionState.CLOSED != ElectionState.get(state))
@@ -147,22 +148,18 @@ public class ClusterLoggingAgentTest
             Tests.sleep(1);
         }
 
-        final Set<Integer> expected = expectedEvents
-            .stream()
-            .map(ClusterEventLogger::toEventCodeId)
-            .collect(toSet());
-
-        assertTrue(LOGGED_EVENTS.containsAll(expected));
+        assertTrue(LOGGED_EVENTS.containsAll(expectedEvents), LOGGED_EVENTS::toString);
     }
 
-    private void before(final String enabledEvents)
+    private void before(final String enabledEvents, final EnumSet<ClusterEventCode> expectedEvents)
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         System.setProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, enabledEvents);
         AgentTests.beforeAgent();
 
         LOGGED_EVENTS.clear();
-        CLUSTER_EVENTS_LOGGED.set(0);
+        WAIT_LIST.clear();
+        WAIT_LIST.addAll(expectedEvents);
 
         testDir = new File(IoUtil.tmpDirName(), "cluster-test");
         if (testDir.exists())
@@ -185,31 +182,36 @@ public class ClusterLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            LOGGED_EVENTS.add(msgTypeId);
+            final ClusterEventCode eventCode = fromEventCodeId(msgTypeId);
+            LOGGED_EVENTS.add(eventCode);
 
             final int offset = LOG_HEADER_LENGTH + index + SIZE_OF_INT;
-            if (toEventCodeId(ROLE_CHANGE) == msgTypeId)
+            switch (eventCode)
             {
-                final String roleChange = buffer.getStringAscii(offset);
-                if (roleChange.contains("LEADER"))
+                case ROLE_CHANGE:
+                    final String roleChange = buffer.getStringAscii(offset);
+                    if (roleChange.contains("LEADER"))
+                    {
+                        WAIT_LIST.remove(eventCode);
+                    }
+                    break;
+                case STATE_CHANGE:
                 {
-                    CLUSTER_EVENTS_LOGGED.getAndIncrement();
+                    final String stateChange = buffer.getStringAscii(offset);
+                    if (stateChange.contains("ACTIVE"))
+                    {
+                        WAIT_LIST.remove(eventCode);
+                    }
+                    break;
                 }
-            }
-            else if (toEventCodeId(STATE_CHANGE) == msgTypeId)
-            {
-                final String stateChange = buffer.getStringAscii(offset);
-                if (stateChange.contains("ACTIVE"))
+                case ELECTION_STATE_CHANGE:
                 {
-                    CLUSTER_EVENTS_LOGGED.getAndIncrement();
-                }
-            }
-            else if (toEventCodeId(ELECTION_STATE_CHANGE) == msgTypeId)
-            {
-                final String stateChange = buffer.getStringAscii(offset);
-                if (stateChange.contains("CLOSED"))
-                {
-                    CLUSTER_EVENTS_LOGGED.getAndIncrement();
+                    final String stateChange = buffer.getStringAscii(offset);
+                    if (stateChange.contains("CLOSED"))
+                    {
+                        WAIT_LIST.remove(eventCode);
+                    }
+                    break;
                 }
             }
         }

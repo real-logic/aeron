@@ -44,7 +44,7 @@ import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
 import static java.util.stream.Collectors.toSet;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class ClusterLoggingAgentTest
@@ -152,7 +152,7 @@ public class ClusterLoggingAgentTest
             .map(ClusterEventLogger::toEventCodeId)
             .collect(toSet());
 
-        assertEquals(expected, LOGGED_EVENTS);
+        assertTrue(LOGGED_EVENTS.containsAll(expected));
     }
 
     private void before(final String enabledEvents)

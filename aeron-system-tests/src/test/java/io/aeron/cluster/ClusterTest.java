@@ -76,7 +76,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -98,7 +98,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -124,7 +124,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -158,7 +158,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -194,7 +194,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -232,7 +232,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -255,7 +255,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -295,7 +295,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -319,7 +319,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -348,7 +348,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -382,7 +382,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -415,7 +415,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -455,7 +455,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -488,7 +488,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -527,7 +527,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -569,7 +569,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -630,7 +630,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -680,7 +680,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -714,7 +714,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -749,7 +749,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -776,7 +776,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -807,7 +807,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -839,7 +839,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -920,7 +920,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -972,7 +972,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -1017,7 +1017,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -1088,7 +1088,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -1123,7 +1123,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -1172,7 +1172,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -1214,7 +1214,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -1270,7 +1270,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -1300,16 +1300,15 @@ public class ClusterTest
         cluster = startThreeNodeStaticCluster(NULL_VALUE);
         try
         {
-            cluster.connectClient(clientCtx);
-
             final int numMessages = 10;
+            cluster.connectClient(clientCtx);
             cluster.sendMessages(numMessages);
             cluster.awaitResponseMessageCount(numMessages);
         }
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 
@@ -1338,7 +1337,7 @@ public class ClusterTest
         catch (final Throwable ex)
         {
             cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            throw ex;
         }
     }
 }

@@ -302,6 +302,7 @@ public class ClusterTimerTest
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .catalogCapacity(CATALOG_CAPACITY)
+                .errorHandler(ClusterTests.errorHandler(0))
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .recordingEventsEnabled(false)
                 .deleteArchiveOnStart(initialLaunch),

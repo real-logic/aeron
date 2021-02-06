@@ -56,11 +56,6 @@ public final class ArchiveEventLogger
         ringBuffer = eventRingBuffer;
     }
 
-    public static int toEventCodeId(final ArchiveEventCode code)
-    {
-        return EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);
-    }
-
     public void logControlRequest(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         headerDecoder.wrap(srcBuffer, srcOffset);
@@ -85,7 +80,7 @@ public final class ArchiveEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
+        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {
@@ -113,7 +108,7 @@ public final class ArchiveEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(toEventCodeId(REPLAY_SESSION_ERROR), encodedLength);
+        final int index = ringBuffer.tryClaim(REPLAY_SESSION_ERROR.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {
@@ -141,7 +136,7 @@ public final class ArchiveEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(toEventCodeId(CATALOG_RESIZE), encodedLength);
+        final int index = ringBuffer.tryClaim(CATALOG_RESIZE.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {
@@ -168,7 +163,7 @@ public final class ArchiveEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
+        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {

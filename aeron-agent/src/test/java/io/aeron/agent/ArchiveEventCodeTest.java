@@ -17,8 +17,11 @@ package io.aeron.agent;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static io.aeron.agent.ArchiveEventCode.EVENT_CODE_TYPE;
+import static io.aeron.agent.ArchiveEventCode.fromEventCodeId;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ArchiveEventCodeTest
 {
@@ -27,5 +30,26 @@ public class ArchiveEventCodeTest
     void getCodeById(final ArchiveEventCode code)
     {
         assertSame(code, ArchiveEventCode.get(code.id()));
+    }
+
+    @ParameterizedTest
+    @EnumSource(ArchiveEventCode.class)
+    void toEventCodeIdComputesEventId(final ArchiveEventCode eventCode)
+    {
+        assertEquals((EVENT_CODE_TYPE << 16) | (0xFFFF & eventCode.id()), eventCode.toEventCodeId());
+    }
+
+    @ParameterizedTest
+    @EnumSource(ArchiveEventCode.class)
+    void fromEventCodeIdLooksUpEventCode(final ArchiveEventCode eventCode)
+    {
+        assertSame(eventCode, fromEventCodeId(eventCode.toEventCodeId()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, -1, 13, Integer.MIN_VALUE, Integer.MAX_VALUE })
+    void fromEventCodeIdReturnNullForUnknownCode(final int eventCodeId)
+    {
+        assertNull(fromEventCodeId(eventCodeId));
     }
 }

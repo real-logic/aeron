@@ -141,19 +141,15 @@ public enum ArchiveEventCode implements EventCode
         this.dissector = dissector;
     }
 
-    static ArchiveEventCode get(final int eventCodeId)
+    static ArchiveEventCode get(final int id)
     {
-        return EVENT_CODE_BY_ID[eventCodeId];
+        return id >= 0 && id < EVENT_CODE_BY_ID.length ? EVENT_CODE_BY_ID[id] : null;
     }
 
     static ArchiveEventCode getByTemplateId(final int templateId)
     {
-        if (templateId >= 0 && templateId < EVENT_CODE_BY_TEMPLATE_ID.length)
-        {
-            return EVENT_CODE_BY_TEMPLATE_ID[templateId];
-        }
-
-        return null;
+        return templateId >= 0 && templateId < EVENT_CODE_BY_TEMPLATE_ID.length ?
+            EVENT_CODE_BY_TEMPLATE_ID[templateId] : null;
     }
 
     /**
@@ -167,6 +163,16 @@ public enum ArchiveEventCode implements EventCode
     public int templateId()
     {
         return templateId;
+    }
+
+    public int toEventCodeId()
+    {
+        return EVENT_CODE_TYPE << 16 | (id() & 0xFFFF);
+    }
+
+    public static ArchiveEventCode fromEventCodeId(final int eventCodeId)
+    {
+        return get(eventCodeId - (EVENT_CODE_TYPE << 16));
     }
 
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)

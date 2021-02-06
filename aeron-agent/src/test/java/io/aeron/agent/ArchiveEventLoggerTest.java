@@ -30,7 +30,6 @@ import java.time.temporal.ChronoUnit;
 import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.ArchiveEventLogger.CONTROL_REQUEST_EVENTS;
-import static io.aeron.agent.ArchiveEventLogger.toEventCodeId;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.*;
 import static io.aeron.archive.codecs.MessageHeaderEncoder.ENCODED_LENGTH;
@@ -57,13 +56,6 @@ class ArchiveEventLoggerTest
     }
 
     @ParameterizedTest
-    @EnumSource(ArchiveEventCode.class)
-    void toEventCodeIdComputesEventId(final ArchiveEventCode eventCode)
-    {
-        assertEquals(0xFFFF + EVENT_CODE_TYPE + eventCode.id(), toEventCodeId(eventCode));
-    }
-
-    @ParameterizedTest
     @EnumSource(
         value = ArchiveEventCode.class,
         mode = EXCLUDE,
@@ -83,7 +75,7 @@ class ArchiveEventLoggerTest
 
         logger.logControlRequest(srcBuffer, srcOffset, length);
 
-        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(eventCode), captureLength, length);
+        verifyLogHeader(logBuffer, recordOffset, eventCode.toEventCodeId(), captureLength, length);
         for (int i = 0; i < captureLength - ENCODED_LENGTH; i++)
         {
             assertEquals((byte)3,
@@ -116,7 +108,7 @@ class ArchiveEventLoggerTest
 
         logger.logControlResponse(srcBuffer, length);
 
-        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(CMD_OUT_RESPONSE), length, length);
+        verifyLogHeader(logBuffer, recordOffset, CMD_OUT_RESPONSE.toEventCodeId(), length, length);
         for (int i = 0; i < length; i++)
         {
             assertEquals((byte)1, logBuffer.getByte(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + i)));
@@ -159,7 +151,7 @@ class ArchiveEventLoggerTest
         logger.logSessionStateChange(CONTROL_SESSION_STATE_CHANGE, from, to, id);
 
         verifyLogHeader(
-            logBuffer, offset, toEventCodeId(CONTROL_SESSION_STATE_CHANGE), captureLength, captureLength);
+            logBuffer, offset, CONTROL_SESSION_STATE_CHANGE.toEventCodeId(), captureLength, captureLength);
         assertEquals(id, logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(payload, logBuffer.getStringAscii(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG)));
     }
@@ -176,7 +168,7 @@ class ArchiveEventLoggerTest
 
         logger.logReplaySessionError(sessionId, recordingId, errorMessage);
 
-        verifyLogHeader(logBuffer, offset, toEventCodeId(REPLAY_SESSION_ERROR), captureLength, captureLength);
+        verifyLogHeader(logBuffer, offset, REPLAY_SESSION_ERROR.toEventCodeId(), captureLength, captureLength);
         assertEquals(sessionId, logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(recordingId,
             logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG), LITTLE_ENDIAN));
@@ -195,7 +187,7 @@ class ArchiveEventLoggerTest
 
         logger.logCatalogResize(catalogLength, newCatalogLength);
 
-        verifyLogHeader(logBuffer, offset, toEventCodeId(CATALOG_RESIZE), captureLength, captureLength);
+        verifyLogHeader(logBuffer, offset, CATALOG_RESIZE.toEventCodeId(), captureLength, captureLength);
         assertEquals(catalogLength,
             logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(newCatalogLength,

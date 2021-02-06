@@ -33,19 +33,18 @@ import org.junit.jupiter.api.Timeout;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 
 import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
-import static java.util.stream.Collectors.toSet;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ArchiveLoggingAgentTest
 {
-    private static final Set<Integer> LOGGED_EVENTS = synchronizedSet(new HashSet<>());
-    private static final Set<Integer> WAIT_LIST = synchronizedSet(new HashSet<>());
+    private static final Set<ArchiveEventCode> LOGGED_EVENTS = synchronizedSet(EnumSet.noneOf(ArchiveEventCode.class));
+    private static final Set<ArchiveEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(ArchiveEventCode.class));
 
     private File testDir;
 
@@ -113,6 +112,7 @@ public class ArchiveLoggingAgentTest
             try (AeronArchive ignore2 = AeronArchive.connect(aeronArchiveContext))
             {
                 Tests.await(WAIT_LIST::isEmpty);
+                assertTrue(LOGGED_EVENTS.containsAll(expectedEvents), LOGGED_EVENTS::toString);
             }
         }
     }
@@ -125,7 +125,7 @@ public class ArchiveLoggingAgentTest
 
         LOGGED_EVENTS.clear();
         WAIT_LIST.clear();
-        WAIT_LIST.addAll(expectedEvents.stream().map(ArchiveEventLogger::toEventCodeId).collect(toSet()));
+        WAIT_LIST.addAll(expectedEvents);
 
         testDir = Paths.get(IoUtil.tmpDirName(), "archive-test").toFile();
         if (testDir.exists())
@@ -148,8 +148,9 @@ public class ArchiveLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            LOGGED_EVENTS.add(msgTypeId);
-            WAIT_LIST.remove(msgTypeId);
+            final ArchiveEventCode eventCode = ArchiveEventCode.fromEventCodeId(msgTypeId);
+            LOGGED_EVENTS.add(eventCode);
+            WAIT_LIST.remove(eventCode);
         }
     }
 }

@@ -22,7 +22,6 @@ import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.agrona.CloseHelper;
-import org.agrona.LangUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -75,8 +74,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -97,8 +95,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -123,8 +120,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -157,8 +153,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -193,8 +188,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -231,8 +225,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -254,8 +247,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -294,8 +286,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -318,8 +309,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -347,8 +337,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -381,8 +370,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -414,8 +402,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -454,8 +441,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -487,8 +473,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -526,8 +511,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -568,8 +552,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -629,8 +612,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -679,8 +661,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -713,8 +694,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -748,8 +728,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -775,8 +754,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -806,8 +784,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -838,8 +815,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -888,8 +864,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -919,8 +894,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -971,8 +945,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -1016,8 +989,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -1087,8 +1059,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -1122,8 +1093,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -1171,8 +1141,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -1213,8 +1182,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -1269,8 +1237,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -1307,8 +1274,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 
@@ -1336,8 +1302,7 @@ public class ClusterTest
         }
         catch (final Throwable ex)
         {
-            cluster.dumpData(testInfo);
-            throw ex;
+            cluster.dumpData(testInfo, ex);
         }
     }
 }

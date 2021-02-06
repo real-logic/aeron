@@ -1155,9 +1155,11 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    public void dumpData(final TestInfo testInfo)
+    public void dumpData(final TestInfo testInfo, final Throwable ex)
     {
+        ex.printStackTrace();
         dataCollector.dumpData(testInfo);
+        LangUtil.rethrowUnchecked(ex);
     }
 
     public static class ServiceContext

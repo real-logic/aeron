@@ -117,6 +117,15 @@ public class ClusterTests
         }
     }
 
+    public static void printWarning()
+    {
+        final Throwable warning = WARNING.get();
+        if (null != warning)
+        {
+            System.err.println("*** Warning captured ***");
+            warning.printStackTrace();
+        }
+    }
     public static void failOnClusterError()
     {
         final Throwable error = ERROR.getAndSet(null);

@@ -1158,6 +1158,8 @@ public class TestCluster implements AutoCloseable
     public void dumpData(final TestInfo testInfo, final Throwable ex)
     {
         ex.printStackTrace();
+        ClusterTests.printWarning();
+
         dataCollector.dumpData(testInfo);
         LangUtil.rethrowUnchecked(ex);
     }

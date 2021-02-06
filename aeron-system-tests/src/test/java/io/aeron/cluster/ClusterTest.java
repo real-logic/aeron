@@ -1046,8 +1046,8 @@ public class ClusterTest
                 node.service().resetSnapshotTaken();
             }
 
-            messageCount++;
             cluster.sendMessages(1);
+            messageCount++;
             cluster.awaitResponseMessageCount(messageCount);
             cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
 

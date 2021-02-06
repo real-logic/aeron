@@ -41,13 +41,11 @@ int aeron_ipc_publication_create(
     char path[AERON_MAX_PATH];
     int path_length = aeron_ipc_publication_location(path, sizeof(path), context->aeron_dir, registration_id);
     aeron_ipc_publication_t *_pub = NULL;
-    const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(params->term_length, context->file_page_size);
-    int64_t now_ns = aeron_clock_cached_nano_time(context->cached_clock);
 
     *publication = NULL;
 
-    if (usable_fs_space < log_length)
+    if (context->perform_storage_checks && context->usable_fs_space_func(context->aeron_dir) < log_length)
     {
         AERON_SET_ERR(
             ENOSPC,
@@ -129,6 +127,8 @@ int aeron_ipc_publication_create(
 
         _pub->log_meta_data->active_term_count = 0;
     }
+
+    int64_t now_ns = aeron_clock_cached_nano_time(context->cached_clock);
 
     _pub->log_meta_data->initial_term_id = initial_term_id;
     _pub->log_meta_data->mtu_length = (int32_t)params->mtu_length;

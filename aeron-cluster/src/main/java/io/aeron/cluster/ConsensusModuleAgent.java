@@ -2459,31 +2459,35 @@ final class ConsensusModuleAgent implements Agent
 
     private int updateLeaderPosition(final long nowNs)
     {
-        final long appendPosition = this.appendPosition.get();
-        thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
-        final long commitPosition = min(quorumPosition(activeMembers, rankedPositions), appendPosition);
-
-        if (commitPosition > this.commitPosition.getWeak() ||
-            nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
+        if (null != appendPosition)
         {
-            for (final ClusterMember member : activeMembers)
+            final long position = appendPosition.get();
+            thisMember.logPosition(position).timeOfLastAppendPositionNs(nowNs);
+            final long commitPosition = min(quorumPosition(activeMembers, rankedPositions), position);
+
+            if (commitPosition > this.commitPosition.getWeak() ||
+                nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
             {
-                if (member.id() != memberId)
+                for (final ClusterMember member : activeMembers)
                 {
-                    consensusPublisher.commitPosition(member.publication(), leadershipTermId, commitPosition, memberId);
+                    if (member.id() != memberId)
+                    {
+                        consensusPublisher.commitPosition(
+                            member.publication(), leadershipTermId, commitPosition, memberId);
+                    }
                 }
+
+                this.commitPosition.setOrdered(commitPosition);
+                timeOfLastLogUpdateNs = nowNs;
+
+                clearUncommittedEntriesTo(commitPosition);
+                if (pendingMemberRemovals > 0)
+                {
+                    handleMemberRemovals(commitPosition);
+                }
+
+                return 1;
             }
-
-            this.commitPosition.setOrdered(commitPosition);
-            timeOfLastLogUpdateNs = nowNs;
-
-            clearUncommittedEntriesTo(commitPosition);
-            if (pendingMemberRemovals > 0)
-            {
-                handleMemberRemovals(commitPosition);
-            }
-
-            return 1;
         }
 
         return 0;
@@ -2491,15 +2495,18 @@ final class ConsensusModuleAgent implements Agent
 
     private int updateFollowerPosition(final long nowNs)
     {
-        final long appendPosition = this.appendPosition.get();
-
-        if ((appendPosition != lastAppendPosition ||
-            nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
-            consensusPublisher.appendPosition(leaderMember.publication(), leadershipTermId, appendPosition, memberId))
+        if (null != appendPosition)
         {
-            lastAppendPosition = appendPosition;
-            timeOfLastAppendPositionNs = nowNs;
-            return 1;
+            final long position = appendPosition.get();
+
+            if ((position != lastAppendPosition ||
+                nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
+                consensusPublisher.appendPosition(leaderMember.publication(), leadershipTermId, position, memberId))
+            {
+                lastAppendPosition = position;
+                timeOfLastAppendPositionNs = nowNs;
+                return 1;
+            }
         }
 
         return 0;
@@ -2873,9 +2880,12 @@ final class ConsensusModuleAgent implements Agent
 
             if (null != appendPosition && appendPosition.registrationId() == registrationId)
             {
-                ctx.countedErrorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
                 appendPosition = null;
-                enterElection();
+                if (NULL_POSITION == terminationPosition)
+                {
+                    ctx.countedErrorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
+                    enterElection();
+                }
             }
         }
     }

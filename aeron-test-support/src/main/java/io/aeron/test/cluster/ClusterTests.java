@@ -126,6 +126,7 @@ public class ClusterTests
             warning.printStackTrace();
         }
     }
+
     public static void failOnClusterError()
     {
         final Throwable error = ERROR.getAndSet(null);

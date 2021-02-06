@@ -372,14 +372,14 @@ final class ConsensusModuleAgent implements Agent
         if (leadershipTermId == this.leadershipTermId && null != session && Cluster.Role.LEADER == role)
         {
             session.closing(CloseReason.CLIENT_ACTION);
-            session.disconnect(ctx.errorHandler());
+            session.disconnect(ctx.countedErrorHandler());
 
             if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
             {
                 session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
-                session.close(ctx.errorHandler());
+                session.close(ctx.countedErrorHandler());
             }
         }
     }
@@ -950,7 +950,7 @@ final class ConsensusModuleAgent implements Agent
                 session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
-                session.close(ctx.errorHandler());
+                session.close(ctx.countedErrorHandler());
             }
         }
     }
@@ -1130,7 +1130,7 @@ final class ConsensusModuleAgent implements Agent
     {
         if (timeUnit != clusterTimeUnit)
         {
-            ctx.errorHandler().onError(new ClusterException(
+            ctx.countedErrorHandler().onError(new ClusterException(
                 "incompatible timestamp units: " + clusterTimeUnit + " log=" + timeUnit,
                 AeronException.Category.FATAL));
             unexpectedTermination();
@@ -1139,7 +1139,7 @@ final class ConsensusModuleAgent implements Agent
 
         if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
         {
-            ctx.errorHandler().onError(new ClusterException(
+            ctx.countedErrorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " log=" + SemanticVersion.toString(appVersion),
                 AeronException.Category.FATAL));
@@ -2227,7 +2227,7 @@ final class ConsensusModuleAgent implements Agent
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
-                        session.close(ctx.errorHandler());
+                        session.close(ctx.countedErrorHandler());
 
                         if (session.closeReason() == CloseReason.TIMEOUT)
                         {
@@ -2865,7 +2865,7 @@ final class ConsensusModuleAgent implements Agent
             {
                 if (registrationId == clientId)
                 {
-                    ctx.errorHandler().onError(new ClusterException(
+                    ctx.countedErrorHandler().onError(new ClusterException(
                         "Aeron client in service closed unexpectedly", WARN));
                     unexpectedTermination();
                 }
@@ -2873,7 +2873,7 @@ final class ConsensusModuleAgent implements Agent
 
             if (null != appendPosition && appendPosition.registrationId() == registrationId)
             {
-                ctx.errorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
+                ctx.countedErrorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
                 appendPosition = null;
                 enterElection();
             }

@@ -181,21 +181,21 @@ public class StartFromTruncatedRecordingLogTest
 
     @Test
     @Timeout(30)
-    public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws Exception
+    public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws IOException
     {
-        stopAndStartClusterWithTruncationOfRecordingLog();
-        assertClusterIsFunctioningCorrectly();
+        restartClusterWithTruncatedRecordingLog();
+        assertClusterIsOperational();
 
-        stopAndStartClusterWithTruncationOfRecordingLog();
-        assertClusterIsFunctioningCorrectly();
+        restartClusterWithTruncatedRecordingLog();
+        assertClusterIsOperational();
 
-        stopAndStartClusterWithTruncationOfRecordingLog();
-        assertClusterIsFunctioningCorrectly();
+        restartClusterWithTruncatedRecordingLog();
+        assertClusterIsOperational();
 
         ClusterTests.failOnClusterError();
     }
 
-    private void stopAndStartClusterWithTruncationOfRecordingLog() throws Exception
+    private void restartClusterWithTruncatedRecordingLog() throws IOException
     {
         final int leaderMemberId = awaitLeader();
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
@@ -231,7 +231,7 @@ public class StartFromTruncatedRecordingLogTest
         return leaderMemberId;
     }
 
-    private void assertClusterIsFunctioningCorrectly()
+    private void assertClusterIsOperational()
     {
         awaitLeader();
         connectClient();

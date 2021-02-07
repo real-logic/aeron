@@ -993,14 +993,8 @@ final class ConsensusModuleAgent implements Agent
                 ++serviceAckId;
                 takeSnapshot(timestamp, logPosition, serviceAcks);
 
-                if (NULL_POSITION == terminationPosition || logPosition < terminationPosition)
+                if (NULL_POSITION == terminationPosition)
                 {
-                    final long nowNs = clusterClock.timeNanos();
-                    for (final ClusterSession session : sessionByIdMap.values())
-                    {
-                        session.timeOfLastActivityNs(nowNs);
-                    }
-
                     state(ConsensusModule.State.ACTIVE);
                     if (Cluster.Role.LEADER == role)
                     {
@@ -1015,7 +1009,8 @@ final class ConsensusModuleAgent implements Agent
                         clusterTermination.deadlineNs(clusterClock.timeNanos() + ctx.terminationTimeoutNs());
                     }
 
-                    state(ConsensusModule.State.TERMINATING);
+                    state(logPosition < terminationPosition ?
+                        ConsensusModule.State.ACTIVE : ConsensusModule.State.TERMINATING);
                 }
             }
             else if (ConsensusModule.State.QUITTING == state)
@@ -2692,6 +2687,12 @@ final class ConsensusModuleAgent implements Agent
         recordingLog.force(ctx.fileSyncLevel());
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
         ctx.snapshotCounter().incrementOrdered();
+
+        final long nowNs = clusterClock.timeNanos();
+        for (final ClusterSession session : sessionByIdMap.values())
+        {
+            session.timeOfLastActivityNs(nowNs);
+        }
     }
 
     private void awaitRecordingComplete(

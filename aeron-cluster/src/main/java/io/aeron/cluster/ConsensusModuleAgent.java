@@ -2881,7 +2881,7 @@ final class ConsensusModuleAgent implements Agent
             if (null != appendPosition && appendPosition.registrationId() == registrationId)
             {
                 appendPosition = null;
-                if (NULL_POSITION == terminationPosition)
+                if (NULL_POSITION == terminationPosition && null == election)
                 {
                     ctx.countedErrorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
                     enterElection();
@@ -2928,8 +2928,6 @@ final class ConsensusModuleAgent implements Agent
 
     private void tryStopLogRecording()
     {
-        appendPosition = null;
-
         if (NULL_VALUE != logSubscriptionId && archive.archiveProxy().publication().isConnected())
         {
             try
@@ -2943,6 +2941,8 @@ final class ConsensusModuleAgent implements Agent
 
             logSubscriptionId = NULL_VALUE;
         }
+
+        appendPosition = null;
     }
 
     private void appendDynamicJoinTermAndSnapshots()

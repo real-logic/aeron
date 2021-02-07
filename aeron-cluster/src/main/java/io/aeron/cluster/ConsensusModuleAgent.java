@@ -714,6 +714,7 @@ final class ConsensusModuleAgent implements Agent
         if (leadershipTermId == this.leadershipTermId && Cluster.Role.FOLLOWER == role)
         {
             terminationPosition = logPosition;
+            timeOfLastLogUpdateNs = clusterClock.timeNanos();
         }
     }
 
@@ -993,24 +994,19 @@ final class ConsensusModuleAgent implements Agent
                 ++serviceAckId;
                 takeSnapshot(timestamp, logPosition, serviceAcks);
 
-                if (NULL_POSITION == terminationPosition)
+                if (null != clusterTermination)
+                {
+                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
+                    clusterTermination.deadlineNs(clusterClock.timeNanos() + ctx.terminationTimeoutNs());
+                    state(ConsensusModule.State.TERMINATING);
+                }
+                else
                 {
                     state(ConsensusModule.State.ACTIVE);
                     if (Cluster.Role.LEADER == role)
                     {
                         ClusterControl.ToggleState.reset(controlToggle);
                     }
-                }
-                else
-                {
-                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
-                    if (null != clusterTermination)
-                    {
-                        clusterTermination.deadlineNs(clusterClock.timeNanos() + ctx.terminationTimeoutNs());
-                    }
-
-                    state(logPosition < terminationPosition ?
-                        ConsensusModule.State.ACTIVE : ConsensusModule.State.TERMINATING);
                 }
             }
             else if (ConsensusModule.State.QUITTING == state)
@@ -1194,7 +1190,6 @@ final class ConsensusModuleAgent implements Agent
                 else
                 {
                     clusterMemberQuit(memberId);
-
                     if (leaderMemberId == memberId && null == election)
                     {
                         commitPosition.proposeMaxOrdered(logPosition);

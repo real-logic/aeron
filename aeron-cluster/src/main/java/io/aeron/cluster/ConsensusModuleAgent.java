@@ -2881,7 +2881,12 @@ final class ConsensusModuleAgent implements Agent
             if (null != appendPosition && appendPosition.registrationId() == registrationId)
             {
                 appendPosition = null;
-                if (NULL_POSITION == terminationPosition && null == election)
+                if (null != election)
+                {
+                    election.handleError(
+                        clusterClock.timeNanos(), new ClusterException("log recording ended unexpectedly", WARN));
+                }
+                else if (NULL_POSITION == terminationPosition)
                 {
                     ctx.countedErrorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
                     enterElection();

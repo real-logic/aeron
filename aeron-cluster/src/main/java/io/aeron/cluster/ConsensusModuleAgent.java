@@ -546,8 +546,8 @@ final class ConsensusModuleAgent implements Agent
             leadershipTermId == this.leadershipTermId &&
             leaderId == leaderMember.id())
         {
-            timeOfLastLogUpdateNs = clusterClock.timeNanos();
             notifiedCommitPosition = Math.max(notifiedCommitPosition, logPosition);
+            timeOfLastLogUpdateNs = clusterClock.timeNanos();
         }
         else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
         {
@@ -585,8 +585,8 @@ final class ConsensusModuleAgent implements Agent
             leadershipTermId == this.leadershipTermId &&
             leaderMemberId == leaderMember.id())
         {
-            timeOfLastLogUpdateNs = clusterClock.timeNanos();
             notifiedCommitPosition = logPosition;
+            timeOfLastLogUpdateNs = clusterClock.timeNanos();
         }
         else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
         {
@@ -714,6 +714,7 @@ final class ConsensusModuleAgent implements Agent
         if (leadershipTermId == this.leadershipTermId && Cluster.Role.FOLLOWER == role)
         {
             terminationPosition = logPosition;
+            notifiedCommitPosition = logPosition;
             timeOfLastLogUpdateNs = clusterClock.timeNanos();
         }
     }

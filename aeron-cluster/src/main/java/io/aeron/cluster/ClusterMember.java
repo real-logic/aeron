@@ -833,7 +833,7 @@ public final class ClusterMember
     }
 
     /**
-     * Has the members of the cluster the voted reached the provided position in their log.
+     * Have the members of the cluster the voted reached the provided position in their log.
      *
      * @param clusterMembers   to check.
      * @param position         to compare the {@link #logPosition()} against.
@@ -852,6 +852,30 @@ public final class ClusterMember
         }
 
         return true;
+    }
+
+    /**
+     * Have a quorum of members of the cluster reached the provided position in their log.
+     *
+     * @param clusterMembers   to check.
+     * @param position         to compare the {@link #logPosition()} against.
+     * @param leadershipTermId expected of the members.
+     * @return true if a quorum of members have reached this position otherwise false.
+     */
+    public static boolean haveQuorumReachedPosition(
+        final ClusterMember[] clusterMembers, final long position, final long leadershipTermId)
+    {
+        int votes = 0;
+
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member.leadershipTermId == leadershipTermId && member.logPosition >= position)
+            {
+                ++votes;
+            }
+        }
+
+        return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
     }
 
     /**

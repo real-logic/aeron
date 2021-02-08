@@ -611,9 +611,17 @@ class Election
             if (consensusModuleAgent.electionComplete())
             {
                 state(CLOSED, nowNs);
+                workCount += 1;
             }
-
-            workCount += 1;
+        }
+        else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()) &&
+            ClusterMember.haveQuorumReachedPosition(clusterMembers, logPosition, leadershipTermId))
+        {
+            if (consensusModuleAgent.electionComplete())
+            {
+                state(CLOSED, nowNs);
+                workCount += 1;
+            }
         }
 
         return workCount;

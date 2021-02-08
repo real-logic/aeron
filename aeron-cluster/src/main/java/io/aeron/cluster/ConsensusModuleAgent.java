@@ -272,8 +272,6 @@ final class ConsensusModuleAgent implements Agent
                 ++serviceAckId;
             }
 
-            state(ConsensusModule.State.ACTIVE);
-
             election = new Election(
                 true,
                 recoveryPlan.lastLeadershipTermId,
@@ -285,6 +283,8 @@ final class ConsensusModuleAgent implements Agent
                 consensusPublisher,
                 ctx,
                 this);
+
+            state(ConsensusModule.State.ACTIVE);
         }
 
         unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
@@ -1835,12 +1835,7 @@ final class ConsensusModuleAgent implements Agent
             }
             else if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
             {
-                if (NULL_POSITION != terminationPosition && logAdapter.position() >= terminationPosition)
-                {
-                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
-                    state(ConsensusModule.State.TERMINATING);
-                }
-                else if (nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatTimeoutNs))
+                if (nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatTimeoutNs) && NULL_POSITION == terminationPosition)
                 {
                     ctx.countedErrorHandler().onError(new ClusterException("leader heartbeat timeout", WARN));
                     enterElection();
@@ -1872,14 +1867,17 @@ final class ConsensusModuleAgent implements Agent
         {
             if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
             {
-                if (null != appendPosition)
+                if (NULL_POSITION != terminationPosition && logAdapter.position() >= terminationPosition)
+                {
+                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
+                    state(ConsensusModule.State.TERMINATING);
+                }
+                else if (null != appendPosition)
                 {
                     final int count = logAdapter.poll(min(notifiedCommitPosition, appendPosition.get()));
                     if (0 == count && logAdapter.isImageClosed())
                     {
-                        ctx.countedErrorHandler().onError(new ClusterException(
-                            "log disconnected from leader: logPosition=" + logAdapter.position(), WARN));
-
+                        ctx.countedErrorHandler().onError(new ClusterException("log disconnected from leader", WARN));
                         enterElection();
                         return 1;
                     }

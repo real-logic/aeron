@@ -22,7 +22,7 @@ import java.util.ArrayDeque;
 /**
  * State holder for ACKs from each of the services.
  */
-class ServiceAck
+final class ServiceAck
 {
     private final long ackId;
     private final long logPosition;

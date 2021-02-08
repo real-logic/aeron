@@ -208,8 +208,8 @@ public final class DriverConductor implements Agent
             final long registrationId = toDriverCommands.nextCorrelationId();
             RawLog rawLog = null;
             CongestionControl congestionControl = null;
-            UnsafeBufferPosition hwmPosition = null;
-            UnsafeBufferPosition receiverPosition = null;
+            UnsafeBufferPosition hwmPos = null;
+            UnsafeBufferPosition receiverPos = null;
 
             try
             {
@@ -236,9 +236,9 @@ public final class DriverConductor implements Agent
                     ctx,
                     countersManager);
 
-                hwmPosition = ReceiverHwm .allocate(
+                hwmPos = ReceiverHwm .allocate(
                     tempBuffer, countersManager, registrationId, sessionId, streamId, udpChannel.originalUriString());
-                receiverPosition = ReceiverPos.allocate(
+                receiverPos = ReceiverPos.allocate(
                     tempBuffer, countersManager, registrationId, sessionId, streamId, udpChannel.originalUriString());
 
                 final InferableBoolean groupSubscription = subscriberPositions.get(0).subscription().group();
@@ -259,8 +259,8 @@ public final class DriverConductor implements Agent
                     rawLog,
                     treatAsMulticast ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
                     subscriberPositions,
-                    hwmPosition,
-                    receiverPosition,
+                    hwmPos,
+                    receiverPos,
                     sourceAddress,
                     congestionControl);
 
@@ -286,7 +286,7 @@ public final class DriverConductor implements Agent
             catch (final Throwable ex)
             {
                 subscriberPositions.forEach((subscriberPosition) -> subscriberPosition.position().close());
-                CloseHelper.quietCloseAll(rawLog, congestionControl, hwmPosition, receiverPosition);
+                CloseHelper.quietCloseAll(rawLog, congestionControl, hwmPos, receiverPos);
                 throw ex;
             }
         }
@@ -1084,36 +1084,35 @@ public final class DriverConductor implements Agent
             ctx.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
         flowControl.initialize(ctx, udpChannel, initialTermId, params.termLength);
 
-        RawLog rawLog = null;
-        UnsafeBufferPosition publisherPosition = null;
-        UnsafeBufferPosition publisherLimit = null;
-        UnsafeBufferPosition senderPosition = null;
-        UnsafeBufferPosition senderLimit = null;
+        final RawLog rawLog = newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
+        UnsafeBufferPosition publisherPos = null;
+        UnsafeBufferPosition publisherLmt = null;
+        UnsafeBufferPosition senderPos = null;
+        UnsafeBufferPosition senderLmt = null;
         AtomicCounter senderBpe = null;
         try
         {
-            rawLog = newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
-            publisherPosition = PublisherPos.allocate(
+            publisherPos = PublisherPos.allocate(
                 tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-            publisherLimit = PublisherLimit.allocate(
+            publisherLmt = PublisherLimit.allocate(
                 tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-            senderPosition = SenderPos.allocate(
+            senderPos = SenderPos.allocate(
                 tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-            senderLimit = SenderLimit.allocate(
+            senderLmt = SenderLimit.allocate(
                 tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
             senderBpe = SenderBpe.allocate(
                 tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
 
-            countersManager.setCounterOwnerId(publisherLimit.id(), clientId);
+            countersManager.setCounterOwnerId(publisherLmt.id(), clientId);
 
             if (params.hasPosition)
             {
                 final int bits = LogBufferDescriptor.positionBitsToShift(params.termLength);
                 final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
-                publisherPosition.setOrdered(position);
-                publisherLimit.setOrdered(position);
-                senderPosition.setOrdered(position);
-                senderLimit.setOrdered(position);
+                publisherPos.setOrdered(position);
+                publisherLmt.setOrdered(position);
+                senderPos.setOrdered(position);
+                senderLmt.setOrdered(position);
             }
 
             final RetransmitHandler retransmitHandler = new RetransmitHandler(
@@ -1129,10 +1128,10 @@ public final class DriverConductor implements Agent
                 channelEndpoint,
                 rawLog,
                 Configuration.producerWindowLength(params.termLength, ctx.publicationTermWindowLength()),
-                publisherPosition,
-                publisherLimit,
-                senderPosition,
-                senderLimit,
+                publisherPos,
+                publisherLmt,
+                senderPos,
+                senderLmt,
                 senderBpe,
                 sessionId,
                 streamId,
@@ -1152,8 +1151,7 @@ public final class DriverConductor implements Agent
         }
         catch (final Throwable ex)
         {
-            CloseHelper.quietCloseAll(
-                rawLog, publisherPosition, publisherLimit, senderPosition, senderLimit, senderBpe);
+            CloseHelper.quietCloseAll(rawLog, publisherPos, publisherLmt, senderPos, senderLmt, senderBpe);
             throw ex;
         }
     }
@@ -1550,15 +1548,14 @@ public final class DriverConductor implements Agent
         final boolean isExclusive,
         final PublicationParams params)
     {
-        RawLog rawLog = null;
+        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, IPC_MEDIA);
+        final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
+        final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
+
         UnsafeBufferPosition publisherPosition = null;
         UnsafeBufferPosition publisherLimit = null;
         try
         {
-            final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, IPC_MEDIA);
-            final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
-            rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
-
             publisherPosition = PublisherPos.allocate(
                 tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
             publisherLimit = PublisherLimit.allocate(

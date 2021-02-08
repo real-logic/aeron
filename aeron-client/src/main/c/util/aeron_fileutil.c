@@ -453,6 +453,7 @@ int aeron_raw_log_map(
         else
         {
             AERON_SET_ERR(errno, "Failed to truncate raw log, filename: %s", path);
+            close(fd);
         }
     }
     else
@@ -483,6 +484,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
         else
         {
             AERON_SET_ERR(errno, "Failed to stat existing raw log, filename: %s", path);
+            close(fd);
             return -1;
         }
 

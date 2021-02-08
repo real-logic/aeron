@@ -1834,17 +1834,16 @@ final class ConsensusModuleAgent implements Agent
             }
             else if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
             {
-                if (NULL_POSITION != terminationPosition && logAdapter.position() >= terminationPosition)
-                {
-                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
-                    state(ConsensusModule.State.TERMINATING);
-                }
-
                 if (nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatTimeoutNs))
                 {
                     ctx.countedErrorHandler().onError(new ClusterException("leader heartbeat timeout", WARN));
                     enterElection();
                     workCount += 1;
+                }
+                else if (NULL_POSITION != terminationPosition && logAdapter.position() >= terminationPosition)
+                {
+                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
+                    state(ConsensusModule.State.TERMINATING);
                 }
             }
         }
@@ -1920,26 +1919,33 @@ final class ConsensusModuleAgent implements Agent
         }
         else
         {
-            if ((ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state) &&
-                null != appendPosition)
+            if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
             {
-                final int count = logAdapter.poll(min(notifiedCommitPosition, appendPosition.get()));
-                if (0 == count && logAdapter.isImageClosed())
+                if (null != appendPosition)
                 {
-                    ctx.countedErrorHandler().onError(new ClusterException(
-                        "log disconnected from leader: logPosition=" + logAdapter.position() +
-                        " commitPosition=" + commitPosition.getWeak() +
-                        " leadershipTermId=" + leadershipTermId +
-                        " leaderId=" + leaderMember.id(),
-                        WARN));
+                    final int count = logAdapter.poll(min(notifiedCommitPosition, appendPosition.get()));
+                    if (0 == count && logAdapter.isImageClosed())
+                    {
+                        ctx.countedErrorHandler().onError(new ClusterException(
+                            "log disconnected from leader: logPosition=" + logAdapter.position() +
+                            " commitPosition=" + commitPosition.getWeak() +
+                            " leadershipTermId=" + leadershipTermId +
+                            " leaderId=" + leaderMember.id(),
+                            WARN));
 
-                    enterElection();
-                    return 1;
+                        enterElection();
+                        return 1;
+                    }
+
+                    commitPosition.proposeMaxOrdered(logAdapter.position());
+                    workCount += ingressAdapter.poll();
+                    workCount += count;
                 }
-
-                commitPosition.proposeMaxOrdered(logAdapter.position());
-                workCount += ingressAdapter.poll();
-                workCount += count;
+                else if (NULL_POSITION != terminationPosition && logAdapter.position() >= terminationPosition)
+                {
+                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
+                    state(ConsensusModule.State.TERMINATING);
+                }
             }
 
             workCount += updateFollowerPosition(nowNs);

@@ -1920,7 +1920,8 @@ final class ConsensusModuleAgent implements Agent
         }
         else
         {
-            if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
+            if ((ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state) &&
+                null != appendPosition)
             {
                 final int count = logAdapter.poll(min(notifiedCommitPosition, appendPosition.get()));
                 if (0 == count && logAdapter.isImageClosed())

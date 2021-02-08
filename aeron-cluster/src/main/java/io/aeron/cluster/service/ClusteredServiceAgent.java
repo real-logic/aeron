@@ -948,10 +948,22 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             activeLifecycleCallbackName = null;
         }
 
-        final long id = ackId++;
-        while (!consensusModuleProxy.ack(logPosition, clusterTime, id, NULL_VALUE, serviceId))
+        try
         {
-            idle();
+            int attempts = 5;
+            final long id = ackId++;
+            while (!consensusModuleProxy.ack(logPosition, clusterTime, id, NULL_VALUE, serviceId))
+            {
+                if (0 == --attempts)
+                {
+                    break;
+                }
+                idle();
+            }
+        }
+        catch (final Exception ex)
+        {
+            ctx.countedErrorHandler().onError(ex);
         }
 
         terminationPosition = NULL_VALUE;

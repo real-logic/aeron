@@ -1084,62 +1084,78 @@ public final class DriverConductor implements Agent
             ctx.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
         flowControl.initialize(ctx, udpChannel, initialTermId, params.termLength);
 
-        final RawLog rawLog = newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
-
-        final UnsafeBufferPosition publisherPosition = PublisherPos.allocate(
-            tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-        final UnsafeBufferPosition publisherLimit = PublisherLimit.allocate(
-            tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-        final UnsafeBufferPosition senderPosition = SenderPos.allocate(
-            tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-        final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
-            tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-
-        countersManager.setCounterOwnerId(publisherLimit.id(), clientId);
-
-        if (params.hasPosition)
+        RawLog rawLog = null;
+        UnsafeBufferPosition publisherPosition = null;
+        UnsafeBufferPosition publisherLimit = null;
+        UnsafeBufferPosition senderPosition = null;
+        UnsafeBufferPosition senderLimit = null;
+        AtomicCounter senderBpe = null;
+        try
         {
-            final int bits = LogBufferDescriptor.positionBitsToShift(params.termLength);
-            final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
-            publisherPosition.setOrdered(position);
-            publisherLimit.setOrdered(position);
-            senderPosition.setOrdered(position);
-            senderLimit.setOrdered(position);
+            rawLog = newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
+            publisherPosition = PublisherPos.allocate(
+                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+            publisherLimit = PublisherLimit.allocate(
+                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+            senderPosition = SenderPos.allocate(
+                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+            senderLimit = SenderLimit.allocate(
+                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+            senderBpe = SenderBpe.allocate(
+                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+
+            countersManager.setCounterOwnerId(publisherLimit.id(), clientId);
+
+            if (params.hasPosition)
+            {
+                final int bits = LogBufferDescriptor.positionBitsToShift(params.termLength);
+                final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
+                publisherPosition.setOrdered(position);
+                publisherLimit.setOrdered(position);
+                senderPosition.setOrdered(position);
+                senderLimit.setOrdered(position);
+            }
+
+            final RetransmitHandler retransmitHandler = new RetransmitHandler(
+                cachedNanoClock,
+                ctx.systemCounters().get(INVALID_PACKETS),
+                ctx.retransmitUnicastDelayGenerator(),
+                ctx.retransmitUnicastLingerGenerator());
+
+            final NetworkPublication publication = new NetworkPublication(
+                registrationId,
+                ctx,
+                params,
+                channelEndpoint,
+                rawLog,
+                Configuration.producerWindowLength(params.termLength, ctx.publicationTermWindowLength()),
+                publisherPosition,
+                publisherLimit,
+                senderPosition,
+                senderLimit,
+                senderBpe,
+                sessionId,
+                streamId,
+                initialTermId,
+                flowControl,
+                retransmitHandler,
+                networkPublicationThreadLocals,
+                isExclusive);
+
+            channelEndpoint.incRef();
+            networkPublications.add(publication);
+            senderProxy.newNetworkPublication(publication);
+            linkSpies(subscriptionLinks, publication);
+            activeSessionSet.add(new SessionKey(sessionId, streamId, canonicalForm));
+
+            return publication;
         }
-
-        final RetransmitHandler retransmitHandler = new RetransmitHandler(
-            cachedNanoClock,
-            ctx.systemCounters().get(INVALID_PACKETS),
-            ctx.retransmitUnicastDelayGenerator(),
-            ctx.retransmitUnicastLingerGenerator());
-
-        final NetworkPublication publication = new NetworkPublication(
-            registrationId,
-            ctx,
-            params,
-            channelEndpoint,
-            rawLog,
-            Configuration.producerWindowLength(params.termLength, ctx.publicationTermWindowLength()),
-            publisherPosition,
-            publisherLimit,
-            senderPosition,
-            senderLimit,
-            SenderBpe.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
-            sessionId,
-            streamId,
-            initialTermId,
-            flowControl,
-            retransmitHandler,
-            networkPublicationThreadLocals,
-            isExclusive);
-
-        channelEndpoint.incRef();
-        networkPublications.add(publication);
-        senderProxy.newNetworkPublication(publication);
-        linkSpies(subscriptionLinks, publication);
-        activeSessionSet.add(new SessionKey(sessionId, streamId, canonicalForm));
-
-        return publication;
+        catch (final Throwable ex)
+        {
+            CloseHelper.quietCloseAll(
+                rawLog, publisherPosition, publisherLimit, senderPosition, senderLimit, senderBpe);
+            throw ex;
+        }
     }
 
     private RawLog newNetworkPublicationLog(

@@ -1534,42 +1534,54 @@ public final class DriverConductor implements Agent
         final boolean isExclusive,
         final PublicationParams params)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, IPC_MEDIA);
-        final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
-        final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
-
-        final UnsafeBufferPosition publisherPosition = PublisherPos.allocate(
-            tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-        final UnsafeBufferPosition publisherLimit = PublisherLimit.allocate(
-            tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-
-        countersManager.setCounterOwnerId(publisherLimit.id(), clientId);
-
-        if (params.hasPosition)
+        RawLog rawLog = null;
+        UnsafeBufferPosition publisherPosition = null;
+        UnsafeBufferPosition publisherLimit = null;
+        try
         {
-            final int positionBitsToShift = positionBitsToShift(params.termLength);
-            final long position = computePosition(params.termId, params.termOffset, positionBitsToShift, initialTermId);
-            publisherPosition.setOrdered(position);
-            publisherLimit.setOrdered(position);
+            final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, IPC_MEDIA);
+            final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
+            rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
+
+            publisherPosition = PublisherPos.allocate(
+                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+            publisherLimit = PublisherLimit.allocate(
+                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+
+            countersManager.setCounterOwnerId(publisherLimit.id(), clientId);
+
+            if (params.hasPosition)
+            {
+                final int positionBitsToShift = positionBitsToShift(params.termLength);
+                final long position = computePosition(
+                    params.termId, params.termOffset, positionBitsToShift, initialTermId);
+                publisherPosition.setOrdered(position);
+                publisherLimit.setOrdered(position);
+            }
+
+            final IpcPublication publication = new IpcPublication(
+                registrationId,
+                channel,
+                ctx,
+                params.entityTag,
+                sessionId,
+                streamId,
+                publisherPosition,
+                publisherLimit,
+                rawLog,
+                Configuration.producerWindowLength(params.termLength, ctx.ipcPublicationTermWindowLength()),
+                isExclusive);
+
+            ipcPublications.add(publication);
+            activeSessionSet.add(new SessionKey(sessionId, streamId, IPC_MEDIA));
+
+            return publication;
         }
-
-        final IpcPublication publication = new IpcPublication(
-            registrationId,
-            channel,
-            ctx,
-            params.entityTag,
-            sessionId,
-            streamId,
-            publisherPosition,
-            publisherLimit,
-            rawLog,
-            Configuration.producerWindowLength(params.termLength, ctx.ipcPublicationTermWindowLength()),
-            isExclusive);
-
-        ipcPublications.add(publication);
-        activeSessionSet.add(new SessionKey(sessionId, streamId, IPC_MEDIA));
-
-        return publication;
+        catch (final Throwable ex)
+        {
+            CloseHelper.quietCloseAll(rawLog, publisherPosition, publisherLimit);
+            throw ex;
+        }
     }
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)

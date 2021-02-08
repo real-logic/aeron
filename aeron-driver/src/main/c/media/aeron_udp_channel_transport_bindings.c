@@ -204,7 +204,7 @@ int aeron_udp_channel_data_paths_init(
     data_paths->outgoing_interceptors = NULL;
     data_paths->incoming_interceptors = NULL;
 
-    /* if no interceptors, then use sendgmmsg_func from transport bindings. */
+    /* if no interceptors, then use sendmmsg_func from transport bindings. */
     data_paths->sendmmsg_func = media_bindings->sendmmsg_func;
     data_paths->sendmsg_func = media_bindings->sendmsg_func;
     /* if no interceptors, then use passed in recv_func */
@@ -254,8 +254,7 @@ int aeron_udp_channel_data_paths_init(
             last_outgoing_interceptor = interceptor;
         }
 
-        if (aeron_alloc(
-            (void **)&outgoing_transport_interceptor, sizeof(aeron_udp_channel_outgoing_interceptor_t)) < 0)
+        if (aeron_alloc((void **)&outgoing_transport_interceptor, sizeof(aeron_udp_channel_outgoing_interceptor_t)) < 0)
         {
             AERON_APPEND_ERR("%s", "Last outgoing interceptor for UDP transport bindings");
             return -1;
@@ -270,7 +269,7 @@ int aeron_udp_channel_data_paths_init(
 #pragma GCC diagnostic pop
 #endif
 
-        /* last interecptor calls sendmmsg_func/sendmsg_func from transport bindings */
+        /* last interceptor calls sendmmsg_func/sendmsg_func from transport bindings */
         outgoing_transport_interceptor->outgoing_mmsg_func = aeron_udp_channel_outgoing_interceptor_mmsg_to_transport;
         outgoing_transport_interceptor->outgoing_msg_func = aeron_udp_channel_outgoing_interceptor_msg_to_transport;
         outgoing_transport_interceptor->close_func = NULL;

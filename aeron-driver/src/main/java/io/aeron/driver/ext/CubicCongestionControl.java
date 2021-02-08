@@ -111,44 +111,57 @@ public class CubicCongestionControl implements CongestionControl
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {
-        mtu = senderMtuLength;
-        minWindow = senderMtuLength;
-        final int maxWindow = Math.min(termLength >> 1, context.initialWindowLength());
+        AtomicCounter rttIndicator = null;
+        AtomicCounter windowIndicator = null;
+        try
+        {
+            mtu = senderMtuLength;
+            minWindow = senderMtuLength;
+            final int maxWindow = Math.min(termLength >> 1, context.initialWindowLength());
 
-        maxCwnd = maxWindow / mtu;
-        cwnd = 1;
-        w_max = maxCwnd; // initially set w_max to max window and act in the TCP and concave region initially
-        k = StrictMath.cbrt((double)w_max * B / C);
+            maxCwnd = maxWindow / mtu;
+            cwnd = 1;
+            w_max = maxCwnd; // initially set w_max to max window and act in the TCP and concave region initially
+            k = StrictMath.cbrt((double)w_max * B / C);
 
-        // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
-        rttNs = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
-        windowUpdateTimeoutNs = rttNs;
+            // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
+            rttNs = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
+            windowUpdateTimeoutNs = rttNs;
 
-        rttIndicator = PerImageIndicator.allocate(
-            context.tempBuffer(),
-            "rcv-cc-cubic-rtt",
-            countersManager,
-            registrationId,
-            sessionId,
-            streamId,
-            udpChannel.originalUriString());
+            rttIndicator = PerImageIndicator.allocate(
+                context.tempBuffer(),
+                "rcv-cc-cubic-rtt",
+                countersManager,
+                registrationId,
+                sessionId,
+                streamId,
+                udpChannel.originalUriString());
 
-        windowIndicator = PerImageIndicator.allocate(
-            context.tempBuffer(),
-            "rcv-cc-cubic-wnd",
-            countersManager,
-            registrationId,
-            sessionId,
-            streamId,
-            udpChannel.originalUriString());
+            windowIndicator = PerImageIndicator.allocate(
+                context.tempBuffer(),
+                "rcv-cc-cubic-wnd",
+                countersManager,
+                registrationId,
+                sessionId,
+                streamId,
+                udpChannel.originalUriString());
 
-        rttIndicator.setOrdered(0);
-        windowIndicator.setOrdered(minWindow);
+            rttIndicator.setOrdered(0);
+            windowIndicator.setOrdered(minWindow);
+            this.rttIndicator = rttIndicator;
+            this.windowIndicator = windowIndicator;
 
-        lastLossTimestampNs = nanoClock.nanoTime();
-        lastUpdateTimestampNs = lastLossTimestampNs;
+            lastLossTimestampNs = nanoClock.nanoTime();
+            lastUpdateTimestampNs = lastLossTimestampNs;
 
-        errorHandler = context.errorHandler();
+            errorHandler = context.errorHandler();
+        }
+        catch (final Throwable ex)
+        {
+            CloseHelper.close(rttIndicator);
+            CloseHelper.close(windowIndicator);
+            throw ex;
+        }
     }
 
     public boolean shouldMeasureRtt(final long nowNs)

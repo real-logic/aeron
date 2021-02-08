@@ -206,73 +206,88 @@ public final class DriverConductor implements Agent
         if (subscriberPositions.size() > 0)
         {
             final long registrationId = toDriverCommands.nextCorrelationId();
-            final RawLog rawLog = newPublicationImageLog(
-                sessionId,
-                streamId,
-                initialTermId,
-                termBufferLength,
-                isOldestSubscriptionSparse(subscriberPositions),
-                senderMtuLength,
-                registrationId);
+            RawLog rawLog = null;
+            CongestionControl congestionControl = null;
+            UnsafeBufferPosition hwmPosition = null;
+            UnsafeBufferPosition receiverPosition = null;
 
-            final UdpChannel udpChannel = channelEndpoint.udpChannel();
-            final CongestionControl congestionControl = ctx.congestionControlSupplier().newInstance(
-                registrationId,
-                udpChannel,
-                streamId,
-                sessionId,
-                termBufferLength,
-                senderMtuLength,
-                controlAddress,
-                sourceAddress,
-                cachedNanoClock,
-                ctx,
-                countersManager);
-
-            final InferableBoolean groupSubscription = subscriberPositions.get(0).subscription().group();
-            final boolean treatAsMulticast = groupSubscription == INFER ?
-                udpChannel.isMulticast() : groupSubscription == FORCE_TRUE;
-
-            final FeedbackDelayGenerator feedbackDelayGenerator = treatAsMulticast ?
-                ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator();
-
-            final String channel = udpChannel.originalUriString();
-            final PublicationImage image = new PublicationImage(
-                registrationId,
-                ctx,
-                channelEndpoint,
-                transportIndex,
-                controlAddress,
-                sessionId,
-                streamId,
-                initialTermId,
-                activeTermId,
-                initialTermOffset,
-                rawLog,
-                feedbackDelayGenerator,
-                subscriberPositions,
-                ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
-                ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
-                sourceAddress,
-                congestionControl);
-
-            publicationImages.add(image);
-            receiverProxy.newPublicationImage(channelEndpoint, image);
-
-            final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
-            for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+            try
             {
-                final SubscriberPosition position = subscriberPositions.get(i);
-                position.addLink(image);
+                rawLog = newPublicationImageLog(
+                    sessionId,
+                    streamId,
+                    initialTermId,
+                    termBufferLength,
+                    isOldestSubscriptionSparse(subscriberPositions),
+                    senderMtuLength,
+                    registrationId);
 
-                clientProxy.onAvailableImage(
+                final UdpChannel udpChannel = channelEndpoint.udpChannel();
+                congestionControl = ctx.congestionControlSupplier().newInstance(
                     registrationId,
+                    udpChannel,
                     streamId,
                     sessionId,
-                    position.subscription().registrationId(),
-                    position.positionCounterId(),
-                    rawLog.fileName(),
-                    sourceIdentity);
+                    termBufferLength,
+                    senderMtuLength,
+                    controlAddress,
+                    sourceAddress,
+                    cachedNanoClock,
+                    ctx,
+                    countersManager);
+
+                hwmPosition = ReceiverHwm .allocate(
+                    tempBuffer, countersManager, registrationId, sessionId, streamId, udpChannel.originalUriString());
+                receiverPosition = ReceiverPos.allocate(
+                    tempBuffer, countersManager, registrationId, sessionId, streamId, udpChannel.originalUriString());
+
+                final InferableBoolean groupSubscription = subscriberPositions.get(0).subscription().group();
+                final boolean treatAsMulticast = groupSubscription == INFER ?
+                    udpChannel.isMulticast() : groupSubscription == FORCE_TRUE;
+
+                final PublicationImage image = new PublicationImage(
+                    registrationId,
+                    ctx,
+                    channelEndpoint,
+                    transportIndex,
+                    controlAddress,
+                    sessionId,
+                    streamId,
+                    initialTermId,
+                    activeTermId,
+                    initialTermOffset,
+                    rawLog,
+                    treatAsMulticast ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
+                    subscriberPositions,
+                    hwmPosition,
+                    receiverPosition,
+                    sourceAddress,
+                    congestionControl);
+
+                publicationImages.add(image);
+                receiverProxy.newPublicationImage(channelEndpoint, image);
+
+                final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
+                for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+                {
+                    final SubscriberPosition position = subscriberPositions.get(i);
+                    position.addLink(image);
+
+                    clientProxy.onAvailableImage(
+                        registrationId,
+                        streamId,
+                        sessionId,
+                        position.subscription().registrationId(),
+                        position.positionCounterId(),
+                        rawLog.fileName(),
+                        sourceIdentity);
+                }
+            }
+            catch (final Throwable ex)
+            {
+                subscriberPositions.forEach((subscriberPosition) -> subscriberPosition.position().close());
+                CloseHelper.quietCloseAll(rawLog, congestionControl, hwmPosition, receiverPosition);
+                throw ex;
             }
         }
     }

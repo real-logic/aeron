@@ -73,15 +73,45 @@ public final class ClusterBackup implements AutoCloseable
      */
     public enum State
     {
-        INIT(0),
-        BACKUP_QUERY(1),
-        SNAPSHOT_LENGTH_RETRIEVE(2),
-        SNAPSHOT_RETRIEVE(3),
-        LIVE_LOG_REPLAY(4),
-        UPDATE_RECORDING_LOG(5),
+        /**
+         * Query leader for current status for backup.
+         */
+        BACKUP_QUERY(0),
+
+        /**
+         * Retrieve length of snapshot from leader.
+         */
+        SNAPSHOT_LENGTH_RETRIEVE(1),
+
+        /**
+         * Retrieve a copy of the latest snapshot from the leader.
+         */
+        SNAPSHOT_RETRIEVE(2),
+
+        /**
+         * Replay the current live log since snapshot and join it.
+         */
+        LIVE_LOG_REPLAY(3),
+
+        /**
+         * Update the local {@link RecordingLog} for recovery.
+         */
+        UPDATE_RECORDING_LOG(4),
+
+        /**
+         * Back up live log and track progress until next query deadline is reached.
+         */
+        BACKING_UP(5),
+
+        /**
+         * On error or progress stall the backup is reset and started over again.
+         */
         RESET_BACKUP(6),
-        BACKING_UP(7),
-        CLOSED(8);
+
+        /**
+         * The backup is complete and closed.
+         */
+        CLOSED(7);
 
         static final State[] STATES = values();
 

@@ -74,7 +74,7 @@ public class ClusterBackupAgent implements Agent
     private final long coolDownIntervalMs;
     private final long unavailableCounterHandlerRegistrationId;
 
-    private ClusterBackup.State state = INIT;
+    private ClusterBackup.State state = BACKUP_QUERY;
 
     private AeronArchive backupArchive;
     private AeronArchive.AsyncConnect clusterArchiveAsyncConnect;
@@ -162,7 +162,7 @@ public class ClusterBackupAgent implements Agent
     public int doWork()
     {
         final long nowMs = epochClock.time();
-        int workCount = INIT == state ? init(nowMs) : 0;
+        int workCount = 0;
 
         if (nowMs > slowTickDeadlineMs)
         {
@@ -195,12 +195,12 @@ public class ClusterBackupAgent implements Agent
                     workCount += updateRecordingLog(nowMs);
                     break;
 
-                case RESET_BACKUP:
-                    workCount += resetBackup(nowMs);
-                    break;
-
                 case BACKING_UP:
                     workCount += backingUp(nowMs);
+                    break;
+
+                case RESET_BACKUP:
+                    workCount += resetBackup(nowMs);
                     break;
             }
 
@@ -445,14 +445,6 @@ public class ClusterBackupAgent implements Agent
         return workCount;
     }
 
-    private int init(final long nowMs)
-    {
-        timeOfLastProgressMs = nowMs;
-        state(BACKUP_QUERY, nowMs);
-
-        return 1;
-    }
-
     private int resetBackup(final long nowMs)
     {
         timeOfLastProgressMs = nowMs;
@@ -466,7 +458,7 @@ public class ClusterBackupAgent implements Agent
         else if (nowMs > coolDownDeadlineMs)
         {
             coolDownDeadlineMs = NULL_VALUE;
-            state(INIT, nowMs);
+            state(BACKUP_QUERY, nowMs);
             return 1;
         }
 

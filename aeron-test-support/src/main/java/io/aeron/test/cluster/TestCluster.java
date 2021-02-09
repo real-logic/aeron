@@ -70,6 +70,7 @@ public class TestCluster implements AutoCloseable
     private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc?term-length=64k";
     private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
     private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k";
+    private static final long STARTUP_CANVASS_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
     private final DataCollector dataCollector = new DataCollector();
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -284,7 +285,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(ClusterTests.errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(staticClusterMembers)
-            .startupCanvassTimeoutNs(TimeUnit.SECONDS.toNanos(5))
+            .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)
             .appointedLeaderId(appointedLeaderId)
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(INGRESS_CHANNEL)
@@ -422,7 +423,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(ClusterTests.errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(clusterMembers(0, staticMemberCount + 1))
-            .startupCanvassTimeoutNs(TimeUnit.SECONDS.toNanos(5))
+            .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)
             .appointedLeaderId(appointedLeaderId)
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(INGRESS_CHANNEL)
@@ -1253,8 +1254,8 @@ public class TestCluster implements AutoCloseable
             .errorHandler(ClusterTests.errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(clusterMembers(0, 3))
+            .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)
             .serviceCount(2)
-            .appointedLeaderId(NULL_VALUE)
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(LOG_CHANNEL)

@@ -492,6 +492,7 @@ public class ClusterTest
             cluster.awaitResponseMessageCount(messageCount);
             cluster.closeClient();
 
+            cluster.awaitActiveSessionCount(firstLeader, 0);
             cluster.awaitActiveSessionCount(cluster.followers().get(0), 0);
             cluster.awaitActiveSessionCount(cluster.followers().get(1), 0);
 

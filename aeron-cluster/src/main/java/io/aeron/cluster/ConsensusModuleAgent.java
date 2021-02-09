@@ -1016,27 +1016,22 @@ final class ConsensusModuleAgent implements Agent
             }
             else if (ConsensusModule.State.TERMINATING == state)
             {
-                final boolean canTerminate;
                 if (null == clusterTermination)
                 {
-                    if (!consensusPublisher.terminationAck(
-                        leaderMember.publication(), leadershipTermId, logPosition, memberId))
-                    {
-                        ctx.countedErrorHandler().onError(new ClusterException("failed to send termination ack", WARN));
-                    }
-                    canTerminate = true;
+                    consensusPublisher.terminationAck(
+                        leaderMember.publication(), leadershipTermId, logPosition, memberId);
+                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                    closeAndTerminate();
                 }
                 else
                 {
                     clusterTermination.onServicesTerminated();
-                    canTerminate = clusterTermination.canTerminate(
-                        activeMembers, terminationPosition, clusterClock.timeNanos());
-                }
-
-                if (canTerminate)
-                {
-                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
-                    closeAndTerminate();
+                    if (clusterTermination.canTerminate(
+                        activeMembers, terminationPosition, clusterClock.timeNanos()))
+                    {
+                        recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                        closeAndTerminate();
+                    }
                 }
             }
         }
@@ -2875,6 +2870,8 @@ final class ConsensusModuleAgent implements Agent
             if (null != appendPosition && appendPosition.registrationId() == registrationId)
             {
                 appendPosition = null;
+                logSubscriptionId = NULL_VALUE;
+
                 if (null != election)
                 {
                     election.handleError(
@@ -2927,6 +2924,8 @@ final class ConsensusModuleAgent implements Agent
 
     private void tryStopLogRecording()
     {
+        appendPosition = null;
+
         if (NULL_VALUE != logSubscriptionId && archive.archiveProxy().publication().isConnected())
         {
             try
@@ -2940,8 +2939,6 @@ final class ConsensusModuleAgent implements Agent
 
             logSubscriptionId = NULL_VALUE;
         }
-
-        appendPosition = null;
     }
 
     private void appendDynamicJoinTermAndSnapshots()

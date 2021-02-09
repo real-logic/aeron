@@ -1785,6 +1785,10 @@ final class ConsensusModuleAgent implements Agent
         {
             throw new AgentTerminationException("unexpected Aeron close");
         }
+        else if (ConsensusModule.State.CLOSED == state)
+        {
+            unexpectedTermination();
+        }
 
         if (null == dynamicJoin)
         {
@@ -2863,7 +2867,8 @@ final class ConsensusModuleAgent implements Agent
                 {
                     ctx.countedErrorHandler().onError(new ClusterException(
                         "Aeron client in service closed unexpectedly", WARN));
-                    unexpectedTermination();
+                    state(ConsensusModule.State.CLOSED);
+                    return;
                 }
             }
 

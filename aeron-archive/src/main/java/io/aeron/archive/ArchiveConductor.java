@@ -471,20 +471,19 @@ abstract class ArchiveConductor
         {
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
+            return;
         }
-        else
-        {
-            final ListRecordingsSession session = new ListRecordingsSession(
-                correlationId,
-                fromId,
-                count,
-                catalog,
-                controlResponseProxy,
-                controlSession,
-                descriptorBuffer);
-            addSession(session);
-            controlSession.activeListing(session);
-        }
+
+        final ListRecordingsSession session = new ListRecordingsSession(
+            correlationId,
+            fromId,
+            count,
+            catalog,
+            controlResponseProxy,
+            controlSession,
+            descriptorBuffer);
+        addSession(session);
+        controlSession.activeListing(session);
     }
 
     void newListRecordingsForUriSession(
@@ -499,23 +498,22 @@ abstract class ArchiveConductor
         {
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
+            return;
         }
-        else
-        {
-            final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
-                correlationId,
-                fromRecordingId,
-                count,
-                channelFragment,
-                streamId,
-                catalog,
-                controlResponseProxy,
-                controlSession,
-                descriptorBuffer,
-                recordingDescriptorDecoder);
-            addSession(session);
-            controlSession.activeListing(session);
-        }
+
+        final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
+            correlationId,
+            fromRecordingId,
+            count,
+            channelFragment,
+            streamId,
+            catalog,
+            controlResponseProxy,
+            controlSession,
+            descriptorBuffer,
+            recordingDescriptorDecoder);
+        addSession(session);
+        controlSession.activeListing(session);
     }
 
     void listRecording(final long correlationId, final long recordingId, final ControlSession controlSession)
@@ -980,8 +978,6 @@ abstract class ArchiveConductor
         if (!isAbort)
         {
             final long position = session.recordedPosition();
-            closeSession(session);
-
             catalog.recordingStopped(recordingId, position, epochClock.time());
 
             session.sendPendingError(controlResponseProxy);
@@ -991,6 +987,8 @@ abstract class ArchiveConductor
                 session.subscription().registrationId(),
                 position,
                 RecordingSignal.STOP);
+
+            closeSession(session);
         }
         else
         {

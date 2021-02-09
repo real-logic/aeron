@@ -1905,10 +1905,11 @@ final class ConsensusModuleAgent implements Agent
             {
                 unexpectedTermination();
             }
-            else if (poller.poll() != 0 && poller.isPollComplete())
+            else if (poller.poll() != 0 &&
+                poller.isPollComplete() &&
+                poller.controlSessionId() == archive.controlSessionId())
             {
-                if (poller.controlSessionId() == archive.controlSessionId() &&
-                    poller.code() == ControlResponseCode.ERROR)
+                if (poller.code() == ControlResponseCode.ERROR)
                 {
                     for (final ClusterMember member : activeMembers)
                     {

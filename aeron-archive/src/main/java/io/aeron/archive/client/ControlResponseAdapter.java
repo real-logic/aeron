@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
 /**
  * Encapsulate the polling, decoding, and dispatching of archive control protocol response messages.
  */
-public class ControlResponseAdapter implements FragmentHandler
+public final class ControlResponseAdapter implements FragmentHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();

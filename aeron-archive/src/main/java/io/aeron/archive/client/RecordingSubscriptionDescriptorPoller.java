@@ -30,7 +30,7 @@ import org.agrona.ErrorHandler;
  * @see ArchiveProxy#listRecordingSubscriptions(int, int, String, int, boolean, long, long)
  * @see AeronArchive#listRecordingSubscriptions(int, int, String, int, boolean, RecordingSubscriptionDescriptorConsumer)
  */
-public class RecordingSubscriptionDescriptorPoller implements ControlledFragmentHandler
+public final class RecordingSubscriptionDescriptorPoller implements ControlledFragmentHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();

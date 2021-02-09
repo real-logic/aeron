@@ -47,7 +47,7 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class RecordingPos
+public final class RecordingPos
 {
     /**
      * Type id of a recording position counter.

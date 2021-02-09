@@ -27,7 +27,7 @@ import org.agrona.SemanticVersion;
 /**
  * Encapsulate the polling and decoding of archive control protocol response messages.
  */
-public class ControlResponsePoller implements ControlledFragmentHandler
+public final class ControlResponsePoller implements ControlledFragmentHandler
 {
     /**
      * Limit to apply when polling response messages.

@@ -27,7 +27,7 @@ import org.agrona.DirectBuffer;
 /**
  * Encapsulate the polling, decoding, and dispatching of recording events.
  */
-public class RecordingEventsAdapter implements FragmentHandler
+public final class RecordingEventsAdapter implements FragmentHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final RecordingStartedDecoder recordingStartedDecoder = new RecordingStartedDecoder();

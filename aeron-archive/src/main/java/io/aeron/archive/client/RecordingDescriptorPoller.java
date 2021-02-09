@@ -26,7 +26,7 @@ import org.agrona.ErrorHandler;
 /**
  * Encapsulate the polling, decoding, dispatching of recording descriptors from an archive.
  */
-public class RecordingDescriptorPoller implements ControlledFragmentHandler
+public final class RecordingDescriptorPoller implements ControlledFragmentHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();

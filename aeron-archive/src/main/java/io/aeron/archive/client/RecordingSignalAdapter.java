@@ -30,7 +30,7 @@ import static io.aeron.logbuffer.ControlledFragmentHandler.Action.*;
  *
  * @see RecordingSignal
  */
-public class RecordingSignalAdapter
+public final class RecordingSignalAdapter
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();

@@ -975,7 +975,11 @@ abstract class ArchiveConductor
         final long recordingId = session.sessionId();
         recordingSessionByIdMap.remove(recordingId);
 
-        if (!isAbort)
+        if (isAbort)
+        {
+            session.abortClose();
+        }
+        else
         {
             final long position = session.recordedPosition();
             catalog.recordingStopped(recordingId, position, epochClock.time());
@@ -989,10 +993,6 @@ abstract class ArchiveConductor
                 RecordingSignal.STOP);
 
             closeSession(session);
-        }
-        else
-        {
-            session.abortClose();
         }
     }
 

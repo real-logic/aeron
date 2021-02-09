@@ -36,6 +36,13 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
     private final LossGenerator controlLossGenerator;
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer();
 
+    /**
+     * Construct a {@link SendChannelEndpoint} with defaults for loss from {@link DebugChannelEndpointConfiguration}.
+     *
+     * @param udpChannel      for the media.
+     * @param statusIndicator for the endpoint for the channel.
+     * @param context         for configuration.
+     */
     public DebugSendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
     {
@@ -47,6 +54,15 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
             DebugChannelEndpointConfiguration.sendControlLossGeneratorSupplier());
     }
 
+    /**
+     * Construct a {@link SendChannelEndpoint} with configuration for loss rate and seed.
+     *
+     * @param udpChannel           for the media.
+     * @param statusIndicator      for the endpoint for the channel.
+     * @param context              for configuration.
+     * @param dataLossGenerator    for the random loss on the data stream.
+     * @param controlLossGenerator for the random loss on the control stream.
+     */
     public DebugSendChannelEndpoint(
         final UdpChannel udpChannel,
         final AtomicCounter statusIndicator,

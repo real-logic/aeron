@@ -43,21 +43,62 @@ import static java.net.StandardSocketOptions.SO_SNDBUF;
  */
 public abstract class UdpChannelTransport implements AutoCloseable
 {
+    /**
+     * Context for configuration.
+     */
     protected final MediaDriver.Context context;
-    protected final UdpChannel udpChannel;
-    protected final AtomicCounter invalidPackets;
-    protected final ErrorHandler errorHandler;
-    protected UdpTransportPoller transportPoller;
-    protected SelectionKey selectionKey;
-    protected final InetSocketAddress bindAddress;
-    protected final InetSocketAddress endPointAddress;
-    protected InetSocketAddress connectAddress;
-    protected DatagramChannel sendDatagramChannel;
-    protected DatagramChannel receiveDatagramChannel;
-    protected int multicastTtl = 0;
-    protected boolean isClosed = false;
 
-    public UdpChannelTransport(
+    /**
+     * {@link ErrorHandler} for logging errors and progressing with throwing.
+     */
+    protected final ErrorHandler errorHandler;
+
+    /**
+     * Media configuration for the channel.
+     */
+    protected final UdpChannel udpChannel;
+
+    /**
+     * Channel to be used for sending frames from the perspective of the endpoint.
+     */
+    protected DatagramChannel sendDatagramChannel;
+
+    /**
+     * Channel to be used for receiving frames from the perspective of the endpoint.
+     */
+    protected DatagramChannel receiveDatagramChannel;
+
+    /**
+     * Address to connect to if appropriate for sending.
+     */
+    protected InetSocketAddress connectAddress;
+
+    /**
+     * To be used when polling the transport.
+     */
+    protected SelectionKey selectionKey;
+
+    private UdpTransportPoller transportPoller;
+    private final InetSocketAddress bindAddress;
+    private final InetSocketAddress endPointAddress;
+    private final AtomicCounter invalidPackets;
+
+    /**
+     * Can be used to check if the transport is closed so an operation does not proceed.
+     */
+    protected boolean isClosed = false;
+    private int multicastTtl = 0;
+
+    /**
+     * Construct a transport for a given channel.
+     *
+     * @param udpChannel      configuration for the media.
+     * @param endPointAddress to which data will be sent.
+     * @param bindAddress     for listening on.
+     * @param connectAddress  for sending data to.
+     * @param context         for configuration.
+     */
+    protected UdpChannelTransport(
         final UdpChannel udpChannel,
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,

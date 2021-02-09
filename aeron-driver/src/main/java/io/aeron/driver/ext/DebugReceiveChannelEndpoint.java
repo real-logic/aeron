@@ -37,6 +37,14 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
     private final LossGenerator controlLossGenerator;
     private final UnsafeBuffer controlBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
 
+    /**
+     * Construct a {@link ReceiveChannelEndpoint} with defaults for loss from {@link DebugChannelEndpointConfiguration}.
+     *
+     * @param udpChannel      for the media.
+     * @param dispatcher      for forwarding packets.
+     * @param statusIndicator for the endpoint for the channel.
+     * @param context         for configuration.
+     */
     public DebugReceiveChannelEndpoint(
         final UdpChannel udpChannel,
         final DataPacketDispatcher dispatcher,
@@ -52,6 +60,16 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
             DebugChannelEndpointConfiguration.receiveControlLossGeneratorSupplier());
     }
 
+    /**
+     * Construct a {@link ReceiveChannelEndpoint} with configuration for loss rate and seed.
+     *
+     * @param udpChannel           for the media.
+     * @param dispatcher           for forwarding packets.
+     * @param statusIndicator      for the endpoint for the channel.
+     * @param context              for configuration.
+     * @param dataLossGenerator    for the random loss on the data stream.
+     * @param controlLossGenerator for the random loss on the control stream.
+     */
     public DebugReceiveChannelEndpoint(
         final UdpChannel udpChannel,
         final DataPacketDispatcher dispatcher,

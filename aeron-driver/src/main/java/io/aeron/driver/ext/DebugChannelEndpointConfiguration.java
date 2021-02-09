@@ -84,6 +84,13 @@ public class DebugChannelEndpointConfiguration
     private static final double SEND_CONTROL_LOSS_RATE =
         Double.parseDouble(getProperty(SEND_CONTROL_LOSS_RATE_PROP_NAME, "0.0"));
 
+    /**
+     * Supplier of {@link LossGenerator}s with provided loss rate and seed for randomisation.
+     *
+     * @param lossRate to generate at.
+     * @param lossSeed to initialise.
+     * @return a {@link LossGenerator}s with provided loss rate and seed.
+     */
     public static LossGenerator lossGeneratorSupplier(final double lossRate, final long lossSeed)
     {
         if (0 == lossRate)
@@ -94,21 +101,41 @@ public class DebugChannelEndpointConfiguration
         return new RandomLossGenerator(lossRate, lossSeed);
     }
 
+    /**
+     * The supplier of {@link LossGenerator}s for the receive end of a data stream.
+     *
+     * @return the supplier of {@link LossGenerator}s for the receive end of a data stream.
+     */
     public static LossGenerator receiveDataLossGeneratorSupplier()
     {
         return lossGeneratorSupplier(RECEIVE_DATA_LOSS_RATE, RECEIVE_DATA_LOSS_SEED);
     }
 
+    /**
+     * The supplier of {@link LossGenerator}s for the receive end of a control stream.
+     *
+     * @return the supplier of {@link LossGenerator}s for the receive end of a control stream.
+     */
     public static LossGenerator receiveControlLossGeneratorSupplier()
     {
         return lossGeneratorSupplier(RECEIVE_CONTROL_LOSS_RATE, RECEIVE_CONTROL_LOSS_SEED);
     }
 
+    /**
+     * The supplier of {@link LossGenerator}s for the send end of a data stream.
+     *
+     * @return the supplier of {@link LossGenerator}s for the send end of a data stream.
+     */
     public static LossGenerator sendDataLossGeneratorSupplier()
     {
         return lossGeneratorSupplier(SEND_DATA_LOSS_RATE, SEND_DATA_LOSS_SEED);
     }
 
+    /**
+     * The supplier of {@link LossGenerator}s for the send end of a control stream.
+     *
+     * @return the supplier of {@link LossGenerator}s for the send end of a control stream.
+     */
     public static LossGenerator sendControlLossGeneratorSupplier()
     {
         return lossGeneratorSupplier(SEND_CONTROL_LOSS_RATE, SEND_CONTROL_LOSS_SEED);

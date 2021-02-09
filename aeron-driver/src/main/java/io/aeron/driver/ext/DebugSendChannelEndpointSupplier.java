@@ -22,10 +22,18 @@ import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.AtomicCounter;
 
 /**
- * Supply a debug implementation of a {@link SendChannelEndpoint}.
+ * Supply a debug implementation of a {@link SendChannelEndpoint} for testing loss.
  */
 public class DebugSendChannelEndpointSupplier implements SendChannelEndpointSupplier
 {
+    /**
+     * Supply a new instance of a {@link DebugSendChannelEndpoint} for testing loss.
+     *
+     * @param udpChannel      on which the sender will send.
+     * @param statusIndicator for the channel.
+     * @param context         for the configuration of the driver.
+     * @return a new instance of a {@link DebugSendChannelEndpoint} for testing loss.
+     */
     public SendChannelEndpoint newInstance(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
     {

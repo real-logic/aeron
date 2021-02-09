@@ -59,6 +59,13 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter statusIndicator;
     private AtomicCounter localSocketAddressIndicator;
 
+    /**
+     * Construct the sender end for data streams.
+     *
+     * @param udpChannel      configuration for the media.
+     * @param statusIndicator to indicate the status of the channel endpoint.
+     * @param context         for configuration.
+     */
     public SendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
     {

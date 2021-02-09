@@ -23,10 +23,19 @@ import io.aeron.driver.ReceiveChannelEndpointSupplier;
 import org.agrona.concurrent.status.AtomicCounter;
 
 /**
- * Supply a debug implementation of a {@link ReceiveChannelEndpoint}.
+ * Supply a debug implementation of a {@link ReceiveChannelEndpoint} for testing loss.
  */
 public class DebugReceiveChannelEndpointSupplier implements ReceiveChannelEndpointSupplier
 {
+    /**
+     * Supply a new instance of a {@link DebugReceiveChannelEndpoint} for testing loss.
+     *
+     * @param udpChannel      on which the receiver is listening.
+     * @param dispatcher      for dispatching packets to publication images.
+     * @param statusIndicator for the channel.
+     * @param context         for the configuration of the driver.
+     * @return a new instance of a {@link DebugReceiveChannelEndpoint} for testing loss.
+     */
     public ReceiveChannelEndpoint newInstance(
         final UdpChannel udpChannel,
         final DataPacketDispatcher dispatcher,

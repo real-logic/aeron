@@ -86,6 +86,14 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     private InetSocketAddress currentControlAddress;
     private AtomicCounter localSocketAddressIndicator;
 
+    /**
+     * Construct the receiver end for data streams.
+     *
+     * @param udpChannel      configuration for the media.
+     * @param dispatcher      for forwarding packets.
+     * @param statusIndicator to indicate the status of the channel endpoint.
+     * @param context         for configuration.
+     */
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
         final DataPacketDispatcher dispatcher,
@@ -195,16 +203,6 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         }
 
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
-    }
-
-    private void updateLocalSocketAddress(final String bindAddressAndPort)
-    {
-        if (null != localSocketAddressIndicator)
-        {
-            LocalSocketAddressStatus.updateBindAddress(
-                localSocketAddressIndicator, bindAddressAndPort, context.countersMetaDataBuffer());
-            localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
-        }
     }
 
     public void closeStatusIndicator()
@@ -687,6 +685,16 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         else
         {
             multiRcvDestination.transport(transportIndex).timeOfLastActivityNs(nowNs);
+        }
+    }
+
+    private void updateLocalSocketAddress(final String bindAddressAndPort)
+    {
+        if (null != localSocketAddressIndicator)
+        {
+            LocalSocketAddressStatus.updateBindAddress(
+                localSocketAddressIndicator, bindAddressAndPort, context.countersMetaDataBuffer());
+            localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
         }
     }
 }

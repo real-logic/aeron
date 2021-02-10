@@ -18,13 +18,13 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
-import io.aeron.archive.client.ControlResponsePoller;
-import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.client.RecordingSignalPoller;
+import io.aeron.archive.codecs.*;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.service.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -133,11 +133,13 @@ final class ConsensusModuleAgent implements Agent
     private final ArrayList<RecordingLog.Snapshot> dynamicJoinSnapshots = new ArrayList<>();
     private RecordingLog.RecoveryPlan recoveryPlan;
     private AeronArchive archive;
+    private RecordingSignalPoller recordingSignalPoller;
     private Election election;
     private DynamicJoin dynamicJoin;
     private ClusterTermination clusterTermination;
     private long logSubscriptionId = NULL_VALUE;
     private long logRecordingId = NULL_VALUE;
+    private long logRecordedPosition = NULL_POSITION;
     private String liveLogDestination;
     private String catchupLogDestination;
     private String ingressEndpoints;
@@ -241,6 +243,8 @@ final class ConsensusModuleAgent implements Agent
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
+        recordingSignalPoller = new RecordingSignalPoller(
+            archive.controlSessionId(), archive.controlResponsePoller().subscription());
 
         if (null == (dynamicJoin = requiresDynamicJoin()))
         {
@@ -1791,7 +1795,7 @@ final class ConsensusModuleAgent implements Agent
 
         if (null == dynamicJoin)
         {
-            checkForArchiveError(true);
+            checkArchiveEvents(true);
         }
 
         if (nowNs >= markFileUpdateDeadlineNs)
@@ -1870,9 +1874,10 @@ final class ConsensusModuleAgent implements Agent
                     serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
                     state(ConsensusModule.State.TERMINATING);
                 }
-                else if (null != appendPosition)
+                else
                 {
-                    final int count = logAdapter.poll(min(notifiedCommitPosition, appendPosition.get()));
+                    final long limit = null != appendPosition ? appendPosition.get() : logRecordedPosition;
+                    final int count = logAdapter.poll(min(notifiedCommitPosition, limit));
                     if (0 == count && logAdapter.isImageClosed())
                     {
                         ctx.countedErrorHandler().onError(new ClusterException("log disconnected from leader", WARN));
@@ -1894,20 +1899,19 @@ final class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
-    private void checkForArchiveError(final boolean isSlowTick)
+    private void checkArchiveEvents(final boolean isSlowTick)
     {
         if (null != archive)
         {
-            final ControlResponsePoller poller = archive.controlResponsePoller();
+            final RecordingSignalPoller poller = this.recordingSignalPoller;
             if (!poller.subscription().isConnected())
             {
                 unexpectedTermination();
             }
-            else if (poller.poll() != 0 &&
-                poller.isPollComplete() &&
-                poller.controlSessionId() == archive.controlSessionId())
+            else if (poller.poll() > 0 && poller.isPollComplete())
             {
-                if (poller.code() == ControlResponseCode.ERROR)
+                if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+                    poller.code() == ControlResponseCode.ERROR)
                 {
                     for (final ClusterMember member : activeMembers)
                     {
@@ -1939,6 +1943,13 @@ final class ConsensusModuleAgent implements Agent
                     else
                     {
                         throw ex;
+                    }
+                }
+                else if (poller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
+                {
+                    if (poller.recordingSignal() == RecordingSignal.STOP && poller.recordingId() == logRecordingId)
+                    {
+                        logRecordedPosition = poller.recordingPosition();
                     }
                 }
             }
@@ -2300,6 +2311,7 @@ final class ConsensusModuleAgent implements Agent
         if (NULL_VALUE == logRecordingId)
         {
             logRecordingId = RecordingPos.getRecordingId(counters, counterId);
+            logRecordedPosition = NULL_POSITION;
         }
     }
 
@@ -2481,18 +2493,16 @@ final class ConsensusModuleAgent implements Agent
 
     private int updateFollowerPosition(final long nowNs)
     {
-        if (null != appendPosition)
-        {
-            final long position = appendPosition.get();
+        final long recordedPosition = null != appendPosition ? appendPosition.get() : logRecordedPosition;
+        final long position = Math.max(recordedPosition, lastAppendPosition);
 
-            if ((position != lastAppendPosition ||
-                nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
-                consensusPublisher.appendPosition(leaderMember.publication(), leadershipTermId, position, memberId))
-            {
-                lastAppendPosition = position;
-                timeOfLastAppendPositionNs = nowNs;
-                return 1;
-            }
+        if ((recordedPosition > lastAppendPosition ||
+            nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
+            consensusPublisher.appendPosition(leaderMember.publication(), leadershipTermId, position, memberId))
+        {
+            lastAppendPosition = position;
+            timeOfLastAppendPositionNs = nowNs;
+            return 1;
         }
 
         return 0;
@@ -2609,7 +2619,7 @@ final class ConsensusModuleAgent implements Agent
         }
 
         idleStrategy.idle();
-        checkForArchiveError(false);
+        checkArchiveEvents(false);
     }
 
     private void idle(final int workCount)
@@ -2625,7 +2635,7 @@ final class ConsensusModuleAgent implements Agent
 
         if (0 == workCount)
         {
-            checkForArchiveError(false);
+            checkArchiveEvents(false);
         }
     }
 

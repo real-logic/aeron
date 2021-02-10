@@ -25,39 +25,45 @@ import org.agrona.DirectBuffer;
 import org.agrona.SemanticVersion;
 
 /**
- * Encapsulate the polling and decoding of archive control protocol response messages.
+ * Encapsulate the polling and decoding of archive control protocol response and recording signal messages.
  */
-public final class ControlResponsePoller
+public final class RecordingSignalPoller
 {
     /**
-     * Limit to apply when polling response messages.
+     * Limit to apply when polling messages.
      */
     public static final int FRAGMENT_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
-    private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
+    private final RecordingSignalEventDecoder recordingSignalEventDecoder = new RecordingSignalEventDecoder();
 
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
-    private long controlSessionId = Aeron.NULL_VALUE;
+    private final long controlSessionId;
     private long correlationId = Aeron.NULL_VALUE;
     private long relevantId = Aeron.NULL_VALUE;
+    private int templateId = Aeron.NULL_VALUE;
     private int version = 0;
-    private final int fragmentLimit;
+    private long recordingId = Aeron.NULL_VALUE;
+    private long recordingSubscriptionId = Aeron.NULL_VALUE;
+    private long recordingPosition = Aeron.NULL_VALUE;
+    private RecordingSignal recordingSignal = null;
     private ControlResponseCode code;
     private String errorMessage;
-    private byte[] encodedChallenge = null;
+    private final int fragmentLimit;
     private boolean isPollComplete = false;
 
     /**
-     * Create a poller for a given subscription to an archive for control response messages.
+     * Create a poller for a given subscription to an archive for control messages.
      *
-     * @param subscription  to poll for new events.
-     * @param fragmentLimit to apply when polling.
+     * @param controlSessionId to listen for associated asynchronous control events, such as errors.
+     * @param subscription     to poll for new events.
+     * @param fragmentLimit    to apply when polling.
      */
-    private ControlResponsePoller(final Subscription subscription, final int fragmentLimit)
+    private RecordingSignalPoller(final long controlSessionId, final Subscription subscription, final int fragmentLimit)
     {
+        this.controlSessionId = controlSessionId;
         this.subscription = subscription;
         this.fragmentLimit = fragmentLimit;
     }
@@ -66,17 +72,18 @@ public final class ControlResponsePoller
      * Create a poller for a given subscription to an archive for control response messages with a default
      * fragment limit for polling as {@link #FRAGMENT_LIMIT}.
      *
-     * @param subscription  to poll for new events.
+     * @param controlSessionId to listen for associated asynchronous control events, such as errors.
+     * @param subscription to poll for new events.
      */
-    public ControlResponsePoller(final Subscription subscription)
+    public RecordingSignalPoller(final long controlSessionId, final Subscription subscription)
     {
-        this(subscription, FRAGMENT_LIMIT);
+        this(controlSessionId, subscription, FRAGMENT_LIMIT);
     }
 
     /**
-     * Get the {@link Subscription} used for polling responses.
+     * Get the {@link Subscription} used for polling messages.
      *
-     * @return the {@link Subscription} used for polling responses.
+     * @return the {@link Subscription} used for polling messages.
      */
     public Subscription subscription()
     {
@@ -90,12 +97,15 @@ public final class ControlResponsePoller
      */
     public int poll()
     {
-        controlSessionId = Aeron.NULL_VALUE;
+        templateId = Aeron.NULL_VALUE;
         correlationId = Aeron.NULL_VALUE;
         relevantId = Aeron.NULL_VALUE;
         version = 0;
         errorMessage = null;
-        encodedChallenge = null;
+        recordingId = Aeron.NULL_VALUE;
+        recordingSubscriptionId = Aeron.NULL_VALUE;
+        recordingPosition = Aeron.NULL_VALUE;
+        recordingSignal = null;
         isPollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
@@ -129,6 +139,56 @@ public final class ControlResponsePoller
     public long relevantId()
     {
         return relevantId;
+    }
+
+    /**
+     * Get the template id of the last received message.
+     *
+     * @return the template id of the last received message.
+     */
+    public int templateId()
+    {
+        return templateId;
+    }
+
+    /**
+     * Get the recording id of the last received message.
+     *
+     * @return the recording id of the last received message.
+     */
+    public long recordingId()
+    {
+        return recordingId;
+    }
+
+    /**
+     * Get the recording subscription id of the last received message.
+     *
+     * @return the recording subscription id of the last received message.
+     */
+    public long recordingSubscriptionId()
+    {
+        return recordingSubscriptionId;
+    }
+
+    /**
+     * Get the recording position of the last received message.
+     *
+     * @return the recording position of the last received message.
+     */
+    public long recordingPosition()
+    {
+        return recordingPosition;
+    }
+
+    /**
+     * Get the recording signal of the last received message.
+     *
+     * @return the recording signal of the last received message.
+     */
+    public RecordingSignal recordingSignal()
+    {
+        return recordingSignal;
     }
 
     /**
@@ -171,27 +231,7 @@ public final class ControlResponsePoller
         return errorMessage;
     }
 
-    /**
-     * Was the last polling action received a challenge message?
-     *
-     * @return true if the last polling action received was a challenge message, false if not.
-     */
-    public boolean wasChallenged()
-    {
-        return null != encodedChallenge;
-    }
-
-    /**
-     * Get the encoded challenge of the last challenge.
-     *
-     * @return the encoded challenge of the last challenge.
-     */
-    public byte[] encodedChallenge()
-    {
-        return encodedChallenge;
-    }
-
-    ControlledFragmentAssembler.Action onFragment(
+    ControlledFragmentHandler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         if (isPollComplete)
@@ -207,7 +247,9 @@ public final class ControlResponsePoller
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        if (messageHeaderDecoder.templateId() == ControlResponseDecoder.TEMPLATE_ID)
+        final int templateId = messageHeaderDecoder.templateId();
+
+        if (ControlResponseDecoder.TEMPLATE_ID == templateId)
         {
             controlResponseDecoder.wrap(
                 buffer,
@@ -215,39 +257,39 @@ public final class ControlResponsePoller
                 messageHeaderDecoder.blockLength(),
                 messageHeaderDecoder.version());
 
-            controlSessionId = controlResponseDecoder.controlSessionId();
-            correlationId = controlResponseDecoder.correlationId();
-            relevantId = controlResponseDecoder.relevantId();
-            code = controlResponseDecoder.code();
-            version = controlResponseDecoder.version();
-            errorMessage = controlResponseDecoder.errorMessage();
-            isPollComplete = true;
+            if (controlResponseDecoder.controlSessionId() == controlSessionId)
+            {
+                this.templateId = templateId;
+                correlationId = controlResponseDecoder.correlationId();
+                relevantId = controlResponseDecoder.relevantId();
+                code = controlResponseDecoder.code();
+                version = controlResponseDecoder.version();
+                errorMessage = controlResponseDecoder.errorMessage();
+                isPollComplete = true;
 
-            return ControlledFragmentHandler.Action.BREAK;
+                return ControlledFragmentHandler.Action.BREAK;
+            }
         }
-
-        if (messageHeaderDecoder.templateId() == ChallengeDecoder.TEMPLATE_ID)
+        else if (RecordingSignalEventDecoder.TEMPLATE_ID == templateId)
         {
-            challengeDecoder.wrap(
+            recordingSignalEventDecoder.wrap(
                 buffer,
-                offset + MessageHeaderEncoder.ENCODED_LENGTH,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
                 messageHeaderDecoder.blockLength(),
                 messageHeaderDecoder.version());
 
-            controlSessionId = challengeDecoder.controlSessionId();
-            correlationId = challengeDecoder.correlationId();
-            relevantId = Aeron.NULL_VALUE;
-            code = ControlResponseCode.NULL_VAL;
-            version = challengeDecoder.version();
-            errorMessage = "";
+            if (recordingSignalEventDecoder.controlSessionId() == controlSessionId)
+            {
+                this.templateId = templateId;
+                correlationId = recordingSignalEventDecoder.correlationId();
+                recordingId = recordingSignalEventDecoder.recordingId();
+                recordingSubscriptionId = recordingSignalEventDecoder.subscriptionId();
+                recordingPosition = recordingSignalEventDecoder.position();
+                recordingSignal = recordingSignalEventDecoder.signal();
+                isPollComplete = true;
 
-            final int encodedChallengeLength = challengeDecoder.encodedChallengeLength();
-            encodedChallenge = new byte[encodedChallengeLength];
-            challengeDecoder.getEncodedChallenge(encodedChallenge, 0, encodedChallengeLength);
-
-            isPollComplete = true;
-
-            return ControlledFragmentHandler.Action.BREAK;
+                return ControlledFragmentHandler.Action.BREAK;
+            }
         }
 
         return ControlledFragmentHandler.Action.CONTINUE;
@@ -255,13 +297,18 @@ public final class ControlResponsePoller
 
     public String toString()
     {
-        return "ControlResponsePoller{" +
+        return "RecordingSignalPoller{" +
             "controlSessionId=" + controlSessionId +
             ", correlationId=" + correlationId +
             ", relevantId=" + relevantId +
             ", code=" + code +
+            ", templateId=" + templateId +
             ", version=" + SemanticVersion.toString(version) +
             ", errorMessage='" + errorMessage + '\'' +
+            ", recordingId=" + recordingId +
+            ", recordingSubscriptionId=" + recordingSubscriptionId +
+            ", recordingPosition=" + recordingPosition +
+            ", recordingSignal=" + recordingSignal +
             ", isPollComplete=" + isPollComplete +
             '}';
     }

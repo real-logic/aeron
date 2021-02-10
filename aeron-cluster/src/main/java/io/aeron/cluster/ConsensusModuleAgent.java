@@ -373,7 +373,7 @@ final class ConsensusModuleAgent implements Agent
     void onSessionClose(final long leadershipTermId, final long clusterSessionId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (leadershipTermId == this.leadershipTermId && null != session && Cluster.Role.LEADER == role)
+        if (null != session && leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             session.closing(CloseReason.CLIENT_ACTION);
             session.disconnect(ctx.countedErrorHandler());
@@ -2054,8 +2054,7 @@ final class ConsensusModuleAgent implements Agent
                     if (session.responsePublication().isConnected())
                     {
                         final RecordingLog.Entry lastEntry = recordingLog.findLastTerm();
-
-                        if (consensusPublisher.backupResponse(
+                        if (null != lastEntry && consensusPublisher.backupResponse(
                             session.responsePublication(),
                             session.correlationId(),
                             recoveryPlan.log.recordingId,
@@ -2073,12 +2072,10 @@ final class ConsensusModuleAgent implements Agent
                         }
                     }
                 }
-                else
+                else if (appendSessionAndOpen(session, nowNs))
                 {
                     ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                    session.timeOfLastActivityNs(nowNs);
                     sessionByIdMap.put(session.id(), session);
-                    appendSessionOpen(session);
                 }
 
                 workCount += 1;
@@ -2240,11 +2237,6 @@ final class ConsensusModuleAgent implements Agent
 
                 workCount += 1;
             }
-            else if (session.state() == CONNECTED)
-            {
-                appendSessionOpen(session);
-                workCount += 1;
-            }
             else if (session.hasNewLeaderEventPending())
             {
                 sendNewLeaderEvent(session);
@@ -2292,13 +2284,17 @@ final class ConsensusModuleAgent implements Agent
         }
     }
 
-    private void appendSessionOpen(final ClusterSession session)
+    private boolean appendSessionAndOpen(final ClusterSession session, final long nowNs)
     {
         final long resultingPosition = logPublisher.appendSessionOpen(session, leadershipTermId, clusterClock.time());
         if (resultingPosition > 0)
         {
             session.open(resultingPosition);
+            session.timeOfLastActivityNs(nowNs);
+            return true;
         }
+
+        return false;
     }
 
     private void createAppendPosition(final int logSessionId)

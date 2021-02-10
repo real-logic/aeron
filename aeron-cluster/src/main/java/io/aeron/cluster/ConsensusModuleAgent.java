@@ -2064,10 +2064,16 @@ final class ConsensusModuleAgent implements Agent
                 }
                 else
                 {
-                    ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                     session.timeOfLastActivityNs(nowNs);
-                    sessionByIdMap.put(session.id(), session);
-                    appendSessionOpen(session);
+                    final long resultingPosition =
+                        logPublisher.appendSessionOpen(session, leadershipTermId, clusterClock.time());
+
+                    if (resultingPosition > 0)
+                    {
+                        ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                        sessionByIdMap.put(session.id(), session);
+                        session.open(resultingPosition);
+                    }
                 }
 
                 workCount += 1;
@@ -2229,11 +2235,6 @@ final class ConsensusModuleAgent implements Agent
 
                 workCount += 1;
             }
-            else if (session.state() == CONNECTED)
-            {
-                appendSessionOpen(session);
-                workCount += 1;
-            }
             else if (session.hasNewLeaderEventPending())
             {
                 sendNewLeaderEvent(session);
@@ -2278,15 +2279,6 @@ final class ConsensusModuleAgent implements Agent
         if (egressPublisher.newLeader(session, leadershipTermId, leaderMember.id(), ingressEndpoints))
         {
             session.hasNewLeaderEventPending(false);
-        }
-    }
-
-    private void appendSessionOpen(final ClusterSession session)
-    {
-        final long resultingPosition = logPublisher.appendSessionOpen(session, leadershipTermId, clusterClock.time());
-        if (resultingPosition > 0)
-        {
-            session.open(resultingPosition);
         }
     }
 

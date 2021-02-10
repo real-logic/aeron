@@ -714,7 +714,6 @@ final class ConsensusModuleAgent implements Agent
         if (leadershipTermId == this.leadershipTermId && Cluster.Role.FOLLOWER == role)
         {
             terminationPosition = logPosition;
-            notifiedCommitPosition = logPosition;
             timeOfLastLogUpdateNs = clusterClock.timeNanos();
         }
     }

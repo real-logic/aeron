@@ -15,7 +15,9 @@
  */
 package io.aeron.driver;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ChannelUri;
+import io.aeron.CommonContext;
 import io.aeron.CommonContext.InferableBoolean;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
@@ -49,7 +51,6 @@ import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.InferableBoolean.FORCE_TRUE;
 import static io.aeron.CommonContext.InferableBoolean.INFER;
-import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.PublicationParams.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;

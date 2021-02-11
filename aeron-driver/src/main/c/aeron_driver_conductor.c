@@ -3195,6 +3195,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
 
     if (NULL != endpoint)
     {
+        aeron_uri_t *uri = NULL; // Ownership is transferred to destination, no need to close...
         const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
 
         if (aeron_driver_conductor_validate_destination_uri(command_uri, command->channel_length, "send") < 0)
@@ -3202,7 +3203,6 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             goto error_cleanup;
         }
 
-        aeron_uri_t *uri; // Ownership is transferred to destination, no need to close...
         if (aeron_alloc((void **)&uri, sizeof(aeron_uri_t)) < 0)
         {
             AERON_APPEND_ERR("%s", "Failed to allocate uri");

@@ -18,7 +18,7 @@ package io.aeron.security;
 import org.agrona.collections.ArrayUtil;
 
 /**
- * Default Authenticator that authenticates all connection requests immediately.
+ * Default Authenticator which authenticates all connection requests immediately.
  */
 public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
 {
@@ -30,8 +30,14 @@ public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
     /**
      * Singleton instance which can be used to avoid allocation.
      */
-    public static final DefaultAuthenticator DEFAULT_AUTHENTICATOR = new DefaultAuthenticator();
+    public static final Authenticator DEFAULT_AUTHENTICATOR = new DefaultAuthenticator();
 
+    /**
+     * Gets the singleton instance {@link #DEFAULT_AUTHENTICATOR} which authenticates all connection requests
+     * immediately.
+     *
+     * @return {@link #DEFAULT_AUTHENTICATOR} which authenticates all connection requests immediately.
+     */
     public Authenticator get()
     {
         return DEFAULT_AUTHENTICATOR;

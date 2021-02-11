@@ -19,11 +19,15 @@ package io.aeron.security;
  * Interface for an Authenticator to handle authentication of clients to a system.
  * <p>
  * The session-id refers to the authentication session and not the Aeron transport session assigned to a publication.
+ *
+ * @see SessionProxy
+ * @see AuthenticatorSupplier
  */
 public interface Authenticator
 {
     /**
-     * Called upon reception of a Connect Request.
+     * Called upon reception of a Connect Request and will be followed up by multiple calls to
+     * {@link #onConnectedSession(SessionProxy, long)} once the response channel is connected.
      *
      * @param sessionId          to identify the client session connecting.
      * @param encodedCredentials from the Connect Request. Will not be null, but may be 0 length.
@@ -44,7 +48,7 @@ public interface Authenticator
      * Called when a client's response channel has been connected. This method may be called multiple times until the
      * session timeouts, is challenged, authenticated, or rejected.
      *
-     * @param sessionProxy to use to inform client of status.
+     * @param sessionProxy to use to update authentication status. Proxy is only valid for the duration of the call.
      * @param nowMs        current epoch time in milliseconds.
      * @see SessionProxy
      */
@@ -58,7 +62,7 @@ public interface Authenticator
      * <p>
      * It is up to the concrete class to provide any timeout management.
      *
-     * @param sessionProxy to use to inform client of status.
+     * @param sessionProxy to use to update authentication status. Proxy is only valid for the duration of the call.
      * @param nowMs        current epoch time in milliseconds.
      * @see SessionProxy
      */

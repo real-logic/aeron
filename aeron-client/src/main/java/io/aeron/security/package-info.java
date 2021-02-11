@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 /**
- * Basic security infrastructure for authenticating sessions by delegating to an {@link io.aeron.security.Authenticator}.
+ * Basic security infrastructure for authenticating sessions by delegating to a supplied instance of an
+ * {@link io.aeron.security.Authenticator}.
+ * <p>
+ * New connection requests will be allocated a unique 64-bit session identity which is first passed to
+ * {@link io.aeron.security.Authenticator#onConnectRequest(long, byte[], long)}. Once the response stream to the client
+ * is connected then the system will make periodic calls to
+ * {@link io.aeron.security.Authenticator#onConnectedSession(io.aeron.security.SessionProxy, long)} until the
+ * {@link io.aeron.security.Authenticator} updates the status of the {@link io.aeron.security.SessionProxy} to indicate
+ * if the session is authenticated, needs challenged, or is rejected.
  */
 package io.aeron.security;

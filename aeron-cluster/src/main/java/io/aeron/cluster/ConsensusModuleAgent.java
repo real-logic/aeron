@@ -398,7 +398,7 @@ final class ConsensusModuleAgent implements Agent
         final int offset,
         final int length)
     {
-        if (leadershipTermId == this.leadershipTermId || Cluster.Role.LEADER == role)
+        if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterSession session = sessionByIdMap.get(clusterSessionId);
             if (null != session && session.state() == OPEN)

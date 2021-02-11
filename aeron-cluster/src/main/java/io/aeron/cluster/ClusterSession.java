@@ -38,6 +38,7 @@ final class ClusterSession
     }
 
     private boolean hasNewLeaderEventPending = false;
+    private boolean hasOpenEventPending = true;
     private final long id;
     private long correlationId;
     private long openedLogPosition = Aeron.NULL_VALUE;
@@ -268,6 +269,16 @@ final class ClusterSession
         return hasNewLeaderEventPending;
     }
 
+    boolean hasOpenEventPending()
+    {
+        return hasOpenEventPending;
+    }
+
+    void hasOpenEventPending(final boolean flag)
+    {
+        hasOpenEventPending = flag;
+    }
+
     boolean isBackupSession()
     {
         return isBackupSession;
@@ -308,6 +319,7 @@ final class ClusterSession
             ", closeReason=" + closeReason +
             ", state=" + state +
             ", hasNewLeaderEventPending=" + hasNewLeaderEventPending +
+            ", hasOpenEventPending=" + hasOpenEventPending +
             ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
             '}';
     }

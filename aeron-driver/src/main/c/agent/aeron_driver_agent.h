@@ -21,6 +21,7 @@
 #include "command/aeron_control_protocol.h"
 
 #define AERON_EVENT_LOG_ENV_VAR "AERON_EVENT_LOG"
+#define AERON_EVENT_LOG_DISABLE_ENV_VAR "AERON_EVENT_LOG_DISABLE"
 #define AERON_EVENT_LOG_FILENAME_ENV_VAR "AERON_EVENT_LOG_FILENAME"
 #define AERON_EVENT_RB_LENGTH (8 * 1024 * 1024)
 #define AERON_MAX_CMD_LENGTH (512)
@@ -171,7 +172,7 @@ void aeron_driver_agent_logging_ring_buffer_init();
 
 void aeron_driver_agent_logging_ring_buffer_free();
 
-bool aeron_driver_agent_logging_events_init(const char *event_log);
+bool aeron_driver_agent_logging_events_init(const char *event_log, const char *event_log_disable);
 
 void aeron_driver_agent_logging_events_free();
 

@@ -45,9 +45,11 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.InferableBoolean.FORCE_TRUE;
 import static io.aeron.CommonContext.InferableBoolean.INFER;
+import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.PublicationParams.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
@@ -647,6 +649,11 @@ public final class DriverConductor implements Agent
 
     void onAddSendDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
+        if (destinationChannel.startsWith(SPY_QUALIFIER))
+        {
+            throw new InvalidChannelException("Aeron spies are invalid as send destinations: " + destinationChannel);
+        }
+
         SendChannelEndpoint sendChannelEndpoint = null;
 
         for (int i = 0, size = networkPublications.size(); i < size; i++)
@@ -916,6 +923,11 @@ public final class DriverConductor implements Agent
 
     void onAddRcvDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
+        if (destinationChannel.startsWith(SPY_QUALIFIER))
+        {
+            throw new InvalidChannelException("Aeron spies are invalid as receive destinations: " + destinationChannel);
+        }
+
         SubscriptionLink subscriptionLink = null;
 
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
@@ -937,6 +949,7 @@ public final class DriverConductor implements Agent
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
         final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver, true);
+
         final AtomicCounter localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
             tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounterId());
 

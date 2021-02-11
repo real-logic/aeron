@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -42,7 +43,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
@@ -259,6 +263,20 @@ public class MultiDestinationCastTest
         verifyFragments(fragmentHandlerA, numMessagesToSend);
         verifyFragments(fragmentHandlerB, numMessagesToSend);
     }
+
+    @Test
+    @Timeout(10)
+    public void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
+    {
+        launch();
+        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+        final RegistrationException registrationException = assertThrows(
+            RegistrationException.class,
+            () -> publication.addDestination(CommonContext.SPY_PREFIX + PUB_MDC_DYNAMIC_URI));
+
+        assertThat(registrationException.getMessage(), containsString("spies are invalid"));
+    }
+
 
     @Test
     @Timeout(10)

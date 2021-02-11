@@ -145,6 +145,27 @@ static bool aeron_driver_conductor_has_clashing_subscription(
     return false;
 }
 
+static int aeron_driver_conductor_validate_destination_uri(
+    const char *channel_uri,
+    int32_t channel_length,
+    const char *transport_direction)
+{
+    if ((int32_t)AERON_SPY_PREFIX_LEN <= channel_length &&
+        0 == strncmp(channel_uri, AERON_SPY_PREFIX, AERON_SPY_PREFIX_LEN))
+    {
+        AERON_SET_ERR(
+            -AERON_ERROR_CODE_INVALID_CHANNEL,
+            "Aeron spies are invalid as %s destinations: %.*s",
+            transport_direction,
+            (int)channel_length,
+            channel_uri);
+
+        return -1;
+    }
+
+    return 0;
+}
+
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
 {
     if (aeron_mpsc_rb_init(
@@ -3175,6 +3196,12 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
     if (NULL != endpoint)
     {
         const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
+
+        if (aeron_driver_conductor_validate_destination_uri(command_uri, command->channel_length, "send") < 0)
+        {
+            goto error_cleanup;
+        }
+
         aeron_uri_t *uri; // Ownership is transferred to destination, no need to close...
         if (aeron_alloc((void **)&uri, sizeof(aeron_uri_t)) < 0)
         {
@@ -3343,6 +3370,11 @@ int aeron_driver_conductor_on_add_receive_destination(
     }
 
     const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
+
+    if (aeron_driver_conductor_validate_destination_uri(command_uri, command->channel_length, "receive") < 0)
+    {
+        return -1;
+    }
 
     aeron_udp_channel_t *udp_channel = NULL;
     if (aeron_udp_channel_parse(

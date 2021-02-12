@@ -518,8 +518,8 @@ public final class PublicationImage
             final int threshold = CongestionControl.threshold(windowLength);
 
             if (CongestionControl.shouldForceStatusMessage(ccOutcome) ||
-                ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0) ||
-                (minSubscriberPosition > (nextSmPosition + threshold)))
+                (minSubscriberPosition > (nextSmPosition + threshold)) ||
+                ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0))
             {
                 cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
                 scheduleStatusMessage(nowNs, minSubscriberPosition, windowLength);

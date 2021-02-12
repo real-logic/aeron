@@ -183,16 +183,25 @@ public class StartFromTruncatedRecordingLogTest
     @Timeout(30)
     public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws IOException
     {
-        restartClusterWithTruncatedRecordingLog();
-        assertClusterIsOperational();
+        try
+        {
+            restartClusterWithTruncatedRecordingLog();
+            assertClusterIsOperational();
 
-        restartClusterWithTruncatedRecordingLog();
-        assertClusterIsOperational();
+            restartClusterWithTruncatedRecordingLog();
+            assertClusterIsOperational();
 
-        restartClusterWithTruncatedRecordingLog();
-        assertClusterIsOperational();
+            restartClusterWithTruncatedRecordingLog();
+            assertClusterIsOperational();
 
-        ClusterTests.failOnClusterError();
+            ClusterTests.failOnClusterError();
+        }
+        catch (final Throwable ex)
+        {
+            ex.printStackTrace();
+            SystemUtil.threadDump();
+            throw ex;
+        }
     }
 
     private void restartClusterWithTruncatedRecordingLog() throws IOException

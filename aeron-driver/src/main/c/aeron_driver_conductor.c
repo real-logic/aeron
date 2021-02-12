@@ -146,9 +146,7 @@ static bool aeron_driver_conductor_has_clashing_subscription(
 }
 
 static int aeron_driver_conductor_validate_destination_uri(
-    const char *channel_uri,
-    int32_t channel_length,
-    const char *transport_direction)
+    const char *channel_uri, int32_t channel_length, const char *transport_direction)
 {
     if ((int32_t)AERON_SPY_PREFIX_LEN <= channel_length &&
         0 == strncmp(channel_uri, AERON_SPY_PREFIX, AERON_SPY_PREFIX_LEN))
@@ -2314,9 +2312,9 @@ int aeron_driver_conductor_do_work(void *clientd)
     const int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
 
     work_count += (int)aeron_mpsc_rb_read(
-        &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 10);
+        &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 5);
     work_count += (int)aeron_mpsc_concurrent_array_queue_drain(
-        conductor->conductor_proxy.command_queue, aeron_driver_conductor_on_command_queue, conductor, 10);
+        conductor->conductor_proxy.command_queue, aeron_driver_conductor_on_command_queue, conductor, 5);
     work_count += conductor->name_resolver.do_work_func(&conductor->name_resolver, now_ms);
 
     if (now_ns >= (conductor->time_of_last_timeout_check_ns + (int64_t)conductor->context->timer_interval_ns))

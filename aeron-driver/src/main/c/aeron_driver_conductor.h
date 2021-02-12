@@ -499,7 +499,6 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_find_send_channel_endpoint
 aeron_receive_channel_endpoint_t *aeron_driver_conductor_find_receive_channel_endpoint_by_tag(
     aeron_driver_conductor_t *conductor, int64_t channel_tag_id);
 
-
 inline bool aeron_driver_conductor_is_subscribable_linked(
     aeron_subscription_link_t *link, aeron_subscribable_t *subscribable)
 {
@@ -720,8 +719,7 @@ inline aeron_publication_image_t * aeron_driver_conductor_find_publication_image
     return NULL;
 }
 
-inline void aeron_driver_init_subscription_channel(
-    size_t uri_length, const char *uri, aeron_subscription_link_t *link)
+inline void aeron_driver_init_subscription_channel(size_t uri_length, const char *uri, aeron_subscription_link_t *link)
 {
     size_t copy_length = sizeof(link->channel) - 1;
     copy_length = uri_length < copy_length ? uri_length : copy_length;

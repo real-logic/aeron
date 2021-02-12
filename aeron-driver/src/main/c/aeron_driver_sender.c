@@ -135,7 +135,7 @@ int aeron_driver_sender_do_work(void *clientd)
     int work_count = 0;
 
     work_count += (int)aeron_spsc_concurrent_array_queue_drain(
-        sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, 10);
+        sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, 5);
 
     int64_t now_ns = aeron_clock_cached_nano_time(sender->context->cached_clock);
     int64_t bytes_received = 0;

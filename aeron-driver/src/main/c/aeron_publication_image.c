@@ -394,8 +394,8 @@ void aeron_publication_image_track_rebuild(
         const int32_t threshold = window_length / 4;
 
         if (should_force_send_sm ||
-            (now_ns > (image->last_status_message_timestamp + status_message_timeout)) ||
-            (min_sub_pos > (image->next_sm_position + threshold)))
+            (min_sub_pos > (image->next_sm_position + threshold)) ||
+            (now_ns > (image->last_status_message_timestamp + status_message_timeout)) )
         {
             aeron_publication_image_clean_buffer_to(image, min_sub_pos - image->term_length);
             aeron_publication_image_schedule_status_message(image, now_ns, min_sub_pos, window_length);

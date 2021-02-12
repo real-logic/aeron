@@ -236,50 +236,50 @@ bool aeron_driver_agent_is_event_enabled(const aeron_driver_agent_event_t id)
     return is_valid_event_id(id) && log_events[id].enabled;
 }
 
-static void enable_all_events()
+static void aeron_driver_agent_set_enabled_all_events(bool is_enabled)
 {
     for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         const char *event_name = log_events[i].name;
         if (!aeron_driver_agent_is_unknown_event(event_name))
         {
-            log_events[i].enabled = true;
+            log_events[i].enabled = is_enabled;
         }
     }
 }
 
-static void enable_admin_events()
+static void aeron_driver_agent_set_enabled_admin_events(bool is_enabled)
 {
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_KEEPALIVE_CLIENT].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION].enabled = true;
-    log_events[AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP].enabled = true;
-    log_events[AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP].enabled = true;
-    log_events[AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ERROR].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT].enabled = true;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER].enabled = true;
-    log_events[AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION].enabled = true;
-    log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION].enabled = true;
-    log_events[AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE].enabled = true;
-    log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE].enabled = true;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_KEEPALIVE_CLIENT].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_OUT_ERROR].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE].enabled = is_enabled;
+    log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE].enabled = is_enabled;
 }
 
-static void enable_specific_events(const uint8_t type)
+static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, bool is_enabled)
 {
     for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
@@ -319,7 +319,92 @@ static aeron_driver_agent_event_t parse_event_name(const char *event_name)
     return event_id;
 }
 
-bool aeron_driver_agent_logging_events_init(const char *event_log)
+static bool aeron_driver_agent_events_set_enabled(char const **events, const int num_events, bool is_enabled)
+{
+    bool result = false;
+    for (int i = num_events - 1; i >= 0; i--)
+    {
+        const char *event_name = events[i];
+        if (0 == strncmp(AERON_DRIVER_AGENT_ALL_EVENTS, event_name, strlen(AERON_DRIVER_AGENT_ALL_EVENTS) + 1))
+        {
+            aeron_driver_agent_set_enabled_all_events(is_enabled);
+            result = true;
+            break;
+        }
+        else if (0 == strncmp(AERON_DRIVER_AGENT_ADMIN_EVENTS, event_name, strlen(AERON_DRIVER_AGENT_ADMIN_EVENTS) + 1))
+        {
+            aeron_driver_agent_set_enabled_admin_events(is_enabled);
+            result = true;
+        }
+        else if (0 == strncmp("0x", event_name, 2))  // Legacy mask-based events
+        {
+            const uint64_t mask = strtoull(event_name, NULL, 0);
+            if (0 != mask)
+            {
+                if (mask >= 0xFFFFu)
+                {
+                    aeron_driver_agent_set_enabled_all_events(is_enabled);
+                    result = true;
+                }
+                else
+                {
+                    if (mask & 0x1u)
+                    {
+                        aeron_driver_agent_set_enabled_specific_events(AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, is_enabled);
+                        result = true;
+                    }
+
+                    if (mask & 0x2u)
+                    {
+                        aeron_driver_agent_set_enabled_specific_events(AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, is_enabled);
+                        result = true;
+                    }
+
+                    if (mask & 0x4u)
+                    {
+                        log_events[AERON_DRIVER_EVENT_FRAME_IN].enabled = is_enabled;
+                        result = true;
+                    }
+
+                    if (mask & 0x8u || mask & 0x10u)
+                    {
+                        log_events[AERON_DRIVER_EVENT_FRAME_OUT].enabled = is_enabled;
+                        result = true;
+                    }
+
+                    if (mask & 0x80u)
+                    {
+                        log_events[AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE].enabled = is_enabled;
+                        result = true;
+                    }
+
+                    if (mask & 0x100u)
+                    {
+                        log_events[AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT].enabled = is_enabled;
+                        result = true;
+                    }
+                }
+            }
+            break;
+        }
+        else
+        {
+            const aeron_driver_agent_event_t event_id = parse_event_name(event_name);
+            if (AERON_DRIVER_EVENT_UNKNOWN_EVENT != event_id)
+            {
+                log_events[event_id].enabled = is_enabled;
+                result = true;
+            }
+            else
+            {
+                fprintf(stderr, "unknown event code: '%s'\n", event_name);
+            }
+        }
+    }
+    return result;
+}
+
+bool aeron_driver_agent_logging_events_init(const char *event_log, const char *event_log_disable)
 {
     aeron_driver_agent_logging_events_free();
 
@@ -346,88 +431,37 @@ bool aeron_driver_agent_logging_events_init(const char *event_log)
         return false;
     }
 
-    bool result = false;
-    for (int i = num_events - 1; i >= 0; i--)
+    char *events_disable[AERON_DRIVER_EVENT_NUM_ELEMENTS];
+    int num_events_disable = 0;
+    char *event_log_disable_dup = NULL;
+
+    if (NULL != event_log_disable)
     {
-        const char *event_name = events[i];
-        if (0 == strncmp(AERON_DRIVER_AGENT_ALL_EVENTS, event_name, strlen(AERON_DRIVER_AGENT_ALL_EVENTS) + 1))
+        event_log_disable_dup = strdup(event_log_disable);
+        if (NULL == event_log_disable_dup)
         {
-            enable_all_events();
-            result = true;
-            break;
+            fprintf(stderr, "failed to copy logging disable events string\n");
+            return false;
         }
-        else if (0 == strncmp(AERON_DRIVER_AGENT_ADMIN_EVENTS, event_name, strlen(AERON_DRIVER_AGENT_ADMIN_EVENTS) + 1))
+
+        num_events_disable = aeron_tokenise(event_log_disable_dup, ',', AERON_DRIVER_EVENT_NUM_ELEMENTS, events_disable);
+
+        if (num_events_disable < 0)
         {
-            enable_admin_events();
-            result = true;
-        }
-        else if (0 == strncmp("0x", event_name, 2))  // Legacy mask-based events
-        {
-            const uint64_t mask = strtoull(event_name, NULL, 0);
-            if (0 != mask)
-            {
-                if (mask >= 0xFFFFu)
-                {
-                    enable_all_events();
-                    result = true;
-                }
-                else
-                {
-                    if (mask & 0x1u)
-                    {
-                        enable_specific_events(AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN);
-                        result = true;
-                    }
-
-                    if (mask & 0x2u)
-                    {
-                        enable_specific_events(AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT);
-                        result = true;
-                    }
-
-                    if (mask & 0x4u)
-                    {
-                        log_events[AERON_DRIVER_EVENT_FRAME_IN].enabled = true;
-                        result = true;
-                    }
-
-                    if (mask & 0x8u || mask & 0x10u)
-                    {
-                        log_events[AERON_DRIVER_EVENT_FRAME_OUT].enabled = true;
-                        result = true;
-                    }
-
-                    if (mask & 0x80u)
-                    {
-                        log_events[AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE].enabled = true;
-                        result = true;
-                    }
-
-                    if (mask & 0x100u)
-                    {
-                        log_events[AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT].enabled = true;
-                        result = true;
-                    }
-                }
-            }
-            break;
-        }
-        else
-        {
-            const aeron_driver_agent_event_t event_id = parse_event_name(event_name);
-            if (AERON_DRIVER_EVENT_UNKNOWN_EVENT != event_id)
-            {
-                log_events[event_id].enabled = true;
-                result = true;
-            }
-            else
-            {
-                fprintf(stderr, "unknown event code: '%s'\n", event_name);
-            }
+            fprintf(stderr, "failed to parse logging events: '%s'\n", event_log_disable);
+            aeron_free(event_log_disable_dup);
+            return false;
         }
     }
 
+    bool result = aeron_driver_agent_events_set_enabled((const char **)events, num_events, true);
+    if (0 < num_events_disable)
+    {
+        result &= aeron_driver_agent_events_set_enabled((const char **)events_disable, num_events_disable, false);
+    }
+
     aeron_free(event_log_dup);
+    aeron_free(event_log_disable_dup);
     return result;
 }
 
@@ -445,7 +479,9 @@ void aeron_driver_agent_logging_events_free()
 static void initialize_agent_logging()
 {
     const char *event_log_str = getenv(AERON_EVENT_LOG_ENV_VAR);
-    if (aeron_driver_agent_logging_events_init(event_log_str))
+    const char *event_log_disable_str = getenv(AERON_EVENT_LOG_DISABLE_ENV_VAR);
+
+    if (aeron_driver_agent_logging_events_init(event_log_str, event_log_disable_str))
     {
         logfp = stdout;
         const char *log_filename = getenv(AERON_EVENT_LOG_FILENAME_ENV_VAR);

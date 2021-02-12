@@ -22,6 +22,7 @@ import io.aeron.logbuffer.BlockHandler;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.agrona.Strings;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -59,6 +60,7 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
     private final CountedErrorHandler countedErrorHandler;
+    private final Archive.Context ctx;
 
     private long segmentBasePosition;
     private int segmentOffset;
@@ -84,6 +86,7 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         countedErrorHandler = ctx.countedErrorHandler();
         checksumBuffer = ctx.recordChecksumBuffer();
         checksum = ctx.recordChecksum();
+        this.ctx = ctx;
 
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
@@ -136,6 +139,11 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
             close();
             throw new ArchiveException("file closed by interrupt, recording aborted", ex, ArchiveException.GENERIC);
         }
+        catch (final IOException ex)
+        {
+            close();
+            checkErrorType(ex, length);
+        }
         catch (final Throwable ex)
         {
             close();
@@ -150,11 +158,6 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
             isClosed = true;
             CloseHelper.close(countedErrorHandler, recordingFileChannel);
         }
-    }
-
-    boolean isClosed()
-    {
-        return isClosed;
     }
 
     long position()
@@ -221,5 +224,32 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         }
 
         openRecordingSegmentFile(file);
+    }
+
+    private void checkErrorType(final IOException ex, final int writeLength)
+    {
+        final String msg = ex.getMessage();
+        boolean isLowStorageSpace = false;
+        IOException suppressed = null;
+
+        try
+        {
+            isLowStorageSpace = (!Strings.isEmpty(msg) && msg.contains("No space left on device")) ||
+                ctx.archiveFileStore().getUsableSpace() < writeLength;
+        }
+        catch (final IOException ex2)
+        {
+            suppressed = ex2;
+        }
+
+        final int errorCode = isLowStorageSpace ? ArchiveException.STORAGE_SPACE : ArchiveException.GENERIC;
+        final ArchiveException error = new ArchiveException("java.io.IOException - " + msg, ex, errorCode);
+
+        if (null != suppressed)
+        {
+            error.addSuppressed(suppressed);
+        }
+
+        throw error;
     }
 }

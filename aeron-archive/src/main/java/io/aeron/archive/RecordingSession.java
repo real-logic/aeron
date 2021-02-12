@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.*;
+import io.aeron.archive.client.ArchiveException;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.CountedErrorHandler;
@@ -46,6 +47,7 @@ class RecordingSession implements Session
     private final CountedErrorHandler countedErrorHandler;
     private State state = State.INIT;
     private String errorMessage = null;
+    private int errorCode = ArchiveException.GENERIC;
 
     RecordingSession(
         final long correlationId,
@@ -171,7 +173,7 @@ class RecordingSession implements Session
     {
         if (null != errorMessage && !controlSession.isDone())
         {
-            controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
+            controlSession.attemptErrorResponse(correlationId, errorCode, errorMessage, controlResponseProxy);
         }
     }
 
@@ -210,13 +212,6 @@ class RecordingSession implements Session
         try
         {
             final int workCount = image.blockPoll(recordingWriter, blockLengthLimit);
-
-            if (recordingWriter.isClosed())
-            {
-                state(State.INACTIVE);
-                return workCount;
-            }
-
             if (workCount > 0)
             {
                 this.position.setOrdered(recordingWriter.position());
@@ -239,6 +234,13 @@ class RecordingSession implements Session
             }
 
             return workCount;
+        }
+        catch (final ArchiveException ex)
+        {
+            errorMessage = ex.getMessage();
+            errorCode = ex.errorCode();
+            state(State.INACTIVE);
+            throw ex;
         }
         catch (final Throwable ex)
         {

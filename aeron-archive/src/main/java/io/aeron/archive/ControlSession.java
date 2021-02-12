@@ -600,6 +600,12 @@ final class ControlSession implements Session
     }
 
     void attemptErrorResponse(
+        final long correlationId, final int errorCode, final String errorMessage, final ControlResponseProxy proxy)
+    {
+        proxy.sendResponse(controlSessionId, correlationId, errorCode, ERROR, errorMessage, this);
+    }
+
+    void attemptErrorResponse(
         final long correlationId, final long relevantId, final String errorMessage, final ControlResponseProxy proxy)
     {
         proxy.sendResponse(controlSessionId, correlationId, relevantId, ERROR, errorMessage, this);

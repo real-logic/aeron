@@ -94,7 +94,6 @@ class RecordingWriterTest
             1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(notADirectory));
 
         assertThrows(IOException.class, recordingWriter::init);
-        assertTrue(recordingWriter.isClosed());
     }
 
     @Test
@@ -104,10 +103,8 @@ class RecordingWriterTest
         final RecordingWriter recordingWriter = new RecordingWriter(
             1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir));
         recordingWriter.init();
-        assertFalse(recordingWriter.isClosed());
 
         recordingWriter.close();
-        assertTrue(recordingWriter.isClosed());
 
         final File segmentFile = segmentFile(1, 0);
         assertTrue(segmentFile.exists());
@@ -124,7 +121,6 @@ class RecordingWriterTest
         assertThrows(
             NullPointerException.class,
             () -> recordingWriter.onBlock(new UnsafeBuffer(allocate(32)), 0, 10, 5, 8));
-        assertTrue(recordingWriter.isClosed());
     }
 
     @Test
@@ -144,7 +140,6 @@ class RecordingWriterTest
                 () -> recordingWriter.onBlock(new UnsafeBuffer(allocate(32)), 0, 10, 5, 8));
             assertEquals(GENERIC, exception.errorCode());
             assertEquals("ERROR - file closed by interrupt, recording aborted", exception.getMessage());
-            assertTrue(recordingWriter.isClosed());
         }
         finally
         {

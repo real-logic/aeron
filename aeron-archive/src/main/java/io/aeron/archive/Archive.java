@@ -925,6 +925,11 @@ public final class Archive implements AutoCloseable
                 }
             }
 
+            if (!(aeron.context().subscriberErrorHandler() instanceof RethrowingErrorHandler))
+            {
+                throw new ArchiveException("Aeron client must use a RethrowingErrorHandler");
+            }
+
             Objects.requireNonNull(errorCounter, "Error counter must be supplied if aeron client is");
 
             if (null == countedErrorHandler)

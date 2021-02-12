@@ -478,7 +478,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(120)
+    @Timeout(90)
     public void shouldRecoverAfterTwoLeadersNodesFailAndComeBackUpAtSameTime(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);

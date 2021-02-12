@@ -199,6 +199,7 @@ public class StartFromTruncatedRecordingLogTest
         catch (final Throwable ex)
         {
             ex.printStackTrace();
+            ClusterTests.printWarning();
             SystemUtil.threadDump();
             throw ex;
         }

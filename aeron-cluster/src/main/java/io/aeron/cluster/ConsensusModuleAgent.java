@@ -2940,6 +2940,10 @@ final class ConsensusModuleAgent implements Agent
         {
             ctx.terminationHook().run();
         }
+        catch (final ClusterTerminationException cex)
+        {
+            throw cex;
+        }
         catch (final Throwable t)
         {
             ex.addSuppressed(t);

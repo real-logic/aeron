@@ -547,7 +547,7 @@ public class ClusterNodeRestartTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .errorHandler(ClusterTests.errorHandler(0)));
     }
 
@@ -618,7 +618,7 @@ public class ClusterNodeRestartTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .errorHandler(ClusterTests.errorHandler(0)));
     }
 

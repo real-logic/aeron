@@ -65,7 +65,7 @@ public class ClusterNodeTest
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .logChannel("aeron:ipc")
                 .deleteDirOnStart(true));
     }
@@ -310,7 +310,7 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(clusteredService)
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .errorHandler(ClusterTests.errorHandler(0)));
     }
 
@@ -352,7 +352,7 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(clusteredService)
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .errorHandler(ClusterTests.errorHandler(0)));
     }
 

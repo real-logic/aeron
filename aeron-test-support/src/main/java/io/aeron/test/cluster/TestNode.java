@@ -63,12 +63,12 @@ public class TestNode implements AutoCloseable
         clusteredArchive = ClusteredArchive.launch(
             mediaDriver.aeronDirectoryName(),
             context.archiveContext,
-            context.consensusModuleContext.terminationHook(ClusterTests.dynamicTerminationHook(
+            context.consensusModuleContext.terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated)));
 
         container = ClusteredServiceContainer.launch(
             context.serviceContainerContext
-                .terminationHook(ClusterTests.dynamicTerminationHook(
+                .terminationHook(ClusterTests.terminationHook(
                     context.isTerminationExpected, context.hasServiceTerminated)));
 
         service = context.service;

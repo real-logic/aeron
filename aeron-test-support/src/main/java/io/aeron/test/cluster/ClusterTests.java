@@ -16,6 +16,7 @@
 package io.aeron.test.cluster;
 
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.exceptions.AeronException;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
@@ -41,27 +42,25 @@ public class ClusterTests
     private static final AtomicReference<Throwable> ERROR = new AtomicReference<>();
     private static final AtomicReference<Throwable> WARNING = new AtomicReference<>();
 
-    public static final Runnable TERMINATION_HOOK =
-        () ->
-        {
-            throw new AgentTerminationException();
-        };
+    public static final Runnable NOOP_TERMINATION_HOOK = () -> {};
 
-    public static Runnable dynamicTerminationHook(
-        final AtomicBoolean terminationExpected, final AtomicBoolean wasTerminated)
+    public static Runnable terminationHook(final AtomicBoolean isTerminationExpected, final AtomicBoolean hasTerminated)
     {
-        return () ->
-        {
-            if (null == terminationExpected || !terminationExpected.get())
+        return
+            () ->
             {
-                throw new AgentTerminationException();
-            }
+                if (null != isTerminationExpected && isTerminationExpected.get())
+                {
+                    if (null != hasTerminated)
+                    {
+                        hasTerminated.set(true);
+                    }
 
-            if (null != wasTerminated)
-            {
-                wasTerminated.set(true);
-            }
-        };
+                    throw new ClusterTerminationException();
+                }
+
+                throw new AgentTerminationException();
+            };
     }
 
     public static ErrorHandler errorHandler(final int memberId)
@@ -75,7 +74,7 @@ public class ClusterTests
                     return;
                 }
 
-                if (ex instanceof AgentTerminationException)
+                if (ex instanceof ClusterTerminationException)
                 {
                     addWarning(ex);
                     return;
@@ -122,7 +121,7 @@ public class ClusterTests
         final Throwable warning = WARNING.get();
         if (null != warning)
         {
-            System.err.println("*** Warning captured ***");
+            System.err.println("\n*** Warning captured ***");
             warning.printStackTrace();
         }
     }
@@ -136,7 +135,7 @@ public class ClusterTests
         {
             if (null != warning)
             {
-                System.err.println("*** Warning captured with error ***");
+                System.err.println("\n*** Warning captured with error ***");
                 warning.printStackTrace();
             }
 
@@ -145,19 +144,19 @@ public class ClusterTests
 
         if (Thread.currentThread().isInterrupted() && null != warning)
         {
-            System.err.println("*** Warning captured with interrupt ***");
+            System.err.println("\n*** Warning captured with interrupt ***");
             warning.printStackTrace();
         }
     }
 
-    public static Thread startPublisherThread(final TestCluster cluster, final long backoffIntervalNs)
+    public static Thread startPublisherThread(final TestCluster testCluster, final long backoffIntervalNs)
     {
         final Thread thread = new Thread(
             () ->
             {
                 final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
-                final AeronCluster client = cluster.client();
-                final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
+                final AeronCluster client = testCluster.client();
+                final ExpandableArrayBuffer msgBuffer = testCluster.msgBuffer();
                 msgBuffer.putStringWithoutLengthAscii(0, HELLO_WORLD_MSG);
 
                 while (!Thread.interrupted())

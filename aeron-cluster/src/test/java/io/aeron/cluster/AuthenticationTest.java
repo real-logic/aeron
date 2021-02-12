@@ -451,7 +451,7 @@ public class AuthenticationTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .errorHandler(ClusterTests.errorHandler(0)));
     }
 
@@ -484,7 +484,7 @@ public class AuthenticationTest
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
                 .authenticatorSupplier(authenticatorSupplier)
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .deleteDirOnStart(true));
     }
 }

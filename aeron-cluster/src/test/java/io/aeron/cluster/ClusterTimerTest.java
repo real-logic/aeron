@@ -193,7 +193,7 @@ public class ClusterTimerTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .errorHandler(ClusterTests.errorHandler(0)));
 
         connectClient();
@@ -277,7 +277,7 @@ public class ClusterTimerTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .errorHandler(ClusterTests.errorHandler(0)));
     }
 
@@ -309,7 +309,7 @@ public class ClusterTimerTest
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
                 .logChannel("aeron:ipc")
-                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .deleteDirOnStart(initialLaunch));
     }
 }

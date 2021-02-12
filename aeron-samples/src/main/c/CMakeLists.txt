@@ -19,9 +19,9 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     add_definitions(-D_DEFAULT_SOURCE)
 endif ()
 
-set(CLIENT_LINK_LIB "aeron")
+set(CLIENT_LINK_LIB "aeron_static")
 if (LINK_SAMPLES_CLIENT_SHARED)
-    set(CLIENT_LINK_LIB "aeron_shared")
+    set(CLIENT_LINK_LIB "aeron")
     add_definitions(-DCLIENT_SHARED)
 endif ()
 

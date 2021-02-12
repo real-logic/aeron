@@ -17,11 +17,13 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.*;
+import io.aeron.test.SlowTest;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
@@ -38,8 +40,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.File;
 import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class MultiDestinationSubscriptionTest
@@ -137,6 +140,20 @@ public class MultiDestinationSubscriptionTest
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
 
         subscription.addDestination(publicationChannelA);
+    }
+
+    @Test
+    @Timeout(10)
+    public void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
+    {
+        launch();
+
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+
+        final RegistrationException registrationException = assertThrows(
+            RegistrationException.class, () -> subscription.addDestination("aeron-spy:" + SUB_MDC_DESTINATION_URI));
+
+        assertThat(registrationException.getMessage(), containsString("spies are invalid"));
     }
 
     @Test

@@ -25,11 +25,8 @@ import static io.aeron.cluster.ClusterSession.State.CHALLENGED;
  */
 class ClusterSessionProxy implements SessionProxy
 {
-    private static final String EMPTY_DETAIL = "";
     private final EgressPublisher egressPublisher;
     private ClusterSession clusterSession;
-    private long leadershipTermId;
-    private int leaderMemberId;
 
     ClusterSessionProxy(final EgressPublisher egressPublisher)
     {
@@ -39,18 +36,6 @@ class ClusterSessionProxy implements SessionProxy
     final SessionProxy session(final ClusterSession clusterSession)
     {
         this.clusterSession = clusterSession;
-        return this;
-    }
-
-    final ClusterSessionProxy leaderMemberId(final int leaderMemberId)
-    {
-        this.leaderMemberId = leaderMemberId;
-        return this;
-    }
-
-    final ClusterSessionProxy leadershipTermId(final long leadershipTermId)
-    {
-        this.leadershipTermId = leadershipTermId;
         return this;
     }
 
@@ -74,19 +59,8 @@ class ClusterSessionProxy implements SessionProxy
     {
         ClusterSession.checkEncodedPrincipalLength(encodedPrincipal);
 
-        if (clusterSession.isBackupSession())
-        {
-            clusterSession.authenticate(encodedPrincipal);
-            return true;
-        }
-        else if (egressPublisher.sendEvent(
-            clusterSession, leadershipTermId, leaderMemberId, EventCode.OK, EMPTY_DETAIL))
-        {
-            clusterSession.authenticate(encodedPrincipal);
-            return true;
-        }
-
-        return false;
+        clusterSession.authenticate(encodedPrincipal);
+        return true;
     }
 
     public final void reject()

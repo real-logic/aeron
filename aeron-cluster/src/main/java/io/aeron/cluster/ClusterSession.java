@@ -38,6 +38,7 @@ class ClusterSession
     }
 
     private boolean hasNewLeaderEventPending = false;
+    private boolean hasOpenEventPending = true;
     private final long id;
     private long correlationId;
     private long openedLogPosition = Aeron.NULL_VALUE;
@@ -266,6 +267,16 @@ class ClusterSession
     boolean hasNewLeaderEventPending()
     {
         return hasNewLeaderEventPending;
+    }
+
+    boolean hasOpenEventPending()
+    {
+        return hasOpenEventPending;
+    }
+
+    void hasOpenEventPending(final boolean flag)
+    {
+        hasOpenEventPending = flag;
     }
 
     boolean isBackupSession()

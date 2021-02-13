@@ -566,7 +566,7 @@ final class ConsensusModuleAgent implements Agent
         {
             election.onAppendPosition(leadershipTermId, logPosition, followerMemberId);
         }
-        else if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
+        else if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower)
@@ -585,9 +585,9 @@ final class ConsensusModuleAgent implements Agent
         {
             election.onCommitPosition(leadershipTermId, logPosition, leaderMemberId);
         }
-        else if (Cluster.Role.FOLLOWER == role &&
-            leadershipTermId == this.leadershipTermId &&
-            leaderMemberId == leaderMember.id())
+        else if (leadershipTermId == this.leadershipTermId &&
+            leaderMemberId == leaderMember.id() &&
+            Cluster.Role.FOLLOWER == role)
         {
             notifiedCommitPosition = logPosition;
             timeOfLastLogUpdateNs = clusterClock.timeNanos();
@@ -601,7 +601,7 @@ final class ConsensusModuleAgent implements Agent
 
     void onCatchupPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
-        if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
+        if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && follower.catchupReplaySessionId() == NULL_VALUE)
@@ -624,10 +624,13 @@ final class ConsensusModuleAgent implements Agent
 
     void onStopCatchup(final long leadershipTermId, final int followerMemberId)
     {
-        if (null != catchupLogDestination && followerMemberId == memberId && leadershipTermId == this.leadershipTermId)
+        if (leadershipTermId == this.leadershipTermId && followerMemberId == memberId)
         {
-            logAdapter.asyncRemoveDestination(catchupLogDestination);
-            catchupLogDestination = null;
+            if (null != catchupLogDestination)
+            {
+                logAdapter.asyncRemoveDestination(catchupLogDestination);
+                catchupLogDestination = null;
+            }
         }
     }
 
@@ -724,9 +727,9 @@ final class ConsensusModuleAgent implements Agent
 
     void onTerminationAck(final long leadershipTermId, final long logPosition, final int memberId)
     {
-        if (Cluster.Role.LEADER == role &&
-            leadershipTermId == this.leadershipTermId &&
-            logPosition >= terminationPosition)
+        if (leadershipTermId == this.leadershipTermId &&
+            logPosition >= terminationPosition &&
+            Cluster.Role.LEADER == role)
         {
             final ClusterMember member = clusterMemberByIdMap.get(memberId);
             if (null != member)

@@ -180,7 +180,7 @@ class Election
                     break;
             }
         }
-        catch (final Exception ex)
+        catch (final Throwable ex)
         {
             handleError(nowNs, ex);
         }
@@ -188,7 +188,7 @@ class Election
         return workCount;
     }
 
-    void handleError(final long nowNs, final Exception ex)
+    void handleError(final long nowNs, final Throwable ex)
     {
         ctx.countedErrorHandler().onError(ex);
         logPosition = ctx.commitPositionCounter().getWeak();

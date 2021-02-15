@@ -168,7 +168,7 @@ int aeron_driver_receiver_do_work(void *clientd)
     {
         aeron_publication_image_t *image = receiver->images.array[i].image;
 
-        int send_sm_result = aeron_publication_image_send_pending_status_message(image);
+        int send_sm_result = aeron_publication_image_send_pending_status_message(image, now_ns);
         if (send_sm_result < 0)
         {
             AERON_APPEND_ERR("%s", "receiver send SM");

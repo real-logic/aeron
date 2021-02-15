@@ -90,7 +90,6 @@ typedef struct aeron_publication_image_stct
     int32_t stream_id;
     int32_t initial_term_id;
     int32_t active_term_id;
-    int32_t initial_term_offset;
     int32_t term_length;
     int32_t mtu_length;
     int32_t term_length_mask;
@@ -100,6 +99,7 @@ typedef struct aeron_publication_image_stct
     aeron_raw_log_free_func_t raw_log_free_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
 
+    int64_t last_loss_change_number;
     volatile int64_t begin_loss_change;
     volatile int64_t end_loss_change;
     int32_t loss_term_id;
@@ -110,14 +110,14 @@ typedef struct aeron_publication_image_stct
     volatile int64_t end_sm_change;
     int64_t next_sm_position;
     int32_t next_sm_receiver_window_length;
-    int64_t last_status_message_timestamp;
-
-    int64_t time_of_last_packet_ns;
 
     int64_t last_sm_change_number;
     int64_t last_sm_position;
     int64_t last_sm_position_window_limit;
-    int64_t last_loss_change_number;
+    int64_t time_of_last_sm_ns;
+    int64_t sm_timeout_ns;
+
+    int64_t time_of_last_packet_ns;
 
     bool is_end_of_stream;
 
@@ -160,8 +160,7 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
 
 void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length);
 
-void aeron_publication_image_track_rebuild(
-    aeron_publication_image_t *image, int64_t now_ns, int64_t status_message_timeout);
+void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int64_t now_ns);
 
 int aeron_publication_image_insert_packet(
     aeron_publication_image_t *image,
@@ -175,7 +174,7 @@ int aeron_publication_image_insert_packet(
 int aeron_publication_image_on_rttm(
     aeron_publication_image_t *image, aeron_rttm_header_t *header, struct sockaddr_storage *addr);
 
-int aeron_publication_image_send_pending_status_message(aeron_publication_image_t *image);
+int aeron_publication_image_send_pending_status_message(aeron_publication_image_t *image, int64_t now_ns);
 
 int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image);
 
@@ -227,19 +226,15 @@ inline bool aeron_publication_image_is_flow_control_over_run(
 }
 
 inline void aeron_publication_image_schedule_status_message(
-    aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length)
+    aeron_publication_image_t *image, int64_t sm_position, int32_t window_length)
 {
     const int64_t change_number = image->begin_sm_change + 1;
 
     AERON_PUT_ORDERED(image->begin_sm_change, change_number);
     aeron_release();
-
     image->next_sm_position = sm_position;
     image->next_sm_receiver_window_length = window_length;
-
     AERON_PUT_ORDERED(image->end_sm_change, change_number);
-
-    image->last_status_message_timestamp = now_ns;
 }
 
 inline bool aeron_publication_image_is_drained(aeron_publication_image_t *image)

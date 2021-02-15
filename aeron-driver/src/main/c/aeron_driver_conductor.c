@@ -2341,8 +2341,7 @@ int aeron_driver_conductor_do_work(void *clientd)
 
     for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
     {
-        aeron_publication_image_track_rebuild(
-            conductor->publication_images.array[i].image, now_ns, conductor->context->status_message_timeout_ns);
+        aeron_publication_image_track_rebuild(conductor->publication_images.array[i].image, now_ns);
     }
 
     return work_count;

@@ -1556,17 +1556,16 @@ public final class AeronCluster implements AutoCloseable
 
         private void checkDeadline()
         {
-            if (Thread.interrupted())
-            {
-                LangUtil.rethrowUnchecked(new InterruptedException());
-            }
-
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
                 throw new TimeoutException(
                     "connect timeout, step=" + step + " egress.isConnected=" + egressSubscription.isConnected() +
-                    " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort(),
-                    AeronException.Category.ERROR);
+                    " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort());
+            }
+
+            if (Thread.currentThread().isInterrupted())
+            {
+                throw new AeronException("unexpected interrupt");
             }
         }
 

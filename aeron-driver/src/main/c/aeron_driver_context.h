@@ -116,6 +116,7 @@ typedef struct aeron_driver_context_stct
     int32_t publication_reserved_session_id_low;            /* aeron.publication.reserved.session.id.low = -1 */
     int32_t publication_reserved_session_id_high;           /* aeron.publication.reserved.session.id.high = 1000 */
     uint8_t multicast_ttl;                                  /* aeron.socket.multicast.ttl = 0 */
+    uint64_t conductor_cycle_threshold_ns;                  /* aeron.driver.conductor.cycle.threshold = 1000 * 1000 * 1000 */
 
     struct                                                  /* aeron.receiver.receiver.tag = <unset> */
     {

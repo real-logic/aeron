@@ -119,18 +119,19 @@ public final class PublicationImage
     private volatile long endSmChange = Aeron.NULL_VALUE;
     private long nextSmPosition;
     private int nextSmReceiverWindowLength;
-    private long timeOfLastStatusMessageScheduleNs;
 
+    private long lastSmChangeNumber = Aeron.NULL_VALUE;
     private long lastSmPosition;
     private long lastSmWindowLimit;
-    private long lastSmChangeNumber = Aeron.NULL_VALUE;
-    private long lastLossChangeNumber = Aeron.NULL_VALUE;
+    private long timeOfLastSmNs;
+    private final long smTimeoutNs;
 
     private volatile long beginLossChange = Aeron.NULL_VALUE;
     private volatile long endLossChange = Aeron.NULL_VALUE;
     private int lossTermId;
     private int lossTermOffset;
     private int lossLength;
+    private long lastLossChangeNumber = Aeron.NULL_VALUE;
 
     private long timeOfLastStateChangeNs;
 
@@ -190,6 +191,7 @@ public final class PublicationImage
         this.imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
         this.untetheredWindowLimitTimeoutNs = ctx.untetheredWindowLimitTimeoutNs();
         this.untetheredRestingTimeoutNs = ctx.untetheredRestingTimeoutNs();
+        this.smTimeoutNs = ctx.statusMessageTimeoutNs();
         this.channelEndpoint = channelEndpoint;
         this.sessionId = sessionId;
         this.streamId = streamId;
@@ -321,7 +323,7 @@ public final class PublicationImage
         if (!subscriptionLink.isTether())
         {
             untetheredSubscriptions.add(new UntetheredSubscription(
-                subscriptionLink, subscriberPosition, timeOfLastStatusMessageScheduleNs));
+                subscriptionLink, subscriberPosition, cachedNanoClock.nanoTime()));
         }
     }
 
@@ -474,7 +476,7 @@ public final class PublicationImage
         trackConnection(transportIndex, remoteAddress, cachedNanoClock.nanoTime());
     }
 
-    int trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
+    int trackRebuild(final long nowNs)
     {
         int workCount = 0;
 
@@ -518,8 +520,7 @@ public final class PublicationImage
             final int threshold = CongestionControl.threshold(windowLength);
 
             if (CongestionControl.shouldForceStatusMessage(ccOutcome) ||
-                (minSubscriberPosition > (nextSmPosition + threshold)) ||
-                ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0))
+                (minSubscriberPosition > (nextSmPosition + threshold)))
             {
                 cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
                 scheduleStatusMessage(nowNs, minSubscriberPosition, windowLength);
@@ -610,14 +611,15 @@ public final class PublicationImage
     /**
      * Called from the {@link Receiver} to send any pending Status Messages.
      *
+     * @param nowNs current time.
      * @return number of work items processed.
      */
-    int sendPendingStatusMessage()
+    int sendPendingStatusMessage(final long nowNs)
     {
         int workCount = 0;
         final long changeNumber = endSmChange;
 
-        if (changeNumber != lastSmChangeNumber)
+        if (changeNumber != lastSmChangeNumber || (timeOfLastSmNs + smTimeoutNs) - nowNs < 0)
         {
             final long smPosition = nextSmPosition;
             final int receiverWindowLength = nextSmReceiverWindowLength;
@@ -637,6 +639,7 @@ public final class PublicationImage
                 lastSmPosition = smPosition;
                 lastSmWindowLimit = smPosition + receiverWindowLength;
                 lastSmChangeNumber = changeNumber;
+                timeOfLastSmNs = nowNs;
 
                 updateActiveTransportCount();
             }
@@ -892,7 +895,7 @@ public final class PublicationImage
         nextSmReceiverWindowLength = receiverWindowLength;
 
         UNSAFE.putOrderedLong(this, END_SM_CHANGE_OFFSET, changeNumber);
-        timeOfLastStatusMessageScheduleNs = nowNs;
+        timeOfLastSmNs = nowNs;
     }
 
     private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)

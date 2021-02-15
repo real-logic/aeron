@@ -99,7 +99,7 @@ public interface CongestionControl extends AutoCloseable
     void onRttMeasurement(long nowNs, long rttNs, InetSocketAddress srcAddress);
 
     /**
-     * Called by {@link DriverConductor} upon execution of {@link PublicationImage#trackRebuild(long, long)} to
+     * Called by {@link DriverConductor} upon execution of {@link PublicationImage#trackRebuild(long)} to
      * pass on current status.
      * <p>
      * The return value must be packed using {@link CongestionControl#packOutcome(int, boolean)}.

@@ -68,11 +68,10 @@ public final class DriverConductor implements Agent
     private int nextSessionId = BitUtil.generateRandomisedId();
     private final long timerIntervalNs;
     private final long clientLivenessTimeoutNs;
-    private final long statusMessageTimeoutNs;
     private long timeOfLastToDriverPositionChangeNs;
-    private long timeOfLastWorkCycleNs;
     private long lastConsumerCommandPosition;
     private long timerCheckDeadlineNs;
+    private long timeOfLastWorkCycleNs;
     private long clockUpdateDeadlineNs;
 
     private final Context ctx;
@@ -113,7 +112,6 @@ public final class DriverConductor implements Agent
         this.ctx = ctx;
         timerIntervalNs = ctx.timerIntervalNs();
         clientLivenessTimeoutNs = ctx.clientLivenessTimeoutNs();
-        statusMessageTimeoutNs = ctx.statusMessageTimeoutNs();
         driverCmdQueue = ctx.driverCommandQueue();
         receiverProxy = ctx.receiverProxy();
         senderProxy = ctx.senderProxy();
@@ -1808,7 +1806,7 @@ public final class DriverConductor implements Agent
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
-            workCount += publicationImages.get(i).trackRebuild(nowNs, statusMessageTimeoutNs);
+            workCount += publicationImages.get(i).trackRebuild(nowNs);
         }
 
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;

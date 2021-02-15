@@ -23,6 +23,7 @@ import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -51,7 +52,11 @@ import java.util.function.LongConsumer;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.ClientHeartbeatTimestamp.HEARTBEAT_TYPE_ID;
+import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_DUTY_CYCLE_TIME_THRESHOLD_EXCEEDED;
+import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_MAX_DUTY_CYCLE_TIME;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.agrona.concurrent.status.CountersReader.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -103,8 +108,12 @@ public class DriverConductorTest
     private final DriverConductorProxy driverConductorProxy = mock(DriverConductorProxy.class);
     private ReceiveChannelEndpoint receiveChannelEndpoint = null;
 
-    private final CachedEpochClock epochClock = new CachedEpochClock();
-    private final CachedNanoClock nanoClock = new CachedNanoClock();
+    private final CachedNanoClock realNanoClock = new CachedNanoClock();
+    private final CachedEpochClock realEpochClock = new CachedEpochClock();
+    private final CachedEpochClock epochClock = spy(realEpochClock);
+    private final CachedNanoClock nanoClock = spy(realNanoClock);
+
+    private SystemCounters spySystemCounters;
 
     private CountersManager spyCountersManager;
     private DriverProxy driverProxy;
@@ -131,8 +140,9 @@ public class DriverConductorTest
             ByteBuffer.allocate(Configuration.countersMetadataBufferLength(BUFFER_LENGTH)));
         spyCountersManager = spy(new CountersManager(metaDataBuffer, counterBuffer, StandardCharsets.US_ASCII));
 
-        final SystemCounters mockSystemCounters = mock(SystemCounters.class);
-        when(mockSystemCounters.get(any())).thenReturn(mockErrorCounter);
+        spySystemCounters = spy(new SystemCounters(spyCountersManager));
+
+        when(spySystemCounters.get(SystemCounterDescriptor.ERRORS)).thenReturn(mockErrorCounter);
         when(mockErrorCounter.appendToLabel(any())).thenReturn(mockErrorCounter);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
@@ -156,11 +166,12 @@ public class DriverConductorTest
             .toDriverCommands(toDriverCommands)
             .clientProxy(mockClientProxy)
             .countersValuesBuffer(counterBuffer)
-            .systemCounters(mockSystemCounters)
+            .systemCounters(spySystemCounters)
             .receiverProxy(receiverProxy)
             .senderProxy(senderProxy)
             .driverConductorProxy(driverConductorProxy)
             .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals())
+            .conductorDutyCycleThresholdNs(600_000_000)
             .nameResolver(DefaultNameResolver.INSTANCE);
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
@@ -1770,6 +1781,38 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
             anyLong(), anyInt(), eq(publication.rawLog().fileName()), anyString());
+    }
+
+    @Test
+    void shouldIncrementCounterOnConductorThresholdExceeded()
+    {
+        final AtomicCounter maxCycleTime = spySystemCounters.get(CONDUCTOR_MAX_DUTY_CYCLE_TIME);
+        final AtomicCounter thresholdExceeded = spySystemCounters.get(CONDUCTOR_DUTY_CYCLE_TIME_THRESHOLD_EXCEEDED);
+
+        when(nanoClock.nanoTime())
+            .thenReturn(realNanoClock.nanoTime())
+            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(750))
+
+            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(750))
+            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(1750))
+
+            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(1750))
+            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(2250))
+
+            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(3000))
+            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(3600))
+
+            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(4000))
+            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(4601));
+
+        driverConductor.doWork();
+        driverConductor.doWork();
+        driverConductor.doWork();
+        driverConductor.doWork();
+        driverConductor.doWork();
+
+        assertEquals(SECONDS.toNanos(1), maxCycleTime.get());
+        assertEquals(3, thresholdExceeded.get());
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

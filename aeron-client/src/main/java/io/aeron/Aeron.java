@@ -1526,7 +1526,8 @@ public class Aeron implements AutoCloseable
         }
         catch (final InterruptedException ex)
         {
-            LangUtil.rethrowUnchecked(ex);
+            Thread.currentThread().interrupt();
+            throw new AeronException("unexpected interrupt", ex);
         }
     }
 }

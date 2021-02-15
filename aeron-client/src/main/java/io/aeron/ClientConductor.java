@@ -1167,10 +1167,10 @@ class ClientConductor implements Agent
                 return;
             }
 
-            if (Thread.interrupted())
+            if (Thread.currentThread().isInterrupted())
             {
                 isTerminating = true;
-                LangUtil.rethrowUnchecked(new InterruptedException());
+                throw new AeronException("unexpected interrupt");
             }
         }
         while (deadlineNs - nanoClock.nanoTime() > 0);

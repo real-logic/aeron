@@ -537,12 +537,12 @@ public class Configuration
     /**
      * Limit for the number of commands drained in one operation.
      */
-    public static final int COMMAND_DRAIN_LIMIT = 5;
+    public static final int COMMAND_DRAIN_LIMIT = 2;
 
     /**
      * Capacity for the command queues used between driver agents.
      */
-    public static final int CMD_QUEUE_CAPACITY = 256;
+    public static final int CMD_QUEUE_CAPACITY = 128;
 
     /**
      * Timeout on cleaning up pending SETUP message state on subscriber.

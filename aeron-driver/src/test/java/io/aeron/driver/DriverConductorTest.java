@@ -282,6 +282,7 @@ public class DriverConductorTest
 
         final long registrationId = captor.getValue();
         final IpcPublication publication = driverConductor.getIpcPublication(registrationId);
+        assertNotNull(publication);
         assertEquals(STREAM_ID_1, publication.streamId());
 
         final long expectedPosition = termLength * (termId - initialTermId) + termOffset;
@@ -324,7 +325,13 @@ public class DriverConductorTest
         driverProxy.addPublication(CHANNEL_4003, STREAM_ID_3);
         driverProxy.addPublication(CHANNEL_4004, STREAM_ID_4);
 
-        driverConductor.doWork();
+        while (true)
+        {
+            if (0 == driverConductor.doWork())
+            {
+                break;
+            }
+        }
 
         verify(senderProxy, times(4)).newNetworkPublication(any());
     }
@@ -367,7 +374,13 @@ public class DriverConductorTest
         final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_2);
         driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_3);
 
-        driverConductor.doWork();
+        while (true)
+        {
+            if (0 == driverConductor.doWork())
+            {
+                break;
+            }
+        }
 
         final ArgumentCaptor<ReceiveChannelEndpoint> captor = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
         verify(receiverProxy).registerReceiveChannelEndpoint(captor.capture());
@@ -391,7 +404,13 @@ public class DriverConductorTest
         final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_2);
         final long id3 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_3);
 
-        driverConductor.doWork();
+        while (true)
+        {
+            if (0 == driverConductor.doWork())
+            {
+                break;
+            }
+        }
 
         final ArgumentCaptor<ReceiveChannelEndpoint> captor = ArgumentCaptor.forClass(ReceiveChannelEndpoint.class);
         verify(receiverProxy).registerReceiveChannelEndpoint(captor.capture());
@@ -1073,7 +1092,13 @@ public class DriverConductorTest
         final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
         driverProxy.removeSubscription(idSpy);
 
-        driverConductor.doWork();
+        while (true)
+        {
+            if (0 == driverConductor.doWork())
+            {
+                break;
+            }
+        }
 
         final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
         verify(senderProxy, times(1)).newNetworkPublication(captor.capture());

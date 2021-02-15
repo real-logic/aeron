@@ -707,14 +707,14 @@ public class Configuration
     public static final long RE_RESOLUTION_CHECK_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
     /**
-     * Property name for the driver conductor duty cycle threshold.
+     * Property name for threshold value for the conductor work cycle threshold to track for being exceeded.
      */
-    public static final String CONDUCTOR_DUTY_CYCLE_THRESHOLD_PROP_NAME = "aeron.driver.conductor.dutyCycle.threshold";
+    public static final String CONDUCTOR_CYCLE_THRESHOLD_PROP_NAME = "aeron.driver.conductor.cycle.threshold";
 
     /**
-     * Default value for the conductor duty cycle threshold.
+     * Default threshold value for the conductor work cycle threshold to track for being exceeded.
      */
-    public static final long CONDUCTOR_DUTY_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(500);
+    public static final long CONDUCTOR_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
     /**
      * Should the driver configuration be printed on start.
@@ -1386,13 +1386,13 @@ public class Configuration
     }
 
     /**
-     * Get the duty cycle time threshold for the driver conductor.
+     * Get threshold value for the conductor work cycle threshold to track for being exceeded.
      *
      * @return threshold value in nanoseconds.
      */
-    public static long conductorDutyCycleThresholdNs()
+    public static long conductorCycleThresholdNs()
     {
-        return getLong(CONDUCTOR_DUTY_CYCLE_THRESHOLD_PROP_NAME, CONDUCTOR_DUTY_CYCLE_THRESHOLD_DEFAULT_NS);
+        return getDurationInNanos(CONDUCTOR_CYCLE_THRESHOLD_PROP_NAME, CONDUCTOR_CYCLE_THRESHOLD_DEFAULT_NS);
     }
 
     /**

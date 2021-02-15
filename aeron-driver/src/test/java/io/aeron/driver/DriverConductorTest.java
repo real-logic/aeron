@@ -52,8 +52,8 @@ import java.util.function.LongConsumer;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.ClientHeartbeatTimestamp.HEARTBEAT_TYPE_ID;
-import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_DUTY_CYCLE_TIME_THRESHOLD_EXCEEDED;
-import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_MAX_DUTY_CYCLE_TIME;
+import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED;
+import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_MAX_CYCLE_TIME;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -171,7 +171,7 @@ public class DriverConductorTest
             .senderProxy(senderProxy)
             .driverConductorProxy(driverConductorProxy)
             .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals())
-            .conductorDutyCycleThresholdNs(600_000_000)
+            .conductorCycleThresholdNs(600_000_000)
             .nameResolver(DefaultNameResolver.INSTANCE);
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
@@ -1786,8 +1786,8 @@ public class DriverConductorTest
     @Test
     void shouldIncrementCounterOnConductorThresholdExceeded()
     {
-        final AtomicCounter maxCycleTime = spySystemCounters.get(CONDUCTOR_MAX_DUTY_CYCLE_TIME);
-        final AtomicCounter thresholdExceeded = spySystemCounters.get(CONDUCTOR_DUTY_CYCLE_TIME_THRESHOLD_EXCEEDED);
+        final AtomicCounter maxCycleTime = spySystemCounters.get(CONDUCTOR_MAX_CYCLE_TIME);
+        final AtomicCounter thresholdExceeded = spySystemCounters.get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
 
         when(nanoClock.nanoTime())
             .thenReturn(realNanoClock.nanoTime())
@@ -1812,7 +1812,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertEquals(SECONDS.toNanos(1), maxCycleTime.get());
-        assertEquals(3, thresholdExceeded.get());
+        assertEquals(2, thresholdExceeded.get());
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

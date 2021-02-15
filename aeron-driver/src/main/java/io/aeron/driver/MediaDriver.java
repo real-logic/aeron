@@ -465,7 +465,7 @@ public final class MediaDriver implements AutoCloseable
         private String resolverName = Configuration.resolverName();
         private String resolverInterface = Configuration.resolverInterface();
         private String resolverBootstrapNeighbor = Configuration.resolverBootstrapNeighbor();
-        private long conductorDutyCycleThresholdNs = Configuration.conductorDutyCycleThresholdNs();
+        private long conductorCycleThresholdNs = Configuration.conductorCycleThresholdNs();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -2971,25 +2971,30 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Set a threshold for the conductor, beyond which it will increment the
-         * {@link io.aeron.driver.status.SystemCounterDescriptor#CONDUCTOR_DUTY_CYCLE_TIME_THRESHOLD_EXCEEDED} counter.
+         * Set a threshold for the conductor work cycle time which when exceed it will increment the
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED} counter.
          *
-         * @param conductorDutyCycleThresholdNs value in nanoseconds
+         * @param thresholdNs value in nanoseconds
          * @return this for fluent API.
-         * @see Configuration#CONDUCTOR_DUTY_CYCLE_THRESHOLD_PROP_NAME
-         * @see Configuration#CONDUCTOR_DUTY_CYCLE_THRESHOLD_DEFAULT_NS
+         * @see Configuration#CONDUCTOR_CYCLE_THRESHOLD_PROP_NAME
+         * @see Configuration#CONDUCTOR_CYCLE_THRESHOLD_DEFAULT_NS
          */
-        public Context conductorDutyCycleThresholdNs(final long conductorDutyCycleThresholdNs)
+        public Context conductorCycleThresholdNs(final long thresholdNs)
         {
-            this.conductorDutyCycleThresholdNs = conductorDutyCycleThresholdNs;
+            this.conductorCycleThresholdNs = thresholdNs;
             return this;
         }
 
-        public long conductorDutyCycleThresholdNs()
+        /**
+         * Threshold for the conductor work cycle time which when exceed it will increment the
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED} counter.
+         *
+         * @return threshold to track for the conductor work cycle time.
+         */
+        public long conductorCycleThresholdNs()
         {
-            return conductorDutyCycleThresholdNs;
+            return conductorCycleThresholdNs;
         }
-
 
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {

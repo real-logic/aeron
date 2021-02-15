@@ -17,11 +17,14 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.test.SlowTest;
+import io.aeron.test.TimeoutTestWatcher;
 import io.aeron.test.cluster.TestBackupNode;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,6 +34,15 @@ import static org.junit.jupiter.api.Assertions.*;
 @SlowTest
 public class ClusterBackupTest
 {
+    @RegisterExtension
+    public final TimeoutTestWatcher timeoutTestWatcher = new TimeoutTestWatcher();
+
+    @BeforeEach
+    void setUp()
+    {
+        timeoutTestWatcher.monitorTestThread(Thread.currentThread());
+    }
+
     @Test
     @Timeout(30)
     public void shouldBackupClusterNoSnapshotsAndEmptyLog()

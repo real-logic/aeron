@@ -146,9 +146,13 @@ public class Tests
 
     public static StringBuilder appendStackTrace(final StringBuilder sb)
     {
+        return appendStackTrace(sb, Thread.currentThread().getStackTrace());
+    }
+
+    public static StringBuilder appendStackTrace(final StringBuilder sb, final StackTraceElement[] stackTraceElements)
+    {
         sb.append(System.lineSeparator());
 
-        final StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
         for (int i = 1, length = stackTraceElements.length; i < length; i++)
         {
             sb.append(stackTraceElements[i]).append(System.lineSeparator());

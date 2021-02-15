@@ -108,10 +108,8 @@ public class DriverConductorTest
     private final DriverConductorProxy driverConductorProxy = mock(DriverConductorProxy.class);
     private ReceiveChannelEndpoint receiveChannelEndpoint = null;
 
-    private final CachedNanoClock realNanoClock = new CachedNanoClock();
-    private final CachedEpochClock realEpochClock = new CachedEpochClock();
-    private final CachedEpochClock epochClock = spy(realEpochClock);
-    private final CachedNanoClock nanoClock = spy(realNanoClock);
+    private final CachedNanoClock nanoClock = new CachedNanoClock();
+    private final CachedEpochClock epochClock = new CachedEpochClock();
 
     private SystemCounters spySystemCounters;
 
@@ -1814,30 +1812,20 @@ public class DriverConductorTest
         final AtomicCounter maxCycleTime = spySystemCounters.get(CONDUCTOR_MAX_CYCLE_TIME);
         final AtomicCounter thresholdExceeded = spySystemCounters.get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
 
-        when(nanoClock.nanoTime())
-            .thenReturn(realNanoClock.nanoTime())
-            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(750))
-
-            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(750))
-            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(1750))
-
-            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(1750))
-            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(2250))
-
-            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(3000))
-            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(3600))
-
-            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(4000))
-            .thenReturn(realNanoClock.nanoTime() + MILLISECONDS.toNanos(4601));
-
         driverConductor.doWork();
+        nanoClock.advance(MILLISECONDS.toNanos(750));
         driverConductor.doWork();
+        nanoClock.advance(MILLISECONDS.toNanos(1000));
         driverConductor.doWork();
+        nanoClock.advance(MILLISECONDS.toNanos(500));
         driverConductor.doWork();
+        nanoClock.advance(MILLISECONDS.toNanos(600));
+        driverConductor.doWork();
+        nanoClock.advance(MILLISECONDS.toNanos(601));
         driverConductor.doWork();
 
         assertEquals(SECONDS.toNanos(1), maxCycleTime.get());
-        assertEquals(2, thresholdExceeded.get());
+        assertEquals(3, thresholdExceeded.get());
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

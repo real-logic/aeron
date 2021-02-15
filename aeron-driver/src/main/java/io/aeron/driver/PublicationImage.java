@@ -523,7 +523,7 @@ public final class PublicationImage
                 (minSubscriberPosition > (nextSmPosition + threshold)))
             {
                 cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
-                scheduleStatusMessage(nowNs, minSubscriberPosition, windowLength);
+                scheduleStatusMessage(minSubscriberPosition, windowLength);
                 workCount += 1;
             }
         }
@@ -885,17 +885,15 @@ public final class PublicationImage
         return true;
     }
 
-    private void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)
+    private void scheduleStatusMessage(final long smPosition, final int receiverWindowLength)
     {
         final long changeNumber = beginSmChange + 1;
+
         UNSAFE.putOrderedLong(this, BEGIN_SM_CHANGE_OFFSET, changeNumber);
         UNSAFE.storeFence();
-
         nextSmPosition = smPosition;
         nextSmReceiverWindowLength = receiverWindowLength;
-
         UNSAFE.putOrderedLong(this, END_SM_CHANGE_OFFSET, changeNumber);
-        timeOfLastSmNs = nowNs;
     }
 
     private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)

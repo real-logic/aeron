@@ -707,6 +707,16 @@ public class Configuration
     public static final long RE_RESOLUTION_CHECK_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
     /**
+     * Property name for the driver conductor duty cycle threshold.
+     */
+    public static final String CONDUCTOR_DUTY_CYCLE_THRESHOLD_PROP_NAME = "aeron.driver.conductor.dutyCycle.threshold";
+
+    /**
+     * Default value for the conductor duty cycle threshold.
+     */
+    public static final long CONDUCTOR_DUTY_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(500);
+
+    /**
      * Should the driver configuration be printed on start.
      *
      * @return true if the driver configuration be printed on start.
@@ -1373,6 +1383,16 @@ public class Configuration
         }
 
         return ThreadingMode.valueOf(propertyValue);
+    }
+
+    /**
+     * Get the duty cycle time threshold for the driver conductor.
+     *
+     * @return threshold value in nanoseconds.
+     */
+    public static long conductorDutyCycleThresholdNs()
+    {
+        return getLong(CONDUCTOR_DUTY_CYCLE_THRESHOLD_PROP_NAME, CONDUCTOR_DUTY_CYCLE_THRESHOLD_DEFAULT_NS);
     }
 
     /**

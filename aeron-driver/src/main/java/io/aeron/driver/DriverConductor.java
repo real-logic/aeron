@@ -104,6 +104,8 @@ public final class DriverConductor implements Agent
     private final DataHeaderFlyweight defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
     private final NameResolver nameResolver;
     private final DriverNameResolver driverNameResolver;
+    private final AtomicCounter maxDutyCycleTimeCounter;
+    private final AtomicCounter dutyCycleTimeThresholdExceeded;
 
     DriverConductor(final Context ctx)
     {
@@ -152,6 +154,9 @@ public final class DriverConductor implements Agent
         timerCheckDeadlineNs = nowNs + timerIntervalNs;
         timeOfLastToDriverPositionChangeNs = nowNs;
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();
+
+        maxDutyCycleTimeCounter = ctx.systemCounters().get(CONDUCTOR_MAX_DUTY_CYCLE_TIME);
+        dutyCycleTimeThresholdExceeded = ctx.systemCounters().get(CONDUCTOR_DUTY_CYCLE_TIME_THRESHOLD_EXCEEDED);
     }
 
     public void onClose()
@@ -181,7 +186,23 @@ public final class DriverConductor implements Agent
         workCount += trackStreamPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
 
+        updateDutyCycleTracking(nowNs);
+
         return workCount;
+    }
+
+    private void updateDutyCycleTracking(final long nowNs)
+    {
+        final long elapsedNs = nanoClock.nanoTime() - nowNs;
+        final long currentMaxDutyCycleTime = maxDutyCycleTimeCounter.get();
+        if (currentMaxDutyCycleTime < elapsedNs)
+        {
+            maxDutyCycleTimeCounter.setOrdered(elapsedNs);
+        }
+        if (ctx.conductorDutyCycleThresholdNs() < elapsedNs)
+        {
+            dutyCycleTimeThresholdExceeded.incrementOrdered();
+        }
     }
 
     void onCreatePublicationImage(

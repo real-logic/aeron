@@ -465,6 +465,7 @@ public final class MediaDriver implements AutoCloseable
         private String resolverName = Configuration.resolverName();
         private String resolverInterface = Configuration.resolverInterface();
         private String resolverBootstrapNeighbor = Configuration.resolverBootstrapNeighbor();
+        private long conductorDutyCycleThresholdNs = Configuration.conductorDutyCycleThresholdNs();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -2968,6 +2969,27 @@ public final class MediaDriver implements AutoCloseable
             this.reResolutionCheckIntervalNs = reResolutionCheckIntervalNs;
             return this;
         }
+
+        /**
+         * Set a threshold for the conductor, beyond which it will increment the
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#CONDUCTOR_DUTY_CYCLE_TIME_THRESHOLD_EXCEEDED} counter.
+         *
+         * @param conductorDutyCycleThresholdNs value in nanoseconds
+         * @return this for fluent API.
+         * @see Configuration#CONDUCTOR_DUTY_CYCLE_THRESHOLD_PROP_NAME
+         * @see Configuration#CONDUCTOR_DUTY_CYCLE_THRESHOLD_DEFAULT_NS
+         */
+        public Context conductorDutyCycleThresholdNs(final long conductorDutyCycleThresholdNs)
+        {
+            this.conductorDutyCycleThresholdNs = conductorDutyCycleThresholdNs;
+            return this;
+        }
+
+        public long conductorDutyCycleThresholdNs()
+        {
+            return conductorDutyCycleThresholdNs;
+        }
+
 
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {

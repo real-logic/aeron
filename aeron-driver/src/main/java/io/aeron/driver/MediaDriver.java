@@ -436,6 +436,7 @@ public final class MediaDriver implements AutoCloseable
         private long nakMulticastMaxBackoffNs = Configuration.nakMulticastMaxBackoffNs();
         private long flowControlReceiverTimeoutNs = Configuration.flowControlReceiverTimeoutNs();
         private long reResolutionCheckIntervalNs = Configuration.reResolutionCheckIntervalNs();
+        private long conductorCycleThresholdNs = Configuration.conductorCycleThresholdNs();
 
         private int conductorBufferLength = Configuration.conductorBufferLength();
         private int toClientsBufferLength = Configuration.toClientsBufferLength();
@@ -465,7 +466,6 @@ public final class MediaDriver implements AutoCloseable
         private String resolverName = Configuration.resolverName();
         private String resolverInterface = Configuration.resolverInterface();
         private String resolverBootstrapNeighbor = Configuration.resolverBootstrapNeighbor();
-        private long conductorCycleThresholdNs = Configuration.conductorCycleThresholdNs();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;

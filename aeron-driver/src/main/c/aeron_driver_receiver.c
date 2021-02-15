@@ -129,7 +129,7 @@ int aeron_driver_receiver_do_work(void *clientd)
     int work_count = 0;
 
     work_count += (int)aeron_spsc_concurrent_array_queue_drain(
-        receiver->receiver_proxy.command_queue, aeron_driver_receiver_on_command, receiver, 5);
+        receiver->receiver_proxy.command_queue, aeron_driver_receiver_on_command, receiver, AERON_COMMAND_DRAIN_LIMIT);
 
     for (size_t i = 0; i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
     {

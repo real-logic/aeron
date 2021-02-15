@@ -31,12 +31,11 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSing
 
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
     EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
-
 
     int32_t session_id = 0;
     std::string log_file_name;
@@ -65,7 +64,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingl
 
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
-    doWork();
+    doWorkUntilDone();
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
@@ -100,7 +99,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameS
     ASSERT_EQ(addIpcSubscription(client_id, sub_id_1, STREAM_ID_1, -1), 0);
     ASSERT_EQ(addIpcSubscription(client_id, sub_id_2, STREAM_ID_1, -1), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
@@ -141,7 +140,7 @@ TEST_F(DriverConductorIpcTest, shouldAddSingleIpcSubscriptionThenAddMultipleExcl
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id_1, STREAM_ID_1, true), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_1, true), 0);
-    doWork();
+    doWorkUntilDone();
 
     aeron_ipc_publication_t *publication_1 = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id_1);
@@ -184,7 +183,7 @@ TEST_F(DriverConductorIpcTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id_1, STREAM_ID_1, false), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id_1);
@@ -218,7 +217,9 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutMultipleIpcSubscriptions)
     ASSERT_EQ(addIpcSubscription(client_id, sub_id1, STREAM_ID_1, false), 0);
     ASSERT_EQ(addIpcSubscription(client_id, sub_id2, STREAM_ID_2, false), 0);
     ASSERT_EQ(addIpcSubscription(client_id, sub_id3, STREAM_ID_3, false), 0);
-    doWork();
+
+    doWorkUntilDone();
+
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 3u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
@@ -238,9 +239,11 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcPublicationWithActiveIpcS
 
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
+
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
-    doWork();
+    doWorkUntilDone();
+
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
     int64_t timeout = m_context.m_context->publication_linger_timeout_ns * 2;
@@ -275,7 +278,7 @@ TEST_F(DriverConductorIpcTest, shouldAddIpcPublicationThenSubscriptionWithSessio
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
     ASSERT_EQ(addSubscription(client_id, sub_id, channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
@@ -311,7 +314,7 @@ TEST_F(DriverConductorIpcTest, shouldAddIpcSubscriptionThenPublicationWithSessio
 
     ASSERT_EQ(addSubscription(client_id, sub_id, channel, STREAM_ID_1, false), 0);
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
@@ -350,7 +353,7 @@ TEST_F(DriverConductorIpcTest, shouldNotAddIpcPublicationThenSubscriptionWithDif
 
     ASSERT_EQ(addPublication(client_id, pub_id, pub_channel, STREAM_ID_1, false), 0);
     ASSERT_EQ(addSubscription(client_id, sub_id, sub_channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
@@ -390,7 +393,7 @@ TEST_F(DriverConductorIpcTest, shouldNotAddIpcSubscriptionThenPublicationWithDif
 
     ASSERT_EQ(addSubscription(client_id, sub_id, sub_channel, STREAM_ID_1, false), 0);
     ASSERT_EQ(addPublication(client_id, pub_id, pub_channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);

@@ -2312,9 +2312,12 @@ int aeron_driver_conductor_do_work(void *clientd)
     const int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
 
     work_count += (int)aeron_mpsc_rb_read(
-        &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 5);
+        &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, AERON_COMMAND_DRAIN_LIMIT);
     work_count += (int)aeron_mpsc_concurrent_array_queue_drain(
-        conductor->conductor_proxy.command_queue, aeron_driver_conductor_on_command_queue, conductor, 5);
+        conductor->conductor_proxy.command_queue,
+        aeron_driver_conductor_on_command_queue,
+        conductor,
+        AERON_COMMAND_DRAIN_LIMIT);
     work_count += conductor->name_resolver.do_work_func(&conductor->name_resolver, now_ms);
 
     if (now_ns >= (conductor->time_of_last_timeout_check_ns + (int64_t)conductor->context->timer_interval_ns))

@@ -220,7 +220,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublica
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_TRUE(GetParam()->sendEndpointExists(&m_conductor.m_conductor, channel));
     ASSERT_TRUE(GetParam()->publicationExists(&m_conductor.m_conductor, pub_id));
@@ -239,7 +239,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublica
     readCounters(mock_counter_handler);
 
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_OPERATION_SUCCESS, _, _))
         .With(IsOperationSuccess(remove_correlation_id));
@@ -257,7 +257,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscri
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, channel, STREAM_ID_1), 0);
 
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 1u);
     ASSERT_TRUE(GetParam()->receiveEndpointExists(&m_conductor.m_conductor, channel));
 
@@ -269,7 +269,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscri
     testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 0u);
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_OPERATION_SUCCESS, _, _))
@@ -288,7 +288,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscri
     int64_t remove_correlation_id = nextCorrelationId();
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, channel_with_session, STREAM_ID_1), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_SUBSCRIPTION_READY, _, _))
@@ -300,7 +300,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscri
     ASSERT_TRUE(GetParam()->receiveEndpointHasRefCnt(&m_conductor.m_conductor, channel_with_session, STREAM_ID_1, SESSION_ID_1, 1));
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 0u);
 
@@ -326,7 +326,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddMultipleNetworkPublications)
     ASSERT_EQ(addPublication(client_id, pub_id_2, channel, STREAM_ID_2, false), 0);
     ASSERT_EQ(addPublication(client_id, pub_id_3, channel, STREAM_ID_3, false), 0);
     ASSERT_EQ(addPublication(client_id, pub_id_4, channel, STREAM_ID_4, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_TRUE(GetParam()->sendEndpointExists(&m_conductor.m_conductor, channel));
 
@@ -365,7 +365,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveMultipleNetworkPubli
     ASSERT_EQ(addPublication(client_id, pub_id_2, channel, STREAM_ID_1, false), 0);
     ASSERT_EQ(addPublication(client_id, pub_id_3, channel, STREAM_ID_1, false), 0);
     ASSERT_EQ(addPublication(client_id, pub_id_4, channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_TRUE(GetParam()->publicationExists(&m_conductor.m_conductor, pub_id_1));
     ASSERT_TRUE(GetParam()->publicationHasRefCnt(&m_conductor.m_conductor, pub_id_1, 4));
@@ -379,7 +379,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveMultipleNetworkPubli
     testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
     ASSERT_EQ(removePublication(client_id, remove_correlation_id_1, pub_id_2), 0);
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_TRUE(GetParam()->publicationHasRefCnt(&m_conductor.m_conductor, pub_id_1, 3));
 
@@ -402,7 +402,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddMultipleExclusiveNetworkPubli
     ASSERT_EQ(addPublication(client_id, pub_id_2, channel, STREAM_ID_1, true), 0);
     ASSERT_EQ(addPublication(client_id, pub_id_3, channel, STREAM_ID_1, true), 0);
     ASSERT_EQ(addPublication(client_id, pub_id_4, channel, STREAM_ID_1, true), 0);
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_TRUE(GetParam()->sendEndpointExists(&m_conductor.m_conductor, channel));
     ASSERT_TRUE(GetParam()->hasSendEndpointCount(&m_conductor.m_conductor, 1u));
@@ -430,7 +430,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublica
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel_with_session_id, STREAM_ID_1, false), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     GetParam()->sendEndpointExists(&m_conductor.m_conductor, channel_with_session_id);
     GetParam()->publicationExists(&m_conductor.m_conductor, pub_id);
@@ -462,7 +462,7 @@ TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecified
     int64_t pub_id2 = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id1, pub_id1, channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _));
@@ -471,7 +471,7 @@ TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecified
 
     ASSERT_EQ(addPublication(client_id2, pub_id2, channel, STREAM_ID_1, false), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _));
@@ -491,7 +491,7 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
     int64_t pub_id2 = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id1, pub_id1, channel1, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
     readAllBroadcastsFromConductor(mock_broadcast_handler);
@@ -499,7 +499,7 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
 
     ASSERT_EQ(addPublication(client_id2, pub_id2, channel2, STREAM_ID_1, false), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _));
@@ -517,7 +517,7 @@ TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecified
     int64_t pub_id2 = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id1, pub_id1, channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
     readAllBroadcastsFromConductor(mock_broadcast_handler);
@@ -525,7 +525,7 @@ TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecified
 
     ASSERT_EQ(addPublication(client_id2, pub_id2, channel, STREAM_ID_1, false), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _));
@@ -545,13 +545,13 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
     int64_t pub_id2 = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id1, pub_id1, channel1, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
     ASSERT_EQ(addPublication(client_id2, pub_id2, channel2, STREAM_ID_1, false), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id2));
@@ -571,12 +571,12 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddSingleNetworkPublicationThatA
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel_with_session_id, STREAM_ID_1, true), 0);
 
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, true), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 2u);
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(testing::AnyNumber());
@@ -595,13 +595,13 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateExclusivePublicationWith
     int64_t pub_id_2 = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id, pub_id_1, channel_with_session_id, STREAM_ID_1, true), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_EQ(addPublication(client_id, pub_id_2, channel_with_session_id, STREAM_ID_1, true), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id_2));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
@@ -619,13 +619,13 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateSharedPublicationWithDif
     int64_t pub_id_2 = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id, pub_id_1, channel1, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_EQ(addPublication(client_id, pub_id_2, channel2, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id_2));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
@@ -640,13 +640,13 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateSharedPublicationWithExc
     int64_t pub_id_2 = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id, pub_id_1, channel_with_session_id, STREAM_ID_1, true), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_EQ(addPublication(client_id, pub_id_2, channel_with_session_id, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id_2));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
@@ -662,13 +662,13 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateExclusivePublicationWith
     int64_t pub_id_2 = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id, pub_id_1, channel_with_session_id, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_EQ(addPublication(client_id, pub_id_2, channel_with_session_id, STREAM_ID_1, true), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id_2));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
@@ -689,7 +689,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddMultipleNetworkSubscriptionsW
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, channel, STREAM_ID_1), 0);
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, channel, STREAM_ID_1), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_TRUE(GetParam()->receiveEndpointExists(&m_conductor.m_conductor, channel));
     ASSERT_TRUE(GetParam()->hasReceiveEndpointCount(&m_conductor.m_conductor, 1u));
@@ -705,7 +705,7 @@ TEST_F(DriverConductorPubSubTest, shouldErrorOnRemovePublicationOnUnknownRegistr
     int64_t remove_correlation_id = nextCorrelationId();
 
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(remove_correlation_id));
 
@@ -719,7 +719,7 @@ TEST_F(DriverConductorPubSubTest, shouldErrorOnRemoveSubscriptionOnUnknownRegist
     int64_t remove_correlation_id = nextCorrelationId();
 
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(remove_correlation_id));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
@@ -731,7 +731,7 @@ TEST_F(DriverConductorPubSubTest, shouldErrorOnAddPublicationWithInvalidUri)
     int64_t pub_id = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id, pub_id, INVALID_URI, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(pub_id));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
@@ -743,7 +743,7 @@ TEST_F(DriverConductorPubSubTest, shouldErrorOnAddSubscriptionWithInvalidUri)
     int64_t sub_id = nextCorrelationId();
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, INVALID_URI, STREAM_ID_1), 0);
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _)).With(IsError(sub_id));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
@@ -757,7 +757,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutNetworkPublication)
     int64_t pub_id = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     EXPECT_TRUE(GetParam()->hasSendEndpointCount(&m_conductor.m_conductor, 1u));
     readAllBroadcastsFromConductor(null_broadcast_handler);
@@ -780,7 +780,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToNotTimeoutNetworkPublicationOnKe
     int64_t pub_id = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
@@ -806,7 +806,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutNetworkSubscription)
     int64_t sub_id = nextCorrelationId();
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, channel, STREAM_ID_1), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_TRUE(GetParam()->hasReceiveEndpointCount(&m_conductor.m_conductor, 1u));
     EXPECT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
@@ -829,7 +829,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToNotTimeoutNetworkSubscriptionOnK
     int64_t sub_id = nextCorrelationId();
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, channel, STREAM_ID_1), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 1u);
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
@@ -856,7 +856,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutSendChannelEndpointWithCl
     int64_t remove_correlation_id = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
     doWork();
@@ -886,10 +886,10 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutSendChannelEndpointWithCl
     int64_t remove_correlation_id = nextCorrelationId();
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numPublications(&m_conductor.m_conductor), 1u);
     ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
-    doWork();
+    doWorkUntilDone();
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
     const int64_t timeout =
@@ -940,10 +940,10 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToTimeoutReceiveChannelEndpointWit
     int64_t remove_correlation_id = nextCorrelationId();
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, channel, STREAM_ID_1), 0);
-    doWork();
+    doWorkUntilDone();
     EXPECT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 1u);
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
-    doWork();
+    doWorkUntilDone();
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
     int64_t timeout = m_context.m_context->client_liveness_timeout_ns;
@@ -971,7 +971,7 @@ TEST_P(DriverConductorPubSubTest, shouldNotAddDynamicSessionIdInReservedRange)
 
     ASSERT_EQ(addPublication(client_id, pub_id, channel, STREAM_ID_1, false), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_PUBLICATION_READY, _, _))
@@ -1015,7 +1015,7 @@ TEST_P(DriverConductorPubSubTest, shouldNotAccidentallyBumpIntoExistingSessionId
     ASSERT_EQ(addPublication(client_id, pub_id_2, channel2, STREAM_ID_1, true), 0);
     ASSERT_EQ(addPublication(client_id, pub_id_3, channel3, STREAM_ID_1, true), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
@@ -1067,7 +1067,7 @@ TEST_P(DriverConductorPubSubTest, shouldNotAccidentallyBumpIntoExistingSessionId
     ASSERT_EQ(addPublication(client_id, pub_id_3, channel3, STREAM_ID_1, true), 0);
     ASSERT_EQ(addPublication(client_id, pub_id_4, channel4, STREAM_ID_1, true), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     readAllBroadcastsFromConductor(null_broadcast_handler);
 
@@ -1100,7 +1100,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddSingleNetworkSubscriptionWith
 
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, channel_with_session_id, STREAM_ID_1), 0);
 
-    doWork();
+    doWorkUntilDone();
 
     ASSERT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 1u);
     ASSERT_TRUE(GetParam()->receiveEndpointExists(&m_conductor.m_conductor, channel_with_session_id));

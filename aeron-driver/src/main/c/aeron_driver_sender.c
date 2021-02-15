@@ -135,7 +135,7 @@ int aeron_driver_sender_do_work(void *clientd)
     int work_count = 0;
 
     work_count += (int)aeron_spsc_concurrent_array_queue_drain(
-        sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, 5);
+        sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, AERON_COMMAND_DRAIN_LIMIT);
 
     int64_t now_ns = aeron_clock_cached_nano_time(sender->context->cached_clock);
     int64_t bytes_received = 0;
@@ -183,7 +183,7 @@ int aeron_driver_sender_do_work(void *clientd)
             sender->re_resolution_deadline_ns = now_ns + sender->context->re_resolution_check_interval_ns;
         }
 
-        work_count += (poll_result < 0) ? 0 : poll_result;
+        work_count += (poll_result < 0 ? 0 : poll_result);
 
         sender->duty_cycle_counter = 0;
         sender->control_poll_timeout_ns = now_ns + sender->status_message_read_timeout_ns;

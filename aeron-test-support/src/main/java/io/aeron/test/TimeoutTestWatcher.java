@@ -26,9 +26,9 @@ import java.util.concurrent.TimeUnit;
 public class TimeoutTestWatcher implements TestWatcher
 {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
-        r ->
+        (runnable) ->
         {
-            final Thread t = new Thread(r);
+            final Thread t = new Thread(runnable);
             t.setName("Test thread monitor");
             t.setDaemon(true);
             return t;

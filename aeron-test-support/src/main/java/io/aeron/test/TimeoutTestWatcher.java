@@ -18,6 +18,7 @@ package io.aeron.test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -37,10 +38,25 @@ public class TimeoutTestWatcher implements TestWatcher
 
     public void testFailed(final ExtensionContext context, final Throwable cause)
     {
-        scheduler.shutdownNow();
         System.out.printf(
             "Stack Trace from Test thread:%n%s%n",
             Tests.appendStackTrace(new StringBuilder(), testThreadStackTraceElements));
+        scheduler.shutdownNow();
+    }
+
+    public void testDisabled(final ExtensionContext context, final Optional<String> reason)
+    {
+        scheduler.shutdownNow();
+    }
+
+    public void testSuccessful(final ExtensionContext context)
+    {
+        scheduler.shutdownNow();
+    }
+
+    public void testAborted(final ExtensionContext context, final Throwable cause)
+    {
+        scheduler.shutdownNow();
     }
 
     public void monitorTestThread(final Thread testThread)

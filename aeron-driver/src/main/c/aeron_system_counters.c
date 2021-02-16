@@ -46,9 +46,11 @@ static aeron_system_counter_t system_counters[] =
         { "Unblocked Control Commands", AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS },
         { "Possible TTL Asymmetry", AERON_SYSTEM_COUNTER_POSSIBLE_TTL_ASYMMETRY },
         { "ControllableIdleStrategy status", AERON_SYSTEM_COUNTER_CONTROLLABLE_IDLE_STRATEGY },
-        { "Loss gap fills", AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS},
-        { "Client liveness timeouts", AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS},
-        { "Resolution changes", AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES}
+        { "Loss gap fills", AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS },
+        { "Client liveness timeouts", AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS },
+        { "Resolution changes", AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES },
+        { "Conductor max cycle time doing its work (ns)", AERON_SYSTEM_COUNTER_CONDUCTOR_MAX_CYCLE_TIME },
+        { "Conductor work cycle exceeded threshold count", AERON_SYSTEM_COUNTER_CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED },
     };
 
 static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);

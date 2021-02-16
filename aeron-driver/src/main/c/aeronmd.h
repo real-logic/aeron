@@ -762,6 +762,15 @@ int aeron_driver_context_set_re_resolution_check_interval_ns(aeron_driver_contex
 uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_context_t *context);
 
 /**
+ * Specify the duty cycle time thresold for the conductor.
+ */
+#define AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_ENV_VAR "AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD"
+
+int64_t aeron_driver_context_set_conductor_cycle_threshold_ns(aeron_driver_context_t *context, uint64_t value);
+int64_t aeron_driver_context_get_conductor_cycle_threshold_ns(aeron_driver_context_t *context);
+
+
+/**
  * Set the list of filenames to dynamic libraries to load upon context init.
  */
 #define AERON_DRIVER_DYNAMIC_LIBRARIES_ENV_VAR "AERON_DRIVER_DYNAMIC_LIBRARIES"

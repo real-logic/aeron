@@ -278,6 +278,8 @@ typedef struct aeron_driver_conductor_stct
     int64_t *errors_counter;
     int64_t *unblocked_commands_counter;
     int64_t *client_timeouts_counter;
+    int64_t *max_cycle_time_counter;
+    int64_t *cycle_time_threshold_exceeded_counter;
 
     int64_t clock_update_deadline_ns;
 
@@ -287,6 +289,7 @@ typedef struct aeron_driver_conductor_stct
     int64_t time_of_last_timeout_check_ns;
     int64_t time_of_last_to_driver_position_change_ns;
     int64_t last_consumer_command_position;
+    int64_t time_of_last_work_cycle_ns;
 
     uint8_t padding[AERON_CACHE_LINE_LENGTH];
 }

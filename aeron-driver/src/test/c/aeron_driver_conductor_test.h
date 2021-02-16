@@ -80,6 +80,8 @@ extern "C"
 #define CONTROL_IP_ADDR "127.0.0.1"
 #define CONTROL_UDP_PORT (43657)
 
+#define TEST_CONDUCTOR_CYCLE_TIME_THRESHOLD (600 * 1000 * 1000)
+
 static int64_t nano_time = 0;
 static bool free_map_raw_log = true;
 
@@ -228,6 +230,8 @@ struct TestDriverContext
         m_context->raw_log_map_func = test_malloc_raw_log_map;
         m_context->raw_log_close_func = test_malloc_raw_log_close;
         m_context->raw_log_free_func = test_malloc_raw_log_free;
+
+        aeron_driver_context_set_conductor_cycle_threshold_ns(m_context, TEST_CONDUCTOR_CYCLE_TIME_THRESHOLD);
     }
 
     virtual ~TestDriverContext()

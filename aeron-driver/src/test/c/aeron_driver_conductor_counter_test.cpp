@@ -172,3 +172,34 @@ TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
     EXPECT_CALL(m_mockCallbacks, onCounter(counter_id, _, _, _, _, _)).Times(1);
     readCounters(mock_counter_handler);
 }
+
+TEST_F(DriverConductorCounterTest, shouldIncrementCounterOnConductorThresholdExceeded)
+{
+    int64_t *maxCycleTimeCounter = aeron_counters_manager_addr(
+        &m_conductor.m_conductor.counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_MAX_CYCLE_TIME);
+    int64_t *thresholdExceededCounter = aeron_counters_manager_addr(
+        &m_conductor.m_conductor.counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
+
+    nano_time = 0;
+    doWork();
+    nano_time = INT64_C(750) * 1000 * 1000;
+    doWork();
+    nano_time = INT64_C(1750) * 1000 * 1000;
+    doWork();
+    nano_time = INT64_C(2250) * 1000 * 1000;
+    doWork();
+    nano_time = INT64_C(2850) * 1000 * 1000;
+    doWork();
+    nano_time = INT64_C(3451) * 1000 * 1000;
+    doWork();
+
+    int64_t maxCycleTime;
+    AERON_GET_VOLATILE(maxCycleTime, *maxCycleTimeCounter);
+
+    ASSERT_EQ(1000 * 1000 * 1000, maxCycleTime);
+
+    int64_t thresholdExceeded;
+    AERON_GET_VOLATILE(thresholdExceeded, *thresholdExceededCounter);
+
+    ASSERT_EQ(3, thresholdExceeded);
+}

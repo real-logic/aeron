@@ -1288,23 +1288,32 @@ public final class DriverConductor implements Agent
         return rawLog;
     }
 
-    private SendChannelEndpoint getOrCreateSendChannelEndpoint(
-        final UdpChannel udpChannel, final long registrationId)
+    private SendChannelEndpoint getOrCreateSendChannelEndpoint(final UdpChannel udpChannel, final long registrationId)
     {
         SendChannelEndpoint channelEndpoint = findExistingSendChannelEndpoint(udpChannel);
         if (null == channelEndpoint)
         {
-            channelEndpoint = ctx.sendChannelEndpointSupplier().newInstance(
-                udpChannel,
-                SendChannelStatus.allocate(tempBuffer, countersManager, registrationId, udpChannel.originalUriString()),
-                ctx);
+            AtomicCounter statusIndicator = null;
+            AtomicCounter localSocketAddressIndicator = null;
+            try
+            {
+                statusIndicator = SendChannelStatus.allocate(
+                    tempBuffer, countersManager, registrationId, udpChannel.originalUriString());
 
-            final AtomicCounter counter = SendLocalSocketAddress.allocate(
-                tempBuffer, countersManager, registrationId, channelEndpoint.statusIndicatorCounterId());
+                channelEndpoint = ctx.sendChannelEndpointSupplier().newInstance(udpChannel, statusIndicator, ctx);
 
-            channelEndpoint.localSocketAddressIndicator(counter);
-            sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
-            senderProxy.registerSendChannelEndpoint(channelEndpoint);
+                localSocketAddressIndicator = SendLocalSocketAddress.allocate(
+                    tempBuffer, countersManager, registrationId, channelEndpoint.statusIndicatorCounterId());
+
+                channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
+                sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
+                senderProxy.registerSendChannelEndpoint(channelEndpoint);
+            }
+            catch (final Exception ex)
+            {
+                CloseHelper.closeAll(statusIndicator, localSocketAddressIndicator, channelEndpoint);
+                throw ex;
+            }
         }
 
         return channelEndpoint;
@@ -1465,23 +1474,34 @@ public final class DriverConductor implements Agent
         ReceiveChannelEndpoint channelEndpoint = findExistingReceiveChannelEndpoint(udpChannel);
         if (null == channelEndpoint)
         {
-            final String channel = udpChannel.originalUriString();
-            channelEndpoint = ctx.receiveChannelEndpointSupplier().newInstance(
-                udpChannel,
-                new DataPacketDispatcher(ctx.driverConductorProxy(), receiverProxy.receiver()),
-                ReceiveChannelStatus.allocate(tempBuffer, countersManager, registrationId, channel),
-                ctx);
-
-            if (!udpChannel.isManualControlMode())
+            AtomicCounter channelStatus = null;
+            AtomicCounter localSocketAddressIndicator = null;
+            try
             {
-                final AtomicCounter counter = ReceiveLocalSocketAddress.allocate(
-                    tempBuffer, countersManager, registrationId, channelEndpoint.statusIndicatorCounterId());
+                final String channel = udpChannel.originalUriString();
+                channelStatus = ReceiveChannelStatus.allocate(tempBuffer, countersManager, registrationId, channel);
 
-                channelEndpoint.localSocketAddressIndicator(counter);
+                final DataPacketDispatcher dispatcher = new DataPacketDispatcher(
+                    ctx.driverConductorProxy(), receiverProxy.receiver());
+                channelEndpoint = ctx.receiveChannelEndpointSupplier().newInstance(
+                    udpChannel, dispatcher, channelStatus, ctx);
+
+                if (!udpChannel.isManualControlMode())
+                {
+                    localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
+                        tempBuffer, countersManager, registrationId, channelEndpoint.statusIndicatorCounterId());
+
+                    channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
+                }
+
+                receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
+                receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
             }
-
-            receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
-            receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
+            catch (final Exception ex)
+            {
+                CloseHelper.closeAll(channelStatus, localSocketAddressIndicator, channelEndpoint);
+                throw ex;
+            }
         }
 
         return channelEndpoint;

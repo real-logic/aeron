@@ -3435,6 +3435,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    nakMulticastGroupSize=" + nakMulticastGroupSize +
                 "\n    statusMessageTimeoutNs=" + statusMessageTimeoutNs +
                 "\n    counterFreeToReuseTimeoutNs=" + counterFreeToReuseTimeoutNs +
+                "\n    conductorCycleThresholdNs=" + conductorCycleThresholdNs +
                 "\n    publicationTermBufferLength=" + publicationTermBufferLength +
                 "\n    ipcTermBufferLength=" + ipcTermBufferLength +
                 "\n    publicationTermWindowLength=" + publicationTermWindowLength +

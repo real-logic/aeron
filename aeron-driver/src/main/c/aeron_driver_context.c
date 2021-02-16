@@ -252,7 +252,6 @@ static void aeron_driver_conductor_remove_publication_cleanup_null(
 
 static void aeron_driver_conductor_remove_subscription_cleanup_null(
     const int64_t id, const int32_t stream_id, const size_t channel_length, const char *channel)
-
 {
 }
 

@@ -2319,11 +2319,10 @@ int aeron_driver_conductor_do_work(void *clientd)
     int64_t cycle_time_ns = now_ns - conductor->time_of_last_work_cycle_ns;
     conductor->time_of_last_work_cycle_ns = now_ns;
     aeron_counter_propose_max_ordered(conductor->max_cycle_time_counter, cycle_time_ns);
-    if (cycle_time_ns > conductor->context->conductor_cycle_threshold_ns)
+    if (cycle_time_ns > (int64_t)(conductor->context->conductor_cycle_threshold_ns))
     {
-        aeron_counter_increment(conductor->cycle_time_threshold_exceeded_counter, 1);
+        aeron_counter_ordered_increment(conductor->cycle_time_threshold_exceeded_counter, 1);
     }
-
 
     work_count += (int)aeron_mpsc_rb_read(
         &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, AERON_COMMAND_DRAIN_LIMIT);

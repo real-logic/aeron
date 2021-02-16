@@ -25,15 +25,11 @@ using testing::_;
 class DriverConductorCounterTest : public DriverConductorTest, public testing::Test
 {
 public:
-    DriverConductorCounterTest()
-    {
-        memset(m_key, 0, COUNTER_KEY_LENGTH);
-    }
 
 protected:
 
     std::string m_label = COUNTER_LABEL;
-    uint8_t m_key[COUNTER_KEY_LENGTH];
+    uint8_t m_key[COUNTER_KEY_LENGTH] = { 0 };
     size_t m_key_length = COUNTER_KEY_LENGTH;
 };
 

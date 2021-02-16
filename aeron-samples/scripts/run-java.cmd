@@ -22,7 +22,7 @@ call "%DIR%\java-common"
 
 "%JAVA_HOME%\bin\java" ^
   -cp "%DIR%\..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar" ^
-  !JAVA_OPTIONS! ^
-  !ADD_OPENS! ^
+  %JAVA_OPTIONS% ^
+  %ADD_OPENS% ^
   %JVM_OPTS% ^
   %*

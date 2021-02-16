@@ -14,7 +14,6 @@
 :: limitations under the License.
 ::
 @echo off
-setlocal EnableExtensions EnableDelayedExpansion
 
 if "%JAVA_HOME%" == "" (
   echo "Please set the JAVA_HOME environment variable"

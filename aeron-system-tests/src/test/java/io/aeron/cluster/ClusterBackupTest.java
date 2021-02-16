@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ClusterBackupTest
 {
     @RegisterExtension
-    public final TimeoutTestWatcher timeoutTestWatcher = new TimeoutTestWatcher();
+    final TimeoutTestWatcher timeoutTestWatcher = new TimeoutTestWatcher();
 
     @BeforeEach
     void setUp()

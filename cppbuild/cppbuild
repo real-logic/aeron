@@ -95,7 +95,7 @@ fi
 mkdir -p "${BUILD_DIR}"
 
 if [[ "$COVERAGE_BUILD" -eq 1 ]] ; then
-  cd ${BUILD_DIR}
+  cd "${BUILD_DIR}"
   cmake -G "Unix Makefiles" "${EXTRA_CMAKE_ARGS}" "${SOURCE_DIR}" && make clean && make -j "$ncpus" all && ctest -C $BUILD_CONFIG -j "$ncpus"
   rm -rf coverage
   mkdir -p coverage

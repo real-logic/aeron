@@ -35,7 +35,7 @@ int aeron_ipc_publication_create(
     aeron_driver_uri_publication_params_t *params,
     bool is_exclusive,
     aeron_system_counters_t *system_counters,
-    const size_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     char path[AERON_MAX_PATH];

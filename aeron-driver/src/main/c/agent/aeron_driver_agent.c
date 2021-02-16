@@ -968,10 +968,10 @@ int aeron_driver_agent_context_init(aeron_driver_context_t *context)
 #define NANOS_PER_SECOND (1000000000)
 
 const char *aeron_driver_agent_dissect_log_header(
-    const int64_t time_ns,
-    const aeron_driver_agent_event_t event_id,
-    const size_t capture_length,
-    const size_t message_length)
+    int64_t time_ns,
+    aeron_driver_agent_event_t event_id,
+    size_t capture_length,
+    size_t message_length)
 {
     static char buffer[256];
 
@@ -990,7 +990,7 @@ const char *aeron_driver_agent_dissect_log_header(
     return buffer;
 }
 
-const char *aeron_driver_agent_dissect_log_start(const int64_t time_ns, const int64_t time_ms)
+const char *aeron_driver_agent_dissect_log_start(int64_t time_ns, int64_t time_ms)
 {
     static char buffer[384];
     char datestamp[256];
@@ -1788,7 +1788,7 @@ static void log_remove_resource_cleanup(
 }
 
 void aeron_driver_agent_remove_publication_cleanup(
-    const int32_t session_id, const int32_t stream_id, const size_t channel_length, const char *channel)
+    int32_t session_id, int32_t stream_id, size_t channel_length, const char *channel)
 {
     log_remove_resource_cleanup(
         AERON_NULL_VALUE,
@@ -1800,7 +1800,7 @@ void aeron_driver_agent_remove_publication_cleanup(
 }
 
 void aeron_driver_agent_remove_subscription_cleanup(
-    const int64_t id, const int32_t stream_id, const size_t channel_length, const char *channel)
+    int64_t id, int32_t stream_id, size_t channel_length, const char *channel)
 {
     log_remove_resource_cleanup(
         id,
@@ -1812,10 +1812,10 @@ void aeron_driver_agent_remove_subscription_cleanup(
 }
 
 void aeron_driver_agent_remove_image_cleanup(
-    const int64_t id,
-    const int32_t session_id,
-    const int32_t stream_id,
-    const size_t channel_length,
+    int64_t id,
+    int32_t session_id,
+    int32_t stream_id,
+    size_t channel_length,
     const char *channel)
 {
     log_remove_resource_cleanup(
@@ -1897,7 +1897,7 @@ int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_diss
     return -1;
 }
 
-void aeron_driver_agent_log_dynamic_event(const int64_t index, const void *message, const size_t length)
+void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length)
 {
     if (!aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT))
     {

@@ -73,7 +73,7 @@ class PendingSetupMessageFromSource
 
     boolean shouldElicitSetupMessage()
     {
-        return channelEndpoint.shouldElicitSetupMessage();
+        return channelEndpoint.dispatcher().shouldElicitSetupMessage();
     }
 
     void controlAddress(final InetSocketAddress newControlAddress)
@@ -98,6 +98,6 @@ class PendingSetupMessageFromSource
 
     void removeFromDataPacketDispatcher()
     {
-        channelEndpoint.removePendingSetup(sessionId, streamId);
+        channelEndpoint.dispatcher().removePendingSetup(sessionId, streamId);
     }
 }

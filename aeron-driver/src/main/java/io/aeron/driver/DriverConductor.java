@@ -518,7 +518,7 @@ public final class DriverConductor implements Agent
 
             if (channelEndpoint.shouldBeClosed())
             {
-                channelEndpoint.closeStatusIndicator();
+                channelEndpoint.closeIndicators();
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
             }
@@ -743,7 +743,7 @@ public final class DriverConductor implements Agent
             registrationId, channelEndpoint, streamId, channel, client, params);
 
         subscriptionLinks.add(subscription);
-        clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
+        clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounter().id());
 
         linkMatchingImages(subscription);
     }
@@ -854,7 +854,7 @@ public final class DriverConductor implements Agent
             if (channelEndpoint.shouldBeClosed())
             {
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
-                channelEndpoint.closeStatusIndicator();
+                channelEndpoint.closeIndicators();
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
             }
         }
@@ -956,7 +956,7 @@ public final class DriverConductor implements Agent
         final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver, true);
 
         final AtomicCounter localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
-            tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounterId());
+            tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounter().id());
 
         final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(
             udpChannel, ctx, localSocketAddressIndicator);
@@ -1479,7 +1479,7 @@ public final class DriverConductor implements Agent
                 if (!udpChannel.isManualControlMode())
                 {
                     localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
-                        tempBuffer, countersManager, registrationId, channelEndpoint.statusIndicatorCounterId());
+                        tempBuffer, countersManager, registrationId, channelEndpoint.statusIndicatorCounter().id());
 
                     channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
                 }

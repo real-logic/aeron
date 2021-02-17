@@ -125,28 +125,28 @@ public final class Receiver implements Agent
 
     void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        channelEndpoint.addSubscription(streamId);
+        channelEndpoint.dispatcher().addSubscription(streamId);
     }
 
     void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
     {
-        channelEndpoint.addSubscription(streamId, sessionId);
+        channelEndpoint.dispatcher().addSubscription(streamId, sessionId);
     }
 
     void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        channelEndpoint.removeSubscription(streamId);
+        channelEndpoint.dispatcher().removeSubscription(streamId);
     }
 
     void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
     {
-        channelEndpoint.removeSubscription(streamId, sessionId);
+        channelEndpoint.dispatcher().removeSubscription(streamId, sessionId);
     }
 
     void onNewPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
     {
         publicationImages = ArrayUtil.add(publicationImages, image);
-        channelEndpoint.addPublicationImage(image);
+        channelEndpoint.dispatcher().addPublicationImage(image);
     }
 
     void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
@@ -189,7 +189,7 @@ public final class Receiver implements Agent
 
     void onRemoveCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
-        channelEndpoint.removeCoolDown(sessionId, streamId);
+        channelEndpoint.dispatcher().removeCoolDown(sessionId, streamId);
     }
 
     void onAddDestination(final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationTransport transport)

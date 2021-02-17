@@ -410,7 +410,7 @@ public final class PublicationImage
      */
     void removeFromDispatcher()
     {
-        channelEndpoint.removePublicationImage(this);
+        channelEndpoint.dispatcher().removePublicationImage(this);
     }
 
     /**

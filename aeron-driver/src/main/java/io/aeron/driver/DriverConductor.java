@@ -71,7 +71,6 @@ public final class DriverConductor implements Agent
     private long timeOfLastToDriverPositionChangeNs;
     private long lastConsumerCommandPosition;
     private long timerCheckDeadlineNs;
-    private long timeOfLastWorkCycleNs;
     private long clockUpdateDeadlineNs;
 
     private final Context ctx;
@@ -152,7 +151,6 @@ public final class DriverConductor implements Agent
         cachedEpochClock.update(epochClock.time());
         timerCheckDeadlineNs = nowNs + timerIntervalNs;
         timeOfLastToDriverPositionChangeNs = nowNs;
-        timeOfLastWorkCycleNs = nowNs;
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();
 
         maxCycleTime = ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME);
@@ -177,16 +175,7 @@ public final class DriverConductor implements Agent
     public int doWork()
     {
         final long nowNs = nanoClock.nanoTime();
-        final long cycleTimeNs = nowNs - timeOfLastWorkCycleNs;
-
-        maxCycleTime.proposeMaxOrdered(cycleTimeNs);
-        timeOfLastWorkCycleNs = nowNs;
-        if (cycleTimeNs > ctx.conductorCycleThresholdNs())
-        {
-            cycleTimeThresholdExceededCount.incrementOrdered();
-        }
-
-        updateClocks(nowNs);
+        trackTime(nowNs);
 
         int workCount = 0;
         workCount += processTimers(nowNs);
@@ -1775,13 +1764,22 @@ public final class DriverConductor implements Agent
         }
     }
 
-    private void updateClocks(final long nowNs)
+    private void trackTime(final long nowNs)
     {
+        final long cycleTimeNs = nowNs - cachedNanoClock.nanoTime();
+
+        cachedNanoClock.update(nowNs);
+        maxCycleTime.proposeMaxOrdered(cycleTimeNs);
+
         if (clockUpdateDeadlineNs - nowNs < 0)
         {
             clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_DURATION_NS;
-            cachedNanoClock.update(nowNs);
             cachedEpochClock.update(epochClock.time());
+        }
+
+        if (cycleTimeNs > ctx.conductorCycleThresholdNs())
+        {
+            cycleTimeThresholdExceededCount.incrementOrdered();
         }
     }
 

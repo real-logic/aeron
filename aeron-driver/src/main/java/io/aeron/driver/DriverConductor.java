@@ -63,7 +63,7 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
  */
 public final class DriverConductor implements Agent
 {
-    private static final long CLOCK_UPDATE_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(1);
+    private static final long CLOCK_UPDATE_INTERNAL_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
     private int nextSessionId = BitUtil.generateRandomisedId();
     private final long timerIntervalNs;
@@ -1773,7 +1773,7 @@ public final class DriverConductor implements Agent
 
         if (clockUpdateDeadlineNs - nowNs < 0)
         {
-            clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_DURATION_NS;
+            clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_INTERNAL_NS;
             cachedEpochClock.update(epochClock.time());
         }
 

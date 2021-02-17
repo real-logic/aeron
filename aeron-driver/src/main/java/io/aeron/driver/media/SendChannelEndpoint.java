@@ -93,21 +93,37 @@ public class SendChannelEndpoint extends UdpChannelTransport
         this.multiSndDestination = multiSndDestination;
     }
 
+    /**
+     * Set a channel binding status counter.
+     *
+     * @param counter to be set.
+     */
     public void localSocketAddressIndicator(final AtomicCounter counter)
     {
         localSocketAddressIndicator = counter;
     }
 
+    /**
+     * Decrement the reference count to the channel.
+     */
     public void decRef()
     {
         --refCount;
     }
 
+    /**
+     * Increment the reference count to the channel.
+     */
     public void incRef()
     {
         ++refCount;
     }
 
+    /**
+     * Open the underlying sockets for the channel.
+     *
+     * @param conductorProxy for notifying potential channel errors.
+     */
     public void openChannel(final DriverConductorProxy conductorProxy)
     {
         if (conductorProxy.notConcurrent())
@@ -134,16 +150,29 @@ public class SendChannelEndpoint extends UdpChannelTransport
         localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
+    /**
+     * The original URI String used when a subscription was added.
+     *
+     * @return the original URI String used when a subscription was added.
+     */
     public String originalUriString()
     {
         return udpChannel().originalUriString();
     }
 
+    /**
+     * Counter id of the channel status indicator counter.
+     *
+     * @return id of the channel status indicator counter.
+     */
     public int statusIndicatorCounterId()
     {
         return statusIndicator.id();
     }
 
+    /**
+     * Indicate that the channel as active after successfully opening it.
+     */
     public void indicateActive()
     {
         final long currentStatus = statusIndicator.get();
@@ -157,7 +186,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
-    public void closeStatusIndicator()
+    /**
+     * Close the counters used to indicate channel status.
+     */
+    public void closeIndicators()
     {
         statusIndicator.close();
 
@@ -239,6 +271,12 @@ public class SendChannelEndpoint extends UdpChannelTransport
         return bytesSent;
     }
 
+    /**
+     * Check sockets may need to be re-resolved due to no activity.
+     *
+     * @param nowNs          to test against for activity.
+     * @param conductorProxy to notify of any addresses which may need to be re-resolved.
+     */
     public void checkForReResolution(final long nowNs, final DriverConductorProxy conductorProxy)
     {
         if (udpChannel.isManualControlMode())
@@ -256,6 +294,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
+    /**
+     * Callback back handler for received status messages.
+     *
+     * @param msg        flyweight over the status message.
+     * @param buffer     containing the message.
+     * @param length     of the message.
+     * @param srcAddress of the message.
+     */
     public void onStatusMessage(
         final StatusMessageFlyweight msg,
         final UnsafeBuffer buffer,
@@ -296,6 +342,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
+    /**
+     * Callback back handler for received NAK messages.
+     *
+     * @param msg        flyweight over the NAK message.
+     * @param buffer     containing the message.
+     * @param length     of the message.
+     * @param srcAddress of the message.
+     */
     public void onNakMessage(
         final NakFlyweight msg,
         final UnsafeBuffer buffer,
@@ -312,6 +366,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
+    /**
+     * Callback back handler for received RTT Measurement messages.
+     *
+     * @param msg        flyweight over the RTT message.
+     * @param buffer     containing the message.
+     * @param length     of the message.
+     * @param srcAddress of the message.
+     */
     public void onRttMeasurement(
         final RttMeasurementFlyweight msg,
         final UnsafeBuffer buffer,
@@ -326,6 +388,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
+    /**
+     * Validate that the channel allows manual control for destinations.
+     * <p>
+     * If not then a {@link ControlProtocolException} will be thrown.
+     */
     public void validateAllowsManualControl()
     {
         if (!(multiSndDestination instanceof ManualSndMultiDestination))
@@ -334,16 +401,34 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
+    /**
+     * Add a destination for an MDC channel.
+     *
+     * @param channelUri for the destination to be added.
+     * @param address    of the destination to be added.
+     */
     public void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
         multiSndDestination.addDestination(channelUri, address);
     }
 
+    /**
+     * Remove a destination from an MDC channel.
+     *
+     * @param channelUri for the destination to be removed.
+     * @param address    of the destination to be removed.
+     */
     public void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
         multiSndDestination.removeDestination(channelUri, address);
     }
 
+    /**
+     * Update the endpoint for the channel on address change.
+     *
+     * @param endpoint   associated with the address.
+     * @param newAddress for the endpoint.
+     */
     public void resolutionChange(final String endpoint, final InetSocketAddress newAddress)
     {
         if (null != multiSndDestination)

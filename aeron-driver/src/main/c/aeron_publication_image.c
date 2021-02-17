@@ -133,6 +133,7 @@ int aeron_publication_image_create(
     _image->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
 
     _image->nano_clock = context->nano_clock;
+    _image->epoch_clock = context->epoch_clock;
     _image->cached_clock = context->cached_clock;
 
     if (aeron_publication_image_add_destination(_image, destination) < 0)
@@ -306,9 +307,8 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
 
     if (image->loss_reporter_offset >= 0)
     {
-        const int64_t now_ms = aeron_clock_cached_epoch_time(image->cached_clock);
         aeron_loss_reporter_record_observation(
-            image->loss_reporter, image->loss_reporter_offset, (int64_t)length, now_ms);
+            image->loss_reporter, image->loss_reporter_offset, (int64_t)length, image->epoch_clock());
     }
     else if (NULL != image->loss_reporter)
     {
@@ -320,7 +320,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
             image->loss_reporter_offset = aeron_loss_reporter_create_entry(
                 image->loss_reporter,
                 (int64_t)length,
-                aeron_clock_cached_epoch_time(image->cached_clock),
+                image->epoch_clock(),
                 image->session_id,
                 image->stream_id,
                 image->endpoint->conductor_fields.udp_channel->original_uri,

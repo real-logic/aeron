@@ -80,6 +80,7 @@ typedef struct aeron_publication_image_stct
     aeron_receive_channel_endpoint_t *endpoint;
     aeron_congestion_control_strategy_t *congestion_control;
     aeron_clock_func_t nano_clock;
+    aeron_clock_func_t epoch_clock;
     aeron_clock_cache_t *cached_clock;
 
     aeron_loss_reporter_t *loss_reporter;

@@ -315,11 +315,11 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         &conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
 
     int64_t now_ns = context->nano_clock();
+    aeron_clock_update_cached_time(context->cached_clock, context->epoch_clock(), now_ns);
 
-    conductor->clock_update_deadline_ns = 0;
+    conductor->clock_update_deadline_ns = now_ns + AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_INTERNAL_NS;
     conductor->time_of_last_timeout_check_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
-    conductor->time_of_last_work_cycle_ns = now_ns;
     conductor->next_session_id = aeron_randomised_int32();
     conductor->publication_reserved_session_id_low = context->publication_reserved_session_id_low;
     conductor->publication_reserved_session_id_high = context->publication_reserved_session_id_high;
@@ -2299,30 +2299,31 @@ void aeron_driver_conductor_on_check_for_blocked_driver_commands(aeron_driver_co
     }
 }
 
-void aeron_driver_conductor_update_clocks(aeron_driver_conductor_t *conductor, int64_t now_ns)
+void aeron_driver_conductor_track_time(aeron_driver_conductor_t *conductor, int64_t now_ns)
 {
-    if (conductor->clock_update_deadline_ns - now_ns <= 0)
+    int64_t cycle_time_ns = now_ns - aeron_clock_cached_nano_time(conductor->context->cached_clock);
+    aeron_clock_update_cached_nano_time(conductor->context->cached_clock, now_ns);
+
+    aeron_counter_propose_max_ordered(conductor->max_cycle_time_counter, cycle_time_ns);
+    if (cycle_time_ns > (int64_t)(conductor->context->conductor_cycle_threshold_ns))
     {
-        conductor->clock_update_deadline_ns = now_ns + AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_DURATION_NS;
-        aeron_clock_update_cached_time(conductor->context->cached_clock, conductor->context->epoch_clock(), now_ns);
+        aeron_counter_ordered_increment(conductor->cycle_time_threshold_exceeded_counter, 1);
+    }
+
+    if (now_ns >= conductor->clock_update_deadline_ns)
+    {
+        conductor->clock_update_deadline_ns = now_ns + AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_INTERNAL_NS;
+        aeron_clock_update_cached_epoch_time(conductor->context->cached_clock, conductor->context->epoch_clock());
     }
 }
 
 int aeron_driver_conductor_do_work(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
-    int work_count = 0;
     const int64_t now_ns = conductor->context->nano_clock();
-    aeron_driver_conductor_update_clocks(conductor, now_ns);
+    aeron_driver_conductor_track_time(conductor, now_ns);
     const int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
-
-    int64_t cycle_time_ns = now_ns - conductor->time_of_last_work_cycle_ns;
-    conductor->time_of_last_work_cycle_ns = now_ns;
-    aeron_counter_propose_max_ordered(conductor->max_cycle_time_counter, cycle_time_ns);
-    if (cycle_time_ns > (int64_t)(conductor->context->conductor_cycle_threshold_ns))
-    {
-        aeron_counter_ordered_increment(conductor->cycle_time_threshold_exceeded_counter, 1);
-    }
+    int work_count = 0;
 
     work_count += (int)aeron_mpsc_rb_read(
         &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, AERON_COMMAND_DRAIN_LIMIT);

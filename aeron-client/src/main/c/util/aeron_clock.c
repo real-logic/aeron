@@ -129,6 +129,16 @@ void aeron_clock_update_cached_time(aeron_clock_cache_t *cached_clock, int64_t e
     AERON_PUT_ORDERED(cached_clock->cached_nano_time, nano_time);
 }
 
+void aeron_clock_update_cached_epoch_time(aeron_clock_cache_t *cached_clock, int64_t epoch_time)
+{
+    AERON_PUT_ORDERED(cached_clock->cached_epoch_time, epoch_time);
+}
+
+void aeron_clock_update_cached_nano_time(aeron_clock_cache_t *cached_clock, int64_t nano_time)
+{
+    AERON_PUT_ORDERED(cached_clock->cached_nano_time, nano_time);
+}
+
 int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t *cached_clock)
 {
     int64_t epoch_time;

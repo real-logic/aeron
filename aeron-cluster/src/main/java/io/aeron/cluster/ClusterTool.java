@@ -49,7 +49,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
- * Tool for investigating the state of a cluster node.
+ * Tool for control and investigating the state of a cluster node.
  * <pre>
  * Usage: ClusterTool &#60;cluster-dir&#62; &#60;command&#62; [options]
  *                    describe: prints out all descriptors in the file.
@@ -200,14 +200,12 @@ public class ClusterTool
         }
     }
 
-    private static void exitWithErrorOnFailure(final boolean success)
-    {
-        if (!success)
-        {
-            System.exit(-1);
-        }
-    }
-
+    /**
+     * Print out the descriptors in the {@link ClusterMarkFile}s.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     */
     public static void describe(final PrintStream out, final File clusterDir)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -227,6 +225,12 @@ public class ClusterTool
         describe(out, serviceMarkFiles);
     }
 
+    /**
+     * Print out the PID of the cluster process.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     */
     public static void pid(final PrintStream out, final File clusterDir)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -242,6 +246,13 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Print out the {@link io.aeron.cluster.RecordingLog.RecoveryPlan} for the cluster.
+     *
+     * @param out          to print the output to.
+     * @param clusterDir   where the cluster is running.
+     * @param serviceCount of services running in the containers.
+     */
     public static void recoveryPlan(final PrintStream out, final File clusterDir, final int serviceCount)
     {
         try (AeronArchive archive = AeronArchive.connect();
@@ -251,6 +262,12 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Print out the {@link RecordingLog} for the cluster.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     */
     public static void recordingLog(final PrintStream out, final File clusterDir)
     {
         try (RecordingLog recordingLog = new RecordingLog(clusterDir))
@@ -259,6 +276,12 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Print out the errors in the error logs for the cluster components.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     */
     public static void errors(final PrintStream out, final File clusterDir)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -282,6 +305,12 @@ public class ClusterTool
         errors(out, serviceMarkFiles);
     }
 
+    /**
+     * Print out a list of the current members of the cluster.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     */
     public static void listMembers(final PrintStream out, final File clusterDir)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -312,6 +341,14 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Remove a member from the cluster.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     * @param memberId   to be removed.
+     * @param isPassive  true if the member is a passive member or false if not.
+     */
     public static void removeMember(
         final PrintStream out, final File clusterDir, final int memberId, final boolean isPassive)
     {
@@ -331,6 +368,12 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Print out the time of the next backup query.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster backup is running.
+     */
     public static void printNextBackupQuery(final PrintStream out, final File clusterDir)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -355,6 +398,13 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Set the time of the next backup query for the cluster backup.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     * @param delayMs    from the current time for the next backup query.
+     */
     public static void nextBackupQuery(final PrintStream out, final File clusterDir, final long delayMs)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -381,6 +431,12 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Print out the descriptors in the {@link ClusterMarkFile}s.
+     *
+     * @param out              to print the output to.
+     * @param serviceMarkFiles to query.
+     */
     public static void describe(final PrintStream out, final ClusterMarkFile[] serviceMarkFiles)
     {
         for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
@@ -391,6 +447,12 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Print out the errors in the error logs for the cluster components.
+     *
+     * @param out              to print the output to.
+     * @param serviceMarkFiles to query.
+     */
     public static void errors(final PrintStream out, final ClusterMarkFile[] serviceMarkFiles)
     {
         for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
@@ -401,6 +463,12 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Does a {@link ClusterMarkFile} exist in the cluster directory.
+     *
+     * @param clusterDir to check for if a mark file exists.
+     * @return true if the cluster mark file exists.
+     */
     public static boolean markFileExists(final File clusterDir)
     {
         final File markFile = new File(clusterDir, ClusterMarkFile.FILENAME);
@@ -408,6 +476,14 @@ public class ClusterTool
         return markFile.exists();
     }
 
+    /**
+     * List the current members of a cluster.
+     *
+     * @param clusterMembership to populate.
+     * @param clusterDir        where the cluster is running.
+     * @param timeoutMs         to wait on the query completing.
+     * @return true if successful.
+     */
     public static boolean listMembers(
         final ClusterMembership clusterMembership, final File clusterDir, final long timeoutMs)
     {
@@ -422,12 +498,28 @@ public class ClusterTool
         return false;
     }
 
+    /**
+     * Query the membership of a cluster.
+     *
+     * @param markFile          for the cluster component.
+     * @param timeoutMs         to wait for the query.
+     * @param clusterMembership to populate.
+     * @return true if the query was successful.
+     */
     public static boolean queryClusterMembers(
         final ClusterMarkFile markFile, final long timeoutMs, final ClusterMembership clusterMembership)
     {
         return queryClusterMembers(markFile.loadControlProperties(), timeoutMs, clusterMembership);
     }
 
+    /**
+     * Query the membership of a cluster.
+     *
+     * @param controlProperties from a {@link ClusterMarkFile}.
+     * @param timeoutMs         to wait for the query.
+     * @param clusterMembership to populate.
+     * @return true if the query was successful.
+     */
     public static boolean queryClusterMembers(
         final ClusterNodeControlProperties controlProperties,
         final long timeoutMs,
@@ -501,6 +593,14 @@ public class ClusterTool
         return id.get() == NULL_VALUE;
     }
 
+    /**
+     * Remove a member from a running cluster.
+     *
+     * @param clusterDir where the cluster component is running.
+     * @param memberId   to be removed.
+     * @param isPassive  true if the member to be removed is a passive member.
+     * @return true if the removal request was successful.
+     */
     public static boolean removeMember(final File clusterDir, final int memberId, final boolean isPassive)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -514,6 +614,14 @@ public class ClusterTool
         return false;
     }
 
+    /**
+     * Remove a member from a running cluster.
+     *
+     * @param markFile  for the cluster component.
+     * @param memberId  to be removed.
+     * @param isPassive true if the member to be removed is a passive member.
+     * @return true if the removal request was successful.
+     */
     public static boolean removeMember(final ClusterMarkFile markFile, final int memberId, final boolean isPassive)
     {
         final String aeronDirectoryName = markFile.decoder().aeronDirectory();
@@ -533,6 +641,12 @@ public class ClusterTool
         return false;
     }
 
+    /**
+     * Get the deadline time (MS) for the next cluster backup query.
+     *
+     * @param clusterDir where the cluster component is running.
+     * @return the deadline time (MS) for the next cluster backup query, or {@link Aeron#NULL_VALUE} not available.
+     */
     public static long nextBackupQueryDeadlineMs(final File clusterDir)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -546,6 +660,12 @@ public class ClusterTool
         return NULL_VALUE;
     }
 
+    /**
+     * Get the deadline time (MS) for the next cluster backup query.
+     *
+     * @param markFile for the cluster component.
+     * @return the deadline time (MS) for the next cluster backup query, or {@link Aeron#NULL_VALUE} not available.
+     */
     public static long nextBackupQueryDeadlineMs(final ClusterMarkFile markFile)
     {
         final String aeronDirectoryName = markFile.decoder().aeronDirectory();
@@ -558,14 +678,21 @@ public class ClusterTool
                 {
                     if (ClusterBackup.QUERY_DEADLINE_TYPE_ID == typeId)
                     {
-                        nextQueryMs.value = aeron.countersReader().getCounterValue(counterId);
+                        nextQueryMs.set(aeron.countersReader().getCounterValue(counterId));
                     }
                 });
         }
 
-        return nextQueryMs.value;
+        return nextQueryMs.get();
     }
 
+    /**
+     * Set the deadline time (MS) for the next cluster backup query.
+     *
+     * @param clusterDir where the cluster component is running.
+     * @param timeMs     to set for the next deadline.
+     * @return true if successful, otherwise false.
+     */
     public static boolean nextBackupQueryDeadlineMs(final File clusterDir, final long timeMs)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -579,6 +706,13 @@ public class ClusterTool
         return false;
     }
 
+    /**
+     * Set the deadline time (MS) for the next cluster backup query.
+     *
+     * @param markFile for the cluster component.
+     * @param timeMs   to set for the next deadline.
+     * @return true if successful, otherwise false.
+     */
     public static boolean nextBackupQueryDeadlineMs(final ClusterMarkFile markFile, final long timeMs)
     {
         final String aeronDirectoryName = markFile.decoder().aeronDirectory();
@@ -605,6 +739,13 @@ public class ClusterTool
         return result.value;
     }
 
+    /**
+     * Invalidate the latest snapshot so recovery will use an earlier one or log if no earlier one exists.
+     *
+     * @param out        to print the operation result.
+     * @param clusterDir where the cluster component is running.
+     * @return true if the latest snapshot was invalidated.
+     */
     public static boolean invalidateLatestSnapshot(final PrintStream out, final File clusterDir)
     {
         try (RecordingLog recordingLog = new RecordingLog(clusterDir))
@@ -615,6 +756,13 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Instruct the cluster to take a snapshot.
+     *
+     * @param clusterDir where the consensus module is running.
+     * @param out        to print the result of the operation.
+     * @return true is the operation was successfully requested.
+     */
     public static boolean snapshot(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
@@ -626,6 +774,13 @@ public class ClusterTool
             TimeUnit.SECONDS.toMillis(30));
     }
 
+    /**
+     * Instruct the cluster to suspend operation.
+     *
+     * @param clusterDir where the consensus module is running.
+     * @param out        to print the result of the operation.
+     * @return true is the operation was successfully requested.
+     */
     public static boolean suspend(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
@@ -637,6 +792,13 @@ public class ClusterTool
             TimeUnit.SECONDS.toMillis(1));
     }
 
+    /**
+     * Instruct the cluster to resume operation.
+     *
+     * @param clusterDir where the consensus module is running.
+     * @param out        to print the result of the operation.
+     * @return true is the operation was successfully requested.
+     */
     public static boolean resume(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
@@ -648,6 +810,13 @@ public class ClusterTool
             TimeUnit.SECONDS.toMillis(1));
     }
 
+    /**
+     * Instruct the cluster to shutdown.
+     *
+     * @param clusterDir where the consensus module is running.
+     * @param out        to print the result of the operation.
+     * @return true is the operation was successfully requested.
+     */
     public static boolean shutdown(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
@@ -659,6 +828,13 @@ public class ClusterTool
             TimeUnit.SECONDS.toMillis(1));
     }
 
+    /**
+     * Instruct the cluster to abort.
+     *
+     * @param clusterDir where the consensus module is running.
+     * @param out        to print the result of the operation.
+     * @return true is the operation was successfully requested.
+     */
     public static boolean abort(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
@@ -671,7 +847,7 @@ public class ClusterTool
     }
 
     @SuppressWarnings("MethodLength")
-    public static boolean toggleClusterState(
+    private static boolean toggleClusterState(
         final PrintStream out,
         final File clusterDir,
         final ConsensusModule.State expectedState,
@@ -841,6 +1017,14 @@ public class ClusterTool
 
         CncFileDescriptor.checkVersion(cncVersion);
         CommonContext.printErrorLog(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), out);
+    }
+
+    private static void exitWithErrorOnFailure(final boolean success)
+    {
+        if (!success)
+        {
+            System.exit(-1);
+        }
     }
 
     private static void printHelp(final PrintStream out)

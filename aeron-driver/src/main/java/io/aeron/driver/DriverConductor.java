@@ -150,6 +150,7 @@ public final class DriverConductor implements Agent
         cachedNanoClock.update(nowNs);
         cachedEpochClock.update(epochClock.time());
         timerCheckDeadlineNs = nowNs + timerIntervalNs;
+        clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_INTERNAL_NS;
         timeOfLastToDriverPositionChangeNs = nowNs;
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();
 

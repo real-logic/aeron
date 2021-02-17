@@ -149,7 +149,6 @@ public final class PublicationImage
     private boolean isRebuilding = true;
     private volatile State state = State.INIT;
 
-    private final NanoClock nanoClock;
     private final CachedNanoClock cachedNanoClock;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final UnsafeBuffer[] termBuffers;
@@ -165,7 +164,8 @@ public final class PublicationImage
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
     private final AtomicCounter lossGapFills;
-    private final CachedEpochClock cachedEpochClock;
+    private final EpochClock epochClock;
+    private final NanoClock nanoClock;
     private final RawLog rawLog;
 
     PublicationImage(
@@ -205,8 +205,8 @@ public final class PublicationImage
         this.lossReport = ctx.lossReport();
 
         this.nanoClock = ctx.nanoClock();
+        this.epochClock = ctx.epochClock();
         this.cachedNanoClock = ctx.cachedNanoClock();
-        this.cachedEpochClock = ctx.cachedEpochClock();
 
         final long nowNs = cachedNanoClock.nanoTime();
         this.timeOfLastStateChangeNs = nowNs;
@@ -363,22 +363,19 @@ public final class PublicationImage
         final long changeNumber = beginLossChange + 1;
 
         beginLossChange = changeNumber;
-
         lossTermId = termId;
         lossTermOffset = termOffset;
         lossLength = length;
-
         endLossChange = changeNumber;
 
         if (null != reportEntry)
         {
-            reportEntry.recordObservation(length, cachedEpochClock.time());
+            reportEntry.recordObservation(length, epochClock.time());
         }
         else if (null != lossReport)
         {
             final String source = Configuration.sourceIdentity(sourceAddress);
-            final long timeMs = cachedEpochClock.time();
-            reportEntry = lossReport.createEntry(length, timeMs, sessionId, streamId, channel(), source);
+            reportEntry = lossReport.createEntry(length, epochClock.time(), sessionId, streamId, channel(), source);
 
             if (null == reportEntry)
             {

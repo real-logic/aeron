@@ -79,8 +79,8 @@ public class UntetheredSubscriptionTest
         final SubscriptionLink tetheredLink = newLink(1, true);
         final SubscriptionLink untetheredLink = newLink(1, false);
 
-        ipcPublication.addSubscriber(tetheredLink, tetheredPosition);
-        ipcPublication.addSubscriber(untetheredLink, untetheredPosition);
+        ipcPublication.addSubscriber(tetheredLink, tetheredPosition, ctx.cachedNanoClock().nanoTime());
+        ipcPublication.addSubscriber(untetheredLink, untetheredPosition, ctx.cachedNanoClock().nanoTime());
 
         final DriverConductor conductor = mock(DriverConductor.class);
         ipcPublication.updatePublisherLimit();

@@ -317,13 +317,13 @@ public final class PublicationImage
     /**
      * {@inheritDoc}
      */
-    public void addSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)
+    public void addSubscriber(
+        final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition, final long nowNs)
     {
         subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
         if (!subscriptionLink.isTether())
         {
-            untetheredSubscriptions.add(new UntetheredSubscription(
-                subscriptionLink, subscriberPosition, cachedNanoClock.nanoTime()));
+            untetheredSubscriptions.add(new UntetheredSubscription(subscriptionLink, subscriberPosition, nowNs));
         }
     }
 

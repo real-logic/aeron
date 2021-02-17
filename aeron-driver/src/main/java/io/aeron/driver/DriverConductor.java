@@ -1389,7 +1389,7 @@ public final class DriverConductor implements Agent
 
                 position.setOrdered(joinPosition);
                 subscriptionLink.link(image, position);
-                image.addSubscriber(subscriptionLink, position);
+                image.addSubscriber(subscriptionLink, position, cachedNanoClock.nanoTime());
 
                 clientProxy.onAvailableImage(
                     image.correlationId(),
@@ -1434,7 +1434,7 @@ public final class DriverConductor implements Agent
 
         position.setOrdered(joinPosition);
         subscription.link(publication, position);
-        publication.addSubscriber(subscription, position);
+        publication.addSubscriber(subscription, position, cachedNanoClock.nanoTime());
 
         return position;
     }
@@ -1453,7 +1453,7 @@ public final class DriverConductor implements Agent
 
         position.setOrdered(joinPosition);
         subscription.link(publication, position);
-        publication.addSubscriber(subscription, position);
+        publication.addSubscriber(subscription, position, cachedNanoClock.nanoTime());
 
         return position;
     }

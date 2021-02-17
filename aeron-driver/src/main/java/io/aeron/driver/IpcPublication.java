@@ -199,13 +199,13 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         CloseHelper.close(errorHandler, rawLog);
     }
 
-    public void addSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)
+    public void addSubscriber(
+        final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition, final long nowNs)
     {
         subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
         if (!subscriptionLink.isTether())
         {
-            untetheredSubscriptions.add(new UntetheredSubscription(
-                subscriptionLink, subscriberPosition, timeOfLastConsumerPositionUpdateNs));
+            untetheredSubscriptions.add(new UntetheredSubscription(subscriptionLink, subscriberPosition, nowNs));
         }
 
         LogBufferDescriptor.isConnected(metaDataBuffer, true);

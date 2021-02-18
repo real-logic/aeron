@@ -117,7 +117,7 @@ public class FileReceiver
     private final FragmentAssembler assembler = new FragmentAssembler(this::onFragment);
     private final Long2ObjectHashMap<UnsafeBuffer> fileSessionByIdMap = new Long2ObjectHashMap<>();
 
-    public FileReceiver(final File storageDir, final Subscription subscription)
+    FileReceiver(final File storageDir, final Subscription subscription)
     {
         this.storageDir = storageDir;
         this.subscription = subscription;

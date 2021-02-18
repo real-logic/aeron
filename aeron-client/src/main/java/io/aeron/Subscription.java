@@ -623,6 +623,9 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
         return removedImage;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "Subscription{" +

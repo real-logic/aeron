@@ -39,6 +39,10 @@
 
         <module name="SuppressWarningsHolder"/>
 
+        <module name="MissingJavadocType"/>
+        <module name="MissingJavadocMethod"/>
+        <module name="MissingJavadocPackage"/>
+
         <module name="Indentation">
             <property name="forceStrictCondition" value="true"/>
         </module>

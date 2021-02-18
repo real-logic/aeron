@@ -69,6 +69,9 @@ public final class ConcurrentPublication extends Publication
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long availableWindow()
     {
         if (isClosed)

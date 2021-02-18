@@ -27,11 +27,17 @@ public class NullCredentialsSupplier implements CredentialsSupplier
      */
     public static final byte[] NULL_CREDENTIAL = ArrayUtil.EMPTY_BYTE_ARRAY;
 
+    /**
+     * {@inheritDoc}
+     */
     public byte[] encodedCredentials()
     {
         return NULL_CREDENTIAL;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public byte[] onChallenge(final byte[] encodedChallenge)
     {
         return NULL_CREDENTIAL;

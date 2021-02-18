@@ -156,6 +156,9 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         termBeginPosition = LogBufferDescriptor.computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long position()
     {
         if (isClosed)
@@ -166,6 +169,9 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         return termBeginPosition + termOffset;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long availableWindow()
     {
         if (isClosed)

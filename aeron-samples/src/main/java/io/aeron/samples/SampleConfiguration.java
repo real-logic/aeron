@@ -84,6 +84,11 @@ public class SampleConfiguration
         EXCLUSIVE_PUBLICATIONS = Boolean.getBoolean(EXCLUSIVE_PUBLICATIONS_PROP);
     }
 
+    /**
+     * Create a new {@link IdleStrategy} based on the {@link #IDLE_STRATEGY_NAME}.
+     *
+     * @return a new {@link IdleStrategy} based on the {@link #IDLE_STRATEGY_NAME}.
+     */
     public static IdleStrategy newIdleStrategy()
     {
         return Configuration.agentIdleStrategy(IDLE_STRATEGY_NAME, null);

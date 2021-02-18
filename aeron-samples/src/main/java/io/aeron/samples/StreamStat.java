@@ -37,7 +37,7 @@ import static io.aeron.driver.status.StreamCounter.*;
  * Each counter has the format:
  * {@code <label-name>:<registration-id>:<position value>}
  */
-public class StreamStat
+public final class StreamStat
 {
     private final CountersReader counters;
 
@@ -138,12 +138,19 @@ public class StreamStat
     /**
      * Composite key which identifies an Aeron stream of messages.
      */
-    public static class StreamCompositeKey
+    public static final class StreamCompositeKey
     {
         private final int sessionId;
         private final int streamId;
         private final String channel;
 
+        /**
+         * Construct a new key representing a unique stream.
+         *
+         * @param sessionId to identify the stream.
+         * @param streamId  within a channel.
+         * @param channel   as a URI.
+         */
         public StreamCompositeKey(final int sessionId, final int streamId, final String channel)
         {
             Objects.requireNonNull(channel, "Channel cannot be null");
@@ -153,21 +160,39 @@ public class StreamStat
             this.channel = channel;
         }
 
+        /**
+         * The session id of the stream.
+         *
+         * @return session id of the stream.
+         */
         public int sessionId()
         {
             return sessionId;
         }
 
+        /**
+         * The stream id within a channel.
+         *
+         * @return  stream id within a channel.
+         */
         public int streamId()
         {
             return streamId;
         }
 
+        /**
+         * The channel as a URI.
+         *
+         * @return channel as a URI.
+         */
         public String channel()
         {
             return channel;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public boolean equals(final Object o)
         {
             if (this == o)
@@ -187,6 +212,9 @@ public class StreamStat
                 this.channel.equals(that.channel);
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public int hashCode()
         {
             int result = sessionId;
@@ -196,6 +224,9 @@ public class StreamStat
             return result;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public String toString()
         {
             return "StreamCompositeKey{" +
@@ -209,12 +240,19 @@ public class StreamStat
     /**
      * Represents a position within a particular stream of messages.
      */
-    public static class StreamPosition
+    public static final class StreamPosition
     {
         private final long id;
         private final long value;
         private final int typeId;
 
+        /**
+         * Stream position representation.
+         *
+         * @param id     of the registered entity.
+         * @param value  of the position.
+         * @param typeId of the counter.
+         */
         public StreamPosition(final long id, final long value, final int typeId)
         {
             this.id = id;
@@ -252,6 +290,9 @@ public class StreamStat
             return typeId;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public boolean equals(final Object o)
         {
             if (this == o)
@@ -269,6 +310,9 @@ public class StreamStat
             return this.id == that.id && this.value == that.value && this.typeId == that.typeId;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public int hashCode()
         {
             int result = (int)(id ^ (id >>> 32));
@@ -278,6 +322,9 @@ public class StreamStat
             return result;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public String toString()
         {
             return "StreamPosition{" +

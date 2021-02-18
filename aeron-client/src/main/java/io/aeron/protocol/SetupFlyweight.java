@@ -285,6 +285,9 @@ public class SetupFlyweight extends HeaderFlyweight
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "SETUP{" +

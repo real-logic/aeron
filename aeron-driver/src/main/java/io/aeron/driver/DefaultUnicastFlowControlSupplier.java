@@ -27,6 +27,9 @@ import static io.aeron.driver.Configuration.UNICAST_FLOW_CONTROL_STRATEGY;
  */
 public class DefaultUnicastFlowControlSupplier implements FlowControlSupplier
 {
+    /**
+     * {@inheritDoc}
+     */
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)
     {
         final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
@@ -56,6 +59,9 @@ public class DefaultUnicastFlowControlSupplier implements FlowControlSupplier
         return flowControl;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "DefaultUnicastFlowControlSupplier{flowControlClass=" +

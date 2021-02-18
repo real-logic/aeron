@@ -243,6 +243,9 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
         return MINIMUM_LENGTH + align(keyLength, SIZE_OF_INT) + SIZE_OF_INT + labelLength;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "CounterMessageFlyweight{" +

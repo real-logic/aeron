@@ -24,6 +24,9 @@ import org.agrona.concurrent.status.AtomicCounter;
  */
 public class DefaultReceiveChannelEndpointSupplier implements ReceiveChannelEndpointSupplier
 {
+    /**
+     * {@inheritDoc}
+     */
     public ReceiveChannelEndpoint newInstance(
         final UdpChannel udpChannel,
         final DataPacketDispatcher dispatcher,

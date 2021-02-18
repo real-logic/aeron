@@ -793,6 +793,9 @@ public final class Image
         isClosed = true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "Image{" +

@@ -133,6 +133,9 @@ public class ClusterBackupAgent implements Agent
         nextQueryDeadlineMsCounter = ctx.nextQueryDeadlineMsCounter();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onStart()
     {
         recordingLog = new RecordingLog(ctx.clusterDir());
@@ -140,6 +143,9 @@ public class ClusterBackupAgent implements Agent
         nextQueryDeadlineMsCounter.setOrdered(epochClock.time() - 1);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onClose()
     {
         aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
@@ -159,6 +165,9 @@ public class ClusterBackupAgent implements Agent
         ctx.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         final long nowMs = epochClock.time();
@@ -228,6 +237,9 @@ public class ClusterBackupAgent implements Agent
         return workCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String roleName()
     {
         return "cluster-backup";

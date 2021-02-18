@@ -119,6 +119,9 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
         return ThreadLocalRandom.current().nextDouble() * max;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "OptimalMulticastDelayGenerator{" +

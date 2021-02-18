@@ -22,6 +22,9 @@ import io.aeron.driver.media.UdpChannel;
  */
 public class TaggedMulticastFlowControlSupplier implements FlowControlSupplier
 {
+    /**
+     * {@inheritDoc}
+     */
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)
     {
         return new TaggedMulticastFlowControl();

@@ -51,6 +51,9 @@ public class StaticDelayGenerator implements FeedbackDelayGenerator
         return immediateFeedback;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "StaticDelayGenerator{" +

@@ -93,7 +93,7 @@ public class BasicAuctionClusteredServiceNode
             .build();
     }
 
-    public static String clusterMembers(final List<String> hostnames)
+    private static String clusterMembers(final List<String> hostnames)
     {
         final StringBuilder sb = new StringBuilder();
         for (int i = 0; i < hostnames.size(); i++)

@@ -138,6 +138,9 @@ public class EmbeddedReplayThroughput extends EmbeddedReplayThroughputValue impl
                 .aeron(aeron));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.closeAll(

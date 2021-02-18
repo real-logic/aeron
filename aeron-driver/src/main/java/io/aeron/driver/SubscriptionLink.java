@@ -180,6 +180,9 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return !hasSessionId || this.sessionId == sessionId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         for (final Map.Entry<Subscribable, ReadablePosition> entry : positionBySubscribableMap.entrySet())
@@ -190,6 +193,9 @@ public abstract class SubscriptionLink implements DriverManagedResource
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (aeronClient.hasTimedOut())
@@ -199,11 +205,17 @@ public abstract class SubscriptionLink implements DriverManagedResource
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return this.getClass().getName() + "{" +

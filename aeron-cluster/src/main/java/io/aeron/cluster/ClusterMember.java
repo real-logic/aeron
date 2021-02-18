@@ -1288,6 +1288,9 @@ public final class ClusterMember
         return builder.toString();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "ClusterMember{" +

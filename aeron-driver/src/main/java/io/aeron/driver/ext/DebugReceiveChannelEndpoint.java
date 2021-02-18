@@ -84,6 +84,9 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         this.controlLossGenerator = controlLossGenerator;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
         int result = buffer.remaining();
@@ -97,6 +100,9 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         return result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int onDataPacket(
         final DataHeaderFlyweight header,
         final UnsafeBuffer buffer,
@@ -114,6 +120,9 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         return result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onSetupMessage(
         final SetupFlyweight header,
         final UnsafeBuffer buffer,
@@ -127,6 +136,9 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onRttMeasurement(
         final RttMeasurementFlyweight header,
         final UnsafeBuffer buffer,

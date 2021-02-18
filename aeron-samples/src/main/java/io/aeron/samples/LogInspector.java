@@ -164,6 +164,14 @@ public class LogInspector
         }
     }
 
+    /**
+     * Format bytes in a buffer to a char array.
+     *
+     * @param buffer containing the bytes to be formatted.
+     * @param offset in the buffer at which the bytes begin.
+     * @param length of the bytes in the buffer.
+     * @return a char array of the formatted bytes.
+     */
     public static char[] formatBytes(final DirectBuffer buffer, final int offset, final int length)
     {
         switch (AERON_LOG_DATA_FORMAT)
@@ -197,6 +205,14 @@ public class LogInspector
         return chars;
     }
 
+    /**
+     * Format bytes to HEX for printing.
+     *
+     * @param buffer containing the bytes.
+     * @param offset in the buffer at which the bytes begin.
+     * @param length of the bytes in the buffer.
+     * @return a char array of the formatted bytes in HEX.
+     */
     public static char[] bytesToHex(final DirectBuffer buffer, final int offset, final int length)
     {
         final char[] chars = new char[length * 2];

@@ -82,11 +82,17 @@ public final class Sender extends SenderRhsPadding implements Agent
         this.reResolutionDeadlineNs = cachedNanoClock.nanoTime() + reResolutionCheckIntervalNs;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onClose()
     {
         controlTransportPoller.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         final int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
@@ -111,6 +117,9 @@ public final class Sender extends SenderRhsPadding implements Agent
         return workCount + bytesSent + bytesReceived;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String roleName()
     {
         return "sender";

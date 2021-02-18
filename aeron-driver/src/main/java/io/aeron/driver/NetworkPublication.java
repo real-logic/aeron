@@ -238,11 +238,17 @@ public final class NetworkPublication
         timeOfLastActivityNs = nowNs;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean free()
     {
         return rawLog.free();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(errorHandler, publisherPos);
@@ -316,6 +322,9 @@ public final class NetworkPublication
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void addSubscriber(
         final SubscriptionLink subscriptionLink, final ReadablePosition position, final long nowNs)
     {
@@ -334,6 +343,9 @@ public final class NetworkPublication
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void removeSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition position)
     {
         spyPositions = ArrayUtil.remove(spyPositions, position);
@@ -430,6 +442,9 @@ public final class NetworkPublication
         // handling of RTT measurements would be done in an else clause here.
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void resend(final int termId, final int termOffset, final int length)
     {
         final long senderPosition = this.senderPosition.get();
@@ -858,6 +873,9 @@ public final class NetworkPublication
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         switch (state)
@@ -918,6 +936,9 @@ public final class NetworkPublication
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasReachedEndOfLife()
     {
         return hasSenderReleased;

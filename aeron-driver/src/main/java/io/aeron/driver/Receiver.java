@@ -62,16 +62,25 @@ public final class Receiver implements Agent
         reResolutionDeadlineNs = cachedNanoClock.nanoTime() + reResolutionCheckIntervalNs;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onClose()
     {
         dataTransportPoller.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String roleName()
     {
         return "receiver";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);

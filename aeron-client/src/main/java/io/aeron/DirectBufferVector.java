@@ -156,6 +156,9 @@ public final class DirectBufferVector
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "DirectBufferVector{" +

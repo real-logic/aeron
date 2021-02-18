@@ -183,6 +183,9 @@ public final class RecordingLog implements AutoCloseable
                 entryIndex);
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public String toString()
         {
             return "Entry{" +
@@ -260,6 +263,9 @@ public final class RecordingLog implements AutoCloseable
             this.serviceId = serviceId;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public String toString()
         {
             return "Snapshot{" +
@@ -352,6 +358,9 @@ public final class RecordingLog implements AutoCloseable
             this.sessionId = sessionId;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public String toString()
         {
             return "Log{" +
@@ -420,6 +429,9 @@ public final class RecordingLog implements AutoCloseable
             this.log = log;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public String toString()
         {
             return "RecoveryPlan{" +
@@ -1087,6 +1099,9 @@ public final class RecordingLog implements AutoCloseable
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "RecordingLog{" +

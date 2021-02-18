@@ -27,6 +27,13 @@ public final class ImageRateReporter implements Runnable
     private final AtomicBoolean running;
     private final ImageRateSubscriber subscriber;
 
+    /**
+     * Construct a reporter for a single image.
+     *
+     * @param messageLength of each message.
+     * @param running       flag to control reporter so it can be stopped running.
+     * @param subscriber    for the image.
+     */
     public ImageRateReporter(final int messageLength, final AtomicBoolean running, final ImageRateSubscriber subscriber)
     {
         this.messageLength = messageLength;
@@ -34,6 +41,9 @@ public final class ImageRateReporter implements Runnable
         this.subscriber = subscriber;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void run()
     {
         long lastTimestampMs = System.currentTimeMillis();

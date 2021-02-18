@@ -233,12 +233,19 @@ public class BacklogStat
     /**
      * Composite key which identifies an Aeron stream of messages.
      */
-    public static class StreamCompositeKey
+    public static final class StreamCompositeKey
     {
         private final int sessionId;
         private final int streamId;
         private final String channel;
 
+        /**
+         * Construct a key to represent a unique stream.
+         *
+         * @param sessionId for the stream.
+         * @param streamId  for the stream within a channel.
+         * @param channel   as a URI.
+         */
         public StreamCompositeKey(final int sessionId, final int streamId, final String channel)
         {
             Objects.requireNonNull(channel, "channel cannot be null");
@@ -248,21 +255,39 @@ public class BacklogStat
             this.channel = channel;
         }
 
+        /**
+         * The session id of the stream.
+         *
+         * @return session id of the stream.
+         */
         public int sessionId()
         {
             return sessionId;
         }
 
+        /**
+         * The stream id within a channel.
+         *
+         * @return  stream id within a channel.
+         */
         public int streamId()
         {
             return streamId;
         }
 
+        /**
+         * The channel as a URI.
+         *
+         * @return channel as a URI.
+         */
         public String channel()
         {
             return channel;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public boolean equals(final Object o)
         {
             if (this == o)
@@ -282,6 +307,9 @@ public class BacklogStat
                 this.channel.equals(that.channel);
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public int hashCode()
         {
             int result = sessionId;
@@ -291,6 +319,9 @@ public class BacklogStat
             return result;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public String toString()
         {
             return "StreamCompositeKey{" +
@@ -304,7 +335,7 @@ public class BacklogStat
     /**
      * Represents the backlog information for a particular stream of messages.
      */
-    public static class StreamBacklog
+    public static final class StreamBacklog
     {
         private Publisher publisher;
         private Sender sender;

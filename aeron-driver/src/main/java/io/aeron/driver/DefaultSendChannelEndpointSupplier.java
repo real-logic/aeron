@@ -24,6 +24,9 @@ import org.agrona.concurrent.status.AtomicCounter;
  */
 public class DefaultSendChannelEndpointSupplier implements SendChannelEndpointSupplier
 {
+    /**
+     * {@inheritDoc}
+     */
     public SendChannelEndpoint newInstance(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
     {

@@ -29,9 +29,19 @@ import java.nio.channels.Selector;
  */
 public class Common
 {
+    /**
+     * Number of message to exchange.
+     */
     public static final int NUM_MESSAGES = 10_000;
 
+    /**
+     * UDP port on which Pong will listen.
+     */
     public static final int PONG_PORT = 20123;
+
+    /**
+     * UDP port on which Ping with listen.
+     */
     public static final int PING_PORT = 20124;
 
     static final Field SELECTED_KEYS_FIELD;
@@ -63,21 +73,20 @@ public class Common
         PUBLIC_SELECTED_KEYS_FIELD = publicSelectKeysField;
     }
 
-    public static void init(final DatagramChannel channel) throws IOException
+    static void init(final DatagramChannel channel) throws IOException
     {
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
     }
 
-    public static void init(final DatagramChannel channel, final InetSocketAddress sendAddress)
-        throws IOException
+    static void init(final DatagramChannel channel, final InetSocketAddress sendAddress) throws IOException
     {
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         channel.connect(sendAddress);
     }
 
-    public static NioSelectedKeySet keySet(final Selector selector)
+    static NioSelectedKeySet keySet(final Selector selector)
     {
         NioSelectedKeySet tmpSet = null;
 

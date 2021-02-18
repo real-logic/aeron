@@ -23,11 +23,34 @@ package io.aeron.cluster.service;
  */
 public final class ClusterNodeControlProperties
 {
+    /**
+     * Directory where the Aeron Media Driver is running.
+     */
     public final String aeronDirectoryName;
+
+    /**
+     * URI for the control channel.
+     */
     public final String controlChannel;
+
+    /**
+     * Stream id in the control channel on which the services listen.
+     */
     public final int serviceStreamId;
+
+    /**
+     * Stream id in the control channel on which the consensus module listens.
+     */
     public final int consensusModuleStreamId;
 
+    /**
+     * Construct the set of properties for interacting with a cluster.
+     *
+     * @param serviceStreamId         in the control channel on which the services listen.
+     * @param consensusModuleStreamId in the control channel on which the consensus module listens.
+     * @param aeronDirectoryName      where the Aeron Media Driver is running.
+     * @param controlChannel          for the services and consensus module.
+     */
     public ClusterNodeControlProperties(
         final int serviceStreamId,
         final int consensusModuleStreamId,

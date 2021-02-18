@@ -1587,6 +1587,9 @@ public final class ChannelUriStringBuilder
         return sb.toString();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return build();

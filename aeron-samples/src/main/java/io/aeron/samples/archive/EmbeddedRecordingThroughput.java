@@ -104,6 +104,9 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
                 .aeron(aeron));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.closeAll(

@@ -687,6 +687,9 @@ public abstract class Publication implements AutoCloseable
         return totalLength;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "Publication{" +

@@ -218,6 +218,9 @@ public final class ClientSession
         responsePublication = null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "ClientSession{" +

@@ -377,6 +377,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "STATUS{" +

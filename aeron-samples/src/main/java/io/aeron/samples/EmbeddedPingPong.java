@@ -210,7 +210,7 @@ public class EmbeddedPingPong
         }
     }
 
-    public static void pingHandler(
+    static void pingHandler(
         final BufferClaim bufferClaim,
         final Publication pongPublication,
         final DirectBuffer buffer,

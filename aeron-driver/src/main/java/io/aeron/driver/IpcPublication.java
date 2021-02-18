@@ -176,11 +176,17 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         return publisherLimit.id();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean free()
     {
         return rawLog.free();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(errorHandler, publisherPos);
@@ -199,6 +205,9 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         CloseHelper.close(errorHandler, rawLog);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void addSubscriber(
         final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition, final long nowNs)
     {
@@ -211,6 +220,9 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         LogBufferDescriptor.isConnected(metaDataBuffer, true);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void removeSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)
     {
         updatePublisherLimit();
@@ -235,6 +247,9 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         switch (state)
@@ -275,6 +290,9 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;

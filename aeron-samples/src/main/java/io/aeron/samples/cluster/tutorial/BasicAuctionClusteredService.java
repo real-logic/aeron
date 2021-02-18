@@ -58,6 +58,9 @@ public class BasicAuctionClusteredService implements ClusteredService
     private Cluster cluster;
     private IdleStrategy idleStrategy;
 
+    /**
+     * {@inheritDoc}
+     */
     // tag::start[]
     public void onStart(final Cluster cluster, final Image snapshotImage)
     {
@@ -71,6 +74,9 @@ public class BasicAuctionClusteredService implements ClusteredService
     }
     // end::start[]
 
+    /**
+     * {@inheritDoc}
+     */
     // tag::message[]
     public void onSessionMessage(
         final ClientSession session,
@@ -102,6 +108,9 @@ public class BasicAuctionClusteredService implements ClusteredService
     }
     // end::message[]
 
+    /**
+     * {@inheritDoc}
+     */
     // tag::takeSnapshot[]
     public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
     {
@@ -150,40 +159,55 @@ public class BasicAuctionClusteredService implements ClusteredService
     }
     // end::loadSnapshot[]
 
+    /**
+     * {@inheritDoc}
+     */
     public void onRoleChange(final Cluster.Role newRole)
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onTerminate(final Cluster cluster)
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onSessionOpen(final ClientSession session, final long timestamp)
     {
         System.out.println("onSessionOpen(" + session + ")");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onSessionClose(final ClientSession session, final long timestamp, final CloseReason closeReason)
     {
         System.out.println("onSessionClose(" + session + ")");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onTimerEvent(final long correlationId, final long timestamp)
     {
     }
 
-    private static class Auction
+    static class Auction
     {
         private long bestPrice = 0;
         private long currentWinningCustomerId = -1;
 
-        public void loadInitialState(final long price, final long customerId)
+        void loadInitialState(final long price, final long customerId)
         {
             bestPrice = price;
             currentWinningCustomerId = customerId;
         }
 
-        public boolean attemptBid(final long price, final long customerId)
+        boolean attemptBid(final long price, final long customerId)
         {
             System.out.println("attemptBid(this=" + this + ", price=" + price + ",customerId=" + customerId + ")");
 
@@ -198,16 +222,19 @@ public class BasicAuctionClusteredService implements ClusteredService
             return true;
         }
 
-        public long getBestPrice()
+        long getBestPrice()
         {
             return bestPrice;
         }
 
-        public long getCurrentWinningCustomerId()
+        long getCurrentWinningCustomerId()
         {
             return currentWinningCustomerId;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public boolean equals(final Object o)
         {
             if (this == o)
@@ -225,11 +252,17 @@ public class BasicAuctionClusteredService implements ClusteredService
             return bestPrice == auction.bestPrice && currentWinningCustomerId == auction.currentWinningCustomerId;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public int hashCode()
         {
             return Objects.hash(bestPrice, currentWinningCustomerId);
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public String toString()
         {
             return "Auction{" +
@@ -239,6 +272,9 @@ public class BasicAuctionClusteredService implements ClusteredService
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean equals(final Object o)
     {
         if (this == o)
@@ -256,11 +292,17 @@ public class BasicAuctionClusteredService implements ClusteredService
         return auction.equals(that.auction);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int hashCode()
     {
         return Objects.hash(auction);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "BasicAuctionClusteredService{" +

@@ -158,6 +158,9 @@ public final class DriverConductor implements Agent
         cycleTimeThresholdExceededCount = ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onClose()
     {
         CloseHelper.close(ctx.errorHandler(), driverNameResolver);
@@ -168,11 +171,17 @@ public final class DriverConductor implements Agent
         ctx.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String roleName()
     {
         return "driver-conductor";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         final long nowNs = nanoClock.nanoTime();

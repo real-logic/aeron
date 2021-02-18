@@ -63,6 +63,9 @@ public final class DataTransportPoller extends UdpTransportPoller
         super(errorHandler);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         for (final ChannelAndTransport transport : channelAndTransports)
@@ -75,6 +78,9 @@ public final class DataTransportPoller extends UdpTransportPoller
         super.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int pollTransports()
     {
         int bytesReceived = 0;
@@ -108,6 +114,9 @@ public final class DataTransportPoller extends UdpTransportPoller
         return bytesReceived;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public SelectionKey registerForRead(final UdpChannelTransport transport)
     {
         return registerForRead((ReceiveChannelEndpoint)transport, transport, 0);
@@ -141,6 +150,9 @@ public final class DataTransportPoller extends UdpTransportPoller
         return key;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void cancelRead(final UdpChannelTransport transport)
     {
         cancelRead((ReceiveChannelEndpoint)transport, transport);

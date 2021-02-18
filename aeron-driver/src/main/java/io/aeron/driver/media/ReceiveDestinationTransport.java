@@ -100,6 +100,9 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
         localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(localSocketAddressIndicator);

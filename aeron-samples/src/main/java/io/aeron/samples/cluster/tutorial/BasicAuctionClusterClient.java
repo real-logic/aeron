@@ -50,6 +50,13 @@ public class BasicAuctionClusterClient implements EgressListener
     private long correlationId = ThreadLocalRandom.current().nextLong();
     private long lastBidSeen = 100;
 
+    /**
+     * Construct a new cluster client for the auction.
+     *
+     * @param customerId    for the client.
+     * @param numOfBids     to make as a client.
+     * @param bidIntervalMs between the bids.
+     */
     public BasicAuctionClusterClient(final long customerId, final int numOfBids, final int bidIntervalMs)
     {
         this.customerId = customerId;
@@ -57,6 +64,9 @@ public class BasicAuctionClusterClient implements EgressListener
         this.bidIntervalMs = bidIntervalMs;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     // tag::response[]
     public void onMessage(
         final long clusterSessionId,
@@ -78,6 +88,9 @@ public class BasicAuctionClusterClient implements EgressListener
             customerId + ", " + currentPrice + ", " + bidSucceed + ")");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onSessionEvent(
         final long correlationId,
         final long clusterSessionId,
@@ -91,6 +104,9 @@ public class BasicAuctionClusterClient implements EgressListener
             leaderMemberId + ", " + code + ", " + detail + ")");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onNewLeader(
         final long clusterSessionId,
         final long leadershipTermId,
@@ -159,6 +175,12 @@ public class BasicAuctionClusterClient implements EgressListener
     }
     // end::publish[]
 
+    /**
+     * Ingress endpoints generated from a list of hostnames.
+     *
+     * @param hostnames for the cluster members.
+     * @return a formatted string of ingress endpoints for connecting to a cluster.
+     */
     public static String ingressEndpoints(final List<String> hostnames)
     {
         final StringBuilder sb = new StringBuilder();

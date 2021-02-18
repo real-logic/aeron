@@ -86,6 +86,9 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int applyAsInt(final SelectionKey key)
     {
         try

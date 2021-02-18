@@ -26,6 +26,9 @@ import io.aeron.driver.media.UdpChannel;
 @Deprecated
 public class PreferredMulticastFlowControlSupplier implements FlowControlSupplier
 {
+    /**
+     * {@inheritDoc}
+     */
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)
     {
         return new PreferredMulticastFlowControl();

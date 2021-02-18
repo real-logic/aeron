@@ -93,6 +93,9 @@ public final class ImageRateSubscriber extends ImageRateSubscriberRhsPadding imp
         return totalBytes;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void run()
     {
         while (!subscription.isConnected())

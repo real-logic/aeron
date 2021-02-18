@@ -51,7 +51,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  * <p>
  * Perfect for playing around with the Cluster.
  */
-public class SingleNodeCluster implements AutoCloseable
+public final class SingleNodeCluster implements AutoCloseable
 {
     private static final int MESSAGE_ID = 1;
     private static final int TIMER_ID = 2;
@@ -67,6 +67,9 @@ public class SingleNodeCluster implements AutoCloseable
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final EgressListener egressMessageListener = new EgressListener()
     {
+        /**
+         * {@inheritDoc}
+         */
         public void onMessage(
             final long clusterSessionId,
             final long timestamp,
@@ -78,6 +81,9 @@ public class SingleNodeCluster implements AutoCloseable
             System.out.println("egress onMessage " + clusterSessionId);
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public void onNewLeader(
             final long clusterSessionId,
             final long leadershipTermId,
@@ -95,6 +101,9 @@ public class SingleNodeCluster implements AutoCloseable
         private int messageCount = 0;
         private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
+        /**
+         * {@inheritDoc}
+         */
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {
             this.cluster = cluster;
@@ -116,16 +125,25 @@ public class SingleNodeCluster implements AutoCloseable
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public void onSessionOpen(final ClientSession session, final long timestamp)
         {
             System.out.println("onSessionOpen " + session.id());
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public void onSessionClose(final ClientSession session, final long timestamp, final CloseReason closeReason)
         {
             System.out.println("onSessionClose " + session.id() + " " + closeReason);
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public void onSessionMessage(
             final ClientSession session,
             final long timestamp,
@@ -156,6 +174,9 @@ public class SingleNodeCluster implements AutoCloseable
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public void onTimerEvent(final long correlationId, final long timestamp)
         {
             System.out.println("onTimerEvent " + correlationId);
@@ -174,6 +195,9 @@ public class SingleNodeCluster implements AutoCloseable
                 });
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
             System.out.println("onTakeSnapshot messageCount=" + messageCount);
@@ -186,15 +210,24 @@ public class SingleNodeCluster implements AutoCloseable
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public void onRoleChange(final Cluster.Role newRole)
         {
             System.out.println("onRoleChange " + newRole);
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public void onTerminate(final Cluster cluster)
         {
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public void onNewLeadershipTermEvent(
             final long leadershipTermId,
             final long logPosition,
@@ -214,7 +247,13 @@ public class SingleNodeCluster implements AutoCloseable
         }
     }
 
-    public SingleNodeCluster(final ClusteredService externalService, final boolean cleanStart)
+    /**
+     * Create an launch a new single node cluster.
+     *
+     * @param externalService to run in the container.
+     * @param isCleanStart    to indicate if a clean start should be made.
+     */
+    public SingleNodeCluster(final ClusteredService externalService, final boolean isCleanStart)
     {
         final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context();
@@ -232,11 +271,11 @@ public class SingleNodeCluster implements AutoCloseable
         archiveContext
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart);
+            .deleteArchiveOnStart(isCleanStart);
 
         consensusModuleContext
             .errorHandler(Throwable::printStackTrace)
-            .deleteDirOnStart(cleanStart);
+            .deleteDirOnStart(isCleanStart);
 
         serviceContainerContext
             .clusteredService(service)
@@ -250,6 +289,9 @@ public class SingleNodeCluster implements AutoCloseable
         container = ClusteredServiceContainer.launch(serviceContainerContext);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         final ErrorHandler errorHandler = clusteredMediaDriver.mediaDriver().context().errorHandler();

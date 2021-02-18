@@ -164,6 +164,9 @@ public class CubicCongestionControl implements CongestionControl
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean shouldMeasureRtt(final long nowNs)
     {
         return CubicCongestionControlConfiguration.MEASURE_RTT &&
@@ -172,12 +175,18 @@ public class CubicCongestionControl implements CongestionControl
                 ((lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS) - nowNs < 0));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onRttMeasurementSent(final long nowNs)
     {
         lastRttTimestampNs = nowNs;
         outstandingRttMeasurements++;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onRttMeasurement(final long nowNs, final long rttNs, final InetSocketAddress srcAddress)
     {
         outstandingRttMeasurements--;
@@ -186,6 +195,9 @@ public class CubicCongestionControl implements CongestionControl
         rttIndicator.setOrdered(rttNs);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long onTrackRebuild(
         final long nowNs,
         final long newConsumptionPosition,
@@ -235,11 +247,17 @@ public class CubicCongestionControl implements CongestionControl
         return packOutcome(window, forceStatusMessage);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int initialWindowLength()
     {
         return minWindow;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.close(errorHandler, rttIndicator);

@@ -65,23 +65,38 @@ public class StaticWindowCongestionControl implements CongestionControl
         ccOutcome = CongestionControl.packOutcome(Math.min(termLength >> 1, context.initialWindowLength()), false);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean shouldMeasureRtt(final long nowNs)
     {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onRttMeasurementSent(final long nowNs)
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onRttMeasurement(final long nowNs, final long rttNs, final InetSocketAddress srcAddress)
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long onTrackRebuild(
         final long nowNs,
         final long newConsumptionPosition,
@@ -94,6 +109,9 @@ public class StaticWindowCongestionControl implements CongestionControl
         return ccOutcome;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int initialWindowLength()
     {
         return CongestionControl.receiverWindowLength(ccOutcome);

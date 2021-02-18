@@ -162,6 +162,9 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 .aeron(dstAeron));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.closeAll(

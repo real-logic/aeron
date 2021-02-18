@@ -204,6 +204,9 @@ public class NakFlyweight extends HeaderFlyweight
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "NAK{" +

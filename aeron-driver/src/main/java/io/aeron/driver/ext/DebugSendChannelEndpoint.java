@@ -76,6 +76,9 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         this.controlLossGenerator = controlLossGenerator;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int send(final ByteBuffer buffer)
     {
         int count = buffer.remaining();
@@ -89,6 +92,9 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         return count;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onStatusMessage(
         final StatusMessageFlyweight msg,
         final UnsafeBuffer buffer,
@@ -101,6 +107,9 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onNakMessage(
         final NakFlyweight msg,
         final UnsafeBuffer buffer,
@@ -113,6 +122,9 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onRttMeasurement(
         final RttMeasurementFlyweight msg,
         final UnsafeBuffer buffer,

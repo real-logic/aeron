@@ -61,6 +61,9 @@ public final class ControlTransportPoller extends UdpTransportPoller
         super(errorHandler);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         CloseHelper.closeAll(errorHandler, transports);
@@ -68,6 +71,9 @@ public final class ControlTransportPoller extends UdpTransportPoller
         super.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int pollTransports()
     {
         int bytesReceived = 0;
@@ -101,6 +107,9 @@ public final class ControlTransportPoller extends UdpTransportPoller
         return bytesReceived;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public SelectionKey registerForRead(final UdpChannelTransport transport)
     {
         return registerForRead((SendChannelEndpoint)transport);
@@ -128,6 +137,9 @@ public final class ControlTransportPoller extends UdpTransportPoller
         return key;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void cancelRead(final UdpChannelTransport transport)
     {
         cancelRead((SendChannelEndpoint)transport);

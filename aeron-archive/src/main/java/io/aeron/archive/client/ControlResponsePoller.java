@@ -253,6 +253,9 @@ public final class ControlResponsePoller
         return ControlledFragmentHandler.Action.CONTINUE;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "ControlResponsePoller{" +

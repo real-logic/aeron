@@ -40,7 +40,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * Simple reader of {@link EventConfiguration#EVENT_RING_BUFFER} that appends to {@link System#out} by default
  * or to file if {@link #LOG_FILENAME_PROP_NAME} System property is set.
  */
-public final class EventLogReaderAgent implements Agent, MessageHandler
+public final class EventLogReaderAgent implements Agent
 {
     /**
      * Event Buffer length system property name. If not set then output will default to {@link System#out}.
@@ -49,6 +49,7 @@ public final class EventLogReaderAgent implements Agent, MessageHandler
 
     private final ManyToOneRingBuffer ringBuffer = EventConfiguration.EVENT_RING_BUFFER;
     private final StringBuilder builder = new StringBuilder();
+    private final MessageHandler messageHandler = this::onMessage;
     private ByteBuffer byteBuffer;
     private FileChannel fileChannel = null;
 
@@ -56,6 +57,9 @@ public final class EventLogReaderAgent implements Agent, MessageHandler
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onStart()
     {
         final String filename = getProperty(LOG_FILENAME_PROP_NAME);
@@ -87,19 +91,28 @@ public final class EventLogReaderAgent implements Agent, MessageHandler
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onClose()
     {
         CloseHelper.close(fileChannel);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String roleName()
     {
         return "event-log-reader";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
-        final int eventsRead = ringBuffer.read(this, EVENT_READER_FRAME_LIMIT);
+        final int eventsRead = ringBuffer.read(messageHandler, EVENT_READER_FRAME_LIMIT);
         if (null != byteBuffer && byteBuffer.position() > 0)
         {
             writeBuffer(byteBuffer, fileChannel);
@@ -108,7 +121,7 @@ public final class EventLogReaderAgent implements Agent, MessageHandler
         return eventsRead;
     }
 
-    public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
+    private void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
         final int eventCodeTypeId = msgTypeId >> 16;
         final int eventCodeId = msgTypeId & 0xFFFF;

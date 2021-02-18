@@ -581,6 +581,9 @@ public final class ReplayMerge implements AutoCloseable
         return archive.controlResponsePoller().relevantId();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "ReplayMerge{" +

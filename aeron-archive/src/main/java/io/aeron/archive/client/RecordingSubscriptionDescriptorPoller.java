@@ -18,7 +18,6 @@ package io.aeron.archive.client;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.*;
-import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
@@ -30,7 +29,7 @@ import org.agrona.ErrorHandler;
  * @see ArchiveProxy#listRecordingSubscriptions(int, int, String, int, boolean, long, long)
  * @see AeronArchive#listRecordingSubscriptions(int, int, String, int, boolean, RecordingSubscriptionDescriptorConsumer)
  */
-public final class RecordingSubscriptionDescriptorPoller implements ControlledFragmentHandler
+public final class RecordingSubscriptionDescriptorPoller
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
@@ -40,7 +39,7 @@ public final class RecordingSubscriptionDescriptorPoller implements ControlledFr
     private final long controlSessionId;
     private final int fragmentLimit;
     private final Subscription subscription;
-    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
+    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
     private final ErrorHandler errorHandler;
 
     private long correlationId;
@@ -136,11 +135,12 @@ public final class RecordingSubscriptionDescriptorPoller implements ControlledFr
         isDispatchComplete = false;
     }
 
-    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    ControlledFragmentAssembler.Action onFragment(
+        final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         if (isDispatchComplete)
         {
-            return Action.ABORT;
+            return ControlledFragmentAssembler.Action.ABORT;
         }
 
         messageHeaderDecoder.wrap(buffer, offset);
@@ -169,7 +169,7 @@ public final class RecordingSubscriptionDescriptorPoller implements ControlledFr
                     if (ControlResponseCode.SUBSCRIPTION_UNKNOWN == code && correlationId == this.correlationId)
                     {
                         isDispatchComplete = true;
-                        return Action.BREAK;
+                        return ControlledFragmentAssembler.Action.BREAK;
                     }
 
                     if (ControlResponseCode.ERROR == code)
@@ -213,12 +213,12 @@ public final class RecordingSubscriptionDescriptorPoller implements ControlledFr
                     if (0 == --remainingSubscriptionCount)
                     {
                         isDispatchComplete = true;
-                        return Action.BREAK;
+                        return ControlledFragmentAssembler.Action.BREAK;
                     }
                 }
                 break;
         }
 
-        return Action.CONTINUE;
+        return ControlledFragmentAssembler.Action.CONTINUE;
     }
 }

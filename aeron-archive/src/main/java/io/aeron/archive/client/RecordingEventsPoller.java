@@ -127,6 +127,9 @@ public final class RecordingEventsPoller implements FragmentHandler
         return recordingStopPosition;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);

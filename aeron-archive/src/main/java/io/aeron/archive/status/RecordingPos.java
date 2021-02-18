@@ -64,11 +64,23 @@ public final class RecordingPos
      */
     public static final String NAME = "rec-pos";
 
-    public static final int RECORDING_ID_OFFSET = 0;
-    public static final int SESSION_ID_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
-    public static final int SOURCE_IDENTITY_LENGTH_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    public static final int SOURCE_IDENTITY_OFFSET = SOURCE_IDENTITY_LENGTH_OFFSET + SIZE_OF_INT;
+    private static final int RECORDING_ID_OFFSET = 0;
+    private static final int SESSION_ID_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
+    private static final int SOURCE_IDENTITY_LENGTH_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
+    private static final int SOURCE_IDENTITY_OFFSET = SOURCE_IDENTITY_LENGTH_OFFSET + SIZE_OF_INT;
 
+    /**
+     * Allocated a recording position counter and populate the metadata.
+     *
+     * @param aeron           on which the counter will be registered.
+     * @param tempBuffer      for encoding the metadata.
+     * @param recordingId     for the recording.
+     * @param sessionId       for the publication being recorded.
+     * @param streamId        for the publication being recorded.
+     * @param strippedChannel for the recording subscription.
+     * @param sourceIdentity  for the publication.
+     * @return the allocated counter.
+     */
     public static Counter allocate(
         final Aeron aeron,
         final UnsafeBuffer tempBuffer,

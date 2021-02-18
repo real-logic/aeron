@@ -160,21 +160,44 @@ public enum ArchiveEventCode implements EventCode
         return id;
     }
 
+    /**
+     * Template ID of the SBE message.
+     *
+     * @return template ID of the SBE message.
+     */
     public int templateId()
     {
         return templateId;
     }
 
+    /**
+     * Get {@link ArchiveEventCode#id()} from {@link #id()}.
+     *
+     * @return get {@link ArchiveEventCode#id()} from {@link #id()}.
+     */
     public int toEventCodeId()
     {
         return EVENT_CODE_TYPE << 16 | (id() & 0xFFFF);
     }
 
+    /**
+     * Get {@link ArchiveEventCode} from its event code id.
+     *
+     * @param eventCodeId to convert.
+     * @return {@link ArchiveEventCode} from its event code id.
+     */
     public static ArchiveEventCode fromEventCodeId(final int eventCodeId)
     {
         return get(eventCodeId - (EVENT_CODE_TYPE << 16));
     }
 
+    /**
+     * Decode an event serialised in a buffer to a provided {@link StringBuilder}.
+     *
+     * @param buffer  containing the encoded event.
+     * @param offset  offset at which the event begins.
+     * @param builder to write the decoded event to.
+     */
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         dissector.dissect(this, buffer, offset, builder);

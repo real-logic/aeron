@@ -63,6 +63,9 @@ public final class RecordingEventsAdapter implements FragmentHandler
         return subscription.poll(this, fragmentLimit);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);

@@ -55,16 +55,31 @@ public final class EventLogAgent
     private static ResettableClassFileTransformer logTransformer;
     private static Thread thread;
 
+    /**
+     * Premain method to run before the main method of the application.
+     *
+     * @param agentArgs       which are ignored.
+     * @param instrumentation for applying to the agent.
+     */
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
     {
         agent(AgentBuilder.RedefinitionStrategy.DISABLED, instrumentation);
     }
 
+    /**
+     * Agent main method for dynamic attach.
+     *
+     * @param agentArgs       which are ignored.
+     * @param instrumentation for applying to the agent.
+     */
     public static void agentmain(final String agentArgs, final Instrumentation instrumentation)
     {
         agent(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION, instrumentation);
     }
 
+    /**
+     * Remove the transformer and close the agent runner for the event log reader.
+     */
     public static synchronized void removeTransformer()
     {
         if (logTransformer != null)

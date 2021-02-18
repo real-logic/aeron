@@ -40,6 +40,18 @@ public final class ClusterEventLogger
         ringBuffer = eventRingBuffer;
     }
 
+    /**
+     * Log a new leadership term event.
+     *
+     * @param logLeadershipTermId term for which log entries are present.
+     * @param logTruncatePosition position of the log for the logLeadershipTermId.
+     * @param leadershipTermId    new leadership term id.
+     * @param logPosition         position the log reached for the new term.
+     * @param timestamp           of the the new term.
+     * @param leaderMemberId      member id for the new leader.
+     * @param logSessionId        session id of the log extension.
+     * @param isStartup           is the leader starting up fresh.
+     */
     public void logNewLeadershipTerm(
         final long logLeadershipTermId,
         final long logTruncatePosition,
@@ -81,6 +93,15 @@ public final class ClusterEventLogger
         }
     }
 
+    /**
+     * Log a state change event for a cluster node.
+     *
+     * @param eventCode for the type of state change.
+     * @param oldState  before the change.
+     * @param newState  after the change.
+     * @param memberId  on which the change has taken place.
+     * @param <E> type representing the state change.
+     */
     public <E extends Enum<E>> void logStateChange(
         final ClusterEventCode eventCode, final E oldState, final E newState, final int memberId)
     {
@@ -109,5 +130,4 @@ public final class ClusterEventLogger
             }
         }
     }
-
 }

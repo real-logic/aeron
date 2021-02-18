@@ -21,14 +21,13 @@ import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.MessageHeaderDecoder;
 import io.aeron.archive.codecs.MessageHeaderEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
 /**
  * Encapsulate the polling, decoding, and dispatching of archive control protocol response messages.
  */
-public final class ControlResponseAdapter implements FragmentHandler
+public final class ControlResponseAdapter
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
@@ -37,7 +36,7 @@ public final class ControlResponseAdapter implements FragmentHandler
     private final int fragmentLimit;
     private final ControlResponseListener listener;
     private final Subscription subscription;
-    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
+    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
 
     /**
      * Create an adapter for a given subscription to an archive for control response messages.
@@ -92,11 +91,7 @@ public final class ControlResponseAdapter implements FragmentHandler
             decoder.sourceIdentity());
     }
 
-    public void onFragment(
-        final DirectBuffer buffer,
-        final int offset,
-        @SuppressWarnings("unused") final int length,
-        @SuppressWarnings("unused") final Header header)
+    void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 

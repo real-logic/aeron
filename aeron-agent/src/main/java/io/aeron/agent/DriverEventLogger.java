@@ -48,7 +48,15 @@ public final class DriverEventLogger
         this.ringBuffer = ringBuffer;
     }
 
-    public void log(final DriverEventCode code, final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    /**
+     * Log an event for the driver.
+     *
+     * @param code   for the type of event.
+     * @param buffer containing the encoded event.
+     * @param offset in the buffer at which the event begins.
+     * @param length of the encoded event.
+     */
+    public void log(final DriverEventCode code, final DirectBuffer buffer, final int offset, final int length)
     {
         if (DRIVER_EVENT_CODES.contains(code))
         {
@@ -61,7 +69,7 @@ public final class DriverEventLogger
             {
                 try
                 {
-                    encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, srcBuffer, srcOffset);
+                    encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, buffer, offset);
                 }
                 finally
                 {
@@ -71,10 +79,18 @@ public final class DriverEventLogger
         }
     }
 
+    /**
+     * Log a frame coming in from the media.
+     *
+     * @param buffer      containing the frame.
+     * @param offset      in the buffer at which the frame begins.
+     * @param frameLength of the frame.
+     * @param dstAddress  for the frame.
+     */
     public void logFrameIn(
-        final DirectBuffer srcBuffer, final int srcOffset, final int bufferLength, final InetSocketAddress dstAddress)
+        final DirectBuffer buffer, final int offset, final int frameLength, final InetSocketAddress dstAddress)
     {
-        final int length = bufferLength + socketAddressLength(dstAddress);
+        final int length = frameLength + socketAddressLength(dstAddress);
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
@@ -84,8 +100,7 @@ public final class DriverEventLogger
         {
             try
             {
-                final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
-                encode(buffer, index, captureLength, length, srcBuffer, srcOffset, dstAddress);
+                encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, buffer, offset, dstAddress);
             }
             finally
             {
@@ -94,9 +109,15 @@ public final class DriverEventLogger
         }
     }
 
-    public void logFrameOut(final ByteBuffer srcBuffer, final InetSocketAddress dstAddress)
+    /**
+     * Log a frame being sent out from the driver to the media.
+     *
+     * @param buffer     containing the frame.
+     * @param dstAddress for the frame.
+     */
+    public void logFrameOut(final ByteBuffer buffer, final InetSocketAddress dstAddress)
     {
-        final int length = srcBuffer.remaining() + socketAddressLength(dstAddress);
+        final int length = buffer.remaining() + socketAddressLength(dstAddress);
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
@@ -111,8 +132,8 @@ public final class DriverEventLogger
                     index,
                     captureLength,
                     length,
-                    srcBuffer,
-                    srcBuffer.position(),
+                    buffer,
+                    buffer.position(),
                     dstAddress);
             }
             finally
@@ -122,6 +143,13 @@ public final class DriverEventLogger
         }
     }
 
+    /**
+     * Log the removal of a publication.
+     *
+     * @param uri       for the channel.
+     * @param sessionId for the publication.
+     * @param streamId  within the channel.
+     */
     public void logPublicationRemoval(final String uri, final int sessionId, final int streamId)
     {
         final int length = SIZE_OF_INT * 3 + uri.length();
@@ -144,7 +172,14 @@ public final class DriverEventLogger
         }
     }
 
-    public void logSubscriptionRemoval(final String uri, final int streamId, final long id)
+    /**
+     * Log the removal of a subscription.
+     *
+     * @param uri            for the channel.
+     * @param streamId       within the channel.
+     * @param subscriptionId for the subscription.
+     */
+    public void logSubscriptionRemoval(final String uri, final int streamId, final long subscriptionId)
     {
         final int length = SIZE_OF_INT * 2 + SIZE_OF_LONG + uri.length();
         final int captureLength = captureLength(length);
@@ -157,7 +192,7 @@ public final class DriverEventLogger
             try
             {
                 final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
-                encodeSubscriptionRemoval(buffer, index, captureLength, length, uri, streamId, id);
+                encodeSubscriptionRemoval(buffer, index, captureLength, length, uri, streamId, subscriptionId);
             }
             finally
             {
@@ -166,7 +201,15 @@ public final class DriverEventLogger
         }
     }
 
-    public void logImageRemoval(final String uri, final int sessionId, final int streamId, final long id)
+    /**
+     * Log the removal of an image from the driver.
+     *
+     * @param uri           for the channel.
+     * @param sessionId     for the image.
+     * @param streamId      for the image.
+     * @param correlationId for the image.
+     */
+    public void logImageRemoval(final String uri, final int sessionId, final int streamId, final long correlationId)
     {
         final int length = SIZE_OF_INT * 3 + SIZE_OF_LONG + uri.length();
         final int captureLength = captureLength(length);
@@ -179,7 +222,7 @@ public final class DriverEventLogger
             try
             {
                 final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
-                encodeImageRemoval(buffer, index, captureLength, length, uri, sessionId, streamId, id);
+                encodeImageRemoval(buffer, index, captureLength, length, uri, sessionId, streamId, correlationId);
             }
             finally
             {
@@ -188,6 +231,12 @@ public final class DriverEventLogger
         }
     }
 
+    /**
+     * Log a generic string associated with an event.
+     *
+     * @param code  for the event type.
+     * @param value of the string to be logged.
+     */
     public void logString(final DriverEventCode code, final String value)
     {
         final int length = value.length() + SIZE_OF_INT;
@@ -209,6 +258,16 @@ public final class DriverEventLogger
         }
     }
 
+    /**
+     * Log an untethered subscription state change.
+     *
+     * @param oldState       before the change.
+     * @param newState       after the change.
+     * @param subscriptionId to which the change applies.
+     * @param streamId       of the image.
+     * @param sessionId      of the image.
+     * @param <E>            type of the event.
+     */
     public <E extends Enum<E>> void logUntetheredSubscriptionStateChange(
         final E oldState, final E newState, final long subscriptionId, final int streamId, final int sessionId)
     {
@@ -240,6 +299,12 @@ public final class DriverEventLogger
         }
     }
 
+    /**
+     * Log an address with associated event.
+     *
+     * @param code    representing the event type.
+     * @param address to be logged.
+     */
     public void logAddress(final DriverEventCode code, final InetSocketAddress address)
     {
         final int length = socketAddressLength(address);
@@ -261,7 +326,7 @@ public final class DriverEventLogger
         }
     }
 
-    public static int toEventCodeId(final DriverEventCode code)
+    static int toEventCodeId(final DriverEventCode code)
     {
         return EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);
     }

@@ -56,25 +56,47 @@ public final class ArchiveEventLogger
         ringBuffer = eventRingBuffer;
     }
 
-    public void logControlRequest(final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    /**
+     * Log in incoming control request to the archive.
+     *
+     * @param buffer containing the encoded request.
+     * @param offset in the buffer at which the request begins.
+     * @param length of the request in the buffer.
+     */
+    public void logControlRequest(final DirectBuffer buffer, final int offset, final int length)
     {
-        headerDecoder.wrap(srcBuffer, srcOffset);
+        headerDecoder.wrap(buffer, offset);
 
         final int templateId = headerDecoder.templateId();
         final ArchiveEventCode eventCode = getByTemplateId(templateId);
         if (eventCode != null && ARCHIVE_EVENT_CODES.contains(eventCode))
         {
-            log(eventCode, srcBuffer, srcOffset, length);
+            log(eventCode, buffer, offset, length);
         }
     }
 
-    public void logControlResponse(final DirectBuffer srcBuffer, final int length)
+    /**
+     * Log an outgoing control response from the archive.
+     *
+     * @param buffer containing the encoded response.
+     * @param length of the response in the buffer.
+     */
+    public void logControlResponse(final DirectBuffer buffer, final int length)
     {
-        log(CMD_OUT_RESPONSE, srcBuffer, 0, length);
+        log(CMD_OUT_RESPONSE, buffer, 0, length);
     }
 
+    /**
+     * Log a state change event for a archive control session
+     *
+     * @param eventCode        for the type of state change.
+     * @param oldState         before the change.
+     * @param newState         after the change.
+     * @param controlSessionId identity for the control session on the Archive.
+     * @param <E>              type representing the state change.
+     */
     public <E extends Enum<E>> void logSessionStateChange(
-        final ArchiveEventCode eventCode, final E oldState, final E newState, final long id)
+        final ArchiveEventCode eventCode, final E oldState, final E newState, final long controlSessionId)
     {
         final int length = sessionStateChangeLength(oldState, newState);
         final int captureLength = captureLength(length);
@@ -93,7 +115,7 @@ public final class ArchiveEventLogger
                     length,
                     oldState,
                     newState,
-                    id);
+                    controlSessionId);
             }
             finally
             {
@@ -102,6 +124,13 @@ public final class ArchiveEventLogger
         }
     }
 
+    /**
+     * Log a control response error.
+     *
+     * @param sessionId    associated with the response.
+     * @param recordingId  to which the error applies.
+     * @param errorMessage which resulted.
+     */
     public void logReplaySessionError(final long sessionId, final long recordingId, final String errorMessage)
     {
         final int length = SIZE_OF_LONG * 2 + SIZE_OF_INT + errorMessage.length();
@@ -130,7 +159,13 @@ public final class ArchiveEventLogger
         }
     }
 
-    public void logCatalogResize(final long catalogLength, final long newCatalogLength)
+    /**
+     * Log a Catalog resize event.
+     *
+     * @param oldCatalogLength before the resize.
+     * @param newCatalogLength after the resize.
+     */
+    public void logCatalogResize(final long oldCatalogLength, final long newCatalogLength)
     {
         final int length = SIZE_OF_LONG * 2;
         final int captureLength = captureLength(length);
@@ -147,7 +182,7 @@ public final class ArchiveEventLogger
                     index,
                     captureLength,
                     length,
-                    catalogLength,
+                    oldCatalogLength,
                     newCatalogLength);
             }
             finally
@@ -157,8 +192,15 @@ public final class ArchiveEventLogger
         }
     }
 
-    private void log(
-        final ArchiveEventCode eventCode, final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    /**
+     * Log an Archive control event.
+     *
+     * @param eventCode for the type of control event.
+     * @param buffer    containing the encoded event.
+     * @param offset    in the buffer at which the event begins.
+     * @param length    of the encoded event.
+     */
+    private void log(final ArchiveEventCode eventCode, final DirectBuffer buffer, final int offset, final int length)
     {
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
@@ -169,7 +211,7 @@ public final class ArchiveEventLogger
         {
             try
             {
-                encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, srcBuffer, srcOffset);
+                encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, buffer, offset);
             }
             finally
             {

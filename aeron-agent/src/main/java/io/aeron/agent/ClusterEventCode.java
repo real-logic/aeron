@@ -74,16 +74,34 @@ public enum ClusterEventCode implements EventCode
         return id;
     }
 
+    /**
+     * Get {@link ClusterEventCode#id()} from {@link #id()}.
+     *
+     * @return get {@link ClusterEventCode#id()} from {@link #id()}.
+     */
     public int toEventCodeId()
     {
         return EVENT_CODE_TYPE << 16 | (id() & 0xFFFF);
     }
 
+    /**
+     * Get {@link ClusterEventCode} from its event code id.
+     *
+     * @param eventCodeId to convert.
+     * @return {@link ClusterEventCode} from its event code id.
+     */
     public static ClusterEventCode fromEventCodeId(final int eventCodeId)
     {
         return get(eventCodeId - (EVENT_CODE_TYPE << 16));
     }
 
+    /**
+     * Decode an event serialised in a buffer to a provided {@link StringBuilder}.
+     *
+     * @param buffer  containing the encoded event.
+     * @param offset  offset at which the event begins.
+     * @param builder to write the decoded event to.
+     */
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         dissector.dissect(this, buffer, offset, builder);

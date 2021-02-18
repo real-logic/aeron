@@ -118,7 +118,7 @@ public enum DriverEventCode implements EventCode
         return id;
     }
 
-    public static DriverEventCode get(final int id)
+    static DriverEventCode get(final int id)
     {
         if (id < 0 || id >= EVENT_CODE_BY_ID.length)
         {
@@ -135,6 +135,13 @@ public enum DriverEventCode implements EventCode
         return code;
     }
 
+    /**
+     * Decode an event serialised in a buffer to a provided {@link StringBuilder}.
+     *
+     * @param buffer  containing the encoded event.
+     * @param offset  offset at which the event begins.
+     * @param builder to write the decoded event to.
+     */
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         dissector.dissect(this, buffer, offset, builder);

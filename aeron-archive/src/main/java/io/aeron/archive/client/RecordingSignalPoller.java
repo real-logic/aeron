@@ -295,6 +295,9 @@ public final class RecordingSignalPoller
         return ControlledFragmentHandler.Action.CONTINUE;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "RecordingSignalPoller{" +

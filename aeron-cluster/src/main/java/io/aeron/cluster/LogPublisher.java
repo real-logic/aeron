@@ -160,7 +160,7 @@ final class LogPublisher
             .responseChannel(channel)
             .putEncodedPrincipal(encodedPrincipal, 0, encodedPrincipal.length);
 
-        final int length = sessionOpenEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + sessionOpenEventEncoder.encodedLength();
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -237,14 +237,13 @@ final class LogPublisher
     boolean appendClusterAction(final long leadershipTermId, final long timestamp, final ClusterAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionRequestEncoder.BLOCK_LENGTH;
-        final int fragmentLength = DataHeaderFlyweight.HEADER_LENGTH +
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            ClusterActionRequestEncoder.BLOCK_LENGTH;
+        final int fragmentLength = DataHeaderFlyweight.HEADER_LENGTH + length;
+        final int alignedFragmentLength = align(fragmentLength, FRAME_ALIGNMENT);
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long logPosition = publication.position() + BitUtil.align(fragmentLength, FRAME_ALIGNMENT);
+            final long logPosition = publication.position() + alignedFragmentLength;
             final long result = publication.tryClaim(length, bufferClaim);
 
             if (result > 0)
@@ -277,15 +276,15 @@ final class LogPublisher
         final int appVersion)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEventEncoder.BLOCK_LENGTH;
-        final int fragmentLength = DataHeaderFlyweight.HEADER_LENGTH +
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            NewLeadershipTermEventEncoder.BLOCK_LENGTH;
+        final int fragmentLength = DataHeaderFlyweight.HEADER_LENGTH + length;
+        final int alignedFragmentLength = align(fragmentLength, FRAME_ALIGNMENT);
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long logPosition = publication.position() + BitUtil.align(fragmentLength, FRAME_ALIGNMENT);
+            final long logPosition = publication.position() + alignedFragmentLength;
             final long result = publication.tryClaim(length, bufferClaim);
+
             if (result > 0)
             {
                 newLeadershipTermEventEncoder.wrapAndApplyHeader(
@@ -336,7 +335,7 @@ final class LogPublisher
                 .memberId(memberId)
                 .clusterMembers(clusterMembers);
 
-            final int length = membershipChangeEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
+            final int length = MessageHeaderEncoder.ENCODED_LENGTH + membershipChangeEventEncoder.encodedLength();
             result = publication.offer(expandableArrayBuffer, 0, length, null);
             if (result > 0)
             {

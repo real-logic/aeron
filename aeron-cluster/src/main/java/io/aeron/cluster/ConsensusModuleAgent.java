@@ -927,6 +927,7 @@ final class ConsensusModuleAgent implements Agent
             {
                 idle();
             }
+            lastAppendPosition = appendPosition;
 
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
 
@@ -1379,7 +1380,7 @@ final class ConsensusModuleAgent implements Agent
         createAppendPosition(image.sessionId());
 
         logAdapter.image(image);
-        lastAppendPosition = 0;
+        lastAppendPosition = image.joinPosition();
 
         awaitServicesReady(
             channel,
@@ -1603,7 +1604,7 @@ final class ConsensusModuleAgent implements Agent
         }
 
         final long appendPosition = logAdapter.position();
-        if (appendPosition != lastAppendPosition || nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs))
+        if (appendPosition > lastAppendPosition || nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs))
         {
             commitPosition.proposeMaxOrdered(appendPosition);
             final ExclusivePublication publication = election.leader().publication();

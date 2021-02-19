@@ -293,18 +293,19 @@ class Election
         final int followerMemberId,
         final boolean vote)
     {
-        final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-
         if (CANDIDATE_BALLOT == state &&
             candidateTermId == this.candidateTermId &&
-            candidateMemberId == thisMember.id() &&
-            null != follower)
+            candidateMemberId == thisMember.id())
         {
-            follower
-                .candidateTermId(candidateTermId)
-                .leadershipTermId(logLeadershipTermId)
-                .logPosition(logPosition)
-                .vote(vote ? Boolean.TRUE : Boolean.FALSE);
+            final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
+            if (null != follower)
+            {
+                follower
+                    .candidateTermId(candidateTermId)
+                    .leadershipTermId(logLeadershipTermId)
+                    .logPosition(logPosition)
+                    .vote(vote ? Boolean.TRUE : Boolean.FALSE);
+            }
         }
     }
 
@@ -363,26 +364,29 @@ class Election
 
     void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
-        final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-        if (null != follower && leadershipTermId == this.leadershipTermId)
+        if (leadershipTermId == this.leadershipTermId)
         {
-            follower
-                .leadershipTermId(leadershipTermId)
-                .logPosition(logPosition)
-                .timeOfLastAppendPositionNs(ctx.clusterClock().timeNanos());
+            final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
+            if (null != follower)
+            {
+                follower
+                    .leadershipTermId(leadershipTermId)
+                    .logPosition(logPosition)
+                    .timeOfLastAppendPositionNs(ctx.clusterClock().timeNanos());
 
-            consensusModuleAgent.trackCatchupCompletion(follower, leadershipTermId);
+                consensusModuleAgent.trackCatchupCompletion(follower, leadershipTermId);
+            }
         }
     }
 
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
-        if (FOLLOWER_CATCHUP == state && NULL_POSITION != catchupPosition &&
-            leadershipTermId == this.leadershipTermId && leaderMemberId == leaderMember.id())
+        if (leadershipTermId == this.leadershipTermId && leaderMemberId == leaderMember.id() &&
+            FOLLOWER_CATCHUP == state && NULL_POSITION != catchupPosition)
         {
             catchupPosition = Math.max(catchupPosition, logPosition);
         }
-        else if (leadershipTermId > this.leadershipTermId && CANVASS != state)
+        else if (leadershipTermId > this.leadershipTermId && (INIT != state && CANVASS != state))
         {
             throw new ClusterException("new leader detected", AeronException.Category.WARN);
         }

@@ -112,10 +112,10 @@ int aeron_receive_channel_endpoint_create(
     }
 
     _endpoint->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
-    _endpoint->possible_ttl_asymmetry_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_POSSIBLE_TTL_ASYMMETRY);
+    _endpoint->possible_ttl_asymmetry_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_POSSIBLE_TTL_ASYMMETRY);
 
-    _endpoint->cached_clock = context->cached_clock;
+    _endpoint->cached_clock = context->receiver_cached_clock;
 
     if (NULL != straight_through_destination)
     {

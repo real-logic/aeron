@@ -144,6 +144,8 @@ typedef struct aeron_driver_context_stct
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
     aeron_clock_cache_t *cached_clock;
+    aeron_clock_cache_t *sender_cached_clock;
+    aeron_clock_cache_t *receiver_cached_clock;
 
     aeron_spsc_concurrent_array_queue_t sender_command_queue;
     aeron_spsc_concurrent_array_queue_t receiver_command_queue;

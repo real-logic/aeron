@@ -87,7 +87,7 @@ int aeron_receive_destination_create(
     }
 
     _destination->transport.destination_clientd = _destination;
-    _destination->time_of_last_activity_ns = aeron_clock_cached_nano_time(context->cached_clock);
+    _destination->time_of_last_activity_ns = aeron_clock_cached_nano_time(context->receiver_cached_clock);
 
     if (channel->is_multicast)
     {

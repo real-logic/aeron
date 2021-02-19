@@ -60,7 +60,7 @@ int aeron_send_channel_endpoint_create(
             aeron_udp_destination_tracker_init(
                 _endpoint->destination_tracker,
                 _endpoint->data_paths,
-                context->cached_clock,
+                context->sender_cached_clock,
                 channel->is_manual_control_mode,
                 AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS) < 0)
         {
@@ -156,7 +156,7 @@ int aeron_send_channel_endpoint_create(
         _endpoint->local_sockaddr_indicator.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE);
 
     _endpoint->sender_proxy = context->sender_proxy;
-    _endpoint->cached_clock = context->cached_clock;
+    _endpoint->cached_clock = context->sender_cached_clock;
     _endpoint->time_of_last_sm_ns = aeron_clock_cached_nano_time(_endpoint->cached_clock);
     memcpy(&_endpoint->current_data_addr, &channel->remote_data, sizeof(_endpoint->current_data_addr));
 

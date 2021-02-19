@@ -134,7 +134,7 @@ int aeron_publication_image_create(
 
     _image->nano_clock = context->nano_clock;
     _image->epoch_clock = context->epoch_clock;
-    _image->cached_clock = context->cached_clock;
+    _image->cached_clock = context->receiver_cached_clock;
 
     if (aeron_publication_image_add_destination(_image, destination) < 0)
     {

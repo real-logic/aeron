@@ -865,6 +865,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     {
         return -1;
     }
+    if (aeron_clock_cache_alloc(&_context->sender_cached_clock) < 0)
+    {
+        return -1;
+    }
+    if (aeron_clock_cache_alloc(&_context->receiver_cached_clock) < 0)
+    {
+        return -1;
+    }
 
     _context->conductor_idle_strategy_name = aeron_strndup("backoff", AERON_MAX_PATH);
     _context->shared_idle_strategy_name = aeron_strndup("backoff", AERON_MAX_PATH);
@@ -1116,6 +1124,8 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free(context->shared_network_idle_strategy_init_args);
     aeron_free(context->bindings_clientd_entries);
     aeron_free(context->cached_clock);
+    aeron_free(context->sender_cached_clock);
+    aeron_free(context->receiver_cached_clock);
     aeron_dl_load_libs_delete(context->dynamic_libs);
 
     aeron_free(context);

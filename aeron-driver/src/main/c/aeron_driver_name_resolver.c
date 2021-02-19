@@ -245,7 +245,7 @@ int aeron_driver_name_resolver_init(
 
     aeron_name_resolver_cache_init(&_driver_resolver->cache, AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS);
 
-    int64_t now_ms = aeron_clock_cached_epoch_time(context->cached_clock);
+    int64_t now_ms = context->epoch_clock();
     _driver_resolver->neighbor_timeout_ms = AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
     _driver_resolver->self_resolution_interval_ms = AERON_NAME_RESOLVER_DRIVER_SELF_RESOLUTION_INTERVAL_MS;
     _driver_resolver->self_resolutions_deadline_ms = 0;

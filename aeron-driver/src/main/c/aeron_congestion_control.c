@@ -440,7 +440,7 @@ int aeron_cubic_congestion_control_strategy_supplier(
     state->last_rtt_timestamp_ns = 0;
     state->outstanding_rtt_measurements = 0;
 
-    state->last_loss_timestamp_ns = aeron_clock_cached_nano_time(context->cached_clock);
+    state->last_loss_timestamp_ns = aeron_clock_cached_nano_time(context->receiver_cached_clock);
     state->last_update_timestamp_ns = state->last_loss_timestamp_ns;
 
     *strategy = _strategy;

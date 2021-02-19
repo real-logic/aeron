@@ -29,7 +29,6 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 }
 
 #define CAPACITY (32 * 1024)
-#define TERM_BUFFER_SIZE (64 * 1024)
 
 typedef std::array<std::uint8_t, CAPACITY> buffer_t;
 typedef std::array<std::uint8_t, 4 * CAPACITY> buffer_4x_t;

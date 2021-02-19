@@ -96,21 +96,18 @@ int aeron_driver_sender_init(
     sender->duty_cycle_ratio = context->send_to_sm_poll_ratio;
     sender->status_message_read_timeout_ns = context->status_message_timeout_ns / 2;
     sender->control_poll_timeout_ns = 0;
-    sender->total_bytes_sent_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_BYTES_SENT);
-    sender->errors_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_ERRORS);
-    sender->invalid_frames_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
-    sender->status_messages_received_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_STATUS_MESSAGES_RECEIVED);
-    sender->nak_messages_received_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_NAK_MESSAGES_RECEIVED);
-    sender->resolution_changes_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES);
+    sender->total_bytes_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_BYTES_SENT);
+    sender->errors_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_ERRORS);
+    sender->invalid_frames_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
+    sender->status_messages_received_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_STATUS_MESSAGES_RECEIVED);
+    sender->nak_messages_received_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_NAK_MESSAGES_RECEIVED);
+    sender->resolution_changes_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES);
 
-    sender->re_resolution_deadline_ns =
-        aeron_clock_cached_nano_time(context->cached_clock) + context->re_resolution_check_interval_ns;
+    int64_t now_ns = context->nano_clock();
+    sender->re_resolution_deadline_ns = now_ns + context->re_resolution_check_interval_ns;
 
     return 0;
 }
@@ -132,15 +129,15 @@ void aeron_driver_sender_on_command(void *clientd, void *item)
 int aeron_driver_sender_do_work(void *clientd)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
-    int work_count = 0;
 
-    work_count += (int)aeron_spsc_concurrent_array_queue_drain(
+    int64_t now_ns = sender->context->nano_clock();
+    aeron_clock_update_cached_nano_time(sender->context->sender_cached_clock, now_ns);
+
+    int work_count = (int)aeron_spsc_concurrent_array_queue_drain(
         sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, AERON_COMMAND_DRAIN_LIMIT);
 
-    int64_t now_ns = aeron_clock_cached_nano_time(sender->context->cached_clock);
     int64_t bytes_received = 0;
     int bytes_sent = aeron_driver_sender_do_send(sender, now_ns);
-    int poll_result;
 
     if (0 == bytes_sent ||
         ++sender->duty_cycle_counter >= sender->duty_cycle_ratio ||
@@ -160,7 +157,7 @@ int aeron_driver_sender_do_work(void *clientd)
             mmsghdr[i].msg_len = 0;
         }
 
-        poll_result = sender->poller_poll_func(
+        int poll_result = sender->poller_poll_func(
             &sender->poller,
             mmsghdr,
             AERON_DRIVER_SENDER_NUM_RECV_BUFFERS,
@@ -189,7 +186,7 @@ int aeron_driver_sender_do_work(void *clientd)
         sender->control_poll_timeout_ns = now_ns + sender->status_message_read_timeout_ns;
     }
 
-    return work_count + bytes_sent;
+    return work_count + bytes_sent + (int)bytes_received;
 }
 
 void aeron_driver_sender_on_close(void *clientd)

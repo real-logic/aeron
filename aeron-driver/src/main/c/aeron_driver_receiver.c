@@ -101,8 +101,8 @@ int aeron_driver_receiver_init(
     receiver->resolution_changes_counter = aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES);
 
-    receiver->re_resolution_deadline_ns =
-        aeron_clock_cached_nano_time(context->cached_clock) + context->re_resolution_check_interval_ns;
+    int64_t now_ns = context->nano_clock();
+    receiver->re_resolution_deadline_ns = now_ns + context->re_resolution_check_interval_ns;
 
     return 0;
 }
@@ -125,10 +125,11 @@ int aeron_driver_receiver_do_work(void *clientd)
 {
     struct mmsghdr mmsghdr[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
-    int64_t bytes_received = 0;
-    int work_count = 0;
 
-    work_count += (int)aeron_spsc_concurrent_array_queue_drain(
+    int64_t now_ns = receiver->context->nano_clock();
+    aeron_clock_update_cached_nano_time(receiver->context->receiver_cached_clock, now_ns);
+
+    int work_count = (int)aeron_spsc_concurrent_array_queue_drain(
         receiver->receiver_proxy.command_queue, aeron_driver_receiver_on_command, receiver, AERON_COMMAND_DRAIN_LIMIT);
 
     for (size_t i = 0; i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
@@ -143,6 +144,7 @@ int aeron_driver_receiver_do_work(void *clientd)
         mmsghdr[i].msg_len = 0;
     }
 
+    int64_t bytes_received = 0;
     int poll_result = receiver->poller_poll_func(
         &receiver->poller,
         mmsghdr,
@@ -161,8 +163,6 @@ int aeron_driver_receiver_do_work(void *clientd)
     work_count += bytes_received > 0 ? (int)bytes_received : 0;
 
     aeron_counter_add_ordered(receiver->total_bytes_received_counter, bytes_received);
-
-    int64_t now_ns = aeron_clock_cached_nano_time(receiver->context->cached_clock);
 
     for (size_t i = 0, length = receiver->images.length; i < length; i++)
     {

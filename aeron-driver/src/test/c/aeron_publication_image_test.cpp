@@ -245,9 +245,7 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
     int64_t registration_id = 0;
 
     int64_t t0_ns = 1000 * 1000 * 1000;
-    int64_t t0_ms = t0_ns / (1000 * 1000);
     int64_t t1_ns = t0_ns + (2 * AERON_RECEIVE_DESTINATION_TIMEOUT_NS);
-    int64_t t1_ms = t1_ns / (1000 * 1000);
 
     aeron_udp_channel_t *channel_1;
     aeron_receive_destination_t *dest_1;
@@ -257,7 +255,7 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
     aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1, false);
     aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2, false);
 
-    aeron_clock_update_cached_time(m_context->cached_clock, t0_ms, t0_ns);
+    aeron_clock_update_cached_nano_time(m_context->receiver_cached_clock, t0_ns);
 
     ASSERT_LE(0, aeron_receive_destination_create(
         &dest_1, channel_1, m_context, &m_counters_manager, registration_id, endpoint->channel_status.counter_id));
@@ -287,7 +285,7 @@ TEST_F(PublicationImageTest, shouldNotSendControlMessagesToAllDestinationThatHav
     aeron_publication_image_insert_packet(image, dest_1, 0, 0, data, message_length, &addr);
     aeron_publication_image_insert_packet(image, dest_2, 0, 0, data, message_length, &addr);
 
-    aeron_clock_update_cached_time(m_context->cached_clock, t1_ms, t1_ns);
+    aeron_clock_update_cached_nano_time(m_context->receiver_cached_clock, t1_ns);
 
     auto next_offset = (int32_t)message_length;
     message->term_offset = next_offset;
@@ -319,7 +317,6 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
     int64_t registration_id = 0;
 
     int64_t t0_ns = 2 * m_context->image_liveness_timeout_ns;
-    int64_t t0_ms = t0_ns / (1000 * 1000);
 
     aeron_udp_channel_t *channel_1;
     aeron_receive_destination_t *dest_1;
@@ -329,7 +326,7 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
     aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1, false);
     aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2, false);
 
-    aeron_clock_update_cached_time(m_context->cached_clock, t0_ms, t0_ns);
+    aeron_clock_update_cached_nano_time(m_context->receiver_cached_clock, t0_ns);
 
     ASSERT_LE(0, aeron_receive_destination_create(
         &dest_1, channel_1, m_context, &m_counters_manager, registration_id, endpoint->channel_status.counter_id));
@@ -398,7 +395,7 @@ TEST_F(PublicationImageTest, shouldTrackUnderRunningTransportsWithLastSmAndRecei
     aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1, false);
     aeron_udp_channel_parse(strlen(uri_2), uri_2, &m_resolver, &channel_2, false);
 
-    aeron_clock_update_cached_time(m_context->cached_clock, t0_ns / (1000 * 1000), t0_ns);
+    aeron_clock_update_cached_nano_time(m_context->receiver_cached_clock, t0_ns);
 
     ASSERT_LE(0, aeron_receive_destination_create(
         &dest_1, channel_1, m_context, &m_counters_manager, registration_id, endpoint->channel_status.counter_id));
@@ -421,7 +418,7 @@ TEST_F(PublicationImageTest, shouldTrackUnderRunningTransportsWithLastSmAndRecei
     aeron_publication_image_send_pending_status_message(image, t0_ns);
     ASSERT_EQ(1, test_bindings_state->sm_count);
 
-    aeron_clock_update_cached_time(m_context->cached_clock, t1_ns / (1000 * 1000), t1_ns);
+    aeron_clock_update_cached_nano_time(m_context->receiver_cached_clock, t1_ns);
 
     message->stream_id = stream_id;
     message->session_id = session_id;

@@ -73,9 +73,12 @@ public class SelectorAndTransportTest
     private SendChannelEndpoint sendChannelEndpoint;
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
+    private final CachedNanoClock nanoClock = new CachedNanoClock();
     private final MediaDriver.Context context = new MediaDriver.Context()
         .systemCounters(mockSystemCounters)
-        .cachedNanoClock(new CachedNanoClock())
+        .cachedNanoClock(nanoClock)
+        .senderCachedNanoClock(nanoClock)
+        .receiverCachedNanoClock(nanoClock)
         .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals());
 
     @BeforeEach

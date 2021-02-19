@@ -206,7 +206,7 @@ public final class PublicationImage
 
         this.nanoClock = ctx.nanoClock();
         this.epochClock = ctx.epochClock();
-        this.cachedNanoClock = ctx.cachedNanoClock();
+        this.cachedNanoClock = ctx.receiverCachedNanoClock();
 
         final long nowNs = cachedNanoClock.nanoTime();
         this.timeOfLastStateChangeNs = nowNs;

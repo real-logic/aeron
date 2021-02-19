@@ -118,6 +118,8 @@ public class SenderTest
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .cachedEpochClock(new CachedEpochClock())
             .cachedNanoClock(nanoClock)
+            .senderCachedNanoClock(nanoClock)
+            .receiverCachedNanoClock(nanoClock)
             .controlTransportPoller(mockTransportPoller)
             .systemCounters(mockSystemCounters)
             .senderCommandQueue(senderCommandQueue)

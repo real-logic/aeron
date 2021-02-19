@@ -43,6 +43,7 @@ public final class Receiver implements Agent
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final AtomicCounter resolutionChanges;
+    private final NanoClock nanoClock;
     private final CachedNanoClock cachedNanoClock;
     private PublicationImage[] publicationImages = EMPTY_IMAGES;
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
@@ -56,10 +57,20 @@ public final class Receiver implements Agent
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
         resolutionChanges = ctx.systemCounters().get(RESOLUTION_CHANGES);
-        cachedNanoClock = ctx.cachedNanoClock();
+        nanoClock = ctx.nanoClock();
+        cachedNanoClock = ctx.receiverCachedNanoClock();
         conductorProxy = ctx.driverConductorProxy();
         reResolutionCheckIntervalNs = ctx.reResolutionCheckIntervalNs();
-        reResolutionDeadlineNs = cachedNanoClock.nanoTime() + reResolutionCheckIntervalNs;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void onStart()
+    {
+        final long nowNs = nanoClock.nanoTime();
+        this.cachedNanoClock.update(nowNs);
+        reResolutionDeadlineNs = nowNs + reResolutionCheckIntervalNs;
     }
 
     /**
@@ -83,10 +94,13 @@ public final class Receiver implements Agent
      */
     public int doWork()
     {
+        final long nowNs = nanoClock.nanoTime();
+        cachedNanoClock.update(nowNs);
+
         int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
+
         final int bytesReceived = dataTransportPoller.pollTransports();
         totalBytesReceived.getAndAddOrdered(bytesReceived);
-        final long nowNs = cachedNanoClock.nanoTime();
 
         final PublicationImage[] publicationImages = this.publicationImages;
         for (int lastIndex = publicationImages.length - 1, i = lastIndex; i >= 0; i--)

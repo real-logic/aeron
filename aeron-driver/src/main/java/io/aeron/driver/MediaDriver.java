@@ -471,6 +471,8 @@ public final class MediaDriver implements AutoCloseable
         private NanoClock nanoClock;
         private CachedEpochClock cachedEpochClock;
         private CachedNanoClock cachedNanoClock;
+        private CachedNanoClock senderCachedNanoClock;
+        private CachedNanoClock receiverCachedNanoClock;
         private ThreadingMode threadingMode;
         private ThreadFactory conductorThreadFactory;
         private ThreadFactory senderThreadFactory;
@@ -1875,7 +1877,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration. This is updated
-         * once per duty cycle of the {@link DriverConductor}.
+         * once per work cycle of the {@link DriverConductor}.
          *
          * @return the {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration.
          */
@@ -1885,7 +1887,8 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration.
+         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration for the
+         * {@link DriverConductor}.
          *
          * @param clock to be used.
          * @return this for a fluent API.
@@ -1893,6 +1896,54 @@ public final class MediaDriver implements AutoCloseable
         public Context cachedNanoClock(final CachedNanoClock clock)
         {
             cachedNanoClock = clock;
+            return this;
+        }
+
+        /**
+         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration. This is updated
+         * once per work cycle of the {@link Sender}.
+         *
+         * @return the {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration.
+         */
+        public CachedNanoClock senderCachedNanoClock()
+        {
+            return senderCachedNanoClock;
+        }
+
+        /**
+         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration for the
+         * {@link Sender}.
+         *
+         * @param clock to be used.
+         * @return this for a fluent API.
+         */
+        public Context senderCachedNanoClock(final CachedNanoClock clock)
+        {
+            senderCachedNanoClock = clock;
+            return this;
+        }
+
+        /**
+         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration. This is updated
+         * once per work cycle of the {@link Receiver}.
+         *
+         * @return the {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration.
+         */
+        public CachedNanoClock receiverCachedNanoClock()
+        {
+            return receiverCachedNanoClock;
+        }
+
+        /**
+         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration for the
+         * {@link Receiver}.
+         *
+         * @param clock to be used.
+         * @return this for a fluent API.
+         */
+        public Context receiverCachedNanoClock(final CachedNanoClock clock)
+        {
+            receiverCachedNanoClock = clock;
             return this;
         }
 
@@ -3146,6 +3197,16 @@ public final class MediaDriver implements AutoCloseable
             if (null == cachedNanoClock)
             {
                 cachedNanoClock = new CachedNanoClock();
+            }
+
+            if (null == senderCachedNanoClock)
+            {
+                senderCachedNanoClock = new CachedNanoClock();
+            }
+
+            if (null == receiverCachedNanoClock)
+            {
+                receiverCachedNanoClock = new CachedNanoClock();
             }
 
             if (null == unicastFlowControlSupplier)

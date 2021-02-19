@@ -115,7 +115,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         nakFlyweight = threadLocals.nakFlyweight();
         rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
-        cachedNanoClock = context.cachedNanoClock();
+        cachedNanoClock = context.receiverCachedNanoClock();
         timeOfLastActivityNs = cachedNanoClock.nanoTime();
         receiverId = threadLocals.nextReceiverId();
 

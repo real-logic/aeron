@@ -186,7 +186,7 @@ public final class NetworkPublication
         this.tag = params.entityTag;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
-        this.cachedNanoClock = ctx.cachedNanoClock();
+        this.cachedNanoClock = ctx.senderCachedNanoClock();
         this.senderPosition = senderPosition;
         this.senderLimit = senderLimit;
         this.flowControl = flowControl;

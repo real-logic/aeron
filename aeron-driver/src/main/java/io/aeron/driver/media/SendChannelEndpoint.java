@@ -83,11 +83,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
         MultiSndDestination multiSndDestination = null;
         if (udpChannel.isManualControlMode())
         {
-            multiSndDestination = new ManualSndMultiDestination(context.cachedNanoClock());
+            multiSndDestination = new ManualSndMultiDestination(context.senderCachedNanoClock());
         }
         else if (udpChannel.isDynamicControlMode() || udpChannel.hasExplicitControl())
         {
-            multiSndDestination = new DynamicSndMultiDestination(context.cachedNanoClock());
+            multiSndDestination = new DynamicSndMultiDestination(context.senderCachedNanoClock());
         }
 
         this.multiSndDestination = multiSndDestination;

@@ -146,16 +146,23 @@ public final class DriverConductor implements Agent
             .appendToLabel(": driverName=").appendToLabel(ctx.resolverName())
             .appendToLabel(" hostname=").appendToLabel(DriverNameResolver.getCanonicalName("<unresolved>"));
 
+        lastConsumerCommandPosition = toDriverCommands.consumerPosition();
+        maxCycleTime = ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME);
+        cycleTimeThresholdExceededCount = ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void onStart()
+    {
         final long nowNs = nanoClock.nanoTime();
+
         cachedNanoClock.update(nowNs);
         cachedEpochClock.update(epochClock.time());
         timerCheckDeadlineNs = nowNs + timerIntervalNs;
         clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_INTERNAL_NS;
         timeOfLastToDriverPositionChangeNs = nowNs;
-        lastConsumerCommandPosition = toDriverCommands.consumerPosition();
-
-        maxCycleTime = ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME);
-        cycleTimeThresholdExceededCount = ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
     }
 
     /**
@@ -248,7 +255,7 @@ public final class DriverConductor implements Agent
                     senderMtuLength,
                     controlAddress,
                     sourceAddress,
-                    cachedNanoClock,
+                    ctx.receiverCachedNanoClock(),
                     ctx,
                     countersManager);
 
@@ -1143,7 +1150,7 @@ public final class DriverConductor implements Agent
             }
 
             final RetransmitHandler retransmitHandler = new RetransmitHandler(
-                cachedNanoClock,
+                ctx.senderCachedNanoClock(),
                 ctx.systemCounters().get(INVALID_PACKETS),
                 ctx.retransmitUnicastDelayGenerator(),
                 ctx.retransmitUnicastLingerGenerator());

@@ -156,6 +156,8 @@ public class DriverConductorTest
             .countersManager(spyCountersManager)
             .epochClock(epochClock)
             .nanoClock(nanoClock)
+            .senderCachedNanoClock(nanoClock)
+            .receiverCachedNanoClock(nanoClock)
             .cachedEpochClock(new CachedEpochClock())
             .cachedNanoClock(new CachedNanoClock())
             .sendChannelEndpointSupplier(Configuration.sendChannelEndpointSupplier())

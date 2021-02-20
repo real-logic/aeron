@@ -16,6 +16,10 @@
 
 #include "LogBuffers.h"
 
+#if defined(__linux__) || defined(_WIN32)
+#define AERON_NATIVE_PRETOUCH
+#endif
+
 namespace aeron
 {
 
@@ -47,7 +51,7 @@ LogBuffers::LogBuffers(const char *filename, bool preTouch)
         m_buffers[i].wrap(basePtr + (i * termLength), static_cast<std::size_t>(termLength));
     }
 
-#ifndef __linux__
+#ifndef AERON_NATIVE_PRETOUCH
     if (preTouch)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)

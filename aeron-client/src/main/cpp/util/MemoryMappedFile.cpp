@@ -257,6 +257,18 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_
         cleanUp();
         throw IOException(std::string("failed to Map Memory: ") + toString(GetLastError()), SOURCEINFO);
     }
+
+    if (preTouch)
+    {
+        WIN32_MEMORY_RANGE_ENTRY entry;
+        entry.NumberOfBytes = m_memorySize;
+        entry.VirtualAddress = m_memory ;
+        if (!PrefetchVirtualMemory(GetCurrentProcess(), 1, &entry, 0))
+        {
+            cleanUp();
+            throw IOException(std::string("failed to prefetch Memory: ") + toString(GetLastError()), SOURCEINFO);
+        }
+    }
 }
 
 void MemoryMappedFile::cleanUp()

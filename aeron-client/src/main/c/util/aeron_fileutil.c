@@ -19,6 +19,10 @@
 #define _GNU_SOURCE
 #endif
 
+#if defined(__linux__) || defined(AERON_COMPILER_MSVC)
+#define AERON_NATIVE_PRETOUCH
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -59,7 +63,7 @@
 #define S_IROTH 0
 #define S_IWOTH 0
 
-static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool /* pre_touch */)
+static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool pre_touch)
 {
     HANDLE hmap = CreateFileMapping((HANDLE)_get_osfhandle(fd), 0, PAGE_READWRITE, 0, 0, 0);
 
@@ -83,6 +87,19 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool /
     }
 
     close(fd);
+
+    if (pre_touch)
+    {
+        WIN32_MEMORY_RANGE_ENTRY entry;
+        entry.NumberOfBytes = mapping->length;
+        entry.VirtualAddress = mapping->addr;
+        if (!PrefetchVirtualMemory(GetCurrentProcess(), 1, &entry, 0))
+        {
+            fprintf(stderr, "Unable to prefetch memory");
+            aeron_unmap(mapping);
+            mapping->addr = MAP_FAILED;
+        }
+    }
 
     return MAP_FAILED == mapping->addr ? -1 : 0;
 }
@@ -286,7 +303,7 @@ int aeron_create_file(const char *path)
 
 #define AERON_BLOCK_SIZE (4 * 1024)
 
-#ifndef __linux__
+#ifndef AERON_NATIVE_PRETOUCH
 static void aeron_touch_pages(volatile uint8_t *base, size_t length, size_t page_size)
 {
     for (size_t i = 0; i < length; i += page_size)
@@ -307,7 +324,7 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
         {
             if (aeron_mmap(mapped_file, fd, 0, fill_with_zeroes) == 0)
             {
-#ifndef __linux__
+#ifndef AERON_NATIVE_PRETOUCH
                 if (fill_with_zeroes)
                 {
                     aeron_touch_pages(mapped_file->addr, mapped_file->length, AERON_BLOCK_SIZE);
@@ -448,7 +465,7 @@ int aeron_raw_log_map(
                 return -1;
             }
 
-#ifndef __linux__
+#ifndef AERON_NATIVE_PRETOUCH
             if (!use_sparse_files)
             {
                 aeron_touch_pages(mapped_raw_log->mapped_file.addr, (size_t)log_length, (size_t)page_size);
@@ -525,7 +542,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
             mapped_raw_log->term_buffers[i].length = term_length;
         }
 
-#ifndef __linux__
+#ifndef AERON_NATIVE_PRETOUCH
         if (pre_touch)
         {
             for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)

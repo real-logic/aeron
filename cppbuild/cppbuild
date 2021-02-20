@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SOURCE_DIR="$(pwd)"
-export BUILD_DIR="$(pwd)/cppbuild/Release"
+export BUILD_DIR="${SOURCE_DIR}/cppbuild/Release"
 export BUILD_CONFIG=Release
 EXTRA_CMAKE_ARGS=""
 COVERAGE_BUILD=0
@@ -31,7 +31,7 @@ do
       shift
       ;;
     -a|--build-archive-api)
-      echo "Enabling building of Aeron Archive API is now the default"
+      echo "Enabling building of Aeron Archive API is the default"
       shift
       ;;
     --slow-system-tests)
@@ -40,12 +40,12 @@ do
       ;;
     -d|--debug-build)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
-      export BUILD_DIR="$(pwd)/cppbuild/Debug"
+      export BUILD_DIR="${SOURCE_DIR}/cppbuild/Debug"
       export BUILD_CONFIG=Debug
       shift
       ;;
     -b|--build-aeron-driver)
-      echo "Enabling building of Aeron driver is now the default"
+      echo "Enabling building of Aeron driver is the default"
       shift
       ;;
     --no-parallel)
@@ -95,7 +95,7 @@ fi
 mkdir -p "${BUILD_DIR}"
 
 if [[ "$COVERAGE_BUILD" -eq 1 ]] ; then
-  cd "${BUILD_DIR}"
+  cd "${BUILD_DIR}" || exit
   cmake -G "Unix Makefiles" "${EXTRA_CMAKE_ARGS}" "${SOURCE_DIR}" && make clean && make -j "$ncpus" all && ctest -C $BUILD_CONFIG -j "$ncpus"
   rm -rf coverage
   mkdir -p coverage

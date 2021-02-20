@@ -21,12 +21,12 @@ do
   option="$1"
   case ${option} in
     --c-warnings-as-errors)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DC_WARNINGS_AS_ERRORS=ON"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DC_WARNINGS_AS_ERRORS=ON"
       echo "Enabling warnings as errors for c"
       shift
       ;;
     --cxx-warnings-as-errors)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCXX_WARNINGS_AS_ERRORS=ON"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCXX_WARNINGS_AS_ERRORS=ON"
       echo "Enabling warnings as errors for c++"
       shift
       ;;
@@ -35,11 +35,11 @@ do
       shift
       ;;
     --slow-system-tests)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_SLOW_SYSTEM_TESTS=ON -DAERON_SYSTEM_TESTS=OFF"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SLOW_SYSTEM_TESTS=ON -DAERON_SYSTEM_TESTS=OFF"
       shift
       ;;
     -d|--debug-build)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCMAKE_BUILD_TYPE=Debug"
       export BUILD_DIR="${SOURCE_DIR}/cppbuild/Debug"
       export BUILD_CONFIG=Debug
       shift
@@ -53,18 +53,18 @@ do
       shift
       ;;
     --no-system-tests)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_SYSTEM_TESTS=OFF"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SYSTEM_TESTS=OFF"
       echo "Disabling system tests"
       shift
       ;;
     --sanitise-build)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DSANITISE_BUILD=ON"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DSANITISE_BUILD=ON"
       echo "Enabling sanitise build"
       shift
       ;;
     --coverage-build)
       if (hash lcov 2>/dev/null && hash genhtml 2>/dev/null); then
-        EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCOVERAGE_BUILD=ON"
+        EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCOVERAGE_BUILD=ON"
         echo "Enabling coverage build"
         COVERAGE_BUILD=1
       else
@@ -87,16 +87,16 @@ done
 
 echo "Will make with \"-j $ncpus\"."
 
-if [[ -d "$BUILD_DIR" ]] ; then
+if [[ -d "${BUILD_DIR}" ]] ; then
   echo "Build directory ($BUILD_DIR) exists, removing."
   rm -rf "${BUILD_DIR}"
 fi
 
 mkdir -p "${BUILD_DIR}"
 
-if [[ "$COVERAGE_BUILD" -eq 1 ]] ; then
+if [[ "${COVERAGE_BUILD}" -eq 1 ]] ; then
   cd "${BUILD_DIR}" || exit
-  cmake -G "Unix Makefiles" "${EXTRA_CMAKE_ARGS}" "${SOURCE_DIR}" && make clean && make -j "$ncpus" all && ctest -C $BUILD_CONFIG -j "$ncpus"
+  cmake -G "Unix Makefiles" "${EXTRA_CMAKE_ARGS}" "${SOURCE_DIR}" && make clean && make -j "$ncpus" all && ctest -C ${BUILD_CONFIG} -j "$ncpus"
   rm -rf coverage
   mkdir -p coverage
   lcov --directory . --base-directory . --capture -o coverage/cov.info

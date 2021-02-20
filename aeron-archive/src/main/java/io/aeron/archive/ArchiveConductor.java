@@ -1921,7 +1921,7 @@ abstract class ArchiveConductor
             if (ReplaySession.notHeaderAligned(
                 channel, dataBuffer, segmentOffset, termOffset, termId, recordingSummary.streamId))
             {
-                final String msg = position + " position not aligned to data header";
+                final String msg = position + " position not aligned to a data header";
                 controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
                 return false;
             }

@@ -294,7 +294,7 @@ class ReplaySession implements Session, AutoCloseable
                 {
                     if (notHeaderAligned(fileChannel, replayBuffer, segmentOffset, termOffset, termId, streamId))
                     {
-                        onError(replayPosition + " position not aligned to data header");
+                        onError(replayPosition + " position not aligned to a data header");
                         return 0;
                     }
                 }

@@ -103,7 +103,7 @@ jobs:
 
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
       - name: Build
-        run: cppbuild/cppbuild --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

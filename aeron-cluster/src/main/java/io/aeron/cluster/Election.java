@@ -381,8 +381,10 @@ class Election
 
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
-        if (leadershipTermId == this.leadershipTermId && leaderMemberId == leaderMember.id() &&
-            FOLLOWER_CATCHUP == state && NULL_POSITION != catchupPosition)
+        if (leadershipTermId == this.leadershipTermId &&
+            NULL_POSITION != catchupPosition &&
+            FOLLOWER_CATCHUP == state &&
+            leaderMemberId == leaderMember.id())
         {
             catchupPosition = Math.max(catchupPosition, logPosition);
         }

@@ -22,6 +22,13 @@ if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set(WSAPOLL_PROTOTYPE_EXISTS True)
 endif ()
 
+if (MSVC)
+    set(AERON_STATIC_LIB_LINK_OPTS "")
+else()
+    # Because dlsym() is used to load strategies.
+    set(AERON_STATIC_LIB_LINK_OPTS "-rdynamic")
+endif()
+
 if (WSAPOLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_WSAPOLL)
 endif ()
@@ -189,7 +196,7 @@ target_link_libraries(
     ${AERON_LIB_M_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS}
-    -rdynamic # Because dlsym() is used to load strategies.
+    ${AERON_STATIC_LIB_LINK_OPTS}
     )
 
 if (AERON_INSTALL_TARGETS)

@@ -293,12 +293,13 @@ project(':aeron-client') {
                 prefer(agronaVersion)
             }
         }
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        testImplementation project(':aeron-test-support')
         testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
             exclude group: 'org.junit.jupiter'
             exclude group: 'net.bytebuddy'
         }
+        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     jar {
@@ -358,12 +359,12 @@ project(':aeron-driver') {
     dependencies {
         api project(':aeron-client')
         testImplementation project(':aeron-test-support')
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
             exclude group: 'org.junit.jupiter'
             exclude group: 'net.bytebuddy'
         }
+        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     jar {
@@ -434,12 +435,12 @@ project(':aeron-archive') {
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
         testImplementation project(':aeron-test-support')
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
             exclude group: 'org.junit.jupiter'
             exclude group: 'net.bytebuddy'
         }
+        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     def generatedDir = file("${buildDir}/generated-src")
@@ -558,12 +559,12 @@ project(':aeron-cluster') {
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
         testImplementation project(':aeron-test-support')
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
             exclude group: 'org.junit.jupiter'
             exclude group: 'net.bytebuddy'
         }
+        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     def generatedDir = file("${buildDir}/generated-src")
@@ -670,8 +671,8 @@ project(':aeron-agent') {
     dependencies {
         implementation aeronClusterProject
         implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testImplementation project(':aeron-test-support')
+        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
     }
 
     shadowJar {
@@ -748,6 +749,7 @@ project(':aeron-samples') {
     dependencies {
         api project(':aeron-cluster')
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+        testImplementation project(':aeron-test-support')
     }
 
     java {
@@ -819,8 +821,8 @@ project(':aeron-system-tests') {
     }
 
     test {
-        systemProperties('java.net.preferIPv4Stack': 'true')
-        systemProperties('aeron.test.system.aeronmd.path': System.getProperty('aeron.test.system.aeronmd.path'))
+        systemProperty('java.net.preferIPv4Stack', 'true')
+        systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
     }
 
     javadoc.enabled = false

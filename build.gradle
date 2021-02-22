@@ -210,8 +210,12 @@ subprojects {
         }
 
         testLogging {
-            exceptionFormat = 'full'
-            showStandardStreams = true
+            for (def level : LogLevel.values())
+            {
+                def testLogging = get(level)
+                testLogging.exceptionFormat = 'full'
+                testLogging.events = ["FAILED", "STANDARD_OUT", "STANDARD_ERROR"]
+            }
         }
 
         systemProperties(

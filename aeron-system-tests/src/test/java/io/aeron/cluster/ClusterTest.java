@@ -1004,7 +1004,7 @@ public class ClusterTest
             cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             cluster.takeSnapshot(leader);
             final int memberCount = 3;
@@ -1019,7 +1019,7 @@ public class ClusterTest
             cluster.sendMessages(1);
             messageCount++;
             cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             cluster.terminationsExpected(true);
 
@@ -1075,12 +1075,12 @@ public class ClusterTest
             final int messageCount = 10;
             cluster.connectClient();
             cluster.sendMessages(messageCount);
-            cluster.awaitServiceMessageCount(leader, messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
 
             cluster.stopNode(followerOne);
             cluster.stopNode(followerTwo);
 
-            while (leader.role() != FOLLOWER)
+            while (leader.role() == LEADER)
             {
                 cluster.sendMessages(1);
                 Tests.sleep(500);

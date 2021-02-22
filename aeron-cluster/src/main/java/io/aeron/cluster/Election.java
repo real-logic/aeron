@@ -364,7 +364,7 @@ class Election
 
     void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
-        if (leadershipTermId == this.leadershipTermId)
+        if (leadershipTermId <= this.leadershipTermId)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower)
@@ -990,6 +990,6 @@ class Election
             " logPosition=" + logPosition +
             " logLeadershipTermId=" + logLeadershipTermId +
             " appendPosition=" + appendPosition);
-         */
+        */
     }
 }

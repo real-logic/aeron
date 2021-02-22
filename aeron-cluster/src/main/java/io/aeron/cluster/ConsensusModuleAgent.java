@@ -601,7 +601,7 @@ final class ConsensusModuleAgent implements Agent
 
     void onCatchupPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
-        if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
+        if (leadershipTermId <= this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && follower.catchupReplaySessionId() == NULL_VALUE)
@@ -624,7 +624,7 @@ final class ConsensusModuleAgent implements Agent
 
     void onStopCatchup(final long leadershipTermId, final int followerMemberId)
     {
-        if (leadershipTermId == this.leadershipTermId && followerMemberId == memberId)
+        if (leadershipTermId == this.replayLeadershipTermId && followerMemberId == memberId)
         {
             if (null != catchupLogDestination)
             {

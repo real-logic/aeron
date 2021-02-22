@@ -17,7 +17,6 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -153,7 +152,6 @@ public class MultiDestinationSubscriptionTest
             RegistrationException.class, () -> subscription.addDestination("aeron-spy:" + SUB_MDC_DESTINATION_URI));
 
         assertThat(registrationException.getMessage(), containsString("spies are invalid"));
-        verify(mockErrorHandler).onError(any(InvalidChannelException.class));
     }
 
     @Test

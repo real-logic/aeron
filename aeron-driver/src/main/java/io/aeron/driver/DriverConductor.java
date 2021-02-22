@@ -1711,7 +1711,8 @@ public final class DriverConductor implements Agent
     {
         if (activeSessionSet.contains(new SessionKey(sessionId, streamId, channel)))
         {
-            throw new IllegalStateException("existing publication has clashing session id: " + sessionId);
+            throw new IllegalStateException("existing publication has clashing sessionId=" + sessionId +
+                " for streamId=" + streamId + " channel=" + channel);
         }
     }
 

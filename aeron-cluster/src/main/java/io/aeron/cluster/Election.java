@@ -988,6 +988,7 @@ class Election
         System.out.println("Election: memberId=" + memberId + " " + oldState + " -> " + newState +
             " leadershipTermId=" + leadershipTermId +
             " logPosition=" + logPosition +
+            " logLeadershipTermId=" + logLeadershipTermId +
             " appendPosition=" + appendPosition);
          */
     }

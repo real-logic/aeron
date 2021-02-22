@@ -219,6 +219,7 @@ subprojects {
         }
 
         systemProperties(
+            'java.util.logging.config.class': 'io.aeron.test.DisableJavaUtilLogging',
             'aeron.shared.idle.strategy': 'yield',
             'aeron.conductor.idle.strategy': 'yield',
             'aeron.sender.idle.strategy': 'yield',

@@ -51,6 +51,7 @@ import java.util.stream.Stream;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
+import static io.aeron.test.cluster.ClusterTests.errorHandler;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -166,8 +167,8 @@ public class TestCluster implements AutoCloseable
 
     private static void await(final int delayMs)
     {
-        ClusterTests.failOnClusterError();
         Tests.sleep(delayMs);
+        ClusterTests.failOnClusterError();
     }
 
     public static ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
@@ -314,16 +315,6 @@ public class TestCluster implements AutoCloseable
         nodes[index] = new TestNode(context, dataCollector);
 
         return nodes[index];
-    }
-
-    private static ErrorHandler errorHandler(final int index)
-    {
-        final ErrorHandler logStachTraceErrorHandler = ClusterTests.errorHandler(index);
-        return throwable ->
-        {
-            ClusterTests.addError(throwable);
-            logStachTraceErrorHandler.onError(throwable);
-        };
     }
 
     public TestNode startDynamicNode(final int index, final boolean cleanStart)

@@ -19,12 +19,10 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
-import io.aeron.test.TimeoutTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -43,16 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SlowTest
 public class ClusterTest
 {
-    @RegisterExtension
-    final TimeoutTestWatcher timeoutTestWatcher = new TimeoutTestWatcher();
-
     private TestCluster cluster = null;
-
-    @BeforeEach
-    void setUp()
-    {
-        timeoutTestWatcher.monitorTestThread(Thread.currentThread());
-    }
 
     @AfterEach
     void after()

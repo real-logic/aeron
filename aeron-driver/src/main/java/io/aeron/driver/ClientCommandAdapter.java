@@ -257,21 +257,21 @@ final class ClientCommandAdapter implements MessageHandler
                     final ControlProtocolException ex = new ControlProtocolException(
                         ErrorCode.UNKNOWN_COMMAND_TYPE_ID, "command typeId=" + msgTypeId);
 
-                    clientProxy.onError(correlationId, ex.errorCode(), ex.getMessage());
                     recordError(ex);
+                    clientProxy.onError(correlationId, ex.errorCode(), ex.getMessage());
                 }
             }
         }
         catch (final ControlProtocolException ex)
         {
-            clientProxy.onError(correlationId, ex.errorCode(), ex.getMessage());
             recordError(ex);
+            clientProxy.onError(correlationId, ex.errorCode(), ex.getMessage());
         }
         catch (final Exception ex)
         {
+            recordError(ex);
             final String errorMessage = ex.getClass().getName() + " : " + ex.getMessage();
             clientProxy.onError(correlationId, GENERIC_ERROR, errorMessage);
-            recordError(ex);
         }
     }
 

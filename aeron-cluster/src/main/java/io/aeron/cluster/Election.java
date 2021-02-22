@@ -721,13 +721,9 @@ class Election
             workCount += 1;
         }
 
-        if (ctx.commitPositionCounter().getWeak() >= catchupPosition)
+        if (ctx.commitPositionCounter().getWeak() >= catchupPosition &&
+            null == consensusModuleAgent.catchupLogDestination())
         {
-            timeOfLastUpdateNs = 0;
-            logPosition = catchupPosition;
-            appendPosition = catchupPosition;
-            consensusModuleAgent.leadershipTermId(leadershipTermId);
-            updateRecordingLog(nowNs);
             state(FOLLOWER_LOG_INIT, nowNs);
             workCount += 1;
         }

@@ -388,7 +388,7 @@ public class ClusterTest
 
             follower = cluster.startStaticNode(follower.index(), true);
 
-            awaitElectionClosed(follower);
+            awaitElectionClosed(cluster.node(follower.index()));
             assertEquals(FOLLOWER, follower.role());
 
             final int messageCount = 10;
@@ -977,7 +977,6 @@ public class ClusterTest
             final TestNode oldFollower2 = cluster.startStaticNode(followers.get(1).index(), true);
 
             cluster.awaitLeader();
-
             cluster.awaitServiceMessageCount(oldFollower1, messageCount);
             cluster.awaitServiceMessageCount(oldFollower2, messageCount);
 
@@ -1163,6 +1162,7 @@ public class ClusterTest
             cluster.awaitNewLeadershipEvent(1);
             assertTrue(cluster.client().sendKeepAlive());
             cluster.startStaticNode(leader0.index(), false);
+            awaitElectionClosed(cluster.node(leader0.index()));
 
             cluster.sendMessages(numMessages);
             cluster.awaitResponseMessageCount(numMessages * 2);
@@ -1173,6 +1173,7 @@ public class ClusterTest
             cluster.awaitNewLeadershipEvent(2);
             assertTrue(cluster.client().sendKeepAlive());
             cluster.startStaticNode(leader1.index(), false);
+            awaitElectionClosed(cluster.node(leader1.index()));
 
             cluster.sendMessages(numMessages);
             cluster.awaitResponseMessageCount(numMessages * 3);

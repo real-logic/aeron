@@ -183,42 +183,41 @@ public class TestNode implements AutoCloseable
 
     public Cluster.Role role()
     {
-        final ConsensusModule.Context context = clusteredArchive.consensusModule().context();
-        if (context.aeron().isClosed())
+        final Counter counter = clusteredArchive.consensusModule().context().clusterNodeRoleCounter();
+        if (counter.isClosed())
         {
             return Cluster.Role.FOLLOWER;
         }
 
-        return Cluster.Role.get(context.clusterNodeRoleCounter());
+        return Cluster.Role.get(counter);
     }
 
     ElectionState electionState()
     {
-        final ConsensusModule.Context context = clusteredArchive.consensusModule().context();
-        if (context.aeron().isClosed())
+        final Counter counter = clusteredArchive.consensusModule().context().electionStateCounter();
+        if (counter.isClosed())
         {
             return ElectionState.CLOSED;
         }
 
-        return ElectionState.get(context.electionStateCounter());
+        return ElectionState.get(counter);
     }
 
     ConsensusModule.State moduleState()
     {
-        final ConsensusModule.Context context = clusteredArchive.consensusModule().context();
-        if (context.aeron().isClosed())
+        final Counter counter = clusteredArchive.consensusModule().context().moduleStateCounter();
+        if (counter.isClosed())
         {
             return ConsensusModule.State.CLOSED;
         }
 
-        return ConsensusModule.State.get(context.moduleStateCounter());
+        return ConsensusModule.State.get(counter);
     }
 
     public long commitPosition()
     {
-        final ConsensusModule.Context context = clusteredArchive.consensusModule().context();
-        final Counter counter = context.commitPositionCounter();
-        if (counter.isClosed() || context.aeron().isClosed())
+        final Counter counter = clusteredArchive.consensusModule().context().commitPositionCounter();
+        if (counter.isClosed())
         {
             return NULL_POSITION;
         }

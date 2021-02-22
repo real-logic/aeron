@@ -566,7 +566,7 @@ final class ConsensusModuleAgent implements Agent
         {
             election.onAppendPosition(leadershipTermId, logPosition, followerMemberId);
         }
-        else if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
+        else if (leadershipTermId <= this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower)
@@ -1366,6 +1366,11 @@ final class ConsensusModuleAgent implements Agent
     void catchupLogDestination(final String catchupLogDestination)
     {
         this.catchupLogDestination = catchupLogDestination;
+    }
+
+    String catchupLogDestination()
+    {
+        return catchupLogDestination;
     }
 
     void joinLogAsFollower(final Image image, final long leadershipTermId, final boolean isLeaderStartup)

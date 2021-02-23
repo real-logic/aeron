@@ -1489,7 +1489,7 @@ final class ConsensusModuleAgent implements Agent
 
     boolean electionComplete()
     {
-        final long termBaseLogPosition = election.logPosition();
+        final long logPosition = election.logPosition();
         final long now = clusterClock.time();
         final long nowNs = clusterTimeUnit.toNanos(now);
 
@@ -1498,7 +1498,7 @@ final class ConsensusModuleAgent implements Agent
             if (!logPublisher.isConnected() || !logPublisher.appendNewLeadershipTermEvent(
                 leadershipTermId,
                 now,
-                termBaseLogPosition,
+                logPosition,
                 memberId,
                 logPublisher.sessionId(),
                 clusterTimeUnit,
@@ -1519,8 +1519,8 @@ final class ConsensusModuleAgent implements Agent
         }
 
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
-        notifiedCommitPosition = termBaseLogPosition;
-        commitPosition.setOrdered(termBaseLogPosition);
+        notifiedCommitPosition = logPosition;
+        commitPosition.setOrdered(logPosition);
         pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
         updateMemberDetails(election.leader());
         election = null;

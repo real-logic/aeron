@@ -250,10 +250,6 @@ class Election
                     logSessionId,
                     isLeaderStartup);
             }
-            else if (logLeadershipTermId > leadershipTermId)
-            {
-                throw new ClusterException("new leader detected", AeronException.Category.WARN);
-            }
         }
     }
 
@@ -757,6 +753,8 @@ class Election
             verifyLogImage(image);
             consensusModuleAgent.leadershipTermId(leadershipTermId);
             consensusModuleAgent.joinLogAsFollower(image, leadershipTermId, isLeaderStartup);
+            appendPosition = image.joinPosition();
+            logPosition = image.joinPosition();
             updateRecordingLog(nowNs);
             state(FOLLOWER_READY, nowNs);
             workCount += 1;
@@ -985,7 +983,8 @@ class Election
             " leadershipTermId=" + leadershipTermId +
             " logPosition=" + logPosition +
             " logLeadershipTermId=" + logLeadershipTermId +
-            " appendPosition=" + appendPosition);
+            " appendPosition=" + appendPosition +
+            " catchupPosition=" + catchupPosition);
         */
     }
 }

@@ -70,6 +70,8 @@ public class ClusterTests
             {
                 if (ex instanceof AeronException && ((AeronException)ex).category() == AeronException.Category.WARN)
                 {
+                    //System.err.println("\n *** Warning in member " + memberId + " \n");
+                    //ex.printStackTrace();
                     addWarning(ex);
                     return;
                 }
@@ -82,8 +84,9 @@ public class ClusterTests
 
                 addError(ex);
 
-                System.err.println("\n*** Error in member " + memberId + " followed by system thread dump ***\n\n");
+                System.err.println("\n*** Error in member " + memberId + " ***\n\n");
                 ex.printStackTrace();
+                printWarning();
 
                 System.err.println();
                 System.err.println(SystemUtil.threadDump());

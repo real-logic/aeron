@@ -1096,6 +1096,40 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
+    public void shouldRecoverWhenLeaderHasAppendedMoreThanFollower(final TestInfo testInfo)
+    {
+        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        try
+        {
+            final TestNode leader = cluster.awaitLeader();
+            final TestNode followerOne = cluster.followers().get(0);
+            final TestNode followerTwo = cluster.followers().get(1);
+
+            final int messageCount = 10;
+            cluster.connectClient();
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+
+            cluster.stopNode(followerOne);
+
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount * 2);
+
+            cluster.stopNode(followerTwo);
+            cluster.stopNode(leader);
+
+            cluster.startStaticNode(leader.index(), false);
+            cluster.startStaticNode(followerOne.index(), false);
+            cluster.awaitLeader();
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
+    @Test
+    @Timeout(40)
     void shouldRecoverWhenLastSnapshotIsMarkedInvalid(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);

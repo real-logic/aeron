@@ -250,6 +250,10 @@ class Election
                     logSessionId,
                     isLeaderStartup);
             }
+            else if (logLeadershipTermId > this.leadershipTermId && (INIT != state && CANVASS != state))
+            {
+                throw new ClusterException("new potential election", AeronException.Category.WARN);
+            }
         }
     }
 
@@ -717,9 +721,13 @@ class Election
             workCount += 1;
         }
 
-        if (ctx.commitPositionCounter().getWeak() >= catchupPosition &&
-            null == consensusModuleAgent.catchupLogDestination())
+        final long position = ctx.commitPositionCounter().getWeak();
+        if (position >= catchupPosition &&
+            null == consensusModuleAgent.catchupLogDestination() &&
+            ConsensusModule.State.SNAPSHOT != consensusModuleAgent.state())
         {
+            appendPosition = position;
+            logPosition = position;
             state(FOLLOWER_LOG_INIT, nowNs);
             workCount += 1;
         }
@@ -751,7 +759,6 @@ class Election
         if (null != image)
         {
             verifyLogImage(image);
-            consensusModuleAgent.leadershipTermId(leadershipTermId);
             consensusModuleAgent.joinLogAsFollower(image, leadershipTermId, isLeaderStartup);
             appendPosition = image.joinPosition();
             logPosition = image.joinPosition();
@@ -772,6 +779,7 @@ class Election
         if (consensusPublisher.appendPosition(
             leaderMember.publication(), leadershipTermId, logPosition, thisMember.id()))
         {
+            consensusModuleAgent.leadershipTermId(leadershipTermId);
             if (consensusModuleAgent.electionComplete())
             {
                 state(CLOSED, nowNs);

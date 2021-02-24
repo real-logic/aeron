@@ -1914,6 +1914,7 @@ final class ConsensusModuleAgent implements Agent
             final RecordingSignalPoller poller = this.recordingSignalPoller;
             if (!poller.subscription().isConnected())
             {
+                ctx.countedErrorHandler().onError(new ClusterException("local archive is not connected", WARN));
                 unexpectedTermination();
             }
             else if (poller.poll() > 0 && poller.isPollComplete())
@@ -2924,17 +2925,7 @@ final class ConsensusModuleAgent implements Agent
     {
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
-
-        try
-        {
-            ctx.terminationHook().run();
-        }
-        catch (final Throwable ex)
-        {
-            ctx.countedErrorHandler().onError(ex);
-        }
-
-        throw new ClusterTerminationException();
+        terminateAgent(new ClusterTerminationException());
     }
 
     private void unexpectedTermination()
@@ -2943,17 +2934,21 @@ final class ConsensusModuleAgent implements Agent
         serviceProxy.terminationPosition(0, ctx.countedErrorHandler());
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
+        terminateAgent(new ClusterTerminationException());
+    }
 
+    private void terminateAgent(final AgentTerminationException ex)
+    {
         try
         {
             ctx.terminationHook().run();
         }
-        catch (final Throwable ex)
+        catch (final Throwable t)
         {
-            ctx.countedErrorHandler().onError(ex);
+            ctx.countedErrorHandler().onError(t);
         }
 
-        throw new ClusterTerminationException();
+        throw ex;
     }
 
     private void tryStopLogRecording()

@@ -451,7 +451,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             ctx.errorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " log=" + SemanticVersion.toString(appVersion)));
-            ctx.terminationHook().run();
+            terminateAgent();
         }
         else
         {
@@ -967,7 +967,11 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         terminationPosition = NULL_VALUE;
+        terminateAgent();
+    }
 
+    private void terminateAgent()
+    {
         try
         {
             ctx.terminationHook().run();

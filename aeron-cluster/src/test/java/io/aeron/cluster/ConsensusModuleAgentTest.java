@@ -29,6 +29,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
@@ -274,6 +275,7 @@ public class ConsensusModuleAgentTest
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
 
+        final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
         final MutableLong stateValue = new MutableLong();
         final Counter mockState = mock(Counter.class);
         final Runnable terminationHook = mock(Runnable.class);
@@ -289,17 +291,18 @@ public class ConsensusModuleAgentTest
         final OutOfMemoryError hookException = new OutOfMemoryError("Hook exception!");
         doThrow(hookException).when(terminationHook).run();
 
-        ctx.moduleStateCounter(mockState);
-        ctx.epochClock(clock).clusterClock(clock);
-        ctx.terminationHook(terminationHook);
+        ctx.countedErrorHandler(countedErrorHandler)
+            .moduleStateCounter(mockState)
+            .epochClock(clock)
+            .clusterClock(clock)
+            .terminationHook(terminationHook);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         agent.state(ConsensusModule.State.QUITTING);
 
-        final ClusterTerminationException exception = assertThrows(ClusterTerminationException.class,
+        assertThrows(ClusterTerminationException.class,
             () -> agent.onServiceAck(1024, 100, 0, 55, 0));
 
-        assertEquals(1, exception.getSuppressed().length);
-        assertSame(exception.getSuppressed()[0], hookException);
+        verify(countedErrorHandler).onError(hookException);
     }
 }

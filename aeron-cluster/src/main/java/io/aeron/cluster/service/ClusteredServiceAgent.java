@@ -967,7 +967,16 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         terminationPosition = NULL_VALUE;
-        ctx.terminationHook().run();
+
+        try
+        {
+            ctx.terminationHook().run();
+        }
+        catch (final Throwable ex)
+        {
+            ctx.countedErrorHandler().onError(ex);
+        }
+
         throw new ClusterTerminationException();
     }
 

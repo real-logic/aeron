@@ -222,19 +222,26 @@ class Election
                 .leadershipTermId(logLeadershipTermId)
                 .logPosition(logPosition);
 
-            if (LEADER_READY == state && logLeadershipTermId < leadershipTermId)
+            if (LEADER_READY == state)
             {
-                final RecordingLog.Entry termEntry = ctx.recordingLog().getTermEntry(logLeadershipTermId + 1);
-                consensusPublisher.newLeadershipTerm(
-                    follower.publication(),
-                    logLeadershipTermId,
-                    termEntry.termBaseLogPosition,
-                    leadershipTermId,
-                    appendPosition,
-                    termEntry.timestamp,
-                    thisMember.id(),
-                    logSessionId,
-                    isLeaderStartup);
+                if (logLeadershipTermId < leadershipTermId)
+                {
+                    final RecordingLog.Entry termEntry = ctx.recordingLog().getTermEntry(logLeadershipTermId + 1);
+                    consensusPublisher.newLeadershipTerm(
+                        follower.publication(),
+                        logLeadershipTermId,
+                        termEntry.termBaseLogPosition,
+                        leadershipTermId,
+                        appendPosition,
+                        termEntry.timestamp,
+                        thisMember.id(),
+                        logSessionId,
+                        isLeaderStartup);
+                }
+                else if (logLeadershipTermId > this.leadershipTermId)
+                {
+                    throw new ClusterException("new potential election", AeronException.Category.WARN);
+                }
             }
             else if ((LEADER_INIT == state || LEADER_REPLAY == state) && logLeadershipTermId < leadershipTermId)
             {
@@ -249,10 +256,6 @@ class Election
                     thisMember.id(),
                     logSessionId,
                     isLeaderStartup);
-            }
-            else if (logLeadershipTermId > this.leadershipTermId && (INIT != state && CANVASS != state))
-            {
-                throw new ClusterException("new potential election", AeronException.Category.WARN);
             }
         }
     }
@@ -388,7 +391,7 @@ class Election
         {
             catchupPosition = Math.max(catchupPosition, logPosition);
         }
-        else if (leadershipTermId > this.leadershipTermId && (INIT != state && CANVASS != state))
+        else if (leadershipTermId > this.leadershipTermId && LEADER_READY == state)
         {
             throw new ClusterException("new leader detected", AeronException.Category.WARN);
         }

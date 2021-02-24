@@ -1128,7 +1128,6 @@ final class ConsensusModuleAgent implements Agent
                 "incompatible timestamp units: " + clusterTimeUnit + " log=" + timeUnit,
                 AeronException.Category.FATAL));
             unexpectedTermination();
-            return;
         }
 
         if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
@@ -1138,7 +1137,6 @@ final class ConsensusModuleAgent implements Agent
                 " log=" + SemanticVersion.toString(appVersion),
                 AeronException.Category.FATAL));
             unexpectedTermination();
-            return;
         }
 
         leadershipTermId(leadershipTermId);

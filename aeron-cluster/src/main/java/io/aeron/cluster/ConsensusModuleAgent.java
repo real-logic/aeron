@@ -327,7 +327,7 @@ final class ConsensusModuleAgent implements Agent
 
     public String roleName()
     {
-        return "consensus-module";
+        return "consensus-module_" + ctx.clusterId() + "_" + memberId;
     }
 
     void onSessionConnect(

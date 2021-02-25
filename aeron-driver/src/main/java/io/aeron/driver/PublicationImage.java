@@ -587,22 +587,15 @@ public final class PublicationImage
     }
 
     /**
-     * To be called from the {@link Receiver} to see if a image should be retained.
+     * To be called from the {@link Receiver} to see if a image should be dispatched to.
      *
      * @param nowNs current time to check against for activity.
      * @return true if the image should be retained otherwise false.
      */
-    boolean hasActivityAndNotEndOfStream(final long nowNs)
+    boolean isConnected(final long nowNs)
     {
-        boolean isActive = true;
-
-        if (((timeOfLastPacketNs + imageLivenessTimeoutNs) - nowNs < 0) ||
-            (isEndOfStream && rebuildPosition.getVolatile() >= hwmPosition.get()))
-        {
-            isActive = false;
-        }
-
-        return isActive;
+        return ((timeOfLastPacketNs + imageLivenessTimeoutNs) - nowNs >= 0) &&
+            (!isEndOfStream || rebuildPosition.getVolatile() < hwmPosition.get());
     }
 
     /**

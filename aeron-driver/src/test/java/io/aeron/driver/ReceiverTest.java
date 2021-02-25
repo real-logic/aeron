@@ -533,7 +533,7 @@ public class ReceiverTest
         final PublicationImage mockImage = mock(PublicationImage.class);
         when(mockImage.sessionId()).thenReturn(SESSION_ID);
         when(mockImage.streamId()).thenReturn(STREAM_ID);
-        when(mockImage.hasActivityAndNotEndOfStream(anyLong())).thenReturn(false);
+        when(mockImage.isConnected(anyLong())).thenReturn(false);
 
         receiver.onNewPublicationImage(receiveChannelEndpoint, mockImage);
         receiver.doWork();
@@ -555,7 +555,7 @@ public class ReceiverTest
         final PublicationImage mockImage = mock(PublicationImage.class);
         when(mockImage.sessionId()).thenReturn(SESSION_ID);
         when(mockImage.streamId()).thenReturn(STREAM_ID);
-        when(mockImage.hasActivityAndNotEndOfStream(anyLong())).thenReturn(true);
+        when(mockImage.isConnected(anyLong())).thenReturn(true);
 
         receiver.onNewPublicationImage(receiveChannelEndpoint, mockImage);
         receiver.onRemoveSubscription(receiveChannelEndpoint, STREAM_ID);

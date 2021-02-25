@@ -69,7 +69,7 @@ public final class Receiver implements Agent
     public void onStart()
     {
         final long nowNs = nanoClock.nanoTime();
-        this.cachedNanoClock.update(nowNs);
+        cachedNanoClock.update(nowNs);
         reResolutionDeadlineNs = nowNs + reResolutionCheckIntervalNs;
     }
 
@@ -106,7 +106,7 @@ public final class Receiver implements Agent
         for (int lastIndex = publicationImages.length - 1, i = lastIndex; i >= 0; i--)
         {
             final PublicationImage image = publicationImages[i];
-            if (image.hasActivityAndNotEndOfStream(nowNs))
+            if (image.isConnected(nowNs))
             {
                 workCount += image.sendPendingStatusMessage(nowNs);
                 workCount += image.processPendingLoss();
@@ -265,8 +265,10 @@ public final class Receiver implements Agent
     {
         final int transportIndex = channelEndpoint.hasDestinationControl() ? channelEndpoint.destination(channel) : 0;
 
-        for (final PendingSetupMessageFromSource pending : pendingSetupMessages)
+        for (int i = 0, size = pendingSetupMessages.size(); i < size; i++)
         {
+            final PendingSetupMessageFromSource pending = pendingSetupMessages.get(i);
+
             if (pending.channelEndpoint() == channelEndpoint &&
                 pending.isPeriodic() &&
                 pending.transportIndex() == transportIndex)
@@ -281,7 +283,6 @@ public final class Receiver implements Agent
 
     private void checkPendingSetupMessages(final long nowNs)
     {
-        final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = this.pendingSetupMessages;
         for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final PendingSetupMessageFromSource pending = pendingSetupMessages.get(i);

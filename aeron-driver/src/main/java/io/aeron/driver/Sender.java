@@ -89,7 +89,7 @@ public final class Sender extends SenderRhsPadding implements Agent
     public void onStart()
     {
         final long nowNs = nanoClock.nanoTime();
-        this.cachedNanoClock.update(nowNs);
+        cachedNanoClock.update(nowNs);
         reResolutionDeadlineNs = nowNs + reResolutionCheckIntervalNs;
     }
 

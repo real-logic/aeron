@@ -66,7 +66,8 @@ bool MemoryMappedFile::fill(FileHandle fd, std::size_t size, std::uint8_t value)
     return true;
 }
 
-MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, std::size_t offset, std::size_t size)
+MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, std::size_t offset, std::size_t size,
+    bool preTouch)
 {
     FileHandle fd{};
     fd.handle = ::CreateFile(
@@ -98,14 +99,14 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, std::s
             std::string("failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
-    auto obj = MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, false));
+    auto obj = MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, false, preTouch));
     fd.handle = INVALID_HANDLE_VALUE;
 
     return obj;
 }
 
 MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(
-    const char *filename, std::size_t offset, std::size_t size, bool readOnly)
+    const char *filename, std::size_t offset, std::size_t size, bool readOnly, bool preTouch)
 {
     DWORD dwDesiredAccess = readOnly ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE);
     DWORD dwSharedMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
@@ -134,7 +135,7 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(
             }
         });
 
-    auto obj = MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, readOnly));
+    auto obj = MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, readOnly, preTouch));
     fd.handle = INVALID_HANDLE_VALUE;
 
     return obj;
@@ -166,7 +167,8 @@ bool MemoryMappedFile::fill(FileHandle fd, std::size_t size, std::uint8_t value)
     return true;
 }
 
-MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t offset, std::size_t size)
+MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t offset, std::size_t size,
+    bool preTouch)
 {
     FileHandle fd{};
     fd.handle = ::open(filename, O_RDWR | O_CREAT, 0666);
@@ -187,11 +189,11 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t 
         throw IOException(std::string("failed to write to file: ") + filename, SOURCEINFO);
     }
 
-    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, false));
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, false, preTouch));
 }
 
 MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(
-    const char *filename, off_t offset, std::size_t length, bool readOnly)
+    const char *filename, off_t offset, std::size_t length, bool readOnly, bool preTouch)
 {
     FileHandle fd{};
     fd.handle = ::open(filename, (readOnly ? O_RDONLY : O_RDWR), 0666);
@@ -207,13 +209,13 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(
             close(fd.handle);
         });
 
-    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, length, readOnly));
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, length, readOnly, preTouch));
 }
 #endif
 
-MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, bool readOnly)
+MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, bool readOnly, bool preTouch)
 {
-    return mapExisting(filename, 0, 0, readOnly);
+    return mapExisting(filename, 0, 0, readOnly, preTouch);
 }
 
 std::uint8_t *MemoryMappedFile::getMemoryPtr() const
@@ -229,7 +231,8 @@ std::size_t MemoryMappedFile::getMemorySize() const
 std::size_t MemoryMappedFile::m_page_size = getPageSize();
 
 #ifdef _WIN32
-MemoryMappedFile::MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_t length, bool readOnly)
+MemoryMappedFile::MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_t length, bool readOnly,
+    bool preTouch)
 {
     m_file = fd.handle;
 
@@ -247,12 +250,24 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_
     }
 
     m_memorySize = length;
-    m_memory = doMapping(m_memorySize, fd, offset, readOnly);
+    m_memory = doMapping(m_memorySize, fd, offset, readOnly, preTouch);
 
     if (!m_memory)
     {
         cleanUp();
         throw IOException(std::string("failed to Map Memory: ") + toString(GetLastError()), SOURCEINFO);
+    }
+
+    if (preTouch)
+    {
+        WIN32_MEMORY_RANGE_ENTRY entry;
+        entry.NumberOfBytes = m_memorySize;
+        entry.VirtualAddress = m_memory ;
+        if (!PrefetchVirtualMemory(GetCurrentProcess(), 1, &entry, 0))
+        {
+            cleanUp();
+            throw IOException(std::string("failed to prefetch Memory: ") + toString(GetLastError()), SOURCEINFO);
+        }
     }
 }
 
@@ -282,7 +297,8 @@ MemoryMappedFile::~MemoryMappedFile()
     cleanUp();
 }
 
-uint8_t *MemoryMappedFile::doMapping(std::size_t size, FileHandle fd, std::size_t offset, bool readOnly)
+uint8_t *MemoryMappedFile::doMapping(std::size_t size, FileHandle fd, std::size_t offset, bool readOnly,
+    bool /* preTouch */)
 {
     DWORD flProtect = readOnly ? PAGE_READONLY : PAGE_READWRITE;
     m_mapping = ::CreateFileMapping(fd.handle, nullptr, flProtect, 0, static_cast<DWORD>(size), nullptr);
@@ -321,7 +337,7 @@ std::int64_t MemoryMappedFile::getFileSize(const char *filename)
 }
 
 #else
-MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, std::size_t length, bool readOnly)
+MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, std::size_t length, bool readOnly, bool preTouch)
 {
     if (0 == length && 0 == offset)
     {
@@ -331,7 +347,7 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, std::size_t leng
     }
 
     m_memorySize = length;
-    m_memory = doMapping(m_memorySize, fd, static_cast<std::size_t>(offset), readOnly);
+    m_memory = doMapping(m_memorySize, fd, static_cast<std::size_t>(offset), readOnly, preTouch);
 }
 
 MemoryMappedFile::~MemoryMappedFile()
@@ -342,13 +358,26 @@ MemoryMappedFile::~MemoryMappedFile()
     }
 }
 
-std::uint8_t *MemoryMappedFile::doMapping(std::size_t length, FileHandle fd, std::size_t offset, bool readOnly)
+std::uint8_t *MemoryMappedFile::doMapping(std::size_t length, FileHandle fd, std::size_t offset, bool readOnly,
+    bool preTouch)
 {
+    int flags = MAP_SHARED;
+
+#ifdef __linux__
+    if (preTouch)
+    {
+        flags = flags | MAP_POPULATE;
+    }
+#else
+    (void) preTouch;
+#endif
+
+
     void *memory = ::mmap(
         nullptr,
         length,
         readOnly ? PROT_READ : (PROT_READ | PROT_WRITE),
-        MAP_SHARED,
+        flags,
         fd.handle,
         static_cast<off_t>(offset));
 

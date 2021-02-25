@@ -36,18 +36,20 @@ public:
     typedef std::shared_ptr<MemoryMappedFile> ptr_t;
 
 #ifdef _WIN32
-    static ptr_t createNew(const char *filename, std::size_t offset, std::size_t length);
-    static ptr_t mapExisting(const char *filename, std::size_t offset, std::size_t length, bool readOnly = false);
+    static ptr_t createNew(const char *filename, std::size_t offset, std::size_t length, bool preTouch);
+    static ptr_t mapExisting(const char *filename, std::size_t offset, std::size_t length, bool readOnly = false,
+        bool preTouch = false);
 #else
-    static ptr_t createNew(const char *filename, off_t offset, std::size_t length);
-    static ptr_t mapExisting(const char *filename, off_t offset, std::size_t length, bool readOnly = false);
+    static ptr_t createNew(const char *filename, off_t offset, std::size_t length, bool preTouch);
+    static ptr_t mapExisting(const char *filename, off_t offset, std::size_t length, bool readOnly = false,
+        bool preTouch = false);
 #endif
 
-    static ptr_t mapExisting(const char *filename, bool readOnly = false);
+    static ptr_t mapExisting(const char *filename, bool readOnly = false, bool preTouch = false);
 
     inline static ptr_t mapExistingReadOnly(const char *filename)
     {
-        return mapExisting(filename, 0, 0, true);
+        return mapExisting(filename, 0, 0, true, false);
     }
 
     ~MemoryMappedFile();
@@ -72,12 +74,12 @@ private:
     };
 
 #ifdef _WIN32
-    MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_t length, bool readOnly);
+    MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_t length, bool readOnly, bool preTouch);
 #else
-    MemoryMappedFile(FileHandle fd, off_t offset, std::size_t length, bool readOnly);
+    MemoryMappedFile(FileHandle fd, off_t offset, std::size_t length, bool readOnly, bool preTouch);
 #endif
 
-    std::uint8_t *doMapping(std::size_t size, FileHandle fd, std::size_t offset, bool readOnly);
+    std::uint8_t *doMapping(std::size_t size, FileHandle fd, std::size_t offset, bool readOnly, bool preTouch);
 
     std::uint8_t *m_memory = nullptr;
     std::size_t m_memorySize = 0;

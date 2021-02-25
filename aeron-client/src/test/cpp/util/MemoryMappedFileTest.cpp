@@ -38,7 +38,7 @@ TEST(mmfileTest, createCheck)
 {
     MemoryMappedFile::ptr_t m;
 
-    const size_t size = 10000;
+    const std::size_t size = 10000;
     const std::string name(makeTempFileName());
 
     ASSERT_NO_THROW({
@@ -48,7 +48,7 @@ TEST(mmfileTest, createCheck)
     ASSERT_EQ(m->getMemorySize(), size);
     ASSERT_NE(m->getMemoryPtr(), nullptr);
 
-    for (size_t n = 0; n < size; n++)
+    for (std::size_t n = 0; n < size; n++)
     {
         ASSERT_EQ(m->getMemoryPtr()[n], 0);
     }
@@ -60,16 +60,16 @@ TEST(mmfileTest, writeReadCheck)
 {
     MemoryMappedFile::ptr_t m;
 
-    const size_t size = 10000;
+    const std::size_t size = 10000;
     std::string name = makeTempFileName();
 
     ASSERT_NO_THROW({
         m = MemoryMappedFile::createNew(name.c_str(), 0, size, true);
     });
 
-    for (size_t n = 0; n < size; n++)
+    for (std::size_t n = 0; n < size; n++)
     {
-        m->getMemoryPtr()[n] = static_cast<uint8_t>(n & 0xff);
+        m->getMemoryPtr()[n] = static_cast<std::uint8_t>(n & 0xff);
     }
 
     m.reset();
@@ -83,7 +83,7 @@ TEST(mmfileTest, writeReadCheck)
 
     for (size_t n = 0; n < size; n++)
     {
-        ASSERT_EQ(m->getMemoryPtr()[n], static_cast<uint8_t>(n & 0xff));
+        ASSERT_EQ(m->getMemoryPtr()[n], static_cast<std::uint8_t>(n & 0xff));
     }
 
     ::unlink(name.c_str());

@@ -37,12 +37,12 @@ public:
 
 #ifdef _WIN32
     static ptr_t createNew(const char *filename, std::size_t offset, std::size_t length, bool preTouch);
-    static ptr_t mapExisting(const char *filename, std::size_t offset, std::size_t length, bool readOnly = false,
-        bool preTouch = false);
+    static ptr_t mapExisting(
+        const char *filename, std::size_t offset, std::size_t length, bool readOnly = false, bool preTouch = false);
 #else
     static ptr_t createNew(const char *filename, off_t offset, std::size_t length, bool preTouch);
-    static ptr_t mapExisting(const char *filename, off_t offset, std::size_t length, bool readOnly = false,
-        bool preTouch = false);
+    static ptr_t mapExisting(
+        const char *filename, off_t offset, std::size_t length, bool readOnly = false, bool preTouch = false);
 #endif
 
     static ptr_t mapExisting(const char *filename, bool readOnly = false, bool preTouch = false);

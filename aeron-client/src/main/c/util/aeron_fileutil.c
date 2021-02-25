@@ -49,8 +49,6 @@
 #include <io.h>
 #include <direct.h>
 
-#include "aeron_alloc.h"
-
 #define PROT_READ  1
 #define PROT_WRITE 2
 #define MAP_FAILED ((void *)-1)
@@ -88,11 +86,12 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool p
 
     close(fd);
 
-    if (pre_touch)
+    if (pre_touch && MAP_FAILED != mapping->addr)
     {
         WIN32_MEMORY_RANGE_ENTRY entry;
         entry.NumberOfBytes = mapping->length;
         entry.VirtualAddress = mapping->addr;
+
         if (!PrefetchVirtualMemory(GetCurrentProcess(), 1, &entry, 0))
         {
             fprintf(stderr, "Unable to prefetch memory");
@@ -117,7 +116,6 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
 int aeron_ftruncate(int fd, off_t length)
 {
     HANDLE hfile = (HANDLE)_get_osfhandle(fd);
-
     LARGE_INTEGER file_size;
     file_size.QuadPart = length;
 
@@ -234,7 +232,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool p
         flags = flags | MAP_POPULATE;
     }
 #else
-    (void) pre_touch;
+    (void)pre_touch;
 #endif
 
     mapping->addr = mmap(NULL, mapping->length, PROT_READ | PROT_WRITE, flags, fd, offset);

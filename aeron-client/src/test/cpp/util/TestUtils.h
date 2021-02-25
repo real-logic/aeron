@@ -39,8 +39,8 @@ std::string makeTempFileName()
     return std::string(rawname);
 
 #else
-    char tmpdir[MAX_PATH + 1];
-    char tmpfile[MAX_PATH];
+    char tmpdir[MAX_PATH + 1] = {};
+    char tmpfile[MAX_PATH] = {};
 
     if (::GetTempPath(MAX_PATH, &tmpdir[0]) > 0)
     {

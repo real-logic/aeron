@@ -31,9 +31,9 @@ TEST(utilTests, scopeTest)
 
     if (1)
     {
-        OnScopeExit onExit ([&]()
+        OnScopeExit onExit([&]()
         {
-           flag = true;
+            flag = true;
         });
 
         ASSERT_EQ(flag, false);
@@ -53,9 +53,9 @@ TEST(utilTests, stringUtilTrimTest)
 TEST(utilTests, stringUtilParseTest)
 {
     ASSERT_NO_THROW({
-        ASSERT_EQ(parse<int> ("100"), 100);
-        ASSERT_EQ(parse<double> ("100.25"), 100.25);
-        ASSERT_EQ(parse<std::uint64_t> ("0x123456789abcdef0"), 0x123456789abcdef0UL);
+        ASSERT_EQ(parse<int>("100"), 100);
+        ASSERT_EQ(parse<double>("100.25"), 100.25);
+        ASSERT_EQ(parse<std::uint64_t>("0x123456789abcdef0"), 0x123456789abcdef0UL);
     });
 
     ASSERT_THROW(parse<int>(""), ParseException);
@@ -128,7 +128,7 @@ TEST(utilTests, sourcedException)
         {
             aeron::test::throwIllegalArgumentException();
         }
-        catch(const SourcedException& e)
+        catch (const SourcedException &e)
         {
             // Path must be relative and not have a prefix
             EXPECT_THAT(e.where(), ::testing::HasSubstr(aeron_client_dir));

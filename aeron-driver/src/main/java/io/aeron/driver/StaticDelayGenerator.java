@@ -18,7 +18,7 @@ package io.aeron.driver;
 /**
  * Delay generator that simply returns a constant value (such as 0)
  */
-public class StaticDelayGenerator implements FeedbackDelayGenerator
+public final class StaticDelayGenerator implements FeedbackDelayGenerator
 {
     private final long delayInNs;
     private final boolean immediateFeedback;

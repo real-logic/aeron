@@ -57,7 +57,7 @@ import static org.agrona.BitUtil.*;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class LossReport
+public final class LossReport
 {
     /**
      * Alignment to be applied for each entry offset.
@@ -170,7 +170,7 @@ public class LossReport
      * Report entry for a specific stream. Once an entry has been created it can then be used repeatably
      * to capture the aggregate loss on a stream.
      */
-    public static class ReportEntry
+    public static final class ReportEntry
     {
         private final AtomicBuffer buffer;
         private final int offset;

@@ -25,7 +25,7 @@ import static org.agrona.IoUtil.mapNewFile;
 /**
  * Utility functions for dealing with the Loss Report.
  */
-public class LossReportUtil
+public final class LossReportUtil
 {
     /**
      * Name of the error report file in the Aeron directory.

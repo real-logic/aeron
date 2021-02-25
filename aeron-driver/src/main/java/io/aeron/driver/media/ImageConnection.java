@@ -20,7 +20,7 @@ import java.net.InetSocketAddress;
 /**
  * State tracking for a connection endpoint to an image from a transport.
  */
-public class ImageConnection
+public final class ImageConnection
 {
     /**
      * Time of the last observed activity on this connection for tracking liveness.

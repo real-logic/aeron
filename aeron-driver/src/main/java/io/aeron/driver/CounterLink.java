@@ -34,11 +34,17 @@ final class CounterLink implements DriverManagedResource
         this.client = client;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         counter.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (client.hasTimedOut())
@@ -47,6 +53,9 @@ final class CounterLink implements DriverManagedResource
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;

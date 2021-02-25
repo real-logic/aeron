@@ -22,7 +22,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-class DriverNameResolverCache implements AutoCloseable
+final class DriverNameResolverCache implements AutoCloseable
 {
     private static final int INVALID_INDEX = -1;
 
@@ -34,6 +34,9 @@ class DriverNameResolverCache implements AutoCloseable
         this.timeoutMs = timeoutMs;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
     }
@@ -135,7 +138,7 @@ class DriverNameResolverCache implements AutoCloseable
 
     private final Iterator iterator = new Iterator();
 
-    public static boolean byteSubsetEquals(final byte[] lhs, final byte[] rhs, final int length)
+    static boolean byteSubsetEquals(final byte[] lhs, final byte[] rhs, final int length)
     {
         if (lhs.length < length || rhs.length < length)
         {
@@ -153,7 +156,7 @@ class DriverNameResolverCache implements AutoCloseable
         return true;
     }
 
-    public static boolean byteSubsetEquals(final byte[] lhs, final String rhs)
+    static boolean byteSubsetEquals(final byte[] lhs, final String rhs)
     {
         final int length = rhs.length();
 

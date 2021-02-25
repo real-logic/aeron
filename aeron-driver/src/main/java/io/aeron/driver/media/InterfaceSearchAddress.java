@@ -22,7 +22,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
-class InterfaceSearchAddress
+final class InterfaceSearchAddress
 {
     private static final InterfaceSearchAddress WILDCARD = new InterfaceSearchAddress(new InetSocketAddress(0), 0);
     private final InetSocketAddress address;

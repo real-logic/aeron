@@ -43,11 +43,17 @@ final class AeronClient implements DriverManagedResource
         this.heartbeatTimestamp = heartbeatTimestamp;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         heartbeatTimestamp.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (timeMs > (heartbeatTimestamp.get() + clientLivenessTimeoutMs))
@@ -64,6 +70,9 @@ final class AeronClient implements DriverManagedResource
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;

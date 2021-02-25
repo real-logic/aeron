@@ -30,7 +30,7 @@ import static io.aeron.driver.RetransmitHandler.State.LINGERING;
  * A max number of retransmits is permitted by {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs
  * will be ignored if this maximum is reached.
  */
-public class RetransmitHandler
+public final class RetransmitHandler
 {
     private final BiInt2ObjectMap<RetransmitAction> activeRetransmitsMap = new BiInt2ObjectMap<>();
     private final RetransmitAction[] retransmitActionPool = new RetransmitAction[MAX_RETRANSMITS_DEFAULT];

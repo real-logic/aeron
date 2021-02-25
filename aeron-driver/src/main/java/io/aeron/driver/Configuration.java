@@ -55,7 +55,7 @@ import static org.agrona.SystemUtil.*;
 /**
  * Configuration options for the {@link MediaDriver}.
  */
-public class Configuration
+public final class Configuration
 {
     /**
      * Should the driver print its configuration on start to {@link System#out}.

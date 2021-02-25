@@ -44,7 +44,7 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 /**
  * Default {@link NameResolver} for the {@link MediaDriver}.
  */
-class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.UdpFrameHandler, NameResolver
+final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransport.UdpFrameHandler, NameResolver
 {
     // TODO: make these configurable
     private static final long SELF_RESOLUTION_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);

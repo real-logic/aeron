@@ -22,7 +22,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 
 import static io.aeron.CommonContext.*;
 
-class SubscriptionParams
+final class SubscriptionParams
 {
     int initialTermId = 0;
     int termId = 0;
@@ -112,6 +112,9 @@ class SubscriptionParams
         return params;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "SubscriptionParams{" +

@@ -28,7 +28,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 /**
  * Reader that provides the function to read entries from a {@link LossReport}.
  */
-public class LossReportReader
+public final class LossReportReader
 {
     /**
      * CSV style header for using with {@link #defaultEntryConsumer(PrintStream)}.

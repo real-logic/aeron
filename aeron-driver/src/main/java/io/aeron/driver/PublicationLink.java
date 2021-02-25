@@ -43,6 +43,9 @@ final class PublicationLink implements DriverManagedResource
         publication.incRef();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         if (publication instanceof NetworkPublication)
@@ -55,6 +58,9 @@ final class PublicationLink implements DriverManagedResource
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (client.hasTimedOut())
@@ -63,6 +69,9 @@ final class PublicationLink implements DriverManagedResource
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;

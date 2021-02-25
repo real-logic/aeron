@@ -37,6 +37,9 @@ final class SessionKey
         this.channel = channel;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean equals(final Object o)
     {
         if (this == o)
@@ -54,11 +57,17 @@ final class SessionKey
         return sessionId == that.sessionId && streamId == that.streamId && channel.equals(that.channel);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int hashCode()
     {
         return 31 * sessionId * streamId * channel.hashCode();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "SessionKey{" +

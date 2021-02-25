@@ -27,7 +27,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 /**
  * Proxy for communicating from the driver to the client conductor.
  */
-class ClientProxy
+final class ClientProxy
 {
     private final MutableDirectBuffer buffer = new ExpandableArrayBuffer(1024);
     private final BroadcastTransmitter transmitter;

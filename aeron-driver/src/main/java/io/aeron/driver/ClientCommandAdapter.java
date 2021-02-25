@@ -66,6 +66,9 @@ final class ClientCommandAdapter implements MessageHandler
         return toDriverCommands.read(this, Configuration.COMMAND_DRAIN_LIMIT);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("MethodLength")
     public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {

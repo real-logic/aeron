@@ -59,6 +59,9 @@ final class SubscriberPosition
         subscriptionLink.link(image, position);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "SubscriberPosition{" +

@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
 /**
  * {@link UdpChannelTransport} specialised for for name resolution between {@link MediaDriver}s.
  */
-public class UdpNameResolutionTransport extends UdpChannelTransport
+public final class UdpNameResolutionTransport extends UdpChannelTransport
 {
     /**
      * Handler for processing the received frames.

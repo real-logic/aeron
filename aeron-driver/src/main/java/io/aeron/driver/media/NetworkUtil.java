@@ -31,7 +31,7 @@ import static java.util.Collections.sort;
 /**
  * Collection of network specific utility functions.
  */
-public class NetworkUtil
+public final class NetworkUtil
 {
     /**
      * Search for a list of network interfaces that match the specified address and subnet prefix.

@@ -78,7 +78,6 @@ public class ClusterTests
 
                 if (ex instanceof ClusterTerminationException)
                 {
-                    addWarning(ex);
                     return;
                 }
 

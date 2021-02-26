@@ -147,6 +147,7 @@ public final class PublicationImage
     private final boolean isReliable;
 
     private boolean isRebuilding = true;
+    private volatile boolean hasReceiverReleased = false;
     private volatile State state = State.INIT;
 
     private final CachedNanoClock cachedNanoClock;
@@ -444,6 +445,11 @@ public final class PublicationImage
             timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
             this.state = State.DRAINING;
         }
+    }
+
+    void receiverRelease()
+    {
+        hasReceiverReleased = true;
     }
 
     void addDestination(final int transportIndex, final ReceiveDestinationTransport transport)
@@ -776,7 +782,7 @@ public final class PublicationImage
      */
     public boolean hasReachedEndOfLife()
     {
-        return State.DONE == state;
+        return hasReceiverReleased && State.DONE == state;
     }
 
     private boolean isDrained()
@@ -962,7 +968,7 @@ public final class PublicationImage
         }
 
         final UnsafeBuffer metaDataBuffer = rawLog.metaData();
-        if (!rawLog.isInactive() && metaDataBuffer.getInt(LOG_ACTIVE_TRANSPORT_COUNT) != activeTransportCount)
+        if (metaDataBuffer.getInt(LOG_ACTIVE_TRANSPORT_COUNT) != activeTransportCount)
         {
             LogBufferDescriptor.activeTransportCount(metaDataBuffer, activeTransportCount);
         }

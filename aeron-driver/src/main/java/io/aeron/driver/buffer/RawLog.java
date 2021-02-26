@@ -68,13 +68,6 @@ public interface RawLog extends AutoCloseable
     boolean free();
 
     /**
-     * Has the {@link #free()} method been called.
-     *
-     * @return true if an attempt to free is in progress or completed.
-     */
-    boolean isInactive();
-
-    /**
      * Close the resource regardless of if {@link #free()} has succeeded or not.
      */
     void close();

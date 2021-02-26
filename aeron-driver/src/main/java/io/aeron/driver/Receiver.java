@@ -114,9 +114,10 @@ public final class Receiver implements Agent
             }
             else
             {
-                image.removeFromDispatcher();
                 this.publicationImages = 1 == this.publicationImages.length ?
                     EMPTY_IMAGES : ArrayUtil.remove(this.publicationImages, i);
+                image.removeFromDispatcher();
+                image.receiverRelease();
             }
         }
 

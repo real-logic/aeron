@@ -82,11 +82,6 @@ public class TestLogFactory implements LogFactory
                 return "stream.log";
             }
 
-            public boolean isInactive()
-            {
-                return false;
-            }
-
             public boolean free()
             {
                 return true;

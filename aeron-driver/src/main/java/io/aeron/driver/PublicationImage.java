@@ -601,6 +601,7 @@ public final class PublicationImage
     boolean isConnected(final long nowNs)
     {
         return ((timeOfLastPacketNs + imageLivenessTimeoutNs) - nowNs >= 0) &&
+            !channelEndpoint.isClosed() &&
             (!isEndOfStream || rebuildPosition.getVolatile() < hwmPosition.get());
     }
 

@@ -304,6 +304,16 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
+     * Has the channel been closed by calling {@link #close()}.
+     *
+     * @return true if the channel has been closed.
+     */
+    public boolean isClosed()
+    {
+        return isClosed;
+    }
+
+    /**
      * Is transport representing a multicast media?
      *
      * @return true if transport is multicast media, otherwise false.

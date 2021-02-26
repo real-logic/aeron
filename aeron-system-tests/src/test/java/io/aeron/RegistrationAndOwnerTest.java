@@ -51,7 +51,7 @@ public class RegistrationAndOwnerTest
 
     @ParameterizedTest
     @ValueSource(strings = { "aeron:udp?endpoint=localhost:24325", "aeron:ipc" })
-    public void shouldHaveCorrectTermBufferLength(final String channel)
+    public void shouldHaveCorrectOwnershipOnEntities(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .errorHandler(Tests::onError)

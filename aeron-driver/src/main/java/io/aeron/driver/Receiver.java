@@ -34,7 +34,8 @@ import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 
 /**
- * Receiver agent for JVM based media driver, uses an event loop with command buffer
+ * Agent that receives messages streams and rebuilds {@link PublicationImage}s, plus iterates over them sending status
+ * and control messages back to the {@link Sender}.
  */
 public final class Receiver implements Agent
 {

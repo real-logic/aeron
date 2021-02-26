@@ -29,6 +29,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static io.aeron.Aeron.NULL_VALUE;
+
 abstract class SubscriptionLhsPadding
 {
     byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
@@ -582,13 +584,13 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
         channelStatusId = id;
     }
 
-    void internalClose()
+    void internalClose(final long lingerDurationNs)
     {
         isClosed = true;
         final Image[] images = this.images;
         this.images = EMPTY_IMAGES;
 
-        conductor.closeImages(images, unavailableImageHandler);
+        conductor.closeImages(images, unavailableImageHandler, lingerDurationNs);
     }
 
     void addImage(final Image image)
@@ -617,7 +619,7 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
         {
             removedImage.close();
             images = oldArray.length == 1 ? EMPTY_IMAGES : ArrayUtil.remove(oldArray, i);
-            conductor.releaseLogBuffers(removedImage.logBuffers(), correlationId);
+            conductor.releaseLogBuffers(removedImage.logBuffers(), correlationId, NULL_VALUE);
         }
 
         return removedImage;

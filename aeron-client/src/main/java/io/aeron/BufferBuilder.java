@@ -31,7 +31,7 @@ import java.util.Arrays;
  * <p>
  * Similar in concept to {@link StringBuilder}.
  */
-public class BufferBuilder
+public final class BufferBuilder
 {
     static final int MAX_CAPACITY = Integer.MAX_VALUE - 8;
     static final int INIT_MIN_CAPACITY = 4096;

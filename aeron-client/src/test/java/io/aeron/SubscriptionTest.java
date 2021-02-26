@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.ByteBuffer;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.status.ChannelEndpointStatus.*;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.*;
@@ -82,7 +83,7 @@ public class SubscriptionTest
         doAnswer(
             (invocation) ->
             {
-                subscription.internalClose();
+                subscription.internalClose(NULL_VALUE);
                 return null;
             }).when(conductor).releaseSubscription(subscription);
     }

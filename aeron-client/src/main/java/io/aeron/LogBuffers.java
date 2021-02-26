@@ -40,7 +40,7 @@ import static java.nio.file.StandardOpenOption.*;
  *
  * @see io.aeron.logbuffer.LogBufferDescriptor
  */
-public class LogBuffers implements AutoCloseable
+public final class LogBuffers implements AutoCloseable
 {
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE, SPARSE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];

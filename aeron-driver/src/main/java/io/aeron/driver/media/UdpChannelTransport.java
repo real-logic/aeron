@@ -294,11 +294,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
             }
 
             CloseHelper.close(errorHandler, sendDatagramChannel);
-
-            if (receiveDatagramChannel != sendDatagramChannel && null != receiveDatagramChannel)
-            {
-                CloseHelper.close(errorHandler, receiveDatagramChannel);
-            }
+            CloseHelper.close(errorHandler, receiveDatagramChannel);
 
             if (null != transportPoller)
             {

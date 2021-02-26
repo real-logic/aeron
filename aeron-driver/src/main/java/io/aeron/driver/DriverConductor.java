@@ -503,8 +503,8 @@ public final class DriverConductor implements Agent
         if (channelEndpoint.shouldBeClosed())
         {
             senderProxy.closeSendChannelEndpoint(channelEndpoint);
-            channelEndpoint.closeIndicators();
             sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
+            channelEndpoint.closeIndicators();
         }
 
         final String channel = channelEndpoint.udpChannel().canonicalForm();
@@ -534,9 +534,9 @@ public final class DriverConductor implements Agent
 
             if (channelEndpoint.shouldBeClosed())
             {
-                channelEndpoint.closeIndicators();
-                receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
+                receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
+                channelEndpoint.closeIndicators();
             }
         }
     }
@@ -869,8 +869,8 @@ public final class DriverConductor implements Agent
             if (channelEndpoint.shouldBeClosed())
             {
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
-                channelEndpoint.closeIndicators();
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
+                channelEndpoint.closeIndicators();
             }
         }
 

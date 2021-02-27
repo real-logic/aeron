@@ -275,14 +275,14 @@ class Election
         else if (compareLog(this.logLeadershipTermId, appendPosition, logLeadershipTermId, logPosition) > 0)
         {
             this.candidateTermId = candidateTermId;
-            ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
+            ctx.clusterMarkFile().proposeMaxCandidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(INIT, ctx.clusterClock().timeNanos());
             placeVote(candidateTermId, candidateId, false);
         }
         else
         {
             this.candidateTermId = candidateTermId;
-            ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
+            ctx.clusterMarkFile().proposeMaxCandidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(FOLLOWER_BALLOT, ctx.clusterClock().timeNanos());
             placeVote(candidateTermId, candidateId, true);
         }
@@ -501,7 +501,7 @@ class Election
         {
             candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
             ClusterMember.becomeCandidate(clusterMembers, candidateTermId, thisMember.id());
-            ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
+            ctx.clusterMarkFile().proposeMaxCandidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(CANDIDATE_BALLOT, nowNs);
             return 1;
         }

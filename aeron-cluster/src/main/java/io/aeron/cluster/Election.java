@@ -855,14 +855,14 @@ class Election
     private void addCatchupLogDestination()
     {
         final String destination = "aeron:udp?endpoint=" + thisMember.catchupEndpoint();
-        logSubscription.asyncAddDestination(destination);
+        logSubscription.addDestination(destination);
         consensusModuleAgent.catchupLogDestination(destination);
     }
 
     private void addLiveLogDestination()
     {
         final String destination = ctx.isLogMdc() ? "aeron:udp?endpoint=" + thisMember.logEndpoint() : ctx.logChannel();
-        logSubscription.asyncAddDestination(destination);
+        logSubscription.addDestination(destination);
         consensusModuleAgent.liveLogDestination(destination);
     }
 

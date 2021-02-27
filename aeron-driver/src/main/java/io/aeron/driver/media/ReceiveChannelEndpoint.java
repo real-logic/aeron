@@ -654,22 +654,19 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     public void sendSetupElicitingStatusMessage(
         final int transportIndex, final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
-        if (!isClosed)
-        {
-            smBuffer.clear();
-            statusMessageFlyweight
-                .sessionId(sessionId)
-                .streamId(streamId)
-                .consumptionTermId(0)
-                .consumptionTermOffset(0)
-                .receiverWindowLength(0)
-                .receiverId(receiverId)
-                .groupTag(groupTag)
-                .flags(SEND_SETUP_FLAG);
-            smBuffer.limit(statusMessageFlyweight.frameLength());
+        smBuffer.clear();
+        statusMessageFlyweight
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .consumptionTermId(0)
+            .consumptionTermOffset(0)
+            .receiverWindowLength(0)
+            .receiverId(receiverId)
+            .groupTag(groupTag)
+            .flags(SEND_SETUP_FLAG);
+        smBuffer.limit(statusMessageFlyweight.frameLength());
 
-            send(smBuffer, statusMessageFlyweight.frameLength(), transportIndex, controlAddress);
-        }
+        send(smBuffer, statusMessageFlyweight.frameLength(), transportIndex, controlAddress);
     }
 
     /**
@@ -692,19 +689,16 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         final long receptionDelta,
         final boolean isReply)
     {
-        if (!isClosed)
-        {
-            rttMeasurementBuffer.clear();
-            rttMeasurementFlyweight
-                .sessionId(sessionId)
-                .streamId(streamId)
-                .receiverId(receiverId)
-                .echoTimestampNs(echoTimestampNs)
-                .receptionDelta(receptionDelta)
-                .flags(isReply ? RttMeasurementFlyweight.REPLY_FLAG : 0);
+        rttMeasurementBuffer.clear();
+        rttMeasurementFlyweight
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .receiverId(receiverId)
+            .echoTimestampNs(echoTimestampNs)
+            .receptionDelta(receptionDelta)
+            .flags(isReply ? RttMeasurementFlyweight.REPLY_FLAG : 0);
 
-            send(rttMeasurementBuffer, RttMeasurementFlyweight.HEADER_LENGTH, transportIndex, controlAddress);
-        }
+        send(rttMeasurementBuffer, RttMeasurementFlyweight.HEADER_LENGTH, transportIndex, controlAddress);
     }
 
     /**
@@ -727,22 +721,19 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         final int windowLength,
         final short flags)
     {
-        if (!isClosed)
-        {
-            smBuffer.clear();
-            statusMessageFlyweight
-                .sessionId(sessionId)
-                .streamId(streamId)
-                .consumptionTermId(termId)
-                .consumptionTermOffset(termOffset)
-                .receiverWindowLength(windowLength)
-                .receiverId(receiverId)
-                .groupTag(groupTag)
-                .flags(flags);
-            smBuffer.limit(statusMessageFlyweight.frameLength());
+        smBuffer.clear();
+        statusMessageFlyweight
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .consumptionTermId(termId)
+            .consumptionTermOffset(termOffset)
+            .receiverWindowLength(windowLength)
+            .receiverId(receiverId)
+            .groupTag(groupTag)
+            .flags(flags);
+        smBuffer.limit(statusMessageFlyweight.frameLength());
 
-            send(smBuffer, statusMessageFlyweight.frameLength(), controlAddresses);
-        }
+        send(smBuffer, statusMessageFlyweight.frameLength(), controlAddresses);
     }
 
     /**
@@ -763,18 +754,15 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         final int termOffset,
         final int length)
     {
-        if (!isClosed)
-        {
-            nakBuffer.clear();
-            nakFlyweight
-                .streamId(streamId)
-                .sessionId(sessionId)
-                .termId(termId)
-                .termOffset(termOffset)
-                .length(length);
+        nakBuffer.clear();
+        nakFlyweight
+            .streamId(streamId)
+            .sessionId(sessionId)
+            .termId(termId)
+            .termOffset(termOffset)
+            .length(length);
 
-            send(nakBuffer, NakFlyweight.HEADER_LENGTH, controlAddresses);
-        }
+        send(nakBuffer, NakFlyweight.HEADER_LENGTH, controlAddresses);
     }
 
     /**
@@ -795,19 +783,16 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         final long receptionDelta,
         final boolean isReply)
     {
-        if (!isClosed)
-        {
-            rttMeasurementBuffer.clear();
-            rttMeasurementFlyweight
-                .sessionId(sessionId)
-                .streamId(streamId)
-                .receiverId(receiverId)
-                .echoTimestampNs(echoTimestampNs)
-                .receptionDelta(receptionDelta)
-                .flags(isReply ? RttMeasurementFlyweight.REPLY_FLAG : 0);
+        rttMeasurementBuffer.clear();
+        rttMeasurementFlyweight
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .receiverId(receiverId)
+            .echoTimestampNs(echoTimestampNs)
+            .receptionDelta(receptionDelta)
+            .flags(isReply ? RttMeasurementFlyweight.REPLY_FLAG : 0);
 
-            send(rttMeasurementBuffer, RttMeasurementFlyweight.HEADER_LENGTH, controlAddresses);
-        }
+        send(rttMeasurementBuffer, RttMeasurementFlyweight.HEADER_LENGTH, controlAddresses);
     }
 
     /**

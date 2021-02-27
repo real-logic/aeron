@@ -103,11 +103,11 @@ final class LogAdapter implements ControlledFragmentHandler
         this.image = image;
     }
 
-    void asyncRemoveDestination(final String destination)
+    void removeDestination(final String destination)
     {
         if (null != image)
         {
-            image.subscription().asyncRemoveDestination(destination);
+            image.subscription().removeDestination(destination);
         }
     }
 

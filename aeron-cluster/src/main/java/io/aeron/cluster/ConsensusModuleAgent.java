@@ -628,7 +628,7 @@ final class ConsensusModuleAgent implements Agent
         {
             if (null != catchupLogDestination)
             {
-                logAdapter.asyncRemoveDestination(catchupLogDestination);
+                logAdapter.removeDestination(catchupLogDestination);
                 catchupLogDestination = null;
             }
         }
@@ -905,16 +905,16 @@ final class ConsensusModuleAgent implements Agent
 
         if (RecordingPos.NULL_RECORDING_ID != logRecordingId)
         {
-            if (null != liveLogDestination)
-            {
-                logAdapter.asyncRemoveDestination(liveLogDestination);
-                liveLogDestination = null;
-            }
-
             if (null != catchupLogDestination)
             {
-                logAdapter.asyncRemoveDestination(catchupLogDestination);
+                logAdapter.removeDestination(catchupLogDestination);
                 catchupLogDestination = null;
+            }
+
+            if (null != liveLogDestination)
+            {
+                logAdapter.removeDestination(liveLogDestination);
+                liveLogDestination = null;
             }
 
             logAdapter.disconnect(ctx.countedErrorHandler());

@@ -290,8 +290,9 @@ class DynamicJoin implements AutoCloseable
 
         if (null == leaderArchive)
         {
+            final int step = leaderArchiveAsyncConnect.step();
             leaderArchive = leaderArchiveAsyncConnect.poll();
-            return null == leaderArchive ? 0 : 1;
+            return null == leaderArchive ? leaderArchiveAsyncConnect.step() - step : 1;
         }
 
         if (NULL_VALUE == correlationId)

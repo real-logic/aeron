@@ -303,7 +303,7 @@ void ReplayMerge::stopReplay()
 
 void ReplayMerge::checkProgress(long long nowMs)
 {
-    if (hasProgressStalled(nowMs))
+    if (nowMs > (m_timeOfLastProgressMs + m_mergeProgressTimeoutMs))
     {
         throw TimeoutException("ReplayMerge no progress: state=" + std::to_string(m_state), SOURCEINFO);
     }

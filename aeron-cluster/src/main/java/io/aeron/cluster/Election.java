@@ -680,6 +680,10 @@ class Election
             consensusModuleAgent.catchupInitiated(nowNs);
             state(FOLLOWER_CATCHUP_AWAIT, nowNs);
         }
+        else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
+        {
+            throw new TimeoutException("failed to send catchup position", AeronException.Category.WARN);
+        }
 
         return 1;
     }
@@ -696,18 +700,9 @@ class Election
             state(FOLLOWER_CATCHUP, nowNs);
             workCount += 1;
         }
-        else
+        else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
         {
-            if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()) && sendCatchupPosition())
-            {
-                timeOfLastUpdateNs = nowNs;
-                workCount += 1;
-            }
-
-            if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
-            {
-                throw new TimeoutException("failed to join catchup log", AeronException.Category.WARN);
-            }
+            throw new TimeoutException("failed to join catchup log", AeronException.Category.WARN);
         }
 
         return workCount;

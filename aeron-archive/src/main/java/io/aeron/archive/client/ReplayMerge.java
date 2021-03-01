@@ -47,7 +47,7 @@ public final class ReplayMerge implements AutoCloseable
     public static final int LIVE_ADD_MAX_WINDOW = 32 * 1024 * 1024;
 
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
-    private static final long MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = TimeUnit.SECONDS.toMillis(10);
+    private static final long MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = TimeUnit.SECONDS.toMillis(5);
 
     enum State
     {
@@ -541,14 +541,9 @@ public final class ReplayMerge implements AutoCloseable
             image.activeTransportCount() >= 2;
     }
 
-    private boolean hasProgressStalled(final long nowMs)
-    {
-        return nowMs > (timeOfLastProgressMs + mergeProgressTimeoutMs);
-    }
-
     private void checkProgress(final long nowMs)
     {
-        if (hasProgressStalled(nowMs))
+        if (nowMs > (timeOfLastProgressMs + mergeProgressTimeoutMs))
         {
             throw new TimeoutException("ReplayMerge no progress: state=" + state);
         }

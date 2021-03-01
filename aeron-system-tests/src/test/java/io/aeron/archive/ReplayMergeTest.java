@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.aeron.archive.ArchiveSystemTests.*;
@@ -127,6 +128,7 @@ public class ReplayMergeTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
                 .spiesSimulateConnection(false)
+                .imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(10))
                 .dirDeleteOnStart(true),
             testWatcher);
 

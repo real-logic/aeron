@@ -29,7 +29,6 @@ import java.util.ArrayList;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
-import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 class DynamicJoin implements AutoCloseable
@@ -52,7 +51,6 @@ class DynamicJoin implements AutoCloseable
     private final String[] clusterConsensusEndpoints;
     private final String consensusEndpoints;
     private final String consensusEndpoint;
-    private final String catchupEndpoint;
     private final String archiveEndpoint;
     private final ArrayList<RecordingLog.Snapshot> leaderSnapshots = new ArrayList<>();
     private final LongArrayList snapshotLengths = new LongArrayList();
@@ -88,7 +86,6 @@ class DynamicJoin implements AutoCloseable
         this.intervalNs = ctx.dynamicJoinIntervalNs();
         this.consensusEndpoints = ctx.memberEndpoints();
         this.consensusEndpoint = thisMember.consensusEndpoint();
-        this.catchupEndpoint = thisMember.catchupEndpoint();
         this.archiveEndpoint = thisMember.archiveEndpoint();
         this.clusterConsensusEndpoints = consensusEndpoints.split(",");
     }
@@ -336,12 +333,6 @@ class DynamicJoin implements AutoCloseable
     {
         int workCount = 0;
 
-        if (null == leaderArchive)
-        {
-            leaderArchive = leaderArchiveAsyncConnect.poll();
-            return null == leaderArchive ? 0 : 1;
-        }
-
         if (null != snapshotRetrieveMonitor)
         {
             workCount += snapshotRetrieveMonitor.poll();
@@ -351,7 +342,6 @@ class DynamicJoin implements AutoCloseable
                     snapshotRetrieveMonitor.recordingId(), leaderSnapshots.get(snapshotCursor));
 
                 snapshotRetrieveMonitor = null;
-                correlationId = NULL_VALUE;
 
                 if (++snapshotCursor >= leaderSnapshots.size())
                 {
@@ -360,38 +350,16 @@ class DynamicJoin implements AutoCloseable
                 }
             }
         }
-        else if (NULL_VALUE == correlationId)
+        else
         {
-            final long replayId = ctx.aeron().nextCorrelationId();
-            final RecordingLog.Snapshot snapshot = leaderSnapshots.get(snapshotCursor);
-            final String catchupChannel = "aeron:udp?endpoint=" + catchupEndpoint;
-
-            if (leaderArchive.archiveProxy().replay(
-                snapshot.recordingId,
-                0,
-                NULL_LENGTH,
-                catchupChannel,
-                ctx.replayStreamId(),
-                replayId,
-                leaderArchive.controlSessionId()))
-            {
-                correlationId = replayId;
-                workCount++;
-            }
-        }
-        else if (pollForResponse(leaderArchive, correlationId))
-        {
-            final int replaySessionId = (int)leaderArchive.controlResponsePoller().relevantId();
-            final String catchupChannel = "aeron:udp?endpoint=" + catchupEndpoint + "|session-id=" + replaySessionId;
-
             snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(localArchive, snapshotLengths.get(snapshotCursor));
-
-            localArchive.archiveProxy().startRecording(
-                catchupChannel,
-                ctx.replayStreamId(),
-                SourceLocation.REMOTE,
-                true,
-                localArchive.context().aeron().nextCorrelationId(),
+            localArchive.archiveProxy().replicate(
+                leaderSnapshots.get(snapshotCursor).recordingId,
+                NULL_VALUE,
+                leaderArchive.context().controlRequestStreamId(),
+                leaderArchive.context().controlRequestChannel(),
+                null,
+                ctx.aeron().nextCorrelationId(),
                 localArchive.controlSessionId());
 
             workCount++;
@@ -442,6 +410,7 @@ class DynamicJoin implements AutoCloseable
     {
         //System.out.println("DynamicJoin: memberId=" + memberId + " " + state + " -> " + newState);
         state = newState;
+        correlationId = NULL_VALUE;
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)

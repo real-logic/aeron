@@ -454,9 +454,12 @@ public final class ClusterMember
     }
 
     /**
-     * The address:port endpoint for this cluster member to which a stream is replayed to for leader catchup.
+     * The address:port endpoint for this cluster member to which a stream is replayed for catchup to the leader.
+     * <p>
+     * It is recommended a port of 0 is used so it is system allocated to avoid potential clashes.
      *
-     * @return the address:port endpoint for this cluster member to which a stream is replayed to for leader catchup.
+     * @return the address:port endpoint for this cluster member to which a stream is replayed for catchup to the
+     * leader.
      */
     public String catchupEndpoint()
     {

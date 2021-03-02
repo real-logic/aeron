@@ -674,7 +674,23 @@ class Election
             addCatchupLogDestination();
         }
 
-        if (sendCatchupPosition())
+        String catchupEndpoint = null;
+        final String endpoint = thisMember.catchupEndpoint();
+        if (endpoint.endsWith(":0"))
+        {
+            final String resolvedEndpoint = logSubscription.resolvedEndpoint();
+            if (null != resolvedEndpoint)
+            {
+                final int i = resolvedEndpoint.lastIndexOf(':');
+                catchupEndpoint = endpoint.substring(0, endpoint.length() - 2) + resolvedEndpoint.substring(i);
+            }
+        }
+        else
+        {
+            catchupEndpoint = endpoint;
+        }
+
+        if (null != catchupEndpoint && sendCatchupPosition(catchupEndpoint))
         {
             timeOfLastUpdateNs = nowNs;
             consensusModuleAgent.catchupInitiated(nowNs);
@@ -841,10 +857,10 @@ class Election
         }
     }
 
-    private boolean sendCatchupPosition()
+    private boolean sendCatchupPosition(final String catchupEndpoint)
     {
         return consensusPublisher.catchupPosition(
-            leaderMember.publication(), leadershipTermId, logPosition, thisMember.id());
+            leaderMember.publication(), leadershipTermId, logPosition, thisMember.id(), catchupEndpoint);
     }
 
     private void addCatchupLogDestination()

@@ -1046,10 +1046,10 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the catchup endpoint to use for snapshot and log retrieval.
+         * Set the catchup endpoint to use for log retrieval.
          *
-         * @param catchupEndpoint to use for the snapshot and log retrieval.
-         * @return catchup endpoint to use for the snapshot and log retrieval.
+         * @param catchupEndpoint to use for the log retrieval.
+         * @return catchup endpoint to use for the log retrieval.
          * @see Configuration#CATCHUP_ENDPOINT_DEFAULT
          */
         public Context catchupEndpoint(final String catchupEndpoint)
@@ -1059,9 +1059,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Get the catchup endpoint to use for snapshot and log retrieval.
+         * Get the catchup endpoint to use for log retrieval.
          *
-         * @return catchup endpoint to use for the snapshot and log retrieval.
+         * @return catchup endpoint to use for the log retrieval.
          * @see Configuration#CATCHUP_ENDPOINT_DEFAULT
          */
         public String catchupEndpoint()

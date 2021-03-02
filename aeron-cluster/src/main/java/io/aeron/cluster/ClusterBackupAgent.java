@@ -50,6 +50,11 @@ import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
  */
 public class ClusterBackupAgent implements Agent
 {
+    /**
+     * Update interval for cluster mark file.
+     */
+    public static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
+
     private static final int SLOW_TICK_INTERVAL_MS = 10;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final BackupResponseDecoder backupResponseDecoder = new BackupResponseDecoder();
@@ -92,6 +97,7 @@ public class ClusterBackupAgent implements Agent
     private RecordingLog.Entry leaderLastTermEntry;
 
     private long slowTickDeadlineMs = 0;
+    private long markFileUpdateDeadlineMs = 0;
     private long timeOfLastBackupQueryMs = 0;
     private long timeOfLastProgressMs = 0;
     private long coolDownDeadlineMs = NULL_VALUE;
@@ -315,8 +321,8 @@ public class ClusterBackupAgent implements Agent
         {
             if (null != eventsListener)
             {
-                eventsListener.onPossibleFailure(
-                    new ClusterException("log recording counter became unavailable", Category.WARN));
+                eventsListener.onPossibleFailure(new ClusterException(
+                    "log recording counter became unavailable", Category.WARN));
             }
 
             state(RESET_BACKUP, epochClock.time());
@@ -442,7 +448,12 @@ public class ClusterBackupAgent implements Agent
         final int workCount = aeronClientInvoker.invoke();
 
         slowTickDeadlineMs = nowMs + SLOW_TICK_INTERVAL_MS;
-        markFile.updateActivityTimestamp(nowMs);
+
+        if (nowMs >= markFileUpdateDeadlineMs)
+        {
+            markFile.updateActivityTimestamp(nowMs);
+            markFileUpdateDeadlineMs = nowMs + MARK_FILE_UPDATE_INTERVAL_MS;
+        }
 
         if (NULL_VALUE == correlationId && null == snapshotRetrieveMonitor)
         {
@@ -530,8 +541,9 @@ public class ClusterBackupAgent implements Agent
 
         if (null == clusterArchive)
         {
+            final int step = clusterArchiveAsyncConnect.step();
             clusterArchive = clusterArchiveAsyncConnect.poll();
-            return null == clusterArchive ? 0 : 1;
+            return null == clusterArchive ? clusterArchiveAsyncConnect.step() - step : 1;
         }
 
         if (NULL_VALUE == correlationId)
@@ -540,9 +552,7 @@ public class ClusterBackupAgent implements Agent
             final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
 
             if (clusterArchive.archiveProxy().getStopPosition(
-                snapshot.recordingId,
-                stopPositionCorrelationId,
-                clusterArchive.controlSessionId()))
+                snapshot.recordingId, stopPositionCorrelationId, clusterArchive.controlSessionId()))
             {
                 correlationId = stopPositionCorrelationId;
                 timeOfLastProgressMs = nowMs;
@@ -577,12 +587,6 @@ public class ClusterBackupAgent implements Agent
     {
         int workCount = 0;
 
-        if (null == clusterArchive)
-        {
-            clusterArchive = clusterArchiveAsyncConnect.poll();
-            return null == clusterArchive ? 0 : 1;
-        }
-
         if (null != snapshotRetrieveMonitor)
         {
             workCount += snapshotRetrieveMonitor.poll();
@@ -601,7 +605,6 @@ public class ClusterBackupAgent implements Agent
                     snapshot.serviceId));
 
                 snapshotRetrieveMonitor = null;
-                correlationId = NULL_VALUE;
 
                 if (++snapshotCursor >= snapshotsToRetrieve.size())
                 {
@@ -610,44 +613,16 @@ public class ClusterBackupAgent implements Agent
                 }
             }
         }
-        else if (NULL_VALUE == correlationId)
-        {
-            final long replayCorrelationId = ctx.aeron().nextCorrelationId();
-            final String channel = "aeron:udp?endpoint=" + ctx.catchupEndpoint();
-            final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
-            final int streamId = snapshot.serviceId == ConsensusModule.Configuration.SERVICE_ID ?
-                ctx.consensusModuleSnapshotStreamId() : ctx.serviceSnapshotStreamId();
-
-            if (clusterArchive.archiveProxy().replay(
-                snapshot.recordingId,
-                0,
-                NULL_LENGTH,
-                channel,
-                streamId,
-                replayCorrelationId,
-                clusterArchive.controlSessionId()))
-            {
-                correlationId = replayCorrelationId;
-                timeOfLastProgressMs = nowMs;
-                workCount++;
-            }
-        }
-        else if (pollForResponse(clusterArchive, correlationId))
+        else
         {
             snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(backupArchive, snapshotLengths.get(snapshotCursor));
-
-            final int replaySessionId = (int)clusterArchive.controlResponsePoller().relevantId();
-            final String channel = "aeron:udp?endpoint=" + ctx.catchupEndpoint() + "|session-id=" + replaySessionId;
-            final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
-            final int streamId = snapshot.serviceId == ConsensusModule.Configuration.SERVICE_ID ?
-                ctx.consensusModuleSnapshotStreamId() : ctx.serviceSnapshotStreamId();
-
-            backupArchive.archiveProxy().startRecording(
-                channel,
-                streamId,
-                SourceLocation.REMOTE,
-                true,
-                backupArchive.context().aeron().nextCorrelationId(),
+            backupArchive.archiveProxy().replicate(
+                snapshotsToRetrieve.get(snapshotCursor).recordingId,
+                NULL_VALUE,
+                clusterArchive.context().controlRequestStreamId(),
+                clusterArchive.context().controlRequestChannel(),
+                null,
+                ctx.aeron().nextCorrelationId(),
                 backupArchive.controlSessionId());
 
             timeOfLastProgressMs = nowMs;
@@ -800,7 +775,6 @@ public class ClusterBackupAgent implements Agent
         snapshotLengths.clear();
 
         timeOfLastProgressMs = nowMs;
-
         nextQueryDeadlineMsCounter.setOrdered(nowMs + backupQueryIntervalMs);
         state(BACKING_UP, nowMs);
 
@@ -850,13 +824,15 @@ public class ClusterBackupAgent implements Agent
         {
             stateCounter.setOrdered(newState.code());
         }
+
         state = newState;
+        correlationId = NULL_VALUE;
     }
 
     @SuppressWarnings("unused")
     private void stateChange(final ClusterBackup.State oldState, final ClusterBackup.State newState, final long nowMs)
     {
-        //System.out.println(nowMs + ": " + oldState + " -> " + newState);
+        //System.out.println("ClusterBackup " + nowMs + ": " + oldState + " -> " + newState);
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)

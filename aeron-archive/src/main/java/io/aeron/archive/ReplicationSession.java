@@ -712,6 +712,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     void stateChange(final State oldState, final State newState, final long replicationId)
     {
-        //System.out.println("ReplicationSession: " + timeOfLastActionMs + ": " + oldState + " -> " + newState);
+        //System.out.println("ReplicationSession: " + timeOfLastActionMs +
+        //    ": " + oldState + " -> " + newState + " replicationId=" + replicationId);
     }
 }

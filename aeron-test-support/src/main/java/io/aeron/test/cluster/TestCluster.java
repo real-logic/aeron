@@ -1075,7 +1075,7 @@ public class TestCluster implements AutoCloseable
                 .append("localhost:2").append(clusterId).append("11").append(i).append(',')
                 .append("localhost:2").append(clusterId).append("22").append(i).append(',')
                 .append("localhost:2").append(clusterId).append("33").append(i).append(',')
-                .append("localhost:2").append(clusterId).append("44").append(i).append(',')
+                .append("localhost:0,")
                 .append("localhost:801").append(i).append('|');
         }
 
@@ -1090,7 +1090,7 @@ public class TestCluster implements AutoCloseable
             "localhost:2" + clusterId + "11" + i + ',' +
             "localhost:2" + clusterId + "22" + i + ',' +
             "localhost:2" + clusterId + "33" + i + ',' +
-            "localhost:2" + clusterId + "44" + i + ',' +
+            "localhost:0," +
             "localhost:801" + i;
     }
 
@@ -1118,7 +1118,7 @@ public class TestCluster implements AutoCloseable
                 "localhost:2" + clusterId + "11" + i + ',' +
                 "localhost:2" + clusterId + "22" + i + ',' +
                 "localhost:2" + clusterId + "33" + i + ',' +
-                "localhost:2" + clusterId + "44" + i + ',' +
+                "localhost:0," +
                 "localhost:801" + i;
         }
 

@@ -57,7 +57,7 @@ final class SnapshotRetrieveMonitor implements ControlEventListener, RecordingSi
         final int fragments = recordingSignalAdapter.poll();
         if (null != errorMessage)
         {
-            throw new ClusterException("error occurred while fetching snapshot: " + errorMessage);
+            throw new ClusterException("error occurred while retrieving snapshot: " + errorMessage);
         }
 
         return fragments;
@@ -84,11 +84,12 @@ final class SnapshotRetrieveMonitor implements ControlEventListener, RecordingSi
         final long position,
         final RecordingSignal signal)
     {
-        if (RecordingSignal.START == signal && RecordingPos.NULL_RECORDING_ID == this.recordingId)
+        if ((RecordingSignal.START == signal || RecordingSignal.EXTEND == signal) &&
+            RecordingPos.NULL_RECORDING_ID == this.recordingId)
         {
             if (0 != position)
             {
-                errorMessage = "unexpected start position expected=0, actual=" + position;
+                errorMessage = "unexpected start position expected=0 actual=" + position;
             }
             else
             {
@@ -103,7 +104,7 @@ final class SnapshotRetrieveMonitor implements ControlEventListener, RecordingSi
             }
             else
             {
-                errorMessage = "unexpected stop position expected=" + expectedStopPosition + ", actual=" + position;
+                errorMessage = "unexpected stop position expected=" + expectedStopPosition + " actual=" + position;
             }
         }
     }

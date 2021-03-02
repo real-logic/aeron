@@ -485,7 +485,7 @@ public class StartFromTruncatedRecordingLogTest
                 .append("localhost:2011").append(i).append(',')
                 .append("localhost:2022").append(i).append(',')
                 .append("localhost:2033").append(i).append(',')
-                .append("localhost:2044").append(i).append(',')
+                .append("localhost:0,")
                 .append("localhost:801").append(i).append('|');
         }
 

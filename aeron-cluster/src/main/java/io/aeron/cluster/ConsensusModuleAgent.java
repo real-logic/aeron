@@ -599,7 +599,8 @@ final class ConsensusModuleAgent implements Agent
         }
     }
 
-    void onCatchupPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
+    void onCatchupPosition(
+        final long leadershipTermId, final long logPosition, final int followerMemberId, final String catchupEndpoint)
     {
         if (leadershipTermId <= this.leadershipTermId && Cluster.Role.LEADER == role)
         {
@@ -608,7 +609,7 @@ final class ConsensusModuleAgent implements Agent
             {
                 final String channel = new ChannelUriStringBuilder()
                     .media(CommonContext.UDP_MEDIA)
-                    .endpoint(follower.catchupEndpoint())
+                    .endpoint(catchupEndpoint)
                     .sessionId(logPublisher.sessionId())
                     .linger(0L)
                     .eos(Boolean.FALSE)
@@ -616,7 +617,6 @@ final class ConsensusModuleAgent implements Agent
 
                 follower.catchupReplaySessionId(archive.startReplay(
                     logRecordingId, logPosition, Long.MAX_VALUE, channel, ctx.logStreamId()));
-
                 follower.catchupReplayCorrelationId(archive.lastCorrelationId());
             }
         }

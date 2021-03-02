@@ -253,9 +253,14 @@ final class ConsensusPublisher
         final ExclusivePublication publication,
         final long leadershipTermId,
         final long logPosition,
-        final int followerMemberId)
+        final int followerMemberId,
+        final String catchupEndpoint)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CatchupPositionEncoder.BLOCK_LENGTH;
+        final int length =
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            CatchupPositionEncoder.BLOCK_LENGTH +
+            CatchupPositionEncoder.catchupEndpointHeaderLength() +
+            catchupEndpoint.length();
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -267,7 +272,8 @@ final class ConsensusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
-                    .followerMemberId(followerMemberId);
+                    .followerMemberId(followerMemberId)
+                    .catchupEndpoint(catchupEndpoint);
 
                 bufferClaim.commit();
 

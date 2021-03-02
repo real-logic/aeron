@@ -324,14 +324,13 @@ public final class ConsensusModule implements AutoCloseable
          * Default property for the list of cluster member endpoints.
          */
         public static final String CLUSTER_MEMBERS_DEFAULT =
-            "0,localhost:20000,localhost:20001,localhost:20002,localhost:20003,localhost:8010";
+            "0,localhost:20000,localhost:20001,localhost:20002,localhost:0,localhost:8010";
 
         /**
          * Property name for the comma separated list of cluster consensus endpoints used for adding passive
          * followers as well as dynamic join of a cluster.
          */
-        public static final String CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME =
-            "aeron.cluster.consensus.endpoints";
+        public static final String CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME = "aeron.cluster.consensus.endpoints";
 
         /**
          * Default property for the list of cluster consensus endpoints.
@@ -605,12 +604,12 @@ public final class ConsensusModule implements AutoCloseable
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
-         * Timeout a leader will wait on getting termination acks from followers.
+         * Timeout a leader will wait on getting termination ACKs from followers.
          */
         public static final String TERMINATION_TIMEOUT_PROP_NAME = "aeron.cluster.termination.timeout";
 
         /**
-         * Default timeout a leader will wait on getting termination acks from followers.
+         * Default timeout a leader will wait on getting termination ACKs from followers.
          */
         public static final long TERMINATION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 

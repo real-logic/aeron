@@ -68,7 +68,6 @@ public class ClusterBackupAgent implements Agent
     private final ConsensusPublisher consensusPublisher = new ConsensusPublisher();
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
     private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>(4);
-    private final LongArrayList snapshotLengths = new LongArrayList();
     private final Counter stateCounter;
     private final Counter liveLogPositionCounter;
     private final Counter nextQueryDeadlineMsCounter;
@@ -194,10 +193,6 @@ public class ClusterBackupAgent implements Agent
                     workCount += backupQuery(nowMs);
                     break;
 
-                case SNAPSHOT_LENGTH_RETRIEVE:
-                    workCount += snapshotLengthRetrieve(nowMs);
-                    break;
-
                 case SNAPSHOT_RETRIEVE:
                     workCount += snapshotRetrieve(nowMs);
                     break;
@@ -257,7 +252,6 @@ public class ClusterBackupAgent implements Agent
         leaderMember = null;
         snapshotsToRetrieve.clear();
         snapshotsRetrieved.clear();
-        snapshotLengths.clear();
         leaderLogEntry = null;
         leaderLastTermEntry = null;
         clusterConsensusEndpointsCursor = NULL_VALUE;
@@ -438,7 +432,7 @@ public class ClusterBackupAgent implements Agent
             }
             else
             {
-                state(SNAPSHOT_LENGTH_RETRIEVE, nowMs);
+                state(SNAPSHOT_RETRIEVE, nowMs);
             }
         }
     }
@@ -535,7 +529,7 @@ public class ClusterBackupAgent implements Agent
         return 0;
     }
 
-    private int snapshotLengthRetrieve(final long nowMs)
+    private int snapshotRetrieve(final long nowMs)
     {
         int workCount = 0;
 
@@ -545,47 +539,6 @@ public class ClusterBackupAgent implements Agent
             clusterArchive = clusterArchiveAsyncConnect.poll();
             return null == clusterArchive ? clusterArchiveAsyncConnect.step() - step : 1;
         }
-
-        if (NULL_VALUE == correlationId)
-        {
-            final long stopPositionCorrelationId = ctx.aeron().nextCorrelationId();
-            final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
-
-            if (clusterArchive.archiveProxy().getStopPosition(
-                snapshot.recordingId, stopPositionCorrelationId, clusterArchive.controlSessionId()))
-            {
-                correlationId = stopPositionCorrelationId;
-                timeOfLastProgressMs = nowMs;
-                workCount++;
-            }
-        }
-        else if (pollForResponse(clusterArchive, correlationId))
-        {
-            final long snapshotStopPosition = clusterArchive.controlResponsePoller().relevantId();
-            correlationId = NULL_VALUE;
-
-            if (NULL_POSITION == snapshotStopPosition)
-            {
-                state(RESET_BACKUP, nowMs);
-            }
-
-            snapshotLengths.addLong(snapshotCursor, snapshotStopPosition);
-            if (++snapshotCursor >= snapshotsToRetrieve.size())
-            {
-                snapshotCursor = 0;
-                state(SNAPSHOT_RETRIEVE, nowMs);
-            }
-
-            timeOfLastProgressMs = nowMs;
-            workCount++;
-        }
-
-        return workCount;
-    }
-
-    private int snapshotRetrieve(final long nowMs)
-    {
-        int workCount = 0;
 
         if (null != snapshotRetrieveMonitor)
         {
@@ -613,18 +566,16 @@ public class ClusterBackupAgent implements Agent
                 }
             }
         }
-        else
+        else if (backupArchive.archiveProxy().replicate(
+            snapshotsToRetrieve.get(snapshotCursor).recordingId,
+            NULL_VALUE,
+            clusterArchive.context().controlRequestStreamId(),
+            clusterArchive.context().controlRequestChannel(),
+            null,
+            ctx.aeron().nextCorrelationId(),
+            backupArchive.controlSessionId()))
         {
-            snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(backupArchive, snapshotLengths.get(snapshotCursor));
-            backupArchive.archiveProxy().replicate(
-                snapshotsToRetrieve.get(snapshotCursor).recordingId,
-                NULL_VALUE,
-                clusterArchive.context().controlRequestStreamId(),
-                clusterArchive.context().controlRequestChannel(),
-                null,
-                ctx.aeron().nextCorrelationId(),
-                backupArchive.controlSessionId());
-
+            snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(backupArchive);
             timeOfLastProgressMs = nowMs;
 
             workCount++;
@@ -641,8 +592,9 @@ public class ClusterBackupAgent implements Agent
         {
             if (null == clusterArchive)
             {
+                final int step = clusterArchiveAsyncConnect.step();
                 clusterArchive = clusterArchiveAsyncConnect.poll();
-                return null == clusterArchive ? 0 : 1;
+                return null == clusterArchive ? clusterArchiveAsyncConnect.step() - step : 1;
             }
 
             if (NULL_VALUE == correlationId)
@@ -772,7 +724,6 @@ public class ClusterBackupAgent implements Agent
 
         snapshotsRetrieved.clear();
         snapshotsToRetrieve.clear();
-        snapshotLengths.clear();
 
         timeOfLastProgressMs = nowMs;
         nextQueryDeadlineMsCounter.setOrdered(nowMs + backupQueryIntervalMs);

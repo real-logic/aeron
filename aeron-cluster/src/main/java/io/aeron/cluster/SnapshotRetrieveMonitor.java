@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Subscription;
 import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
@@ -26,20 +25,17 @@ import static io.aeron.cluster.ConsensusModuleSnapshotLoader.FRAGMENT_LIMIT;
 
 final class SnapshotRetrieveMonitor implements ControlEventListener, RecordingSignalConsumer
 {
-    private final long expectedStopPosition;
     private final RecordingSignalAdapter recordingSignalAdapter;
 
     private long recordingId = RecordingPos.NULL_RECORDING_ID;
     private boolean isDone = false;
+    private boolean isSync = false;
     private String errorMessage;
 
-    SnapshotRetrieveMonitor(final AeronArchive archive, final long expectedStopPosition)
+    SnapshotRetrieveMonitor(final AeronArchive archive)
     {
-        this.expectedStopPosition = expectedStopPosition;
-
-        final Subscription subscription = archive.controlResponsePoller().subscription();
         recordingSignalAdapter = new RecordingSignalAdapter(
-            archive.controlSessionId(), this, this, subscription, FRAGMENT_LIMIT);
+            archive.controlSessionId(), this, this, archive.controlResponsePoller().subscription(), FRAGMENT_LIMIT);
     }
 
     long recordingId()
@@ -96,15 +92,19 @@ final class SnapshotRetrieveMonitor implements ControlEventListener, RecordingSi
                 this.recordingId = recordingId;
             }
         }
+        else if (RecordingSignal.SYNC == signal && recordingId == this.recordingId)
+        {
+            isSync = true;
+        }
         else if (RecordingSignal.STOP == signal && recordingId == this.recordingId)
         {
-            if (expectedStopPosition == position)
+            if (isSync)
             {
                 isDone = true;
             }
             else
             {
-                errorMessage = "unexpected stop position expected=" + expectedStopPosition + " actual=" + position;
+                errorMessage = "unexpected stop position " + position;
             }
         }
     }

@@ -29,7 +29,9 @@ public enum ClusterEventCode implements EventCode
     ELECTION_STATE_CHANGE(1, ClusterEventDissector::dissectStateChange),
     NEW_LEADERSHIP_TERM(2, (eventCode, buffer, offset, builder) -> dissectNewLeadershipTerm(buffer, offset, builder)),
     STATE_CHANGE(3, ClusterEventDissector::dissectStateChange),
-    ROLE_CHANGE(4, ClusterEventDissector::dissectStateChange);
+    ROLE_CHANGE(4, ClusterEventDissector::dissectStateChange),
+    CANVASS_POSITION(5, ClusterEventDissector::dissectCanvassPosition),
+    REQUEST_VOTE(6, ClusterEventDissector::dissectRequestVote);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

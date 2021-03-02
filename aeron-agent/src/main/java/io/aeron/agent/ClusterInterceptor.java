@@ -44,6 +44,7 @@ class ClusterInterceptor
             final long logTruncatePosition,
             final long leadershipTermId,
             final long logPosition,
+            final long leaderRecordingId,
             final long timestamp,
             final int leaderMemberId,
             final int logSessionId,
@@ -77,6 +78,26 @@ class ClusterInterceptor
         static void roleChange(final Cluster.Role oldRole, final Cluster.Role newRole, final int memberId)
         {
             LOGGER.logStateChange(ROLE_CHANGE, oldRole, newRole, memberId);
+        }
+    }
+
+    static class CanvassPosition
+    {
+        @Advice.OnMethodEnter
+        static void onCanvassPosition(
+            final long logLeadershipTermId, final long logPosition, final int followerMemberId)
+        {
+            LOGGER.logCanvassPosition(logLeadershipTermId, logPosition, followerMemberId);
+        }
+    }
+
+    static class RequestVote
+    {
+        @Advice.OnMethodEnter
+        static void onRequestVote(
+            final long logLeadershipTermId, final long logPosition, final long candidateTermId, final int candidateId)
+        {
+            LOGGER.logRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
     }
 }

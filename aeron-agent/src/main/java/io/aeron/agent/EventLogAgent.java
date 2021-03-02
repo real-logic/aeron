@@ -452,8 +452,10 @@ public final class EventLogAgent
         final boolean hasNewLeadershipTerm = CLUSTER_EVENT_CODES.contains(ClusterEventCode.NEW_LEADERSHIP_TERM);
         final boolean hasStateChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.STATE_CHANGE);
         final boolean hasRoleChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.ROLE_CHANGE);
+        final boolean hasCanvasPosition = CLUSTER_EVENT_CODES.contains(ClusterEventCode.CANVASS_POSITION);
+        final boolean hasRequestVote = CLUSTER_EVENT_CODES.contains(ClusterEventCode.REQUEST_VOTE);
 
-        if (!hasNewLeadershipTerm && !hasStateChange && !hasRoleChange)
+        if (!hasNewLeadershipTerm && !hasStateChange && !hasRoleChange && !hasCanvasPosition && !hasRequestVote)
         {
             return agentBuilder;
         }
@@ -478,6 +480,18 @@ public final class EventLogAgent
                     builder = builder
                         .visit(to(ClusterInterceptor.ConsensusModuleRoleChange.class)
                             .on(named("roleChange")));
+                }
+                if (hasCanvasPosition)
+                {
+                    builder = builder
+                        .visit(to(ClusterInterceptor.CanvassPosition.class)
+                            .on(named("onCanvassPosition")));
+                }
+                if (hasRequestVote)
+                {
+                    builder = builder
+                        .visit(to(ClusterInterceptor.RequestVote.class)
+                            .on(named("onRequestVote")));
                 }
 
                 return builder;

@@ -140,6 +140,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     newLeadershipTermDecoder.logTruncatePosition(),
                     newLeadershipTermDecoder.leadershipTermId(),
                     newLeadershipTermDecoder.logPosition(),
+                    newLeadershipTermDecoder.leaderRecordingId(),
                     newLeadershipTermDecoder.timestamp(),
                     newLeadershipTermDecoder.leaderMemberId(),
                     newLeadershipTermDecoder.logSessionId(),

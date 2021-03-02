@@ -62,8 +62,6 @@ public class ClusterTest
             awaitElectionClosed(follower);
             cluster.stopNode(follower);
 
-            Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
-
             follower = cluster.startStaticNode(follower.index(), false);
 
             awaitElectionClosed(follower);
@@ -384,8 +382,6 @@ public class ClusterTest
             awaitElectionClosed(follower);
             cluster.stopNode(follower);
 
-            Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
-
             follower = cluster.startStaticNode(follower.index(), true);
 
             awaitElectionClosed(cluster.node(follower.index()));
@@ -416,8 +412,6 @@ public class ClusterTest
 
             awaitElectionClosed(followerB);
             cluster.stopNode(followerB);
-
-            Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
             cluster.takeSnapshot(leader);
             cluster.awaitSnapshotCount(leader, 1);
@@ -529,8 +523,6 @@ public class ClusterTest
 
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
-
-            Tests.sleep(1_000); // wait until existing replays can be cleaned up by conductor.
 
             followerA = cluster.startStaticNode(followerA.index(), true);
             followerB = cluster.startStaticNode(followerB.index(), true);
@@ -836,7 +828,6 @@ public class ClusterTest
             try
             {
                 cluster.stopNode(followerB);
-                Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
                 followerB = cluster.startStaticNode(followerB.index(), false);
                 awaitElectionClosed(followerB);
@@ -884,8 +875,6 @@ public class ClusterTest
             cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
-
-            Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
             follower = cluster.startStaticNode(follower.index(), true);
             cluster.awaitServiceMessageCount(follower, messageCount);
@@ -1325,8 +1314,6 @@ public class ClusterTest
             cluster.msgBuffer().putStringWithoutLengthAscii(0, message);
             cluster.pollUntilMessageSent(message.length());
             cluster.awaitResponseMessageCount(1);
-
-            Tests.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
             follower = cluster.startStaticNode(follower.index(), false);
 

@@ -20,13 +20,11 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.test.cluster.TestCluster.startThreeNodeStaticCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MultiNodeTest

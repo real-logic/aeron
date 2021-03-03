@@ -81,7 +81,6 @@ public class ClusteredArchive implements AutoCloseable
         try
         {
             archive = Archive.launch(archiveCtx.aeronDirectoryName(aeronDirectoryName));
-
             consensusModule = ConsensusModule.launch(consensusModuleCtx.aeronDirectoryName(aeronDirectoryName));
 
             return new ClusteredArchive(archive, consensusModule);

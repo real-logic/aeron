@@ -60,6 +60,7 @@ public class TestNode implements AutoCloseable
     TestNode(final Context context, final DataCollector dataCollector)
     {
         mediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
+
         clusteredArchive = ClusteredArchive.launch(
             mediaDriver.aeronDirectoryName(),
             context.archiveContext,
@@ -160,7 +161,7 @@ public class TestNode implements AutoCloseable
         }
         catch (final Throwable t)
         {
-            if (error == null)
+            if (null == error)
             {
                 error = t;
             }

@@ -15,6 +15,7 @@
  */
 package io.aeron.test.cluster;
 
+import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.exceptions.AeronException;
@@ -163,8 +164,13 @@ public class ClusterTests
 
                 while (!Thread.interrupted())
                 {
-                    if (client.offer(msgBuffer, 0, HELLO_WORLD_MSG.length()) < 0)
+                    final long result = client.offer(msgBuffer, 0, HELLO_WORLD_MSG.length());
+                    if (result < 0)
                     {
+                        if (Publication.CLOSED == result)
+                        {
+                            break;
+                        }
                         LockSupport.parkNanos(backoffIntervalNs);
                     }
 

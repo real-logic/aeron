@@ -23,8 +23,6 @@ import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 
@@ -1275,29 +1273,6 @@ public class ClusterTest
     public void shouldCatchUpAfterFollowerMissesTimerRegistration(final TestInfo testInfo)
     {
         shouldCatchUpAfterFollowerMissesMessage(REGISTER_TIMER_MSG, testInfo);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "9020", "0" })
-    @Timeout(30)
-    void shouldConnectClientUsingResolvedResponsePort(final String responsePort, final TestInfo testInfo)
-    {
-        final AeronCluster.Context clientCtx = new AeronCluster.Context()
-            .ingressChannel("aeron:udp?term-length=128k")
-            .egressChannel("aeron:udp?term-length=128k|endpoint=localhost:" + responsePort);
-
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
-        try
-        {
-            final int numMessages = 10;
-            cluster.connectClient(clientCtx);
-            cluster.sendMessages(numMessages);
-            cluster.awaitResponseMessageCount(numMessages);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message, final TestInfo testInfo)

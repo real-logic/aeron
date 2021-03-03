@@ -22,6 +22,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.agrona.CloseHelper;
+import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
@@ -808,12 +809,13 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(40)
     public void shouldRecoverWhileMessagesContinue(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);
         try
         {
+            final MutableInteger messageCounter = new MutableInteger();
             final TestNode leader = cluster.awaitLeader();
             final List<TestNode> followers = cluster.followers();
             final TestNode followerA = followers.get(0);
@@ -821,12 +823,11 @@ public class ClusterTest
 
             cluster.connectClient();
             final long backoffIntervalNs = MICROSECONDS.toNanos(500);
-            final Thread messageThread = startPublisherThread(cluster, backoffIntervalNs);
+            final Thread messageThread = startPublisherThread(cluster, messageCounter, backoffIntervalNs);
 
             try
             {
                 cluster.stopNode(followerB);
-
                 followerB = cluster.startStaticNode(followerB.index(), false);
                 awaitElectionClosed(followerB);
 
@@ -838,12 +839,9 @@ public class ClusterTest
                 messageThread.join();
             }
 
+            cluster.awaitResponseMessageCount(messageCounter.get());
             cluster.client().close();
-
-            while (leader.commitPosition() > followerB.commitPosition())
-            {
-                Tests.sleep(1);
-            }
+            cluster.awaitActiveSessionCount(0);
 
             assertEquals(0L, leader.errors());
             assertEquals(0L, followerA.errors());

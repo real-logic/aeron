@@ -23,6 +23,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -152,7 +153,8 @@ public class ClusterTests
         }
     }
 
-    public static Thread startPublisherThread(final TestCluster testCluster, final long backoffIntervalNs)
+    public static Thread startPublisherThread(
+        final TestCluster testCluster, final MutableInteger messageCounter, final long backoffIntervalNs)
     {
         final Thread thread = new Thread(
             () ->
@@ -165,7 +167,11 @@ public class ClusterTests
                 while (!Thread.interrupted())
                 {
                     final long result = client.offer(msgBuffer, 0, HELLO_WORLD_MSG.length());
-                    if (result < 0)
+                    if (result > 0)
+                    {
+                        messageCounter.increment();
+                    }
+                    else
                     {
                         if (Publication.CLOSED == result)
                         {

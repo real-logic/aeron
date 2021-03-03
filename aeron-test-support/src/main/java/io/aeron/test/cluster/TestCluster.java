@@ -33,6 +33,7 @@ import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
 import org.agrona.*;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -75,7 +76,7 @@ public class TestCluster implements AutoCloseable
 
     private final DataCollector dataCollector = new DataCollector();
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-    private final MutableInteger responseCount = new MutableInteger();
+    private final MutableLong responseCount = new MutableLong();
     private final MutableInteger newLeaderEvent = new MutableInteger();
     private final EgressListener egressMessageListener = new EgressListener()
     {
@@ -790,6 +791,17 @@ public class TestCluster implements AutoCloseable
         while (node.service().activeSessionCount() != count)
         {
             await(1);
+        }
+    }
+
+    public void awaitActiveSessionCount(final int count)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node && !node.isClosed())
+            {
+                awaitActiveSessionCount(node, count);
+            }
         }
     }
 

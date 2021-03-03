@@ -542,6 +542,7 @@ final class ConsensusModuleAgent implements Agent
                 logTruncatePosition,
                 leadershipTermId,
                 logPosition,
+                leaderRecordingId,
                 timestamp,
                 leaderId,
                 logSessionId,
@@ -1476,6 +1477,11 @@ final class ConsensusModuleAgent implements Agent
     long logRecordingId()
     {
         return logRecordingId;
+    }
+
+    void logRecordingId(final long recordingId)
+    {
+        this.logRecordingId = recordingId;
     }
 
     void truncateLogEntry(final long leadershipTermId, final long logPosition)
@@ -2479,36 +2485,56 @@ final class ConsensusModuleAgent implements Agent
     {
         if (null != appendPosition)
         {
-            final long position = appendPosition.get();
-            thisMember.logPosition(position).timeOfLastAppendPositionNs(nowNs);
-            final long commitPosition = min(quorumPosition(activeMembers, rankedPositions), position);
-
-            if (commitPosition > this.commitPosition.getWeak() ||
-                nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
-            {
-                for (final ClusterMember member : activeMembers)
-                {
-                    if (member.id() != memberId)
-                    {
-                        consensusPublisher.commitPosition(
-                            member.publication(), leadershipTermId, commitPosition, memberId);
-                    }
-                }
-
-                this.commitPosition.setOrdered(commitPosition);
-                timeOfLastLogUpdateNs = nowNs;
-
-                clearUncommittedEntriesTo(commitPosition);
-                if (pendingMemberRemovals > 0)
-                {
-                    handleMemberRemovals(commitPosition);
-                }
-
-                return 1;
-            }
+            return updateLeaderPosition(nowNs, appendPosition.get());
         }
 
         return 0;
+    }
+
+    int updateLeaderPosition(final long nowNs, final long position)
+    {
+        thisMember.logPosition(position).timeOfLastAppendPositionNs(nowNs);
+        final long commitPosition = min(quorumPosition(activeMembers, rankedPositions), position);
+
+        if (commitPosition > this.commitPosition.getWeak() ||
+            nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
+        {
+            for (final ClusterMember member : activeMembers)
+            {
+                if (member.id() != memberId)
+                {
+                    consensusPublisher.commitPosition(
+                        member.publication(), leadershipTermId, commitPosition, memberId);
+                }
+            }
+
+            this.commitPosition.setOrdered(commitPosition);
+            timeOfLastLogUpdateNs = nowNs;
+
+            clearUncommittedEntriesTo(commitPosition);
+            if (pendingMemberRemovals > 0)
+            {
+                handleMemberRemovals(commitPosition);
+            }
+
+            return 1;
+        }
+
+        return 0;
+    }
+
+    LogReplication newLogReplication(
+        final String leaderArchiveEndpoint,
+        final long leaderRecordingId,
+        final long stopPosition)
+    {
+        return new LogReplication(
+            archive,
+            leaderRecordingId,
+            logRecordingId,
+            ctx.archiveContext().controlRequestStreamId(),
+            leaderArchiveEndpoint,
+            stopPosition);
     }
 
     private int updateFollowerPosition(final long nowNs)

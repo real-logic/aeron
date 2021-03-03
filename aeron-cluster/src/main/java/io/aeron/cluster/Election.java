@@ -52,6 +52,8 @@ class Election
     private long logPosition;
     private long appendPosition;
     private long catchupPosition = NULL_POSITION;
+    private long logReplicationPosition = NULL_POSITION;
+    private long leaderRecordingId = NULL_VALUE;
     private long leadershipTermId;
     private long logLeadershipTermId;
     private long candidateTermId = NULL_VALUE;
@@ -65,6 +67,7 @@ class Election
     private final ConsensusPublisher consensusPublisher;
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
+    private LogReplication logReplication = null;
 
     Election(
         final boolean isNodeStartup,
@@ -151,6 +154,10 @@ class Election
                     workCount += leaderReady(nowNs);
                     break;
 
+                case LEADER_LOG_REPLICATION:
+                    workCount += leaderLogReplication(nowNs);
+                    break;
+
                 case FOLLOWER_REPLAY:
                     workCount += followerReplay(nowNs);
                     break;
@@ -173,6 +180,10 @@ class Election
 
                 case FOLLOWER_LOG_AWAIT:
                     workCount += followerLogAwait(nowNs);
+                    break;
+
+                case FOLLOWER_LOG_REPLICATION:
+                    workCount += followerLogReplication(nowNs);
                     break;
 
                 case FOLLOWER_READY:
@@ -319,6 +330,7 @@ class Election
         final long logTruncatePosition,
         final long leadershipTermId,
         final long logPosition,
+        final long leaderRecordingId,
         final long timestamp,
         final int leaderMemberId,
         final int logSessionId,
@@ -352,7 +364,9 @@ class Election
             this.leadershipTermId = leadershipTermId;
             this.logSessionId = logSessionId;
             catchupPosition = logPosition > appendPosition ? logPosition : NULL_POSITION;
-            state(FOLLOWER_REPLAY, ctx.clusterClock().timeNanos());
+            logReplicationPosition = logPosition > appendPosition ? logPosition : NULL_POSITION;
+            this.leaderRecordingId = leaderRecordingId;
+            state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
         }
         else if (CANVASS == state &&
             compareLog(this.logLeadershipTermId, appendPosition, leadershipTermId, logPosition) < 0)
@@ -436,6 +450,7 @@ class Election
         {
             resetCatchup();
             cleanupReplay();
+            cleanupReplication();
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
             CloseHelper.close(logSubscription);
             logSubscription = null;
@@ -520,7 +535,7 @@ class Election
         {
             leaderMember = thisMember;
             leadershipTermId = candidateTermId;
-            state(LEADER_REPLAY, nowNs);
+            state(LEADER_LOG_REPLICATION, nowNs);
             workCount += 1;
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.electionTimeoutNs()))
@@ -529,7 +544,7 @@ class Election
             {
                 leaderMember = thisMember;
                 leadershipTermId = candidateTermId;
-                state(LEADER_REPLAY, nowNs);
+                state(LEADER_LOG_REPLICATION, nowNs);
             }
             else
             {
@@ -562,6 +577,24 @@ class Election
         {
             state(CANVASS, nowNs);
             workCount += 1;
+        }
+
+        return workCount;
+    }
+
+    private int leaderLogReplication(final long nowNs)
+    {
+        int workCount = 0;
+
+        consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
+
+        if (appendPosition <= ctx.commitPositionCounter().getWeak())
+        {
+            state(LEADER_REPLAY, nowNs);
+        }
+        else
+        {
+            workCount += publishNewLeadershipTermOnInterval(nowNs);
         }
 
         return workCount;
@@ -651,7 +684,7 @@ class Election
             }
             else
             {
-                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
+                state(NULL_POSITION != catchupPosition && appendPosition < catchupPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
             }
         }
         else
@@ -661,7 +694,50 @@ class Election
             {
                 cleanupReplay();
                 logPosition = appendPosition;
-                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
+                state(NULL_POSITION != catchupPosition && appendPosition < catchupPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
+            }
+        }
+
+        return workCount;
+    }
+
+    private int followerLogReplication(long nowNs)
+    {
+        int workCount = 0;
+
+        if (null == logReplication)
+        {
+            if (appendPosition < logReplicationPosition)
+            {
+                logReplication = consensusModuleAgent.newLogReplication(
+                    leaderMember.archiveEndpoint(), leaderRecordingId, logReplicationPosition);
+                workCount++;
+            }
+            else
+            {
+                state(FOLLOWER_REPLAY, nowNs);
+            }
+        }
+        else
+        {
+            workCount += logReplication.doWork();
+            if (logReplication.isDone())
+            {
+                // Which position should be updated here???
+                appendPosition = logReplication.replicatedLogPosition();
+                assert appendPosition == logReplicationPosition;
+
+                consensusPublisher.appendPosition(
+                    leaderMember.publication(),
+                    leadershipTermId,
+                    appendPosition,
+                    thisMember.id());
+
+                consensusModuleAgent.logRecordingId(logReplication.recordingId());
+                consensusModuleAgent.prepareForNewLeadership(appendPosition);
+                state(FOLLOWER_REPLAY, nowNs);
+
+                cleanupReplication();
             }
         }
 
@@ -961,6 +1037,15 @@ class Election
         {
             logReplay.close();
             logReplay = null;
+        }
+    }
+
+    private void cleanupReplication()
+    {
+        if (null != logReplication)
+        {
+            logReplication.close();
+            logReplication = null;
         }
     }
 

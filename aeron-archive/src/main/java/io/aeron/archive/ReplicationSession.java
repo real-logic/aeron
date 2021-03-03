@@ -37,6 +37,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
     private static final int RETRY_ATTEMPTS = 3;
 
+
     enum State
     {
         CONNECT,
@@ -48,7 +49,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         REPLICATE,
         CATCHUP,
         ATTEMPT_LIVE_JOIN,
-        DONE
+        DONE;
     }
 
     private long activeCorrelationId = NULL_VALUE;
@@ -56,6 +57,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private long replayPosition = NULL_POSITION;
     private long srcStopPosition = NULL_POSITION;
     private long srcRecordingPosition = NULL_POSITION;
+    private final long dstStopPosition;
     private long timeOfLastActionMs;
     private final long actionTimeoutMs;
     private final long replicationId;
@@ -90,6 +92,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final long channelTagId,
         final long subscriptionTagId,
         final long replicationId,
+        final long stopPosition,
         final String liveDestination,
         final String replicationChannel,
         final RecordingSummary recordingSummary,
@@ -112,6 +115,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.conductor = controlSession.archiveConductor();
         this.controlSession = controlSession;
         this.actionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(context.messageTimeoutNs());
+        this.dstStopPosition = stopPosition;
 
         this.isTagged = NULL_VALUE != channelTagId || NULL_VALUE != subscriptionTagId;
         this.channelTagId = NULL_VALUE == channelTagId ? replicationId : channelTagId;
@@ -481,11 +485,14 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 channelUri.put(CommonContext.EOS_PARAM_NAME, "false");
             }
 
+            final long replayLength = NULL_POSITION == dstStopPosition ?
+                Long.MAX_VALUE : dstStopPosition - replayPosition;
+
             final long correlationId = aeron.nextCorrelationId();
             if (srcArchive.archiveProxy().replay(
                 srcRecordingId,
                 replayPosition,
-                Long.MAX_VALUE,
+                replayLength,
                 channelUri.toString(),
                 replayStreamId,
                 correlationId,

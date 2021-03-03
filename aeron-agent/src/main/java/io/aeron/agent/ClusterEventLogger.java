@@ -131,6 +131,13 @@ public final class ClusterEventLogger
         }
     }
 
+    /**
+     * Log a canvass position event received by the cluster node
+     *
+     * @param logLeadershipTermId leadershipTermId processes from the log by the candidate
+     * @param logPosition         position in the candidate's log
+     * @param followerMemberId    member to canvas
+     */
     public void logCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
     {
         final int length = canvassPositionLength();
@@ -159,6 +166,14 @@ public final class ClusterEventLogger
         }
     }
 
+    /**
+     * Log a canvass position event received by the cluster node
+     *
+     * @param logLeadershipTermId leadershipTermId processes from the log by the candidate
+     * @param logPosition         position in the candidate's log
+     * @param candidateTermId     next termId proposed by the candidate
+     * @param candidateId         id of the candidate node
+     */
     public void logRequestVote(
         final long logLeadershipTermId,
         final long logPosition,

@@ -91,6 +91,7 @@ public class ElectionTest
     }
 
     @Test
+    @SuppressWarnings("MethodLength")
     public void shouldElectAppointedLeader()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
@@ -151,8 +152,8 @@ public class ElectionTest
             leadershipTermId,
             logPosition,
             candidateTermId,
-            RECORDING_ID,
             logPosition,
+            RECORDING_ID,
             t5,
             candidateMember.id(),
             LOG_SESSION_ID,
@@ -162,8 +163,8 @@ public class ElectionTest
             leadershipTermId,
             logPosition,
             candidateTermId,
-            RECORDING_ID,
             logPosition,
+            RECORDING_ID,
             t5,
             candidateMember.id(),
             LOG_SESSION_ID,

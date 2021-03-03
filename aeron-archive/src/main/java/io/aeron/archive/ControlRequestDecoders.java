@@ -47,6 +47,7 @@ class ControlRequestDecoders
     final BoundedReplayRequestDecoder boundedReplayRequest = new BoundedReplayRequestDecoder();
     final StopAllReplaysRequestDecoder stopAllReplaysRequest = new StopAllReplaysRequestDecoder();
     final ReplicateRequestDecoder replicateRequest = new ReplicateRequestDecoder();
+    final ReplicateRequest2Decoder replicateRequest2 = new ReplicateRequest2Decoder();
     final StopReplicationRequestDecoder stopReplicationRequest = new StopReplicationRequestDecoder();
     final StartPositionRequestDecoder startPositionRequest = new StartPositionRequestDecoder();
     final DetachSegmentsRequestDecoder detachSegmentsRequest = new DetachSegmentsRequestDecoder();

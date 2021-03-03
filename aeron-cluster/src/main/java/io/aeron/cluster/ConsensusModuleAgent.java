@@ -192,11 +192,10 @@ final class ConsensusModuleAgent implements Agent
             consensusUri.put(ENDPOINT_PARAM_NAME, thisMember.consensusEndpoint());
         }
 
-        final int statusStreamId = ctx.consensusStreamId();
         consensusAdapter = new ConsensusAdapter(
-            aeron.addSubscription(consensusUri.toString(), statusStreamId), this);
+            aeron.addSubscription(consensusUri.toString(), ctx.consensusStreamId()), this);
 
-        ClusterMember.addConsensusPublications(activeMembers, thisMember, consensusUri, statusStreamId, aeron);
+        ClusterMember.addConsensusPublications(activeMembers, thisMember, consensusUri, ctx.consensusStreamId(), aeron);
 
         ingressAdapter = new IngressAdapter(ctx.ingressFragmentLimit(), this);
         logAdapter = new LogAdapter(this, ctx.logFragmentLimit());

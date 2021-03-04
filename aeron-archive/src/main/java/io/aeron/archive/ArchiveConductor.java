@@ -1036,7 +1036,7 @@ abstract class ArchiveConductor
             .controlRequestChannel(srcControlChannel)
             .controlRequestStreamId(srcControlStreamId);
 
-        final long replicationId = aeron.nextCorrelationId();
+        final long replicationId = nextSessionId++;
         final ReplicationSession replicationSession = new ReplicationSession(
             srcRecordingId,
             dstRecordingId,

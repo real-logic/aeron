@@ -86,7 +86,7 @@ public class ClusterBackupAgent implements Agent
 
     private SnapshotRetrieveMonitor snapshotRetrieveMonitor;
 
-    private final FragmentAssembler consensusFragmentAssembler = new FragmentAssembler(this::onFragment);
+    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
     private final Subscription consensusSubscription;
     private ExclusivePublication consensusPublication;
     private ClusterMember[] clusterMembers;
@@ -187,7 +187,7 @@ public class ClusterBackupAgent implements Agent
 
         try
         {
-            workCount += consensusSubscription.poll(consensusFragmentAssembler, ConsensusAdapter.FRAGMENT_LIMIT);
+            workCount += consensusSubscription.poll(fragmentAssembler, ConsensusAdapter.FRAGMENT_LIMIT);
 
             switch (state)
             {
@@ -262,7 +262,7 @@ public class ClusterBackupAgent implements Agent
         leaderLastTermEntry = null;
         clusterConsensusEndpointsCursor = NULL_VALUE;
 
-        consensusFragmentAssembler.clear();
+        fragmentAssembler.clear();
         final ExclusivePublication consensusPublication = this.consensusPublication;
         final AeronArchive clusterArchive = this.clusterArchive;
         final AeronArchive.AsyncConnect clusterArchiveAsyncConnect = this.clusterArchiveAsyncConnect;
@@ -588,7 +588,6 @@ public class ClusterBackupAgent implements Agent
         if (NULL_VALUE == liveLogRecordingSubscriptionId)
         {
             final String endpoint = ctx.catchupEndpoint();
-
             if (endpoint.endsWith(":0"))
             {
                 if (null == recordingSubscription)

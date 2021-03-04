@@ -519,6 +519,8 @@ public final class ClusterBackup implements AutoCloseable
                         .errorHandler(errorHandler)
                         .epochClock(epochClock)
                         .useConductorAgentInvoker(true)
+                        .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE)
+                        .subscriberErrorHandler(RethrowingErrorHandler.INSTANCE)
                         .clientLock(NoOpLock.INSTANCE));
 
                 if (null == errorCounter)
@@ -526,6 +528,11 @@ public final class ClusterBackup implements AutoCloseable
                     errorCounter = ClusterCounters.allocate(
                         aeron, "ClusterBackup errors", CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID, clusterId);
                 }
+            }
+
+            if (!(aeron.context().subscriberErrorHandler() instanceof RethrowingErrorHandler))
+            {
+                throw new ClusterException("Aeron client must use a RethrowingErrorHandler");
             }
 
             if (null == aeron.conductorAgentInvoker())

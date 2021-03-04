@@ -453,7 +453,7 @@ public class ClusterBackupAgent implements Agent
 
             if (null != clusterArchive)
             {
-                clusterArchive.pollForErrorResponse();
+                clusterArchive.checkForErrorResponse();
             }
         }
 

@@ -473,7 +473,7 @@ public class TestNode implements AutoCloseable
             for (int i = 0; i < SNAPSHOT_FRAGMENT_COUNT; i++)
             {
                 idleStrategy.reset();
-                while (snapshotPublication.offer(buffer, 0, SNAPSHOT_MSG_LENGTH) <= 0)
+                while (snapshotPublication.offer(buffer, 0, SNAPSHOT_MSG_LENGTH) < 0)
                 {
                     idleStrategy.idle();
                 }

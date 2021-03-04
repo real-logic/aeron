@@ -828,10 +828,11 @@ public class ClusterTest
             try
             {
                 cluster.stopNode(followerB);
-                followerB = cluster.startStaticNode(followerB.index(), false);
-                awaitElectionClosed(followerB);
+                Tests.sleep(2_000); // keep ingress going so the cluster advances.
 
-                Tests.sleep(3_000); // keep ingress going so started node has to catchup.
+                followerB = cluster.startStaticNode(followerB.index(), false);
+                Tests.sleep(2_000); // keep ingress going a while after catchup.
+                awaitElectionClosed(followerB);
             }
             finally
             {

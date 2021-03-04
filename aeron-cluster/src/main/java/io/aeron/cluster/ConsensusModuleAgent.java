@@ -1285,7 +1285,8 @@ final class ConsensusModuleAgent implements Agent
         {
             if (!channelUri.containsKey(FLOW_CONTROL_PARAM_NAME))
             {
-                final long timeout = Math.max(TimeUnit.NANOSECONDS.toSeconds(ctx.leaderHeartbeatTimeoutNs() >> 1), 2L);
+                final long timeoutNs = (ctx.leaderHeartbeatTimeoutNs() >> 1) + (ctx.leaderHeartbeatTimeoutNs() >> 2);
+                final long timeout = Math.max(TimeUnit.NANOSECONDS.toSeconds(timeoutNs), 3L);
                 channelUri.put(FLOW_CONTROL_PARAM_NAME, "min,t:" + timeout + "s");
             }
 

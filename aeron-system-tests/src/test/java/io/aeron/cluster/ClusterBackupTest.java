@@ -305,7 +305,6 @@ public class ClusterBackupTest
             cluster.awaitServicesMessageCount(messageCount);
 
             final long logPosition = leader.service().cluster().logPosition();
-
             final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
 
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);

@@ -84,29 +84,34 @@ public final class ClusterBackup implements AutoCloseable
         SNAPSHOT_RETRIEVE(1),
 
         /**
+         * Setup recording for live log.
+         */
+        LIVE_LOG_RECORD(2),
+
+        /**
          * Replay the current live log since snapshot and join it.
          */
-        LIVE_LOG_REPLAY(2),
+        LIVE_LOG_REPLAY(3),
 
         /**
          * Update the local {@link RecordingLog} for recovery.
          */
-        UPDATE_RECORDING_LOG(3),
+        UPDATE_RECORDING_LOG(4),
 
         /**
          * Back up live log and track progress until next query deadline is reached.
          */
-        BACKING_UP(4),
+        BACKING_UP(5),
 
         /**
          * On error or progress stall the backup is reset and started over again.
          */
-        RESET_BACKUP(5),
+        RESET_BACKUP(6),
 
         /**
          * The backup is complete and closed.
          */
-        CLOSED(6);
+        CLOSED(7);
 
         static final State[] STATES = values();
 

@@ -499,7 +499,7 @@ public class TestCluster implements AutoCloseable
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .consensusChannel(consensusChannelUri.toString())
             .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
-            .catchupEndpoint(clusterBackupCatchupEndpoint(0, staticMemberCount + dynamicMemberCount))
+            .catchupEndpoint("localhost:0")
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .archiveContext(context.aeronArchiveContext.clone())
             .deleteDirOnStart(cleanStart);
@@ -1154,11 +1154,6 @@ public class TestCluster implements AutoCloseable
     private static String clusterBackupStatusEndpoint(final int clusterId, final int maxMemberCount)
     {
         return "localhost:2" + clusterId + "22" + maxMemberCount;
-    }
-
-    private static String clusterBackupCatchupEndpoint(final int clusterId, final int maxMemberCount)
-    {
-        return "localhost:2" + clusterId + "44" + maxMemberCount;
     }
 
     public void invalidateLatestSnapshots()

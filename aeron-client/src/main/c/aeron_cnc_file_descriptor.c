@@ -37,9 +37,7 @@ int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
 }
 
 aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
-    const char *dir,
-    aeron_mapped_file_t *cnc_mmap,
-    aeron_cnc_metadata_t **metadata)
+    const char *dir, aeron_mapped_file_t *cnc_mmap, aeron_cnc_metadata_t **metadata)
 {
     if (NULL == metadata)
     {
@@ -59,6 +57,12 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
 
     if (aeron_map_existing_file(cnc_mmap, filename) < 0)
     {
+        if (ENOENT == errno)
+        {
+            aeron_err_clear();
+            return AERON_CNC_LOAD_AWAIT_FILE;
+        }
+
         AERON_APPEND_ERR("CnC file could not be mmapped: %s", filename);
         return AERON_CNC_LOAD_FAILED;
     }
@@ -70,9 +74,9 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
     }
 
     aeron_cnc_metadata_t *_metadata = (aeron_cnc_metadata_t *)cnc_mmap->addr;
-    int32_t cnc_version;
+    int32_t cnc_version = aeron_cnc_version_volatile(_metadata);
 
-    if (0 == (cnc_version = aeron_cnc_version_volatile(_metadata)))
+    if (0 == cnc_version)
     {
         aeron_unmap(cnc_mmap);
         return AERON_CNC_LOAD_AWAIT_VERSION;
@@ -101,6 +105,7 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
     }
 
     *metadata = _metadata;
+
     return AERON_CNC_LOAD_SUCCESS;
 }
 

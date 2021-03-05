@@ -1069,7 +1069,8 @@ int aeron_publication_async_add_destination(
  * @param uri for the destination to remove.
  * @return 0 for success and -1 for error.
  */
-int aeron_publication_async_remove_destination(aeron_async_destination_t **async, aeron_t *client, aeron_publication_t *publication, const char *uri);
+int aeron_publication_async_remove_destination(
+    aeron_async_destination_t **async, aeron_t *client, aeron_publication_t *publication, const char *uri);
 
 /**
  * Poll the completion of the add/remove of a destination to/from a publication.

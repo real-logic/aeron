@@ -314,9 +314,10 @@ static void aeron_touch_pages(volatile uint8_t *base, size_t length, size_t page
 
 int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool fill_with_zeroes)
 {
-    int fd, result = -1;
+    int result = -1;
 
-    if ((fd = aeron_create_file(path)) >= 0)
+    int fd = aeron_create_file(path);
+    if (fd >= 0)
     {
         if (aeron_ftruncate(fd, (off_t)mapped_file->length) >= 0)
         {
@@ -351,11 +352,13 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 
 int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
 {
-    struct stat sb;
-    int fd, result = -1;
+    int result = -1;
 
-    if ((fd = open(path, O_RDWR)) >= 0)
+    int fd = open(path, O_RDWR);
+    if (fd >= 0)
     {
+        struct stat sb;
+
         if (fstat(fd, &sb) == 0)
         {
             mapped_file->length = (size_t)sb.st_size;
@@ -499,11 +502,13 @@ int aeron_raw_log_map(
 
 int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool pre_touch)
 {
-    struct stat sb;
-    int fd, result = -1;
+    int result = -1;
 
-    if ((fd = open(path, O_RDWR)) >= 0)
+    int fd = open(path, O_RDWR);
+    if (fd >= 0)
     {
+        struct stat sb;
+
         if (fstat(fd, &sb) == 0)
         {
             mapped_raw_log->mapped_file.length = (size_t)sb.st_size;

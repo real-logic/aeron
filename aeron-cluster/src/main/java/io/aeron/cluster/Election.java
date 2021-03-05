@@ -968,6 +968,8 @@ class Election
 
     private Subscription addFollowerSubscription()
     {
+        assert logSessionId != CommonContext.NULL_SESSION_ID;
+
         final int streamId = ctx.logStreamId();
         final String channel = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)

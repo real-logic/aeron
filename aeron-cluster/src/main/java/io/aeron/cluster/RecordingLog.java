@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
@@ -799,13 +800,17 @@ public final class RecordingLog implements AutoCloseable
      *
      * @param archive      to lookup recording descriptors.
      * @param serviceCount of services that may have snapshots.
+     * @param replicatedRecordingId leader's recordingId used for replicating
      * @return a new {@link RecoveryPlan} for the cluster.
      */
-    public RecoveryPlan createRecoveryPlan(final AeronArchive archive, final int serviceCount)
+    public RecoveryPlan createRecoveryPlan(
+        final AeronArchive archive,
+        final int serviceCount,
+        final long replicatedRecordingId)
     {
         final ArrayList<Snapshot> snapshots = new ArrayList<>();
         final MutableReference<Log> logRef = new MutableReference<>();
-        planRecovery(snapshots, logRef, entriesCache, archive, serviceCount);
+        planRecovery(snapshots, logRef, entriesCache, archive, serviceCount, replicatedRecordingId);
 
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;
@@ -1326,9 +1331,10 @@ public final class RecordingLog implements AutoCloseable
         final MutableReference<Log> logRef,
         final ArrayList<Entry> entries,
         final AeronArchive archive,
-        final int serviceCount)
+        final int serviceCount,
+        final long replicatedRecordingId)
     {
-        if (entries.isEmpty())
+        if (entries.isEmpty() && NULL_VALUE == replicatedRecordingId)
         {
             return;
         }
@@ -1378,6 +1384,29 @@ public final class RecordingLog implements AutoCloseable
                 entry.leadershipTermId,
                 entry.termBaseLogPosition,
                 entry.logPosition,
+                startPosition,
+                recordingExtent.stopPosition,
+                recordingExtent.initialTermId,
+                recordingExtent.termBufferLength,
+                recordingExtent.mtuLength,
+                recordingExtent.sessionId));
+        }
+        else if (Aeron.NULL_VALUE != replicatedRecordingId)
+        {
+            final RecordingExtent recordingExtent = new RecordingExtent();
+            if (archive.listRecording(replicatedRecordingId, recordingExtent) == 0)
+            {
+                throw new ClusterException("unknown recording id: " + replicatedRecordingId);
+            }
+
+            final long startPosition = -1 == snapshotIndex ?
+                recordingExtent.startPosition : snapshots.get(0).logPosition;
+
+            logRef.set(new Log(
+                replicatedRecordingId,
+                -1,
+                0,
+                0,
                 startPosition,
                 recordingExtent.stopPosition,
                 recordingExtent.initialTermId,

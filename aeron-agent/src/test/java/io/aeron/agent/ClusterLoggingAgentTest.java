@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Timeout;
 import java.io.File;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
@@ -141,9 +142,11 @@ public class ClusterLoggingAgentTest
         Tests.await(WAIT_LIST::isEmpty);
 
         final Counter state = clusteredMediaDriver.consensusModule().context().electionStateCounter();
+
+        final Supplier<String> message = () -> ElectionState.get(state).toString();
         while (ElectionState.CLOSED != ElectionState.get(state))
         {
-            Tests.sleep(1);
+            Tests.wait(Tests.SLEEP_1_MS, message);
         }
     }
 

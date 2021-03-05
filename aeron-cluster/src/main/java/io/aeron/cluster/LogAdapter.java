@@ -80,12 +80,17 @@ final class LogAdapter implements ControlledFragmentHandler
 
     int poll(final long boundPosition)
     {
+        if (null == image)
+        {
+            return 0;
+        }
+
         return image.boundedControlledPoll(this, boundPosition, fragmentLimit);
     }
 
     boolean isImageClosed()
     {
-        return image.isClosed();
+        return null == image || image.isClosed();
     }
 
     Image image()

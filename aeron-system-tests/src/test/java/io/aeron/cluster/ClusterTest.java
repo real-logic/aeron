@@ -1031,6 +1031,9 @@ public class ClusterTest
 
             assertEquals(messageCount, cluster.node(0).service().messageCount());
             assertEquals(messageCount, cluster.node(1).service().messageCount());
+
+            // Needs a little time to replay the transactions...
+            Tests.await(() -> cluster.node(2).service().messageCount() >= 3);
             assertEquals(messageCount, cluster.node(2).service().messageCount());
 
             final int messageCountAfterStart = 4;
@@ -1107,6 +1110,83 @@ public class ClusterTest
             cluster.startStaticNode(leader.index(), false);
             cluster.startStaticNode(followerOne.index(), false);
             cluster.awaitLeader();
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
+    @Test
+    @Timeout(40)
+    public void shouldRecoverWhenFollowerArrivePartWayThroughTerm(final TestInfo testInfo)
+    {
+        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        try
+        {
+            final TestNode leader = cluster.awaitLeader();
+            final TestNode followerOne = cluster.followers().get(0);
+            final TestNode followerTwo = cluster.followers().get(1);
+
+            final int messageCount = 10;
+            cluster.connectClient();
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+
+            cluster.stopNode(followerOne);
+
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount * 2);
+
+            cluster.startStaticNode(followerOne.index(), false);
+
+            // Needs a little time to replay the transactions...
+            Tests.await(() -> cluster.node(followerOne.index()).service().messageCount() >= messageCount * 2);
+            assertEquals(messageCount * 2, cluster.node(followerOne.index()).service().messageCount());
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
+    @Test
+    @Timeout(40)
+    public void shouldRecoverWhenFollowerArrivePartWayThroughTermAfterMissingElection(final TestInfo testInfo)
+    {
+        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        try
+        {
+            final TestNode leader = cluster.awaitLeader();
+            final TestNode followerOne = cluster.followers().get(0);
+            final TestNode followerTwo = cluster.followers().get(1);
+
+            final int messageCount = 10;
+            cluster.connectClient();
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+
+            cluster.stopNode(followerOne);
+
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount * 2);
+
+            cluster.stopNode(followerTwo);
+            cluster.stopNode(leader);
+
+            cluster.startStaticNode(leader.index(), false);
+            cluster.startStaticNode(followerTwo.index(), false);
+            cluster.awaitLeader();
+            cluster.reconnectClient();
+
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount * 3);
+
+            cluster.startStaticNode(followerOne.index(), false);
+
+            // Needs a little time to replay the transactions...
+            Tests.await(() -> cluster.node(followerOne.index()).service().messageCount() >= messageCount * 3);
+            assertEquals(messageCount * 3, cluster.node(followerOne.index()).service().messageCount());
         }
         catch (final Throwable ex)
         {

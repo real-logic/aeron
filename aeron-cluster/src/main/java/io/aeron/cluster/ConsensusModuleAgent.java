@@ -253,7 +253,7 @@ final class ConsensusModuleAgent implements Agent
                 archive.tryStopRecordingByIdentity(lastTermRecordingId);
             }
 
-            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), Aeron.NULL_VALUE);
             if (null != recoveryPlan.log)
             {
                 logRecordingId = recoveryPlan.log.recordingId;
@@ -931,7 +931,7 @@ final class ConsensusModuleAgent implements Agent
             }
             lastAppendPosition = appendPosition;
 
-            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
 
             clearSessionsAfter(logPosition);
             for (final ClusterSession session : sessionByIdMap.values())
@@ -1523,7 +1523,7 @@ final class ConsensusModuleAgent implements Agent
             timeOfLastAppendPositionNs = nowNs;
         }
 
-        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), Aeron.NULL_VALUE);
         notifiedCommitPosition = logPosition;
         commitPosition.setOrdered(logPosition);
         pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
@@ -2732,7 +2732,7 @@ final class ConsensusModuleAgent implements Agent
             recordingId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
 
         recordingLog.force(ctx.fileSyncLevel());
-        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), Aeron.NULL_VALUE);
         ctx.snapshotCounter().incrementOrdered();
 
         final long nowNs = clusterClock.timeNanos();
@@ -3039,5 +3039,10 @@ final class ConsensusModuleAgent implements Agent
             ingressAdapter.connect(aeron.addSubscription(
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
+    }
+
+    ClusterMember thisMember()
+    {
+        return thisMember;
     }
 }

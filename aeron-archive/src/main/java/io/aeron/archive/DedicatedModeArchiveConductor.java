@@ -27,8 +27,8 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
     private static final int COMMAND_LIMIT = 10;
 
     private final ManyToOneConcurrentLinkedQueue<Session> closeQueue;
-    private AgentRunner replayerAgentRunner;
     private AgentRunner recorderAgentRunner;
+    private AgentRunner replayerAgentRunner;
 
     DedicatedModeArchiveConductor(final Archive.Context ctx)
     {
@@ -43,8 +43,8 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         recorderAgentRunner = new AgentRunner(ctx.recorderIdleStrategy(), errorHandler, ctx.errorCounter(), recorder);
         replayerAgentRunner = new AgentRunner(ctx.replayerIdleStrategy(), errorHandler, ctx.errorCounter(), replayer);
 
-        AgentRunner.startOnThread(replayerAgentRunner, ctx.threadFactory());
         AgentRunner.startOnThread(recorderAgentRunner, ctx.threadFactory());
+        AgentRunner.startOnThread(replayerAgentRunner, ctx.threadFactory());
     }
 
     protected SessionWorker<RecordingSession> newRecorder()

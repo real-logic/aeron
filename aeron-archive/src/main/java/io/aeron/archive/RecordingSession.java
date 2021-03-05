@@ -45,7 +45,7 @@ class RecordingSession implements Session
     private final String originalChannel;
     private final ControlSession controlSession;
     private final CountedErrorHandler countedErrorHandler;
-    private State state = State.INIT;
+    private volatile State state = State.INIT;
     private String errorMessage = null;
     private int errorCode = ArchiveException.GENERIC;
 

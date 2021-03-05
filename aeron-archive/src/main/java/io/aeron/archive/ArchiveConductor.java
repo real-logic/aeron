@@ -104,8 +104,8 @@ abstract class ArchiveConductor
     private final Authenticator authenticator;
     private final ControlSessionProxy controlSessionProxy;
     final Archive.Context ctx;
-    SessionWorker<ReplaySession> replayer;
     SessionWorker<RecordingSession> recorder;
+    SessionWorker<ReplaySession> replayer;
 
     ArchiveConductor(final Archive.Context ctx)
     {
@@ -147,8 +147,8 @@ abstract class ArchiveConductor
 
     public void onStart()
     {
-        replayer = newReplayer();
         recorder = newRecorder();
+        replayer = newReplayer();
     }
 
     public void onAvailableImage(final Image image)
@@ -194,11 +194,10 @@ abstract class ArchiveConductor
         else
         {
             aeron.removeCloseHandler(closeHandlerRegistrationId);
+            aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
 
             if (!ctx.ownsAeronClient())
             {
-                aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
-
                 for (final Subscription subscription : recordingSubscriptionMap.values())
                 {
                     subscription.close();
@@ -219,14 +218,14 @@ abstract class ArchiveConductor
         {
             isAbort = true;
 
-            if (null != replayer)
-            {
-                replayer.abort();
-            }
-
             if (null != recorder)
             {
                 recorder.abort();
+            }
+
+            if (null != replayer)
+            {
+                replayer.abort();
             }
 
             ctx.errorCounter().close();

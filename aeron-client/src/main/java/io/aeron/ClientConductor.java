@@ -29,6 +29,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static io.aeron.Aeron.Configuration.IDLE_SLEEP_MS;
@@ -46,6 +47,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 final class ClientConductor implements Agent
 {
     private static final long NO_CORRELATION_ID = NULL_VALUE;
+    private static final long EXPLICIT_CLOSE_LINGER_NS = TimeUnit.SECONDS.toNanos(1);
 
     private final long keepAliveIntervalNs;
     private final long driverTimeoutMs;
@@ -477,7 +479,8 @@ final class ClientConductor implements Agent
                 publication.internalClose();
                 if (publication == resourceByRegIdMap.remove(publication.registrationId()))
                 {
-                    releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId(), 0);
+                    releaseLogBuffers(
+                        publication.logBuffers(), publication.originalRegistrationId(), EXPLICIT_CLOSE_LINGER_NS);
                     asyncCommandIdSet.add(driverProxy.removePublication(publication.registrationId()));
                 }
             }
@@ -539,7 +542,7 @@ final class ClientConductor implements Agent
             {
                 ensureNotReentrant();
 
-                subscription.internalClose(0);
+                subscription.internalClose(EXPLICIT_CLOSE_LINGER_NS);
                 final long registrationId = subscription.registrationId();
                 if (subscription == resourceByRegIdMap.remove(registrationId))
                 {
@@ -1039,6 +1042,10 @@ final class ClientConductor implements Agent
         for (final Image image : images)
         {
             image.close();
+        }
+
+        for (final Image image : images)
+        {
             releaseLogBuffers(image.logBuffers(), image.correlationId(), lingerNs);
         }
 

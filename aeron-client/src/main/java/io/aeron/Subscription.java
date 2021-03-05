@@ -586,10 +586,9 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
 
     void internalClose(final long lingerDurationNs)
     {
-        isClosed = true;
         final Image[] images = this.images;
         this.images = EMPTY_IMAGES;
-
+        isClosed = true;
         conductor.closeImages(images, unavailableImageHandler, lingerDurationNs);
     }
 

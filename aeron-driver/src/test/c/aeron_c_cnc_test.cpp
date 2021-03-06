@@ -17,9 +17,7 @@
 #include <functional>
 
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 
-#include "EmbeddedMediaDriver.h"
 #include "aeron_test_base.h"
 
 extern "C"
@@ -74,7 +72,8 @@ class CncTest : public CSystemTestBase, public testing::Test
 {
 protected:
     CncTest() : CSystemTestBase(
-        std::vector<std::pair<std::string, std::string>>{
+        std::vector<std::pair<std::string, std::string>>
+        {
             { "AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS",        "loss" },
             { "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", "rate=0.2|recv-msg-mask=0xF" }
         })

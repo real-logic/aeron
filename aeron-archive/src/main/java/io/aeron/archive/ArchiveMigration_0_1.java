@@ -40,11 +40,17 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
 {
     private static final int MINIMUM_VERSION = SemanticVersion.compose(1, 0, 0);
 
+    /**
+     * {@inheritDoc}
+     */
     public int minimumVersion()
     {
         return MINIMUM_VERSION;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void migrate(
         final PrintStream stream,
         final ArchiveMarkFile markFile,
@@ -88,7 +94,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
         }
     }
 
-    public void migrateRecording(
+    private void migrateRecording(
         final PrintStream stream,
         final File archiveDir,
         final String[] segmentFiles,
@@ -160,6 +166,9 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
         stream.println("(recordingId=" + recordingId + ") OK");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "to " + fullVersionString(minimumVersion());

@@ -113,6 +113,9 @@ class RecordingReader implements AutoCloseable
         replayLimit = fromPosition + replayLength;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         closeRecordingSegment();

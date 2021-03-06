@@ -124,21 +124,33 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long sessionId()
     {
         return replicationId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isDone()
     {
         return state == State.DONE;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void abort()
     {
         this.state(State.DONE);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         final ArchiveConductor archiveConductor = controlSession.archiveConductor();
@@ -152,6 +164,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         archiveConductor.removeReplicationSession(this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;
@@ -213,6 +228,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         return workCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onRecordingDescriptor(
         final long controlSessionId,
         final long correlationId,

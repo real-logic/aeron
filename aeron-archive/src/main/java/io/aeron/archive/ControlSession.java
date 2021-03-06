@@ -91,11 +91,17 @@ final class ControlSession implements Session
         this.activityDeadlineMs = cachedEpochClock.time() + connectTimeoutMs;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long sessionId()
     {
         return controlSessionId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void abort()
     {
         state(State.DONE);
@@ -105,6 +111,9 @@ final class ControlSession implements Session
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         if (null != activeListing)
@@ -120,11 +129,17 @@ final class ControlSession implements Session
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isDone()
     {
         return state == State.DONE;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;

@@ -45,25 +45,40 @@ class ControlSessionDemuxer implements Session, FragmentHandler
         this.conductor = conductor;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long sessionId()
     {
         return image.correlationId();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void abort()
     {
         isActive = false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isDone()
     {
         return !isActive;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;
@@ -85,6 +100,9 @@ class ControlSessionDemuxer implements Session, FragmentHandler
         return workCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("MethodLength")
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {

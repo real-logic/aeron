@@ -50,21 +50,33 @@ abstract class AbstractListRecordingsSession implements Session
         this.descriptorBuffer = descriptorBuffer;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void abort()
     {
         isDone = true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isDone()
     {
         return isDone;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long sessionId()
     {
         return Aeron.NULL_VALUE;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         if (isDone)
@@ -131,6 +143,9 @@ abstract class AbstractListRecordingsSession implements Session
         return sent - alreadySent;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         controlSession.activeListing(null);

@@ -40,11 +40,17 @@ class SessionWorker<T extends Session> implements Agent
         this.errorHandler = errorHandler;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String roleName()
     {
         return roleName;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;
@@ -72,6 +78,9 @@ class SessionWorker<T extends Session> implements Agent
         return workCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public final void onClose()
     {
         if (isClosed)
@@ -98,10 +107,16 @@ class SessionWorker<T extends Session> implements Agent
         postSessionsClose();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected void abort()
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected void closeSession(final T session)
     {
         try
@@ -114,14 +129,23 @@ class SessionWorker<T extends Session> implements Agent
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected void postSessionsClose()
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected void preSessionsClose()
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected void addSession(final T session)
     {
         sessions.add(session);

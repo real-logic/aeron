@@ -94,6 +94,9 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         segmentOffset = (int)(joinPosition - segmentBasePosition);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onBlock(
         final DirectBuffer termBuffer, final int termOffset, final int length, final int sessionId, final int termId)
     {
@@ -151,6 +154,9 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         if (!isClosed)

@@ -35,8 +35,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
             catalog,
             proxy,
             controlSession,
-            descriptorBuffer
-        );
+            descriptorBuffer);
     }
 
     boolean acceptDescriptor(final UnsafeBuffer descriptorBuffer)

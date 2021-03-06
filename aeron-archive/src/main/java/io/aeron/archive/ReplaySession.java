@@ -172,6 +172,9 @@ class ReplaySession implements Session, AutoCloseable
         connectDeadlineMs = epochClock.time() + connectTimeoutMs;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         final CountedErrorHandler errorHandler = controlSession.archiveConductor().context().countedErrorHandler();
@@ -179,11 +182,17 @@ class ReplaySession implements Session, AutoCloseable
         CloseHelper.close(errorHandler, fileChannel);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long sessionId()
     {
         return sessionId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;
@@ -220,11 +229,17 @@ class ReplaySession implements Session, AutoCloseable
         return workCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void abort()
     {
         isAborted = true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isDone()
     {
         return state == State.DONE;

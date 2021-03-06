@@ -55,26 +55,41 @@ class ListRecordingSubscriptionsSession implements Session
         this.proxy = proxy;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         controlSession.activeListing(null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void abort()
     {
         isDone = true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isDone()
     {
         return isDone;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long sessionId()
     {
         return Aeron.NULL_VALUE;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;

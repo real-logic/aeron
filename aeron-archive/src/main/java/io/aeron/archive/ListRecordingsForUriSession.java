@@ -44,8 +44,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
             catalog,
             proxy,
             controlSession,
-            descriptorBuffer
-        );
+            descriptorBuffer);
 
         this.streamId = streamId;
         this.channelFragment = channelFragment;

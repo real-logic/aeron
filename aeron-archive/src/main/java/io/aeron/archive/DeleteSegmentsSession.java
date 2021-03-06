@@ -51,24 +51,39 @@ class DeleteSegmentsSession implements Session
         this.errorHandler = errorHandler;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void abort()
     {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isDone()
     {
         return files.isEmpty();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long sessionId()
     {
         return recordingId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;

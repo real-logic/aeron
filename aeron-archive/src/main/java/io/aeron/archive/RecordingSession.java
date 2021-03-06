@@ -37,7 +37,7 @@ class RecordingSession implements Session
     private final long recordingId;
     private long progressEventPosition;
     private final int blockLengthLimit;
-    private final boolean autoStop;
+    private final boolean isAutoStop;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Image image;
     private final Counter position;
@@ -60,7 +60,7 @@ class RecordingSession implements Session
         final Counter position,
         final Archive.Context ctx,
         final ControlSession controlSession,
-        final boolean autoStop)
+        final boolean isAutoStop)
     {
         this.correlationId = correlationId;
         this.recordingId = recordingId;
@@ -69,7 +69,7 @@ class RecordingSession implements Session
         this.image = image;
         this.position = position;
         this.controlSession = controlSession;
-        this.autoStop = autoStop;
+        this.isAutoStop = isAutoStop;
         countedErrorHandler = ctx.countedErrorHandler();
         progressEventPosition = image.joinPosition();
 
@@ -77,29 +77,36 @@ class RecordingSession implements Session
         recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx);
     }
 
-    public long correlationId()
-    {
-        return correlationId;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     public long sessionId()
     {
         return recordingId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isDone()
     {
         return state == State.STOPPED;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void abort()
     {
         state(State.INACTIVE);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
-        if (autoStop)
+        if (isAutoStop)
         {
             final Subscription subscription = image.subscription();
             CloseHelper.close(countedErrorHandler, subscription);
@@ -109,26 +116,9 @@ class RecordingSession implements Session
         CloseHelper.close(countedErrorHandler, position);
     }
 
-    public void abortClose()
-    {
-        recordingWriter.close();
-    }
-
-    public Counter recordingPosition()
-    {
-        return position;
-    }
-
-    public long recordedPosition()
-    {
-        if (position.isClosed())
-        {
-            return NULL_POSITION;
-        }
-
-        return position.get();
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;
@@ -159,6 +149,31 @@ class RecordingSession implements Session
         return workCount;
     }
 
+    void abortClose()
+    {
+        recordingWriter.close();
+    }
+
+    long correlationId()
+    {
+        return correlationId;
+    }
+
+    Counter recordingPosition()
+    {
+        return position;
+    }
+
+    long recordedPosition()
+    {
+        if (position.isClosed())
+        {
+            return NULL_POSITION;
+        }
+
+        return position.get();
+    }
+
     Subscription subscription()
     {
         return image.subscription();
@@ -167,6 +182,11 @@ class RecordingSession implements Session
     ControlSession controlSession()
     {
         return controlSession;
+    }
+
+    boolean isAutoStop()
+    {
+        return isAutoStop;
     }
 
     void sendPendingError(final ControlResponseProxy controlResponseProxy)

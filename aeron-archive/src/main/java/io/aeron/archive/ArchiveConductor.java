@@ -29,9 +29,7 @@ import io.aeron.security.Authenticator;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.collections.Object2ObjectHashMap;
+import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -84,11 +82,13 @@ abstract class ArchiveConductor
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ReplicationSession> replicationSessionByIdMap = new Long2ObjectHashMap<>();
     private final Int2ObjectHashMap<Counter> counterByIdMap = new Int2ObjectHashMap<>();
-    private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionMap = new Object2ObjectHashMap<>();
+    private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionByKeyMap =
+        new Object2ObjectHashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+    private final Long2LongCounterMap subscriptionRefCountMap = new Long2LongCounterMap(0L);
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -140,11 +140,6 @@ abstract class ArchiveConductor
         controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     }
 
-    Archive.Context context()
-    {
-        return ctx;
-    }
-
     public void onStart()
     {
         recorder = newRecorder();
@@ -174,17 +169,26 @@ abstract class ArchiveConductor
         }
     }
 
-    protected abstract SessionWorker<RecordingSession> newRecorder();
+    abstract SessionWorker<RecordingSession> newRecorder();
 
-    protected abstract SessionWorker<ReplaySession> newReplayer();
+    abstract SessionWorker<ReplaySession> newReplayer();
 
+    /**
+     * {@inheritDoc}
+     */
     protected final void preSessionsClose()
     {
         closeSessionWorkers();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected abstract void closeSessionWorkers();
 
+    /**
+     * {@inheritDoc}
+     */
     protected void postSessionsClose()
     {
         if (isAbort)
@@ -198,7 +202,7 @@ abstract class ArchiveConductor
 
             if (!ctx.ownsAeronClient())
             {
-                for (final Subscription subscription : recordingSubscriptionMap.values())
+                for (final Subscription subscription : recordingSubscriptionByKeyMap.values())
                 {
                     subscription.close();
                 }
@@ -212,6 +216,9 @@ abstract class ArchiveConductor
         ctx.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected void abort()
     {
         try
@@ -240,6 +247,9 @@ abstract class ArchiveConductor
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;
@@ -266,6 +276,11 @@ abstract class ArchiveConductor
         workCount += runTasks(taskQueue);
 
         return workCount + super.doWork();
+    }
+
+    Archive.Context context()
+    {
+        return ctx;
     }
 
     final int invokeAeronInvoker()
@@ -376,7 +391,7 @@ abstract class ArchiveConductor
         {
             final ChannelUri channelUri = ChannelUri.parse(originalChannel);
             final String key = makeKey(streamId, channelUri);
-            final Subscription oldSubscription = recordingSubscriptionMap.get(key);
+            final Subscription oldSubscription = recordingSubscriptionByKeyMap.get(key);
 
             if (null == oldSubscription)
             {
@@ -389,7 +404,8 @@ abstract class ArchiveConductor
 
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 
-                recordingSubscriptionMap.put(key, subscription);
+                recordingSubscriptionByKeyMap.put(key, subscription);
+                subscriptionRefCountMap.incrementAndGet(subscription.registrationId());
                 controlSession.sendOkResponse(correlationId, subscription.registrationId(), controlResponseProxy);
             }
             else
@@ -411,11 +427,23 @@ abstract class ArchiveConductor
         try
         {
             final String key = makeKey(streamId, ChannelUri.parse(channel));
-            final Subscription subscription = recordingSubscriptionMap.remove(key);
+            final Subscription subscription = recordingSubscriptionByKeyMap.remove(key);
 
             if (null != subscription)
             {
-                subscription.close();
+                for (final RecordingSession session : recordingSessionByIdMap.values())
+                {
+                    if (subscription == session.subscription())
+                    {
+                        session.abort();
+                    }
+                }
+
+                if (0 == subscriptionRefCountMap.decrementAndGet(subscription.registrationId()))
+                {
+                    subscription.close();
+                }
+
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
             }
             else
@@ -437,7 +465,19 @@ abstract class ArchiveConductor
         final Subscription subscription = removeRecordingSubscription(subscriptionId);
         if (null != subscription)
         {
-            CloseHelper.close(errorHandler, subscription);
+            for (final RecordingSession session : recordingSessionByIdMap.values())
+            {
+                if (subscription == session.subscription())
+                {
+                    session.abort();
+                }
+            }
+
+            if (0 == subscriptionRefCountMap.decrementAndGet(subscriptionId))
+            {
+                CloseHelper.close(errorHandler, subscription);
+            }
+
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
         else
@@ -449,7 +489,7 @@ abstract class ArchiveConductor
 
     Subscription removeRecordingSubscription(final long subscriptionId)
     {
-        final Iterator<Subscription> iter = recordingSubscriptionMap.values().iterator();
+        final Iterator<Subscription> iter = recordingSubscriptionByKeyMap.values().iterator();
         while (iter.hasNext())
         {
             final Subscription subscription = iter.next();
@@ -763,7 +803,7 @@ abstract class ArchiveConductor
         {
             final ChannelUri channelUri = ChannelUri.parse(originalChannel);
             final String key = makeKey(streamId, channelUri);
-            final Subscription oldSubscription = recordingSubscriptionMap.get(key);
+            final Subscription oldSubscription = recordingSubscriptionByKeyMap.get(key);
 
             if (null == oldSubscription)
             {
@@ -776,7 +816,8 @@ abstract class ArchiveConductor
 
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 
-                recordingSubscriptionMap.put(key, subscription);
+                recordingSubscriptionByKeyMap.put(key, subscription);
+                subscriptionRefCountMap.incrementAndGet(subscription.registrationId());
                 controlSession.sendOkResponse(correlationId, subscription.registrationId(), controlResponseProxy);
 
                 return subscription;
@@ -926,14 +967,14 @@ abstract class ArchiveConductor
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
         }
-        else if (pseudoIndex < 0 || pseudoIndex >= recordingSubscriptionMap.size() || subscriptionCount <= 0)
+        else if (pseudoIndex < 0 || pseudoIndex >= recordingSubscriptionByKeyMap.size() || subscriptionCount <= 0)
         {
             controlSession.sendSubscriptionUnknown(correlationId, controlResponseProxy);
         }
         else
         {
             final ListRecordingSubscriptionsSession session = new ListRecordingSubscriptionsSession(
-                recordingSubscriptionMap,
+                recordingSubscriptionByKeyMap,
                 pseudoIndex,
                 subscriptionCount,
                 streamId,
@@ -958,10 +999,13 @@ abstract class ArchiveConductor
             {
                 final long subscriptionId = recordingSession.subscription().registrationId();
                 final Subscription subscription = removeRecordingSubscription(subscriptionId);
+
+                recordingSession.abort();
+
                 if (null != subscription)
                 {
                     found = 1;
-                    CloseHelper.close(errorHandler, subscription);
+                    subscriptionRefCountMap.decrementAndGet(subscriptionId);
                 }
             }
 
@@ -971,9 +1015,6 @@ abstract class ArchiveConductor
 
     void closeRecordingSession(final RecordingSession session)
     {
-        final long recordingId = session.sessionId();
-        recordingSessionByIdMap.remove(recordingId);
-
         if (isAbort)
         {
             session.abortClose();
@@ -981,29 +1022,36 @@ abstract class ArchiveConductor
         else
         {
             final long position = session.recordedPosition();
+            final long recordingId = session.sessionId();
+            final Subscription subscription = session.subscription();
             catalog.recordingStopped(recordingId, position, epochClock.time());
+            recordingSessionByIdMap.remove(recordingId);
 
             session.sendPendingError(controlResponseProxy);
             session.controlSession().attemptSignal(
                 session.correlationId(),
                 recordingId,
-                session.subscription().registrationId(),
+                subscription.registrationId(),
                 position,
                 RecordingSignal.STOP);
 
+            if (0 == subscriptionRefCountMap.decrementAndGet(subscription.registrationId()) || session.isAutoStop())
+            {
+                subscriptionRefCountMap.remove(subscription.registrationId());
+                subscription.close();
+            }
             closeSession(session);
         }
     }
 
     void closeReplaySession(final ReplaySession session)
     {
-        replaySessionByIdMap.remove(session.sessionId());
-
         if (!isAbort)
         {
             session.sendPendingError(controlResponseProxy);
         }
 
+        replaySessionByIdMap.remove(session.sessionId());
         closeSession(session);
     }
 
@@ -1513,6 +1561,7 @@ abstract class ArchiveConductor
             controlSession,
             autoStop);
 
+        subscriptionRefCountMap.incrementAndGet(image.subscription().registrationId());
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
 
@@ -1569,6 +1618,7 @@ abstract class ArchiveConductor
                 controlSession,
                 autoStop);
 
+            subscriptionRefCountMap.incrementAndGet(image.subscription().registrationId());
             recordingSessionByIdMap.put(recordingId, session);
             catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
             recorder.addSession(session);

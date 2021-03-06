@@ -35,11 +35,17 @@ class ControlSessionProxy implements SessionProxy
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long sessionId()
     {
         return controlSession.sessionId();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean challenge(final byte[] encodedChallenge)
     {
         if (controlResponseProxy.sendChallenge(
@@ -55,6 +61,9 @@ class ControlSessionProxy implements SessionProxy
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean authenticate(final byte[] encodedPrincipal)
     {
         if (controlResponseProxy.sendResponse(
@@ -72,6 +81,9 @@ class ControlSessionProxy implements SessionProxy
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void reject()
     {
         controlSession.reject();

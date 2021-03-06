@@ -44,7 +44,7 @@ final class ArchiveMigrationPlanner
     {
     }
 
-    public static List<ArchiveMigrationStep> createPlan(final int version)
+    static List<ArchiveMigrationStep> createPlan(final int version)
     {
         final List<ArchiveMigrationStep> steps = new ArrayList<>();
 

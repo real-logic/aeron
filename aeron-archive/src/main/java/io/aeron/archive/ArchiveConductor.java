@@ -999,6 +999,14 @@ abstract class ArchiveConductor
                 if (null != subscription)
                 {
                     found = 1;
+
+                    for (final RecordingSession session : recordingSessionByIdMap.values())
+                    {
+                        if (subscription == session.subscription())
+                        {
+                            session.abort();
+                        }
+                    }
                     subscriptionRefCountMap.decrementAndGet(subscriptionId);
                 }
             }

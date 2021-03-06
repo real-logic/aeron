@@ -28,16 +28,17 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  */
 class RecordingSession implements Session
 {
-    private enum State
+    enum State
     {
         INIT, RECORDING, INACTIVE, STOPPED
     }
 
+    private final boolean isAutoStop;
+    private volatile boolean isAborted = false;
     private final long correlationId;
     private final long recordingId;
     private long progressEventPosition;
     private final int blockLengthLimit;
-    private final boolean isAutoStop;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Image image;
     private final Counter position;
@@ -45,7 +46,7 @@ class RecordingSession implements Session
     private final String originalChannel;
     private final ControlSession controlSession;
     private final CountedErrorHandler countedErrorHandler;
-    private volatile State state = State.INIT;
+    private State state = State.INIT;
     private String errorMessage = null;
     private int errorCode = ArchiveException.GENERIC;
 
@@ -70,8 +71,8 @@ class RecordingSession implements Session
         this.position = position;
         this.controlSession = controlSession;
         this.isAutoStop = isAutoStop;
-        countedErrorHandler = ctx.countedErrorHandler();
-        progressEventPosition = image.joinPosition();
+        this.countedErrorHandler = ctx.countedErrorHandler();
+        this.progressEventPosition = image.joinPosition();
 
         blockLengthLimit = Math.min(image.termBufferLength(), ctx.fileIoMaxLength());
         recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx);
@@ -98,7 +99,7 @@ class RecordingSession implements Session
      */
     public void abort()
     {
-        state(State.INACTIVE);
+        isAborted = true;
     }
 
     /**
@@ -106,12 +107,6 @@ class RecordingSession implements Session
      */
     public void close()
     {
-        if (isAutoStop)
-        {
-            final Subscription subscription = image.subscription();
-            CloseHelper.close(countedErrorHandler, subscription);
-            controlSession.archiveConductor().removeRecordingSubscription(subscription.registrationId());
-        }
         recordingWriter.close();
         CloseHelper.close(countedErrorHandler, position);
     }
@@ -122,6 +117,11 @@ class RecordingSession implements Session
     public int doWork()
     {
         int workCount = 0;
+
+        if (isAborted)
+        {
+            state = State.INACTIVE;
+        }
 
         if (State.INIT == state)
         {

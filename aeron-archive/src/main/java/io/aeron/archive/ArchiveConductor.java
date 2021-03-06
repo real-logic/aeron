@@ -997,10 +997,10 @@ abstract class ArchiveConductor
 
             if (null != recordingSession)
             {
+                recordingSession.abort();
+
                 final long subscriptionId = recordingSession.subscription().registrationId();
                 final Subscription subscription = removeRecordingSubscription(subscriptionId);
-
-                recordingSession.abort();
 
                 if (null != subscription)
                 {

@@ -156,7 +156,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final ArchiveConductor archiveConductor = controlSession.archiveConductor();
         final CountedErrorHandler countedErrorHandler = archiveConductor.context().countedErrorHandler();
 
-        stopRecording(countedErrorHandler);
+        stopRecording();
         stopReplaySession(countedErrorHandler);
 
         CloseHelper.close(countedErrorHandler, asyncConnect);
@@ -690,12 +690,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
     }
 
-    private void stopRecording(final CountedErrorHandler countedErrorHandler)
+    private void stopRecording()
     {
         if (null != recordingSubscription)
         {
-            conductor.removeRecordingSubscription(recordingSubscription.registrationId());
-            CloseHelper.close(countedErrorHandler, recordingSubscription);
+            conductor.stopRecordingSubscription(recordingSubscription.registrationId());
             recordingSubscription = null;
         }
     }

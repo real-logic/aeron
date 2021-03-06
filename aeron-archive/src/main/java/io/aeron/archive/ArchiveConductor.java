@@ -462,6 +462,19 @@ abstract class ArchiveConductor
     void stopRecordingSubscription(
         final long correlationId, final long subscriptionId, final ControlSession controlSession)
     {
+        if (stopRecordingSubscription(subscriptionId))
+        {
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
+        else
+        {
+            final String msg = "no recording subscription found for subscriptionId=" + subscriptionId;
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_SUBSCRIPTION, msg, controlResponseProxy);
+        }
+    }
+
+    boolean stopRecordingSubscription(final long subscriptionId)
+    {
         final Subscription subscription = removeRecordingSubscription(subscriptionId);
         if (null != subscription)
         {
@@ -478,29 +491,10 @@ abstract class ArchiveConductor
                 CloseHelper.close(errorHandler, subscription);
             }
 
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
-        }
-        else
-        {
-            final String msg = "no recording subscription found for subscriptionId=" + subscriptionId;
-            controlSession.sendErrorResponse(correlationId, UNKNOWN_SUBSCRIPTION, msg, controlResponseProxy);
-        }
-    }
-
-    Subscription removeRecordingSubscription(final long subscriptionId)
-    {
-        final Iterator<Subscription> iter = recordingSubscriptionByKeyMap.values().iterator();
-        while (iter.hasNext())
-        {
-            final Subscription subscription = iter.next();
-            if (subscription.registrationId() == subscriptionId)
-            {
-                iter.remove();
-                return subscription;
-            }
+            return true;
         }
 
-        return null;
+        return false;
     }
 
     void newListRecordingsSession(
@@ -1038,6 +1032,7 @@ abstract class ArchiveConductor
             if (0 == subscriptionRefCountMap.decrementAndGet(subscription.registrationId()) || session.isAutoStop())
             {
                 subscriptionRefCountMap.remove(subscription.registrationId());
+                removeRecordingSubscription(subscription.registrationId());
                 subscription.close();
             }
             closeSession(session);
@@ -1639,6 +1634,22 @@ abstract class ArchiveConductor
                 CloseHelper.close(errorHandler, image.subscription());
             }
         }
+    }
+
+    private Subscription removeRecordingSubscription(final long subscriptionId)
+    {
+        final Iterator<Subscription> iter = recordingSubscriptionByKeyMap.values().iterator();
+        while (iter.hasNext())
+        {
+            final Subscription subscription = iter.next();
+            if (subscription.registrationId() == subscriptionId)
+            {
+                iter.remove();
+                return subscription;
+            }
+        }
+
+        return null;
     }
 
     private ExclusivePublication newReplayPublication(

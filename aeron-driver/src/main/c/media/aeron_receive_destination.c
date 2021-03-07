@@ -41,14 +41,17 @@ int aeron_receive_destination_create(
     _destination->transport.data_paths = _destination->data_paths;
     _destination->local_sockaddr_indicator.counter_id = AERON_NULL_COUNTER_ID;
 
+    const size_t socket_sndbuf = 0 != channel->socket_sndbuf ? channel->socket_sndbuf : context->socket_sndbuf;
+    const size_t socket_rcvbuf = 0 != channel->socket_rcvbuf ? channel->socket_rcvbuf : context->socket_rcvbuf;
+
     if (context->udp_channel_transport_bindings->init_func(
         &_destination->transport,
         &channel->remote_data,
         &channel->local_data,
         channel->interface_index,
         0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
-        context->socket_rcvbuf,
-        context->socket_sndbuf,
+        socket_rcvbuf,
+        socket_sndbuf,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {

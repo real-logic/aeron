@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.driver.DefaultNameResolver;
@@ -61,6 +62,8 @@ public final class UdpChannel
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
     private final ChannelUri channelUri;
+    private final int socketRcvBuf;
+    private final int socketSndBuf;
 
     private UdpChannel(final Context context)
     {
@@ -82,6 +85,8 @@ public final class UdpChannel
         localInterface = context.localInterface;
         protocolFamily = context.protocolFamily;
         channelUri = context.channelUri;
+        socketRcvBuf = context.socketRcvBuf;
+        socketSndBuf = context.socketSndBuf;
     }
 
     /**
@@ -134,6 +139,8 @@ public final class UdpChannel
             final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
             final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
             final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
+            final int socketRcvBuf = Integer.parseInt(channelUri.get(CommonContext.SOCKET_RCVBUF_PARAM_NAME, "-1"));
+            final int socketSndBuf = Integer.parseInt(channelUri.get(CommonContext.SOCKET_SNDBUF_PARAM_NAME, "-1"));
 
             final boolean requiresAdditionalSuffix = !isDestination &&
                 (null == endpointAddress && null == explicitControlAddress ||
@@ -186,7 +193,9 @@ public final class UdpChannel
                 .isManualControlMode(isManualControlMode)
                 .isDynamicControlMode(isDynamicControlMode)
                 .hasExplicitEndpoint(hasExplicitEndpoint)
-                .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic);
+                .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic)
+                .socketRcvBuf(socketRcvBuf)
+                .socketSndBuf(socketSndBuf);
 
             if (null != tagIdStr)
             {
@@ -624,6 +633,26 @@ public final class UdpChannel
     }
 
     /**
+     * Get the socket receive buffer size
+     *
+     * @return socket receive buffer size or {@link Aeron#NULL_VALUE} if not specified
+     */
+    public int socketRcvBuf()
+    {
+        return socketRcvBuf;
+    }
+
+    /**
+     * Get the socket send buffer size
+     *
+     * @return socket send buffer size or {@link Aeron#NULL_VALUE} if not specified
+     */
+    public int socketSndBuf()
+    {
+        return socketSndBuf;
+    }
+
+    /**
      * Resolve and endpoint into a {@link InetSocketAddress}.
      *
      * @param endpoint       to resolve
@@ -804,6 +833,8 @@ public final class UdpChannel
         boolean hasMulticastTtl = false;
         boolean hasTagId = false;
         boolean hasNoDistinguishingCharacteristic = false;
+        int socketRcvBuf = Aeron.NULL_VALUE;
+        int socketSndBuf = Aeron.NULL_VALUE;
 
         Context uriStr(final String uri)
         {
@@ -916,6 +947,18 @@ public final class UdpChannel
         Context hasNoDistinguishingCharacteristic(final boolean hasNoDistinguishingCharacteristic)
         {
             this.hasNoDistinguishingCharacteristic = hasNoDistinguishingCharacteristic;
+            return this;
+        }
+
+        Context socketRcvBuf(final int socketRcvBuf)
+        {
+            this.socketRcvBuf = socketRcvBuf;
+            return this;
+        }
+
+        Context socketSndBuf(final int socketSndBuf)
+        {
+            this.socketSndBuf = socketSndBuf;
             return this;
         }
     }

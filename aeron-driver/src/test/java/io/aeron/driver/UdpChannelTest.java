@@ -15,7 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.UdpChannel;
@@ -468,8 +467,8 @@ public class UdpChannelTest
         assertEquals(8192, udpChannelWithBufferSizes.socketRcvbufLength());
 
         final UdpChannel udpChannelWithoutBufferSizes = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:9999");
-        assertEquals(Aeron.NULL_VALUE, udpChannelWithoutBufferSizes.socketRcvbufLength());
-        assertEquals(Aeron.NULL_VALUE, udpChannelWithoutBufferSizes.socketSndbufLenth());
+        assertEquals(0, udpChannelWithoutBufferSizes.socketRcvbufLength());
+        assertEquals(0, udpChannelWithoutBufferSizes.socketSndbufLenth());
     }
 
     @ParameterizedTest

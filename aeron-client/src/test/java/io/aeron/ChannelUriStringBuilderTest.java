@@ -100,4 +100,18 @@ public class ChannelUriStringBuilderTest
             "aeron:udp?endpoint=address:9999|term-length=131072|init-term-id=777|term-id=999|term-offset=64",
             builder.build());
     }
+
+    @Test
+    public void shouldGenerateChannelWithSocketParameters()
+    {
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("address:9999")
+            .socketSndbufLength(8192)
+            .socketRcvbufLength(4096);
+
+        assertEquals(
+            "aeron:udp?endpoint=address:9999|socket-sndbuf=8192|socket-rcvbuf=4096",
+            builder.build());
+    }
 }

@@ -138,8 +138,10 @@ public final class UdpChannel
             final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
             final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
             final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
-            final int socketRcvbufLength = Integer.parseInt(channelUri.get(CommonContext.SOCKET_RCVBUF_PARAM_NAME, "0"));
-            final int socketSndbufLength = Integer.parseInt(channelUri.get(CommonContext.SOCKET_SNDBUF_PARAM_NAME, "0"));
+            final int socketRcvbufLength = Integer.parseInt(
+                channelUri.get(CommonContext.SOCKET_RCVBUF_PARAM_NAME, "0"));
+            final int socketSndbufLength = Integer.parseInt(
+                channelUri.get(CommonContext.SOCKET_SNDBUF_PARAM_NAME, "0"));
 
             final boolean requiresAdditionalSuffix = !isDestination &&
                 (null == endpointAddress && null == explicitControlAddress ||

@@ -3,7 +3,7 @@
                    package="io.aeron.archive.codecs"
                    id="101"
                    version="6"
-                   semanticVersion="5.3"
+                   semanticVersion="5.2"
                    description="Message Codecs for communicating with an Aeron Archive."
                    byteOrder="littleEndian">
     <types>

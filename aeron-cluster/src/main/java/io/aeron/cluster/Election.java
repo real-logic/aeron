@@ -732,7 +732,6 @@ class Election
             {
                 // Which position should be updated here???
                 appendPosition = logReplication.replicatedLogPosition();
-                assert appendPosition == logReplicationPosition;
 
                 consensusPublisher.appendPosition(
                     leaderMember.publication(),
@@ -969,8 +968,6 @@ class Election
 
     private Subscription addFollowerSubscription()
     {
-        assert logSessionId != CommonContext.NULL_SESSION_ID;
-
         final int streamId = ctx.logStreamId();
         final String channel = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)

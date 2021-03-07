@@ -146,7 +146,7 @@ public class ClusterLoggingAgentTest
         final Supplier<String> message = () -> ElectionState.get(state).toString();
         while (ElectionState.CLOSED != ElectionState.get(state))
         {
-            Tests.wait(Tests.SLEEP_1_MS, message);
+            Tests.sleep(1, message);
         }
     }
 

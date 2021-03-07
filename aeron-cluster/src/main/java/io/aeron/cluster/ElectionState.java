@@ -64,6 +64,9 @@ public enum ElectionState
      */
     LEADER_READY(7),
 
+    /**
+     * Wait for followers to replicate any missing log entries
+     */
     LEADER_LOG_REPLICATION(8),
 
     /**
@@ -101,6 +104,9 @@ public enum ElectionState
      */
     FOLLOWER_READY(15),
 
+    /**
+     * Replicate missing log entries from the leader.
+     */
     FOLLOWER_LOG_REPLICATION(16),
 
     /**

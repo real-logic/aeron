@@ -1404,7 +1404,7 @@ public final class RecordingLog implements AutoCloseable
 
             logRef.set(new Log(
                 replicatedRecordingId,
-                -1,
+                NULL_VALUE,
                 0,
                 0,
                 startPosition,

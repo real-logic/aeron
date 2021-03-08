@@ -1334,8 +1334,29 @@ public final class RecordingLog implements AutoCloseable
         final int serviceCount,
         final long replicatedRecordingId)
     {
-        if (entries.isEmpty() && NULL_VALUE == replicatedRecordingId)
+        if (entries.isEmpty())
         {
+            if (Aeron.NULL_VALUE != replicatedRecordingId)
+            {
+                final RecordingExtent recordingExtent = new RecordingExtent();
+                if (archive.listRecording(replicatedRecordingId, recordingExtent) == 0)
+                {
+                    throw new ClusterException("unknown recording id: " + replicatedRecordingId);
+                }
+
+                logRef.set(new Log(
+                    replicatedRecordingId,
+                    NULL_VALUE,
+                    0,
+                    0,
+                    recordingExtent.startPosition,
+                    recordingExtent.stopPosition,
+                    recordingExtent.initialTermId,
+                    recordingExtent.termBufferLength,
+                    recordingExtent.mtuLength,
+                    recordingExtent.sessionId));
+            }
+
             return;
         }
 
@@ -1384,29 +1405,6 @@ public final class RecordingLog implements AutoCloseable
                 entry.leadershipTermId,
                 entry.termBaseLogPosition,
                 entry.logPosition,
-                startPosition,
-                recordingExtent.stopPosition,
-                recordingExtent.initialTermId,
-                recordingExtent.termBufferLength,
-                recordingExtent.mtuLength,
-                recordingExtent.sessionId));
-        }
-        else if (Aeron.NULL_VALUE != replicatedRecordingId)
-        {
-            final RecordingExtent recordingExtent = new RecordingExtent();
-            if (archive.listRecording(replicatedRecordingId, recordingExtent) == 0)
-            {
-                throw new ClusterException("unknown recording id: " + replicatedRecordingId);
-            }
-
-            final long startPosition = -1 == snapshotIndex ?
-                recordingExtent.startPosition : snapshots.get(0).logPosition;
-
-            logRef.set(new Log(
-                replicatedRecordingId,
-                NULL_VALUE,
-                0,
-                0,
                 startPosition,
                 recordingExtent.stopPosition,
                 recordingExtent.initialTermId,

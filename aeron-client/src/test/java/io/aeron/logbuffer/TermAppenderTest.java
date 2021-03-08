@@ -185,7 +185,7 @@ public class TermAppenderTest
 
         assertEquals(alignedFrameLength, termAppender.claim(headerWriter, msgLength, bufferClaim, TERM_ID));
 
-        assertEquals(tail + headerLength, bufferClaim.offset());
+        assertEquals(tail, bufferClaim.offset());
         assertEquals(msgLength, bufferClaim.length());
 
         assertEquals(

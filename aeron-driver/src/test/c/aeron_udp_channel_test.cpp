@@ -415,7 +415,7 @@ TEST_F(UdpChannelTest, shouldHandleTooSmallBuffer)
 
 TEST_F(UdpChannelTest, shouldParseSocketBufferParameters)
 {
-    const char *uri = "aeron:udp?interface=localhost|endpoint=224.10.9.9:40124|socket-sndbuf=8192|socket-rcvbuf=4096";
+    const char *uri = "aeron:udp?interface=localhost|endpoint=224.10.9.9:40124|so-sndbuf=8k|so-rcvbuf=4k";
     ASSERT_EQ(parse_udp_channel(uri), 0) << aeron_errmsg();
 
     ASSERT_EQ(8192u, m_channel->socket_sndbuf);

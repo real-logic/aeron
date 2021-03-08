@@ -201,6 +201,8 @@ int aeron_udp_channel_parse(
     _channel->is_multicast = false;
     _channel->tag_id = AERON_URI_INVALID_TAG;
     _channel->ats_status = AERON_URI_ATS_STATUS_DEFAULT;
+    _channel->socket_rcvbuf = 0;
+    _channel->socket_sndbuf = 0;
 
     if (_channel->uri.type != AERON_URI_UDP)
     {

@@ -62,7 +62,10 @@ public:
         m_group.reset(nullptr);
         m_rejoin.reset(nullptr);
         m_ssc.reset(nullptr);
+        m_socketRcvbufLength.reset(nullptr);
+        m_socketSndbufLength.reset(nullptr);
         m_isSessionIdTagged = false;
+
         return *this;
     }
 
@@ -295,6 +298,30 @@ public:
         return *this;
     }
 
+    inline this_t &socketSndbufLength(std::uint32_t socketSndbufLength)
+    {
+        m_socketSndbufLength.reset(new Value(socketSndbufLength));
+        return *this;
+    }
+
+    inline this_t &socketSndbufLength(std::nullptr_t socketSndbufLength)
+    {
+        m_socketSndbufLength.reset(nullptr);
+        return *this;
+    }
+
+    inline this_t &socketRcvbufLength(std::uint32_t socketRcvbufLength)
+    {
+        m_socketRcvbufLength.reset(new Value(socketRcvbufLength));
+        return *this;
+    }
+
+    inline this_t &socketRcvbufLength(std::nullptr_t)
+    {
+        m_socketRcvbufLength.reset(nullptr);
+        return *this;
+    }
+
     inline this_t &initialPosition(std::int64_t position, std::int32_t initialTermId, std::int32_t termLength)
     {
         if (position < 0 || 0 != (position & (aeron::concurrent::logbuffer::FrameDescriptor::FRAME_ALIGNMENT - 1)))
@@ -445,6 +472,16 @@ public:
             sb << SPIES_SIMULATE_CONNECTION_PARAM_NAME << '=' << (m_ssc->value == 1 ? "true" : "false") << '|';
         }
 
+        if (m_socketSndbufLength)
+        {
+            sb << SOCKET_SNDBUF_PARAM_NAME << '=' << m_socketSndbufLength->value << '|';
+        }
+
+        if (m_socketRcvbufLength)
+        {
+            sb << SOCKET_RCVBUF_PARAM_NAME << '=' << m_socketRcvbufLength->value << '|';
+        }
+
         std::string result = sb.str();
         const char lastChar = result.back();
 
@@ -493,6 +530,8 @@ private:
     std::unique_ptr<Value> m_group;
     std::unique_ptr<Value> m_rejoin;
     std::unique_ptr<Value> m_ssc;
+    std::unique_ptr<Value> m_socketSndbufLength;
+    std::unique_ptr<Value> m_socketRcvbufLength;
     bool m_isSessionIdTagged = false;
 
     inline static std::string prefixTag(bool isTagged, Value &value)

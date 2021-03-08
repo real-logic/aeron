@@ -437,6 +437,28 @@ int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *ur
     return 1;
 }
 
+int aeron_uri_get_socket_bufs(aeron_uri_params_t *uri_params, size_t *socket_sndbuf, size_t *socket_rcvbuf)
+{
+    int64_t socket_sndbuf_tmp = 0;
+    if (aeron_uri_get_int64(uri_params, AERON_URI_SOCKET_SNDBUF_KEY, &socket_sndbuf_tmp) < 0)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "Failed to parse socket-sndbuf");
+        return -1;
+    }
+
+    int64_t socket_rcvbuf_tmp = 0;
+    if (aeron_uri_get_int64(uri_params, AERON_URI_SOCKET_RCVBUF_KEY, &socket_rcvbuf_tmp) < 0)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "Failed to parse socket-rcvbuf");
+        return -1;
+    }
+
+    *socket_sndbuf = (size_t)socket_sndbuf_tmp;
+    *socket_rcvbuf = (size_t)socket_rcvbuf_tmp;
+
+    return 0;
+}
+
 int64_t aeron_uri_parse_tag(const char *tag_str)
 {
     errno = 0;

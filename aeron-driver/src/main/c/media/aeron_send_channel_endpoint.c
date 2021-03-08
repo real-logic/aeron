@@ -82,14 +82,17 @@ int aeron_send_channel_endpoint_create(
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
     _endpoint->transport.data_paths = _endpoint->data_paths;
 
+    const size_t socket_sndbuf = 0 != channel->socket_sndbuf ? channel->socket_sndbuf : context->socket_sndbuf;
+    const size_t socket_rcvbuf = 0 != channel->socket_rcvbuf ? channel->socket_rcvbuf : context->socket_rcvbuf;
+
     if (context->udp_channel_transport_bindings->init_func(
         &_endpoint->transport,
         channel->is_multicast ? &channel->remote_control : &channel->local_control,
         channel->is_multicast ? &channel->local_control : &channel->remote_control,
         channel->interface_index,
         0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
-        context->socket_rcvbuf,
-        context->socket_sndbuf,
+        socket_rcvbuf,
+        socket_sndbuf,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER) < 0)
     {

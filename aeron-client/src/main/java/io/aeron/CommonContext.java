@@ -305,6 +305,16 @@ public class CommonContext implements Cloneable
     public static final String SPIES_SIMULATE_CONNECTION_PARAM_NAME = "ssc";
 
     /**
+     * Parameter name for the underlying OS socket send buffer size
+     */
+    public static final String SOCKET_SNDBUF_PARAM_NAME = "socket-sndbuf";
+
+    /**
+     * Parameter name for the underlying OS socket receive buffer size
+     */
+    public static final String SOCKET_RCVBUF_PARAM_NAME = "socket-rcvbuf";
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(

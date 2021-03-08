@@ -61,3 +61,4 @@ aeron_client_wrapper_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
 aeron_client_native_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
 
 aeron_client_wrapper_test(exceptionsTest ExceptionsTest.cpp)
+aeron_client_wrapper_test(channelUriStringBuilderTest ChannelUriStringBuilderTest.cpp)

@@ -31,9 +31,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardProtocolFamily;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -129,6 +135,43 @@ public class SelectorAndTransportTest
         sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         processLoop(dataTransportPoller, 5);
+    }
+
+    @Test
+    void shouldSetSocketBufferSizesFromUdpChannelForReceiveChannel() throws IOException
+    {
+        final DatagramChannel spyChannel = spy(DatagramChannel.open(StandardProtocolFamily.INET));
+        final UdpChannel channel = UdpChannel.parse(
+            "aeron:udp?endpoint=localhost:" + RCV_PORT + "|socket-sndbuf=8192|socket-rcvbuf=4096");
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            channel, mockDispatcher, mockReceiveStatusIndicator, context);
+
+        try (MockedStatic<DatagramChannel> mockDatagramChannel = Mockito.mockStatic(DatagramChannel.class))
+        {
+            mockDatagramChannel.when(() -> DatagramChannel.open(StandardProtocolFamily.INET)).thenReturn(spyChannel);
+            receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+
+            verify(spyChannel).setOption(StandardSocketOptions.SO_SNDBUF, 8192);
+            verify(spyChannel).setOption(StandardSocketOptions.SO_RCVBUF, 4096);
+        }
+    }
+
+    @Test
+    void shouldSetSocketBufferSizesFromUdpChannelForSendChannel() throws IOException
+    {
+        final DatagramChannel spyChannel = spy(DatagramChannel.open(StandardProtocolFamily.INET));
+        final UdpChannel channel = UdpChannel.parse(
+            "aeron:udp?endpoint=localhost:" + RCV_PORT + "|socket-sndbuf=8192|socket-rcvbuf=4096");
+        sendChannelEndpoint = new SendChannelEndpoint(channel, mockReceiveStatusIndicator, context);
+
+        try (MockedStatic<DatagramChannel> mockDatagramChannel = Mockito.mockStatic(DatagramChannel.class))
+        {
+            mockDatagramChannel.when(() -> DatagramChannel.open(StandardProtocolFamily.INET)).thenReturn(spyChannel);
+            sendChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+
+            verify(spyChannel).setOption(StandardSocketOptions.SO_SNDBUF, 8192);
+            verify(spyChannel).setOption(StandardSocketOptions.SO_RCVBUF, 4096);
+        }
     }
 
     @Test

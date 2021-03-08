@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.6.1 FATAL_ERROR)
-cmake_policy(VERSION 3.6.1)
+cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
+cmake_policy(VERSION 3.5.1)
 
 file(STRINGS version.txt AERON_VERSION_TXT LIMIT_COUNT 1 REGEX "^[0-9]+(\\.[0-9]+)+")
 string(REGEX REPLACE "^([0-9]+(\\.[0-9]+)+).*$" "\\1" AERON_VERSION_FROM_FILE "${AERON_VERSION_TXT}")

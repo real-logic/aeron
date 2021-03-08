@@ -29,6 +29,7 @@ import io.aeron.security.Authenticator;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
+import org.agrona.SystemUtil;
 import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
@@ -46,6 +47,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.CommonContext.MTU_LENGTH_PARAM_NAME;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -332,11 +334,14 @@ abstract class ArchiveConductor
         final ControlSessionDemuxer demuxer)
     {
         final ChannelUri channelUri = ChannelUri.parse(channel);
+        final String mtuStr = channelUri.get(CommonContext.MTU_LENGTH_PARAM_NAME);
+        final int mtuLength = null == mtuStr ?
+            ctx.controlMtuLength() : (int)SystemUtil.parseSize(MTU_LENGTH_PARAM_NAME, mtuStr);
         final String controlChannel = strippedChannelBuilder(channelUri)
             .ttl(channelUri)
             .sparse(ctx.controlTermBufferSparse())
             .termLength(ctx.controlTermBufferLength())
-            .mtu(ctx.controlMtuLength())
+            .mtu(mtuLength)
             .build();
 
         String invalidVersionMessage = null;
@@ -1442,6 +1447,8 @@ abstract class ArchiveConductor
             .congestionControl(channelUri)
             .flowControl(channelUri)
             .groupTag(channelUri)
+            .socketRcvbufLength(channelUri)
+            .socketSndbufLength(channelUri)
             .alias(channelUri);
 
         final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);

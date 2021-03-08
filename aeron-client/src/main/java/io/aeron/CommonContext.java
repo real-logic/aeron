@@ -315,6 +315,11 @@ public class CommonContext implements Cloneable
     public static final String SOCKET_RCVBUF_PARAM_NAME = "so-rcvbuf";
 
     /**
+     * Parameter name for the congestion control's initial window length.
+     */
+    public static final String RECEIVER_WINDOW_LENGTH_PARAM_NAME = "rcv-wnd";
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(

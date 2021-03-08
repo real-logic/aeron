@@ -52,8 +52,6 @@ public final class UdpChannel
     private final boolean hasMulticastTtl;
     private final boolean hasTag;
     private final int multicastTtl;
-    private final int socketRcvbufLength;
-    private final int socketSndbufLength;
     private final long tag;
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -64,6 +62,9 @@ public final class UdpChannel
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
     private final ChannelUri channelUri;
+    private final int socketRcvbufLength;
+    private final int socketSndbufLength;
+    private final int receiverWindowLength;
 
     private UdpChannel(final Context context)
     {
@@ -76,8 +77,6 @@ public final class UdpChannel
         tag = context.tagId;
         hasMulticastTtl = context.hasMulticastTtl;
         multicastTtl = context.multicastTtl;
-        socketRcvbufLength = context.socketRcvbufLength;
-        socketSndbufLength = context.socketSndbufLength;
         remoteData = context.remoteData;
         localData = context.localData;
         remoteControl = context.remoteControl;
@@ -87,6 +86,9 @@ public final class UdpChannel
         localInterface = context.localInterface;
         protocolFamily = context.protocolFamily;
         channelUri = context.channelUri;
+        socketRcvbufLength = context.socketRcvbufLength;
+        socketSndbufLength = context.socketSndbufLength;
+        receiverWindowLength = context.receiverWindowLength;
     }
 
     /**
@@ -140,8 +142,10 @@ public final class UdpChannel
             final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
             final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
 
-            final int socketRcvbufLength = getSocketBufferLength(channelUri, CommonContext.SOCKET_RCVBUF_PARAM_NAME);
-            final int socketSndbufLength = getSocketBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
+            final int socketRcvbufLength = getBufferLength(channelUri, CommonContext.SOCKET_RCVBUF_PARAM_NAME);
+            final int socketSndbufLength = getBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
+            final int receiverWindowLength = getBufferLength(
+                channelUri, CommonContext.RECEIVER_WINDOW_LENGTH_PARAM_NAME);
 
             final boolean requiresAdditionalSuffix = !isDestination &&
                 (null == endpointAddress && null == controlAddress ||
@@ -190,7 +194,8 @@ public final class UdpChannel
                 .hasExplicitEndpoint(hasExplicitEndpoint)
                 .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic)
                 .socketRcvbufLength(socketRcvbufLength)
-                .socketSndbufLength(socketSndbufLength);
+                .socketSndbufLength(socketSndbufLength)
+                .receiverWindowLength(receiverWindowLength);
 
             if (null != tagIdStr)
             {
@@ -273,7 +278,7 @@ public final class UdpChannel
         }
     }
 
-    private static int getSocketBufferLength(final ChannelUri channelUri, final String paramName)
+    private static int getBufferLength(final ChannelUri channelUri, final String paramName)
     {
         int socketBufferLength = 0;
 
@@ -558,9 +563,19 @@ public final class UdpChannel
      *
      * @return socket send buffer length or 0 if not specified.
      */
-    public int socketSndbufLenth()
+    public int socketSndbufLength()
     {
         return socketSndbufLength;
+    }
+
+    /**
+     * Get the receiver window length used as the initial window length for congestion control.
+     *
+     * @return receiver window length or 0 if not specified.
+     */
+    public int receiverWindowLength()
+    {
+        return receiverWindowLength;
     }
 
     /**
@@ -835,10 +850,11 @@ public final class UdpChannel
         boolean hasMulticastTtl = false;
         boolean hasTagId = false;
         boolean hasNoDistinguishingCharacteristic = false;;
-        long tagId;
-        int multicastTtl;
         int socketRcvbufLength = 0;
         int socketSndbufLength = 0;
+        int receiverWindowLength = 0;
+        long tagId;
+        int multicastTtl;
         InetSocketAddress remoteData;
         InetSocketAddress localData;
         InetSocketAddress remoteControl;
@@ -972,6 +988,12 @@ public final class UdpChannel
         Context socketSndbufLength(final int socketSndbufLength)
         {
             this.socketSndbufLength = socketSndbufLength;
+            return this;
+        }
+
+        public Context receiverWindowLength(final int receiverWindowLength)
+        {
+            this.receiverWindowLength = receiverWindowLength;
             return this;
         }
     }

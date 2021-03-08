@@ -305,14 +305,14 @@ public class CommonContext implements Cloneable
     public static final String SPIES_SIMULATE_CONNECTION_PARAM_NAME = "ssc";
 
     /**
-     * Parameter name for the underlying OS socket send buffer size
+     * Parameter name for the underlying OS socket send buffer length.
      */
-    public static final String SOCKET_SNDBUF_PARAM_NAME = "socket-sndbuf";
+    public static final String SOCKET_SNDBUF_PARAM_NAME = "so-sndbuf";
 
     /**
-     * Parameter name for the underlying OS socket receive buffer size
+     * Parameter name for the underlying OS socket receive buffer length.
      */
-    public static final String SOCKET_RCVBUF_PARAM_NAME = "socket-rcvbuf";
+    public static final String SOCKET_RCVBUF_PARAM_NAME = "so-rcvbuf";
 
     /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.

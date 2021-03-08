@@ -111,7 +111,7 @@ public class ChannelUriStringBuilderTest
             .socketRcvbufLength(4096);
 
         assertEquals(
-            "aeron:udp?endpoint=address:9999|socket-sndbuf=8192|socket-rcvbuf=4096",
+            "aeron:udp?endpoint=address:9999|so-sndbuf=8192|so-rcvbuf=4096",
             builder.build());
     }
 }

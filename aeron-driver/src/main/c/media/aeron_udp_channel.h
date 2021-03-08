@@ -44,6 +44,7 @@ typedef struct aeron_udp_channel_stct
     aeron_uri_ats_status_t ats_status;
     size_t socket_sndbuf;
     size_t socket_rcvbuf;
+    size_t receiver_window;
 }
 aeron_udp_channel_t;
 

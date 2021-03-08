@@ -203,6 +203,7 @@ int aeron_udp_channel_parse(
     _channel->ats_status = AERON_URI_ATS_STATUS_DEFAULT;
     _channel->socket_rcvbuf = 0;
     _channel->socket_sndbuf = 0;
+    _channel->receiver_window = 0;
 
     if (_channel->uri.type != AERON_URI_UDP)
     {
@@ -294,6 +295,11 @@ int aeron_udp_channel_parse(
 
     if (aeron_uri_get_socket_bufs(
         &_channel->uri.params.udp.additional_params, &_channel->socket_sndbuf, &_channel->socket_rcvbuf) < 0)
+    {
+        goto error_cleanup;
+    }
+
+    if (aeron_uri_get_receiver_window(&_channel->uri.params.udp.additional_params, &_channel->receiver_window) < 0)
     {
         goto error_cleanup;
     }

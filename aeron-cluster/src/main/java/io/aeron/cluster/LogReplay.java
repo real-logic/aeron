@@ -25,7 +25,6 @@ final class LogReplay
 {
     private final long startPosition;
     private final long stopPosition;
-    private final long leadershipTermId;
     private final int logSessionId;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final ConsensusModule.Context ctx;
@@ -37,13 +36,11 @@ final class LogReplay
         final long recordingId,
         final long startPosition,
         final long stopPosition,
-        final long leadershipTermId,
         final LogAdapter logAdapter,
         final ConsensusModule.Context ctx)
     {
         this.startPosition = startPosition;
         this.stopPosition = stopPosition;
-        this.leadershipTermId = leadershipTermId;
         this.logAdapter = logAdapter;
         this.consensusModuleAgent = logAdapter.consensusModuleAgent();
         this.ctx = ctx;
@@ -82,7 +79,6 @@ final class LogReplay
                     logSubscription.channel(),
                     logSubscription.streamId(),
                     logSessionId,
-                    leadershipTermId,
                     startPosition,
                     stopPosition,
                     true,

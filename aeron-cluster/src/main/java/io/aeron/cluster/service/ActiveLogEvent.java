@@ -20,7 +20,6 @@ package io.aeron.cluster.service;
  */
 class ActiveLogEvent
 {
-    final long leadershipTermId;
     final long logPosition;
     final long maxLogPosition;
     final int memberId;
@@ -31,7 +30,6 @@ class ActiveLogEvent
     final String channel;
 
     ActiveLogEvent(
-        final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
         final int memberId,
@@ -41,7 +39,6 @@ class ActiveLogEvent
         final Cluster.Role role,
         final String channel)
     {
-        this.leadershipTermId = leadershipTermId;
         this.logPosition = logPosition;
         this.maxLogPosition = maxLogPosition;
         this.memberId = memberId;
@@ -55,7 +52,6 @@ class ActiveLogEvent
     public String toString()
     {
         return "ActiveLogEvent{" +
-            "leadershipTermId=" + leadershipTermId +
             ", logPosition=" + logPosition +
             ", maxLogPosition=" + maxLogPosition +
             ", memberId=" + memberId +

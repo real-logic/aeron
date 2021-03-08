@@ -1346,7 +1346,6 @@ final class ConsensusModuleAgent implements Agent
             isIpc ? channel : SPY_PREFIX + channel,
             ctx.logStreamId(),
             logSessionId,
-            leadershipTermId,
             logPosition,
             Long.MAX_VALUE,
             isStartup,
@@ -1373,7 +1372,7 @@ final class ConsensusModuleAgent implements Agent
         return catchupLogDestination;
     }
 
-    void joinLogAsFollower(final Image image, final long leadershipTermId, final boolean isLeaderStartup)
+    void joinLogAsFollower(final Image image, final boolean isLeaderStartup)
     {
         appendDynamicJoinTermAndSnapshots();
 
@@ -1391,7 +1390,6 @@ final class ConsensusModuleAgent implements Agent
             channel,
             streamId,
             image.sessionId(),
-            leadershipTermId,
             image.joinPosition(),
             Long.MAX_VALUE,
             isLeaderStartup,
@@ -1402,14 +1400,12 @@ final class ConsensusModuleAgent implements Agent
         final String logChannel,
         final int streamId,
         final int logSessionId,
-        final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
         final boolean isStartup,
         final Cluster.Role role)
     {
         serviceProxy.joinLog(
-            leadershipTermId,
             logPosition,
             maxLogPosition,
             memberId,
@@ -1443,7 +1439,6 @@ final class ConsensusModuleAgent implements Agent
             recoveryPlan.log.recordingId,
             logPosition,
             appendPosition,
-            recoveryPlan.log.leadershipTermId,
             logAdapter,
             ctx);
     }

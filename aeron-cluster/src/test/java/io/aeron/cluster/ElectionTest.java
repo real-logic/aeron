@@ -428,7 +428,7 @@ public class ElectionTest
         final long t5 = t4 + 1;
         election.doWork(t5);
 
-        verify(consensusModuleAgent).joinLogAsFollower(logImage, leadershipTermId, isLeaderStart);
+        verify(consensusModuleAgent).joinLogAsFollower(logImage, isLeaderStart);
     }
 
     @Test

@@ -22,6 +22,7 @@ import io.aeron.driver.NameResolver;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
+import org.agrona.SystemUtil;
 
 import java.net.*;
 import java.util.Objects;
@@ -138,10 +139,9 @@ public final class UdpChannel
             final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
             final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
             final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
-            final int socketRcvbufLength = Integer.parseInt(
-                channelUri.get(CommonContext.SOCKET_RCVBUF_PARAM_NAME, "0"));
-            final int socketSndbufLength = Integer.parseInt(
-                channelUri.get(CommonContext.SOCKET_SNDBUF_PARAM_NAME, "0"));
+
+            final int socketRcvbufLength = getSocketBufferLength(channelUri, CommonContext.SOCKET_RCVBUF_PARAM_NAME);
+            final int socketSndbufLength = getSocketBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
 
             final boolean requiresAdditionalSuffix = !isDestination &&
                 (null == endpointAddress && null == explicitControlAddress ||
@@ -277,6 +277,24 @@ public final class UdpChannel
         {
             throw new InvalidChannelException(ex);
         }
+    }
+
+    private static int getSocketBufferLength(final ChannelUri channelUri, final String paramName)
+    {
+        int socketBufferLength = 0;
+
+        final String paramValue = channelUri.get(paramName);
+        if (null != paramValue)
+        {
+            final long size = SystemUtil.parseSize(paramName, paramValue);
+            if (size < 0 || size > Integer.MAX_VALUE)
+            {
+                throw new IllegalArgumentException("Invalid " + paramName + " length: " + size);
+            }
+            socketBufferLength = (int)size;
+        }
+
+        return socketBufferLength;
     }
 
     /**
@@ -532,6 +550,26 @@ public final class UdpChannel
     }
 
     /**
+     * Get the socket receive buffer length.
+     *
+     * @return socket receive buffer length or 0 if not specified.
+     */
+    public int socketRcvbufLength()
+    {
+        return socketRcvbufLength;
+    }
+
+    /**
+     * Get the socket send buffer length.
+     *
+     * @return socket send buffer length or 0 if not specified.
+     */
+    public int socketSndbufLenth()
+    {
+        return socketSndbufLength;
+    }
+
+    /**
      * Does this channel have a tag match to another channel including endpoints.
      *
      * @param udpChannel to match against.
@@ -631,26 +669,6 @@ public final class UdpChannel
         {
             throw new InvalidChannelException(ex);
         }
-    }
-
-    /**
-     * Get the socket receive buffer size
-     *
-     * @return socket receive buffer size or 0 if not specified
-     */
-    public int socketRcvbufLength()
-    {
-        return socketRcvbufLength;
-    }
-
-    /**
-     * Get the socket send buffer size
-     *
-     * @return socket send buffer size or 0 if not specified
-     */
-    public int socketSndbufLenth()
-    {
-        return socketSndbufLength;
     }
 
     /**

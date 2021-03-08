@@ -462,7 +462,7 @@ public class UdpChannelTest
     void shouldParseSocketRcvAndSndBufSizes()
     {
         final UdpChannel udpChannelWithBufferSizes = UdpChannel.parse(
-            "aeron:udp?endpoint=127.0.0.1:9999|socket-sndbuf=4096|socket-rcvbuf=8192");
+            "aeron:udp?endpoint=127.0.0.1:9999|so-sndbuf=4096|so-rcvbuf=8192");
         assertEquals(4096, udpChannelWithBufferSizes.socketSndbufLenth());
         assertEquals(8192, udpChannelWithBufferSizes.socketRcvbufLength());
 

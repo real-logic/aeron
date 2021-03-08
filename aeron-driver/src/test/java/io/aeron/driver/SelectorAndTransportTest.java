@@ -142,7 +142,7 @@ public class SelectorAndTransportTest
     {
         final DatagramChannel spyChannel = spy(DatagramChannel.open(StandardProtocolFamily.INET));
         final UdpChannel channel = UdpChannel.parse(
-            "aeron:udp?endpoint=localhost:" + RCV_PORT + "|socket-sndbuf=8192|socket-rcvbuf=4096");
+            "aeron:udp?endpoint=localhost:" + RCV_PORT + "|so-sndbuf=8k|so-rcvbuf=4k");
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             channel, mockDispatcher, mockReceiveStatusIndicator, context);
 
@@ -161,7 +161,7 @@ public class SelectorAndTransportTest
     {
         final DatagramChannel spyChannel = spy(DatagramChannel.open(StandardProtocolFamily.INET));
         final UdpChannel channel = UdpChannel.parse(
-            "aeron:udp?endpoint=localhost:" + RCV_PORT + "|socket-sndbuf=8192|socket-rcvbuf=4096");
+            "aeron:udp?endpoint=localhost:" + RCV_PORT + "|so-sndbuf=8k|so-rcvbuf=4k");
         sendChannelEndpoint = new SendChannelEndpoint(channel, mockReceiveStatusIndicator, context);
 
         try (MockedStatic<DatagramChannel> mockDatagramChannel = Mockito.mockStatic(DatagramChannel.class))

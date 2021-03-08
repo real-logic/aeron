@@ -1448,7 +1448,7 @@ public final class ChannelUriStringBuilder
     /**
      * Set the underlying OS send buffer length.
      *
-     * @param socketSndbufLength paramter to be passed as SO_SNDBUF value
+     * @param socketSndbufLength parameter to be passed as SO_SNDBUF value.
      * @return this for a fluent API.
      * @see CommonContext#SOCKET_SNDBUF_PARAM_NAME
      */
@@ -1487,7 +1487,7 @@ public final class ChannelUriStringBuilder
     /**
      * Set the underlying OS receive buffer length.
      *
-     * @param socketRcvbufLength paramter to be passed as SO_SNDBUF value
+     * @param socketRcvbufLength parameter to be passed as SO_SNDBUF value.
      * @return this for a fluent API.
      * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
      */

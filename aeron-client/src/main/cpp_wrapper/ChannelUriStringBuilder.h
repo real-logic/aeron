@@ -62,6 +62,8 @@ public:
         m_group.reset(nullptr);
         m_rejoin.reset(nullptr);
         m_ssc.reset(nullptr);
+        m_socketRcvbufLength.reset(nullptr);
+        m_socketSndbufLength.reset(nullptr);
 
         m_isSessionIdTagged = false;
         return *this;

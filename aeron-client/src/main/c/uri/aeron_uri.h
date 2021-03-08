@@ -62,9 +62,8 @@ aeron_uri_params_t;
 #define AERON_URI_CC_KEY "cc"
 #define AERON_URI_SPIES_SIMULATE_CONNECTION_KEY "ssc"
 #define AERON_URI_ATS_KEY "ats"
-#define AERON_URI_SOCKET_SNDBUF_KEY "socket-sndbuf"
-#define AERON_URI_SOCKET_RCVBUF_KEY "socket-rcvbuf"
-
+#define AERON_URI_SOCKET_SNDBUF_KEY "so-sndbuf"
+#define AERON_URI_SOCKET_RCVBUF_KEY "so-rcvbuf"
 #define AERON_URI_INVALID_TAG (-1)
 
 typedef struct aeron_udp_channel_params_stct

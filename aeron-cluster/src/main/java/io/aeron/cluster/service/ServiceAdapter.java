@@ -70,7 +70,6 @@ final class ServiceAdapter implements AutoCloseable
                     messageHeaderDecoder.version());
 
                 clusteredServiceAgent.onJoinLog(
-                    joinLogDecoder.leadershipTermId(),
                     joinLogDecoder.logPosition(),
                     joinLogDecoder.maxLogPosition(),
                     joinLogDecoder.memberId(),

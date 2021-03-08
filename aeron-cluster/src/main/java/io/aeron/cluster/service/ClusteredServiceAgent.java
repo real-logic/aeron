@@ -325,7 +325,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     }
 
     void onJoinLog(
-        final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
         final int memberId,
@@ -337,7 +336,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         logAdapter.maxLogPosition(logPosition);
         activeLogEvent = new ActiveLogEvent(
-            leadershipTermId,
             logPosition,
             maxLogPosition,
             memberId,

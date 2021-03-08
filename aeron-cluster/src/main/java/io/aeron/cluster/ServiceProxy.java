@@ -49,7 +49,6 @@ final class ServiceProxy implements AutoCloseable
     }
 
     void joinLog(
-        final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
         final int memberId,
@@ -71,7 +70,6 @@ final class ServiceProxy implements AutoCloseable
             {
                 joinLogEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
                     .maxLogPosition(maxLogPosition)
                     .memberId(memberId)

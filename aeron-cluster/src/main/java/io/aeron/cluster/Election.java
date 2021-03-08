@@ -712,7 +712,7 @@ class Election
         if (null != image)
         {
             verifyLogImage(image);
-            consensusModuleAgent.joinLogAsFollower(image, leadershipTermId, isLeaderStartup);
+            consensusModuleAgent.joinLogAsFollower(image, isLeaderStartup);
             state(FOLLOWER_CATCHUP, nowNs);
             workCount += 1;
         }
@@ -773,7 +773,7 @@ class Election
         if (null != image)
         {
             verifyLogImage(image);
-            consensusModuleAgent.joinLogAsFollower(image, leadershipTermId, isLeaderStartup);
+            consensusModuleAgent.joinLogAsFollower(image, isLeaderStartup);
             appendPosition = image.joinPosition();
             logPosition = image.joinPosition();
             updateRecordingLog(nowNs);

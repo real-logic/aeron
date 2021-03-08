@@ -315,7 +315,7 @@ public class CommonContext implements Cloneable
     public static final String SOCKET_RCVBUF_PARAM_NAME = "so-rcvbuf";
 
     /**
-     * Parameter name for the congestion control's initial window length.
+     * Parameter name for the congestion control's initial receiver window length.
      */
     public static final String RECEIVER_WINDOW_LENGTH_PARAM_NAME = "rcv-wnd";
 

@@ -111,5 +111,5 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateSocketSndRcvbufLengths)
 
     ASSERT_EQ(
         builder.build(),
-        "aeron:udp?endpoint=localhost:9999|socket-sndbuf=8192|socket-rcvbuf=4096");
+        "aeron:udp?endpoint=localhost:9999|so-sndbuf=8192|so-rcvbuf=4096");
 }

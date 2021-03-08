@@ -28,9 +28,6 @@ extern "C"
 class UriTest : public testing::Test
 {
 public:
-    UriTest()
-    {
-    }
 
     ~UriTest() override
     {
@@ -258,7 +255,7 @@ TEST_F(UriLookupTest, shouldNotFindUnknown)
 class UriPrintTest : public testing::TestWithParam<const char *>
 {
 public:
-    ~UriPrintTest()
+    ~UriPrintTest() override
     {
         aeron_uri_close(&m_uri);
     }

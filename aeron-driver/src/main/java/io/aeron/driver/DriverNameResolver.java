@@ -76,7 +76,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
     private final String bootstrapNeighbor;
     private InetSocketAddress bootstrapNeighborAddress;
-    private long timeOfLastBootstrapNeighborResolveMs;
+    private long bootstrapNeighborResolveDeadlineMs;
 
     private final long neighborTimeoutMs = TIMEOUT_MS;
     private final long selfResolutionIntervalMs = SELF_RESOLUTION_INTERVAL_MS;
@@ -84,7 +84,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
     private final int mtuLength;
     private final boolean preferIPv6 = false;
 
-    private long timeOfLastWorkMs = 0;
+    private long workDeadlineMs = 0;
     private long selfResolutionDeadlineMs;
     private long neighborResolutionDeadlineMs;
 
@@ -100,7 +100,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         bootstrapNeighbor = ctx.resolverBootstrapNeighbor();
         bootstrapNeighborAddress = null == bootstrapNeighbor ?
             null : UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
-        timeOfLastBootstrapNeighborResolveMs = nowMs;
+        bootstrapNeighborResolveDeadlineMs = nowMs + TIMEOUT_MS;
 
         localSocketAddress = null != ctx.resolverInterface() ?
             UdpNameResolutionTransport.getInterfaceAddress(ctx.resolverInterface()) :
@@ -142,8 +142,9 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
     {
         int workCount = 0;
 
-        if ((timeOfLastWorkMs + DUTY_CYCLE_INTERVAL_MS) < nowMs)
+        if (nowMs > workDeadlineMs)
         {
+            workDeadlineMs = nowMs + DUTY_CYCLE_INTERVAL_MS;
             workCount += transport.poll(this, nowMs);
             workCount += cache.timeoutOldEntries(nowMs, cacheEntriesCounter);
             workCount += timeoutNeighbors(nowMs);
@@ -157,8 +158,6 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
             {
                 sendNeighborResolutions(nowMs);
             }
-
-            timeOfLastWorkMs = nowMs;
         }
 
         return workCount;
@@ -198,7 +197,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
             return InetAddress.getByAddress(entry.address);
         }
-        catch (final UnknownHostException ex)
+        catch (final UnknownHostException ignore)
         {
             return null;
         }
@@ -268,7 +267,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         {
             canonicalName = InetAddress.getLocalHost().getHostName();
         }
-        catch (final UnknownHostException ex)
+        catch (final UnknownHostException ignore)
         {
             canonicalName = fallback;
         }
@@ -320,7 +319,11 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
             }
         }
 
-        neighborsCounter.setOrdered(neighborList.size());
+        final int neighborCount = neighborList.size();
+        if (neighborsCounter.getWeak() != neighborCount)
+        {
+            neighborsCounter.setOrdered(neighborCount);
+        }
 
         return workCount;
     }
@@ -365,10 +368,10 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
         if (sendToBootstrap)
         {
-            if (nowMs > (timeOfLastBootstrapNeighborResolveMs + TIMEOUT_MS))
+            if (nowMs > bootstrapNeighborResolveDeadlineMs)
             {
                 bootstrapNeighborAddress = UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
-                timeOfLastBootstrapNeighborResolveMs = nowMs;
+                bootstrapNeighborResolveDeadlineMs = nowMs + TIMEOUT_MS;
             }
 
             sendResolutionFrameTo(byteBuffer, bootstrapNeighborAddress);

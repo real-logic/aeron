@@ -458,6 +458,19 @@ public class UdpChannelTest
             UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:0|tags=1001").canonicalForm());
     }
 
+    @Test
+    void shouldParseSocketRcvAndSndBufSizes()
+    {
+        final UdpChannel udpChannelWithBufferSizes = UdpChannel.parse(
+            "aeron:udp?endpoint=127.0.0.1:9999|socket-sndbuf=4096|socket-rcvbuf=8192");
+        assertEquals(4096, udpChannelWithBufferSizes.socketSndbufLenth());
+        assertEquals(8192, udpChannelWithBufferSizes.socketRcvbufLength());
+
+        final UdpChannel udpChannelWithoutBufferSizes = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:9999");
+        assertEquals(0, udpChannelWithoutBufferSizes.socketRcvbufLength());
+        assertEquals(0, udpChannelWithoutBufferSizes.socketSndbufLenth());
+    }
+
     @ParameterizedTest
     @CsvSource({
         "NAME_ENDPOINT,192.168.1.1,,,UDP-127.0.0.1:0-NAME_ENDPOINT",

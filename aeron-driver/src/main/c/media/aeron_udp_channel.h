@@ -42,6 +42,8 @@ typedef struct aeron_udp_channel_stct
     bool is_dynamic_control_mode;
     bool is_multicast;
     aeron_uri_ats_status_t ats_status;
+    size_t socket_sndbuf;
+    size_t socket_rcvbuf;
 }
 aeron_udp_channel_t;
 

@@ -173,14 +173,14 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 sendDatagramChannel.connect(connectAddress);
             }
 
-            if (0 != context.socketSndbufLength())
+            if (0 != socketSndbufLength())
             {
-                sendDatagramChannel.setOption(SO_SNDBUF, context.socketSndbufLength());
+                sendDatagramChannel.setOption(SO_SNDBUF, socketSndbufLength());
             }
 
-            if (0 != context.socketRcvbufLength())
+            if (0 != socketRcvbufLength())
             {
-                receiveDatagramChannel.setOption(SO_RCVBUF, context.socketRcvbufLength());
+                receiveDatagramChannel.setOption(SO_RCVBUF, socketRcvbufLength());
             }
 
             sendDatagramChannel.configureBlocking(false);
@@ -435,5 +435,15 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
             throw new AeronException(message, ex);
         }
+    }
+
+    private int socketSndbufLength()
+    {
+        return 0 != udpChannel.socketSndbufLenth() ? udpChannel.socketSndbufLenth() : context.socketSndbufLength();
+    }
+
+    private int socketRcvbufLength()
+    {
+        return 0 != udpChannel.socketRcvbufLength() ? udpChannel.socketRcvbufLength() : context.socketRcvbufLength();
     }
 }

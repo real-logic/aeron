@@ -68,6 +68,8 @@ public final class ChannelUriStringBuilder
     private Boolean rejoin;
     private Boolean ssc;
     private boolean isSessionIdTagged;
+    private Integer socketSndbufLength;
+    private Integer socketRcvbufLength;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -102,6 +104,8 @@ public final class ChannelUriStringBuilder
         group = null;
         rejoin = null;
         isSessionIdTagged = false;
+        socketRcvbufLength = null;
+        socketSndbufLength = null;
 
         return this;
     }
@@ -1442,6 +1446,83 @@ public final class ChannelUriStringBuilder
     }
 
     /**
+     * Set the underlying OS send buffer length.
+     *
+     * @param socketSndbufLength paramter to be passed as SO_SNDBUF value
+     * @return this for a fluent API.
+     * @see CommonContext#SOCKET_SNDBUF_PARAM_NAME
+     */
+    public ChannelUriStringBuilder socketSndbufLength(final Integer socketSndbufLength)
+    {
+        this.socketSndbufLength = socketSndbufLength;
+        return this;
+    }
+
+    /**
+     * Set the underlying OS send buffer length from an existing {@link ChannelUri} which may be (null).
+     *
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
+     * @see CommonContext#SOCKET_SNDBUF_PARAM_NAME
+     */
+    public ChannelUriStringBuilder socketSndbufLength(final ChannelUri channelUri)
+    {
+        final String socketSndbufLengthString = channelUri.get(SOCKET_SNDBUF_PARAM_NAME);
+        this.socketSndbufLength = null == socketSndbufLengthString ? null : Integer.valueOf(socketSndbufLengthString);
+        return this;
+    }
+
+    /**
+     * Get the underling OS send buffer length setting
+     *
+     * @return underlying OS send buffer length setting or null if not specified.
+     * @see CommonContext#SOCKET_SNDBUF_PARAM_NAME
+     */
+    public Integer socketSndbufLength()
+    {
+        return socketSndbufLength;
+    }
+
+
+    /**
+     * Set the underlying OS receive buffer length.
+     *
+     * @param socketRcvbufLength paramter to be passed as SO_SNDBUF value
+     * @return this for a fluent API.
+     * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
+     */
+    public ChannelUriStringBuilder socketRcvbufLength(final Integer socketRcvbufLength)
+    {
+        this.socketRcvbufLength = socketRcvbufLength;
+        return this;
+    }
+
+    /**
+     * Set the underlying OS receive buffer length from an existing {@link ChannelUri} which may be (null).
+     *
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
+     * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
+     */
+    public ChannelUriStringBuilder socketRcvbufLength(final ChannelUri channelUri)
+    {
+        final String socketRcvbufLengthString = channelUri.get(SOCKET_RCVBUF_PARAM_NAME);
+        this.socketRcvbufLength = null == socketRcvbufLengthString ? null : Integer.valueOf(socketRcvbufLengthString);
+        return this;
+    }
+
+    /**
+     * Get the underling OS receive buffer length setting
+     *
+     * @return underlying OS receive buffer length setting or null if not specified.
+     * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
+     */
+    public Integer socketRcvbufLength()
+    {
+        return socketRcvbufLength;
+    }
+
+    /**
      * Build a channel URI String for the given parameters.
      *
      * @return a channel URI String for the given parameters.
@@ -1576,6 +1657,16 @@ public final class ChannelUriStringBuilder
         if (null != ssc)
         {
             sb.append(SPIES_SIMULATE_CONNECTION_PARAM_NAME).append('=').append(ssc).append('|');
+        }
+
+        if (null != socketSndbufLength)
+        {
+            sb.append(SOCKET_SNDBUF_PARAM_NAME).append('=').append(socketSndbufLength).append('|');
+        }
+
+        if (null != socketRcvbufLength)
+        {
+            sb.append(SOCKET_RCVBUF_PARAM_NAME).append('=').append(socketRcvbufLength).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

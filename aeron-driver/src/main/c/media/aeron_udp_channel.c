@@ -290,6 +290,12 @@ int aeron_udp_channel_parse(
         goto error_cleanup;
     }
 
+    if (aeron_uri_get_socket_bufs(
+        &_channel->uri.params.udp.additional_params, &_channel->socket_sndbuf, &_channel->socket_rcvbuf) < 0)
+    {
+        goto error_cleanup;
+    }
+
     if (aeron_is_addr_multicast(&endpoint_addr))
     {
         memcpy(&_channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));

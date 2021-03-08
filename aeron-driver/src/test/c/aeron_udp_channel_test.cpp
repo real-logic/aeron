@@ -413,6 +413,15 @@ TEST_F(UdpChannelTest, shouldHandleTooSmallBuffer)
     ASSERT_LE(aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH - 1, &addr), 0);
 }
 
+TEST_F(UdpChannelTest, shouldParseSocketBufferParameters)
+{
+    const char *uri = "aeron:udp?interface=localhost|endpoint=224.10.9.9:40124|socket-sndbuf=8192|socket-rcvbuf=4096";
+    ASSERT_EQ(parse_udp_channel(uri), 0) << aeron_errmsg();
+
+    ASSERT_EQ(8192u, m_channel->socket_sndbuf);
+    ASSERT_EQ(4096u, m_channel->socket_rcvbuf);
+}
+
 TEST_P(UdpChannelNamesParameterisedTest, shouldBeValid)
 {
     const char *endpoint_name = std::get<0>(GetParam());

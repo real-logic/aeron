@@ -23,7 +23,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
-import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -36,6 +36,7 @@ import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.agrona.concurrent.status.CountersReader.*;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -69,7 +70,7 @@ public class DriverNameResolverTest
             .resolverInterface("0.0.0.0:0")), testWatcher));
         startClients();
 
-        final int neighborsCounterId = neighborsCounterId("A");
+        final int neighborsCounterId = awaitNeighborsCounterId("A");
         assertNotEquals(neighborsCounterId, NULL_VALUE);
     }
 
@@ -89,8 +90,8 @@ public class DriverNameResolverTest
             .resolverBootstrapNeighbor("localhost:8050"), testWatcher));
         startClients();
 
-        final int aNeighborsCounterId = neighborsCounterId("A");
-        final int bNeighborsCounterId = neighborsCounterId("B");
+        final int aNeighborsCounterId = awaitNeighborsCounterId("A");
+        final int bNeighborsCounterId = awaitNeighborsCounterId("B");
 
         awaitCounterValue("A", aNeighborsCounterId, 1);
         awaitCounterValue("B", bNeighborsCounterId, 1);
@@ -119,9 +120,9 @@ public class DriverNameResolverTest
 
         startClients();
 
-        final int aNeighborsCounterId = neighborsCounterId("A");
-        final int bNeighborsCounterId = neighborsCounterId("B");
-        final int cNeighborsCounterId = neighborsCounterId("C");
+        final int aNeighborsCounterId = awaitNeighborsCounterId("A");
+        final int bNeighborsCounterId = awaitNeighborsCounterId("B");
+        final int cNeighborsCounterId = awaitNeighborsCounterId("C");
 
         awaitCounterValue("A", aNeighborsCounterId, 2);
         awaitCounterValue("B", bNeighborsCounterId, 2);
@@ -150,9 +151,9 @@ public class DriverNameResolverTest
             .resolverBootstrapNeighbor("localhost:8050"), testWatcher));
         startClients();
 
-        final int aNeighborsCounterId = neighborsCounterId("A");
-        final int bNeighborsCounterId = neighborsCounterId("B");
-        final int cNeighborsCounterId = neighborsCounterId("C");
+        final int aNeighborsCounterId = awaitNeighborsCounterId("A");
+        final int bNeighborsCounterId = awaitNeighborsCounterId("B");
+        final int cNeighborsCounterId = awaitNeighborsCounterId("C");
 
         awaitCounterValue("A", aNeighborsCounterId, 2);
         awaitCounterValue("B", bNeighborsCounterId, 2);
@@ -165,7 +166,7 @@ public class DriverNameResolverTest
             .resolverBootstrapNeighbor("localhost:8050"), testWatcher));
         startClients();
 
-        final int dNeighborsCounterId = neighborsCounterId("D");
+        final int dNeighborsCounterId = awaitNeighborsCounterId("D");
 
         awaitCounterValue("D", dNeighborsCounterId, 3);
         awaitCounterValue("A", aNeighborsCounterId, 3);
@@ -189,13 +190,13 @@ public class DriverNameResolverTest
             .resolverBootstrapNeighbor("localhost:8050"), testWatcher));
         startClients();
 
-        final int aNeighborsCounterId = neighborsCounterId("A");
-        final int bNeighborsCounterId = neighborsCounterId("B");
+        final int aNeighborsCounterId = awaitNeighborsCounterId("A");
+        final int bNeighborsCounterId = awaitNeighborsCounterId("B");
 
         awaitCounterValue("A", aNeighborsCounterId, 1);
         awaitCounterValue("B", bNeighborsCounterId, 1);
 
-        final int aCacheEntriesCounterId = cacheEntriesCounterId("A");
+        final int aCacheEntriesCounterId = awaitCacheEntriesCounterId("A");
 
         awaitCounterValue("A", aCacheEntriesCounterId, 1);
 
@@ -226,13 +227,13 @@ public class DriverNameResolverTest
             .resolverBootstrapNeighbor("localhost:8050"), testWatcher));
         startClients();
 
-        final int aNeighborsCounterId = neighborsCounterId("A");
-        final int bNeighborsCounterId = neighborsCounterId("B");
+        final int aNeighborsCounterId = awaitNeighborsCounterId("A");
+        final int bNeighborsCounterId = awaitNeighborsCounterId("B");
 
         awaitCounterValue("A", aNeighborsCounterId, 1);
         awaitCounterValue("B", bNeighborsCounterId, 1);
 
-        final int aCacheEntriesCounterId = cacheEntriesCounterId("A");
+        final int aCacheEntriesCounterId = awaitCacheEntriesCounterId("A");
 
         awaitCounterValue("A", aCacheEntriesCounterId, 1);
 
@@ -265,16 +266,16 @@ public class DriverNameResolverTest
             .resolverBootstrapNeighbor("localhost:8050"), testWatcher));
         startClients();
 
-        final int aNeighborsCounterId = neighborsCounterId("A");
-        final int bNeighborsCounterId = neighborsCounterId("B");
-        final int cNeighborsCounterId = neighborsCounterId("C");
+        final int aNeighborsCounterId = awaitNeighborsCounterId("A");
+        final int bNeighborsCounterId = awaitNeighborsCounterId("B");
+        final int cNeighborsCounterId = awaitNeighborsCounterId("C");
 
         awaitCounterValue("A", aNeighborsCounterId, 2);
         awaitCounterValue("B", bNeighborsCounterId, 2);
         awaitCounterValue("C", cNeighborsCounterId, 2);
 
-        final int aCacheEntriesCounterId = cacheEntriesCounterId("A");
-        final int bCacheEntriesCounterId = cacheEntriesCounterId("B");
+        final int aCacheEntriesCounterId = awaitCacheEntriesCounterId("A");
+        final int bCacheEntriesCounterId = awaitCacheEntriesCounterId("B");
         awaitCounterValue("A", aCacheEntriesCounterId, 2);
         awaitCounterValue("B", bCacheEntriesCounterId, 2);
 
@@ -306,38 +307,68 @@ public class DriverNameResolverTest
         return context;
     }
 
-    private int neighborsCounterId(final String name)
+    private int awaitNeighborsCounterId(final String name)
     {
         final CountersReader countersReader = clients.get(name).countersReader();
-        final MutableInteger id = new MutableInteger(NULL_VALUE);
+        final AtomicBuffer metaDataBuffer = countersReader.metaDataBuffer();
 
-        countersReader.forEach(
-            (counterId, typeId, keyBuffer, label) ->
+        while (true)
+        {
+            for (int offset = 0, counterId = 0, capacity = metaDataBuffer.capacity();
+                offset < capacity;
+                offset += METADATA_LENGTH)
             {
-                if (label.startsWith("Resolver neighbors"))
+                final int recordStatus = metaDataBuffer.getIntVolatile(offset);
+                if (RECORD_ALLOCATED == recordStatus)
                 {
-                    id.value = counterId;
+                    final int typeId = metaDataBuffer.getInt(offset + TYPE_ID_OFFSET);
+                    if (AeronCounters.NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID == typeId)
+                    {
+                        return counterId;
+                    }
                 }
-            });
+                else if (RECORD_UNUSED == recordStatus)
+                {
+                    break;
+                }
 
-        return id.value;
+                counterId++;
+            }
+
+            Tests.yield();
+        }
     }
 
-    private int cacheEntriesCounterId(final String name)
+    private int awaitCacheEntriesCounterId(final String name)
     {
         final CountersReader countersReader = clients.get(name).countersReader();
-        final MutableInteger id = new MutableInteger(NULL_VALUE);
+        final AtomicBuffer metaDataBuffer = countersReader.metaDataBuffer();
 
-        countersReader.forEach(
-            (counterId, typeId, keyBuffer, label) ->
+        while (true)
+        {
+            for (int offset = 0, counterId = 0, capacity = metaDataBuffer.capacity();
+                offset < capacity;
+                offset += METADATA_LENGTH)
             {
-                if (label.startsWith("Resolver cache entries"))
+                final int recordStatus = metaDataBuffer.getIntVolatile(offset);
+                if (RECORD_ALLOCATED == recordStatus)
                 {
-                    id.value = counterId;
+                    final int typeId = metaDataBuffer.getInt(offset + TYPE_ID_OFFSET);
+                    if (AeronCounters.NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID == typeId)
+                    {
+                        return counterId;
+                    }
                 }
-            });
+                else if (RECORD_UNUSED == recordStatus)
+                {
+                    break;
+                }
 
-        return id.value;
+                counterId++;
+            }
+
+            Tests.yield();
+        }
     }
 
     private void awaitCounterValue(final String name, final int counterId, final long expectedValue)

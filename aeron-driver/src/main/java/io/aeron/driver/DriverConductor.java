@@ -101,8 +101,8 @@ public final class DriverConductor implements Agent
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final MutableDirectBuffer tempBuffer;
     private final DataHeaderFlyweight defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
-    private final NameResolver nameResolver;
-    private final DriverNameResolver driverNameResolver;
+    private NameResolver nameResolver;
+    private DriverNameResolver driverNameResolver;
     private final AtomicCounter maxCycleTime;
     private final AtomicCounter cycleTimeThresholdExceededCount;
 
@@ -124,16 +124,6 @@ public final class DriverConductor implements Agent
         tempBuffer = ctx.tempBuffer();
 
         countersManager = ctx.countersManager();
-        if (null == ctx.resolverInterface())
-        {
-            driverNameResolver = null;
-            nameResolver = ctx.nameResolver();
-        }
-        else
-        {
-            driverNameResolver = new DriverNameResolver(ctx);
-            nameResolver = driverNameResolver;
-        }
 
         clientCommandAdapter = new ClientCommandAdapter(
             ctx.systemCounters().get(ERRORS),
@@ -156,8 +146,18 @@ public final class DriverConductor implements Agent
      */
     public void onStart()
     {
-        final long nowNs = nanoClock.nanoTime();
+        if (null == ctx.resolverInterface())
+        {
+            driverNameResolver = null;
+            nameResolver = ctx.nameResolver();
+        }
+        else
+        {
+            driverNameResolver = new DriverNameResolver(ctx);
+            nameResolver = driverNameResolver;
+        }
 
+        final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
         cachedEpochClock.update(epochClock.time());
         timerCheckDeadlineNs = nowNs + timerIntervalNs;

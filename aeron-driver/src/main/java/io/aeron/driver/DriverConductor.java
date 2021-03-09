@@ -132,10 +132,6 @@ public final class DriverConductor implements Agent
             clientProxy,
             this);
 
-        ctx.systemCounters().get(RESOLUTION_CHANGES)
-            .appendToLabel(": driverName=").appendToLabel(ctx.resolverName())
-            .appendToLabel(" hostname=").appendToLabel(DriverNameResolver.getCanonicalName("<unresolved>"));
-
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();
         maxCycleTime = ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME);
         cycleTimeThresholdExceededCount = ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
@@ -156,6 +152,10 @@ public final class DriverConductor implements Agent
             driverNameResolver = new DriverNameResolver(ctx);
             nameResolver = driverNameResolver;
         }
+
+        ctx.systemCounters().get(RESOLUTION_CHANGES)
+            .appendToLabel(": driverName=").appendToLabel(ctx.resolverName())
+            .appendToLabel(" hostname=").appendToLabel(DriverNameResolver.getCanonicalName("<unresolved>"));
 
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);

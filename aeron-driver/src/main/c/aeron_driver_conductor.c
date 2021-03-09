@@ -318,7 +318,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     aeron_clock_update_cached_time(context->cached_clock, context->epoch_clock(), now_ns);
 
     conductor->clock_update_deadline_ns = now_ns + AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_INTERNAL_NS;
-    conductor->time_of_last_timeout_check_ns = now_ns;
+    conductor->timeout_check_deadline_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
     conductor->next_session_id = aeron_randomised_int32();
     conductor->publication_reserved_session_id_low = context->publication_reserved_session_id_low;
@@ -2334,12 +2334,12 @@ int aeron_driver_conductor_do_work(void *clientd)
         AERON_COMMAND_DRAIN_LIMIT);
     work_count += conductor->name_resolver.do_work_func(&conductor->name_resolver, now_ms);
 
-    if (now_ns >= (conductor->time_of_last_timeout_check_ns + (int64_t)conductor->context->timer_interval_ns))
+    if (now_ns > conductor->timeout_check_deadline_ns)
     {
         aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, now_ms);
         aeron_driver_conductor_on_check_managed_resources(conductor, now_ns, now_ms);
         aeron_driver_conductor_on_check_for_blocked_driver_commands(conductor, now_ns);
-        conductor->time_of_last_timeout_check_ns = now_ns;
+        conductor->timeout_check_deadline_ns = now_ns + (int64_t)conductor->context->timer_interval_ns;
         work_count++;
     }
 

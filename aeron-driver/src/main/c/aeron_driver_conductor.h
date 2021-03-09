@@ -286,7 +286,7 @@ typedef struct aeron_driver_conductor_stct
     int32_t next_session_id;
     int32_t publication_reserved_session_id_low;
     int32_t publication_reserved_session_id_high;
-    int64_t time_of_last_timeout_check_ns;
+    int64_t timeout_check_deadline_ns;
     int64_t time_of_last_to_driver_position_change_ns;
     int64_t last_consumer_command_position;
 

@@ -50,7 +50,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
     private static final long SELF_RESOLUTION_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
     private static final long NEIGHBOR_RESOLUTION_INTERVAL_MS = TimeUnit.SECONDS.toMillis(2);
     private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
-    private static final long DUTY_CYCLE_INTERVAL_MS = 10;
+    private static final long WORK_INTERVAL_MS = 10;
 
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
         Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
@@ -144,7 +144,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
         if (nowMs > workDeadlineMs)
         {
-            workDeadlineMs = nowMs + DUTY_CYCLE_INTERVAL_MS;
+            workDeadlineMs = nowMs + WORK_INTERVAL_MS;
             workCount += transport.poll(this, nowMs);
             workCount += cache.timeoutOldEntries(nowMs, cacheEntriesCounter);
             workCount += timeoutNeighbors(nowMs);

@@ -3616,8 +3616,11 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     aeron_receive_channel_endpoint_t *endpoint = command->endpoint;
     aeron_receive_destination_t *destination = command->destination;
 
+    size_t initial_window_length = aeron_udp_channel_receiver_window(
+        endpoint->conductor_fields.udp_channel, conductor->context->initial_window_length);
+
     if (aeron_receiver_channel_endpoint_validate_sender_mtu_length(
-        endpoint, (size_t)command->mtu_length, conductor->context->initial_window_length) < 0)
+        endpoint, (size_t)command->mtu_length, initial_window_length) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_driver_conductor_log_error(conductor);
@@ -3650,8 +3653,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     aeron_congestion_control_strategy_t *congestion_control = NULL;
     if (conductor->context->congestion_control_supplier_func(
         &congestion_control,
-        uri_length,
-        uri,
+        endpoint->conductor_fields.udp_channel,
         command->stream_id,
         command->session_id,
         registration_id,

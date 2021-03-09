@@ -210,7 +210,11 @@ protected:
 
         aeron_udp_channel_t *channel = endpoint->conductor_fields.udp_channel;
         m_context->congestion_control_supplier_func(
-            &congestion_control_strategy, 0, 0, 0, 0, 0, TERM_BUFFER_SIZE, MTU,
+            &congestion_control_strategy, channel,
+            0,
+            0,
+            0,
+            TERM_BUFFER_SIZE, MTU,
             &channel->remote_control,
             &channel->remote_data,
             m_context,

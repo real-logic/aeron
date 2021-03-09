@@ -401,3 +401,5 @@ void aeron_udp_channel_delete(aeron_udp_channel_t *channel)
 extern bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel);
 
 extern bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b);
+
+extern size_t aeron_udp_channel_receiver_window(aeron_udp_channel_t *channel, size_t default_receiver_window);

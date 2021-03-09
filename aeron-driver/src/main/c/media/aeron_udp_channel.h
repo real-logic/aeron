@@ -68,4 +68,9 @@ inline bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t
     return a == b || (a != NULL && 0 == strncmp(a->canonical_form, b->canonical_form, AERON_MAX_PATH));
 }
 
+inline size_t aeron_udp_channel_receiver_window(aeron_udp_channel_t *channel, size_t default_receiver_window)
+{
+    return 0 != channel->receiver_window ? channel->receiver_window : default_receiver_window;
+}
+
 #endif //AERON_UDP_CHANNEL_H

@@ -762,7 +762,7 @@ int aeron_driver_context_set_re_resolution_check_interval_ns(aeron_driver_contex
 uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_context_t *context);
 
 /**
- * Specify the duty cycle time thresold for the conductor.
+ * Specify the duty cycle time threshold for the conductor.
  */
 #define AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_ENV_VAR "AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD"
 

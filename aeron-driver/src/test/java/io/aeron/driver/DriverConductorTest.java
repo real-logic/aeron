@@ -176,6 +176,7 @@ public class DriverConductorTest
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);
+        driverConductor.onStart();
 
         doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeReceiveChannelEndpoint(any());
     }

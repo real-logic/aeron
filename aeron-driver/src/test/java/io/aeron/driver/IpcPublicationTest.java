@@ -84,6 +84,7 @@ public class IpcPublicationTest
 
         driverProxy = new DriverProxy(toDriverCommands, CLIENT_ID);
         driverConductor = new DriverConductor(ctx);
+        driverConductor.onStart();
 
         driverProxy.addPublication(CommonContext.IPC_CHANNEL, STREAM_ID);
         driverConductor.doWork();

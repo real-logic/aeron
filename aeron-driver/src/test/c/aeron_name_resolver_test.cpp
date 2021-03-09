@@ -271,7 +271,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
         timestamp_ms += 10;
     }
 
-    struct sockaddr_storage resolved_address_of_b = { 0 };
+    struct sockaddr_storage resolved_address_of_b;
     resolved_address_of_b.ss_family = AF_INET;
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address_of_b));
     ASSERT_EQ(AF_INET, resolved_address_of_b.ss_family);
@@ -306,7 +306,7 @@ TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6Wil
         timestamp_ms += 10;
     }
 
-    struct sockaddr_storage resolved_address_of_b = { 0 };
+    struct sockaddr_storage resolved_address_of_b;
     resolved_address_of_b.ss_family = AF_INET6;
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address_of_b));
     ASSERT_EQ(AF_INET6, resolved_address_of_b.ss_family);
@@ -354,7 +354,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for neighbors" << *this;
     }
 
-    struct sockaddr_storage resolved_address = { 0 };
+    struct sockaddr_storage resolved_address;
     resolved_address.ss_family = AF_INET;
 
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address));
@@ -376,7 +376,7 @@ TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)
     const char *hostname = "this.is.the.hostname";
     auto *resolution_header = (aeron_resolution_header_t *)&buffer[0];
     uint8_t flags = 0;
-    struct sockaddr_storage address = { 0 };
+    struct sockaddr_storage address;
 
     address.ss_family = AF_INET6;
     ASSERT_EQ(48, aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
@@ -403,7 +403,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
 {
     aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
     ASSERT_NE(nullptr, supplier_func);
-    struct sockaddr_storage address = { 0 };
+    struct sockaddr_storage address;
     int64_t timestamp_ms = INTMAX_C(8932472347945);
 
     initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");

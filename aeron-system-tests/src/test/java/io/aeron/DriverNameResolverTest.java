@@ -309,14 +309,13 @@ public class DriverNameResolverTest
 
     private int awaitNeighborsCounterId(final String name)
     {
-        final CountersReader countersReader = clients.get(name).countersReader();
-        final AtomicBuffer metaDataBuffer = countersReader.metaDataBuffer();
+        final AtomicBuffer metaDataBuffer = clients.get(name).countersReader().metaDataBuffer();
 
         while (true)
         {
             for (int offset = 0, counterId = 0, capacity = metaDataBuffer.capacity();
                 offset < capacity;
-                offset += METADATA_LENGTH)
+                offset += METADATA_LENGTH, counterId++)
             {
                 final int recordStatus = metaDataBuffer.getIntVolatile(offset);
                 if (RECORD_ALLOCATED == recordStatus)
@@ -331,24 +330,21 @@ public class DriverNameResolverTest
                 {
                     break;
                 }
-
-                counterId++;
             }
 
-            Tests.yield();
+            Tests.sleep(1);
         }
     }
 
     private int awaitCacheEntriesCounterId(final String name)
     {
-        final CountersReader countersReader = clients.get(name).countersReader();
-        final AtomicBuffer metaDataBuffer = countersReader.metaDataBuffer();
+        final AtomicBuffer metaDataBuffer = clients.get(name).countersReader().metaDataBuffer();
 
         while (true)
         {
             for (int offset = 0, counterId = 0, capacity = metaDataBuffer.capacity();
                 offset < capacity;
-                offset += METADATA_LENGTH)
+                offset += METADATA_LENGTH, counterId++)
             {
                 final int recordStatus = metaDataBuffer.getIntVolatile(offset);
                 if (RECORD_ALLOCATED == recordStatus)
@@ -363,11 +359,9 @@ public class DriverNameResolverTest
                 {
                     break;
                 }
-
-                counterId++;
             }
 
-            Tests.yield();
+            Tests.sleep(1);
         }
     }
 

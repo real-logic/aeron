@@ -52,6 +52,8 @@ public final class UdpChannel
     private final boolean hasMulticastTtl;
     private final boolean hasTag;
     private final int multicastTtl;
+    private final int socketRcvbufLength;
+    private final int socketSndbufLength;
     private final long tag;
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -62,8 +64,6 @@ public final class UdpChannel
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
     private final ChannelUri channelUri;
-    private final int socketRcvbufLength;
-    private final int socketSndbufLength;
 
     private UdpChannel(final Context context)
     {
@@ -76,6 +76,8 @@ public final class UdpChannel
         tag = context.tagId;
         hasMulticastTtl = context.hasMulticastTtl;
         multicastTtl = context.multicastTtl;
+        socketRcvbufLength = context.socketRcvbufLength;
+        socketSndbufLength = context.socketSndbufLength;
         remoteData = context.remoteData;
         localData = context.localData;
         remoteControl = context.remoteControl;
@@ -85,8 +87,6 @@ public final class UdpChannel
         localInterface = context.localInterface;
         protocolFamily = context.protocolFamily;
         channelUri = context.channelUri;
-        socketRcvbufLength = context.socketRcvbufLength;
-        socketSndbufLength = context.socketSndbufLength;
     }
 
     /**
@@ -133,7 +133,7 @@ public final class UdpChannel
             validateConfiguration(channelUri);
 
             InetSocketAddress endpointAddress = getEndpointAddress(channelUri, nameResolver);
-            final InetSocketAddress explicitControlAddress = getExplicitControlAddress(channelUri, nameResolver);
+            final InetSocketAddress controlAddress = getExplicitControlAddress(channelUri, nameResolver);
 
             final String tagIdStr = channelUri.channelTag();
             final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
@@ -144,14 +144,14 @@ public final class UdpChannel
             final int socketSndbufLength = getSocketBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
 
             final boolean requiresAdditionalSuffix = !isDestination &&
-                (null == endpointAddress && null == explicitControlAddress ||
+                (null == endpointAddress && null == controlAddress ||
                 (null != endpointAddress && endpointAddress.getPort() == 0) ||
-                (null != explicitControlAddress && explicitControlAddress.getPort() == 0));
+                (null != controlAddress && controlAddress.getPort() == 0));
 
             final boolean hasNoDistinguishingCharacteristic =
-                null == endpointAddress && null == explicitControlAddress && null == tagIdStr;
+                null == endpointAddress && null == controlAddress && null == tagIdStr;
 
-            if (isDynamicControlMode && null == explicitControlAddress)
+            if (isDynamicControlMode && null == controlAddress)
             {
                 throw new IllegalArgumentException(
                     "explicit control expected with dynamic control mode: " + channelUriString);
@@ -169,23 +169,17 @@ public final class UdpChannel
                 throw new UnknownHostException("could not resolve endpoint address: " + endpointAddress);
             }
 
-            if (null != explicitControlAddress && explicitControlAddress.isUnresolved())
+            if (null != controlAddress && controlAddress.isUnresolved())
             {
-                throw new UnknownHostException("could not resolve control address: " + explicitControlAddress);
+                throw new UnknownHostException("could not resolve control address: " + controlAddress);
             }
 
             boolean hasExplicitEndpoint = true;
             if (null == endpointAddress)
             {
                 hasExplicitEndpoint = false;
-                if (null != explicitControlAddress && explicitControlAddress.getAddress() instanceof Inet6Address)
-                {
-                    endpointAddress = ANY_IPV6;
-                }
-                else
-                {
-                    endpointAddress = ANY_IPV4;
-                }
+                endpointAddress = null != controlAddress && controlAddress.getAddress() instanceof Inet6Address ?
+                    ANY_IPV6 : ANY_IPV4;
             }
 
             final Context context = new Context()
@@ -225,7 +219,7 @@ public final class UdpChannel
                     context.hasMulticastTtl(true).multicastTtl(Integer.parseInt(ttlValue));
                 }
             }
-            else if (null != explicitControlAddress)
+            else if (null != controlAddress)
             {
                 final String controlVal = channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
                 final String endpointVal = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
@@ -237,14 +231,14 @@ public final class UdpChannel
                 }
 
                 final String canonicalForm = canonicalise(
-                    controlVal, explicitControlAddress, endpointVal, endpointAddress) + suffix;
+                    controlVal, controlAddress, endpointVal, endpointAddress) + suffix;
 
                 context
                     .hasExplicitControl(true)
                     .remoteControlAddress(endpointAddress)
                     .remoteDataAddress(endpointAddress)
-                    .localControlAddress(explicitControlAddress)
-                    .localDataAddress(explicitControlAddress)
+                    .localControlAddress(controlAddress)
+                    .localDataAddress(controlAddress)
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
                     .canonicalForm(canonicalForm);
             }
@@ -798,10 +792,10 @@ public final class UdpChannel
             }
         }
 
-        throw new IllegalArgumentException(errorNoMatchingInterfaces(filteredInterfaces, searchAddress));
+        throw new IllegalArgumentException(noMatchingInterfacesError(filteredInterfaces, searchAddress));
     }
 
-    private static String errorNoMatchingInterfaces(
+    private static String noMatchingInterfacesError(
         final NetworkInterface[] filteredInterfaces, final InterfaceSearchAddress address)
         throws SocketException
     {
@@ -831,10 +825,20 @@ public final class UdpChannel
         return builder.toString();
     }
 
-    static class Context
+    static final class Context
     {
+        boolean isManualControlMode = false;
+        boolean isDynamicControlMode = false;
+        boolean hasExplicitEndpoint = false;
+        boolean hasExplicitControl = false;
+        boolean isMulticast = false;
+        boolean hasMulticastTtl = false;
+        boolean hasTagId = false;
+        boolean hasNoDistinguishingCharacteristic = false;;
         long tagId;
         int multicastTtl;
+        int socketRcvbufLength = 0;
+        int socketSndbufLength = 0;
         InetSocketAddress remoteData;
         InetSocketAddress localData;
         InetSocketAddress remoteControl;
@@ -844,16 +848,6 @@ public final class UdpChannel
         NetworkInterface localInterface;
         ProtocolFamily protocolFamily;
         ChannelUri channelUri;
-        boolean isManualControlMode = false;
-        boolean isDynamicControlMode = false;
-        boolean hasExplicitEndpoint = false;
-        boolean hasExplicitControl = false;
-        boolean isMulticast = false;
-        boolean hasMulticastTtl = false;
-        boolean hasTagId = false;
-        boolean hasNoDistinguishingCharacteristic = false;
-        int socketRcvbufLength = 0;
-        int socketSndbufLength = 0;
 
         Context uriStr(final String uri)
         {

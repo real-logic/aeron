@@ -56,7 +56,7 @@ def checkstyleVersion = '8.39'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.7.1'
 def mockitoVersion = '3.8.0'
-def byteBuddyVersion = '1.10.21'
+def byteBuddyVersion = '1.10.22'
 def hdrHistogramVersion = '2.1.12'
 
 ext {

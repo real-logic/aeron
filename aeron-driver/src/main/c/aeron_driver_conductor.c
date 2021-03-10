@@ -1552,6 +1552,13 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
         endpoint = aeron_str_to_ptr_hash_map_get(
             &conductor->send_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
+        if (NULL != endpoint &&
+            AERON_URI_INVALID_TAG != endpoint->conductor_fields.udp_channel->tag_id &&
+            AERON_URI_INVALID_TAG != channel->tag_id &&
+            channel->tag_id != endpoint->conductor_fields.udp_channel->tag_id)
+        {
+            endpoint = NULL;
+        }
     }
 
     if (aeron_driver_conductor_update_and_check_ats_status(

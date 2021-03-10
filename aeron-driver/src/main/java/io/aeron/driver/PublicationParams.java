@@ -243,7 +243,7 @@ final class PublicationParams
                 "MTU greater than SO_SNDBUF for channel: mtu=" + params.mtuLength +
                 " so-sndbuf=" + channelSocketSndbufLength);
         }
-        else if (params.mtuLength > ctx.osDefaultSocketSndbufLength())
+        else if (0 == channelSocketSndbufLength && params.mtuLength > ctx.osDefaultSocketSndbufLength())
         {
             throw new IllegalStateException(
                 "MTU greater than SO_SNDBUF for channel: mtu=" + params.mtuLength +

@@ -597,6 +597,7 @@ public final class MediaDriver implements AutoCloseable
 
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
                 LogBufferDescriptor.checkTermLength(ipcTermBufferLength);
+//                clampInitialWindowLength();
                 validateInitialWindowLength(initialWindowLength, mtuLength);
                 validateUnblockTimeout(publicationUnblockTimeoutNs, clientLivenessTimeoutNs, timerIntervalNs);
                 validateUntetheredTimeouts(untetheredWindowLimitTimeoutNs, untetheredRestingTimeoutNs, timerIntervalNs);
@@ -642,6 +643,16 @@ public final class MediaDriver implements AutoCloseable
             }
 
             return this;
+        }
+
+        private void clampInitialWindowLength()
+        {
+            if (Configuration.INITIAL_WINDOW_LENGTH_DEFAULT == initialWindowLength() &&
+                0 == socketRcvbufLength() &&
+                initialWindowLength() > osDefaultSocketRcvbufLength())
+            {
+                initialWindowLength = osDefaultSocketRcvbufLength();
+            }
         }
 
         /**

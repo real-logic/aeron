@@ -142,9 +142,9 @@ public final class UdpChannel
             final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
             final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
 
-            final int socketRcvbufLength = getBufferLength(channelUri, CommonContext.SOCKET_RCVBUF_PARAM_NAME);
-            final int socketSndbufLength = getBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
-            final int receiverWindowLength = getBufferLength(
+            final int socketRcvbufLength = parseBufferLength(channelUri, CommonContext.SOCKET_RCVBUF_PARAM_NAME);
+            final int socketSndbufLength = parseBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
+            final int receiverWindowLength = parseBufferLength(
                 channelUri, CommonContext.RECEIVER_WINDOW_LENGTH_PARAM_NAME);
 
             final boolean requiresAdditionalSuffix = !isDestination &&
@@ -278,7 +278,16 @@ public final class UdpChannel
         }
     }
 
-    private static int getBufferLength(final ChannelUri channelUri, final String paramName)
+    /**
+     * Parse a buffer length for a given URI paramName with a format specified by
+     * {@link SystemUtil#parseSize(String, String)}, clamping the range to 0 <= x <= Integer.MAX_VALUE.
+     *
+     * @see SystemUtil#parseSize(String, String)
+     * @param channelUri to get the value from
+     * @param paramName key for the parameter
+     * @return value as an integer
+     */
+    public static int parseBufferLength(final ChannelUri channelUri, final String paramName)
     {
         int socketBufferLength = 0;
 

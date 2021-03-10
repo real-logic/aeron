@@ -53,6 +53,7 @@ import static io.aeron.CommonContext.InferableBoolean.FORCE_TRUE;
 import static io.aeron.CommonContext.InferableBoolean.INFER;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.PublicationParams.*;
+import static io.aeron.driver.SubscriptionParams.validateInitialWindowForRcvBuf;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
@@ -740,6 +741,7 @@ public final class DriverConductor implements Agent
 
         checkForClashingSubscription(params, udpChannel, streamId);
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(udpChannel, registrationId);
+        validateInitialWindowForRcvBuf(params, channelEndpoint.socketRcvbufLength(), ctx);
 
         if (params.hasSessionId)
         {
@@ -1518,6 +1520,13 @@ public final class DriverConductor implements Agent
                 throw ex;
             }
         }
+        else
+        {
+            validateChannelBufferLength(
+                SOCKET_RCVBUF_PARAM_NAME, udpChannel.socketRcvbufLength(), channelEndpoint.socketRcvbufLength());
+            validateChannelBufferLength(
+                SOCKET_SNDBUF_PARAM_NAME, udpChannel.socketSndbufLength(), channelEndpoint.socketSndbufLength());
+        }
 
         return channelEndpoint;
     }
@@ -1880,7 +1889,7 @@ public final class DriverConductor implements Agent
 
             throw new InvalidChannelException(
                 "'" + paramName + "=" + channelLength +
-                    "' is invalid, endpoint already uses " + existingValue);
+                "' is invalid, endpoint already uses " + existingValue);
         }
     }
 }

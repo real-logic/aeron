@@ -72,7 +72,7 @@ public class ChannelValidationTests
     }
 
     @Test
-    void shouldCantUseDifferentSoSndbufIfAlreadySetViaUri()
+    void publicationCantUseDifferentSoSndbufIfAlreadySetViaUri()
     {
         launch();
 
@@ -86,7 +86,7 @@ public class ChannelValidationTests
     }
 
     @Test
-    void shouldCantUseDifferentSoSndbufIfAlreadySetViaContext()
+    void publicationCantUseDifferentSoSndbufIfAlreadySetViaContext()
     {
         context.socketSndbufLength(131072);
         launch();
@@ -101,7 +101,7 @@ public class ChannelValidationTests
     }
 
     @Test
-    void shouldCantUseDifferentSoSndbufIfAlreadySetViaDefault()
+    void publicationCantUseDifferentSoSndbufIfAlreadySetViaDefault()
     {
         context.socketRcvbufLength(131072);
         launch();
@@ -115,7 +115,7 @@ public class ChannelValidationTests
 
 
     @Test
-    void shouldCantUseDifferentSoRcvbufIfAlreadySetViaUri()
+    void publicationCantUseDifferentSoRcvbufIfAlreadySetViaUri()
     {
         launch();
 
@@ -129,7 +129,7 @@ public class ChannelValidationTests
     }
 
     @Test
-    void shouldCantUseDifferentSoRcvbufIfAlreadySetViaContext()
+    void publicationCantUseDifferentSoRcvbufIfAlreadySetViaContext()
     {
         context.socketRcvbufLength(131072);
         launch();
@@ -144,7 +144,7 @@ public class ChannelValidationTests
     }
 
     @Test
-    void shouldCantUseDifferentSoRcvbufIfAlreadySetViaDefault()
+    void publicationCantUseDifferentSoRcvbufIfAlreadySetViaDefault()
     {
         context.socketRcvbufLength(131072);
         launch();
@@ -154,6 +154,91 @@ public class ChannelValidationTests
         assertThrows(
             RegistrationException.class,
             () -> addPublication("aeron:udp?endpoint=localhost:9999|so-rcvbuf=65536", 1001));
+    }
+
+    @Test
+    void subscriptionCantUseDifferentSoSndbufIfAlreadySetViaUri()
+    {
+        launch();
+
+        addSubscription("aeron:udp?endpoint=localhost:9999|so-sndbuf=131072", 1000);
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?endpoint=localhost:9999|so-sndbuf=65536", 1001));
+
+        addSubscription("aeron:udp?endpoint=localhost:9999|so-sndbuf=131072", 1002);
+    }
+
+    @Test
+    void subscriptionCantUseDifferentSoSndbufIfAlreadySetViaContext()
+    {
+        context.socketSndbufLength(131072);
+        launch();
+
+        addSubscription("aeron:udp?endpoint=localhost:9999", 1000);
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?endpoint=localhost:9999|so-sndbuf=65536", 1001));
+
+        addSubscription("aeron:udp?endpoint=localhost:9999|so-sndbuf=131072", 1002);
+    }
+
+    @Test
+    void subscriptionCantUseDifferentSoSndbufIfAlreadySetViaDefault()
+    {
+        context.socketRcvbufLength(131072);
+        launch();
+
+        addSubscription("aeron:udp?endpoint=localhost:9999", 1000);
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?endpoint=localhost:9999|so-sndbuf=65536", 1001));
+    }
+
+
+    @Test
+    void subscriptionCantUseDifferentSoRcvbufIfAlreadySetViaUri()
+    {
+        launch();
+
+        addSubscription("aeron:udp?endpoint=localhost:9999|so-rcvbuf=131072", 1000);
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?endpoint=localhost:9999|so-rcvbuf=65536", 1001));
+
+        addSubscription("aeron:udp?endpoint=localhost:9999|so-rcvbuf=131072", 1002);
+    }
+
+    @Test
+    void subscriptionCantUseDifferentSoRcvbufIfAlreadySetViaContext()
+    {
+        context.socketRcvbufLength(131072);
+        launch();
+
+        addSubscription("aeron:udp?endpoint=localhost:9999", 1000);
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?endpoint=localhost:9999|so-rcvbuf=65536", 1001));
+
+        addSubscription("aeron:udp?endpoint=localhost:9999|so-rcvbuf=131072", 1002);
+    }
+
+    @Test
+    void subscriptionCantUseDifferentSoRcvbufIfAlreadySetViaDefault()
+    {
+        context.socketRcvbufLength(131072);
+        launch();
+
+        addSubscription("aeron:udp?endpoint=localhost:9999", 1000);
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?endpoint=localhost:9999|so-rcvbuf=65536", 1001));
     }
 
     @Test
@@ -205,10 +290,71 @@ public class ChannelValidationTests
             () -> addPublication("aeron:udp?endpoint=localhost:9999|mtu=" + (defaultOsSocketSndbufLength + 32), 1000));
     }
 
+    @Test
+    void shouldValidateReceiverWindowAgainstSoRcvbufSetViaUri()
+    {
+        launch();
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?endpoint=localhost:9999|rcv-wnd=1056|so-rcvbuf=1024", 1000));
+    }
+
+    @Test
+    void shouldValidateReceiverWindowAgainstSoRcvbufSetViaContext()
+    {
+        context.socketRcvbufLength(4096);
+        launch();
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?endpoint=localhost:9999|rcv-wnd=4128", 1000));
+    }
+
+    @Test
+    void shouldValidateReceiverAgainstSoRcvbufSetViaOsDefault() throws IOException
+    {
+        final int defaultOsSocketRcvbufLength;
+        try (DatagramChannel channel = DatagramChannel.open(StandardProtocolFamily.INET))
+        {
+            defaultOsSocketRcvbufLength = channel.getOption(StandardSocketOptions.SO_RCVBUF);
+        }
+
+        assumeTrue(
+            defaultOsSocketRcvbufLength < Configuration.MAX_UDP_PAYLOAD_LENGTH,
+            "OS buffer sizes to big (use sudo sysctl net.core.rmem_default=8192 to verify)");
+
+        final int desiredMaxMessageLength = 2 * defaultOsSocketRcvbufLength;
+        assumeTrue(
+            desiredMaxMessageLength < FrameDescriptor.MAX_MESSAGE_LENGTH,
+            "OS buffer sizes to big (use sudo sysctl net.core.rmem_default=8192 to verify)");
+
+        final int termLength = BitUtil.findNextPositivePowerOfTwo(desiredMaxMessageLength * 8);
+        context.publicationTermBufferLength(termLength);
+        context.socketRcvbufLength(0);
+
+        launch();
+
+        assertThrows(
+            RegistrationException.class,
+            () ->
+            {
+                final int receiverWindow = defaultOsSocketRcvbufLength + 32;
+                addSubscription("aeron:udp?endpoint=localhost:9999|rcv-wnd=" + receiverWindow, 1000);
+            });
+    }
+
     private Publication addPublication(final String channel, final int streamId)
     {
         final Publication pub = aeron.addPublication(channel, streamId);
         closeables.add(pub);
         return pub;
+    }
+
+    private Subscription addSubscription(final String channel, final int streamId)
+    {
+        final Subscription sub = aeron.addSubscription(channel, streamId);
+        closeables.add(sub);
+        return sub;
     }
 }

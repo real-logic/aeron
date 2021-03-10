@@ -17,14 +17,18 @@ package io.aeron;
 
 import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
@@ -33,7 +37,10 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -43,6 +50,12 @@ public class ChannelValidationTests
     public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
     private final MediaDriver.Context context = new MediaDriver.Context();
+    {
+        context
+            .errorHandler(ignore -> {})
+            .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
+    }
 
     private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
 
@@ -51,11 +64,6 @@ public class ChannelValidationTests
 
     private void launch()
     {
-        context
-            .errorHandler(ignore -> {})
-            .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
-            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
-
         driver = TestMediaDriver.launch(context, watcher);
         aeron = Aeron.connect();
     }
@@ -342,6 +350,30 @@ public class ChannelValidationTests
                 final int receiverWindow = defaultOsSocketRcvbufLength + 32;
                 addSubscription("aeron:udp?endpoint=localhost:9999|rcv-wnd=" + receiverWindow, 1000);
             });
+    }
+
+    @Test
+    @Timeout(5)
+    void shouldValidateSenderMtuAgainstUriReceiverWindow() throws IOException
+    {
+        context.errorHandler(null);
+        launch();
+
+        addPublication("aeron:udp?endpoint=localhost:9999|mtu=1408", 1000);
+        addSubscription("aeron:udp?endpoint=localhost:9999|rcv-wnd=1376", 1000);
+
+        final Supplier<String> message = () ->
+            "Error counter: " + aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id());
+        while (0 < aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()))
+        {
+            Tests.sleep(1, message);
+        }
+
+        final Matcher<String> exceptionMessageMatcher = allOf(
+            containsString("initial window length"),
+            containsString("must be >= to MTU length"));
+
+        SystemTests.waitForErrorToOccur(driver.aeronDirectoryName(), exceptionMessageMatcher, Tests.SLEEP_1_MS);
     }
 
     private Publication addPublication(final String channel, final int streamId)

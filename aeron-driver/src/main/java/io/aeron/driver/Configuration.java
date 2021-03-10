@@ -19,10 +19,9 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.Publication;
-import io.aeron.exceptions.AeronException;
-import io.aeron.exceptions.ConfigurationException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -35,10 +34,7 @@ import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.StatusIndicator;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
-import java.nio.channels.DatagramChannel;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -1767,55 +1763,43 @@ public final class Configuration
      */
     public static void validateSocketBufferLengths(final MediaDriver.Context ctx)
     {
-        try (DatagramChannel probe = DatagramChannel.open())
+        if (ctx.osMaxSocketSndbufLength() < ctx.socketSndbufLength())
         {
-            final int defaultSoSndBuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
-
-            probe.setOption(StandardSocketOptions.SO_SNDBUF, Integer.MAX_VALUE);
-            final int maxSoSndBuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
-
-            if (maxSoSndBuf < ctx.socketSndbufLength())
-            {
-                System.err.format(
-                    "WARNING: Could not get desired SO_SNDBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
-                    SOCKET_SNDBUF_LENGTH_PROP_NAME,
-                    ctx.socketSndbufLength(),
-                    maxSoSndBuf);
-            }
-
-            probe.setOption(StandardSocketOptions.SO_RCVBUF, Integer.MAX_VALUE);
-            final int maxSoRcvBuf = probe.getOption(StandardSocketOptions.SO_RCVBUF);
-
-            if (maxSoRcvBuf < ctx.socketRcvbufLength())
-            {
-                System.err.format(
-                    "WARNING: Could not get desired SO_RCVBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
-                    SOCKET_RCVBUF_LENGTH_PROP_NAME,
-                    ctx.socketRcvbufLength(),
-                    maxSoRcvBuf);
-            }
-
-            final int soSndBuf = 0 == ctx.socketSndbufLength() ? defaultSoSndBuf : ctx.socketSndbufLength();
-
-            if (ctx.mtuLength() > soSndBuf)
-            {
-                throw new ConfigurationException(String.format(
-                    "MTU greater than socket SO_SNDBUF, adjust %s to match MTU: mtuLength=%d, SO_SNDBUF=%d",
-                    SOCKET_SNDBUF_LENGTH_PROP_NAME,
-                    ctx.mtuLength(),
-                    soSndBuf));
-            }
-
-            if (ctx.initialWindowLength() > maxSoRcvBuf)
-            {
-                throw new ConfigurationException("window length greater than socket SO_RCVBUF, increase '" +
-                    Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME +
-                    "' to match window: windowLength=" + ctx.initialWindowLength() + ", SO_RCVBUF=" + maxSoRcvBuf);
-            }
+            System.err.format(
+                "WARNING: Could not get desired SO_SNDBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
+                SOCKET_SNDBUF_LENGTH_PROP_NAME,
+                ctx.socketSndbufLength(),
+                ctx.osMaxSocketSndbufLength());
         }
-        catch (final IOException ex)
+
+        if (ctx.osMaxSocketRcvbufLength() < ctx.socketRcvbufLength())
         {
-            throw new AeronException("probe socket: " + ex.toString(), ex);
+            System.err.format(
+                "WARNING: Could not get desired SO_RCVBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
+                SOCKET_RCVBUF_LENGTH_PROP_NAME,
+                ctx.socketRcvbufLength(),
+                ctx.osMaxSocketRcvbufLength());
+        }
+
+        final int soSndBuf = 0 == ctx.socketSndbufLength() ?
+            ctx.osDefaultSocketSndbufLength() : ctx.socketSndbufLength();
+
+        if (ctx.mtuLength() > soSndBuf)
+        {
+            throw new ConfigurationException(String.format(
+                "MTU greater than socket SO_SNDBUF, adjust %s to match MTU: mtuLength=%d, SO_SNDBUF=%d",
+                SOCKET_SNDBUF_LENGTH_PROP_NAME,
+                ctx.mtuLength(),
+                soSndBuf));
+        }
+
+        if (ctx.initialWindowLength() > ctx.osMaxSocketRcvbufLength())
+        {
+            throw new ConfigurationException(
+                "window length greater than socket SO_RCVBUF, increase '" +
+                Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME +
+                "' to match window: windowLength=" + ctx.initialWindowLength() +
+                ", SO_RCVBUF=" + ctx.osMaxSocketRcvbufLength());
         }
     }
 

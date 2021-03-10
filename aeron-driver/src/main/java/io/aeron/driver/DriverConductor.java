@@ -48,7 +48,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
-import static io.aeron.CommonContext.IPC_MEDIA;
+import static io.aeron.CommonContext.*;
 import static io.aeron.CommonContext.InferableBoolean.FORCE_TRUE;
 import static io.aeron.CommonContext.InferableBoolean.INFER;
 import static io.aeron.ErrorCode.*;
@@ -217,8 +217,11 @@ public final class DriverConductor implements Agent
         final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
+        final UdpChannel udpChannel = channelEndpoint.udpChannel();
+
         Configuration.validateMtuLength(senderMtuLength);
-        Configuration.validateInitialWindowLength(ctx.initialWindowLength(), senderMtuLength);
+        Configuration.validateInitialWindowLength(
+            udpChannel.receiverWindowLengthOrDefault(ctx.initialWindowLength()), senderMtuLength);
 
         final long joinPosition = computePosition(
             activeTermId, initialTermOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
@@ -245,7 +248,6 @@ public final class DriverConductor implements Agent
                     senderMtuLength,
                     registrationId);
 
-                final UdpChannel udpChannel = channelEndpoint.udpChannel();
                 congestionControl = ctx.congestionControlSupplier().newInstance(
                     registrationId,
                     udpChannel,
@@ -424,6 +426,7 @@ public final class DriverConductor implements Agent
         validateMtuForMaxMessage(params);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel, correlationId);
+        validateMtuForSndbuf(params, channelEndpoint.socketSndbufLength(), ctx);
 
         NetworkPublication publication = null;
         if (!isExclusive)
@@ -1320,6 +1323,13 @@ public final class DriverConductor implements Agent
                 throw ex;
             }
         }
+        else
+        {
+            validateChannelBufferLength(
+                SOCKET_RCVBUF_PARAM_NAME, udpChannel.socketRcvbufLength(), channelEndpoint.socketRcvbufLength());
+            validateChannelBufferLength(
+                SOCKET_SNDBUF_PARAM_NAME, udpChannel.socketSndbufLength(), channelEndpoint.socketSndbufLength());
+        }
 
         return channelEndpoint;
     }
@@ -1857,5 +1867,20 @@ public final class DriverConductor implements Agent
         }
 
         return workCount;
+    }
+
+    private static void validateChannelBufferLength(
+        final String paramName,
+        final int channelLength,
+        final int endpointLength)
+    {
+        if (0 != channelLength && channelLength != endpointLength)
+        {
+            final String existingValue = 0 == endpointLength ? "OS default" : Integer.toString(endpointLength);
+
+            throw new InvalidChannelException(
+                "'" + paramName + "=" + channelLength +
+                    "' is invalid, endpoint already uses " + existingValue);
+        }
     }
 }

@@ -49,7 +49,7 @@ public interface CongestionControl extends AutoCloseable
      */
     static int receiverWindowLength(final long outcome)
     {
-        return (int)outcome;
+        return (int)(outcome & 0xFFFFFFFFL);
     }
 
     /**

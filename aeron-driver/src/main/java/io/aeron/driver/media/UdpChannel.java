@@ -559,6 +559,17 @@ public final class UdpChannel
     }
 
     /**
+     * Get the socket receive buffer length.
+     *
+     * @param defaultValue to be used if the UdpChannel's value is 0 (unspecified)
+     * @return socket receive buffer length or 0 if not specified.
+     */
+    public int socketRcvbufLengthOrDefault(final int defaultValue)
+    {
+        return 0 != socketRcvbufLength ? socketRcvbufLength : defaultValue;
+    }
+
+    /**
      * Get the socket send buffer length.
      *
      * @return socket send buffer length or 0 if not specified.
@@ -569,6 +580,17 @@ public final class UdpChannel
     }
 
     /**
+     * Get the socket send buffer length.
+     *
+     * @param defaultValue to be used if the UdpChannel's value is 0 (unspecified)
+     * @return socket send buffer length or defaultValue if not specified.
+     */
+    public int socketSndbufLengthOrDefault(final int defaultValue)
+    {
+        return 0 != socketSndbufLength ? socketSndbufLength : defaultValue;
+    }
+
+    /**
      * Get the receiver window length used as the initial window length for congestion control.
      *
      * @return receiver window length or 0 if not specified.
@@ -576,6 +598,17 @@ public final class UdpChannel
     public int receiverWindowLength()
     {
         return receiverWindowLength;
+    }
+
+    /**
+     * Get the receiver window length used as the initial window length for congestion control.
+     *
+     * @param defaultValue to be used if the UdpChannel's value is 0 (unspecified)
+     * @return receiver window length or defaultValue if not specified.
+     */
+    public int receiverWindowLengthOrDefault(final int defaultValue)
+    {
+        return 0 != receiverWindowLength() ? receiverWindowLength() : defaultValue;
     }
 
     /**

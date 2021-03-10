@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.FileStoreLogFactory;
@@ -23,6 +24,7 @@ import io.aeron.driver.exceptions.ActiveDriverException;
 import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -37,9 +39,12 @@ import org.agrona.concurrent.status.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.net.StandardSocketOptions;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -523,6 +528,11 @@ public final class MediaDriver implements AutoCloseable
         private MappedByteBuffer cncByteBuffer;
         private UnsafeBuffer cncMetaDataBuffer;
 
+        private int osDefaultSocketRcvbufLength = Aeron.NULL_VALUE;
+        private int osMaxSocketRcvbufLength = Aeron.NULL_VALUE;
+        private int osDefaultSocketSndbufLength = Aeron.NULL_VALUE;
+        private int osMaxSocketSndbufLength = Aeron.NULL_VALUE;
+
         /**
          * Perform a shallow copy of the object.
          *
@@ -578,6 +588,7 @@ public final class MediaDriver implements AutoCloseable
             try
             {
                 concludeNullProperties();
+                resolveOsSocketBufLengths();
 
                 validateMtuLength(mtuLength);
                 validateMtuLength(ipcMtuLength);
@@ -3169,6 +3180,55 @@ public final class MediaDriver implements AutoCloseable
         {
             this.driverConductorProxy = driverConductorProxy;
             return this;
+        }
+
+        int osDefaultSocketRcvbufLength()
+        {
+            resolveOsSocketBufLengths();
+            return osDefaultSocketRcvbufLength;
+        }
+
+        int osMaxSocketRcvbufLength()
+        {
+            resolveOsSocketBufLengths();
+            return osMaxSocketRcvbufLength;
+        }
+
+        int osDefaultSocketSndbufLength()
+        {
+            resolveOsSocketBufLengths();
+            return osDefaultSocketSndbufLength;
+        }
+
+        int osMaxSocketSndbufLength()
+        {
+            resolveOsSocketBufLengths();
+            return osMaxSocketSndbufLength;
+        }
+
+        void resolveOsSocketBufLengths()
+        {
+            if (Aeron.NULL_VALUE != osMaxSocketRcvbufLength)
+            {
+                return;
+            }
+
+            try (DatagramChannel probe = DatagramChannel.open())
+            {
+                osDefaultSocketSndbufLength = probe.getOption(StandardSocketOptions.SO_SNDBUF);
+
+                probe.setOption(StandardSocketOptions.SO_SNDBUF, Integer.MAX_VALUE);
+                osMaxSocketSndbufLength = probe.getOption(StandardSocketOptions.SO_SNDBUF);
+
+                osDefaultSocketRcvbufLength = probe.getOption(StandardSocketOptions.SO_RCVBUF);
+
+                probe.setOption(StandardSocketOptions.SO_RCVBUF, Integer.MAX_VALUE);
+                osMaxSocketRcvbufLength = probe.getOption(StandardSocketOptions.SO_RCVBUF);
+            }
+            catch (final IOException ex)
+            {
+                throw new AeronException("probe socket: " + ex.toString(), ex);
+            }
         }
 
         @SuppressWarnings({ "MethodLength", "deprecation" })

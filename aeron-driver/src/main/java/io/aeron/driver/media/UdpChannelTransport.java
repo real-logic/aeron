@@ -88,6 +88,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     protected boolean isClosed = false;
     private int multicastTtl = 0;
+    private final int socketSndbufLength;
+    private final int socketRcvbufLength;
 
     /**
      * Construct a transport for a given channel.
@@ -112,6 +114,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
         this.bindAddress = bindAddress;
         this.connectAddress = connectAddress;
         this.invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
+        this.socketSndbufLength = udpChannel.socketSndbufLengthOrDefault(context.socketSndbufLength());
+        this.socketRcvbufLength = udpChannel.socketRcvbufLengthOrDefault(context.socketRcvbufLength());
     }
 
     /**
@@ -437,13 +441,23 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
     }
 
-    private int socketSndbufLength()
+    /**
+     * Get the configured OS send socket buffer length (SO_SNDBUF) for the endpoint's socket.
+     *
+     * @return OS socket send buffer length or 0 if using OS default.
+     */
+    public int socketSndbufLength()
     {
-        return 0 != udpChannel.socketSndbufLength() ? udpChannel.socketSndbufLength() : context.socketSndbufLength();
+        return socketSndbufLength;
     }
 
-    private int socketRcvbufLength()
+    /**
+     * Get the configured OS receive socket buffer length (SO_RCVBUF) for the endpoint's socket.
+     *
+     * @return OS socket receive buffer length or 0 if using OS default.
+     */
+    public int socketRcvbufLength()
     {
-        return 0 != udpChannel.socketRcvbufLength() ? udpChannel.socketRcvbufLength() : context.socketRcvbufLength();
+        return socketRcvbufLength;
     }
 }

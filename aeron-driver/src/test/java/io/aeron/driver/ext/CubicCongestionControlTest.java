@@ -38,8 +38,8 @@ class CubicCongestionControlTest
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[8192]);
     private final UnsafeBuffer valuesBuffer = new UnsafeBuffer(new byte[8192]);
     private final MediaDriver.Context context = new MediaDriver.Context()
-            .initialWindowLength(CONTEXT_RECEIVER_WINDOW_LENGTH)
-            .tempBuffer(tempBuffer);
+        .initialWindowLength(CONTEXT_RECEIVER_WINDOW_LENGTH)
+        .tempBuffer(tempBuffer);
     private final UdpChannel channelWithWindow = UdpChannel.parse(
         "aeron:udp?endpoint=127.0.0.1:9999|rcv-wnd=" + CHANNEL_RECEIVER_WINDOW_LENGTH);
     private final UdpChannel channelWithoutWindow = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:9999");

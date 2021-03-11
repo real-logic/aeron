@@ -50,6 +50,7 @@ import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.exceptions.AeronException.Category.WARN;
+import static java.lang.Math.log;
 import static java.lang.Math.min;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
@@ -1436,7 +1437,7 @@ final class ConsensusModuleAgent implements Agent
     {
         return new LogReplay(
             archive,
-            recoveryPlan.log.recordingId,
+            logRecordingId,
             logPosition,
             appendPosition,
             logAdapter,

@@ -363,6 +363,7 @@ class Election
             leaderMember = leader;
             isLeaderStartup = isStartup;
             this.leadershipTermId = leadershipTermId;
+            this.candidateTermId = leadershipTermId;
             this.logSessionId = logSessionId;
             catchupPosition = appendPosition < logPosition ? logPosition : NULL_POSITION;
             logReplicationPosition = appendPosition < logTruncatePosition ? logTruncatePosition : NULL_POSITION;
@@ -740,7 +741,6 @@ class Election
                     thisMember.id());
 
                 consensusModuleAgent.logRecordingId(logReplication.recordingId());
-                consensusModuleAgent.prepareForNewLeadership(appendPosition);
                 state(FOLLOWER_REPLAY, nowNs);
 
                 cleanupReplication();

@@ -164,6 +164,27 @@ static int aeron_driver_conductor_validate_destination_uri(
     return 0;
 }
 
+static inline int aeron_driver_conductor_validate_channel_buffer_length(
+    const char *param_name, size_t channel_length, size_t endpoint_length)
+{
+    if (0 != channel_length && channel_length != endpoint_length)
+    {
+        const char *suffix = 0 == endpoint_length ? " (OS default)" : "";
+
+        AERON_SET_ERR(
+            EINVAL,
+            "'%s'=%" PRIu64 " is invalid, endpoint already uses %" PRIu64 "%s",
+            param_name,
+            (uint64_t)channel_length,
+            (uint64_t)endpoint_length,
+            suffix);
+
+        return -1;
+    }
+
+    return 0;
+}
+
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
 {
     if (aeron_mpsc_rb_init(
@@ -1595,6 +1616,22 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         aeron_counter_set_ordered(
             endpoint->channel_status.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE);
     }
+    else
+    {
+        if (aeron_driver_conductor_validate_channel_buffer_length(
+            AERON_URI_SOCKET_RCVBUF_KEY, channel->socket_rcvbuf, endpoint->conductor_fields.socket_rcvbuf) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return NULL;
+        }
+
+        if (aeron_driver_conductor_validate_channel_buffer_length(
+            AERON_URI_SOCKET_SNDBUF_KEY, channel->socket_sndbuf, endpoint->conductor_fields.socket_sndbuf) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return NULL;
+        }
+    }
 
     return endpoint;
 }
@@ -1717,6 +1754,29 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
         conductor->receive_channel_endpoints.array[conductor->receive_channel_endpoints.length++].endpoint = endpoint;
         *status_indicator.value_addr = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
+    }
+    else
+    {
+        if (!channel->is_manual_control_mode && 1 == endpoint->destinations.length)
+        {
+            if (aeron_driver_conductor_validate_channel_buffer_length(
+                AERON_URI_SOCKET_SNDBUF_KEY,
+                channel->socket_sndbuf,
+                endpoint->destinations.array[0].destination->conductor_fields.socket_sndbuf) < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+                return NULL;
+            }
+
+            if (aeron_driver_conductor_validate_channel_buffer_length(
+                AERON_URI_SOCKET_RCVBUF_KEY,
+                channel->socket_rcvbuf,
+                endpoint->destinations.array[0].destination->conductor_fields.socket_rcvbuf) < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+                return NULL;
+            }
+        }
     }
 
     return endpoint;
@@ -2701,6 +2761,13 @@ int aeron_driver_conductor_on_add_network_publication(
         return -1;
     }
 
+    if (aeron_publication_params_validate_mtu_for_sndbuf(
+        &params, endpoint->conductor_fields.socket_sndbuf, conductor->context->os_buffer_lengths.default_so_sndbuf) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
     aeron_network_publication_t *publication = aeron_driver_conductor_get_or_add_network_publication(
         conductor,
         client,
@@ -3016,6 +3083,18 @@ int aeron_driver_conductor_on_add_network_subscription(
         aeron_udp_channel_delete(udp_channel);
     }
     udp_channel = NULL;
+
+    for (size_t i = 0; i < endpoint->destinations.length; i++)
+    {
+        if (aeron_subscription_params_validate_initial_window_for_rcvbuf(
+            &params,
+            endpoint->destinations.array[i].destination->conductor_fields.socket_rcvbuf,
+            conductor->context->os_buffer_lengths.default_so_rcvbuf) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+    }
 
     if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, &params))
     {
@@ -3620,7 +3699,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         endpoint->conductor_fields.udp_channel, conductor->context->initial_window_length);
 
     if (aeron_receiver_channel_endpoint_validate_sender_mtu_length(
-        endpoint, (size_t)command->mtu_length, initial_window_length) < 0)
+        endpoint, (size_t)command->mtu_length, initial_window_length, conductor->context) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_driver_conductor_log_error(conductor);

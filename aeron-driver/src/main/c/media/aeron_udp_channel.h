@@ -73,4 +73,14 @@ inline size_t aeron_udp_channel_receiver_window(aeron_udp_channel_t *channel, si
     return 0 != channel->receiver_window ? channel->receiver_window : default_receiver_window;
 }
 
+inline size_t aeron_udp_channel_socket_so_sndbuf(aeron_udp_channel_t *channel, size_t default_so_sndbuf)
+{
+    return 0 != channel->socket_sndbuf ? channel->socket_sndbuf : default_so_sndbuf;
+}
+
+inline size_t aeron_udp_channel_socket_so_rcvbuf(aeron_udp_channel_t *channel, size_t default_so_rcvbuf)
+{
+    return 0 != channel->socket_rcvbuf ? channel->socket_rcvbuf : default_so_rcvbuf;
+}
+
 #endif //AERON_UDP_CHANNEL_H

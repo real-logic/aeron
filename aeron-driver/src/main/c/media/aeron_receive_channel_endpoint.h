@@ -47,6 +47,8 @@ typedef struct aeron_receive_channel_endpoint_stct
         aeron_driver_managed_resource_t managed_resource;
         aeron_udp_channel_t *udp_channel;
         aeron_receive_channel_endpoint_status_t status;
+        size_t socket_so_sndbuf;
+        size_t socket_so_rcvbuf;
     }
     conductor_fields;
 
@@ -186,7 +188,10 @@ int aeron_receive_channel_endpoint_on_remove_publication_image(
     aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image);
 
 int aeron_receiver_channel_endpoint_validate_sender_mtu_length(
-    aeron_receive_channel_endpoint_t *endpoint, size_t sender_mtu_length, size_t window_max_length);
+    aeron_receive_channel_endpoint_t *endpoint,
+    size_t sender_mtu_length,
+    size_t window_max_length,
+    aeron_driver_context_t *pStct);
 
 void aeron_receive_channel_endpoint_check_for_re_resolution(
     aeron_receive_channel_endpoint_t *endpoint,

@@ -28,6 +28,8 @@ typedef struct aeron_receive_destination_stct
     struct aeron_receive_destination_conductor_fields_stct
     {
         aeron_udp_channel_t *udp_channel;
+        size_t socket_sndbuf;
+        size_t socket_rcvbuf;
     }
     conductor_fields;
 

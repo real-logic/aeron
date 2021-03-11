@@ -45,6 +45,8 @@ typedef struct aeron_send_channel_endpoint_stct
         bool has_reached_end_of_life;
         aeron_udp_channel_t *udp_channel;
         aeron_send_channel_endpoint_status_t status;
+        size_t socket_sndbuf;
+        size_t socket_rcvbuf;
     }
     conductor_fields;
 

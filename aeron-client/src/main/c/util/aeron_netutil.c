@@ -678,3 +678,66 @@ int aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_st
 
     return total;
 }
+
+int aeron_netutil_get_so_buf_lengths(
+    size_t *default_so_rcvbuf, size_t *max_so_rcvbuf, size_t *default_so_sndbuf, size_t *max_so_sndbuf)
+{
+    int result = -1;
+
+    aeron_socket_t fd = aeron_socket(PF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed to probe socket for buffer lengths");
+        goto done;
+    }
+
+    socklen_t optlen = sizeof(size_t);
+
+    if (aeron_getsockopt(fd, SOL_SOCKET, SO_RCVBUF, default_so_rcvbuf, &optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed to get SO_RCVBUF option");
+        goto done;
+    }
+
+    if (aeron_getsockopt(fd, SOL_SOCKET, SO_SNDBUF, default_so_sndbuf, &optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed to get SO_SNDBUF option");
+        goto done;
+    }
+
+    size_t max_length = SIZE_MAX;
+
+    if (aeron_setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &max_length, optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed to set SO_RCVBUF option to maximum");
+        goto done;
+    }
+
+    if (aeron_getsockopt(fd, SOL_SOCKET, SO_RCVBUF, max_so_rcvbuf, &optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed to get SO_RCVBUF option");
+        goto done;
+    }
+
+    if (aeron_setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &max_length, optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed to set SO_SNDBUF option to maximum");
+        goto done;
+    }
+
+    if (aeron_getsockopt(fd, SOL_SOCKET, SO_SNDBUF, max_so_sndbuf, &optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed to get SO_SNDBUF option");
+        goto done;
+    }
+
+    result = 0;
+
+done:
+    if (fd > 0)
+    {
+        aeron_close_socket(fd);
+    }
+
+    return result;
+}

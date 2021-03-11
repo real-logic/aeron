@@ -296,8 +296,11 @@ public class ChannelValidationTests
 
         assertThrows(
             RegistrationException.class,
-            () -> addPublication(
-                "aeron:udp?endpoint=localhost:9999|mtu=" + ((2 * defaultOsSocketSndbufLength) + 32), 1000));
+            () ->
+            {
+                final String uri = "aeron:udp?endpoint=localhost:9999|mtu=" + ((2 * defaultOsSocketSndbufLength) + 32);
+                addPublication(uri, 1000);
+            });
     }
 
     @Test

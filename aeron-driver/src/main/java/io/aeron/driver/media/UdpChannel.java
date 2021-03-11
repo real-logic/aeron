@@ -280,7 +280,7 @@ public final class UdpChannel
 
     /**
      * Parse a buffer length for a given URI paramName with a format specified by
-     * {@link SystemUtil#parseSize(String, String)}, clamping the range to 0 <= x <= Integer.MAX_VALUE.
+     * {@link SystemUtil#parseSize(String, String)}, clamping the range to 0 &lt;= x &lt;= Integer.MAX_VALUE.
      *
      * @see SystemUtil#parseSize(String, String)
      * @param channelUri to get the value from

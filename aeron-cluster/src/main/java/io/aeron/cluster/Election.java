@@ -357,8 +357,11 @@ class Election
             logReplicationPosition = appendPosition < logTruncatePosition ? logTruncatePosition : NULL_POSITION;
             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
         }
-        else if ((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state) &&
-            leadershipTermId == candidateTermId && appendPosition <= logPosition)
+        else if (
+            ((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state) &&
+            leadershipTermId == candidateTermId && appendPosition <= logPosition) ||
+            (CANVASS == state &&
+            compareLog(this.logLeadershipTermId, appendPosition, leadershipTermId, logPosition) <= 0))
         {
             leaderMember = leader;
             isLeaderStartup = isStartup;
@@ -370,19 +373,19 @@ class Election
             this.leaderRecordingId = leaderRecordingId;
             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
         }
-        else if (CANVASS == state &&
-            compareLog(this.logLeadershipTermId, appendPosition, leadershipTermId, logPosition) <= 0)
-        {
-            leaderMember = leader;
-            isLeaderStartup = isStartup;
-            this.leadershipTermId = leadershipTermId;
-            this.candidateTermId = leadershipTermId;
-            this.logSessionId = logSessionId;
-            catchupPosition = logPosition > appendPosition ? logPosition : NULL_POSITION;
-            logReplicationPosition = appendPosition < logTruncatePosition ? logTruncatePosition : NULL_POSITION;
-            this.leaderRecordingId = leaderRecordingId;
-            state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
-        }
+//        else if (CANVASS == state &&
+//            compareLog(this.logLeadershipTermId, appendPosition, leadershipTermId, logPosition) <= 0)
+//        {
+//            leaderMember = leader;
+//            isLeaderStartup = isStartup;
+//            this.leadershipTermId = leadershipTermId;
+//            this.candidateTermId = leadershipTermId;
+//            this.logSessionId = logSessionId;
+//            catchupPosition = logPosition > appendPosition ? logPosition : NULL_POSITION;
+//            logReplicationPosition = appendPosition < logTruncatePosition ? logTruncatePosition : NULL_POSITION;
+//            this.leaderRecordingId = leaderRecordingId;
+//            state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
+//        }
     }
 
     void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)

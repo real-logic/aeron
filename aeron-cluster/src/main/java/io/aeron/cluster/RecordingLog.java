@@ -900,11 +900,11 @@ public final class RecordingLog implements AutoCloseable
         final int size = entriesCache.size();
         if (size > 0)
         {
-            final Entry lastEntry = entriesCache.get(size - 1);
-            if (lastEntry.type != NULL_VALUE && lastEntry.leadershipTermId >= leadershipTermId)
+            final Entry entry = findLastTerm();
+            if (null != entry && entry.leadershipTermId != (leadershipTermId - 1))
             {
-                throw new ClusterException("leadershipTermId out of sequence: previous " +
-                    lastEntry.leadershipTermId + " this " + leadershipTermId);
+                throw new ClusterException("leadershipTermId out of sequence: previous=" +
+                    entry.leadershipTermId + " appending=" + leadershipTermId);
             }
 
             final long previousLeadershipTermId = leadershipTermId - 1;
@@ -932,7 +932,7 @@ public final class RecordingLog implements AutoCloseable
      * @param recordingId         in the archive for the snapshot.
      * @param leadershipTermId    for the current term
      * @param termBaseLogPosition at the beginning of the leadership term.
-     * @param logPosition         for the position in the current term or length so far for that term.
+     * @param logPosition         within the current term or accumulated length for the log.
      * @param timestamp           at which the snapshot was taken.
      * @param serviceId           for which the snapshot is recorded.
      */
@@ -944,31 +944,25 @@ public final class RecordingLog implements AutoCloseable
         final long timestamp,
         final int serviceId)
     {
-        final int size = entriesCache.size();
-        if (size > 0)
+        if (!restoreInvalidSnapshot(
+            recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
         {
-            if (restoreSnapshotMarkedWithInvalid(
-                recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
+            final Entry entry = findLastTerm();
+            if (null != entry && entry.leadershipTermId != leadershipTermId)
             {
-                return;
+                throw new ClusterException("snapshot not for current leadership term=" + entry.leadershipTermId +
+                    " snapshot=" + leadershipTermId);
             }
 
-            final Entry entry = entriesCache.get(size - 1);
-            if (entry.type == ENTRY_TYPE_TERM && entry.leadershipTermId != leadershipTermId)
-            {
-                throw new ClusterException("leadershipTermId out of sequence: previous " +
-                    entry.leadershipTermId + " this " + leadershipTermId);
-            }
+            append(
+                ENTRY_TYPE_SNAPSHOT,
+                recordingId,
+                leadershipTermId,
+                termBaseLogPosition,
+                logPosition,
+                timestamp,
+                serviceId);
         }
-
-        append(
-            ENTRY_TYPE_SNAPSHOT,
-            recordingId,
-            leadershipTermId,
-            termBaseLogPosition,
-            logPosition,
-            timestamp,
-            serviceId);
     }
 
     /**
@@ -1149,7 +1143,7 @@ public final class RecordingLog implements AutoCloseable
         }
     }
 
-    private boolean restoreSnapshotMarkedWithInvalid(
+    private boolean restoreInvalidSnapshot(
         final long recordingId,
         final long leadershipTermId,
         final long termBaseLogPosition,

@@ -31,15 +31,11 @@ public:
 TEST_F(NetutilTest, shouldGetSocketBufferLengths)
 {
     size_t default_so_rcvbuf = 0;
-    size_t max_so_rcvbuf = 0;
     size_t default_so_sndbuf = 0;
-    size_t max_so_sndbuf = 0;
 
     ASSERT_GE(aeron_netutil_get_so_buf_lengths(
-        &default_so_rcvbuf, &max_so_rcvbuf, &default_so_sndbuf, &max_so_sndbuf), 0) << aeron_errmsg();
+        &default_so_rcvbuf, &default_so_sndbuf), 0) << aeron_errmsg();
 
     EXPECT_NE(0U, default_so_rcvbuf);
-    EXPECT_NE(0U, max_so_rcvbuf);
     EXPECT_NE(0U, default_so_sndbuf);
-    EXPECT_NE(0U, max_so_sndbuf);
 }

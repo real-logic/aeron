@@ -1021,10 +1021,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 #endif
 
     if (aeron_netutil_get_so_buf_lengths(
-        &_context->os_buffer_lengths.default_so_rcvbuf,
-        &_context->os_buffer_lengths.max_so_rcvbuf,
-        &_context->os_buffer_lengths.default_so_sndbuf,
-        &_context->os_buffer_lengths.max_so_sndbuf) < 0)
+        &_context->os_buffer_lengths.default_so_rcvbuf, NULL) < 0)
     {
         AERON_APPEND_ERR("%s", "Failed to initial context with buffer lengths");
         return -1;

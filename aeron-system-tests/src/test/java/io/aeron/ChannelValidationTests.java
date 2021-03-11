@@ -53,6 +53,7 @@ public class ChannelValidationTests
     {
         context
             .errorHandler(ignore -> {})
+            .dirDeleteOnStart(true)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
     }
@@ -295,7 +296,8 @@ public class ChannelValidationTests
 
         assertThrows(
             RegistrationException.class,
-            () -> addPublication("aeron:udp?endpoint=localhost:9999|mtu=" + (defaultOsSocketSndbufLength + 32), 1000));
+            () -> addPublication(
+                "aeron:udp?endpoint=localhost:9999|mtu=" + ((2 * defaultOsSocketSndbufLength) + 32), 1000));
     }
 
     @Test
@@ -312,6 +314,7 @@ public class ChannelValidationTests
     void shouldValidateReceiverWindowAgainstSoRcvbufSetViaContext()
     {
         context.socketRcvbufLength(4096);
+        context.initialWindowLength(4096);
         launch();
 
         assertThrows(
@@ -340,6 +343,7 @@ public class ChannelValidationTests
         final int termLength = BitUtil.findNextPositivePowerOfTwo(desiredMaxMessageLength * 8);
         context.publicationTermBufferLength(termLength);
         context.socketRcvbufLength(0);
+        context.initialWindowLength(defaultOsSocketRcvbufLength);
 
         launch();
 
@@ -347,7 +351,7 @@ public class ChannelValidationTests
             RegistrationException.class,
             () ->
             {
-                final int receiverWindow = defaultOsSocketRcvbufLength + 32;
+                final int receiverWindow = (2 * defaultOsSocketRcvbufLength) + 32;
                 addSubscription("aeron:udp?endpoint=localhost:9999|rcv-wnd=" + receiverWindow, 1000);
             });
     }
@@ -371,7 +375,7 @@ public class ChannelValidationTests
 
         final Matcher<String> exceptionMessageMatcher = allOf(
             containsString("initial window length"),
-            containsString("must be >= to MTU length"));
+            containsString("must be >= MTU length"));
 
         SystemTests.waitForErrorToOccur(driver.aeronDirectoryName(), exceptionMessageMatcher, Tests.SLEEP_1_MS);
     }

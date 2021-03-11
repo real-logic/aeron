@@ -1690,7 +1690,7 @@ public final class Configuration
         if (mtuLength > initialWindowLength)
         {
             throw new ConfigurationException(
-                "initial window length (" + initialWindowLength + ") must be >= to MTU length (" + mtuLength + ")");
+                "initial window length (" + initialWindowLength + ") must be >= MTU length (" + mtuLength + ")");
         }
     }
 

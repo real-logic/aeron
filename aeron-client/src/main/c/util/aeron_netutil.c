@@ -705,7 +705,7 @@ int aeron_netutil_get_so_buf_lengths(
         goto done;
     }
 
-    size_t max_length = SIZE_MAX;
+    size_t max_length = (size_t)INT32_MAX;
 
     if (aeron_setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &max_length, optlen) < 0)
     {

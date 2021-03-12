@@ -564,7 +564,7 @@ public final class UdpChannel
     }
 
     /**
-     * Does this channel have a tag match to another channel including endpoints.
+     * Does this channel have a tag match to another channel having INADDR_ANY endpoints.
      *
      * @param udpChannel to match against.
      * @return true if there is a match otherwise false.

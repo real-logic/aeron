@@ -1791,7 +1791,7 @@ public final class Configuration
         if (ctx.mtuLength() > soSndBuf)
         {
             throw new ConfigurationException(
-                "mtuLength=" + ctx.mtuLength() + " > SO_SNDBUF=" + ctx.osMaxSocketRcvbufLength() +
+                "mtuLength=" + ctx.mtuLength() + " > SO_SNDBUF=" + soSndBuf +
                 ", increase " + SOCKET_SNDBUF_LENGTH_PROP_NAME + " to match MTU");
         }
 
@@ -1801,7 +1801,7 @@ public final class Configuration
         if (ctx.initialWindowLength() > soRcvBuf)
         {
             throw new ConfigurationException(
-                "initialWindowLength=" + ctx.initialWindowLength() + " > SO_RCVBUF=" + ctx.osMaxSocketRcvbufLength() +
+                "initialWindowLength=" + ctx.initialWindowLength() + " > SO_RCVBUF=" + soRcvBuf +
                 ", increase " + SOCKET_RCVBUF_LENGTH_PROP_NAME + " limits to match initialWindowLength");
         }
     }

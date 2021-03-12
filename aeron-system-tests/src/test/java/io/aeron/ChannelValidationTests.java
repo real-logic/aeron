@@ -37,7 +37,6 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;

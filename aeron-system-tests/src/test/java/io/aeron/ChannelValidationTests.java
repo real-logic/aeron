@@ -377,8 +377,8 @@ public class ChannelValidationTests
         }
 
         final Matcher<String> exceptionMessageMatcher = allOf(
-            containsString("initial window length"),
-            containsString("must be >= MTU length"));
+            containsString("mtuLength="),
+            containsString("> initialWindowLength="));
 
         SystemTests.waitForErrorToOccur(driver.aeronDirectoryName(), exceptionMessageMatcher, Tests.SLEEP_1_MS);
     }

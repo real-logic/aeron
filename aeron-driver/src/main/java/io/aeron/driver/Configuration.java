@@ -1690,7 +1690,7 @@ public final class Configuration
         if (mtuLength > initialWindowLength)
         {
             throw new ConfigurationException(
-                "initial window length (" + initialWindowLength + ") must be >= MTU length (" + mtuLength + ")");
+                "mtuLength=" + mtuLength + " > initialWindowLength=" + initialWindowLength);
         }
     }
 
@@ -1703,15 +1703,22 @@ public final class Configuration
      */
     public static void validateMtuLength(final int mtuLength)
     {
-        if (mtuLength <= DataHeaderFlyweight.HEADER_LENGTH || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
+        if (mtuLength <= DataHeaderFlyweight.HEADER_LENGTH)
         {
             throw new ConfigurationException(
-                "mtuLength must be a > HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: " + mtuLength);
+                "mtuLength=" + mtuLength + " <= HEADER_LENGTH=" + DataHeaderFlyweight.HEADER_LENGTH);
+        }
+
+        if (mtuLength > MAX_UDP_PAYLOAD_LENGTH)
+        {
+            throw new ConfigurationException(
+                "mtuLength=" + mtuLength + " > MAX_UDP_PAYLOAD_LENGTH=" + MAX_UDP_PAYLOAD_LENGTH);
         }
 
         if ((mtuLength & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
         {
-            throw new ConfigurationException("mtuLength must be a multiple of FRAME_ALIGNMENT: " + mtuLength);
+            throw new ConfigurationException(
+                "mtuLength=" + mtuLength + " is not a multiple of FRAME_ALIGNMENT=" + FrameDescriptor.FRAME_ALIGNMENT);
         }
     }
 
@@ -1766,20 +1773,16 @@ public final class Configuration
     {
         if (ctx.osMaxSocketSndbufLength() < ctx.socketSndbufLength())
         {
-            System.err.format(
-                "WARNING: Could not get desired SO_SNDBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
-                SOCKET_SNDBUF_LENGTH_PROP_NAME,
-                ctx.socketSndbufLength(),
-                ctx.osMaxSocketSndbufLength());
+            System.err.println(
+                "WARNING: Could not set desired SO_SNDBUF, adjust OS to allow " + SOCKET_SNDBUF_LENGTH_PROP_NAME +
+                " attempted=" + ctx.socketSndbufLength() + ", actual=" + ctx.osMaxSocketSndbufLength());
         }
 
         if (ctx.osMaxSocketRcvbufLength() < ctx.socketRcvbufLength())
         {
-            System.err.format(
-                "WARNING: Could not get desired SO_RCVBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
-                SOCKET_RCVBUF_LENGTH_PROP_NAME,
-                ctx.socketRcvbufLength(),
-                ctx.osMaxSocketRcvbufLength());
+            System.err.println(
+                "WARNING: Could not set desired SO_RCVBUF, adjust OS to allow " + SOCKET_SNDBUF_LENGTH_PROP_NAME +
+                " attempted=" + ctx.socketSndbufLength() + ", actual=" + ctx.osMaxSocketSndbufLength());
         }
 
         final int soSndBuf = 0 == ctx.socketSndbufLength() ?
@@ -1787,20 +1790,19 @@ public final class Configuration
 
         if (ctx.mtuLength() > soSndBuf)
         {
-            throw new ConfigurationException(String.format(
-                "MTU greater than socket SO_SNDBUF, adjust %s to match MTU: mtuLength=%d, SO_SNDBUF=%d",
-                SOCKET_SNDBUF_LENGTH_PROP_NAME,
-                ctx.mtuLength(),
-                soSndBuf));
+            throw new ConfigurationException(
+                "mtuLength=" + ctx.mtuLength() + " > SO_SNDBUF=" + ctx.osMaxSocketRcvbufLength() +
+                ", increase " + SOCKET_SNDBUF_LENGTH_PROP_NAME + " to match MTU");
         }
 
-        if (ctx.initialWindowLength() > ctx.osMaxSocketRcvbufLength())
+        final int soRcvBuf = 0 == ctx.socketRcvbufLength() ?
+            ctx.osDefaultSocketRcvbufLength() : ctx.socketRcvbufLength();
+
+        if (ctx.initialWindowLength() > soRcvBuf)
         {
             throw new ConfigurationException(
-                "window length greater than socket SO_RCVBUF, increase '" +
-                Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME +
-                "' to match window: windowLength=" + ctx.initialWindowLength() +
-                ", SO_RCVBUF=" + ctx.osMaxSocketRcvbufLength());
+                "initialWindowLength=" + ctx.initialWindowLength() + " > SO_RCVBUF=" + ctx.osMaxSocketRcvbufLength() +
+                ", increase " + SOCKET_RCVBUF_LENGTH_PROP_NAME + " limits to match initialWindowLength");
         }
     }
 

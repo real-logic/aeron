@@ -107,6 +107,7 @@ public final class ChannelUriStringBuilder
         isSessionIdTagged = false;
         socketRcvbufLength = null;
         socketSndbufLength = null;
+        receiverWindowLength = null;
 
         return this;
     }

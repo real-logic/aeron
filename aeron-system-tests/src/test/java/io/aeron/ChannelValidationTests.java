@@ -30,6 +30,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.net.StandardProtocolFamily;
@@ -40,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -377,6 +380,36 @@ public class ChannelValidationTests
             containsString("> initialWindowLength="));
 
         SystemTests.waitForErrorToOccur(driver.aeronDirectoryName(), exceptionMessageMatcher, Tests.SLEEP_1_MS);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "mtu", "rcv-wnd", "so-rcvbuf", "so-sndbuf" })
+    void shouldNotAllowUriParametersForManualMdc(String parameter)
+    {
+        launch();
+
+        final Publication publication = addPublication("aeron:udp?control-mode=manual", 1000);
+
+        final RegistrationException registrationException = assertThrows(
+            RegistrationException.class,
+            () -> publication.addDestination("aeron:udp?endpoint=localhost:9999|" + parameter + "=4096"));
+
+        assertThat(registrationException.getMessage(), containsString(parameter));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "mtu", "rcv-wnd", "so-rcvbuf", "so-sndbuf" })
+    void shouldNotAllowUriParametersForManualMds(String parameter)
+    {
+        launch();
+
+        final Subscription subscription = addSubscription("aeron:udp?control-mode=manual", 1000);
+
+        final RegistrationException registrationException = assertThrows(
+            RegistrationException.class,
+            () -> subscription.addDestination("aeron:udp?endpoint=localhost:9999|" + parameter + "=4096"));
+
+        assertThat(registrationException.getMessage(), containsString(parameter));
     }
 
     private Publication addPublication(final String channel, final int streamId)

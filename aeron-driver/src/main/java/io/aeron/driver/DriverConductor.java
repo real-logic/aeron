@@ -65,6 +65,12 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
 public final class DriverConductor implements Agent
 {
     private static final long CLOCK_UPDATE_INTERNAL_NS = TimeUnit.MILLISECONDS.toNanos(1);
+    private static final String[] INVALID_DESTINATION_KEYS = {
+        MTU_LENGTH_PARAM_NAME,
+        RECEIVER_WINDOW_LENGTH_PARAM_NAME,
+        SOCKET_RCVBUF_PARAM_NAME,
+        SOCKET_SNDBUF_PARAM_NAME
+    };
 
     private int nextSessionId = BitUtil.generateRandomisedId();
     private final long timerIntervalNs;
@@ -674,10 +680,8 @@ public final class DriverConductor implements Agent
 
     void onAddSendDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
-        if (destinationChannel.startsWith(SPY_QUALIFIER))
-        {
-            throw new InvalidChannelException("Aeron spies are invalid as send destinations: " + destinationChannel);
-        }
+        final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
+        validateDestinationUri(channelUri);
 
         SendChannelEndpoint sendChannelEndpoint = null;
 
@@ -699,7 +703,6 @@ public final class DriverConductor implements Agent
 
         sendChannelEndpoint.validateAllowsManualControl();
 
-        final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
         senderProxy.addDestination(sendChannelEndpoint, channelUri, dstAddress);
         clientProxy.operationSucceeded(correlationId);
@@ -948,10 +951,8 @@ public final class DriverConductor implements Agent
 
     void onAddRcvDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
-        if (destinationChannel.startsWith(SPY_QUALIFIER))
-        {
-            throw new InvalidChannelException("Aeron spies are invalid as receive destinations: " + destinationChannel);
-        }
+        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver, true);
+        validateDestinationUri(udpChannel.channelUri());
 
         SubscriptionLink subscriptionLink = null;
 
@@ -972,8 +973,6 @@ public final class DriverConductor implements Agent
 
         final ReceiveChannelEndpoint receiveChannelEndpoint = subscriptionLink.channelEndpoint();
         receiveChannelEndpoint.validateAllowsDestinationControl();
-
-        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver, true);
 
         final AtomicCounter localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
             tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounter().id());
@@ -1890,6 +1889,22 @@ public final class DriverConductor implements Agent
             throw new InvalidChannelException(
                 "'" + paramName + "=" + channelLength +
                 "' is invalid, endpoint already uses " + existingValue);
+        }
+    }
+
+    private static void validateDestinationUri(final ChannelUri uri)
+    {
+        if (SPY_QUALIFIER.equals(uri.prefix()))
+        {
+            throw new InvalidChannelException("Aeron spies are invalid as send destinations: " + uri);
+        }
+
+        for (final String invalidKey : INVALID_DESTINATION_KEYS)
+        {
+            if (uri.containsKey(invalidKey))
+            {
+                throw new InvalidChannelException("Destinations must not contain the key: " + invalidKey);
+            }
         }
     }
 }

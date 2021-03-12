@@ -122,8 +122,8 @@ public class SpySubscriptionTest
     @Timeout(10)
     public void shouldConnectToRecreatedChannelByTag()
     {
-        final String channel = "aeron:udp?tags=1|endpoint=localhost:24325";
-        try (Publication publication = aeron.addExclusivePublication(channel, STREAM_ID);
+        final String channelOne = "aeron:udp?tags=1|endpoint=localhost:24325";
+        try (Publication publication = aeron.addExclusivePublication(channelOne, STREAM_ID);
             Subscription spy = aeron.addSubscription(
                 SPY_PREFIX + "aeron:udp?tags=1|session-id=" + publication.sessionId(), STREAM_ID))
         {
@@ -131,8 +131,8 @@ public class SpySubscriptionTest
             assertNotNull(spy.imageBySessionId(publication.sessionId()));
         }
 
-        final String channel2 = "aeron:udp?tags=2|endpoint=localhost:24325";
-        try (Publication publication = aeron.addExclusivePublication(channel2, STREAM_ID);
+        final String channelTwo = "aeron:udp?tags=2|endpoint=localhost:24325";
+        try (Publication publication = aeron.addExclusivePublication(channelTwo, STREAM_ID);
             Subscription spy = aeron.addSubscription(
                 SPY_PREFIX + "aeron:udp?tags=2|session-id=" + publication.sessionId(), STREAM_ID))
         {

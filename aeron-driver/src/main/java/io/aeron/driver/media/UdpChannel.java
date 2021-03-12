@@ -585,7 +585,7 @@ public final class UdpChannel
         }
 
         throw new IllegalArgumentException(
-            "matching tag has explicit endpoint or control - " + uriStr + " <> " + udpChannel.uriStr);
+            "matching tag=" + tag + " has explicit endpoint or control - " + uriStr + " <> " + udpChannel.uriStr);
     }
 
     /**

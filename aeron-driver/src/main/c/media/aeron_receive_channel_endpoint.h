@@ -191,7 +191,7 @@ int aeron_receiver_channel_endpoint_validate_sender_mtu_length(
     aeron_receive_channel_endpoint_t *endpoint,
     size_t sender_mtu_length,
     size_t window_max_length,
-    aeron_driver_context_t *pStct);
+    aeron_driver_context_t *ctx);
 
 void aeron_receive_channel_endpoint_check_for_re_resolution(
     aeron_receive_channel_endpoint_t *endpoint,

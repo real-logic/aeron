@@ -749,24 +749,43 @@ int aeron_receiver_channel_endpoint_validate_sender_mtu_length(
     size_t window_max_length,
     aeron_driver_context_t *ctx)
 {
-    if (sender_mtu_length < AERON_DATA_HEADER_LENGTH || sender_mtu_length > AERON_MAX_UDP_PAYLOAD_LENGTH)
+    if (sender_mtu_length < AERON_DATA_HEADER_LENGTH)
     {
         AERON_SET_ERR(
             EINVAL,
-            "mtuLength must be a >= HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: mtuLength=%" PRIu64,
-            sender_mtu_length);
+            "mtuLength=%" PRIu64 " < DATA_HEADER_LENGTH=%d",
+            (uint64_t)sender_mtu_length,
+            AERON_DATA_HEADER_LENGTH);
+        return -1;
+    }
+
+    if (sender_mtu_length > AERON_MAX_UDP_PAYLOAD_LENGTH)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "mtuLength=%" PRIu64 " > MAX_UDP_PAYLOAD_LENGTH=%d",
+            (uint64_t)sender_mtu_length,
+            AERON_MAX_UDP_PAYLOAD_LENGTH);
         return -1;
     }
 
     if ((sender_mtu_length & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1)) != 0)
     {
-        AERON_SET_ERR(EINVAL, "mtuLength must be a multiple of FRAME_ALIGNMENT: mtuLength=%" PRIu64, sender_mtu_length);
+        AERON_SET_ERR(
+            EINVAL,
+            "mtuLength=%" PRIu64 " must be a multiple of FRAME_ALIGNMENT=%d",
+            (uint64_t)sender_mtu_length,
+            AERON_LOGBUFFER_FRAME_ALIGNMENT);
         return -1;
     }
 
     if (sender_mtu_length > window_max_length)
     {
-        AERON_SET_ERR(EINVAL, "initial window length must be >= MTU length=%" PRIu64, sender_mtu_length);
+        AERON_SET_ERR(
+            EINVAL,
+            "mtuLength=%" PRIu64 " > initialWindowLength=%" PRIu64,
+            (uint64_t)sender_mtu_length,
+            (uint64_t)window_max_length);
         return -1;
     }
 

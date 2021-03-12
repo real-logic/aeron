@@ -19,13 +19,14 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -113,6 +114,27 @@ public class SpySubscriptionTest
 
             assertEquals(expectedMessageCount, fragmentCountSpy.value);
             assertEquals(expectedMessageCount, fragmentCountSub.value);
+        }
+    }
+
+    @Test
+    @Timeout(100)
+    public void shouldConnectToRecreatedPublicationByTag()
+    {
+        final String channel = "aeron:udp?tags=1|endpoint=localhost:24325";
+        try (Publication publication = aeron.addExclusivePublication(channel, STREAM_ID);
+            Subscription spy = aeron.addSubscription(
+                SPY_PREFIX + "aeron:udp?tags=1|session-id=" + publication.sessionId, STREAM_ID))
+        {
+            Tests.await(() -> spy.imageCount() > 0);
+        }
+
+        final String channel2 = "aeron:udp?tags=2|endpoint=localhost:24325";
+        try (Publication publication = aeron.addExclusivePublication(channel2, STREAM_ID);
+            Subscription spy = aeron.addSubscription(
+                SPY_PREFIX + "aeron:udp?tags=2|session-id=" + publication.sessionId, STREAM_ID))
+        {
+            Tests.await(() -> spy.imageCount() > 0);
         }
     }
 }

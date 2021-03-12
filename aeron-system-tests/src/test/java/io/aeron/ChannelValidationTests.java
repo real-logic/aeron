@@ -366,15 +366,12 @@ public class ChannelValidationTests
         context.errorHandler(null);
         launch();
 
+        final long initialErrorCount = aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id());
+
         addPublication("aeron:udp?endpoint=localhost:9999|mtu=1408", 1000);
         addSubscription("aeron:udp?endpoint=localhost:9999|rcv-wnd=1376", 1000);
 
-        final Supplier<String> message = () ->
-            "Error counter: " + aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id());
-        while (0 < aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()))
-        {
-            Tests.sleep(1, message);
-        }
+        Tests.awaitCounterDelta(aeron.countersReader(), SystemCounterDescriptor.ERRORS.id(), initialErrorCount, 1);
 
         final Matcher<String> exceptionMessageMatcher = allOf(
             containsString("mtuLength="),

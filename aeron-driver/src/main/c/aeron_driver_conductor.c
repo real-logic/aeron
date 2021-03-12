@@ -174,7 +174,7 @@ static int aeron_driver_conductor_validate_destination_uri_prefix(
 
 static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *uri)
 {
-    aeron_uri_params_t *params;
+    aeron_uri_params_t *params = NULL;
     switch (uri->type)
     {
         case AERON_URI_UDP:
@@ -185,8 +185,12 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
             break;
         case AERON_URI_UNKNOWN:
             AERON_SET_ERR(EINVAL, "%s", "Unknown uri type");
-            return -1;
             break;
+    }
+
+    if (NULL == params)
+    {
+        return -1;
     }
 
     for (int i = 0; NULL != AERON_DRIVER_CONDUCTOR_INVALID_DESTINATION_KEYS[i]; i++)

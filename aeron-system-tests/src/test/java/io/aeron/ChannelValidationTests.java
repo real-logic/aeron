@@ -384,7 +384,7 @@ public class ChannelValidationTests
 
     @ParameterizedTest
     @ValueSource(strings = { "mtu", "rcv-wnd", "so-rcvbuf", "so-sndbuf" })
-    void shouldNotAllowUriParametersForManualMdc(String parameter)
+    void shouldNotAllowUriParametersForManualMdc(final String parameter)
     {
         launch();
 
@@ -399,7 +399,7 @@ public class ChannelValidationTests
 
     @ParameterizedTest
     @ValueSource(strings = { "mtu", "rcv-wnd", "so-rcvbuf", "so-sndbuf" })
-    void shouldNotAllowUriParametersForManualMds(String parameter)
+    void shouldNotAllowUriParametersForManualMds(final String parameter)
     {
         launch();
 

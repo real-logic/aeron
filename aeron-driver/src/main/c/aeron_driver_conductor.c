@@ -1616,7 +1616,12 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
     {
         if (!aeron_udp_channel_is_wildcard(channel))
         {
-            AERON_SET_ERR(EINVAL, "matching tag %" PRId64 " already in use", channel->tag_id);
+            AERON_SET_ERR(
+                EINVAL,
+                "matching tag=%" PRId64 " has explicit endpoint or control - %.*s",
+                channel->tag_id,
+                (int)channel->uri_length,
+                channel->original_uri);
             return NULL;
         }
     }

@@ -28,8 +28,6 @@ typedef struct aeron_receive_destination_stct
     struct aeron_receive_destination_conductor_fields_stct
     {
         aeron_udp_channel_t *udp_channel;
-        size_t socket_sndbuf;
-        size_t socket_rcvbuf;
     }
     conductor_fields;
 
@@ -50,7 +48,9 @@ int aeron_receive_destination_create(
     aeron_driver_context_t *context,
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
-    int32_t channel_status_counter_id);
+    int32_t channel_status_counter_id,
+    size_t socket_rcvbuf,
+    size_t socket_sndbuf);
 
 void aeron_receive_destination_delete(
     aeron_receive_destination_t *destination, aeron_counters_manager_t *counters_manager);

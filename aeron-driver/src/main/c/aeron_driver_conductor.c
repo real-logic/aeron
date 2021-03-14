@@ -1752,6 +1752,9 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
         aeron_receive_destination_t *destination = NULL;
 
+        size_t socket_rcvbuf = 0 != channel->socket_rcvbuf ? channel->socket_rcvbuf : conductor->context->socket_rcvbuf;
+        size_t socket_sndbuf = 0 != channel->socket_sndbuf ? channel->socket_sndbuf : conductor->context->socket_sndbuf;
+
         // TODO: ensure the logic for determining that this is truly MDS is correct...
         if (!channel->is_manual_control_mode)
         {
@@ -1761,7 +1764,9 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
                 conductor->context,
                 &conductor->counters_manager,
                 correlation_id,
-                status_indicator.counter_id) < 0)
+                status_indicator.counter_id,
+                socket_rcvbuf,
+                socket_rcvbuf) < 0)
             {
                 AERON_APPEND_ERR("correlation_id = %" PRId64, correlation_id);
                 return NULL;
@@ -1774,7 +1779,9 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
             destination,
             &status_indicator,
             &conductor->system_counters,
-            conductor->context) < 0)
+            conductor->context,
+            socket_rcvbuf,
+            socket_sndbuf) < 0)
         {
             aeron_receive_destination_delete(destination, &conductor->counters_manager);
             return NULL;
@@ -1816,7 +1823,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
             if (aeron_driver_conductor_validate_channel_buffer_length(
                 AERON_URI_SOCKET_SNDBUF_KEY,
                 channel->socket_sndbuf,
-                endpoint->destinations.array[0].destination->conductor_fields.socket_sndbuf) < 0)
+                endpoint->conductor_fields.socket_sndbuf) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
                 return NULL;
@@ -1825,7 +1832,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
             if (aeron_driver_conductor_validate_channel_buffer_length(
                 AERON_URI_SOCKET_RCVBUF_KEY,
                 channel->socket_rcvbuf,
-                endpoint->destinations.array[0].destination->conductor_fields.socket_rcvbuf) < 0)
+                endpoint->conductor_fields.socket_rcvbuf) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
                 return NULL;
@@ -3138,16 +3145,13 @@ int aeron_driver_conductor_on_add_network_subscription(
     }
     udp_channel = NULL;
 
-    for (size_t i = 0; i < endpoint->destinations.length; i++)
+    if (aeron_subscription_params_validate_initial_window_for_rcvbuf(
+        &params,
+        endpoint->conductor_fields.socket_rcvbuf,
+        conductor->context->os_buffer_lengths.default_so_rcvbuf) < 0)
     {
-        if (aeron_subscription_params_validate_initial_window_for_rcvbuf(
-            &params,
-            endpoint->destinations.array[i].destination->conductor_fields.socket_rcvbuf,
-            conductor->context->os_buffer_lengths.default_so_rcvbuf) < 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-            return -1;
-        }
+        AERON_APPEND_ERR("%s", "");
+        return -1;
     }
 
     if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, &params))
@@ -3556,7 +3560,9 @@ int aeron_driver_conductor_on_add_receive_destination(
         conductor->context,
         &conductor->counters_manager,
         command->registration_id,
-        endpoint->channel_status.counter_id) < 0)
+        endpoint->channel_status.counter_id,
+        endpoint->conductor_fields.socket_rcvbuf,
+        endpoint->conductor_fields.socket_sndbuf) < 0)
     {
         goto error_cleanup;
     }

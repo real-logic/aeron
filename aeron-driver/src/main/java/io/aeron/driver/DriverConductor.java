@@ -1357,7 +1357,14 @@ public final class DriverConductor implements Agent
             }
         }
 
-        return sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+        SendChannelEndpoint endpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+        if (null != endpoint && endpoint.udpChannel().hasTag() && udpChannel.hasTag() &&
+            endpoint.udpChannel().tag() != udpChannel.tag())
+        {
+            endpoint = null;
+        }
+
+        return endpoint;
     }
 
     private void checkForClashingSubscription(

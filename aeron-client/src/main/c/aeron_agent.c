@@ -33,14 +33,14 @@
 
 void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
 {
-    uint64_t *duration = (uint64_t *)state;
+    uint64_t *duration_ns = (uint64_t *)state;
 
     if (work_count > 0)
     {
         return;
     }
 
-    aeron_nano_sleep(*duration);
+    aeron_nano_sleep(*duration_ns);
 }
 
 int aeron_idle_strategy_sleeping_init_args(void **state, const char *env_var, const char *init_args)
@@ -51,14 +51,14 @@ int aeron_idle_strategy_sleeping_init_args(void **state, const char *env_var, co
         return -1;
     }
 
-    uint64_t *duration = (uint64_t *)*state;
+    uint64_t *duration_ns = (uint64_t *)*state;
     if (NULL == init_args)
     {
-        *duration = 1;
+        *duration_ns = 1;
     }
     else
     {
-        return aeron_parse_duration_ns(init_args, duration);
+        return aeron_parse_duration_ns(init_args, duration_ns);
     }
 
     return 0;
@@ -321,7 +321,7 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
     }
     else
     {
-        char idle_func_name[AERON_MAX_PATH];
+        char idle_func_name[AERON_MAX_PATH] = { 0 };
         aeron_idle_strategy_t *idle_strategy = NULL;
 
         snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s", idle_strategy_name);

@@ -82,7 +82,7 @@ void aeron_init_dlopen_support()
     }
 }
 
-void *aeron_dlsym(HMODULE module, const char *name)
+void *aeron_dlsym(void *module, const char *name)
 {
     aeron_init_dlopen_support();
 
@@ -120,7 +120,7 @@ void *aeron_dlsym(HMODULE module, const char *name)
         return aeron_dlsym_fallback(name);
     }
 
-    return GetProcAddress(module, name);
+    return GetProcAddress((HMODULE)module, name);
 }
 
 void *aeron_dlopen(const char *filename)

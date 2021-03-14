@@ -19,13 +19,14 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,6 +37,7 @@ import java.util.List;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SpySubscriptionTest
 {
@@ -113,6 +115,29 @@ public class SpySubscriptionTest
 
             assertEquals(expectedMessageCount, fragmentCountSpy.value);
             assertEquals(expectedMessageCount, fragmentCountSub.value);
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldConnectToRecreatedChannelByTag()
+    {
+        final String channelOne = "aeron:udp?tags=1|endpoint=localhost:24325";
+        try (Publication publication = aeron.addExclusivePublication(channelOne, STREAM_ID);
+            Subscription spy = aeron.addSubscription(
+                SPY_PREFIX + "aeron:udp?tags=1|session-id=" + publication.sessionId(), STREAM_ID))
+        {
+            Tests.await(spy::isConnected);
+            assertNotNull(spy.imageBySessionId(publication.sessionId()));
+        }
+
+        final String channelTwo = "aeron:udp?tags=2|endpoint=localhost:24325";
+        try (Publication publication = aeron.addExclusivePublication(channelTwo, STREAM_ID);
+            Subscription spy = aeron.addSubscription(
+                SPY_PREFIX + "aeron:udp?tags=2|session-id=" + publication.sessionId(), STREAM_ID))
+        {
+            Tests.await(spy::isConnected);
+            assertNotNull(spy.imageBySessionId(publication.sessionId()));
         }
     }
 }

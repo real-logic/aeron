@@ -67,7 +67,7 @@ jobs:
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
           path: ${{ steps.copy_test_logs.outputs.dir }}
@@ -128,7 +128,7 @@ jobs:
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: crash-logs-topology-${{ matrix.os }}-java-${{ matrix.java }}
           path: ${{ steps.copy_test_logs.outputs.dir }}
@@ -185,7 +185,7 @@ jobs:
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: crash-logs-gcc-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.dir }}
@@ -231,7 +231,7 @@ jobs:
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: crash-logs-gcc-centos-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.dir }}
@@ -289,7 +289,7 @@ jobs:
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: crash-logs-clang-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.dir }}
@@ -347,7 +347,7 @@ jobs:
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: crash-logs-clang-debug-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.dir }}
@@ -399,7 +399,7 @@ jobs:
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: crash-logs-xcode-latest
           path: ${{ steps.copy_test_logs.outputs.dir }}
@@ -452,7 +452,7 @@ jobs:
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: crash-logs-msvc-latest
           path: ${{ steps.copy_test_logs.outputs.dir }}

@@ -564,7 +564,27 @@ public final class UdpChannel
     }
 
     /**
-     * Does this channel have a tag match to another channel including endpoints.
+     * Get the socket receive buffer length.
+     *
+     * @return socket receive buffer length or 0 if not specified.
+     */
+    public int socketRcvbufLength()
+    {
+        return socketRcvbufLength;
+    }
+
+    /**
+     * Get the socket send buffer length.
+     *
+     * @return socket send buffer length or 0 if not specified.
+     */
+    public int socketSndbufLenth()
+    {
+        return socketSndbufLength;
+    }
+
+    /**
+     * Does this channel have a tag match to another channel having INADDR_ANY endpoints.
      *
      * @param udpChannel to match against.
      * @return true if there is a match otherwise false.
@@ -585,7 +605,7 @@ public final class UdpChannel
         }
 
         throw new IllegalArgumentException(
-            "matching tag has set endpoint or control address - " + uriStr + " <> " + udpChannel.uriStr);
+            "matching tag=" + tag + " has explicit endpoint or control - " + uriStr + " <> " + udpChannel.uriStr);
     }
 
     /**

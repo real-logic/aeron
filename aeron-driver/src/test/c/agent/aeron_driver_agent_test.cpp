@@ -204,7 +204,7 @@ TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByValue)
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<aeron_driver_agent_event_t>(9)));
 }
 
-TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByResersedValue)
+TEST_F(DriverAgentTest, shouldNotEnableUnknownEventByReservedValue)
 {
     EXPECT_FALSE(aeron_driver_agent_logging_events_init("-1", nullptr));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNKNOWN_EVENT));

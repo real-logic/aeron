@@ -1552,6 +1552,13 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
         endpoint = aeron_str_to_ptr_hash_map_get(
             &conductor->send_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
+        if (NULL != endpoint &&
+            AERON_URI_INVALID_TAG != endpoint->conductor_fields.udp_channel->tag_id &&
+            AERON_URI_INVALID_TAG != channel->tag_id &&
+            channel->tag_id != endpoint->conductor_fields.udp_channel->tag_id)
+        {
+            endpoint = NULL;
+        }
     }
 
     if (aeron_driver_conductor_update_and_check_ats_status(
@@ -1592,8 +1599,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         aeron_driver_sender_proxy_on_add_endpoint(conductor->context->sender_proxy, endpoint);
         conductor->send_channel_endpoints.array[conductor->send_channel_endpoints.length++].endpoint = endpoint;
 
-        aeron_counter_set_ordered(
-            endpoint->channel_status.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE);
+        aeron_counter_set_ordered(endpoint->channel_status.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE);
     }
 
     return endpoint;
@@ -1609,7 +1615,12 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
     {
         if (!aeron_udp_channel_is_wildcard(channel))
         {
-            AERON_SET_ERR(EINVAL, "matching tag %" PRId64 " already in use", channel->tag_id);
+            AERON_SET_ERR(
+                EINVAL,
+                "matching tag=%" PRId64 " has explicit endpoint or control - %.*s",
+                channel->tag_id,
+                (int)channel->uri_length,
+                channel->original_uri);
             return NULL;
         }
     }

@@ -32,6 +32,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
@@ -136,6 +138,22 @@ public class MultiDestinationSubscriptionTest
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
 
+        subscription.addDestination(publicationChannelA);
+    }
+
+    @Test
+    @Timeout(10)
+    @EnabledOnOs(OS.LINUX)
+    public void destinationShouldInheritSocketBufferLengthsFromSubscription()
+    {
+        launch(Tests::onError);
+
+        final String publicationChannelA = new ChannelUriStringBuilder()
+            .media(CommonContext.UDP_MEDIA)
+            .endpoint("127.0.0.1:24325")
+            .build();
+
+        subscription = clientA.addSubscription(SUB_URI + "|so-sndbuf=32768|so-rcvbuf=32768|rcv-wnd=32768", STREAM_ID);
         subscription.addDestination(publicationChannelA);
     }
 

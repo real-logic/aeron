@@ -99,13 +99,17 @@ public abstract class UdpChannelTransport implements AutoCloseable
      * @param bindAddress     for listening on.
      * @param connectAddress  for sending data to.
      * @param context         for configuration.
+     * @param socketRcvbufLength set SO_RCVBUF for socket, 0 for OS default.
+     * @param socketSndbufLength set SO_SNDBUF for socket, 0 for OS default.
      */
     protected UdpChannelTransport(
         final UdpChannel udpChannel,
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
-        final MediaDriver.Context context)
+        final MediaDriver.Context context,
+        final int socketRcvbufLength,
+        final int socketSndbufLength)
     {
         this.context = context;
         this.udpChannel = udpChannel;
@@ -114,8 +118,34 @@ public abstract class UdpChannelTransport implements AutoCloseable
         this.bindAddress = bindAddress;
         this.connectAddress = connectAddress;
         this.invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
-        this.socketSndbufLength = udpChannel.socketSndbufLengthOrDefault(context.socketSndbufLength());
-        this.socketRcvbufLength = udpChannel.socketRcvbufLengthOrDefault(context.socketRcvbufLength());
+        this.socketRcvbufLength = socketRcvbufLength;
+        this.socketSndbufLength = socketSndbufLength;
+    }
+
+    /**
+     * Construct a transport for a given channel.
+     *
+     * @param udpChannel      configuration for the media.
+     * @param endPointAddress to which data will be sent.
+     * @param bindAddress     for listening on.
+     * @param connectAddress  for sending data to.
+     * @param context         for configuration.
+     */
+    protected UdpChannelTransport(
+        final UdpChannel udpChannel,
+        final InetSocketAddress endPointAddress,
+        final InetSocketAddress bindAddress,
+        final InetSocketAddress connectAddress,
+        final MediaDriver.Context context)
+    {
+        this(
+            udpChannel,
+            endPointAddress,
+            bindAddress,
+            connectAddress,
+            context,
+            udpChannel.socketRcvbufLengthOrDefault(context.socketRcvbufLength()),
+            udpChannel.socketSndbufLengthOrDefault(context.socketSndbufLength()));
     }
 
     /**

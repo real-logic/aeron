@@ -978,7 +978,11 @@ public final class DriverConductor implements Agent
             tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounter().id());
 
         final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(
-            udpChannel, ctx, localSocketAddressIndicator);
+            udpChannel,
+            ctx,
+            localSocketAddressIndicator,
+            receiveChannelEndpoint.socketRcvbufLength(),
+            receiveChannelEndpoint.socketSndbufLength());
 
         receiverProxy.addDestination(receiveChannelEndpoint, transport);
         clientProxy.operationSucceeded(correlationId);

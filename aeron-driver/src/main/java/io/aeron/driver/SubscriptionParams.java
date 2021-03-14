@@ -125,13 +125,13 @@ final class SubscriptionParams
         if (0 != channelSocketRcvbufLength && params.initialWindowLength > channelSocketRcvbufLength)
         {
             throw new IllegalStateException(
-                "Initial window greater than SO_SNDBUF for channel: rcv-wnd=" + params.initialWindowLength +
+                "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
                     " so-rcvbuf=" + channelSocketRcvbufLength);
         }
         else if (0 == channelSocketRcvbufLength && params.initialWindowLength > ctx.osDefaultSocketRcvbufLength())
         {
             throw new IllegalStateException(
-                "Initial window greater than SO_SNDBUF for channel: rcv-wnd=" + params.initialWindowLength +
+                "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
                     " so-rcvbuf=" + ctx.osDefaultSocketRcvbufLength() + " (OS default)");
         }
     }

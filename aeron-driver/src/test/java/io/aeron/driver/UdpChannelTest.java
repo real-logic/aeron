@@ -463,12 +463,12 @@ public class UdpChannelTest
     {
         final UdpChannel udpChannelWithBufferSizes = UdpChannel.parse(
             "aeron:udp?endpoint=127.0.0.1:9999|so-sndbuf=4096|so-rcvbuf=8192");
-        assertEquals(4096, udpChannelWithBufferSizes.socketSndbufLenth());
+        assertEquals(4096, udpChannelWithBufferSizes.socketSndbufLength());
         assertEquals(8192, udpChannelWithBufferSizes.socketRcvbufLength());
 
         final UdpChannel udpChannelWithoutBufferSizes = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:9999");
         assertEquals(0, udpChannelWithoutBufferSizes.socketRcvbufLength());
-        assertEquals(0, udpChannelWithoutBufferSizes.socketSndbufLenth());
+        assertEquals(0, udpChannelWithoutBufferSizes.socketSndbufLength());
     }
 
     @ParameterizedTest

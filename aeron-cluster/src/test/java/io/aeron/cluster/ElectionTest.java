@@ -678,7 +678,6 @@ public class ElectionTest
         verify(consensusPublisher).appendPosition(
             liveLeader.publication(), leadershipTermId, leaderLogPosition, thisMember.id());
         verify(consensusModuleAgent).logRecordingId(localRecordingId);
-        verify(consensusModuleAgent).prepareForNewLeadership(leaderLogPosition);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
     }
 
@@ -795,7 +794,6 @@ public class ElectionTest
         verify(consensusPublisher).appendPosition(
             liveLeader.publication(), leadershipTermId, termBaseLogPosition, thisMember.id());
         verify(consensusModuleAgent).logRecordingId(localRecordingId);
-        verify(consensusModuleAgent).prepareForNewLeadership(termBaseLogPosition);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
     }
 

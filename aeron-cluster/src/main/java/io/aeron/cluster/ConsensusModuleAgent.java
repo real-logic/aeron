@@ -23,8 +23,8 @@ import io.aeron.archive.codecs.*;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -50,7 +50,6 @@ import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.exceptions.AeronException.Category.WARN;
-import static java.lang.Math.log;
 import static java.lang.Math.min;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 

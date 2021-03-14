@@ -558,33 +558,13 @@ public final class UdpChannel
      *
      * @return socket send buffer length or 0 if not specified.
      */
-    public int socketSndbufLenth()
+    public int socketSndbufLength()
     {
         return socketSndbufLength;
     }
 
     /**
-     * Get the socket receive buffer length.
-     *
-     * @return socket receive buffer length or 0 if not specified.
-     */
-    public int socketRcvbufLength()
-    {
-        return socketRcvbufLength;
-    }
-
-    /**
-     * Get the socket send buffer length.
-     *
-     * @return socket send buffer length or 0 if not specified.
-     */
-    public int socketSndbufLenth()
-    {
-        return socketSndbufLength;
-    }
-
-    /**
-     * Does this channel have a tag match to another channel having INADDR_ANY endpoints.
+     * Does this channel have a tag match to another channel including endpoints.
      *
      * @param udpChannel to match against.
      * @return true if there is a match otherwise false.

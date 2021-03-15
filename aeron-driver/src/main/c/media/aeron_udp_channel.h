@@ -42,9 +42,9 @@ typedef struct aeron_udp_channel_stct
     bool is_dynamic_control_mode;
     bool is_multicast;
     aeron_uri_ats_status_t ats_status;
-    size_t socket_sndbuf;
-    size_t socket_rcvbuf;
-    size_t receiver_window;
+    size_t socket_sndbuf_length;
+    size_t socket_rcvbuf_length;
+    size_t receiver_window_length;
 }
 aeron_udp_channel_t;
 
@@ -70,17 +70,17 @@ inline bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t
 
 inline size_t aeron_udp_channel_receiver_window(aeron_udp_channel_t *channel, size_t default_receiver_window)
 {
-    return 0 != channel->receiver_window ? channel->receiver_window : default_receiver_window;
+    return 0 != channel->receiver_window_length ? channel->receiver_window_length : default_receiver_window;
 }
 
 inline size_t aeron_udp_channel_socket_so_sndbuf(aeron_udp_channel_t *channel, size_t default_so_sndbuf)
 {
-    return 0 != channel->socket_sndbuf ? channel->socket_sndbuf : default_so_sndbuf;
+    return 0 != channel->socket_sndbuf_length ? channel->socket_sndbuf_length : default_so_sndbuf;
 }
 
 inline size_t aeron_udp_channel_socket_so_rcvbuf(aeron_udp_channel_t *channel, size_t default_so_rcvbuf)
 {
-    return 0 != channel->socket_rcvbuf ? channel->socket_rcvbuf : default_so_rcvbuf;
+    return 0 != channel->socket_rcvbuf_length ? channel->socket_rcvbuf_length : default_so_rcvbuf;
 }
 
 #endif //AERON_UDP_CHANNEL_H

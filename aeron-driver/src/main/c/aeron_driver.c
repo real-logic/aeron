@@ -533,8 +533,8 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    publication_window_length=%" PRIu64, (uint64_t)context->publication_window_length);
     fprintf(fpout, "\n    ipc_publication_window_length=%" PRIu64, (uint64_t)context->ipc_publication_window_length);
     fprintf(fpout, "\n    initial_window_length=%" PRIu64, (uint64_t)context->initial_window_length);
-    fprintf(fpout, "\n    socket_sndbuf=%" PRIu64, (uint64_t)context->socket_sndbuf);
-    fprintf(fpout, "\n    socket_rcvbuf=%" PRIu64, (uint64_t)context->socket_rcvbuf);
+    fprintf(fpout, "\n    socket_sndbuf_length=%" PRIu64, (uint64_t)context->socket_sndbuf);
+    fprintf(fpout, "\n    socket_rcvbuf_length=%" PRIu64, (uint64_t)context->socket_rcvbuf);
     fprintf(fpout, "\n    multicast_ttl=%" PRIu8, context->multicast_ttl);
     fprintf(fpout, "\n    mtu_length=%" PRIu64, (uint64_t)context->mtu_length);
     fprintf(fpout, "\n    ipc_mtu_length=%" PRIu64, (uint64_t)context->ipc_mtu_length);

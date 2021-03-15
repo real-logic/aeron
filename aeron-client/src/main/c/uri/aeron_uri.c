@@ -460,21 +460,22 @@ int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *ur
     return 1;
 }
 
-int aeron_uri_get_socket_bufs(aeron_uri_params_t *uri_params, size_t *socket_sndbuf, size_t *socket_rcvbuf)
+int aeron_uri_get_socket_bufs(
+    aeron_uri_params_t *uri_params, size_t *socket_sndbuf_length, size_t *socket_rcvbuf_length)
 {
-    int result = aeron_uri_get_size_t(uri_params, AERON_URI_SOCKET_SNDBUF_KEY, socket_sndbuf);
+    int result = aeron_uri_get_size_t(uri_params, AERON_URI_SOCKET_SNDBUF_KEY, socket_sndbuf_length);
 
     if (result < 0)
     {
         return result;
     }
 
-    return aeron_uri_get_size_t(uri_params, AERON_URI_SOCKET_RCVBUF_KEY, socket_rcvbuf);
+    return aeron_uri_get_size_t(uri_params, AERON_URI_SOCKET_RCVBUF_KEY, socket_rcvbuf_length);
 }
 
-int aeron_uri_get_receiver_window(aeron_uri_params_t *uri_params, size_t *receiver_window)
+int aeron_uri_get_receiver_window(aeron_uri_params_t *uri_params, size_t *receiver_window_length)
 {
-    return aeron_uri_get_size_t(uri_params, AERON_URI_RECEIVER_WINDOW_KEY, receiver_window);
+    return aeron_uri_get_size_t(uri_params, AERON_URI_RECEIVER_WINDOW_KEY, receiver_window_length);
 }
 
 int64_t aeron_uri_parse_tag(const char *tag_str)

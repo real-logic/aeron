@@ -38,7 +38,8 @@
 
 #define STATIC_BIT_SET_U64_LEN (512u)
 
-const char* const AERON_DRIVER_CONDUCTOR_INVALID_DESTINATION_KEYS[] = {
+const char * const AERON_DRIVER_CONDUCTOR_INVALID_DESTINATION_KEYS[] =
+{
     AERON_URI_MTU_LENGTH_KEY,
     AERON_URI_RECEIVER_WINDOW_KEY,
     AERON_URI_SOCKET_RCVBUF_KEY,
@@ -180,9 +181,11 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
         case AERON_URI_UDP:
             params = &uri->params.udp.additional_params;
             break;
+
         case AERON_URI_IPC:
             params = &uri->params.ipc.additional_params;
             break;
+
         case AERON_URI_UNKNOWN:
             AERON_SET_ERR(EINVAL, "%s", "Unknown uri type");
             break;
@@ -1668,14 +1671,14 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     else
     {
         if (aeron_driver_conductor_validate_channel_buffer_length(
-            AERON_URI_SOCKET_RCVBUF_KEY, channel->socket_rcvbuf, endpoint->conductor_fields.socket_rcvbuf) < 0)
+            AERON_URI_SOCKET_RCVBUF_KEY, channel->socket_rcvbuf_length, endpoint->conductor_fields.socket_rcvbuf) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             return NULL;
         }
 
         if (aeron_driver_conductor_validate_channel_buffer_length(
-            AERON_URI_SOCKET_SNDBUF_KEY, channel->socket_sndbuf, endpoint->conductor_fields.socket_sndbuf) < 0)
+            AERON_URI_SOCKET_SNDBUF_KEY, channel->socket_sndbuf_length, endpoint->conductor_fields.socket_sndbuf) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             return NULL;
@@ -1752,8 +1755,10 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
         aeron_receive_destination_t *destination = NULL;
 
-        size_t socket_rcvbuf = 0 != channel->socket_rcvbuf ? channel->socket_rcvbuf : conductor->context->socket_rcvbuf;
-        size_t socket_sndbuf = 0 != channel->socket_sndbuf ? channel->socket_sndbuf : conductor->context->socket_sndbuf;
+        size_t socket_rcvbuf = 0 != channel->socket_rcvbuf_length ?
+            channel->socket_rcvbuf_length : conductor->context->socket_rcvbuf;
+        size_t socket_sndbuf = 0 != channel->socket_sndbuf_length ?
+            channel->socket_sndbuf_length : conductor->context->socket_sndbuf;
 
         // TODO: ensure the logic for determining that this is truly MDS is correct...
         if (!channel->is_manual_control_mode)
@@ -1822,7 +1827,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         {
             if (aeron_driver_conductor_validate_channel_buffer_length(
                 AERON_URI_SOCKET_SNDBUF_KEY,
-                channel->socket_sndbuf,
+                channel->socket_sndbuf_length,
                 endpoint->conductor_fields.socket_sndbuf) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
@@ -1831,7 +1836,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
             if (aeron_driver_conductor_validate_channel_buffer_length(
                 AERON_URI_SOCKET_RCVBUF_KEY,
-                channel->socket_rcvbuf,
+                channel->socket_rcvbuf_length,
                 endpoint->conductor_fields.socket_rcvbuf) < 0)
             {
                 AERON_APPEND_ERR("%s", "");

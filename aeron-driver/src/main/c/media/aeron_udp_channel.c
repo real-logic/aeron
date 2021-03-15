@@ -201,9 +201,9 @@ int aeron_udp_channel_parse(
     _channel->is_multicast = false;
     _channel->tag_id = AERON_URI_INVALID_TAG;
     _channel->ats_status = AERON_URI_ATS_STATUS_DEFAULT;
-    _channel->socket_rcvbuf = 0;
-    _channel->socket_sndbuf = 0;
-    _channel->receiver_window = 0;
+    _channel->socket_rcvbuf_length = 0;
+    _channel->socket_sndbuf_length = 0;
+    _channel->receiver_window_length = 0;
 
     if (_channel->uri.type != AERON_URI_UDP)
     {
@@ -294,12 +294,15 @@ int aeron_udp_channel_parse(
     }
 
     if (aeron_uri_get_socket_bufs(
-        &_channel->uri.params.udp.additional_params, &_channel->socket_sndbuf, &_channel->socket_rcvbuf) < 0)
+        &_channel->uri.params.udp.additional_params,
+        &_channel->socket_sndbuf_length,
+        &_channel->socket_rcvbuf_length) < 0)
     {
         goto error_cleanup;
     }
 
-    if (aeron_uri_get_receiver_window(&_channel->uri.params.udp.additional_params, &_channel->receiver_window) < 0)
+    if (aeron_uri_get_receiver_window(
+        &_channel->uri.params.udp.additional_params, &_channel->receiver_window_length) < 0)
     {
         goto error_cleanup;
     }

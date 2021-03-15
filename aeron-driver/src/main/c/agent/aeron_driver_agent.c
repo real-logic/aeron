@@ -1054,7 +1054,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_publication_command_t *command = (aeron_publication_command_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_publication_command_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%s %d %*s [%" PRId64 ":%" PRId64 "]",
+            snprintf(buffer, sizeof(buffer) - 1, "%s %d %.*s [%" PRId64 ":%" PRId64 "]",
                 dissect_command_type_id(cmd_id),
                 command->stream_id,
                 command->channel_length,
@@ -1084,7 +1084,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_subscription_command_t *command = (aeron_subscription_command_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_subscription_command_t);
-            snprintf(buffer, sizeof(buffer) - 1, "ADD_SUBSCRIPTION %d %*s [%" PRId64 "][%" PRId64 ":%" PRId64 "]",
+            snprintf(buffer, sizeof(buffer) - 1, "ADD_SUBSCRIPTION %d %.*s [%" PRId64 "][%" PRId64 ":%" PRId64 "]",
                 command->stream_id,
                 command->channel_length,
                 channel,
@@ -1110,7 +1110,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_destination_command_t *command = (aeron_destination_command_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_destination_command_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%s %*s %" PRId64 " [%" PRId64 ":%" PRId64 "]",
+            snprintf(buffer, sizeof(buffer) - 1, "%s %.*s %" PRId64 " [%" PRId64 ":%" PRId64 "]",
                 dissect_command_type_id(cmd_id),
                 command->channel_length,
                 channel,
@@ -1196,9 +1196,11 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_publication_buffers_ready_t *command = (aeron_publication_buffers_ready_t *)message;
 
             const char *log_file_name = (const char *)message + sizeof(aeron_publication_buffers_ready_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%s %d:%d %d %d [%" PRId64 " %" PRId64 "]\n    \"%*s\"",
-                AERON_RESPONSE_ON_PUBLICATION_READY == cmd_id ? "ON_PUBLICATION_READY"
-                    : "ON_EXCLUSIVE_PUBLICATION_READY",
+            const char *cmd_out_str = AERON_RESPONSE_ON_PUBLICATION_READY == cmd_id ?
+                "ON_PUBLICATION_READY" : "ON_EXCLUSIVE_PUBLICATION_READY";
+
+            snprintf(buffer, sizeof(buffer) - 1, "%s %d:%d %d %d [%" PRId64 " %" PRId64 "]\n    \"%.*s\"",
+                cmd_out_str,
                 command->session_id,
                 command->stream_id,
                 command->position_limit_counter_id,
@@ -1225,7 +1227,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_error_response_t *command = (aeron_error_response_t *)message;
 
             const char *error_message = (const char *)message + sizeof(aeron_error_response_t);
-            snprintf(buffer, sizeof(buffer) - 1, "ON_ERROR %" PRId64 "%d %*s",
+            snprintf(buffer, sizeof(buffer) - 1, "ON_ERROR %" PRId64 "%d %.*s",
                 command->offending_command_correlation_id,
                 command->error_code,
                 command->error_message_length,
@@ -1238,7 +1240,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_image_message_t *command = (aeron_image_message_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_image_message_t);
-            snprintf(buffer, sizeof(buffer) - 1, "ON_UNAVAILABLE_IMAGE %d %*s [%" PRId64 "]",
+            snprintf(buffer, sizeof(buffer) - 1, "ON_UNAVAILABLE_IMAGE %d %.*s [%" PRId64 "]",
                 command->stream_id,
                 command->channel_length,
                 channel,
@@ -1263,7 +1265,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             snprintf(
                 buffer,
                 sizeof(buffer) - 1,
-                "ON_AVAILABLE_IMAGE %d:%d [%" PRId32 ":%" PRId64 "] \"%*s\" [%" PRId64 "] \"%*s\"",
+                "ON_AVAILABLE_IMAGE %d:%d [%" PRId32 ":%" PRId64 "] \"%.*s\" [%" PRId64 "] \"%.*s\"",
                 command->session_id,
                 command->stream_id,
                 command->subscriber_position_id,
@@ -1613,7 +1615,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
             fprintf(
                 logfp,
-                "%s: sessionId=%d, streamId=%d, uri=%*s\n",
+                "%s: sessionId=%d, streamId=%d, uri=%.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->session_id,
                 hdr->stream_id,
@@ -1628,7 +1630,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
             fprintf(
                 logfp,
-                "%s: streamId=%d, id=%" PRId64 ", uri=%*s\n",
+                "%s: streamId=%d, id=%" PRId64 ", uri=%.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->stream_id,
                 hdr->id,
@@ -1643,7 +1645,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
             fprintf(
                 logfp,
-                "%s: sessionId=%d, streamId=%d, id=%" PRId64 ", uri=%*s\n",
+                "%s: sessionId=%d, streamId=%d, id=%" PRId64 ", uri=%.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->session_id,
                 hdr->stream_id,

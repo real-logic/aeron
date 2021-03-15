@@ -74,58 +74,58 @@ static aeron_driver_agent_dynamic_dissector_entry_t *dynamic_dissector_entries =
 static size_t num_dynamic_dissector_entries = 0;
 static int64_t dynamic_dissector_index = 0;
 static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NUM_ELEMENTS] =
-{
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {"FRAME_IN", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"FRAME_OUT", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"CMD_IN_ADD_PUBLICATION", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_IN_REMOVE_PUBLICATION", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_IN_ADD_SUBSCRIPTION", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_IN_REMOVE_SUBSCRIPTION", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_OUT_PUBLICATION_READY", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {"CMD_OUT_AVAILABLE_IMAGE", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {"CMD_OUT_ON_OPERATION_SUCCESS", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {"CMD_IN_KEEPALIVE_CLIENT", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"REMOVE_PUBLICATION_CLEANUP", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"REMOVE_SUBSCRIPTION_CLEANUP", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"REMOVE_IMAGE_CLEANUP", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"CMD_OUT_ON_UNAVAILABLE_IMAGE", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {"SEND_CHANNEL_CREATION", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"RECEIVE_CHANNEL_CREATION", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"SEND_CHANNEL_CLOSE", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"RECEIVE_CHANNEL_CLOSE", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false},
-    {"CMD_IN_ADD_DESTINATION", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_IN_REMOVE_DESTINATION", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_IN_ADD_EXCLUSIVE_PUBLICATION", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_OUT_EXCLUSIVE_PUBLICATION_READY", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {"CMD_OUT_ERROR", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {"CMD_IN_ADD_COUNTER", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_IN_REMOVE_COUNTER", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_OUT_SUBSCRIPTION_READY", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {"CMD_OUT_COUNTER_READY", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {"CMD_OUT_ON_UNAVAILABLE_COUNTER", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {"CMD_IN_CLIENT_CLOSE", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_IN_ADD_RCV_DESTINATION", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_IN_REMOVE_RCV_DESTINATION", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"CMD_OUT_ON_CLIENT_TIMEOUT", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false},
-    {"CMD_IN_TERMINATE_DRIVER", AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, false},
-    {"UNTETHERED_SUBSCRIPTION_STATE_CHANGE", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"NAME_RESOLUTION_NEIGHBOR_ADDED", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"NAME_RESOLUTION_NEIGHBOR_REMOVED", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"ADD_DYNAMIC_DISSECTOR", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-    {"DYNAMIC_DISSECTOR_EVENT", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER, false},
-};
+    {
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { "FRAME_IN",                             AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "FRAME_OUT",                            AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "CMD_IN_ADD_PUBLICATION",               AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_IN_REMOVE_PUBLICATION",            AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_IN_ADD_SUBSCRIPTION",              AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_IN_REMOVE_SUBSCRIPTION",           AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_OUT_PUBLICATION_READY",            AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { "CMD_OUT_AVAILABLE_IMAGE",              AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { "CMD_OUT_ON_OPERATION_SUCCESS",         AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { "CMD_IN_KEEPALIVE_CLIENT",              AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "REMOVE_PUBLICATION_CLEANUP",           AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "REMOVE_SUBSCRIPTION_CLEANUP",          AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "REMOVE_IMAGE_CLEANUP",                 AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "CMD_OUT_ON_UNAVAILABLE_IMAGE",         AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { "SEND_CHANNEL_CREATION",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "RECEIVE_CHANNEL_CREATION",             AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "SEND_CHANNEL_CLOSE",                   AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "RECEIVE_CHANNEL_CLOSE",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
+        { "CMD_IN_ADD_DESTINATION",               AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_IN_REMOVE_DESTINATION",            AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_IN_ADD_EXCLUSIVE_PUBLICATION",     AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_OUT_EXCLUSIVE_PUBLICATION_READY",  AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { "CMD_OUT_ERROR",                        AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { "CMD_IN_ADD_COUNTER",                   AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_IN_REMOVE_COUNTER",                AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_OUT_SUBSCRIPTION_READY",           AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { "CMD_OUT_COUNTER_READY",                AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { "CMD_OUT_ON_UNAVAILABLE_COUNTER",       AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { "CMD_IN_CLIENT_CLOSE",                  AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_IN_ADD_RCV_DESTINATION",           AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_IN_REMOVE_RCV_DESTINATION",        AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "CMD_OUT_ON_CLIENT_TIMEOUT",            AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, false },
+        { "CMD_IN_TERMINATE_DRIVER",              AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "UNTETHERED_SUBSCRIPTION_STATE_CHANGE", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "NAME_RESOLUTION_NEIGHBOR_ADDED",       AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "NAME_RESOLUTION_NEIGHBOR_REMOVED",     AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "ADD_DYNAMIC_DISSECTOR",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+    };
 
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb()
 {
@@ -193,8 +193,8 @@ void aeron_driver_agent_logging_ring_buffer_free()
 
 static bool aeron_driver_agent_is_unknown_event(const char *event_name)
 {
-    return 0 ==
-        strncmp(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);
+    return 0 == strncmp(
+        AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);
 }
 
 static aeron_driver_agent_event_t aeron_driver_agent_event_name_to_id(const char *event_name)
@@ -350,13 +350,15 @@ static bool aeron_driver_agent_events_set_enabled(char const **events, const int
                 {
                     if (mask & 0x1u)
                     {
-                        aeron_driver_agent_set_enabled_specific_events(AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, is_enabled);
+                        aeron_driver_agent_set_enabled_specific_events(
+                            AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN, is_enabled);
                         result = true;
                     }
 
                     if (mask & 0x2u)
                     {
-                        aeron_driver_agent_set_enabled_specific_events(AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, is_enabled);
+                        aeron_driver_agent_set_enabled_specific_events(
+                            AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT, is_enabled);
                         result = true;
                     }
 
@@ -444,7 +446,8 @@ bool aeron_driver_agent_logging_events_init(const char *event_log, const char *e
             return false;
         }
 
-        num_events_disable = aeron_tokenise(event_log_disable_dup, ',', AERON_DRIVER_EVENT_NUM_ELEMENTS, events_disable);
+        num_events_disable = aeron_tokenise(
+            event_log_disable_dup, ',', AERON_DRIVER_EVENT_NUM_ELEMENTS, events_disable);
 
         if (num_events_disable < 0)
         {
@@ -462,6 +465,7 @@ bool aeron_driver_agent_logging_events_init(const char *event_log, const char *e
 
     aeron_free(event_log_dup);
     aeron_free(event_log_disable_dup);
+
     return result;
 }
 
@@ -471,6 +475,7 @@ void aeron_driver_agent_logging_events_free()
     {
         log_events[i].enabled = false;
     }
+
     dynamic_dissector_entries = NULL;
     dynamic_dissector_index = 0;
     num_dynamic_dissector_entries = 0;
@@ -641,8 +646,8 @@ void aeron_driver_agent_log_frame(
     int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len)
 {
     const int32_t copy_length = message_len < AERON_MAX_FRAME_LENGTH ? message_len : AERON_MAX_FRAME_LENGTH;
-    const size_t command_length = sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) +
-        copy_length;
+    const size_t command_length =
+        sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) + copy_length;
     int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, msg_type_id, command_length);
     if (offset > 0)
     {
@@ -760,7 +765,9 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
     int32_t stream_id,
     int32_t session_id)
 {
-    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE,
+    int32_t offset = aeron_mpsc_rb_try_claim(
+        &logging_mpsc_rb,
+        AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE,
         sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
     if (offset > 0)
     {
@@ -1313,6 +1320,7 @@ static const char *dissect_res_address(int8_t res_type, const uint8_t *address)
     static char addr_buffer[INET6_ADDRSTRLEN];
     int af = AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD == res_type ? AF_INET6 : AF_INET;
     inet_ntop(af, address, addr_buffer, sizeof(addr_buffer));
+
     return addr_buffer;
 }
 
@@ -1829,8 +1837,8 @@ void aeron_driver_agent_remove_image_cleanup(
 
 static void log_endpoint_change_event(const aeron_driver_agent_event_t event_id, const void *channel)
 {
-    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, event_id,
-        sizeof(aeron_driver_agent_on_endpoint_change_t));
+    int32_t offset = aeron_mpsc_rb_try_claim(
+        &logging_mpsc_rb, event_id, sizeof(aeron_driver_agent_on_endpoint_change_t));
     if (offset > 0)
     {
         uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
@@ -1905,9 +1913,11 @@ void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, si
     }
 
     const size_t copy_length = length < AERON_MAX_FRAME_LENGTH ? length : AERON_MAX_FRAME_LENGTH;
-    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb,
+    int32_t offset = aeron_mpsc_rb_try_claim(
+        &logging_mpsc_rb,
         AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT,
         sizeof(aeron_driver_agent_dynamic_event_header_t) + copy_length);
+
     if (offset > 0)
     {
         uint8_t *ptr = (logging_mpsc_rb.buffer + offset);

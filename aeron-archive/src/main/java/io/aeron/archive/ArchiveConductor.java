@@ -1447,6 +1447,7 @@ abstract class ArchiveConductor
             .groupTag(channelUri)
             .socketRcvbufLength(channelUri)
             .socketSndbufLength(channelUri)
+            .receiverWindowLength(channelUri)
             .alias(channelUri);
 
         final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);

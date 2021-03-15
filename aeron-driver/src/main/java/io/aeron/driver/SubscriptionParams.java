@@ -118,21 +118,19 @@ final class SubscriptionParams
     }
 
     public static void validateInitialWindowForRcvBuf(
-        final SubscriptionParams params,
-        final int channelSocketRcvbufLength,
-        final MediaDriver.Context ctx)
+        final SubscriptionParams params, final int channelSocketRcvbufLength, final MediaDriver.Context ctx)
     {
         if (0 != channelSocketRcvbufLength && params.initialWindowLength > channelSocketRcvbufLength)
         {
             throw new IllegalStateException(
                 "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
-                    " so-rcvbuf=" + channelSocketRcvbufLength);
+                " so-rcvbuf=" + channelSocketRcvbufLength);
         }
         else if (0 == channelSocketRcvbufLength && params.initialWindowLength > ctx.osDefaultSocketRcvbufLength())
         {
             throw new IllegalStateException(
                 "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
-                    " so-rcvbuf=" + ctx.osDefaultSocketRcvbufLength() + " (OS default)");
+                " so-rcvbuf=" + ctx.osDefaultSocketRcvbufLength() + " (OS default)");
         }
     }
 

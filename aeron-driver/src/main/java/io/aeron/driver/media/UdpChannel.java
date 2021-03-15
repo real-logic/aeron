@@ -52,6 +52,9 @@ public final class UdpChannel
     private final boolean hasMulticastTtl;
     private final boolean hasTag;
     private final int multicastTtl;
+    private final int socketRcvbufLength;
+    private final int socketSndbufLength;
+    private final int receiverWindowLength;
     private final long tag;
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -62,9 +65,6 @@ public final class UdpChannel
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
     private final ChannelUri channelUri;
-    private final int socketRcvbufLength;
-    private final int socketSndbufLength;
-    private final int receiverWindowLength;
 
     private UdpChannel(final Context context)
     {
@@ -895,8 +895,8 @@ public final class UdpChannel
         int socketRcvbufLength = 0;
         int socketSndbufLength = 0;
         int receiverWindowLength = 0;
-        long tagId;
         int multicastTtl;
+        long tagId;
         InetSocketAddress remoteData;
         InetSocketAddress localData;
         InetSocketAddress remoteControl;
@@ -1033,7 +1033,7 @@ public final class UdpChannel
             return this;
         }
 
-        public Context receiverWindowLength(final int receiverWindowLength)
+        Context receiverWindowLength(final int receiverWindowLength)
         {
             this.receiverWindowLength = receiverWindowLength;
             return this;

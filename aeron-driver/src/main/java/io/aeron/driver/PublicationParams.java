@@ -233,9 +233,7 @@ final class PublicationParams
     }
 
     static void validateMtuForSndbuf(
-        final PublicationParams params,
-        final int channelSocketSndbufLength,
-        final MediaDriver.Context ctx)
+        final PublicationParams params, final int channelSocketSndbufLength, final MediaDriver.Context ctx)
     {
         if (0 != channelSocketSndbufLength && params.mtuLength > channelSocketSndbufLength)
         {
@@ -247,7 +245,7 @@ final class PublicationParams
         {
             throw new IllegalStateException(
                 "MTU greater than SO_SNDBUF for channel: mtu=" + params.mtuLength +
-                    " so-sndbuf=" + ctx.osDefaultSocketSndbufLength() + " (OS default)");
+                " so-sndbuf=" + ctx.osDefaultSocketSndbufLength() + " (OS default)");
         }
     }
 

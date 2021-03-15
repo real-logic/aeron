@@ -70,6 +70,7 @@ public final class ChannelUriStringBuilder
     private boolean isSessionIdTagged;
     private Integer socketSndbufLength;
     private Integer socketRcvbufLength;
+    private Integer receiverWindowLength;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -106,6 +107,7 @@ public final class ChannelUriStringBuilder
         isSessionIdTagged = false;
         socketRcvbufLength = null;
         socketSndbufLength = null;
+        receiverWindowLength = null;
 
         return this;
     }
@@ -1498,7 +1500,8 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Set the underlying OS receive buffer length from an existing {@link ChannelUri} which may be (null).
+     * Set the underlying OS receive buffer length from an existing {@link ChannelUri}, which may have a null value for
+     * this field.
      *
      * @param channelUri to read the value from.
      * @return this for a fluent API.
@@ -1520,6 +1523,45 @@ public final class ChannelUriStringBuilder
     public Integer socketRcvbufLength()
     {
         return socketRcvbufLength;
+    }
+
+    /**
+     * Set the congestion control initial receiver window length for this channel.
+     *
+     * @param receiverWindowLength initial receiver window length
+     * @return this for a fluent API
+     * @see CommonContext#RECEIVER_WINDOW_LENGTH_PARAM_NAME
+     */
+    public ChannelUriStringBuilder receiverWindowLength(final Integer receiverWindowLength)
+    {
+        this.receiverWindowLength = receiverWindowLength;
+        return this;
+    }
+
+    /**
+     * Set the congestion control initial receiver window length for this channel from an existing {@link ChannelUri},
+     * which may have a null value for this field.
+     *
+     * @param channelUri to read the value from
+     * @return this for a fluent API
+     * @see CommonContext#RECEIVER_WINDOW_LENGTH_PARAM_NAME
+     */
+    public ChannelUriStringBuilder receiverWindowLength(final ChannelUri channelUri)
+    {
+        final String receiverWindowLengthString = channelUri.get(RECEIVER_WINDOW_LENGTH_PARAM_NAME);
+        this.receiverWindowLength = null == receiverWindowLengthString ?
+            null : Integer.valueOf(receiverWindowLengthString);
+        return this;
+    }
+
+    /**
+     * Get the receiver window length to be used as the initial receiver window for congestion control.
+     * @return receiver window length
+     * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
+     */
+    public Integer receiverWindowLength()
+    {
+        return receiverWindowLength;
     }
 
     /**
@@ -1667,6 +1709,11 @@ public final class ChannelUriStringBuilder
         if (null != socketRcvbufLength)
         {
             sb.append(SOCKET_RCVBUF_PARAM_NAME).append('=').append(socketRcvbufLength).append('|');
+        }
+
+        if (null != receiverWindowLength)
+        {
+            sb.append(RECEIVER_WINDOW_LENGTH_PARAM_NAME).append('=').append(receiverWindowLength).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

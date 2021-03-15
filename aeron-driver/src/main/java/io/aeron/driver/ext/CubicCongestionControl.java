@@ -117,7 +117,9 @@ public class CubicCongestionControl implements CongestionControl
         {
             mtu = senderMtuLength;
             minWindow = senderMtuLength;
-            final int maxWindow = Math.min(termLength >> 1, context.initialWindowLength());
+            final int initialWindowLength = 0 != udpChannel.receiverWindowLength() ?
+                udpChannel.receiverWindowLength() : context.initialWindowLength();
+            final int maxWindow = Math.min(termLength >> 1, initialWindowLength);
 
             maxCwnd = maxWindow / mtu;
             cwnd = 1;
@@ -262,5 +264,10 @@ public class CubicCongestionControl implements CongestionControl
     {
         CloseHelper.close(errorHandler, rttIndicator);
         CloseHelper.close(errorHandler, windowIndicator);
+    }
+
+    int maxCongestionWindow()
+    {
+        return maxCwnd;
     }
 }

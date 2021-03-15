@@ -70,8 +70,7 @@ aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strat
 
 int aeron_congestion_control_default_strategy_supplier(
     aeron_congestion_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int32_t session_id,
     int64_t registration_id,
@@ -84,8 +83,7 @@ int aeron_congestion_control_default_strategy_supplier(
 
 int aeron_static_window_congestion_control_strategy_supplier(
     aeron_congestion_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int32_t session_id,
     int64_t registration_id,
@@ -98,8 +96,7 @@ int aeron_static_window_congestion_control_strategy_supplier(
 
 int aeron_cubic_congestion_control_strategy_supplier(
     aeron_congestion_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int32_t session_id,
     int64_t registration_id,

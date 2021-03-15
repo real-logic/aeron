@@ -422,6 +422,14 @@ TEST_F(UdpChannelTest, shouldParseSocketBufferParameters)
     ASSERT_EQ(4096u, m_channel->socket_rcvbuf);
 }
 
+TEST_F(UdpChannelTest, shouldParseReceiverWindow)
+{
+    const char *uri = "aeron:udp?interface=localhost|endpoint=224.10.9.9:40124|rcv-wnd=8k";
+    ASSERT_EQ(parse_udp_channel(uri), 0) << aeron_errmsg();
+
+    ASSERT_EQ(8192u, m_channel->receiver_window);
+}
+
 TEST_P(UdpChannelNamesParameterisedTest, shouldBeValid)
 {
     const char *endpoint_name = std::get<0>(GetParam());

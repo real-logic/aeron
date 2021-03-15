@@ -39,6 +39,7 @@ protected:
     void SetUp() override
     {
         aeron_test_udp_bindings_load(&m_transport_bindings);
+        aeron_default_name_resolver_supplier(&m_resolver, nullptr, nullptr);
 
         aeron_driver_context_init(&m_context);
         aeron_driver_context_set_dir_delete_on_start(m_context, true);
@@ -55,7 +56,6 @@ protected:
 
         aeron_system_counters_init(&m_system_counters, &m_counters_manager);
 
-        aeron_default_name_resolver_supplier(&m_resolver, nullptr, nullptr);
 
         aeron_driver_sender_init(&m_sender, m_context, &m_system_counters, nullptr);
 

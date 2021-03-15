@@ -48,7 +48,9 @@ int aeron_receive_destination_create(
     aeron_driver_context_t *context,
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
-    int32_t channel_status_counter_id);
+    int32_t channel_status_counter_id,
+    size_t socket_rcvbuf,
+    size_t socket_sndbuf);
 
 void aeron_receive_destination_delete(
     aeron_receive_destination_t *destination, aeron_counters_manager_t *counters_manager);

@@ -44,6 +44,7 @@ typedef struct aeron_udp_channel_stct
     aeron_uri_ats_status_t ats_status;
     size_t socket_sndbuf;
     size_t socket_rcvbuf;
+    size_t receiver_window;
 }
 aeron_udp_channel_t;
 
@@ -65,6 +66,21 @@ inline bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel)
 inline bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b)
 {
     return a == b || (a != NULL && 0 == strncmp(a->canonical_form, b->canonical_form, AERON_MAX_PATH));
+}
+
+inline size_t aeron_udp_channel_receiver_window(aeron_udp_channel_t *channel, size_t default_receiver_window)
+{
+    return 0 != channel->receiver_window ? channel->receiver_window : default_receiver_window;
+}
+
+inline size_t aeron_udp_channel_socket_so_sndbuf(aeron_udp_channel_t *channel, size_t default_so_sndbuf)
+{
+    return 0 != channel->socket_sndbuf ? channel->socket_sndbuf : default_so_sndbuf;
+}
+
+inline size_t aeron_udp_channel_socket_so_rcvbuf(aeron_udp_channel_t *channel, size_t default_so_rcvbuf)
+{
+    return 0 != channel->socket_rcvbuf ? channel->socket_rcvbuf : default_so_rcvbuf;
 }
 
 #endif //AERON_UDP_CHANNEL_H

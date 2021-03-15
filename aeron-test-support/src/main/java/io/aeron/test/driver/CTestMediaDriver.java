@@ -167,6 +167,9 @@ public final class CTestMediaDriver implements TestMediaDriver
         {
             environment.put("AERON_DRIVER_RESOLVER_BOOTSTRAP_NEIGHBOR", context.resolverBootstrapNeighbor());
         }
+        environment.put("AERON_SOCKET_SO_RCVBUF", String.valueOf(context.socketRcvbufLength()));
+        environment.put("AERON_SOCKET_SO_SNDBUF", String.valueOf(context.socketSndbufLength()));
+        environment.put("AERON_RCV_INITIAL_WINDOW_LENGTH", String.valueOf(context.initialWindowLength()));
 
         setFlowControlStrategy(environment, context);
         setLogging(environment);

@@ -380,9 +380,8 @@ int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t
     value = strtoll(value_str, &end_ptr, 0);
     if (0 != errno || '\0' != *end_ptr)
     {
-        int system_errno = errno;
         return -1;
-        AERON_SET_ERR(EINVAL, "could not parse %s=%s as int64_t in URI: %s", key, value_str, strerror(system_errno));
+        AERON_SET_ERR(EINVAL, "could not parse %s=%s as int64_t in URI: %s", key, value_str, strerror(errno));
     }
 
     *retval = value;
@@ -460,7 +459,7 @@ int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *ur
     return 1;
 }
 
-int aeron_uri_get_socket_bufs(
+int aeron_uri_get_socket_buf_lengths(
     aeron_uri_params_t *uri_params, size_t *socket_sndbuf_length, size_t *socket_rcvbuf_length)
 {
     int result = aeron_uri_get_size_t(uri_params, AERON_URI_SOCKET_SNDBUF_KEY, socket_sndbuf_length);
@@ -473,7 +472,7 @@ int aeron_uri_get_socket_bufs(
     return aeron_uri_get_size_t(uri_params, AERON_URI_SOCKET_RCVBUF_KEY, socket_rcvbuf_length);
 }
 
-int aeron_uri_get_receiver_window(aeron_uri_params_t *uri_params, size_t *receiver_window_length)
+int aeron_uri_get_receiver_window_length(aeron_uri_params_t *uri_params, size_t *receiver_window_length)
 {
     return aeron_uri_get_size_t(uri_params, AERON_URI_RECEIVER_WINDOW_KEY, receiver_window_length);
 }
@@ -645,10 +644,13 @@ int aeron_uri_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
     {
         case AERON_URI_UDP:
             return aeron_uri_udp_sprint(uri, buffer, buffer_len);
+
         case AERON_URI_IPC:
             return aeron_uri_ipc_sprint(uri, buffer, buffer_len);
+
         case AERON_URI_UNKNOWN:
             return snprintf(buffer, buffer_len, "aeron:unknown");
+
         default:
             AERON_SET_ERR(EINVAL, "Invalid URI type: %d", (int)uri->type);
             return -1;

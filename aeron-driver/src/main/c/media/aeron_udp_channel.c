@@ -293,7 +293,7 @@ int aeron_udp_channel_parse(
         goto error_cleanup;
     }
 
-    if (aeron_uri_get_socket_bufs(
+    if (aeron_uri_get_socket_buf_lengths(
         &_channel->uri.params.udp.additional_params,
         &_channel->socket_sndbuf_length,
         &_channel->socket_rcvbuf_length) < 0)
@@ -301,7 +301,7 @@ int aeron_udp_channel_parse(
         goto error_cleanup;
     }
 
-    if (aeron_uri_get_receiver_window(
+    if (aeron_uri_get_receiver_window_length(
         &_channel->uri.params.udp.additional_params, &_channel->receiver_window_length) < 0)
     {
         goto error_cleanup;

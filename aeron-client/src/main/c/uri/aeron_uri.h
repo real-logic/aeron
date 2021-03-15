@@ -135,9 +135,9 @@ int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t
 int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *retval);
 int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *uri_ats_status);
 int aeron_uri_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len);
-int aeron_uri_get_socket_bufs(
+int aeron_uri_get_socket_buf_lengths(
     aeron_uri_params_t *uri_params, size_t *socket_sndbuf_length, size_t *socket_rcvbuf_length);
-int aeron_uri_get_receiver_window(aeron_uri_params_t *uri_params, size_t *receiver_window_length);
+int aeron_uri_get_receiver_window_length(aeron_uri_params_t *uri_params, size_t *receiver_window_length);
 
 int64_t aeron_uri_parse_tag(const char *tag_str);
 

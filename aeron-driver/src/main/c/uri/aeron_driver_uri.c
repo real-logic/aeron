@@ -370,7 +370,7 @@ int aeron_driver_uri_subscription_params(
         return -1;
     }
 
-    if (aeron_uri_get_receiver_window(uri_params, &params->initial_window_length) < 0)
+    if (aeron_uri_get_receiver_window_length(uri_params, &params->initial_window_length) < 0)
     {
         return -1;
     }

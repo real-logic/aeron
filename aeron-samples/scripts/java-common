@@ -15,7 +15,7 @@
 ## limitations under the License.
 ##
 
-if [ -z "$JAVA_HOME" ]; then
+if [ -z "${JAVA_HOME}" ]; then
   echo "Please set the JAVA_HOME environment variable"
   exit 1
 fi
@@ -39,9 +39,9 @@ then
 else
   major_java_version=${java_version%%[.-]*}
 
-  if [ "$major_java_version" -lt 15 ]
+  if [ "${major_java_version}" -lt 15 ]
   then
-    JAVA_OPTIONS="$JAVA_OPTIONS -XX:+UseBiasedLocking -XX:BiasedLockingStartupDelay=0"
+    JAVA_OPTIONS="${JAVA_OPTIONS} -XX:+UseBiasedLocking -XX:BiasedLockingStartupDelay=0"
   fi
 
   ADD_OPENS="\

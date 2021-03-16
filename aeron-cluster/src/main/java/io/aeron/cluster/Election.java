@@ -605,6 +605,7 @@ class Election
         {
             if (logPosition < appendPosition)
             {
+                ctx.commitPositionCounter().setOrdered(logPosition);
                 logReplay = consensusModuleAgent.newLogReplay(logPosition, appendPosition);
             }
             else

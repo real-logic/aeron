@@ -16,11 +16,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <inttypes.h>
 #include "command/aeron_control_protocol.h"
 #include "uri/aeron_uri.h"
 #include "util/aeron_arrayutil.h"
-#include "util/aeron_math.h"
 #include "util/aeron_parse_util.h"
 
 typedef enum aeron_uri_parser_state_enum

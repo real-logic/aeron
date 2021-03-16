@@ -206,13 +206,13 @@ final class DriverNameResolverCache implements AutoCloseable
         return INVALID_INDEX;
     }
 
-    static class CacheEntry
+    static final class CacheEntry
     {
         long deadlineMs;
         long timeOfLastActivityMs;
         int port;
-        byte type;
-        byte[] name;
+        final byte type;
+        final byte[] name;
         byte[] address;
 
         CacheEntry(
@@ -224,10 +224,10 @@ final class DriverNameResolverCache implements AutoCloseable
             final int port)
         {
             this.name = name;
+            this.type = type;
             this.timeOfLastActivityMs = timeOfLastActivityMs;
             this.deadlineMs = deadlineMs;
             this.address = address;
-            this.type = type;
             this.port = port;
         }
     }

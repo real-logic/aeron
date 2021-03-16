@@ -18,7 +18,6 @@ package io.aeron.driver;
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
-import io.aeron.CommonContext.InferableBoolean;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;

@@ -471,6 +471,13 @@ public class UdpChannelTest
         assertEquals(0, udpChannelWithoutBufferSizes.socketSndbufLength());
     }
 
+    @Test
+    void shouldParseReceiverWindow()
+    {
+        final UdpChannel udpChannelWithBufferSizes = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:9999|rcv-wnd=8192");
+        assertEquals(8192, udpChannelWithBufferSizes.receiverWindowLength());
+    }
+
     @ParameterizedTest
     @CsvSource({
         "NAME_ENDPOINT,192.168.1.1,,,UDP-127.0.0.1:0-NAME_ENDPOINT",

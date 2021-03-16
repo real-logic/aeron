@@ -54,6 +54,7 @@ public final class UdpChannel
     private final int multicastTtl;
     private final int socketRcvbufLength;
     private final int socketSndbufLength;
+    private final int receiverWindowLength;
     private final long tag;
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -76,8 +77,6 @@ public final class UdpChannel
         tag = context.tagId;
         hasMulticastTtl = context.hasMulticastTtl;
         multicastTtl = context.multicastTtl;
-        socketRcvbufLength = context.socketRcvbufLength;
-        socketSndbufLength = context.socketSndbufLength;
         remoteData = context.remoteData;
         localData = context.localData;
         remoteControl = context.remoteControl;
@@ -87,6 +86,9 @@ public final class UdpChannel
         localInterface = context.localInterface;
         protocolFamily = context.protocolFamily;
         channelUri = context.channelUri;
+        socketRcvbufLength = context.socketRcvbufLength;
+        socketSndbufLength = context.socketSndbufLength;
+        receiverWindowLength = context.receiverWindowLength;
     }
 
     /**
@@ -140,8 +142,10 @@ public final class UdpChannel
             final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
             final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
 
-            final int socketRcvbufLength = getSocketBufferLength(channelUri, CommonContext.SOCKET_RCVBUF_PARAM_NAME);
-            final int socketSndbufLength = getSocketBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
+            final int socketRcvbufLength = parseBufferLength(channelUri, CommonContext.SOCKET_RCVBUF_PARAM_NAME);
+            final int socketSndbufLength = parseBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
+            final int receiverWindowLength = parseBufferLength(
+                channelUri, CommonContext.RECEIVER_WINDOW_LENGTH_PARAM_NAME);
 
             final boolean requiresAdditionalSuffix = !isDestination &&
                 (null == endpointAddress && null == controlAddress ||
@@ -190,7 +194,8 @@ public final class UdpChannel
                 .hasExplicitEndpoint(hasExplicitEndpoint)
                 .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic)
                 .socketRcvbufLength(socketRcvbufLength)
-                .socketSndbufLength(socketSndbufLength);
+                .socketSndbufLength(socketSndbufLength)
+                .receiverWindowLength(receiverWindowLength);
 
             if (null != tagIdStr)
             {
@@ -273,7 +278,16 @@ public final class UdpChannel
         }
     }
 
-    private static int getSocketBufferLength(final ChannelUri channelUri, final String paramName)
+    /**
+     * Parse a buffer length for a given URI paramName with a format specified by
+     * {@link SystemUtil#parseSize(String, String)}, clamping the range to 0 &lt;= x &lt;= Integer.MAX_VALUE.
+     *
+     * @see SystemUtil#parseSize(String, String)
+     * @param channelUri to get the value from
+     * @param paramName key for the parameter
+     * @return value as an integer
+     */
+    public static int parseBufferLength(final ChannelUri channelUri, final String paramName)
     {
         int socketBufferLength = 0;
 
@@ -554,6 +568,17 @@ public final class UdpChannel
     }
 
     /**
+     * Get the socket receive buffer length.
+     *
+     * @param defaultValue to be used if the UdpChannel's value is 0 (unspecified)
+     * @return socket receive buffer length or 0 if not specified.
+     */
+    public int socketRcvbufLengthOrDefault(final int defaultValue)
+    {
+        return 0 != socketRcvbufLength ? socketRcvbufLength : defaultValue;
+    }
+
+    /**
      * Get the socket send buffer length.
      *
      * @return socket send buffer length or 0 if not specified.
@@ -564,7 +589,39 @@ public final class UdpChannel
     }
 
     /**
-     * Does this channel have a tag match to another channel including endpoints.
+     * Get the socket send buffer length.
+     *
+     * @param defaultValue to be used if the UdpChannel's value is 0 (unspecified)
+     * @return socket send buffer length or defaultValue if not specified.
+     */
+    public int socketSndbufLengthOrDefault(final int defaultValue)
+    {
+        return 0 != socketSndbufLength ? socketSndbufLength : defaultValue;
+    }
+
+    /**
+     * Get the receiver window length used as the initial window length for congestion control.
+     *
+     * @return receiver window length or 0 if not specified.
+     */
+    public int receiverWindowLength()
+    {
+        return receiverWindowLength;
+    }
+
+    /**
+     * Get the receiver window length used as the initial window length for congestion control.
+     *
+     * @param defaultValue to be used if the UdpChannel's value is 0 (unspecified)
+     * @return receiver window length or defaultValue if not specified.
+     */
+    public int receiverWindowLengthOrDefault(final int defaultValue)
+    {
+        return 0 != receiverWindowLength() ? receiverWindowLength() : defaultValue;
+    }
+
+    /**
+     * Does this channel have a tag match to another channel having INADDR_ANY endpoints.
      *
      * @param udpChannel to match against.
      * @return true if there is a match otherwise false.
@@ -835,10 +892,11 @@ public final class UdpChannel
         boolean hasMulticastTtl = false;
         boolean hasTagId = false;
         boolean hasNoDistinguishingCharacteristic = false;;
-        long tagId;
-        int multicastTtl;
         int socketRcvbufLength = 0;
         int socketSndbufLength = 0;
+        int receiverWindowLength = 0;
+        int multicastTtl;
+        long tagId;
         InetSocketAddress remoteData;
         InetSocketAddress localData;
         InetSocketAddress remoteControl;
@@ -972,6 +1030,12 @@ public final class UdpChannel
         Context socketSndbufLength(final int socketSndbufLength)
         {
             this.socketSndbufLength = socketSndbufLength;
+            return this;
+        }
+
+        Context receiverWindowLength(final int receiverWindowLength)
+        {
+            this.receiverWindowLength = receiverWindowLength;
             return this;
         }
     }

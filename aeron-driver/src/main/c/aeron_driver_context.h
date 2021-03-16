@@ -238,6 +238,14 @@ typedef struct aeron_driver_context_stct
     aeron_dl_loaded_libs_state_t *dynamic_libs;
     aeron_driver_context_bindings_clientd_entry_t *bindings_clientd_entries;
     size_t num_bindings_clientd_entries;
+    struct
+    {
+        size_t default_so_sndbuf;
+        size_t max_so_sndbuf;
+        size_t default_so_rcvbuf;
+        size_t max_so_rcvbuf;
+    }
+    os_buffer_lengths;
 }
 aeron_driver_context_t;
 

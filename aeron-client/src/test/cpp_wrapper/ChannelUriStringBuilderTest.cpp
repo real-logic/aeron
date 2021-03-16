@@ -113,3 +113,17 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateSocketSndRcvbufLengths)
         builder.build(),
         "aeron:udp?endpoint=localhost:9999|so-sndbuf=8192|so-rcvbuf=4096");
 }
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateReceiverWindowLength)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .receiverWindowLength(4096);
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|rcv-wnd=4096");
+}

@@ -34,9 +34,12 @@ abstract class ReceiveDestinationTransportHotFields extends UdpChannelTransport
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
-        final MediaDriver.Context context)
+        final MediaDriver.Context context,
+        final int socketRcvbufLength,
+        final int socketSndbufLength)
     {
-        super(udpChannel, endPointAddress, bindAddress, connectAddress, context);
+        super(
+            udpChannel, endPointAddress, bindAddress, connectAddress, context, socketRcvbufLength, socketSndbufLength);
     }
 }
 
@@ -55,15 +58,27 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
 
     /**
      * Construct a new transport for a receive destination.
-     *
-     * @param udpChannel                  for the destination.
+     *  @param udpChannel                  for the destination.
      * @param context                     for configuration.
      * @param localSocketAddressIndicator to indicate status of the transport.
+     * @param socketRcvbufLength set SO_RCVBUF for socket, 0 for OS default.
+     * @param socketSndbufLength set SO_SNDBUF for socket, 0 for OS default.
      */
     public ReceiveDestinationTransport(
-        final UdpChannel udpChannel, final MediaDriver.Context context, final AtomicCounter localSocketAddressIndicator)
+        final UdpChannel udpChannel,
+        final MediaDriver.Context context,
+        final AtomicCounter localSocketAddressIndicator,
+        final int socketRcvbufLength,
+        final int socketSndbufLength)
     {
-        super(udpChannel, udpChannel.remoteData(), udpChannel.remoteData(), null, context);
+        super(
+            udpChannel,
+            udpChannel.remoteData(),
+            udpChannel.remoteData(),
+            null,
+            context,
+            socketRcvbufLength,
+            socketSndbufLength);
 
         this.timeOfLastActivityNs = context.receiverCachedNanoClock().nanoTime();
         this.currentControlAddress = udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;

@@ -380,9 +380,8 @@ int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t
     value = strtoll(value_str, &end_ptr, 0);
     if (0 != errno || '\0' != *end_ptr)
     {
-        int system_errno = errno;
         return -1;
-        AERON_SET_ERR(EINVAL, "could not parse %s=%s as int64_t in URI: %s", key, value_str, strerror(system_errno));
+        AERON_SET_ERR(EINVAL, "could not parse %s=%s as int64_t in URI: %s", key, value_str, strerror(errno));
     }
 
     *retval = value;
@@ -413,6 +412,29 @@ int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *re
     return 1;
 }
 
+int aeron_uri_get_size_t(aeron_uri_params_t *uri_params, const char *key, size_t *value)
+{
+    const char *value_str = aeron_uri_find_param_value(uri_params, key);
+    int result = 0;
+
+    if (NULL != value_str)
+    {
+        uint64_t temp_value = 0;
+
+        if (-1 == aeron_parse_size64(value_str, &temp_value))
+        {
+            AERON_SET_ERR(EINVAL, "could not parse %s=%s in URI", key, value_str);
+            return -1;
+        }
+
+        *value = (size_t)temp_value;
+
+        result = 1;
+    }
+
+    return result;
+}
+
 int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *uri_ats_status)
 {
     const char *value_str = aeron_uri_find_param_value(uri_params, AERON_URI_ATS_KEY);
@@ -437,37 +459,22 @@ int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *ur
     return 1;
 }
 
-int aeron_uri_get_socket_bufs(aeron_uri_params_t *uri_params, size_t *socket_sndbuf, size_t *socket_rcvbuf)
+int aeron_uri_get_socket_buf_lengths(
+    aeron_uri_params_t *uri_params, size_t *socket_sndbuf_length, size_t *socket_rcvbuf_length)
 {
-    const char *sndbuf_str = aeron_uri_find_param_value(uri_params, AERON_URI_SOCKET_SNDBUF_KEY);
-    if (NULL != sndbuf_str)
+    int result = aeron_uri_get_size_t(uri_params, AERON_URI_SOCKET_SNDBUF_KEY, socket_sndbuf_length);
+
+    if (result < 0)
     {
-        uint64_t value;
-
-        if (-1 == aeron_parse_size64(sndbuf_str, &value))
-        {
-            AERON_SET_ERR(EINVAL, "could not parse %s=%s in URI", AERON_URI_SOCKET_SNDBUF_KEY, sndbuf_str);
-            return -1;
-        }
-
-        *socket_sndbuf = (size_t)value;
+        return result;
     }
 
-    const char *rcvbuf_str = aeron_uri_find_param_value(uri_params, AERON_URI_SOCKET_RCVBUF_KEY);
-    if (NULL != rcvbuf_str)
-    {
-        uint64_t value;
+    return aeron_uri_get_size_t(uri_params, AERON_URI_SOCKET_RCVBUF_KEY, socket_rcvbuf_length);
+}
 
-        if (-1 == aeron_parse_size64(rcvbuf_str, &value))
-        {
-            AERON_SET_ERR(EINVAL, "could not parse %s=%s in URI", AERON_URI_SOCKET_RCVBUF_KEY, rcvbuf_str);
-            return -1;
-        }
-
-        *socket_rcvbuf = (size_t)value;
-    }
-
-    return 0;
+int aeron_uri_get_receiver_window_length(aeron_uri_params_t *uri_params, size_t *receiver_window_length)
+{
+    return aeron_uri_get_size_t(uri_params, AERON_URI_RECEIVER_WINDOW_KEY, receiver_window_length);
 }
 
 int64_t aeron_uri_parse_tag(const char *tag_str)
@@ -637,10 +644,13 @@ int aeron_uri_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len)
     {
         case AERON_URI_UDP:
             return aeron_uri_udp_sprint(uri, buffer, buffer_len);
+
         case AERON_URI_IPC:
             return aeron_uri_ipc_sprint(uri, buffer, buffer_len);
+
         case AERON_URI_UNKNOWN:
             return snprintf(buffer, buffer_len, "aeron:unknown");
+
         default:
             AERON_SET_ERR(EINVAL, "Invalid URI type: %d", (int)uri->type);
             return -1;

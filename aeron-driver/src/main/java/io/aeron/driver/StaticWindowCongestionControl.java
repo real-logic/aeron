@@ -62,7 +62,9 @@ public class StaticWindowCongestionControl implements CongestionControl
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {
-        ccOutcome = CongestionControl.packOutcome(Math.min(termLength >> 1, context.initialWindowLength()), false);
+        final int initialWindowLength = udpChannel.receiverWindowLength() != 0 ?
+            udpChannel.receiverWindowLength() : context.initialWindowLength();
+        ccOutcome = CongestionControl.packOutcome(Math.min(termLength >> 1, initialWindowLength), false);
     }
 
     /**

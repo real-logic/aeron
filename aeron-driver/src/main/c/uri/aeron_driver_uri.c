@@ -337,6 +337,7 @@ int aeron_driver_uri_subscription_params(
     params->is_sparse = context->term_buffer_sparse_file;
     params->is_tether = context->tether_subscriptions;
     params->is_rejoin = context->rejoin_stream;
+    params->initial_window_length = context->initial_window_length;
 
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
         &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
@@ -369,6 +370,62 @@ int aeron_driver_uri_subscription_params(
         return -1;
     }
 
+    if (aeron_uri_get_receiver_window_length(uri_params, &params->initial_window_length) < 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 
+int aeron_publication_params_validate_mtu_for_sndbuf(
+    aeron_driver_uri_publication_params_t *params,
+    size_t endpoint_socket_sndbuf,
+    size_t os_default_socket_sndbuf)
+{
+    if (0 != endpoint_socket_sndbuf && endpoint_socket_sndbuf < params->mtu_length)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "MTU greater than SO_SNDBUF for channel: mtu=%" PRIu64 " so-sndbuf=%" PRIu64,
+            params->mtu_length, endpoint_socket_sndbuf);
+        return -1;
+    }
+
+    if (0 == endpoint_socket_sndbuf && os_default_socket_sndbuf < params->mtu_length)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "MTU greater than SO_SNDBUF for channel: mtu=%" PRIu64 " so-sndbuf=%" PRIu64 " (OS default)",
+            params->mtu_length, endpoint_socket_sndbuf);
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_subscription_params_validate_initial_window_for_rcvbuf(
+    aeron_driver_uri_subscription_params_t *params,
+    size_t endpoint_socket_rcvbuf,
+    size_t os_default_socket_rcvbuf)
+{
+    if (0 != endpoint_socket_rcvbuf && endpoint_socket_rcvbuf < params->initial_window_length)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "Initial window greater than SO_SNDBUF for channel: rcv-wnd=%" PRIu64 " so-rcvbuf=%" PRIu64,
+            params->initial_window_length, endpoint_socket_rcvbuf);
+        return -1;
+    }
+
+    if (0 == endpoint_socket_rcvbuf && os_default_socket_rcvbuf < params->initial_window_length)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "Initial window greater than SO_SNDBUF for channel: rcv-wnd=%" PRIu64 " so-rcvbuf=%" PRIu64 " (OS default)",
+            params->initial_window_length, endpoint_socket_rcvbuf);
+        return -1;
+    }
+
+    return 0;
+}

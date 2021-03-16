@@ -23,6 +23,9 @@ extern "C"
 #include "aeron_driver_context.h"
 #include "aeron_counters.h"
 #include "util/aeron_env.h"
+#include "media/aeron_udp_channel.h"
+
+int32_t aeron_cubic_congestion_control_strategy_get_max_cwnd(void *state);
 }
 
 #define CAPACITY (32 * 1024)
@@ -49,6 +52,8 @@ public:
             m_counter_value_buffer.data(), m_counter_value_buffer.size(),
             m_context->cached_clock,
             1000);
+
+        aeron_default_name_resolver_supplier(&m_resolver, nullptr, nullptr);
     }
 
     ~CongestionControlTest() override
@@ -57,6 +62,7 @@ public:
         aeron_counters_manager_close(&m_counters_manager);
         reset_env();
     }
+
 
     static void reset_env()
     {
@@ -72,12 +78,12 @@ public:
         const int32_t term_length,
         const int32_t expected_window_length)
     {
+        aeron_udp_channel_t *udp_channel = parse_udp_channel(channel);
         aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
 
         const int result = func(
             &congestion_control_strategy,
-            strlen(channel),
-            channel,
+            udp_channel,
             42,
             5,
             11,
@@ -151,9 +157,32 @@ public:
         return clientd.id;
     }
 
+    aeron_udp_channel_t *parse_udp_channel(const char *channel)
+    {
+        aeron_udp_channel_t *udp_channel = nullptr;
+        int result = aeron_udp_channel_parse(strlen(channel), channel, &m_resolver, &udp_channel, false);
+        EXPECT_TRUE(0 <= result) << " '" << channel << "' " << aeron_errmsg();
+
+        m_udp_channels.push_back(udp_channel);
+        return udp_channel;
+    }
+
 protected:
+    virtual void TearDown() override
+    {
+        auto it = m_udp_channels.begin();
+        while (it != m_udp_channels.end())
+        {
+            auto udp_channel = *it;
+            aeron_udp_channel_delete(udp_channel);
+            it = m_udp_channels.erase(it);
+        }
+    }
+    
     aeron_driver_context_t *m_context = nullptr;
     aeron_counters_manager_t m_counters_manager = {};
+    std::vector<aeron_udp_channel_t *> m_udp_channels;
+    aeron_name_resolver_t m_resolver = {};
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16) = {};
     AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16) = {};
 };
@@ -172,7 +201,7 @@ TEST_F(CongestionControlTest, contextShouldResolveCongestionControlStrategySuppl
 
     EXPECT_NE(nullptr, m_context->congestion_control_supplier_func);
 
-    const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1:9999\0";
     test_static_window_congestion_control(
         m_context->congestion_control_supplier_func,
         channel,
@@ -198,13 +227,13 @@ TEST_F(CongestionControlTest, shouldReturnDefaultCongestionControlStrategySuppli
 
     EXPECT_NE(nullptr, supplier);
 
-    const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1:9999\0";
     test_static_window_congestion_control(supplier, channel, 8192, 4096);
 }
 
 TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCongestionControlStrategyWhenNoCcParamValue)
 {
-    const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1:9999\0";
     const auto initial_window_length = (int32_t)m_context->initial_window_length;
     test_static_window_congestion_control(
         aeron_congestion_control_default_strategy_supplier,
@@ -215,17 +244,17 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCon
 
 TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCongestionControlStrategyWhenCcParamValueIsStatic)
 {
-    const char *channel = "aeron:udp?endpoint=192.168.0.1|cc=static\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1:9999|cc=static|rcv-wnd=65536\0";
     test_static_window_congestion_control(
         aeron_congestion_control_default_strategy_supplier,
         channel,
-        4096,
-        2048);
+        1000000,
+        65536);
 }
 
 TEST_F(CongestionControlTest, staticWindowCongestionControlStrategySupplier)
 {
-    const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1:9999\0";
     test_static_window_congestion_control(
         aeron_static_window_congestion_control_strategy_supplier,
         channel,
@@ -235,18 +264,18 @@ TEST_F(CongestionControlTest, staticWindowCongestionControlStrategySupplier)
 
 TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestionControlStrategyWhenCcParamValueIsCubic)
 {
-    const char *channel = "aeron:udp?endpoint=192.168.0.1|cc=cubic\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1:9999|cc=cubic|rcv-wnd=65536\0";
+    aeron_udp_channel_t *udp_channel = parse_udp_channel(channel);
     aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
 
     const int stream_id = 42;
     const int session_id = 5;
     const int registration_id = 11;
     const int sender_mtu_length = 1408;
-    const int term_length = 8096;
+    const int term_length = 65536 << 2;
     const int result = aeron_congestion_control_default_strategy_supplier(
         &congestion_control_strategy,
-        strlen(channel),
-        channel,
+        udp_channel,
         stream_id,
         session_id,
         registration_id,
@@ -282,19 +311,22 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestion
 
     EXPECT_FALSE(congestion_control_strategy->should_measure_rtt(state, 777LL));
     EXPECT_EQ(sender_mtu_length, congestion_control_strategy->initial_window_length(state));
+    EXPECT_EQ(
+        65536 / sender_mtu_length,
+        aeron_cubic_congestion_control_strategy_get_max_cwnd(congestion_control_strategy->state));
 
     congestion_control_strategy->fini(congestion_control_strategy);
 }
 
 TEST_F(CongestionControlTest, defaultStrategySupplierShouldReturnNegativeResultWhenCcParamValueIsUnknown)
 {
-    const char *channel = "aeron:udp?endpoint=192.168.0.1|cc=static1234\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1:9999|cc=static1234\0";
     aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
+    aeron_udp_channel_t *udp_channel = parse_udp_channel(channel);
 
     const int result = aeron_congestion_control_default_strategy_supplier(
         &congestion_control_strategy,
-        strlen(channel),
-        channel,
+        udp_channel,
         2,
         15,
         1,
@@ -311,15 +343,15 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldReturnNegativeResultW
 
 TEST_F(CongestionControlTest, cubicCongestionControlSupplierReturnsNegativeValueIfInitialRttValueIsInvalid)
 {
-    const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1:9999\0";
     aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
+    aeron_udp_channel_t *udp_channel = parse_udp_channel(channel);
 
     aeron_env_set(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR, "initial_rtt wrong value");
 
     const int result = aeron_cubic_congestion_control_strategy_supplier(
         &congestion_control_strategy,
-        strlen(channel),
-        channel,
+        udp_channel,
         2,
         15,
         1,
@@ -341,8 +373,9 @@ TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
     aeron_env_set(AERON_CUBICCONGESTIONCONTROL_MEASURERTT_ENV_VAR, "true");
     aeron_env_set(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR, "1s");
 
-    const char *channel = "aeron:udp?endpoint=192.168.0.1\0";
+    const char *channel = "aeron:udp?endpoint=192.168.0.1:9999\0";
     aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
+    aeron_udp_channel_t *udp_channel = parse_udp_channel(channel);
 
     const int stream_id = 42;
     const int session_id = 5;
@@ -351,8 +384,7 @@ TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
     const int term_length = 8096;
     const int result = aeron_cubic_congestion_control_strategy_supplier(
         &congestion_control_strategy,
-        strlen(channel),
-        channel,
+        udp_channel,
         stream_id,
         session_id,
         registration_id,

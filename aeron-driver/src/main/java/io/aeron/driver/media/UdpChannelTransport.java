@@ -88,6 +88,39 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     protected boolean isClosed = false;
     private int multicastTtl = 0;
+    private final int socketSndbufLength;
+    private final int socketRcvbufLength;
+
+    /**
+     * Construct a transport for a given channel.
+     *
+     * @param udpChannel      configuration for the media.
+     * @param endPointAddress to which data will be sent.
+     * @param bindAddress     for listening on.
+     * @param connectAddress  for sending data to.
+     * @param context         for configuration.
+     * @param socketRcvbufLength set SO_RCVBUF for socket, 0 for OS default.
+     * @param socketSndbufLength set SO_SNDBUF for socket, 0 for OS default.
+     */
+    protected UdpChannelTransport(
+        final UdpChannel udpChannel,
+        final InetSocketAddress endPointAddress,
+        final InetSocketAddress bindAddress,
+        final InetSocketAddress connectAddress,
+        final MediaDriver.Context context,
+        final int socketRcvbufLength,
+        final int socketSndbufLength)
+    {
+        this.context = context;
+        this.udpChannel = udpChannel;
+        this.errorHandler = context.errorHandler();
+        this.endPointAddress = endPointAddress;
+        this.bindAddress = bindAddress;
+        this.connectAddress = connectAddress;
+        this.invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
+        this.socketRcvbufLength = socketRcvbufLength;
+        this.socketSndbufLength = socketSndbufLength;
+    }
 
     /**
      * Construct a transport for a given channel.
@@ -105,13 +138,14 @@ public abstract class UdpChannelTransport implements AutoCloseable
         final InetSocketAddress connectAddress,
         final MediaDriver.Context context)
     {
-        this.context = context;
-        this.udpChannel = udpChannel;
-        this.errorHandler = context.errorHandler();
-        this.endPointAddress = endPointAddress;
-        this.bindAddress = bindAddress;
-        this.connectAddress = connectAddress;
-        this.invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
+        this(
+            udpChannel,
+            endPointAddress,
+            bindAddress,
+            connectAddress,
+            context,
+            udpChannel.socketRcvbufLengthOrDefault(context.socketRcvbufLength()),
+            udpChannel.socketSndbufLengthOrDefault(context.socketSndbufLength()));
     }
 
     /**
@@ -437,13 +471,23 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
     }
 
-    private int socketSndbufLength()
+    /**
+     * Get the configured OS send socket buffer length (SO_SNDBUF) for the endpoint's socket.
+     *
+     * @return OS socket send buffer length or 0 if using OS default.
+     */
+    public int socketSndbufLength()
     {
         return 0 != udpChannel.socketSndbufLength() ? udpChannel.socketSndbufLength() : context.socketSndbufLength();
     }
 
-    private int socketRcvbufLength()
+    /**
+     * Get the configured OS receive socket buffer length (SO_RCVBUF) for the endpoint's socket.
+     *
+     * @return OS socket receive buffer length or 0 if using OS default.
+     */
+    public int socketRcvbufLength()
     {
-        return 0 != udpChannel.socketRcvbufLength() ? udpChannel.socketRcvbufLength() : context.socketRcvbufLength();
+        return socketRcvbufLength;
     }
 }

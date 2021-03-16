@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
+import io.aeron.driver.media.UdpChannel;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 
@@ -35,6 +36,7 @@ final class SubscriptionParams
     boolean isSparse = true;
     boolean isTether = true;
     InferableBoolean group = InferableBoolean.INFER;
+    int initialWindowLength;
 
     static SubscriptionParams getSubscriptionParams(final ChannelUri channelUri, final MediaDriver.Context context)
     {
@@ -109,7 +111,27 @@ final class SubscriptionParams
         final String groupStr = channelUri.get(GROUP_PARAM_NAME);
         params.group = null != groupStr ? InferableBoolean.parse(groupStr) : context.receiverGroupConsideration();
 
+        final int initialWindowLength = UdpChannel.parseBufferLength(channelUri, RECEIVER_WINDOW_LENGTH_PARAM_NAME);
+        params.initialWindowLength = 0 != initialWindowLength ? initialWindowLength : context.initialWindowLength();
+
         return params;
+    }
+
+    public static void validateInitialWindowForRcvBuf(
+        final SubscriptionParams params, final int channelSocketRcvbufLength, final MediaDriver.Context ctx)
+    {
+        if (0 != channelSocketRcvbufLength && params.initialWindowLength > channelSocketRcvbufLength)
+        {
+            throw new IllegalStateException(
+                "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
+                " so-rcvbuf=" + channelSocketRcvbufLength);
+        }
+        else if (0 == channelSocketRcvbufLength && params.initialWindowLength > ctx.osDefaultSocketRcvbufLength())
+        {
+            throw new IllegalStateException(
+                "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
+                " so-rcvbuf=" + ctx.osDefaultSocketRcvbufLength() + " (OS default)");
+        }
     }
 
     /**

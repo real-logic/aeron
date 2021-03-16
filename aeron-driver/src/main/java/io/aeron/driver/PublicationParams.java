@@ -15,8 +15,8 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.buffer.RawLog;
 import io.aeron.ChannelUri;
+import io.aeron.driver.buffer.RawLog;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.SystemUtil;
@@ -229,6 +229,23 @@ final class PublicationParams
         {
             throw new IllegalStateException("existing publication has different spiesSimulateConnection: existing=" +
                 existingSpiesSimulateConnection + " requested=" + params.spiesSimulateConnection);
+        }
+    }
+
+    static void validateMtuForSndbuf(
+        final PublicationParams params, final int channelSocketSndbufLength, final MediaDriver.Context ctx)
+    {
+        if (0 != channelSocketSndbufLength && params.mtuLength > channelSocketSndbufLength)
+        {
+            throw new IllegalStateException(
+                "MTU greater than SO_SNDBUF for channel: mtu=" + params.mtuLength +
+                " so-sndbuf=" + channelSocketSndbufLength);
+        }
+        else if (0 == channelSocketSndbufLength && params.mtuLength > ctx.osDefaultSocketSndbufLength())
+        {
+            throw new IllegalStateException(
+                "MTU greater than SO_SNDBUF for channel: mtu=" + params.mtuLength +
+                " so-sndbuf=" + ctx.osDefaultSocketSndbufLength() + " (OS default)");
         }
     }
 

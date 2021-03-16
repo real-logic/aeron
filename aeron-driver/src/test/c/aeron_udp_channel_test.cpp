@@ -418,8 +418,16 @@ TEST_F(UdpChannelTest, shouldParseSocketBufferParameters)
     const char *uri = "aeron:udp?interface=localhost|endpoint=224.10.9.9:40124|so-sndbuf=8k|so-rcvbuf=4k";
     ASSERT_EQ(parse_udp_channel(uri), 0) << aeron_errmsg();
 
-    ASSERT_EQ(8192u, m_channel->socket_sndbuf);
-    ASSERT_EQ(4096u, m_channel->socket_rcvbuf);
+    ASSERT_EQ(8192u, m_channel->socket_sndbuf_length);
+    ASSERT_EQ(4096u, m_channel->socket_rcvbuf_length);
+}
+
+TEST_F(UdpChannelTest, shouldParseReceiverWindow)
+{
+    const char *uri = "aeron:udp?interface=localhost|endpoint=224.10.9.9:40124|rcv-wnd=8k";
+    ASSERT_EQ(parse_udp_channel(uri), 0) << aeron_errmsg();
+
+    ASSERT_EQ(8192u, m_channel->receiver_window_length);
 }
 
 TEST_P(UdpChannelNamesParameterisedTest, shouldBeValid)

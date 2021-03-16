@@ -114,4 +114,17 @@ public class ChannelUriStringBuilderTest
             "aeron:udp?endpoint=address:9999|so-sndbuf=8192|so-rcvbuf=4096",
             builder.build());
     }
+
+    @Test
+    public void shouldGenerateChannelWithReceiverWindow()
+    {
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("address:9999")
+            .receiverWindowLength(8192);
+
+        assertEquals(
+            "aeron:udp?endpoint=address:9999|rcv-wnd=8192",
+            builder.build());
+    }
 }

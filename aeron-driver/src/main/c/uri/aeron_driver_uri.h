@@ -48,6 +48,7 @@ typedef struct aeron_driver_uri_subscription_params_stct
     aeron_inferable_boolean_t group;
     bool has_session_id;
     int32_t session_id;
+    size_t initial_window_length;
 }
 aeron_driver_uri_subscription_params_t;
 
@@ -64,5 +65,16 @@ int aeron_driver_uri_subscription_params(
     aeron_uri_t *uri,
     aeron_driver_uri_subscription_params_t *params,
     aeron_driver_conductor_t *conductor);
+
+int aeron_publication_params_validate_mtu_for_sndbuf(
+    aeron_driver_uri_publication_params_t *params,
+    size_t endpoint_socket_sndbuf,
+    size_t os_default_socket_sndbuf);
+
+int aeron_subscription_params_validate_initial_window_for_rcvbuf(
+    aeron_driver_uri_subscription_params_t *params,
+    size_t endpoint_socket_rcvbuf,
+    size_t os_default_socket_rcvbuf);
+
 
 #endif //AERON_AERON_DRIVER_URI_H

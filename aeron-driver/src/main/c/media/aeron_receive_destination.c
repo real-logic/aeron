@@ -25,7 +25,9 @@ int aeron_receive_destination_create(
     aeron_driver_context_t *context,
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
-    int32_t channel_status_counter_id)
+    int32_t channel_status_counter_id,
+    size_t socket_rcvbuf,
+    size_t socket_sndbuf)
 {
     aeron_receive_destination_t *_destination = NULL;
 
@@ -41,8 +43,6 @@ int aeron_receive_destination_create(
     _destination->transport.data_paths = _destination->data_paths;
     _destination->local_sockaddr_indicator.counter_id = AERON_NULL_COUNTER_ID;
 
-    const size_t socket_sndbuf = 0 != channel->socket_sndbuf ? channel->socket_sndbuf : context->socket_sndbuf;
-    const size_t socket_rcvbuf = 0 != channel->socket_rcvbuf ? channel->socket_rcvbuf : context->socket_rcvbuf;
 
     if (context->udp_channel_transport_bindings->init_func(
         &_destination->transport,

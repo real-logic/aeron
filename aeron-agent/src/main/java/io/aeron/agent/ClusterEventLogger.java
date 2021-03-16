@@ -132,11 +132,11 @@ public final class ClusterEventLogger
     }
 
     /**
-     * Log a canvass position event received by the cluster node
+     * Log a canvass position event received by the cluster node.
      *
-     * @param logLeadershipTermId leadershipTermId processes from the log by the candidate
-     * @param logPosition         position in the candidate's log
-     * @param followerMemberId    member to canvas
+     * @param logLeadershipTermId leadershipTermId reached by the member for it recorded log.
+     * @param logPosition         position the member has durably recorded.
+     * @param followerMemberId    member who sent the event.
      */
     public void logCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
     {
@@ -167,12 +167,12 @@ public final class ClusterEventLogger
     }
 
     /**
-     * Log a canvass position event received by the cluster node
+     * Log a request to vote from a cluster candidate for leadership.
      *
-     * @param logLeadershipTermId leadershipTermId processes from the log by the candidate
-     * @param logPosition         position in the candidate's log
-     * @param candidateTermId     next termId proposed by the candidate
-     * @param candidateId         id of the candidate node
+     * @param logLeadershipTermId leadershipTermId processes from the log by the candidate.
+     * @param logPosition         position reached in the log for the latest leadership term.
+     * @param candidateTermId     the term id as the candidate sees it for the election.
+     * @param candidateId         id of the candidate node.
      */
     public void logRequestVote(
         final long logLeadershipTermId,

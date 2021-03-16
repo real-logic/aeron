@@ -1476,7 +1476,7 @@ final class ConsensusModuleAgent implements Agent
 
     void logRecordingId(final long recordingId)
     {
-        this.logRecordingId = recordingId;
+        logRecordingId = recordingId;
     }
 
     void truncateLogEntry(final long leadershipTermId, final long logPosition)

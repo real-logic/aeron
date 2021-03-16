@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ChannelUriStringBuilder;
 import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
@@ -24,13 +23,13 @@ import static io.aeron.cluster.ConsensusModuleSnapshotLoader.FRAGMENT_LIMIT;
 
 final class LogReplication implements ControlEventListener, RecordingSignalConsumer
 {
+    private final long replicationId;
     private final AeronArchive archive;
-    private final long replicateSessionId;
     private final RecordingSignalAdapter recordingSignalAdapter;
 
     private boolean isDone = false;
-    private long replicatedLogPosition = AeronArchive.NULL_POSITION;
-    private long logRecordingId;
+    private long position = AeronArchive.NULL_POSITION;
+    private long recordingId;
 
     LogReplication(
         final AeronArchive archive,
@@ -42,46 +41,52 @@ final class LogReplication implements ControlEventListener, RecordingSignalConsu
     {
         this.archive = archive;
 
-        final String srcArchiveChannel = new ChannelUriStringBuilder()
-            .media("udp")
-            .endpoint(srcArchiveEndpoint)
-            .build();
+        final String srcArchiveChannel = "aeron:udp?endpoint=" + srcArchiveEndpoint;
 
-        replicateSessionId = archive.replicate(
+        replicationId = archive.replicate(
             srcRecordingId, dstRecordingId, srcArchiveStreamId, srcArchiveChannel, null, stopPosition);
 
         recordingSignalAdapter = new RecordingSignalAdapter(
             archive.controlSessionId(), this, this, archive.controlResponsePoller().subscription(), FRAGMENT_LIMIT);
     }
 
-    public boolean isDone()
+    boolean isDone()
     {
         return isDone;
     }
 
-    public int doWork()
+    int doWork()
     {
         return recordingSignalAdapter.poll();
     }
 
-    public long replicatedLogPosition()
+    long position()
     {
-        return replicatedLogPosition;
+        return position;
     }
 
-    public long recordingId()
+    long recordingId()
     {
-        return logRecordingId;
+        return recordingId;
     }
 
     void close()
     {
         if (!isDone)
         {
-            archive.stopRecording(replicateSessionId);
+            try
+            {
+                archive.stopReplication(replicationId);
+            }
+            catch (final Exception ignore)
+            {
+            }
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onResponse(
         final long controlSessionId,
         final long correlationId,
@@ -89,9 +94,15 @@ final class LogReplication implements ControlEventListener, RecordingSignalConsu
         final ControlResponseCode code,
         final String errorMessage)
     {
-
+        if (ControlResponseCode.ERROR == code)
+        {
+            throw new ArchiveException(errorMessage, (int)relevantId, correlationId);
+        }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onSignal(
         final long controlSessionId,
         final long correlationId,
@@ -100,11 +111,12 @@ final class LogReplication implements ControlEventListener, RecordingSignalConsu
         final long position,
         final RecordingSignal signal)
     {
-        if (signal == RecordingSignal.STOP)
+
+        if (correlationId == replicationId && RecordingSignal.STOP == signal)
         {
+            this.position = position;
+            this.recordingId = recordingId;
             isDone = true;
-            replicatedLogPosition = position;
-            logRecordingId = recordingId;
         }
     }
 }

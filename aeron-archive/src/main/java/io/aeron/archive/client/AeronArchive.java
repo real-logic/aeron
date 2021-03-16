@@ -1598,12 +1598,12 @@ public final class AeronArchive implements AutoCloseable
             if (!archiveProxy.replicate(
                 srcRecordingId,
                 dstRecordingId,
-                stopPosition, srcControlStreamId,
+                stopPosition,
+                srcControlStreamId,
                 srcControlChannel,
                 liveDestination,
                 lastCorrelationId,
-                controlSessionId
-            ))
+                controlSessionId))
             {
                 throw new ArchiveException("failed to send replicate request");
             }

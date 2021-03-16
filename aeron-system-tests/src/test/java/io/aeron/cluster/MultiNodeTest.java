@@ -59,8 +59,8 @@ public class MultiNodeTest
             assertEquals(appointedLeaderIndex, leader.index());
             assertEquals(Cluster.Role.LEADER, leader.role());
 
-            cluster.connectClient();
             final int messageCount = 10;
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount);
             cluster.awaitServicesMessageCount(messageCount);
@@ -86,10 +86,10 @@ public class MultiNodeTest
             assertEquals(appointedLeaderIndex, leader.index());
             assertEquals(Cluster.Role.LEADER, leader.role());
 
-            cluster.connectClient();
             final int preCatchupMessageCount = 5;
             final int postCatchupMessageCount = 10;
             final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
+            cluster.connectClient();
             cluster.sendMessages(preCatchupMessageCount);
             cluster.awaitResponseMessageCount(preCatchupMessageCount);
             cluster.awaitServicesMessageCount(preCatchupMessageCount);

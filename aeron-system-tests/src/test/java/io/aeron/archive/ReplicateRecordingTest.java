@@ -382,7 +382,7 @@ public class ReplicateRecordingTest
             final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
             final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
-            final long replicationId = dstAeronArchive.replicate(
+            dstAeronArchive.replicate(
                 srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null, firstPosition);
 
             assertEquals(RecordingSignal.REPLICATE, awaitSignal(signalRef, adapter));
@@ -394,7 +394,6 @@ public class ReplicateRecordingTest
 
             assertEquals(RecordingSignal.SYNC, awaitSignal(signalRef, adapter));
             assertEquals(RecordingSignal.STOP, awaitSignal(signalRef, adapter));
-
 
             awaitPosition(dstCounters, dstCounterId, firstPosition);
 

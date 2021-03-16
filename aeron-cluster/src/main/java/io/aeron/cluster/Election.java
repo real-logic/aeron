@@ -142,6 +142,10 @@ class Election
                     workCount += followerBallot(nowNs);
                     break;
 
+                case LEADER_LOG_REPLICATION:
+                    workCount += leaderLogReplication(nowNs);
+                    break;
+
                 case LEADER_REPLAY:
                     workCount += leaderReplay(nowNs);
                     break;
@@ -154,8 +158,8 @@ class Election
                     workCount += leaderReady(nowNs);
                     break;
 
-                case LEADER_LOG_REPLICATION:
-                    workCount += leaderLogReplication(nowNs);
+                case FOLLOWER_LOG_REPLICATION:
+                    workCount += followerLogReplication(nowNs);
                     break;
 
                 case FOLLOWER_REPLAY:
@@ -180,10 +184,6 @@ class Election
 
                 case FOLLOWER_LOG_AWAIT:
                     workCount += followerLogAwait(nowNs);
-                    break;
-
-                case FOLLOWER_LOG_REPLICATION:
-                    workCount += followerLogReplication(nowNs);
                     break;
 
                 case FOLLOWER_READY:
@@ -668,6 +668,48 @@ class Election
         return workCount;
     }
 
+    private int followerLogReplication(final long nowNs)
+    {
+        int workCount = 0;
+
+        if (null == logReplication)
+        {
+            if (appendPosition < logReplicationPosition)
+            {
+                logReplication = consensusModuleAgent.newLogReplication(
+                    leaderMember.archiveEndpoint(), leaderRecordingId, logReplicationPosition);
+                workCount++;
+            }
+            else
+            {
+                state(FOLLOWER_REPLAY, nowNs);
+            }
+        }
+        else
+        {
+            workCount += logReplication.doWork();
+            if (logReplication.isDone())
+            {
+                appendPosition = logReplication.position();
+                consensusModuleAgent.logRecordingId(logReplication.recordingId());
+
+                if (consensusPublisher.appendPosition(
+                    leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id()))
+                {
+                    // TODO: only begin replay when commit position from leader is received that matches
+                    cleanupReplication();
+                    state(FOLLOWER_REPLAY, nowNs);
+                }
+                else
+                {
+                    // TODO: check for timeout of leader liveness
+                }
+            }
+        }
+
+        return workCount;
+    }
+
     private int followerReplay(final long nowNs)
     {
         int workCount = 0;
@@ -692,47 +734,6 @@ class Election
                 cleanupReplay();
                 logPosition = appendPosition;
                 state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
-            }
-        }
-
-        return workCount;
-    }
-
-    private int followerLogReplication(final long nowNs)
-    {
-        int workCount = 0;
-
-        if (null == logReplication)
-        {
-            if (appendPosition < logReplicationPosition)
-            {
-                logReplication = consensusModuleAgent.newLogReplication(
-                    leaderMember.archiveEndpoint(), leaderRecordingId, logReplicationPosition);
-                workCount++;
-            }
-            else
-            {
-                state(FOLLOWER_REPLAY, nowNs);
-            }
-        }
-        else
-        {
-            workCount += logReplication.doWork();
-            if (logReplication.isDone())
-            {
-                // Which position should be updated here???
-                appendPosition = logReplication.replicatedLogPosition();
-
-                consensusPublisher.appendPosition(
-                    leaderMember.publication(),
-                    leadershipTermId,
-                    appendPosition,
-                    thisMember.id());
-
-                consensusModuleAgent.logRecordingId(logReplication.recordingId());
-                state(FOLLOWER_REPLAY, nowNs);
-
-                cleanupReplication();
             }
         }
 

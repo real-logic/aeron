@@ -37,7 +37,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
     private static final int RETRY_ATTEMPTS = 3;
 
-
     enum State
     {
         CONNECT,
@@ -49,7 +48,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         REPLICATE,
         CATCHUP,
         ATTEMPT_LIVE_JOIN,
-        DONE;
+        DONE
     }
 
     private long activeCorrelationId = NULL_VALUE;

@@ -671,8 +671,11 @@ public class ElectionTest
         verify(logReplication, times(4)).doWork();
 
         when(logReplication.isDone()).thenReturn(true);
-        when(logReplication.replicatedLogPosition()).thenReturn(leaderLogPosition);
+        when(logReplication.position()).thenReturn(leaderLogPosition);
         when(logReplication.recordingId()).thenReturn(localRecordingId);
+        when(consensusPublisher.appendPosition(
+            liveLeader.publication(), leadershipTermId, leaderLogPosition, thisMember.id()))
+            .thenReturn(true);
         election.doWork(++t1);
 
         verify(consensusPublisher).appendPosition(
@@ -787,8 +790,9 @@ public class ElectionTest
             liveLeader.archiveEndpoint(), RECORDING_ID, termBaseLogPosition);
 
         when(logReplication.isDone()).thenReturn(true);
-        when(logReplication.replicatedLogPosition()).thenReturn(termBaseLogPosition);
+        when(logReplication.position()).thenReturn(termBaseLogPosition);
         when(logReplication.recordingId()).thenReturn(localRecordingId);
+        when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(true);
         election.doWork(++t1);
 
         verify(consensusPublisher).appendPosition(

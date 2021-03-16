@@ -41,7 +41,7 @@ for %%o in (%*) do (
 
     if "%%o"=="--slow-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON"
-                echo "Disabling system tests"
+        echo "Enabling slow system tests"
     )
 
     if "%%o"=="--no-system-tests" (

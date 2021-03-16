@@ -517,4 +517,11 @@ public class TestNode implements AutoCloseable
             this.service = service;
         }
     }
+
+    public String toString()
+    {
+        return "TestNode{" +
+            "consensusModule=" + clusteredArchive.consensusModule() +
+            '}';
+    }
 }

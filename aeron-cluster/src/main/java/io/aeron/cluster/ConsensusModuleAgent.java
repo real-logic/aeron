@@ -3053,4 +3053,11 @@ final class ConsensusModuleAgent implements Agent
     {
         return thisMember;
     }
+
+    public String toString()
+    {
+        return "ConsensusModuleAgent{" +
+            "election=" + election +
+            '}';
+    }
 }

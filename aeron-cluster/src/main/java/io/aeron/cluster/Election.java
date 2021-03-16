@@ -30,6 +30,7 @@ import org.agrona.LangUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.AgentTerminationException;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -1102,5 +1103,35 @@ class Election
             " appendPosition=" + appendPosition +
             " catchupPosition=" + catchupPosition);
         */
+    }
+
+    public String toString()
+    {
+        return "Election{" +
+            "isNodeStartup=" + isNodeStartup +
+            ", isLeaderStartup=" + isLeaderStartup +
+            ", isExtendedCanvass=" + isExtendedCanvass +
+            ", logSessionId=" + logSessionId +
+            ", timeOfLastStateChangeNs=" + timeOfLastStateChangeNs +
+            ", timeOfLastUpdateNs=" + timeOfLastUpdateNs +
+            ", nominationDeadlineNs=" + nominationDeadlineNs +
+            ", logPosition=" + logPosition +
+            ", appendPosition=" + appendPosition +
+            ", catchupPosition=" + catchupPosition +
+            ", logReplicationPosition=" + logReplicationPosition +
+            ", leaderRecordingId=" + leaderRecordingId +
+            ", leadershipTermId=" + leadershipTermId +
+            ", logLeadershipTermId=" + logLeadershipTermId +
+            ", candidateTermId=" + candidateTermId +
+            ", leaderMember=" + leaderMember +
+            ", state=" + state +
+            ", logSubscription=" + logSubscription +
+            ", logReplay=" + logReplay +
+            ", clusterMembers=" + Arrays.toString(clusterMembers) +
+            ", thisMember=" + thisMember +
+            ", clusterMemberByIdMap=" + clusterMemberByIdMap +
+            ", ctx=" + ctx +
+            ", logReplication=" + logReplication +
+            '}';
     }
 }

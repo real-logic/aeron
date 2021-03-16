@@ -189,6 +189,7 @@ public final class ConsensusModule implements AutoCloseable
     }
 
     private final Context ctx;
+    private final ConsensusModuleAgent conductor;
     private final AgentRunner conductorRunner;
 
     ConsensusModule(final Context ctx)
@@ -198,7 +199,7 @@ public final class ConsensusModule implements AutoCloseable
             ctx.conclude();
             this.ctx = ctx;
 
-            final ConsensusModuleAgent conductor = new ConsensusModuleAgent(ctx);
+            conductor = new ConsensusModuleAgent(ctx);
             conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
         }
         catch (final ConcurrentConcludeException ex)
@@ -2995,5 +2996,12 @@ public final class ConsensusModule implements AutoCloseable
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
         }
+    }
+
+    public String toString()
+    {
+        return "ConsensusModule{" +
+            "conductor=" + conductor +
+            '}';
     }
 }

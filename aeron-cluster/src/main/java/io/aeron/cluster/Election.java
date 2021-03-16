@@ -584,14 +584,13 @@ class Election
             logSessionId = consensusModuleAgent.addLogPublication();
         }
 
-        consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
-
         if (appendPosition <= ctx.commitPositionCounter().getWeak())
         {
             state(LEADER_REPLAY, nowNs);
         }
         else
         {
+            workCount += consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
             workCount += publishNewLeadershipTermOnInterval(nowNs);
         }
 

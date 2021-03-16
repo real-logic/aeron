@@ -20,7 +20,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
-import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
+import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
@@ -123,6 +123,82 @@ public final class ClusterEventLogger
                     oldState,
                     newState,
                     memberId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log a canvass position event received by the cluster node
+     *
+     * @param logLeadershipTermId leadershipTermId processes from the log by the candidate
+     * @param logPosition         position in the candidate's log
+     * @param followerMemberId    member to canvas
+     */
+    public void logCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
+    {
+        final int length = canvassPositionLength();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(CANVASS_POSITION.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeCanvassPosition(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    logLeadershipTermId,
+                    logPosition,
+                    followerMemberId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log a canvass position event received by the cluster node
+     *
+     * @param logLeadershipTermId leadershipTermId processes from the log by the candidate
+     * @param logPosition         position in the candidate's log
+     * @param candidateTermId     next termId proposed by the candidate
+     * @param candidateId         id of the candidate node
+     */
+    public void logRequestVote(
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long candidateTermId,
+        final int candidateId)
+    {
+        final int length = requestVoteLength();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(REQUEST_VOTE.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeRequestVote(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    logLeadershipTermId,
+                    logPosition,
+                    candidateTermId,
+                    candidateId);
             }
             finally
             {

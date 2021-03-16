@@ -422,11 +422,12 @@
         <field name="logTruncatePosition"       id="2" type="int64"/>
         <field name="leadershipTermId"          id="3" type="int64"/>
         <field name="logPosition"               id="4" type="int64"/>
-        <field name="timestamp"                 id="5" type="time_t"/>
-        <field name="leaderMemberId"            id="6" type="int32"/>
-        <field name="logSessionId"              id="7" type="int32"/>
-        <field name="appVersion"                id="8" type="version_t"/>
-        <field name="isStartup"                 id="9" type="BooleanType"/>
+        <field name="leaderRecordingId"         id="5" type="int64"/>
+        <field name="timestamp"                 id="6" type="time_t"/>
+        <field name="leaderMemberId"            id="7" type="int32"/>
+        <field name="logSessionId"              id="8" type="int32"/>
+        <field name="appVersion"                id="9" type="version_t"/>
+        <field name="isStartup"                 id="10" type="BooleanType"/>
     </sbe:message>
 
     <!-- keep this under 32 - 8 = 24 bytes for efficiency -->

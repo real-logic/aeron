@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.IoUtil;
@@ -100,7 +101,8 @@ public class RecordingLogTest
             assertEquals(3, recordingLog.entries().size());
 
             final AeronArchive mockArchive = mock(AeronArchive.class);
-            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount);
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount,
+                Aeron.NULL_VALUE);
             assertEquals(2, recoveryPlan.snapshots.size());
             assertEquals(SERVICE_ID, recoveryPlan.snapshots.get(0).serviceId);
             assertEquals(2L, recoveryPlan.snapshots.get(0).recordingId);
@@ -127,7 +129,8 @@ public class RecordingLogTest
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
             final AeronArchive mockArchive = mock(AeronArchive.class);
-            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount);
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount,
+                Aeron.NULL_VALUE);
             assertEquals(2, recoveryPlan.snapshots.size());
             assertEquals(SERVICE_ID, recoveryPlan.snapshots.get(0).serviceId);
             assertEquals(2L, recoveryPlan.snapshots.get(0).recordingId);
@@ -157,7 +160,8 @@ public class RecordingLogTest
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
             final AeronArchive mockArchive = mock(AeronArchive.class);
-            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount);
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount,
+                Aeron.NULL_VALUE);
             assertEquals(2, recoveryPlan.snapshots.size());
             assertEquals(SERVICE_ID, recoveryPlan.snapshots.get(0).serviceId);
             assertEquals(6L, recoveryPlan.snapshots.get(0).recordingId);
@@ -195,7 +199,8 @@ public class RecordingLogTest
             final AeronArchive mockArchive = mock(AeronArchive.class);
             when(mockArchive.listRecording(anyLong(), any())).thenReturn(1);
 
-            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount);
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount,
+                Aeron.NULL_VALUE);
             assertEquals(0L, recoveryPlan.log.recordingId);
             assertEquals(10L, recoveryPlan.log.leadershipTermId);
             assertEquals(666, recoveryPlan.log.termBaseLogPosition);

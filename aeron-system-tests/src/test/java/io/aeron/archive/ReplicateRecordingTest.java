@@ -357,6 +357,58 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    public void shouldReplicateLiveRecordingAndStopAtSpecifiedPosition()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            final long firstPosition = publication.position();
+            awaitPosition(srcCounters, counterId, firstPosition);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
+
+            final MutableLong dstRecordingId = new MutableLong();
+            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+            final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
+
+            final long replicationId = dstAeronArchive.replicate(
+                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null, firstPosition);
+
+            assertEquals(RecordingSignal.REPLICATE, awaitSignal(signalRef, adapter));
+            assertEquals(RecordingSignal.EXTEND, awaitSignal(signalRef, adapter));
+
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
+            final int srcCounterId = RecordingPos.findCounterIdByRecording(srcCounters, srcRecordingId);
+
+            assertEquals(RecordingSignal.SYNC, awaitSignal(signalRef, adapter));
+            assertEquals(RecordingSignal.STOP, awaitSignal(signalRef, adapter));
+
+
+            awaitPosition(dstCounters, dstCounterId, firstPosition);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, srcCounterId, publication.position());
+
+            assertTrue(firstPosition < publication.position());
+            assertEquals(firstPosition, dstCounters.getCounterValue(dstCounterId));
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+    }
+
+    @Test
     public void shouldReplicateMoreThanOnce()
     {
         final String messagePrefix = "Message-Prefix-";

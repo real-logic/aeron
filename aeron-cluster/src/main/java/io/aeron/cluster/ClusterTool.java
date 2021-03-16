@@ -258,7 +258,7 @@ public class ClusterTool
         try (AeronArchive archive = AeronArchive.connect();
             RecordingLog recordingLog = new RecordingLog(clusterDir))
         {
-            out.println(recordingLog.createRecoveryPlan(archive, serviceCount));
+            out.println(recordingLog.createRecoveryPlan(archive, serviceCount, Aeron.NULL_VALUE));
         }
     }
 

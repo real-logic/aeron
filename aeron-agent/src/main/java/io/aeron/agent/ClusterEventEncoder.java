@@ -105,4 +105,64 @@ final class ClusterEventEncoder
     {
         return stateTransitionStringLength(from, to) + SIZE_OF_INT;
     }
+
+    static int encodeCanvassPosition(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final long logLeadershipTermId,
+        final long logPosition,
+        final int followerMemberId)
+    {
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putLong(offset + relativeOffset, logLeadershipTermId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + relativeOffset, logPosition, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(offset + relativeOffset, followerMemberId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        return relativeOffset;
+    }
+
+    static int canvassPositionLength()
+    {
+        return (2 * SIZE_OF_LONG) + SIZE_OF_INT;
+    }
+
+    static int encodeRequestVote(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long candidateTermId,
+        final int candidateId)
+    {
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putLong(offset + relativeOffset, logLeadershipTermId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + relativeOffset, logPosition, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + relativeOffset, candidateTermId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(offset + relativeOffset, candidateId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        return relativeOffset;
+    }
+
+    static int requestVoteLength()
+    {
+        return (3 * SIZE_OF_LONG) + SIZE_OF_INT;
+    }
 }

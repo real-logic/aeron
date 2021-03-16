@@ -36,10 +36,11 @@ import static org.mockito.Mockito.*;
 
 public class ElectionTest
 {
-    private static final long RECORDING_ID = 1L;
+    private static final long RECORDING_ID = 600L;
     private static final int LOG_SESSION_ID = 777;
     private final Aeron aeron = mock(Aeron.class);
     private final Counter electionStateCounter = mock(Counter.class);
+    private final Counter commitPositionCounter = mock(Counter.class);
     private final Subscription subscription = mock(Subscription.class);
     private final Image logImage = mock(Image.class);
     private final RecordingLog recordingLog = mock(RecordingLog.class);
@@ -53,6 +54,7 @@ public class ElectionTest
         .clusterClock(new TestClusterClock(NANOSECONDS))
         .random(new Random())
         .electionStateCounter(electionStateCounter)
+        .commitPositionCounter(commitPositionCounter)
         .clusterMarkFile(clusterMarkFile);
 
     @BeforeEach
@@ -82,6 +84,7 @@ public class ElectionTest
         final long t1 = 1;
         election.doWork(t1);
         election.doWork(t1);
+        election.doWork(t1);
 
         verify(clusterMarkFile).candidateTermId();
         verify(consensusModuleAgent).joinLogAsLeader(eq(newLeadershipTermId), eq(logPosition), anyInt(), eq(true));
@@ -91,12 +94,14 @@ public class ElectionTest
     }
 
     @Test
+    @SuppressWarnings("MethodLength")
     public void shouldElectAppointedLeader()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember candidateMember = clusterMembers[0];
+        when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
 
         ctx.appointedLeaderId(candidateMember.id());
 
@@ -140,28 +145,35 @@ public class ElectionTest
 
         final long t4 = t3 + 1;
         election.doWork(t3);
-        verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
+        verify(electionStateCounter).setOrdered(ElectionState.LEADER_LOG_REPLICATION.code());
 
         when(recordingLog.isUnknown(candidateTermId)).thenReturn(Boolean.TRUE);
 
         final long t5 = t4 + 1;
         election.doWork(t5);
+        verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
+
+        election.doWork(t5);
+
         verify(consensusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
             leadershipTermId,
             logPosition,
             candidateTermId,
             logPosition,
+            RECORDING_ID,
             t5,
             candidateMember.id(),
             LOG_SESSION_ID,
             election.isLeaderStartup());
+
         verify(consensusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
             leadershipTermId,
             logPosition,
             candidateTermId,
             logPosition,
+            RECORDING_ID,
             t5,
             candidateMember.id(),
             LOG_SESSION_ID,
@@ -200,15 +212,15 @@ public class ElectionTest
         final int candidateId = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
+        final long leaderRecordingId = 983724;
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember);
 
-        final long t1 = 1;
-        election.doWork(t1);
+        long nowNs = 0;
+        election.doWork(++nowNs);
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
         final long candidateTermId = leadershipTermId + 1;
-        final long t2 = 2;
         election.onRequestVote(leadershipTermId, logPosition, candidateTermId, candidateId);
         verify(consensusPublisher).placeVote(
             clusterMembers[candidateId].publication(),
@@ -218,31 +230,39 @@ public class ElectionTest
             candidateId,
             followerMember.id(),
             true);
-        election.doWork(t2);
+        election.doWork(++nowNs);
+        final long t2 = nowNs;
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_BALLOT.code());
 
         final int logSessionId = -7;
         election.onNewLeadershipTerm(
-            leadershipTermId, logPosition, candidateTermId, logPosition, t2, candidateId, logSessionId, false);
+            leadershipTermId,
+            logPosition,
+            candidateTermId,
+            logPosition,
+            leaderRecordingId,
+            t2,
+            candidateId,
+            logSessionId, false);
+
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
+
+        election.doWork(++nowNs);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
 
-        final long t3 = 3;
-        election.doWork(t3);
+        election.doWork(++nowNs);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_INIT.code());
 
-        final long t4 = 4;
-        election.doWork(t4);
+        election.doWork(++nowNs);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_AWAIT.code());
 
-        final long t5 = 5;
-        election.doWork(t5);
+        election.doWork(++nowNs);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_READY.code());
 
         when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
         when(consensusModuleAgent.electionComplete()).thenReturn(true);
 
-        final long t6 = 6;
-        election.doWork(t6);
+        election.doWork(++nowNs);
         final InOrder inOrder = inOrder(consensusPublisher, consensusModuleAgent, electionStateCounter);
         inOrder.verify(consensusPublisher).appendPosition(
             clusterMembers[candidateId].publication(), candidateTermId, logPosition, followerMember.id());
@@ -365,7 +385,7 @@ public class ElectionTest
         election.onVote(
             candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
         election.doWork(t4);
-        verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
+        verify(electionStateCounter).setOrdered(ElectionState.LEADER_LOG_REPLICATION.code());
     }
 
     @ParameterizedTest
@@ -374,6 +394,7 @@ public class ElectionTest
     {
         final long leadershipTermId = 0;
         final long logPosition = 0;
+        final long leaderRecordingId = 367234;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
 
@@ -387,7 +408,15 @@ public class ElectionTest
         final long t2 = t1 + 1;
         final int leaderMemberId = clusterMembers[0].id();
         election.onNewLeadershipTerm(
-            leadershipTermId, logPosition, leadershipTermId, logPosition, t2, leaderMemberId, 0, isLeaderStart);
+            leadershipTermId,
+            logPosition,
+            leadershipTermId,
+            logPosition,
+            leaderRecordingId,
+            t2,
+            leaderMemberId,
+            0,
+            isLeaderStart);
         election.doWork(t2);
 
         final long t3 = t2 + 1;
@@ -395,6 +424,9 @@ public class ElectionTest
 
         final long t4 = t3 + 1;
         election.doWork(t4);
+
+        final long t5 = t4 + 1;
+        election.doWork(t5);
 
         verify(consensusModuleAgent).joinLogAsFollower(logImage, isLeaderStart);
     }
@@ -432,7 +464,7 @@ public class ElectionTest
         election.onVote(
             candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
         election.doWork(t4);
-        verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
+        verify(electionStateCounter).setOrdered(ElectionState.LEADER_LOG_REPLICATION.code());
     }
 
     @Test
@@ -524,6 +556,8 @@ public class ElectionTest
 
         final long t10 = t9 + ctx.electionTimeoutNs();
         election.doWork(t10);
+        inOrder.verify(electionStateCounter).setOrdered(ElectionState.LEADER_LOG_REPLICATION.code());
+        election.doWork(t10);
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
 
         final long t11 = t10 + 1;
@@ -577,6 +611,280 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
         verify(consensusModuleAgent).prepareForNewLeadership(logPosition);
         verify(consensusModuleAgent).role(Cluster.Role.FOLLOWER);
+    }
+
+    @Test
+    void followerShouldReplicateLogBeforeReplayDuringElection()
+    {
+        final long leadershipTermId = 1;
+        final long leaderLogPosition = 120;
+        final long followerLogPosition = 60;
+        final long localRecordingId = 2390485;
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+        final ClusterMember thisMember = clusterMembers[1];
+        final ClusterMember liveLeader = clusterMembers[0];
+        final int leaderId = liveLeader.id();
+        final LogReplication logReplication = mock(LogReplication.class);
+
+
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
+        when(consensusModuleAgent.prepareForNewLeadership(anyLong())).thenReturn(followerLogPosition);
+
+        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+
+        final Election election = new Election(
+            true,
+            0,
+            followerLogPosition,
+            followerLogPosition,
+            clusterMembers,
+            clusterMemberByIdMap,
+            thisMember,
+            consensusPublisher,
+            ctx,
+            consensusModuleAgent);
+
+        long t1 = 0;
+        election.doWork(++t1);
+        verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
+
+        election.onRequestVote(leadershipTermId, leaderLogPosition, leadershipTermId, leaderId);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_BALLOT.code());
+
+        election.onNewLeadershipTerm(
+            0, leaderLogPosition, leadershipTermId, leaderLogPosition, RECORDING_ID, t1, leaderId, 0, true);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
+
+        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong())).thenReturn(logReplication);
+        election.doWork(++t1);
+
+        verify(consensusModuleAgent, times(1)).newLogReplication(
+            liveLeader.archiveEndpoint(), RECORDING_ID, leaderLogPosition);
+
+        when(logReplication.isDone()).thenReturn(false);
+        election.doWork(++t1);
+        election.doWork(++t1);
+        election.doWork(++t1);
+        election.doWork(++t1);
+
+        verify(logReplication, times(4)).doWork();
+
+        when(logReplication.isDone()).thenReturn(true);
+        when(logReplication.replicatedLogPosition()).thenReturn(leaderLogPosition);
+        when(logReplication.recordingId()).thenReturn(localRecordingId);
+        election.doWork(++t1);
+
+        verify(consensusPublisher).appendPosition(
+            liveLeader.publication(), leadershipTermId, leaderLogPosition, thisMember.id());
+        verify(consensusModuleAgent).logRecordingId(localRecordingId);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
+    }
+
+    @Test
+    void followerShouldReplayAndCatchupWhenLateJoiningClusterInSameTerm()
+    {
+        final long leadershipTermId = 1;
+        final long leaderLogPosition = 120;
+        final long followerLogPosition = 60;
+        final long localRecordingId = 2390485;
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+        final ClusterMember thisMember = clusterMembers[1];
+        final ClusterMember liveLeader = clusterMembers[0];
+        final int leaderId = liveLeader.id();
+        final LogReplay logReplay = mock(LogReplay.class);
+
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
+        when(consensusModuleAgent.prepareForNewLeadership(anyLong())).thenReturn(followerLogPosition);
+
+        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+
+        final Election election = new Election(
+            true,
+            1,
+            followerLogPosition,
+            followerLogPosition,
+            clusterMembers,
+            clusterMemberByIdMap,
+            thisMember,
+            consensusPublisher,
+            ctx,
+            consensusModuleAgent);
+
+        long t1 = 0;
+        election.doWork(++t1);
+        verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
+
+        election.onNewLeadershipTerm(
+            leadershipTermId,
+            0,
+            leadershipTermId,
+            leaderLogPosition,
+            RECORDING_ID,
+            t1,
+            leaderId,
+            LOG_SESSION_ID,
+            true);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
+
+        election.doWork(++t1);
+        verify(consensusModuleAgent, never()).newLogReplication(any(), anyLong(), anyLong());
+
+        election.doWork(++t1);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
+
+        when(consensusModuleAgent.newLogReplay(anyLong(), anyLong())).thenReturn(logReplay);
+        when(logReplay.isDone()).thenReturn(true);
+        election.doWork(++t1);
+        election.doWork(++t1);
+
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_CATCHUP_INIT.code());
+    }
+
+    @Test
+    void followerShouldReplicateReplayAndCatchupWhenLateJoiningClusterInLaterTerm()
+    {
+        final long leadershipTermId = 1;
+        final long leaderLogPosition = 120;
+        final long termBaseLogPosition = 60;
+        final long localRecordingId = 2390485;
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+        final ClusterMember thisMember = clusterMembers[1];
+        final ClusterMember liveLeader = clusterMembers[0];
+        final int leaderId = liveLeader.id();
+        final LogReplication logReplication = mock(LogReplication.class);
+
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
+
+        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+
+        final Election election = new Election(
+            true,
+            0,
+            0,
+            0,
+            clusterMembers,
+            clusterMemberByIdMap,
+            thisMember,
+            consensusPublisher,
+            ctx,
+            consensusModuleAgent);
+
+        long t1 = 0;
+        election.doWork(++t1);
+        verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
+
+        election.onNewLeadershipTerm(
+            0, termBaseLogPosition, leadershipTermId, leaderLogPosition, RECORDING_ID, t1, leaderId, 0, false);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
+
+        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong())).thenReturn(logReplication);
+        election.doWork(++t1);
+
+        verify(consensusModuleAgent, times(1)).newLogReplication(
+            liveLeader.archiveEndpoint(), RECORDING_ID, termBaseLogPosition);
+
+        when(logReplication.isDone()).thenReturn(true);
+        when(logReplication.replicatedLogPosition()).thenReturn(termBaseLogPosition);
+        when(logReplication.recordingId()).thenReturn(localRecordingId);
+        election.doWork(++t1);
+
+        verify(consensusPublisher).appendPosition(
+            liveLeader.publication(), leadershipTermId, termBaseLogPosition, thisMember.id());
+        verify(consensusModuleAgent).logRecordingId(localRecordingId);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
+    }
+
+    @Test
+    void leaderShouldMoveToLogReplicationThenWaitForCommitPosition()
+    {
+        final long leadershipTermId = 1;
+        final long candidateTermId = leadershipTermId + 1;
+        final long leaderLogPosition = 120;
+        final long followerLogPosition = 60;
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+        final ClusterMember thisMember = clusterMembers[0];
+        final ClusterMember liveFollower = clusterMembers[1];
+        final int leaderId = thisMember.id();
+        final int followerId = liveFollower.id();
+
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.LEADER);
+        when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
+
+        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+
+        final Election election = new Election(
+            true,
+            leadershipTermId,
+            0,
+            leaderLogPosition,
+            clusterMembers,
+            clusterMemberByIdMap,
+            thisMember,
+            consensusPublisher,
+            ctx,
+            consensusModuleAgent);
+
+        reset(electionStateCounter);
+
+        long t1 = 0;
+        election.doWork(++t1);
+        verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
+
+        election.onCanvassPosition(leadershipTermId, leaderLogPosition, leaderId);
+        election.onCanvassPosition(leadershipTermId, followerLogPosition, followerId);
+
+        t1 += (2 * ctx.startupCanvassTimeoutNs());
+        election.doWork(t1);
+        verify(electionStateCounter).setOrdered(ElectionState.NOMINATE.code());
+
+        t1 += (2 * ctx.electionTimeoutNs());
+        election.doWork(t1);
+        verify(electionStateCounter).setOrdered(ElectionState.CANDIDATE_BALLOT.code());
+
+        election.onVote(candidateTermId, leadershipTermId, 120, leaderId, leaderId, true);
+        election.onVote(candidateTermId, leadershipTermId, 120, leaderId, followerId, true);
+
+        t1 += (2 * ctx.electionTimeoutNs());
+        election.doWork(t1);
+        verify(electionStateCounter).setOrdered(ElectionState.LEADER_LOG_REPLICATION.code());
+
+        // Until the commit position moves to the leader's append position
+        // we stay in the same state and emit new leadership terms.
+        when(commitPositionCounter.getWeak()).thenReturn(followerLogPosition);
+        election.doWork(++t1);
+        verifyNoMoreInteractions(electionStateCounter);
+        verify(consensusPublisher).newLeadershipTerm(
+            clusterMembers[1].publication(),
+            leadershipTermId,
+            leaderLogPosition,
+            candidateTermId,
+            leaderLogPosition,
+            RECORDING_ID,
+            t1,
+            leaderId,
+            LOG_SESSION_ID,
+            election.isLeaderStartup());
+
+        verify(consensusPublisher).newLeadershipTerm(
+            clusterMembers[2].publication(),
+            leadershipTermId,
+            leaderLogPosition,
+            candidateTermId,
+            leaderLogPosition,
+            RECORDING_ID,
+            t1,
+            leaderId,
+            LOG_SESSION_ID,
+            election.isLeaderStartup());
+
+        // Begin replay once a quorum of followers have caught up.
+        when(commitPositionCounter.getWeak()).thenReturn(leaderLogPosition);
+        election.doWork(++t1);
+        verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
     }
 
     private Election newElection(

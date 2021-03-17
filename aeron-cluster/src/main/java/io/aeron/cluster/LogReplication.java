@@ -35,6 +35,8 @@ final class LogReplication
     private long progressTimeoutDeadlineNs = Aeron.NULL_VALUE;
     private RecordingSignal lastRecordingSignal = RecordingSignal.NULL_VAL;
 
+    private boolean isClosed = false;
+
     LogReplication(
         final AeronArchive archive,
         final long srcRecordingId,
@@ -120,8 +122,18 @@ final class LogReplication
         return progressCheckIntervalNs;
     }
 
+    boolean isClosed()
+    {
+        return isClosed;
+    }
+
     void close()
     {
+        if (isClosed)
+        {
+            return;
+        }
+
         if (RecordingSignal.STOP != lastRecordingSignal)
         {
             try
@@ -132,6 +144,8 @@ final class LogReplication
             {
             }
         }
+
+        isClosed = true;
     }
 
     void onSignal(final long correlationId, final long recordingId, final long position, final RecordingSignal signal)

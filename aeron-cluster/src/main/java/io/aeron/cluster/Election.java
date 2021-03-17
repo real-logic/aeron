@@ -70,6 +70,8 @@ class Election
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
     private LogReplication logReplication = null;
+    private long leaderLogReplicationCommitPosition = NULL_POSITION;
+    private long leaderLogReplicationCommitPositionDeadlineNs = NULL_VALUE;
 
     Election(
         final boolean isNodeStartup,
@@ -411,6 +413,10 @@ class Election
         {
             catchupPosition = Math.max(catchupPosition, logPosition);
         }
+        else if (FOLLOWER_LOG_REPLICATION == state && leaderMemberId == leaderMember.id())
+        {
+            leaderLogReplicationCommitPosition = Math.max(leaderLogReplicationCommitPosition, logPosition);
+        }
         else if (leadershipTermId > this.leadershipTermId && LEADER_READY == state)
         {
             throw new ClusterException("new leader detected", AeronException.Category.WARN);
@@ -704,19 +710,43 @@ class Election
             workCount += consensusModuleAgent.pollArchiveEvents();
             if (logReplication.isDone(nowNs))
             {
-                appendPosition = logReplication.position();
-                consensusModuleAgent.logRecordingId(logReplication.recordingId());
-
-                if (consensusPublisher.appendPosition(
-                    leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id()))
+                if (logReplication.isClosed())
                 {
-                    // TODO: only begin replay when commit position from leader is received that matches
-                    cleanupReplication();
-                    state(FOLLOWER_REPLAY, nowNs);
+                    if (leaderLogReplicationCommitPosition >= appendPosition)
+                    {
+                        cleanupReplication();
+                        state(FOLLOWER_REPLAY, nowNs);
+
+                        workCount++;
+                    }
+                    else if (nowNs >= leaderLogReplicationCommitPositionDeadlineNs)
+                    {
+                        throw new ClusterException("Timeout waiting for leader to commit replicated log position");
+                    }
+                    else
+                    {
+                        if (nowNs + ctx.leaderHeartbeatIntervalNs() >= timeOfLastUpdateNs)
+                        {
+                            timeOfLastUpdateNs = nowNs;
+                            consensusPublisher.appendPosition(
+                                leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id());
+
+                            workCount++;
+                        }
+                    }
                 }
                 else
                 {
-                    // TODO: check for timeout of leader liveness
+                    logReplication.close();
+                    appendPosition = logReplication.position();
+                    consensusModuleAgent.logRecordingId(logReplication.recordingId());
+                    consensusPublisher.appendPosition(
+                        leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id());
+
+                    leaderLogReplicationCommitPositionDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
+                    timeOfLastUpdateNs = nowNs;
+
+                    workCount++;
                 }
             }
         }

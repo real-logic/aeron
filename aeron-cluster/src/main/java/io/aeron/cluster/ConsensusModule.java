@@ -2998,6 +2998,9 @@ public final class ConsensusModule implements AutoCloseable
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "ConsensusModule{" +

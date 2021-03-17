@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2021 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.cluster;
 
 import io.aeron.Subscription;
@@ -42,12 +57,12 @@ class LogReplicationTest
 
     @ParameterizedTest
     @ValueSource(strings = { "START", "STOP", "SYNC", "EXTEND", "REPLICATE", "MERGE" })
-    void shouldBeDoneWhenRecordingPositionMatchesStopPositionRegardlessOfSignal(String recordingSignalString)
+    void shouldBeDoneWhenRecordingPositionMatchesStopPositionRegardlessOfSignal(final String recordingSignalString)
     {
         final RecordingSignal recordingSignal = RecordingSignal.valueOf(recordingSignalString);
 
         final long stopPosition = 982734;
-        long nowNs = 0;
+        final long nowNs = 0;
 
         final LogReplication logReplication = new LogReplication(
             aeronArchive, SRC_RECORDING_ID, DST_RECORDING_ID, SRC_ARCHIVE_STREAM_ID, ENDPOINT, stopPosition,
@@ -64,12 +79,12 @@ class LogReplicationTest
 
     @ParameterizedTest
     @ValueSource(strings = { "START", "SYNC", "EXTEND", "REPLICATE", "MERGE" })
-    void shouldStopReplicationIfNotAlreadyStopped(String recordingSignalString)
+    void shouldStopReplicationIfNotAlreadyStopped(final String recordingSignalString)
     {
         final RecordingSignal recordingSignal = RecordingSignal.valueOf(recordingSignalString);
 
         final long stopPosition = 982734;
-        long nowNs = 0;
+        final long nowNs = 0;
 
         final LogReplication logReplication = new LogReplication(
             aeronArchive, SRC_RECORDING_ID, DST_RECORDING_ID, SRC_ARCHIVE_STREAM_ID, ENDPOINT, stopPosition,
@@ -88,7 +103,7 @@ class LogReplicationTest
         final RecordingSignal recordingSignal = RecordingSignal.STOP;
 
         final long stopPosition = 982734;
-        long nowNs = 0;
+        final long nowNs = 0;
 
         final LogReplication logReplication = new LogReplication(
             aeronArchive, SRC_RECORDING_ID, DST_RECORDING_ID, SRC_ARCHIVE_STREAM_ID, ENDPOINT, stopPosition,
@@ -142,7 +157,7 @@ class LogReplicationTest
 
         logReplication.onSignal(-1, REPLICATION_ID, DST_RECORDING_ID, -1, stopPosition - 1, RecordingSignal.SYNC);
 
-        long t0 = 20L;
+        final long t0 = 20L;
 
         assertFalse(logReplication.isDone(t0));
 

@@ -15,17 +15,25 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.cluster.client.ClusterException;
 
 final class LogReplication
 {
     private final long replicationId;
     private final AeronArchive archive;
+    private final long stopPosition;
+    private final long progressCheckTimeoutNs;
+    private final long progressCheckIntervalNs;
 
-    private boolean isDone = false;
-    private long position = AeronArchive.NULL_POSITION;
     private long recordingId;
+    private long position = AeronArchive.NULL_POSITION;
+
+    private long nextProgressCheckDeadlineNs = Aeron.NULL_VALUE;
+    private long progressTimeoutDeadlineNs = Aeron.NULL_VALUE;
+    private RecordingSignal lastRecordingSignal = RecordingSignal.NULL_VAL;
 
     LogReplication(
         final AeronArchive archive,
@@ -33,9 +41,14 @@ final class LogReplication
         final long dstRecordingId,
         final int srcArchiveStreamId,
         final String srcArchiveEndpoint,
-        final long stopPosition)
+        final long stopPosition,
+        final long progressCheckTimeoutNs,
+        final long progressCheckIntervalNs)
     {
         this.archive = archive;
+        this.stopPosition = stopPosition;
+        this.progressCheckTimeoutNs = progressCheckTimeoutNs;
+        this.progressCheckIntervalNs = progressCheckIntervalNs;
 
         final String srcArchiveChannel = "aeron:udp?endpoint=" + srcArchiveEndpoint;
 
@@ -43,9 +56,48 @@ final class LogReplication
             srcRecordingId, dstRecordingId, srcArchiveStreamId, srcArchiveChannel, null, stopPosition);
     }
 
-    boolean isDone()
+    boolean isDone(final long nowNs)
     {
-        return isDone;
+        if (position == stopPosition)
+        {
+            return true;
+        }
+
+        if (position > stopPosition)
+        {
+            throw new ClusterException(
+                "Log replication has progressed too far, position > stopPosition, state=" + this);
+        }
+
+        if (Aeron.NULL_VALUE == progressTimeoutDeadlineNs)
+        {
+            progressTimeoutDeadlineNs = nowNs + progressCheckTimeoutNs;
+        }
+
+        if (Aeron.NULL_VALUE == nextProgressCheckDeadlineNs)
+        {
+            nextProgressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
+        }
+
+        if (Aeron.NULL_VALUE != recordingId && nowNs >= nextProgressCheckDeadlineNs)
+        {
+            final long recordingPosition = archive.getRecordingPosition(recordingId);
+            if (recordingPosition > position)
+            {
+                position = recordingPosition;
+                progressTimeoutDeadlineNs = nowNs + progressCheckTimeoutNs;
+            }
+
+            nextProgressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
+        }
+
+        if (nowNs >= progressTimeoutDeadlineNs)
+        {
+            throw new ClusterException(
+                "Log Replicate has had no progress for " + progressCheckTimeoutNs + "ns, state: " + this);
+        }
+
+        return false;
     }
 
     long position()
@@ -58,9 +110,19 @@ final class LogReplication
         return recordingId;
     }
 
+    long progressCheckTimeoutNs()
+    {
+        return progressCheckTimeoutNs;
+    }
+
+    long progressCheckIntervalNs()
+    {
+        return progressCheckIntervalNs;
+    }
+
     void close()
     {
-        if (!isDone)
+        if (RecordingSignal.STOP != lastRecordingSignal)
         {
             try
             {
@@ -74,11 +136,31 @@ final class LogReplication
 
     void onSignal(final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
     {
-        if (correlationId == replicationId && RecordingSignal.STOP == signal)
+        if (correlationId == replicationId)
         {
-            this.position = position;
+            if (RecordingSignal.DELETE == signal)
+            {
+                throw new ClusterException("Recording was deleted during replication, state=" + this);
+            }
+
             this.recordingId = recordingId;
-            isDone = true;
+            this.lastRecordingSignal = signal;
+            this.position = position;
         }
+    }
+
+    public String toString()
+    {
+        return "LogReplication{" +
+            "replicationId=" + replicationId +
+            ", recordingId=" + recordingId +
+            ", position=" + position +
+            ", stopPosition=" + stopPosition +
+            ", lastRecordingSignal=" + lastRecordingSignal +
+            ", nextProgressCheckDeadlineNs=" + nextProgressCheckDeadlineNs +
+            ", progressTimeoutDeadlineNs=" + progressTimeoutDeadlineNs +
+            ", progressCheckTimeoutNs=" + progressCheckTimeoutNs +
+            ", progressCheckIntervalNs=" + progressCheckIntervalNs +
+            '}';
     }
 }

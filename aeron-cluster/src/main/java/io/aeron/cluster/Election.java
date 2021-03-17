@@ -702,7 +702,7 @@ class Election
         else
         {
             workCount += consensusModuleAgent.pollArchiveEvents();
-            if (logReplication.isDone())
+            if (logReplication.isDone(nowNs))
             {
                 appendPosition = logReplication.position();
                 consensusModuleAgent.logRecordingId(logReplication.recordingId());

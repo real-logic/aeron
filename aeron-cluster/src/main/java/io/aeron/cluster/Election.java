@@ -727,9 +727,11 @@ class Election
                     {
                         if (nowNs + ctx.leaderHeartbeatIntervalNs() >= timeOfLastUpdateNs)
                         {
-                            timeOfLastUpdateNs = nowNs;
-                            consensusPublisher.appendPosition(
-                                leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id());
+                            if (consensusPublisher.appendPosition(
+                                leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id()))
+                            {
+                                timeOfLastUpdateNs = nowNs;
+                            }
 
                             workCount++;
                         }
@@ -740,11 +742,13 @@ class Election
                     logReplication.close();
                     appendPosition = logReplication.position();
                     consensusModuleAgent.logRecordingId(logReplication.recordingId());
-                    consensusPublisher.appendPosition(
-                        leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id());
+                    if (consensusPublisher.appendPosition(
+                        leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id()))
+                    {
+                        timeOfLastUpdateNs = nowNs;
+                    }
 
                     leaderLogReplicationCommitPositionDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
-                    timeOfLastUpdateNs = nowNs;
 
                     workCount++;
                 }

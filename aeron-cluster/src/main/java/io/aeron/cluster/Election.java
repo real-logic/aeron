@@ -439,14 +439,17 @@ class Election
 
     private int init(final long nowNs)
     {
+        CloseHelper.close(logSubscription);
+        logSubscription = null;
+        logSessionId = CommonContext.NULL_SESSION_ID;
+        consensusModuleAgent.role(Cluster.Role.FOLLOWER);
+        resetCatchup();
+        cleanupReplay();
+        cleanupReplication();
+
         if (!isNodeStartup)
         {
-            resetCatchup();
-            cleanupReplay();
-            cleanupReplication();
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
-            CloseHelper.close(logSubscription);
-            logSubscription = null;
         }
 
         candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
@@ -980,11 +983,6 @@ class Election
         {
             stateChange(state, newState, thisMember.id());
 
-            if (CANVASS == newState)
-            {
-                resetMembers();
-            }
-
             if (CANVASS == state)
             {
                 isExtendedCanvass = false;
@@ -992,15 +990,8 @@ class Election
 
             switch (newState)
             {
-                case INIT:
                 case CANVASS:
-                case NOMINATE:
-                case FOLLOWER_BALLOT:
-                case FOLLOWER_CATCHUP_INIT:
-                case FOLLOWER_CATCHUP:
-                case FOLLOWER_REPLAY:
-                case FOLLOWER_LOG_INIT:
-                case FOLLOWER_READY:
+                    resetMembers();
                     consensusModuleAgent.role(Cluster.Role.FOLLOWER);
                     break;
 
@@ -1008,8 +999,11 @@ class Election
                     consensusModuleAgent.role(Cluster.Role.CANDIDATE);
                     break;
 
+                case FOLLOWER_LOG_REPLICATION:
+                    consensusModuleAgent.role(Cluster.Role.FOLLOWER);
+                    break;
+
                 case LEADER_INIT:
-                case LEADER_READY:
                     consensusModuleAgent.role(Cluster.Role.LEADER);
                     break;
             }

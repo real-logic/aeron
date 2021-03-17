@@ -610,7 +610,7 @@ public class ElectionTest
         election.doWork(t1);
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
         verify(consensusModuleAgent).prepareForNewLeadership(logPosition);
-        verify(consensusModuleAgent).role(Cluster.Role.FOLLOWER);
+        verify(consensusModuleAgent, atLeastOnce()).role(Cluster.Role.FOLLOWER);
     }
 
     @Test
@@ -625,7 +625,6 @@ public class ElectionTest
         final ClusterMember liveLeader = clusterMembers[0];
         final int leaderId = liveLeader.id();
         final LogReplication logReplication = mock(LogReplication.class);
-
 
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
         when(consensusModuleAgent.prepareForNewLeadership(anyLong())).thenReturn(followerLogPosition);
@@ -690,7 +689,6 @@ public class ElectionTest
         final long leadershipTermId = 1;
         final long leaderLogPosition = 120;
         final long followerLogPosition = 60;
-        final long localRecordingId = 2390485;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember thisMember = clusterMembers[1];
         final ClusterMember liveLeader = clusterMembers[0];

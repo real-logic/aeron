@@ -19,6 +19,7 @@ import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
@@ -208,6 +209,15 @@ class Election
         if (ex instanceof AgentTerminationException || ex instanceof InterruptedException)
         {
             LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    void onRecordingSignal(
+        final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
+    {
+        if (null != logReplication)
+        {
+            logReplication.onSignal(correlationId, recordingId, position, signal);
         }
     }
 
@@ -690,7 +700,7 @@ class Election
         }
         else
         {
-            workCount += logReplication.doWork();
+            workCount += consensusModuleAgent.pollArchiveEvents();
             if (logReplication.isDone())
             {
                 appendPosition = logReplication.position();

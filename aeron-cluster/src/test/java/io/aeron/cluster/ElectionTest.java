@@ -667,7 +667,7 @@ public class ElectionTest
         election.doWork(++t1);
         election.doWork(++t1);
 
-        verify(logReplication, times(4)).doWork();
+        verify(consensusModuleAgent, times(4)).pollArchiveEvents();
 
         when(logReplication.isDone()).thenReturn(true);
         when(logReplication.position()).thenReturn(leaderLogPosition);

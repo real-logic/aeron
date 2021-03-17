@@ -16,16 +16,12 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.*;
-import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 
-import static io.aeron.cluster.ConsensusModuleSnapshotLoader.FRAGMENT_LIMIT;
-
-final class LogReplication implements ControlEventListener, RecordingSignalConsumer
+final class LogReplication
 {
     private final long replicationId;
     private final AeronArchive archive;
-    private final RecordingSignalAdapter recordingSignalAdapter;
 
     private boolean isDone = false;
     private long position = AeronArchive.NULL_POSITION;
@@ -45,19 +41,11 @@ final class LogReplication implements ControlEventListener, RecordingSignalConsu
 
         replicationId = archive.replicate(
             srcRecordingId, dstRecordingId, srcArchiveStreamId, srcArchiveChannel, null, stopPosition);
-
-        recordingSignalAdapter = new RecordingSignalAdapter(
-            archive.controlSessionId(), this, this, archive.controlResponsePoller().subscription(), FRAGMENT_LIMIT);
     }
 
     boolean isDone()
     {
         return isDone;
-    }
-
-    int doWork()
-    {
-        return recordingSignalAdapter.poll();
     }
 
     long position()
@@ -84,34 +72,8 @@ final class LogReplication implements ControlEventListener, RecordingSignalConsu
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public void onResponse(
-        final long controlSessionId,
-        final long correlationId,
-        final long relevantId,
-        final ControlResponseCode code,
-        final String errorMessage)
+    void onSignal(final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
     {
-        if (ControlResponseCode.ERROR == code)
-        {
-            throw new ArchiveException(errorMessage, (int)relevantId, correlationId);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void onSignal(
-        final long controlSessionId,
-        final long correlationId,
-        final long recordingId,
-        final long subscriptionId,
-        final long position,
-        final RecordingSignal signal)
-    {
-
         if (correlationId == replicationId && RecordingSignal.STOP == signal)
         {
             this.position = position;

@@ -1717,6 +1717,76 @@ final class ConsensusModuleAgent implements Agent
         return false;
     }
 
+    int pollArchiveEvents()
+    {
+        int workCount = 0;
+
+        if (null != archive)
+        {
+            final RecordingSignalPoller poller = this.recordingSignalPoller;
+            workCount += poller.poll();
+
+            if (poller.isPollComplete())
+            {
+                final int templateId = poller.templateId();
+
+                if (ControlResponseDecoder.TEMPLATE_ID == templateId && poller.code() == ControlResponseCode.ERROR)
+                {
+                    for (final ClusterMember member : activeMembers)
+                    {
+                        if (member.catchupReplayCorrelationId() != NULL_VALUE &&
+                            member.catchupReplayCorrelationId() == poller.correlationId())
+                        {
+                            member.catchupReplaySessionId(NULL_VALUE);
+                            member.catchupReplayCorrelationId(NULL_VALUE);
+
+                            ctx.countedErrorHandler().onError(new ClusterException(
+                                "catchup replay failed - " + poller.errorMessage(), WARN));
+                            return workCount;
+                        }
+                    }
+
+                    final ArchiveException ex = new ArchiveException(
+                        poller.errorMessage(), (int)poller.relevantId(), poller.correlationId());
+
+                    if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
+                    {
+                        ctx.countedErrorHandler().onError(ex);
+                        unexpectedTermination();
+                    }
+
+                    if (null != election)
+                    {
+                        election.handleError(clusterClock.timeNanos(), ex);
+                    }
+                }
+                else if (RecordingSignalEventDecoder.TEMPLATE_ID == templateId)
+                {
+                    final long recordingId = poller.recordingId();
+                    final long position = poller.recordingPosition();
+                    final RecordingSignal signal = poller.recordingSignal();
+
+                    if (RecordingSignal.STOP == signal && recordingId == logRecordingId)
+                    {
+                        this.logRecordedPosition = position;
+                    }
+
+                    if (null != election)
+                    {
+                        election.onRecordingSignal(poller.correlationId(), recordingId, position, signal);
+                    }
+                }
+            }
+            else if (0 == workCount && !poller.subscription().isConnected())
+            {
+                ctx.countedErrorHandler().onError(new ClusterException("local archive is not connected", WARN));
+                unexpectedTermination();
+            }
+        }
+
+        return workCount;
+    }
+
     private void startLogRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
     {
         try
@@ -1803,7 +1873,7 @@ final class ConsensusModuleAgent implements Agent
 
         if (null == dynamicJoin)
         {
-            checkArchiveEvents(true);
+            workCount += pollArchiveEvents();
         }
 
         if (nowNs >= markFileUpdateDeadlineNs)
@@ -1905,64 +1975,6 @@ final class ConsensusModuleAgent implements Agent
         workCount += consensusModuleAdapter.poll();
 
         return workCount;
-    }
-
-    private void checkArchiveEvents(final boolean isSlowTick)
-    {
-        if (null != archive)
-        {
-            final RecordingSignalPoller poller = this.recordingSignalPoller;
-            if (!poller.subscription().isConnected())
-            {
-                ctx.countedErrorHandler().onError(new ClusterException("local archive is not connected", WARN));
-                unexpectedTermination();
-            }
-            else if (poller.poll() > 0 && poller.isPollComplete())
-            {
-                if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
-                    poller.code() == ControlResponseCode.ERROR)
-                {
-                    for (final ClusterMember member : activeMembers)
-                    {
-                        if (member.catchupReplayCorrelationId() != NULL_VALUE &&
-                            member.catchupReplayCorrelationId() == poller.correlationId())
-                        {
-                            member.catchupReplaySessionId(NULL_VALUE);
-                            member.catchupReplayCorrelationId(NULL_VALUE);
-
-                            ctx.countedErrorHandler().onError(new ClusterException(
-                                "catchup replay failed - " + poller.errorMessage(), WARN));
-                            return;
-                        }
-                    }
-
-                    final ArchiveException ex = new ArchiveException(
-                        poller.errorMessage(), (int)poller.relevantId(), poller.correlationId());
-
-                    if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
-                    {
-                        ctx.countedErrorHandler().onError(ex);
-                        unexpectedTermination();
-                    }
-
-                    if (null != election && isSlowTick)
-                    {
-                        election.handleError(clusterClock.timeNanos(), ex);
-                    }
-                    else
-                    {
-                        throw ex;
-                    }
-                }
-                else if (poller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
-                {
-                    if (poller.recordingSignal() == RecordingSignal.STOP && poller.recordingId() == logRecordingId)
-                    {
-                        logRecordedPosition = poller.recordingPosition();
-                    }
-                }
-            }
-        }
     }
 
     private int checkControlToggle(final long nowNs)
@@ -2660,7 +2672,7 @@ final class ConsensusModuleAgent implements Agent
         }
 
         idleStrategy.idle();
-        checkArchiveEvents(false);
+        pollArchiveEvents();
     }
 
     private void idle(final int workCount)
@@ -2676,7 +2688,7 @@ final class ConsensusModuleAgent implements Agent
 
         if (0 == workCount)
         {
-            checkArchiveEvents(false);
+            pollArchiveEvents();
         }
     }
 

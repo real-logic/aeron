@@ -17,8 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.*;
-import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.codecs.*;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
@@ -32,6 +31,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.*;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -43,12 +43,13 @@ import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.*;
 import static io.aeron.cluster.ClusterBackup.State.*;
 import static io.aeron.exceptions.AeronException.Category;
+import static io.aeron.exceptions.AeronException.Category.WARN;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 /**
  * {@link Agent} which backs up a remote cluster by replicating the log and polling for snapshots.
  */
-public class ClusterBackupAgent implements Agent
+public final class ClusterBackupAgent implements Agent
 {
     /**
      * Update interval for cluster mark file.
@@ -80,11 +81,12 @@ public class ClusterBackupAgent implements Agent
 
     private ClusterBackup.State state = BACKUP_QUERY;
 
+    private RecordingSignalPoller recordingSignalPoller;
     private AeronArchive backupArchive;
     private AeronArchive.AsyncConnect clusterArchiveAsyncConnect;
     private AeronArchive clusterArchive;
 
-    private SnapshotRetrieveMonitor snapshotRetrieveMonitor;
+    private SnapshotReplication snapshotReplication;
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
     private final Subscription consensusSubscription;
@@ -147,6 +149,8 @@ public class ClusterBackupAgent implements Agent
     {
         recordingLog = new RecordingLog(ctx.clusterDir());
         backupArchive = AeronArchive.connect(ctx.archiveContext().clone());
+        recordingSignalPoller = new RecordingSignalPoller(
+            backupArchive.controlSessionId(), backupArchive.controlResponsePoller().subscription());
         nextQueryDeadlineMsCounter.setOrdered(epochClock.time() - 1);
     }
 
@@ -161,6 +165,11 @@ public class ClusterBackupAgent implements Agent
         if (NULL_VALUE != liveLogRecordingSubscriptionId)
         {
             backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
+        }
+
+        if (null != snapshotReplication)
+        {
+            snapshotReplication.close(backupArchive);
         }
 
         if (!ctx.ownsAeronClient())
@@ -183,6 +192,7 @@ public class ClusterBackupAgent implements Agent
         if (nowMs > slowTickDeadlineMs)
         {
             workCount += slowTick(nowMs);
+            slowTickDeadlineMs = nowMs + SLOW_TICK_INTERVAL_MS;
         }
 
         try
@@ -267,6 +277,12 @@ public class ClusterBackupAgent implements Agent
         final AeronArchive clusterArchive = this.clusterArchive;
         final AeronArchive.AsyncConnect clusterArchiveAsyncConnect = this.clusterArchiveAsyncConnect;
         final Subscription recordingSubscription = this.recordingSubscription;
+
+        if (null != snapshotReplication)
+        {
+            snapshotReplication.close(backupArchive);
+            snapshotReplication = null;
+        }
 
         if (NULL_VALUE != liveLogRecordingSubscriptionId)
         {
@@ -437,9 +453,7 @@ public class ClusterBackupAgent implements Agent
 
     private int slowTick(final long nowMs)
     {
-        final int workCount = aeronClientInvoker.invoke();
-
-        slowTickDeadlineMs = nowMs + SLOW_TICK_INTERVAL_MS;
+        int workCount = aeronClientInvoker.invoke();
 
         if (nowMs >= markFileUpdateDeadlineMs)
         {
@@ -447,14 +461,11 @@ public class ClusterBackupAgent implements Agent
             markFileUpdateDeadlineMs = nowMs + MARK_FILE_UPDATE_INTERVAL_MS;
         }
 
-        if (NULL_VALUE == correlationId && null == snapshotRetrieveMonitor)
-        {
-            backupArchive.checkForErrorResponse();
+        workCount += pollBackupArchiveEvents();
 
-            if (null != clusterArchive)
-            {
-                clusterArchive.checkForErrorResponse();
-            }
+        if (NULL_VALUE == correlationId && null != clusterArchive)
+        {
+            clusterArchive.checkForErrorResponse();
         }
 
         return workCount;
@@ -537,24 +548,37 @@ public class ClusterBackupAgent implements Agent
             return null == clusterArchive ? clusterArchiveAsyncConnect.step() - step : 1;
         }
 
-        if (null != snapshotRetrieveMonitor)
+        if (null == snapshotReplication)
         {
-            workCount += snapshotRetrieveMonitor.poll();
+            final long replicationId = backupArchive.replicate(
+                snapshotsToRetrieve.get(snapshotCursor).recordingId,
+                NULL_VALUE,
+                clusterArchive.context().controlRequestStreamId(),
+                clusterArchive.context().controlRequestChannel(),
+                null);
+
+            snapshotReplication = new SnapshotReplication(replicationId);
+            timeOfLastProgressMs = nowMs;
+            workCount++;
+        }
+        else
+        {
+            workCount += pollBackupArchiveEvents();
             timeOfLastProgressMs = nowMs;
 
-            if (snapshotRetrieveMonitor.isDone())
+            if (snapshotReplication.isDone())
             {
                 final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
 
                 snapshotsRetrieved.add(new RecordingLog.Snapshot(
-                    snapshotRetrieveMonitor.recordingId(),
+                    snapshotReplication.recordingId(),
                     snapshot.leadershipTermId,
                     snapshot.termBaseLogPosition,
                     snapshot.logPosition,
                     snapshot.timestamp,
                     snapshot.serviceId));
 
-                snapshotRetrieveMonitor = null;
+                snapshotReplication = null;
 
                 if (++snapshotCursor >= snapshotsToRetrieve.size())
                 {
@@ -562,20 +586,10 @@ public class ClusterBackupAgent implements Agent
                     workCount++;
                 }
             }
-        }
-        else if (backupArchive.archiveProxy().replicate(
-            snapshotsToRetrieve.get(snapshotCursor).recordingId,
-            NULL_VALUE,
-            clusterArchive.context().controlRequestStreamId(),
-            clusterArchive.context().controlRequestChannel(),
-            null,
-            ctx.aeron().nextCorrelationId(),
-            backupArchive.controlSessionId()))
-        {
-            snapshotRetrieveMonitor = new SnapshotRetrieveMonitor(backupArchive);
-            timeOfLastProgressMs = nowMs;
-
-            workCount++;
+            else
+            {
+                snapshotReplication.checkForError();
+            }
         }
 
         return workCount;
@@ -845,6 +859,53 @@ public class ClusterBackupAgent implements Agent
         }
 
         return false;
+    }
+
+    private int pollBackupArchiveEvents()
+    {
+        int workCount = 0;
+
+        if (null != backupArchive)
+        {
+            final RecordingSignalPoller poller = this.recordingSignalPoller;
+            workCount += poller.poll();
+
+            if (poller.isPollComplete())
+            {
+                final int templateId = poller.templateId();
+
+                if (ControlResponseDecoder.TEMPLATE_ID == templateId && poller.code() == ControlResponseCode.ERROR)
+                {
+                    final ArchiveException ex = new ArchiveException(
+                        poller.errorMessage(), (int)poller.relevantId(), poller.correlationId());
+
+                    if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
+                    {
+                        ctx.countedErrorHandler().onError(ex);
+                        throw new AgentTerminationException();
+                    }
+                    else
+                    {
+                        throw ex;
+                    }
+                }
+                else if (RecordingSignalEventDecoder.TEMPLATE_ID == templateId && null != snapshotReplication)
+                {
+                    snapshotReplication.onSignal(
+                        poller.correlationId(),
+                        poller.recordingId(),
+                        poller.recordingPosition(),
+                        poller.recordingSignal());
+                }
+            }
+            else if (0 == workCount && !poller.subscription().isConnected())
+            {
+                ctx.countedErrorHandler().onError(new ClusterException("local archive is not connected", WARN));
+                throw new AgentTerminationException();
+            }
+        }
+
+        return workCount;
     }
 
     private boolean hasProgressStalled(final long nowMs)

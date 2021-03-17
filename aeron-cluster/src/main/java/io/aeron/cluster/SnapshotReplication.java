@@ -57,7 +57,7 @@ final class SnapshotReplication
         return isDone;
     }
 
-    void checkError()
+    void checkForError()
     {
         if (null != errorMessage)
         {
@@ -65,8 +65,7 @@ final class SnapshotReplication
         }
     }
 
-    public void onSignal(
-        final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
+    void onSignal(final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
     {
         if (correlationId == replicationId)
         {

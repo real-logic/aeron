@@ -275,7 +275,19 @@ final class DynamicJoin
     {
         int workCount = 0;
 
-        if (null != snapshotReplication)
+        if (null == snapshotReplication)
+        {
+            final long replicationId = localArchive.replicate(
+                leaderSnapshots.get(snapshotCursor).recordingId,
+                NULL_VALUE,
+                ctx.archiveContext().controlRequestStreamId(),
+                "aeron:udp?term-length=64k|endpoint=" + leaderMember.archiveEndpoint(),
+                null);
+
+            snapshotReplication = new SnapshotReplication(replicationId);
+            workCount++;
+        }
+        else
         {
             workCount += consensusModuleAgent.pollArchiveEvents();
             if (snapshotReplication.isDone())
@@ -293,20 +305,8 @@ final class DynamicJoin
             }
             else
             {
-                snapshotReplication.checkError();
+                snapshotReplication.checkForError();
             }
-        }
-        else
-        {
-            final long replicationId = localArchive.replicate(
-                leaderSnapshots.get(snapshotCursor).recordingId,
-                NULL_VALUE,
-                ctx.archiveContext().controlRequestStreamId(),
-                "aeron:udp?term-length=64k|endpoint=" + leaderMember.archiveEndpoint(),
-                null);
-
-            snapshotReplication = new SnapshotReplication(replicationId);
-            workCount++;
         }
 
         return workCount;

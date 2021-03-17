@@ -1775,6 +1775,11 @@ final class ConsensusModuleAgent implements Agent
                     {
                         election.onRecordingSignal(poller.correlationId(), recordingId, position, signal);
                     }
+
+                    if (null != dynamicJoin)
+                    {
+                        dynamicJoin.onRecordingSignal(poller.correlationId(), recordingId, position, signal);
+                    }
                 }
             }
             else if (0 == workCount && !poller.subscription().isConnected())
@@ -1871,17 +1876,13 @@ final class ConsensusModuleAgent implements Agent
             unexpectedTermination();
         }
 
-        if (null == dynamicJoin)
-        {
-            workCount += pollArchiveEvents();
-        }
-
         if (nowNs >= markFileUpdateDeadlineNs)
         {
             markFile.updateActivityTimestamp(nowMs);
             markFileUpdateDeadlineNs = nowNs + MARK_FILE_UPDATE_INTERVAL_NS;
         }
 
+        workCount += pollArchiveEvents();
         workCount += sendRedirects(redirectSessions, nowNs);
         workCount += sendRejections(rejectedSessions, nowNs);
 

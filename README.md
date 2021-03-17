@@ -143,35 +143,37 @@ Start up a media driver which will create the data and conductor directories. On
 `/dev/shm/aeron` or `/tmp/aeron`.
 
 ```shell
-    $ java -cp aeron-samples/build/libs/samples.jar io.aeron.driver.MediaDriver
+    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar io.aeron.driver.MediaDriver
 ```
 
 Alternatively, specify the data and conductor directories. The following example uses the shared memory 'directory' on
 Linux, but you could just as easily point to the regular filesystem.
 
 ```shell
-    $ java -cp aeron-samples/build/libs/samples.jar -Daeron.dir=/dev/shm/aeron io.aeron.driver.MediaDriver
+    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar -Daeron.dir=/dev/shm/aeron io.aeron.driver.MediaDriver
 ```
 
 You can run the `BasicSubscriber` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory
 directory, so be sure your `MediaDriver` is doing the same!
 
 ```shell
-    $ java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.BasicSubscriber
+    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar io.aeron.samples.BasicSubscriber
 ```
     
 You can run the `BasicPublisher` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory
 directory, so be sure your `MediaDriver` is doing the same!
 
 ```shell
-    $ java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.BasicPublisher
+    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar io.aeron.samples.BasicPublisher
 ```
 
 You can run the `AeronStat` utility to read system counters from a command line
     
 ```shell
-    $ java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat
+    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar io.aeron.samples.AeronStat
 ```
+
+For more samples and scripts to run them, see the [aeron-samples](https://github.com/real-logic/aeron/tree/master/aeron-samples) directory.
 
 Media Driver Packaging
 ----------------------

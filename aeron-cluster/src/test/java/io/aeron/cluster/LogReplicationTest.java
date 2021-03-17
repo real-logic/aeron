@@ -70,10 +70,10 @@ class LogReplicationTest
 
         assertFalse(logReplication.isDone(nowNs));
 
-        logReplication.onSignal(-1, REPLICATION_ID, DST_RECORDING_ID, -1, stopPosition - 1, recordingSignal);
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition - 1, recordingSignal);
         assertFalse(logReplication.isDone(nowNs));
 
-        logReplication.onSignal(-1, REPLICATION_ID, DST_RECORDING_ID, -1, stopPosition, recordingSignal);
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
         assertTrue(logReplication.isDone(nowNs));
     }
 
@@ -90,7 +90,7 @@ class LogReplicationTest
             aeronArchive, SRC_RECORDING_ID, DST_RECORDING_ID, SRC_ARCHIVE_STREAM_ID, ENDPOINT, stopPosition,
             PROGRESS_CHECK_TIMEOUT_NS, PROGRESS_CHECK_INTERVAL_NS);
 
-        logReplication.onSignal(-1, REPLICATION_ID, DST_RECORDING_ID, -1, stopPosition, recordingSignal);
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
         assertTrue(logReplication.isDone(nowNs));
 
         logReplication.close();
@@ -109,7 +109,7 @@ class LogReplicationTest
             aeronArchive, SRC_RECORDING_ID, DST_RECORDING_ID, SRC_ARCHIVE_STREAM_ID, ENDPOINT, stopPosition,
             PROGRESS_CHECK_TIMEOUT_NS, PROGRESS_CHECK_INTERVAL_NS);
 
-        logReplication.onSignal(-1, REPLICATION_ID, DST_RECORDING_ID, -1, stopPosition, recordingSignal);
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
         assertTrue(logReplication.isDone(nowNs));
 
         logReplication.close();
@@ -128,7 +128,7 @@ class LogReplicationTest
 
         assertThrows(
             ClusterException.class,
-            () -> logReplication.onSignal(-1, REPLICATION_ID, DST_RECORDING_ID, -1, stopPosition - 1, recordingSignal));
+            () -> logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition - 1, recordingSignal));
     }
 
     @Test
@@ -140,7 +140,7 @@ class LogReplicationTest
             aeronArchive, SRC_RECORDING_ID, DST_RECORDING_ID, SRC_ARCHIVE_STREAM_ID, ENDPOINT, stopPosition,
             PROGRESS_CHECK_TIMEOUT_NS, PROGRESS_CHECK_INTERVAL_NS);
 
-        logReplication.onSignal(-1, REPLICATION_ID, DST_RECORDING_ID, -1, stopPosition + 1, RecordingSignal.SYNC);
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition + 1, RecordingSignal.SYNC);
 
         assertThrows(ClusterException.class, () -> logReplication.isDone(0));
     }
@@ -155,7 +155,7 @@ class LogReplicationTest
             aeronArchive, SRC_RECORDING_ID, DST_RECORDING_ID, SRC_ARCHIVE_STREAM_ID, ENDPOINT, stopPosition,
             PROGRESS_CHECK_TIMEOUT_NS, PROGRESS_CHECK_INTERVAL_NS);
 
-        logReplication.onSignal(-1, REPLICATION_ID, DST_RECORDING_ID, -1, stopPosition - 1, RecordingSignal.SYNC);
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition - 1, RecordingSignal.SYNC);
 
         final long t0 = 20L;
 

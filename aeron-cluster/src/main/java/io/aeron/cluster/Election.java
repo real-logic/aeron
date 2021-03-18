@@ -426,10 +426,9 @@ class Election
     {
         if (FOLLOWER_CATCHUP == state || FOLLOWER_REPLAY == state)
         {
-            final RecordingLog recordingLog = ctx.recordingLog();
-
             for (long termId = Math.max(logLeadershipTermId, 0); termId <= leadershipTermId; termId++)
             {
+                final RecordingLog recordingLog = ctx.recordingLog();
                 if (!recordingLog.isUnknown(termId - 1))
                 {
                     recordingLog.commitLogPosition(termId - 1, termBaseLogPosition);
@@ -605,14 +604,13 @@ class Election
             logSessionId = consensusModuleAgent.addLogPublication();
         }
 
+        workCount += consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
+        workCount += publishNewLeadershipTermOnInterval(nowNs);
+
         if (appendPosition <= ctx.commitPositionCounter().getWeak())
         {
+            workCount += 1;
             state(LEADER_REPLAY, nowNs);
-        }
-        else
-        {
-            workCount += consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
-            workCount += publishNewLeadershipTermOnInterval(nowNs);
         }
 
         return workCount;

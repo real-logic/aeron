@@ -912,8 +912,6 @@ final class ConsensusModuleAgent implements Agent
 
     long prepareForNewLeadership(final long logPosition)
     {
-        long appendPosition = 0;
-
         role(Cluster.Role.FOLLOWER);
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
         ClusterControl.ToggleState.deactivate(controlToggle);
@@ -930,20 +928,13 @@ final class ConsensusModuleAgent implements Agent
             liveLogDestination = null;
         }
 
+        logAdapter.disconnect(ctx.countedErrorHandler());
+        logPublisher.disconnect(ctx.countedErrorHandler());
+
         if (RecordingPos.NULL_RECORDING_ID != logRecordingId)
         {
-            logAdapter.disconnect(ctx.countedErrorHandler());
-            logPublisher.disconnect(ctx.countedErrorHandler());
-
             tryStopLogRecording();
-
-            idleStrategy.reset();
-            while (AeronArchive.NULL_POSITION == (appendPosition = archive.getStopPosition(logRecordingId)))
-            {
-                idle();
-            }
-            lastAppendPosition = appendPosition;
-
+            lastAppendPosition = getLastAppendedPosition();
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
 
             clearSessionsAfter(logPosition);
@@ -956,7 +947,7 @@ final class ConsensusModuleAgent implements Agent
             restoreUncommittedEntries(logPosition);
         }
 
-        return appendPosition;
+        return lastAppendPosition;
     }
 
     void onServiceCloseSession(final long clusterSessionId)
@@ -3013,6 +3004,21 @@ final class ConsensusModuleAgent implements Agent
             }
 
             logSubscriptionId = NULL_VALUE;
+        }
+    }
+
+    private long getLastAppendedPosition()
+    {
+        idleStrategy.reset();
+        while (true)
+        {
+            final long appendPosition = archive.getStopPosition(logRecordingId);
+            if (NULL_POSITION != appendPosition)
+            {
+                return appendPosition;
+            }
+
+            idle();
         }
     }
 

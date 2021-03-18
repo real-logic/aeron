@@ -971,17 +971,13 @@ class Election
 
     private void addLiveLogDestination()
     {
-        final String destination = ctx.isLogMdc() ?
-            "aeron:udp?endpoint=" + thisMember.logEndpoint() + "|alias=liveLog_" + thisMember.id() : ctx.logChannel();
+        final String destination = ctx.isLogMdc() ? "aeron:udp?endpoint=" + thisMember.logEndpoint() : ctx.logChannel();
         logSubscription.addDestination(destination);
         consensusModuleAgent.liveLogDestination(destination);
     }
 
     private Subscription addFollowerSubscription()
     {
-        assert logSessionId != CommonContext.NULL_SESSION_ID;
-
-        final int streamId = ctx.logStreamId();
         final String channel = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
             .tags(ctx.aeron().nextCorrelationId() + "," + ctx.aeron().nextCorrelationId())
@@ -992,7 +988,7 @@ class Election
             .alias("log")
             .build();
 
-        return ctx.aeron().addSubscription(channel, streamId);
+        return ctx.aeron().addSubscription(channel, ctx.logStreamId());
     }
 
     private void state(final ElectionState newState, final long nowNs)

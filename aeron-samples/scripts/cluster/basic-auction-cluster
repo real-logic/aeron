@@ -32,9 +32,9 @@ function startNode() {
         -XX:GuaranteedSafepointInterval=300000 \
         -XX:+UseParallelGC \
         -Daeron.event.cluster.log=all \
-        -Daeron.cluster.tutorial.nodeId=$1 \
+        -Daeron.cluster.tutorial.nodeId=${1} \
         ${JVM_OPTS} ${ADD_OPENS} \
-        io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode > logs/cluster-$1.log &
+        io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode > logs/cluster-${1}.log &
 }
 
 function startAll() {
@@ -48,9 +48,9 @@ function startAll() {
 
 if [[ $# -lt 1 ]]; then
   startAll
-elif [[ $1 == 0 ]] || [[ $1 == 1 ]] || [[ $1 == 2 ]]; then
-  echo "starting node $1"
-  startNode $1
+elif [[ ${1} == 0 ]] || [[ ${1} == 1 ]] || [[ ${1} == 2 ]]; then
+  echo "starting node ${1}"
+  startNode ${1}
 else
   echo "Usage: ./basic-auction-cluster [0,1,2]"
   exit 1

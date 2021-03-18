@@ -23,7 +23,7 @@ mkdir -p logs
 
 function startNode() {
 
-    namespace=ns_node$1
+    namespace=ns_node${1}
 
     sudo ip netns exec ${namespace} su - ${USER} -c "cd ${PWD} && \
     ${JAVA_HOME}/bin/java \
@@ -37,7 +37,7 @@ function startNode() {
         -XX:GuaranteedSafepointInterval=300000 \
         -XX:+UseParallelGC \
         ${JVM_OPTS:-} ${ADD_OPENS} \
-        io.aeron.test.launcher.RemoteLaunchServer > logs/launch-$1.log &"
+        io.aeron.test.launcher.RemoteLaunchServer > logs/launch-${1}.log &"
 }
 
 function startAll() {
@@ -48,9 +48,9 @@ function startAll() {
 
 if [[ $# -lt 1 ]]; then
   startAll
-elif [[ $1 == 0 ]] || [[ $1 == 1 ]] || [[ $1 == 2 ]]; then
-  echo "starting node $1"
-  startNode $1
+elif [[ ${1} == 0 ]] || [[ ${1} == 1 ]] || [[ ${1} == 2 ]]; then
+  echo "starting node ${1}"
+  startNode ${1}
 else
   echo "Usage: ./agent-ns [0,1,2]"
   exit 1

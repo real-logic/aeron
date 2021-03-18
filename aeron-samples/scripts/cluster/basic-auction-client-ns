@@ -30,9 +30,9 @@ function startNode() {
         -XX:+UnlockDiagnosticVMOptions \
         -XX:GuaranteedSafepointInterval=300000 \
         -XX:+UseParallelGC \
-        -Daeron.cluster.tutorial.customerId="$1" \
-        -Daeron.cluster.tutorial.numOfBids="$2" \
-        -Daeron.cluster.tutorial.bidIntervalMs="$3" \
+        -Daeron.cluster.tutorial.customerId="${1}" \
+        -Daeron.cluster.tutorial.numOfBids="${2}" \
+        -Daeron.cluster.tutorial.bidIntervalMs="${3}" \
         -Daeron.cluster.tutorial.hostnames=10.42.0.10,10.42.0.11,10.42.0.12 \
         ${JVM_OPTS:-} ${ADD_OPENS} \
         io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient

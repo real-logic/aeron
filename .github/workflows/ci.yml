@@ -1,5 +1,6 @@
 name: Continuous Integration
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: run-commit-tests
   push:

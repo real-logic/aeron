@@ -2342,10 +2342,10 @@ final class ConsensusModuleAgent implements Agent
         final long registrationId = counters.getCounterRegistrationId(counterId);
 
         appendPosition = new ReadableCounter(counters, registrationId, counterId);
+        logRecordedPosition = NULL_POSITION;
         if (NULL_VALUE == logRecordingId)
         {
             logRecordingId = RecordingPos.getRecordingId(counters, counterId);
-            logRecordedPosition = NULL_POSITION;
         }
     }
 

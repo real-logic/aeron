@@ -462,10 +462,10 @@ class Election
         {
             cleanupReplication();
             resetCatchup();
-            cleanupReplay();
-            logSessionId = CommonContext.NULL_SESSION_ID;
-            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
+
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
+            logSessionId = CommonContext.NULL_SESSION_ID;
+            cleanupReplay();
             CloseHelper.close(logSubscription);
             logSubscription = null;
         }

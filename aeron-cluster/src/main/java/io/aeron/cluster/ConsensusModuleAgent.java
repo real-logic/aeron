@@ -902,23 +902,24 @@ final class ConsensusModuleAgent implements Agent
     {
         long appendPosition = 0;
 
+        role(Cluster.Role.FOLLOWER);
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
         ClusterControl.ToggleState.deactivate(controlToggle);
 
+        if (null != catchupLogDestination)
+        {
+            logAdapter.removeDestination(catchupLogDestination);
+            catchupLogDestination = null;
+        }
+
+        if (null != liveLogDestination)
+        {
+            logAdapter.removeDestination(liveLogDestination);
+            liveLogDestination = null;
+        }
+
         if (RecordingPos.NULL_RECORDING_ID != logRecordingId)
         {
-            if (null != catchupLogDestination)
-            {
-                logAdapter.removeDestination(catchupLogDestination);
-                catchupLogDestination = null;
-            }
-
-            if (null != liveLogDestination)
-            {
-                logAdapter.removeDestination(liveLogDestination);
-                liveLogDestination = null;
-            }
-
             logAdapter.disconnect(ctx.countedErrorHandler());
             logPublisher.disconnect(ctx.countedErrorHandler());
 

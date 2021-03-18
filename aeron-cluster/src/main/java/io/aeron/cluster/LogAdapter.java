@@ -110,7 +110,7 @@ final class LogAdapter implements ControlledFragmentHandler
 
     void removeDestination(final String destination)
     {
-        if (null != image)
+        if (null != image && !image.subscription().isClosed())
         {
             image.subscription().removeDestination(destination);
         }

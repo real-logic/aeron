@@ -460,14 +460,14 @@ class Election
         }
         else
         {
-            CloseHelper.close(logSubscription);
-            logSubscription = null;
             cleanupReplication();
             resetCatchup();
             cleanupReplay();
             logSessionId = CommonContext.NULL_SESSION_ID;
             consensusModuleAgent.role(Cluster.Role.FOLLOWER);
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
+            CloseHelper.close(logSubscription);
+            logSubscription = null;
         }
 
         candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);

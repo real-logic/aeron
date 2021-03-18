@@ -955,7 +955,6 @@ public class ClusterTest
             cluster.terminationsExpected(true);
             cluster.abortCluster(leader);
             cluster.awaitNodeTerminations();
-
             cluster.stopAllNodes();
 
             final TestNode oldLeader = cluster.startStaticNode(leader.index(), false);
@@ -963,8 +962,7 @@ public class ClusterTest
             final TestNode oldFollower2 = cluster.startStaticNode(followers.get(1).index(), true);
 
             cluster.awaitLeader();
-            cluster.awaitServiceMessageCount(oldFollower1, messageCount);
-            cluster.awaitServiceMessageCount(oldFollower2, messageCount);
+            cluster.awaitServicesMessageCount(messageCount);
 
             assertEquals(0L, oldLeader.errors());
             assertEquals(0L, oldFollower1.errors());

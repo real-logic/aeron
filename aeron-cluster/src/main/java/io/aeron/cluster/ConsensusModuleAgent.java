@@ -207,6 +207,9 @@ final class ConsensusModuleAgent implements Agent
         authenticator = ctx.authenticatorSupplier().get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onClose()
     {
         if (!aeron.isClosed())
@@ -239,6 +242,9 @@ final class ConsensusModuleAgent implements Agent
         ctx.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
@@ -293,6 +299,9 @@ final class ConsensusModuleAgent implements Agent
         unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;
@@ -324,6 +333,9 @@ final class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String roleName()
     {
         return "consensus-module_" + ctx.clusterId() + "_" + memberId;

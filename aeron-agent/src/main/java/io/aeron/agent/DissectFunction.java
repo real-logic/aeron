@@ -18,12 +18,20 @@ package io.aeron.agent;
 import org.agrona.MutableDirectBuffer;
 
 /**
- * Takes an event and serialises it to the supplied {@code StringBuilder}.
+ * Takes an event and serialises it to the supplied {@link StringBuilder}.
  *
  * @param <T> the type of the event
  */
 @FunctionalInterface
 interface DissectFunction<T>
 {
+    /**
+     * Dissect an event and serialise it to a {@link StringBuilder}.
+     *
+     * @param event   to be dissected.
+     * @param buffer  with the encoded event.
+     * @param offset  at which the encoded event begins.
+     * @param builder into which the event will be serialised.
+     */
     void dissect(T event, MutableDirectBuffer buffer, int offset, StringBuilder builder);
 }

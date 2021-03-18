@@ -24,7 +24,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 final class ClusterEventEncoder
 {
-
     private ClusterEventEncoder()
     {
     }
@@ -95,11 +94,9 @@ final class ClusterEventEncoder
         relativeOffset += SIZE_OF_INT;
 
         final String fromName = null == from ? "null" : from.name();
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, fromName);
-
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, STATE_SEPARATOR);
-
         final String toName = null == to ? "null" : to.name();
+        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, fromName);
+        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, STATE_SEPARATOR);
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, toName);
 
         return relativeOffset;

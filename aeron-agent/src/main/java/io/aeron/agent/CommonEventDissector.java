@@ -38,10 +38,7 @@ final class CommonEventDissector
     }
 
     static void dissectLogStartMessage(
-        final long timestampNs,
-        final long timestampMs,
-        final ZoneId zone,
-        final StringBuilder builder)
+        final long timestampNs, final long timestampMs, final ZoneId zone, final StringBuilder builder)
     {
         builder
             .append('[')

@@ -26,11 +26,34 @@ import static io.aeron.agent.ClusterEventDissector.dissectNewLeadershipTerm;
  */
 public enum ClusterEventCode implements EventCode
 {
+    /**
+     * State change events within a cluster election.
+     */
     ELECTION_STATE_CHANGE(1, ClusterEventDissector::dissectStateChange),
+
+    /**
+     * A new term of leadership is to begin for an elected cluster member.
+     */
     NEW_LEADERSHIP_TERM(2, (eventCode, buffer, offset, builder) -> dissectNewLeadershipTerm(buffer, offset, builder)),
+
+    /**
+     * State change in the cluster node consensus module.
+     */
     STATE_CHANGE(3, ClusterEventDissector::dissectStateChange),
+
+    /**
+     * Role change for the cluster member.
+     */
     ROLE_CHANGE(4, ClusterEventDissector::dissectStateChange),
+
+    /**
+     * A Canvass position event to notify the state of a member's log before nomination.
+     */
     CANVASS_POSITION(5, ClusterEventDissector::dissectCanvassPosition),
+
+    /**
+     * A vote request for new leadership.
+     */
     REQUEST_VOTE(6, ClusterEventDissector::dissectRequestVote);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();

@@ -23,9 +23,6 @@ import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOR_ADDED;
 import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOR_REMOVED;
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 
-/**
- * Diverse driver-related interceptors.
- */
 class DriverInterceptor
 {
     static class UntetheredSubscriptionStateChange

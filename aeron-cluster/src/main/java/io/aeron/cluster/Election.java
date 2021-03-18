@@ -44,6 +44,7 @@ import static io.aeron.cluster.ElectionState.*;
 class Election
 {
     private final boolean isNodeStartup;
+    private boolean isFirstInit = true;
     private boolean isLeaderStartup;
     private boolean isExtendedCanvass;
     private int logSessionId = CommonContext.NULL_SESSION_ID;
@@ -449,16 +450,23 @@ class Election
 
     private int init(final long nowNs)
     {
-        CloseHelper.close(logSubscription);
-        logSubscription = null;
-        logSessionId = CommonContext.NULL_SESSION_ID;
-        consensusModuleAgent.role(Cluster.Role.FOLLOWER);
-        resetCatchup();
-        cleanupReplay();
-        cleanupReplication();
-
-        if (!isNodeStartup)
+        if (isFirstInit)
         {
+            isFirstInit = false;
+            if (!isNodeStartup)
+            {
+                appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
+            }
+        }
+        else
+        {
+            CloseHelper.close(logSubscription);
+            logSubscription = null;
+            cleanupReplication();
+            resetCatchup();
+            cleanupReplay();
+            logSessionId = CommonContext.NULL_SESSION_ID;
+            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
         }
 

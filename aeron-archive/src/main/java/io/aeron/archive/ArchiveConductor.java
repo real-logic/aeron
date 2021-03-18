@@ -1028,9 +1028,10 @@ abstract class ArchiveConductor
         }
         else
         {
+            final Subscription subscription = session.subscription();
             final long position = session.recordedPosition();
             final long recordingId = session.sessionId();
-            final Subscription subscription = session.subscription();
+            final long subscriptionId = subscription.registrationId();
             catalog.recordingStopped(recordingId, position, epochClock.time());
             recordingSessionByIdMap.remove(recordingId);
 
@@ -1038,15 +1039,15 @@ abstract class ArchiveConductor
             session.controlSession().attemptSignal(
                 session.correlationId(),
                 recordingId,
-                subscription.registrationId(),
+                subscriptionId,
                 position,
                 RecordingSignal.STOP);
 
-            if (0 == subscriptionRefCountMap.decrementAndGet(subscription.registrationId()) || session.isAutoStop())
+            if (0 == subscriptionRefCountMap.decrementAndGet(subscriptionId) || session.isAutoStop())
             {
-                subscriptionRefCountMap.remove(subscription.registrationId());
-                removeRecordingSubscription(subscription.registrationId());
-                subscription.close();
+                CloseHelper.close(errorHandler, subscription);
+                subscriptionRefCountMap.remove(subscriptionId);
+                removeRecordingSubscription(subscriptionId);
             }
             closeSession(session);
         }
@@ -1427,7 +1428,7 @@ abstract class ArchiveConductor
         while (null != (runnable = taskQueue.pollFirst()))
         {
             runnable.run();
-            workCount += 1;
+            workCount++;
         }
 
         return workCount;
@@ -1595,6 +1596,7 @@ abstract class ArchiveConductor
         final Image image,
         final boolean autoStop)
     {
+        final long subscriptionId = image.subscription().registrationId();
         try
         {
             if (recordingSessionByIdMap.containsKey(recordingId))
@@ -1631,25 +1633,22 @@ abstract class ArchiveConductor
                 controlSession,
                 autoStop);
 
-            subscriptionRefCountMap.incrementAndGet(image.subscription().registrationId());
+            subscriptionRefCountMap.incrementAndGet(subscriptionId);
             recordingSessionByIdMap.put(recordingId, session);
             catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
             recorder.addSession(session);
 
             controlSession.attemptSignal(
-                correlationId,
-                recordingId,
-                image.subscription().registrationId(),
-                image.joinPosition(),
-                RecordingSignal.EXTEND);
+                correlationId, recordingId, subscriptionId, image.joinPosition(), RecordingSignal.EXTEND);
         }
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
             if (autoStop)
             {
-                removeRecordingSubscription(image.subscription().registrationId());
                 CloseHelper.close(errorHandler, image.subscription());
+                subscriptionRefCountMap.remove(subscriptionId);
+                removeRecordingSubscription(subscriptionId);
             }
         }
     }

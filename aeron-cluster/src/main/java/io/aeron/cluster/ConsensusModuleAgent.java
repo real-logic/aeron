@@ -3067,9 +3067,4 @@ final class ConsensusModuleAgent implements Agent
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
     }
-
-    ClusterMember thisMember()
-    {
-        return thisMember;
-    }
 }

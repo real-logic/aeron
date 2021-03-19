@@ -42,7 +42,7 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopPositionRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/FindLastMatchingRecordingRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingSubscriptionsRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ReplicateRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ReplicateRequest2.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/TaggedReplicateRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/DetachSegmentsRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/DeleteDetachedSegmentsRequest.h

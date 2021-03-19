@@ -1087,6 +1087,18 @@ private:
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
+    util::index_t replicate(
+        AtomicBuffer &buffer,
+        std::int64_t srcRecordingId,
+        std::int64_t dstRecordingId,
+        std::int64_t stopPosition,
+        std::int32_t srcControlStreamId,
+        const std::string &srcControlChannel,
+        const std::string &liveDestination,
+        const std::string &replicationChannel,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
     static util::index_t taggedReplicate(
         AtomicBuffer &buffer,
         std::int64_t srcRecordingId,

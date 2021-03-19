@@ -60,17 +60,18 @@ public class CubicCongestionControl implements CongestionControl
     private static final long SECOND_IN_NS = TimeUnit.SECONDS.toNanos(1);
     private static final long RTT_MAX_TIMEOUT_NS = SECOND_IN_NS;
     private static final int MAX_OUTSTANDING_RTT_MEASUREMENTS = 1;
+    private static final int INITCWND = 10;
 
     private static final double C = 0.4;
     private static final double B = 0.2;
 
     private final int minWindow;
     private final int mtu;
+    private final int initCwnd;
     private final int maxCwnd;
-    private final ErrorHandler errorHandler;
 
-    private long lastLossTimestampNs;
     private long lastUpdateTimestampNs;
+    private long lastLossTimestampNs;
     private long lastRttTimestampNs = 0;
     private final long windowUpdateTimeoutNs;
     private long rttNs;
@@ -80,6 +81,7 @@ public class CubicCongestionControl implements CongestionControl
 
     private int outstandingRttMeasurements = 0;
 
+    private final ErrorHandler errorHandler;
     private final AtomicCounter rttIndicator;
     private final AtomicCounter windowIndicator;
 
@@ -122,7 +124,8 @@ public class CubicCongestionControl implements CongestionControl
             final int maxWindow = Math.min(termLength >> 1, initialWindowLength);
 
             maxCwnd = maxWindow / mtu;
-            cwnd = 1;
+            initCwnd = Math.min(INITCWND, maxCwnd);
+            cwnd = initCwnd;
             w_max = maxCwnd; // initially set w_max to max window and act in the TCP and concave region initially
             k = StrictMath.cbrt((double)w_max * B / C);
 
@@ -215,7 +218,7 @@ public class CubicCongestionControl implements CongestionControl
         {
             w_max = cwnd;
             k = StrictMath.cbrt((double)w_max * B / C);
-            cwnd = Math.max(1, (int)(cwnd * (1.0 - B)));
+            cwnd = Math.max(initCwnd, (int)(cwnd * (1.0 - B)));
             lastLossTimestampNs = nowNs;
             forceStatusMessage = true;
         }

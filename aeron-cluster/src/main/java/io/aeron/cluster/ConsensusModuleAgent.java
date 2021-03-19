@@ -209,6 +209,9 @@ final class ConsensusModuleAgent implements Agent
         authenticator = ctx.authenticatorSupplier().get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onClose()
     {
         if (!aeron.isClosed())
@@ -241,6 +244,9 @@ final class ConsensusModuleAgent implements Agent
         ctx.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
@@ -295,6 +301,9 @@ final class ConsensusModuleAgent implements Agent
         unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int doWork()
     {
         int workCount = 0;
@@ -326,6 +335,9 @@ final class ConsensusModuleAgent implements Agent
         return workCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String roleName()
     {
         return "consensus-module_" + ctx.clusterId() + "_" + memberId;
@@ -902,37 +914,29 @@ final class ConsensusModuleAgent implements Agent
 
     long prepareForNewLeadership(final long logPosition)
     {
-        long appendPosition = 0;
-
+        role(Cluster.Role.FOLLOWER);
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
         ClusterControl.ToggleState.deactivate(controlToggle);
 
+        if (null != catchupLogDestination)
+        {
+            logAdapter.removeDestination(catchupLogDestination);
+            catchupLogDestination = null;
+        }
+
+        if (null != liveLogDestination)
+        {
+            logAdapter.removeDestination(liveLogDestination);
+            liveLogDestination = null;
+        }
+
+        logAdapter.disconnect(ctx.countedErrorHandler());
+        logPublisher.disconnect(ctx.countedErrorHandler());
+
         if (RecordingPos.NULL_RECORDING_ID != logRecordingId)
         {
-            if (null != catchupLogDestination)
-            {
-                logAdapter.removeDestination(catchupLogDestination);
-                catchupLogDestination = null;
-            }
-
-            if (null != liveLogDestination)
-            {
-                logAdapter.removeDestination(liveLogDestination);
-                liveLogDestination = null;
-            }
-
-            logAdapter.disconnect(ctx.countedErrorHandler());
-            logPublisher.disconnect(ctx.countedErrorHandler());
-
             tryStopLogRecording();
-
-            idleStrategy.reset();
-            while (AeronArchive.NULL_POSITION == (appendPosition = archive.getStopPosition(logRecordingId)))
-            {
-                idle();
-            }
-            lastAppendPosition = appendPosition;
-
+            lastAppendPosition = getLastAppendedPosition();
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
 
             clearSessionsAfter(logPosition);
@@ -945,7 +949,7 @@ final class ConsensusModuleAgent implements Agent
             restoreUncommittedEntries(logPosition);
         }
 
-        return appendPosition;
+        return lastAppendPosition;
     }
 
     void onServiceCloseSession(final long clusterSessionId)
@@ -2344,10 +2348,10 @@ final class ConsensusModuleAgent implements Agent
         final long registrationId = counters.getCounterRegistrationId(counterId);
 
         appendPosition = new ReadableCounter(counters, registrationId, counterId);
+        logRecordedPosition = NULL_POSITION;
         if (NULL_VALUE == logRecordingId)
         {
             logRecordingId = RecordingPos.getRecordingId(counters, counterId);
-            logRecordedPosition = NULL_POSITION;
         }
     }
 
@@ -3007,6 +3011,21 @@ final class ConsensusModuleAgent implements Agent
         }
     }
 
+    private long getLastAppendedPosition()
+    {
+        idleStrategy.reset();
+        while (true)
+        {
+            final long appendPosition = archive.getStopPosition(logRecordingId);
+            if (NULL_POSITION != appendPosition)
+            {
+                return appendPosition;
+            }
+
+            idle();
+        }
+    }
+
     private void appendDynamicJoinTermAndSnapshots()
     {
         if (!dynamicJoinSnapshots.isEmpty())
@@ -3051,11 +3070,6 @@ final class ConsensusModuleAgent implements Agent
             ingressAdapter.connect(aeron.addSubscription(
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
-    }
-
-    ClusterMember thisMember()
-    {
-        return thisMember;
     }
 
     public String toString()

@@ -151,6 +151,9 @@ final class CommonEventEncoder
 
     static <E extends Enum<E>> int stateTransitionStringLength(final E from, final E to)
     {
-        return SIZE_OF_INT + from.name().length() + STATE_SEPARATOR.length() + to.name().length();
+        final int fromLength = null == from ? "null".length() : from.name().length();
+        final int toLength = null == to ? "null".length() : to.name().length();
+
+        return SIZE_OF_INT + fromLength + STATE_SEPARATOR.length() + toLength;
     }
 }

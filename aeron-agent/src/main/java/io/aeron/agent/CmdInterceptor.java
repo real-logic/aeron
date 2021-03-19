@@ -24,9 +24,6 @@ import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 import static io.aeron.command.ControlProtocolEvents.*;
 
-/**
- * Intercepts calls for the command protocol from clients to the driver for logging.
- */
 class CmdInterceptor
 {
     static final EnumSet<DriverEventCode> EVENTS = EnumSet.of(

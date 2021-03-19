@@ -148,16 +148,10 @@ public class ElectionTest
             candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
 
         final long t4 = t3 + 1;
-        election.doWork(t3);
+        election.doWork(t4);
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_LOG_REPLICATION.code());
 
-        when(recordingLog.isUnknown(candidateTermId)).thenReturn(Boolean.TRUE);
-
-        final long t5 = t4 + 1;
-        election.doWork(t5);
-        verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
-
-        election.doWork(t5);
+        election.doWork(t4);
 
         verify(consensusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
@@ -166,7 +160,7 @@ public class ElectionTest
             candidateTermId,
             logPosition,
             RECORDING_ID,
-            t5,
+            t4,
             candidateMember.id(),
             LOG_SESSION_ID,
             election.isLeaderStartup());
@@ -178,10 +172,16 @@ public class ElectionTest
             candidateTermId,
             logPosition,
             RECORDING_ID,
-            t5,
+            t4,
             candidateMember.id(),
             LOG_SESSION_ID,
             election.isLeaderStartup());
+
+        when(recordingLog.isUnknown(candidateTermId)).thenReturn(Boolean.TRUE);
+
+        final long t5 = t4 + 1;
+        election.doWork(t5);
+        verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
 
         election.doWork(t5);
 

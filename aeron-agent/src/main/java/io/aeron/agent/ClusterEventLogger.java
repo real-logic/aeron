@@ -31,6 +31,9 @@ import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
  */
 public final class ClusterEventLogger
 {
+    /**
+     * Logger for writing into the {@link EventConfiguration#EVENT_RING_BUFFER}.
+     */
     public static final ClusterEventLogger LOGGER = new ClusterEventLogger(EVENT_RING_BUFFER);
 
     private final ManyToOneRingBuffer ringBuffer;

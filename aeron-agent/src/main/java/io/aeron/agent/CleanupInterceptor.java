@@ -23,9 +23,6 @@ import net.bytebuddy.asm.Advice;
 
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 
-/**
- * Intercepts calls in the driver to log the clean up of major resources.
- */
 class CleanupInterceptor
 {
     static class CleanupImage

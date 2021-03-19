@@ -1,5 +1,6 @@
 name: Continuous Integration (Low Cadence)
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: run-slow-tests
   schedule:

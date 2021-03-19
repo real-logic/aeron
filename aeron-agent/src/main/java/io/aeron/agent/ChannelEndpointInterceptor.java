@@ -26,9 +26,6 @@ import java.nio.ByteBuffer;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 
-/**
- * Intercepts calls on channel endpoints for logging.
- */
 class ChannelEndpointInterceptor
 {
     static class SenderProxy

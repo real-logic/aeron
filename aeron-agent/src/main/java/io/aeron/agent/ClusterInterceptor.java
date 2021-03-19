@@ -22,9 +22,6 @@ import net.bytebuddy.asm.Advice;
 import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventLogger.LOGGER;
 
-/**
- * Intercepts calls in the cluster which relate to state changes.
- */
 class ClusterInterceptor
 {
     static class ElectionStateChange

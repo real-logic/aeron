@@ -803,5 +803,4 @@ final class ArchiveEventDissector
             .append(", correlationId=").append(PURGE_RECORDING_REQUEST_DECODER.correlationId())
             .append(", recordingId=").append(PURGE_RECORDING_REQUEST_DECODER.recordingId());
     }
-
 }

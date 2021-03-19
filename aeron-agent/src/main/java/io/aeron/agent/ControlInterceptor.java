@@ -20,9 +20,6 @@ import org.agrona.DirectBuffer;
 
 import static io.aeron.agent.ArchiveEventLogger.LOGGER;
 
-/**
- * Intercepts requests to the archive.
- */
 class ControlInterceptor
 {
     static class ControlRequest

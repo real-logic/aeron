@@ -461,7 +461,8 @@ final class ControlSession implements Session
         final long subscriptionTagId,
         final int srcControlStreamId,
         final String srcControlChannel,
-        final String liveDestination)
+        final String liveDestination,
+        final String replicationChannel)
     {
         attemptToActivate();
         if (State.ACTIVE == state)
@@ -470,12 +471,13 @@ final class ControlSession implements Session
                 correlationId,
                 srcRecordingId,
                 dstRecordingId,
+                stopPosition,
                 channelTagId,
                 subscriptionTagId,
                 srcControlStreamId,
                 srcControlChannel,
                 liveDestination,
-                stopPosition,
+                replicationChannel,
                 this);
         }
     }

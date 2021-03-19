@@ -965,7 +965,8 @@ public final class ArchiveProxy
             .subscriptionTagId(subscriptionTagIdNullValue())
             .srcControlStreamId(srcControlStreamId)
             .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination);
+            .liveDestination(liveDestination)
+            .replicationChannel(null);
 
         return offer(replicateRequest.encodedLength());
     }
@@ -989,6 +990,7 @@ public final class ArchiveProxy
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
      * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
      * @param liveDestination    destination for the live stream if merge is required. Empty or null for no merge.
+     * @param replicationChannel channel over which the replication will occur. Empty or null for default channel.
      * @param correlationId      for this request.
      * @param controlSessionId   for this request.
      * @return true if successfully offered otherwise false.
@@ -1000,6 +1002,7 @@ public final class ArchiveProxy
         final int srcControlStreamId,
         final String srcControlChannel,
         final String liveDestination,
+        final String replicationChannel,
         final long correlationId,
         final long controlSessionId)
     {
@@ -1019,7 +1022,8 @@ public final class ArchiveProxy
             .subscriptionTagId(subscriptionTagIdNullValue())
             .srcControlStreamId(srcControlStreamId)
             .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination);
+            .liveDestination(liveDestination)
+            .replicationChannel(replicationChannel);
 
         return offer(replicateRequest.encodedLength());
     }

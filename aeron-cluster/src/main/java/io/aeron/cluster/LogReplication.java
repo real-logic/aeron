@@ -40,7 +40,7 @@ final class LogReplication
         final String srcArchiveChannel = "aeron:udp?endpoint=" + srcArchiveEndpoint;
 
         replicationId = archive.replicate(
-            srcRecordingId, dstRecordingId, srcArchiveStreamId, srcArchiveChannel, null, stopPosition);
+            srcRecordingId, dstRecordingId, stopPosition, srcArchiveStreamId, srcArchiveChannel, null, null);
     }
 
     boolean isDone()

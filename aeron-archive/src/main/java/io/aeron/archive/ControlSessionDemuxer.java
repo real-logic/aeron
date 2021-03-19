@@ -28,6 +28,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.ReplicateRequest2Decoder.*;
 
 class ControlSessionDemuxer implements Session, FragmentHandler
@@ -496,13 +497,13 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     correlationId,
                     decoder.srcRecordingId(),
                     decoder.dstRecordingId(),
-                    AeronArchive.NULL_POSITION,
+                    NULL_POSITION,
                     Aeron.NULL_VALUE,
                     Aeron.NULL_VALUE,
                     decoder.srcControlStreamId(),
                     decoder.srcControlChannel(),
-                    decoder.liveDestination()
-                );
+                    decoder.liveDestination(),
+                    "");
                 break;
             }
 
@@ -724,12 +725,13 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     correlationId,
                     decoder.srcRecordingId(),
                     decoder.dstRecordingId(),
-                    AeronArchive.NULL_POSITION,
+                    NULL_POSITION,
                     decoder.channelTagId(),
                     decoder.subscriptionTagId(),
                     decoder.srcControlStreamId(),
                     decoder.srcControlChannel(),
-                    decoder.liveDestination());
+                    decoder.liveDestination(),
+                    "");
                 break;
             }
 
@@ -808,24 +810,21 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final long controlSessionId = decoder.controlSessionId();
                 final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
 
-                final long stopPosition = stopPositionNullValue() != decoder.stopPosition() ?
-                    decoder.stopPosition() : AeronArchive.NULL_POSITION;
-                final long channelTagId = channelTagIdNullValue() != decoder.channelTagId() ?
-                    decoder.channelTagId() : Aeron.NULL_VALUE;
-                final long subscriptionTagId = subscriptionTagIdNullValue() != decoder.subscriptionTagId() ?
-                    decoder.subscriptionTagId() : Aeron.NULL_VALUE;
+                final long stopPosition = decoder.stopPosition();
+                final long channelTagId = decoder.channelTagId();
+                final long subscriptionTagId = decoder.subscriptionTagId();
 
                 controlSession.onReplicate(
                     correlationId,
                     decoder.srcRecordingId(),
                     decoder.dstRecordingId(),
-                    stopPosition,
-                    channelTagId,
-                    subscriptionTagId,
+                    stopPosition == stopPositionNullValue() ? AeronArchive.NULL_POSITION : stopPosition,
+                    channelTagId == channelTagIdNullValue() ? Aeron.NULL_VALUE : channelTagId,
+                    subscriptionTagId == subscriptionTagIdNullValue() ? Aeron.NULL_VALUE : subscriptionTagId,
                     decoder.srcControlStreamId(),
                     decoder.srcControlChannel(),
-                    decoder.liveDestination()
-                );
+                    decoder.liveDestination(),
+                    decoder.replicationChannel());
                 break;
             }
 

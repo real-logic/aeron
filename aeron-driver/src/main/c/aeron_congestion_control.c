@@ -36,6 +36,7 @@
 #define AERON_CUBICCONGESTIONCONTROL_RTT_MAX_TIMEOUT_NS (AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS)
 #define AERON_CUBICCONGESTIONCONTROL_MAX_OUTSTANDING_RTT_MEASUREMENTS (1)
 
+#define AERON_CUBICCONGESTIONCONTROL_INITCWND (10)
 #define AERON_CUBICCONGESTIONCONTROL_C (0.4)
 #define AERON_CUBICCONGESTIONCONTROL_B (0.2)
 
@@ -209,6 +210,7 @@ typedef struct aeron_cubic_congestion_control_strategy_state_stct
 
     int32_t min_window;
     int32_t mtu;
+    int32_t init_cwnd;
     int32_t max_cwnd;
     int32_t cwnd;
     int32_t w_max;
@@ -279,7 +281,7 @@ int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
             (double)cubic_state->w_max * AERON_CUBICCONGESTIONCONTROL_B / AERON_CUBICCONGESTIONCONTROL_C);
 
         const int32_t cwnd = (int32_t)(cubic_state->cwnd * (1.0 - AERON_CUBICCONGESTIONCONTROL_B));
-        cubic_state->cwnd = cwnd > 1 ? cwnd : 1;
+        cubic_state->cwnd = cwnd > cubic_state->init_cwnd ? cwnd : cubic_state->init_cwnd;
         cubic_state->last_loss_timestamp_ns = now_ns;
         *should_force_sm = true;
     }
@@ -380,7 +382,9 @@ int aeron_cubic_congestion_control_strategy_supplier(
         max_window_for_term : initial_window_length;
 
     state->max_cwnd = max_window / sender_mtu_length;
-    state->cwnd = 1;
+    state->init_cwnd = state->max_cwnd > AERON_CUBICCONGESTIONCONTROL_INITCWND ?
+        AERON_CUBICCONGESTIONCONTROL_INITCWND : state->max_cwnd;
+    state->cwnd = state->init_cwnd;
     // initially set w_max to max window and act in the TCP and concave region initially
     state->w_max = state->max_cwnd;
     state->k = cbrt((double)state->w_max * AERON_CUBICCONGESTIONCONTROL_B / AERON_CUBICCONGESTIONCONTROL_C);

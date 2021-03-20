@@ -28,9 +28,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 
-import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.archive.codecs.ReplicateRequest2Decoder.*;
-
 class ControlSessionDemuxer implements Session, FragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 10;
@@ -497,7 +494,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     correlationId,
                     decoder.srcRecordingId(),
                     decoder.dstRecordingId(),
-                    NULL_POSITION,
+                    AeronArchive.NULL_POSITION,
                     Aeron.NULL_VALUE,
                     Aeron.NULL_VALUE,
                     decoder.srcControlStreamId(),
@@ -725,7 +722,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     correlationId,
                     decoder.srcRecordingId(),
                     decoder.dstRecordingId(),
-                    NULL_POSITION,
+                    AeronArchive.NULL_POSITION,
                     decoder.channelTagId(),
                     decoder.subscriptionTagId(),
                     decoder.srcControlStreamId(),
@@ -810,17 +807,13 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final long controlSessionId = decoder.controlSessionId();
                 final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
 
-                final long stopPosition = decoder.stopPosition();
-                final long channelTagId = decoder.channelTagId();
-                final long subscriptionTagId = decoder.subscriptionTagId();
-
                 controlSession.onReplicate(
                     correlationId,
                     decoder.srcRecordingId(),
                     decoder.dstRecordingId(),
-                    stopPosition == stopPositionNullValue() ? AeronArchive.NULL_POSITION : stopPosition,
-                    channelTagId == channelTagIdNullValue() ? Aeron.NULL_VALUE : channelTagId,
-                    subscriptionTagId == subscriptionTagIdNullValue() ? Aeron.NULL_VALUE : subscriptionTagId,
+                    decoder.stopPosition(),
+                    decoder.channelTagId(),
+                    decoder.subscriptionTagId(),
                     decoder.srcControlStreamId(),
                     decoder.srcControlChannel(),
                     decoder.liveDestination(),

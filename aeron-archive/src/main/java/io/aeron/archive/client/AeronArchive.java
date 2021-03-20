@@ -1573,7 +1573,8 @@ public final class AeronArchive implements AutoCloseable
      *
      * @param srcRecordingId     recording id which must exist in the source archive.
      * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
-     * @param stopPosition       position to stop replication.
+     * @param stopPosition       position to stop the replication. {@link AeronArchive#NULL_POSITION} to stop at end
+     *                           of current recording.
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
      * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
      * @param liveDestination    destination for the live stream if merge is required. Empty or null for no merge.

@@ -49,7 +49,6 @@
 #include "aeron_archive_client/MigrateSegmentsRequest.h"
 #include "aeron_archive_client/KeepAliveRequest.h"
 #include "aeron_archive_client/ChallengeResponse.h"
-#include "aeron_archive_client/TaggedReplicateRequest.h"
 #include "aeron_archive_client/PurgeRecordingRequest.h"
 
 using namespace aeron;
@@ -517,9 +516,9 @@ util::index_t ArchiveProxy::replicate(
     wrapAndApplyHeader(request, buffer)
         .controlSessionId(controlSessionId)
         .correlationId(correlationId)
-        .stopPosition(ReplicateRequest2::stopPositionNullValue())
-        .channelTagId(ReplicateRequest2::channelTagIdNullValue())
-        .subscriptionTagId(ReplicateRequest2::subscriptionTagIdNullValue())
+        .stopPosition(NULL_POSITION)
+        .channelTagId(NULL_VALUE)
+        .subscriptionTagId(NULL_VALUE)
         .srcRecordingId(srcRecordingId)
         .dstRecordingId(dstRecordingId)
         .srcControlStreamId(srcControlStreamId)
@@ -550,8 +549,8 @@ util::index_t ArchiveProxy::replicate(
         .srcRecordingId(srcRecordingId)
         .dstRecordingId(dstRecordingId)
         .stopPosition(stopPosition)
-        .channelTagId(ReplicateRequest2::channelTagIdNullValue())
-        .subscriptionTagId(ReplicateRequest2::subscriptionTagIdNullValue())
+        .channelTagId(NULL_VALUE)
+        .subscriptionTagId(NULL_VALUE)
         .srcControlStreamId(srcControlStreamId)
         .putSrcControlChannel(srcControlChannel)
         .putLiveDestination(liveDestination)
@@ -579,7 +578,7 @@ util::index_t ArchiveProxy::taggedReplicate(
         .correlationId(correlationId)
         .srcRecordingId(srcRecordingId)
         .dstRecordingId(dstRecordingId)
-        .stopPosition(ReplicateRequest2::stopPositionNullValue())
+        .stopPosition(NULL_POSITION)
         .channelTagId(channelTagId)
         .subscriptionTagId(subscriptionTagId)
         .srcControlStreamId(srcControlStreamId)

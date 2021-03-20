@@ -315,7 +315,7 @@ public class ReplayMergeTest
         final long initialTimestampNs = System.nanoTime();
         final long currentPosition = counters.getCounterValue(counterId);
         final Supplier<String> msg = () -> String.format(
-            "publicationPosition=%d recordingPosition=%d timeSinceLastChangeMs=%d attempt=%d replayMerge=%s",
+            "publicationPosition=%d recordingPosition=%d timeSinceLastChangeMs=%d attempt=%d %s",
             position,
             currentPosition,
             (System.nanoTime() - initialTimestampNs) / 1_000_000,

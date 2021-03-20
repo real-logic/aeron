@@ -589,6 +589,7 @@ public final class ReplayMerge implements AutoCloseable
             ", isLiveAdded=" + isLiveAdded +
             ", isReplayActive=" + isReplayActive +
             ", replayChannelUri=" + replayChannelUri +
+            ", image=" + image +
             '}';
     }
 }

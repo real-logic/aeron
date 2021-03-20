@@ -238,7 +238,6 @@ public class ReplayMergeTest
                 recordingId,
                 receivedPosition.get()))
         {
-            final MutableLong offerPosition = new MutableLong();
             final Supplier<String> msgOne = () -> String.format(
                 "replay did not merge: attempt=%d %s", attempt, replayMerge);
             final Supplier<String> msgTwo = () -> String.format(
@@ -247,20 +246,31 @@ public class ReplayMergeTest
 
             for (int i = messagesPublished; i < TOTAL_MESSAGE_COUNT; i++)
             {
-                while ((offerPosition.value = offerMessage(publication, i)) <= 0)
+                while (true)
                 {
-                    if (Publication.BACK_PRESSURED == offerPosition.get())
+                    final long offerResult = offerMessage(publication, i);
+                    if (offerResult > 0)
+                    {
+                        messagesPublished++;
+                        break;
+                    }
+                    else if (Publication.BACK_PRESSURED == offerResult)
                     {
                         awaitRecordingPositionChange(
                             attempt, replayMerge, counters, recordingCounterId, recordingId, publication);
+
                         if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT) && replayMerge.hasFailed())
                         {
                             return false;
                         }
                     }
-                    else if (Publication.NOT_CONNECTED == offerPosition.get())
+                    else if (Publication.NOT_CONNECTED == offerResult)
                     {
                         throw new IllegalStateException("publication is not connected");
+                    }
+                    else if (Publication.CLOSED == offerResult)
+                    {
+                        throw new IllegalStateException("publication is closed");
                     }
                 }
 
@@ -336,29 +346,25 @@ public class ReplayMergeTest
 
     private long offerMessage(final Publication publication, final int index)
     {
-        final int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX + index);
-        final long offerResult = publication.offer(buffer, 0, length);
+        int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX);
+        length += buffer.putIntAscii(length, index);
 
-        if (offerResult > 0)
-        {
-            messagesPublished++;
-        }
-
-        return offerResult;
+        return publication.offer(buffer, 0, length);
     }
 
     private void publishMessages(final Publication publication)
     {
         for (int i = 0; i < INITIAL_MESSAGE_COUNT; i++)
         {
-            final int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX + i);
+            int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX);
+            length += buffer.putIntAscii(length, i);
 
             while (publication.offer(buffer, 0, length) <= 0)
             {
                 Tests.yield();
             }
-
-            messagesPublished++;
         }
+
+        messagesPublished = INITIAL_MESSAGE_COUNT;
     }
 }

@@ -63,7 +63,6 @@ public:
         reset_env();
     }
 
-
     static void reset_env()
     {
         aeron_env_unset(AERON_CUBICCONGESTIONCONTROL_INITIALRTT_ENV_VAR);
@@ -168,7 +167,7 @@ public:
     }
 
 protected:
-    virtual void TearDown() override
+    void TearDown() override
     {
         auto it = m_udp_channels.begin();
         while (it != m_udp_channels.end())
@@ -196,7 +195,8 @@ TEST_F(CongestionControlTest, contextShouldResolveCongestionControlStrategySuppl
 {
     aeron_driver_context_close(m_context);
 
-    aeron_env_set(AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR, "aeron_static_window_congestion_control_strategy_supplier");
+    aeron_env_set(
+        AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR, "aeron_static_window_congestion_control_strategy_supplier");
     EXPECT_EQ(aeron_driver_context_init(&m_context), 0);
 
     EXPECT_NE(nullptr, m_context->congestion_control_supplier_func);
@@ -231,7 +231,7 @@ TEST_F(CongestionControlTest, shouldReturnDefaultCongestionControlStrategySuppli
     test_static_window_congestion_control(supplier, channel, 8192, 4096);
 }
 
-TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCongestionControlStrategyWhenNoCcParamValue)
+TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCongestionControlWhenNoCcParam)
 {
     const char *channel = "aeron:udp?endpoint=192.168.0.1:9999\0";
     const auto initial_window_length = (int32_t)m_context->initial_window_length;
@@ -242,7 +242,7 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCon
         initial_window_length);
 }
 
-TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCongestionControlStrategyWhenCcParamValueIsStatic)
+TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseStaticWindowCongestionControlWhenCcParamIsStatic)
 {
     const char *channel = "aeron:udp?endpoint=192.168.0.1:9999|cc=static|rcv-wnd=65536\0";
     test_static_window_congestion_control(
@@ -262,7 +262,7 @@ TEST_F(CongestionControlTest, staticWindowCongestionControlStrategySupplier)
         4096);
 }
 
-TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestionControlStrategyWhenCcParamValueIsCubic)
+TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestionControlWhenCcParamIsCubic)
 {
     const char *channel = "aeron:udp?endpoint=192.168.0.1:9999|cc=cubic|rcv-wnd=65536\0";
     aeron_udp_channel_t *udp_channel = parse_udp_channel(channel);
@@ -307,10 +307,12 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestion
         &m_counters_manager,
         AERON_COUNTER_PER_IMAGE_TYPE_ID,
         AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME);
-    EXPECT_EQ(sender_mtu_length, aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, window_counter_id)));
+    EXPECT_EQ(
+        sender_mtu_length * 10,
+        aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, window_counter_id)));
 
     EXPECT_FALSE(congestion_control_strategy->should_measure_rtt(state, 777LL));
-    EXPECT_EQ(sender_mtu_length, congestion_control_strategy->initial_window_length(state));
+    EXPECT_EQ(sender_mtu_length * 10, congestion_control_strategy->initial_window_length(state));
     EXPECT_EQ(
         65536 / sender_mtu_length,
         aeron_cubic_congestion_control_strategy_get_max_cwnd(congestion_control_strategy->state));
@@ -318,7 +320,7 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestion
     congestion_control_strategy->fini(congestion_control_strategy);
 }
 
-TEST_F(CongestionControlTest, defaultStrategySupplierShouldReturnNegativeResultWhenCcParamValueIsUnknown)
+TEST_F(CongestionControlTest, defaultStrategySupplierShouldReturnNegativeResultWhenCcParamIsUnknown)
 {
     const char *channel = "aeron:udp?endpoint=192.168.0.1:9999|cc=static1234\0";
     aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
@@ -341,7 +343,7 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldReturnNegativeResultW
     EXPECT_EQ(nullptr, congestion_control_strategy);
 }
 
-TEST_F(CongestionControlTest, cubicCongestionControlSupplierReturnsNegativeValueIfInitialRttValueIsInvalid)
+TEST_F(CongestionControlTest, cubicCongestionControlSupplierReturnsNegativeValueIfInitialRttIsInvalid)
 {
     const char *channel = "aeron:udp?endpoint=192.168.0.1:9999\0";
     aeron_congestion_control_strategy_t *congestion_control_strategy = nullptr;
@@ -365,7 +367,6 @@ TEST_F(CongestionControlTest, cubicCongestionControlSupplierReturnsNegativeValue
     EXPECT_EQ(-1, result);
     EXPECT_EQ(nullptr, congestion_control_strategy);
 }
-
 
 TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
 {
@@ -416,7 +417,8 @@ TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
         &m_counters_manager,
         AERON_COUNTER_PER_IMAGE_TYPE_ID,
         AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME);
-    EXPECT_EQ(sender_mtu_length, aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, window_counter_id)));
+    EXPECT_EQ(
+        sender_mtu_length * 2, aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, window_counter_id)));
 
     EXPECT_TRUE(congestion_control_strategy->should_measure_rtt(state, 10000000000LL));
 

@@ -201,10 +201,13 @@ public class ReplayMergeTest
 
             publishMessages(publication);
             awaitPosition(counters, recordingCounterId, publication.position());
+            int attempt = 1;
 
-            while (!attemptReplayMerge(recordingId, recordingCounterId, counters, publication, subscriptionChannel))
+            while (!attemptReplayMerge(
+                attempt, recordingId, recordingCounterId, counters, publication, subscriptionChannel))
             {
                 Tests.yield();
+                attempt++;
             }
 
             assertEquals(TOTAL_MESSAGE_COUNT, receivedMessageCount.get());
@@ -218,6 +221,7 @@ public class ReplayMergeTest
     }
 
     private boolean attemptReplayMerge(
+        final int attempt,
         final long recordingId,
         final int recordingCounterId,
         final CountersReader counters,
@@ -235,10 +239,11 @@ public class ReplayMergeTest
                 receivedPosition.get()))
         {
             final MutableLong offerPosition = new MutableLong();
-            final Supplier<String> msgOne = () -> String.format("replay did not merge: %s", replayMerge);
+            final Supplier<String> msgOne = () -> String.format(
+                "replay did not merge: attempt=%d %s", attempt, replayMerge);
             final Supplier<String> msgTwo = () -> String.format(
-                "receivedMessageCount=%d < totalMessageCount=%d: replayMerge=%s",
-                receivedMessageCount.get(), TOTAL_MESSAGE_COUNT, replayMerge);
+                "receivedMessageCount=%d < totalMessageCount=%d: attempt=%d %s",
+                receivedMessageCount.get(), TOTAL_MESSAGE_COUNT, attempt, replayMerge);
 
             for (int i = messagesPublished; i < TOTAL_MESSAGE_COUNT; i++)
             {
@@ -247,7 +252,7 @@ public class ReplayMergeTest
                     if (Publication.BACK_PRESSURED == offerPosition.get())
                     {
                         awaitRecordingPositionChange(
-                            replayMerge, counters, recordingCounterId, recordingId, publication);
+                            attempt, replayMerge, counters, recordingCounterId, recordingId, publication);
                         if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT) && replayMerge.hasFailed())
                         {
                             return false;
@@ -299,6 +304,7 @@ public class ReplayMergeTest
     }
 
     static void awaitRecordingPositionChange(
+        final int attempt,
         final ReplayMerge replayMerge,
         final CountersReader counters,
         final int counterId,
@@ -309,10 +315,11 @@ public class ReplayMergeTest
         final long initialTimestampNs = System.nanoTime();
         final long currentPosition = counters.getCounterValue(counterId);
         final Supplier<String> msg = () -> String.format(
-            "publicationPosition=%d, recordingPosition=%d, timeSinceLastChangeMs=%d, replayMerge=%s",
+            "publicationPosition=%d recordingPosition=%d timeSinceLastChangeMs=%d attempt=%d replayMerge=%s",
             position,
             currentPosition,
             (System.nanoTime() - initialTimestampNs) / 1_000_000,
+            attempt,
             replayMerge);
 
         do

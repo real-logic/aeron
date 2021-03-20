@@ -65,10 +65,9 @@ public class CubicCongestionControl implements CongestionControl
     private static final double C = 0.4;
     private static final double B = 0.2;
 
-    private final int minWindow;
     private final int mtu;
-    private final int initCwnd;
     private final int maxCwnd;
+    private final int initialWindowLength;
 
     private long lastUpdateTimestampNs;
     private long lastLossTimestampNs;
@@ -113,19 +112,18 @@ public class CubicCongestionControl implements CongestionControl
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {
-        AtomicCounter rttIndicator = null;
-        AtomicCounter windowIndicator = null;
         try
         {
+            errorHandler = context.errorHandler();
             mtu = senderMtuLength;
-            minWindow = senderMtuLength;
+
             final int initialWindowLength = 0 != udpChannel.receiverWindowLength() ?
                 udpChannel.receiverWindowLength() : context.initialWindowLength();
             final int maxWindow = Math.min(termLength >> 1, initialWindowLength);
 
             maxCwnd = maxWindow / mtu;
-            initCwnd = Math.min(INITCWND, maxCwnd);
-            cwnd = initCwnd;
+            cwnd = Math.min(INITCWND, maxCwnd);
+            this.initialWindowLength = cwnd * mtu;
             w_max = maxCwnd; // initially set w_max to max window and act in the TCP and concave region initially
             k = StrictMath.cbrt((double)w_max * B / C);
 
@@ -152,21 +150,25 @@ public class CubicCongestionControl implements CongestionControl
                 udpChannel.originalUriString());
 
             rttIndicator.setOrdered(0);
-            windowIndicator.setOrdered(minWindow);
-            this.rttIndicator = rttIndicator;
-            this.windowIndicator = windowIndicator;
+            windowIndicator.setOrdered(this.initialWindowLength);
 
             lastLossTimestampNs = nanoClock.nanoTime();
             lastUpdateTimestampNs = lastLossTimestampNs;
-
-            errorHandler = context.errorHandler();
         }
         catch (final Throwable ex)
         {
-            CloseHelper.close(rttIndicator);
-            CloseHelper.close(windowIndicator);
+            close();
             throw ex;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
+    {
+        CloseHelper.close(errorHandler, rttIndicator);
+        CloseHelper.close(errorHandler, windowIndicator);
     }
 
     /**
@@ -218,7 +220,7 @@ public class CubicCongestionControl implements CongestionControl
         {
             w_max = cwnd;
             k = StrictMath.cbrt((double)w_max * B / C);
-            cwnd = Math.max(initCwnd, (int)(cwnd * (1.0 - B)));
+            cwnd = Math.max(1, (int)(cwnd * (1.0 - B)));
             lastLossTimestampNs = nowNs;
             forceStatusMessage = true;
         }
@@ -257,16 +259,7 @@ public class CubicCongestionControl implements CongestionControl
      */
     public int initialWindowLength()
     {
-        return minWindow;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void close()
-    {
-        CloseHelper.close(errorHandler, rttIndicator);
-        CloseHelper.close(errorHandler, windowIndicator);
+        return initialWindowLength;
     }
 
     int maxCongestionWindow()

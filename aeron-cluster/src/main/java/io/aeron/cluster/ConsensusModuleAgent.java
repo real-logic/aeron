@@ -57,8 +57,6 @@ final class ConsensusModuleAgent implements Agent
 {
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final int SERVICE_MESSAGE_LIMIT = 20;
-    public static final long LOG_REPLICATION_PROGRESS_CHECK_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
-    public static final long LOG_REPLICATION_PROGRESS_CHECK_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
     private final long sessionTimeoutNs;
     private final long leaderHeartbeatIntervalNs;
@@ -2549,8 +2547,8 @@ final class ConsensusModuleAgent implements Agent
             ctx.archiveContext().controlRequestStreamId(),
             leaderArchiveEndpoint,
             stopPosition,
-            LOG_REPLICATION_PROGRESS_CHECK_TIMEOUT_NS,
-            LOG_REPLICATION_PROGRESS_CHECK_INTERVAL_NS);
+            ctx.leaderHeartbeatTimeoutNs(),
+            ctx.leaderHeartbeatIntervalNs());
     }
 
     private int updateFollowerPosition(final long nowNs)

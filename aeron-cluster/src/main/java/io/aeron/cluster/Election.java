@@ -704,6 +704,8 @@ class Election
             {
                 logReplication = consensusModuleAgent.newLogReplication(
                     leaderMember.archiveEndpoint(), leaderRecordingId, logReplicationPosition);
+                leaderLogReplicationCommitPositionDeadlineNs = NULL_VALUE;
+
                 workCount++;
             }
             else
@@ -714,54 +716,67 @@ class Election
         else
         {
             workCount += consensusModuleAgent.pollArchiveEvents();
+
+            if (NULL_VALUE != logReplication.recordingId() &&
+                consensusModuleAgent.logRecordingId() != logReplication.recordingId())
+            {
+                consensusModuleAgent.logRecordingId(logReplication.recordingId());
+            }
+
             if (logReplication.isDone(nowNs))
             {
-                if (logReplication.isClosed())
+                logReplication.close();
+
+                if (leaderLogReplicationCommitPosition >= appendPosition)
                 {
-                    if (leaderLogReplicationCommitPosition >= appendPosition)
-                    {
-                        cleanupReplication();
-                        state(FOLLOWER_REPLAY, nowNs);
+                    cleanupReplication();
 
-                        workCount++;
-                    }
-                    else if (nowNs >= leaderLogReplicationCommitPositionDeadlineNs)
-                    {
-                        throw new ClusterException("Timeout waiting for leader to commit replicated log position");
-                    }
-                    else
-                    {
-                        if (nowNs + ctx.leaderHeartbeatIntervalNs() >= timeOfLastUpdateNs)
-                        {
-                            if (consensusPublisher.appendPosition(
-                                leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id()))
-                            {
-                                timeOfLastUpdateNs = nowNs;
-                            }
-
-                            workCount++;
-                        }
-                    }
-                }
-                else
-                {
-                    logReplication.close();
-                    appendPosition = logReplication.position();
-                    consensusModuleAgent.logRecordingId(logReplication.recordingId());
-                    if (consensusPublisher.appendPosition(
-                        leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id()))
-                    {
-                        timeOfLastUpdateNs = nowNs;
-                    }
-
-                    leaderLogReplicationCommitPositionDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
+                    state(FOLLOWER_REPLAY, nowNs);
 
                     workCount++;
                 }
+                else if (NULL_VALUE != leaderLogReplicationCommitPositionDeadlineNs &&
+                    nowNs >= leaderLogReplicationCommitPositionDeadlineNs)
+                {
+                    throw new ClusterException("Timeout waiting for leader to commit replicated log position");
+                }
+                else
+                {
+                    workCount += updateFollowerPositionForReplication(nowNs);
+                }
+            }
+            else
+            {
+                workCount += updateFollowerPositionForReplication(nowNs);
             }
         }
 
         return workCount;
+    }
+
+    private int updateFollowerPositionForReplication(final long nowNs)
+    {
+        final long position = logReplication.position();
+        if (appendPosition < position)
+        {
+            leaderLogReplicationCommitPositionDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
+        }
+
+        if (appendPosition < position ||
+            nowNs >= (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
+        {
+            appendPosition = position;
+
+            if (consensusPublisher.appendPosition(
+                leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id()))
+            {
+                timeOfLastUpdateNs = nowNs;
+            }
+
+            return 1;
+        }
+
+        return 0;
     }
 
     private int followerReplay(final long nowNs)

@@ -51,7 +51,8 @@ class LogReplicationTest
     {
         when(aeronArchive.controlResponsePoller()).thenReturn(controlResponsePoller);
         when(controlResponsePoller.subscription()).thenReturn(subscription);
-        when(aeronArchive.replicate(anyLong(), anyLong(), anyInt(), anyString(), nullable(String.class), anyLong()))
+        when(aeronArchive.replicate(
+            anyLong(), anyLong(), anyLong(), anyInt(), anyString(), nullable(String.class), nullable(String.class)))
             .thenReturn(REPLICATION_ID);
     }
 

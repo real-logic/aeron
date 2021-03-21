@@ -26,10 +26,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.security.Authenticator;
-import org.agrona.CloseHelper;
-import org.agrona.LangUtil;
-import org.agrona.SemanticVersion;
-import org.agrona.SystemUtil;
+import org.agrona.*;
 import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
@@ -1068,12 +1065,13 @@ abstract class ArchiveConductor
         final long correlationId,
         final long srcRecordingId,
         final long dstRecordingId,
+        final long stopPosition,
         final long channelTagId,
         final long subscriptionTagId,
         final int srcControlStreamId,
         final String srcControlChannel,
         final String liveDestination,
-        final long stopPosition,
+        final String replicationChannel,
         final ControlSession controlSession)
     {
         final boolean hasRecording = catalog.hasRecording(dstRecordingId);
@@ -1102,7 +1100,7 @@ abstract class ArchiveConductor
             replicationId,
             stopPosition,
             liveDestination,
-            ctx.replicationChannel(),
+            Strings.isEmpty(replicationChannel) ? ctx.replicationChannel() : replicationChannel,
             hasRecording ? recordingSummary : null,
             remoteArchiveContext,
             cachedEpochClock,

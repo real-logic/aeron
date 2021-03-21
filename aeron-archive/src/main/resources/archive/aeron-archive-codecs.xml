@@ -553,6 +553,7 @@
         <field name="srcControlStreamId"   id="8" type="int32"/>
         <data  name="srcControlChannel"    id="9" type="varAsciiEncoding"/>
         <data  name="liveDestination"      id="10" type="varAsciiEncoding"/>
+        <data  name="replicationChannel"   id="11" type="varAsciiEncoding"/>
     </sbe:message>
 
     <!-- Archive Recording Progress Events -->

@@ -36,6 +36,7 @@
 #define AERON_CUBICCONGESTIONCONTROL_RTT_MAX_TIMEOUT_NS (AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS)
 #define AERON_CUBICCONGESTIONCONTROL_MAX_OUTSTANDING_RTT_MEASUREMENTS (1)
 
+#define AERON_CUBICCONGESTIONCONTROL_INITCWND (10)
 #define AERON_CUBICCONGESTIONCONTROL_C (0.4)
 #define AERON_CUBICCONGESTIONCONTROL_B (0.2)
 
@@ -207,7 +208,7 @@ typedef struct aeron_cubic_congestion_control_strategy_state_stct
     bool tcp_mode;
     bool measure_rtt;
 
-    int32_t min_window;
+    int32_t initial_window_length;
     int32_t mtu;
     int32_t max_cwnd;
     int32_t cwnd;
@@ -320,7 +321,7 @@ int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
 
 int32_t aeron_cubic_congestion_control_strategy_initial_window_length(void *state)
 {
-    return ((aeron_cubic_congestion_control_strategy_state_t *)state)->min_window;
+    return ((aeron_cubic_congestion_control_strategy_state_t *)state)->initial_window_length;
 }
 
 int aeron_cubic_congestion_control_strategy_supplier(
@@ -372,7 +373,6 @@ int aeron_cubic_congestion_control_strategy_supplier(
     }
 
     state->mtu = sender_mtu_length;
-    state->min_window = sender_mtu_length;
     const int32_t initial_window_length = (int32_t)aeron_udp_channel_receiver_window(
         channel, context->initial_window_length);
     const int32_t max_window_for_term = term_length / 2;
@@ -380,7 +380,10 @@ int aeron_cubic_congestion_control_strategy_supplier(
         max_window_for_term : initial_window_length;
 
     state->max_cwnd = max_window / sender_mtu_length;
-    state->cwnd = 1;
+    state->cwnd = state->max_cwnd > AERON_CUBICCONGESTIONCONTROL_INITCWND ?
+        AERON_CUBICCONGESTIONCONTROL_INITCWND : state->max_cwnd;
+    state->initial_window_length = state->cwnd * sender_mtu_length;
+
     // initially set w_max to max window and act in the TCP and concave region initially
     state->w_max = state->max_cwnd;
     state->k = cbrt((double)state->w_max * AERON_CUBICCONGESTIONCONTROL_B / AERON_CUBICCONGESTIONCONTROL_C);
@@ -424,7 +427,7 @@ int aeron_cubic_congestion_control_strategy_supplier(
     aeron_counter_set_ordered(state->rtt_indicator, 0);
 
     state->window_indicator = aeron_counters_manager_addr(counters_manager, window_indicator_counter_id);
-    aeron_counter_set_ordered(state->window_indicator, state->min_window);
+    aeron_counter_set_ordered(state->window_indicator, state->initial_window_length);
 
     state->last_rtt_timestamp_ns = 0;
     state->outstanding_rtt_measurements = 0;

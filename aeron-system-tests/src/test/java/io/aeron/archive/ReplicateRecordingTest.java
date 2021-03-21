@@ -383,7 +383,13 @@ public class ReplicateRecordingTest
             final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
             dstAeronArchive.replicate(
-                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null, firstPosition);
+                srcRecordingId,
+                NULL_VALUE,
+                firstPosition,
+                SRC_CONTROL_STREAM_ID,
+                SRC_CONTROL_REQUEST_CHANNEL,
+                null,
+                null);
 
             assertEquals(RecordingSignal.REPLICATE, awaitSignal(signalRef, adapter));
             assertEquals(RecordingSignal.EXTEND, awaitSignal(signalRef, adapter));

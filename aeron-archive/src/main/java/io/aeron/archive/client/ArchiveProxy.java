@@ -15,6 +15,7 @@
  */
 package io.aeron.archive.client;
 
+import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.Subscription;
@@ -25,7 +26,6 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.*;
 
 import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
-import static io.aeron.archive.codecs.ReplicateRequest2Encoder.*;
 
 /**
  * Proxy class for encapsulating encoding and sending of control protocol messages to an archive.
@@ -960,12 +960,13 @@ public final class ArchiveProxy
             .correlationId(correlationId)
             .srcRecordingId(srcRecordingId)
             .dstRecordingId(dstRecordingId)
-            .stopPosition(stopPositionNullValue())
-            .channelTagId(channelTagIdNullValue())
-            .subscriptionTagId(subscriptionTagIdNullValue())
+            .stopPosition(AeronArchive.NULL_POSITION)
+            .channelTagId(Aeron.NULL_VALUE)
+            .subscriptionTagId(Aeron.NULL_VALUE)
             .srcControlStreamId(srcControlStreamId)
             .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination);
+            .liveDestination(liveDestination)
+            .replicationChannel(null);
 
         return offer(replicateRequest.encodedLength());
     }
@@ -985,10 +986,12 @@ public final class ArchiveProxy
      *
      * @param srcRecordingId     recording id which must exist in the source archive.
      * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
-     * @param stopPosition       position to stop the replication.
+     * @param stopPosition       position to stop the replication. {@link AeronArchive#NULL_POSITION} to stop at end
+     *                           of current recording.
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
      * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
      * @param liveDestination    destination for the live stream if merge is required. Empty or null for no merge.
+     * @param replicationChannel channel over which the replication will occur. Empty or null for default channel.
      * @param correlationId      for this request.
      * @param controlSessionId   for this request.
      * @return true if successfully offered otherwise false.
@@ -1000,6 +1003,7 @@ public final class ArchiveProxy
         final int srcControlStreamId,
         final String srcControlChannel,
         final String liveDestination,
+        final String replicationChannel,
         final long correlationId,
         final long controlSessionId)
     {
@@ -1015,11 +1019,12 @@ public final class ArchiveProxy
             .srcRecordingId(srcRecordingId)
             .dstRecordingId(dstRecordingId)
             .stopPosition(stopPosition)
-            .channelTagId(channelTagIdNullValue())
-            .subscriptionTagId(subscriptionTagIdNullValue())
+            .channelTagId(Aeron.NULL_VALUE)
+            .subscriptionTagId(Aeron.NULL_VALUE)
             .srcControlStreamId(srcControlStreamId)
             .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination);
+            .liveDestination(liveDestination)
+            .replicationChannel(replicationChannel);
 
         return offer(replicateRequest.encodedLength());
     }
@@ -1070,7 +1075,7 @@ public final class ArchiveProxy
             .correlationId(correlationId)
             .srcRecordingId(srcRecordingId)
             .dstRecordingId(dstRecordingId)
-            .stopPosition(stopPositionNullValue())
+            .stopPosition(AeronArchive.NULL_POSITION)
             .channelTagId(channelTagId)
             .subscriptionTagId(subscriptionTagId)
             .srcControlStreamId(srcControlStreamId)

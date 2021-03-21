@@ -40,7 +40,7 @@
 #include "aeron_archive_client/FindLastMatchingRecordingRequest.h"
 #include "aeron_archive_client/TruncateRecordingRequest.h"
 #include "aeron_archive_client/ListRecordingSubscriptionsRequest.h"
-#include "aeron_archive_client/ReplicateRequest.h"
+#include "aeron_archive_client/ReplicateRequest2.h"
 #include "aeron_archive_client/StopReplicationRequest.h"
 #include "aeron_archive_client/DetachSegmentsRequest.h"
 #include "aeron_archive_client/DeleteDetachedSegmentsRequest.h"
@@ -49,7 +49,6 @@
 #include "aeron_archive_client/MigrateSegmentsRequest.h"
 #include "aeron_archive_client/KeepAliveRequest.h"
 #include "aeron_archive_client/ChallengeResponse.h"
-#include "aeron_archive_client/TaggedReplicateRequest.h"
 #include "aeron_archive_client/PurgeRecordingRequest.h"
 
 using namespace aeron;
@@ -512,16 +511,50 @@ util::index_t ArchiveProxy::replicate(
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
-    ReplicateRequest request;
+    ReplicateRequest2 request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .stopPosition(NULL_POSITION)
+        .channelTagId(NULL_VALUE)
+        .subscriptionTagId(NULL_VALUE)
+        .srcRecordingId(srcRecordingId)
+        .dstRecordingId(dstRecordingId)
+        .srcControlStreamId(srcControlStreamId)
+        .putSrcControlChannel(srcControlChannel)
+        .putLiveDestination(liveDestination)
+        .putReplicationChannel(nullptr, 0);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::replicate(
+    AtomicBuffer &buffer,
+    std::int64_t srcRecordingId,
+    std::int64_t dstRecordingId,
+    std::int64_t stopPosition,
+    std::int32_t srcControlStreamId,
+    const std::string &srcControlChannel,
+    const std::string &liveDestination,
+    const std::string &replicationChannel,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    ReplicateRequest2 request;
 
     wrapAndApplyHeader(request, buffer)
         .controlSessionId(controlSessionId)
         .correlationId(correlationId)
         .srcRecordingId(srcRecordingId)
         .dstRecordingId(dstRecordingId)
+        .stopPosition(stopPosition)
+        .channelTagId(NULL_VALUE)
+        .subscriptionTagId(NULL_VALUE)
         .srcControlStreamId(srcControlStreamId)
         .putSrcControlChannel(srcControlChannel)
-        .putLiveDestination(liveDestination);
+        .putLiveDestination(liveDestination)
+        .putReplicationChannel(replicationChannel);
 
     return messageAndHeaderLength(request);
 }
@@ -538,18 +571,20 @@ util::index_t ArchiveProxy::taggedReplicate(
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
-    TaggedReplicateRequest request;
+    ReplicateRequest2 request;
 
     wrapAndApplyHeader(request, buffer)
         .controlSessionId(controlSessionId)
         .correlationId(correlationId)
         .srcRecordingId(srcRecordingId)
         .dstRecordingId(dstRecordingId)
+        .stopPosition(NULL_POSITION)
         .channelTagId(channelTagId)
         .subscriptionTagId(subscriptionTagId)
         .srcControlStreamId(srcControlStreamId)
         .putSrcControlChannel(srcControlChannel)
-        .putLiveDestination(liveDestination);
+        .putLiveDestination(liveDestination)
+        .putReplicationChannel(nullptr, 0);
 
     return messageAndHeaderLength(request);
 }

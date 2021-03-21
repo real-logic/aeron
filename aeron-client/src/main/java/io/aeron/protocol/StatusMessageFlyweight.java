@@ -291,6 +291,11 @@ public class StatusMessageFlyweight extends HeaderFlyweight
             frameLength(HEADER_LENGTH + SIZE_OF_LONG);
             putLongUnaligned(GROUP_TAG_FIELD_OFFSET, groupTag);
         }
+        else
+        {
+            // make sure to explicitly set the frameLength in case of previous tags used.
+            frameLength(HEADER_LENGTH);
+        }
 
         return this;
     }

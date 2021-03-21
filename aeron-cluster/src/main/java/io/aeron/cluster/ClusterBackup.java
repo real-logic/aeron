@@ -284,6 +284,16 @@ public final class ClusterBackup implements AutoCloseable
         public static final String CATCHUP_ENDPOINT_DEFAULT;
 
         /**
+         * Channel template used for catchup and replication of log and snapshots.
+         */
+        public static final String CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME = "aeron.cluster.backup.catchup.channel";
+
+        /**
+         * Default channel template used for catchup and replication of log and snapshots.
+         */
+        public static final String CLUSTER_BACKUP_CATCHUP_CHANNEL_DEFAULT = "aeron:udp?alias=replicate|cc=cubic";
+
+        /**
          * Interval at which a cluster backup will send backup queries.
          */
         public static final String CLUSTER_BACKUP_INTERVAL_PROP_NAME = "aeron.cluster.backup.interval";
@@ -301,7 +311,7 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Default timeout within which a cluster backup will expect a response from a backup query.
          */
-        public static final long CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(2);
+        public static final long CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(3);
 
         /**
          * Timeout within which a cluster backup will expect progress.
@@ -341,6 +351,18 @@ public final class ClusterBackup implements AutoCloseable
 
             CONSENSUS_CHANNEL_DEFAULT = consensusUri.toString();
             CATCHUP_ENDPOINT_DEFAULT = member.catchupEndpoint();
+        }
+
+        /**
+         * The value {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_DEFAULT} or system property
+         * {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_DEFAULT} or system property
+         * {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME} if set.
+         */
+        public static String catchupChannel()
+        {
+            return System.getProperty(CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME, CLUSTER_BACKUP_CATCHUP_CHANNEL_DEFAULT);
         }
 
         /**
@@ -411,6 +433,7 @@ public final class ClusterBackup implements AutoCloseable
         private int serviceSnapshotStreamId = ClusteredServiceContainer.Configuration.snapshotStreamId();
         private int logStreamId = ConsensusModule.Configuration.logStreamId();
         private String catchupEndpoint = Configuration.CATCHUP_ENDPOINT_DEFAULT;
+        private String catchupChannel = Configuration.catchupChannel();
 
         private long clusterBackupIntervalNs = Configuration.clusterBackupIntervalNs();
         private long clusterBackupResponseTimeoutNs = Configuration.clusterBackupResponseTimeoutNs();
@@ -1074,6 +1097,30 @@ public final class ClusterBackup implements AutoCloseable
         public String catchupEndpoint()
         {
             return catchupEndpoint;
+        }
+
+        /**
+         * Set the catchup channel template to use for log and snapshot retrieval.
+         *
+         * @param catchupChannel to use for the log and snapshot retrieval.
+         * @return catchup endpoint to use for the log and snapshot retrieval.
+         * @see Configuration#CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME
+         */
+        public Context catchupChannel(final String catchupChannel)
+        {
+            this.catchupChannel = catchupChannel;
+            return this;
+        }
+
+        /**
+         * Get the catchup channel template to use for log and snapshot retrieval.
+         *
+         * @return catchup endpoint to use for the log and snapshot retrieval.
+         * @see Configuration#CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME
+         */
+        public String catchupChannel()
+        {
+            return catchupChannel;
         }
 
         /**

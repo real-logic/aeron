@@ -550,12 +550,16 @@ public final class ClusterBackupAgent implements Agent
 
         if (null == snapshotReplication)
         {
+            final ChannelUri replicationUri = ChannelUri.parse(ctx.catchupChannel());
+            replicationUri.put(ENDPOINT_PARAM_NAME, ctx.catchupEndpoint());
             final long replicationId = backupArchive.replicate(
                 snapshotsToRetrieve.get(snapshotCursor).recordingId,
                 NULL_VALUE,
+                NULL_POSITION,
                 clusterArchive.context().controlRequestStreamId(),
                 clusterArchive.context().controlRequestChannel(),
-                null);
+                null,
+                replicationUri.toString());
 
             snapshotReplication = new SnapshotReplication(replicationId);
             timeOfLastProgressMs = nowMs;

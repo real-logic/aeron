@@ -418,22 +418,17 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final boolean isMds = isTagged || null != liveDestination;
         final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
         final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
-        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
-            .media(channelUri)
-            .sessionId(replaySessionId)
-            .alias(channelUri)
-            .rejoin(Boolean.FALSE);
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
+        channelUri.put(CommonContext.REJOIN_PARAM_NAME, "false");
 
         if (isMds)
         {
-            builder.tags(channelTagId + "," + subscriptionTagId).controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
-        }
-        else
-        {
-            builder.endpoint(endpoint);
+            channelUri.remove(CommonContext.ENDPOINT_PARAM_NAME);
+            channelUri.put(CommonContext.TAGS_PARAM_NAME, channelTagId + "," + subscriptionTagId);
+            channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
         }
 
-        final String channel = builder.build();
+        final String channel = channelUri.toString();
         recordingSubscription = conductor.extendRecording(
             replicationId, dstRecordingId, replayStreamId, SourceLocation.REMOTE, true, channel, controlSession);
 
@@ -484,14 +479,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 channelUri.put(CommonContext.EOS_PARAM_NAME, "false");
             }
 
-            final long replayLength = NULL_POSITION == dstStopPosition ?
-                Long.MAX_VALUE : dstStopPosition - replayPosition;
-
             final long correlationId = aeron.nextCorrelationId();
             if (srcArchive.archiveProxy().replay(
                 srcRecordingId,
                 replayPosition,
-                replayLength,
+                NULL_POSITION == dstStopPosition ? Long.MAX_VALUE : dstStopPosition - replayPosition,
                 channelUri.toString(),
                 replayStreamId,
                 correlationId,

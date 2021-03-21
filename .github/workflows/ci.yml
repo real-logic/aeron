@@ -58,7 +58,7 @@ jobs:
         with:
           java-version: 8
       - name: Build with Gradle
-        run: java -version && ./gradlew
+        run: java -version && ./gradlew clean build
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

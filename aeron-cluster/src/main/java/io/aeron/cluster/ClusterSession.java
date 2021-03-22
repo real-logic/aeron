@@ -39,12 +39,12 @@ final class ClusterSession
 
     private boolean hasNewLeaderEventPending = false;
     private boolean hasOpenEventPending = true;
+    private boolean isBackupSession = false;
     private final long id;
     private long correlationId;
     private long openedLogPosition = Aeron.NULL_VALUE;
     private long closedLogPosition = Aeron.NULL_VALUE;
     private long timeOfLastActivityNs;
-    private boolean isBackupSession = false;
     private final int responseStreamId;
     private final String responseChannel;
     private Publication responsePublication;
@@ -114,6 +114,9 @@ final class ClusterSession
     void closing(final CloseReason closeReason)
     {
         this.closeReason = closeReason;
+        this.hasOpenEventPending = false;
+        this.hasNewLeaderEventPending = false;
+        this.timeOfLastActivityNs = 0;
         state(State.CLOSING);
     }
 
@@ -197,8 +200,8 @@ final class ClusterSession
     void open(final long openedLogPosition)
     {
         this.openedLogPosition = openedLogPosition;
-        state(State.OPEN);
         encodedPrincipal = null;
+        state(State.OPEN);
     }
 
     byte[] encodedPrincipal()
@@ -214,9 +217,9 @@ final class ClusterSession
 
     void reject(final EventCode code, final String responseDetail)
     {
-        state(State.REJECTED);
         this.eventCode = code;
         this.responseDetail = responseDetail;
+        state(State.REJECTED);
     }
 
     EventCode eventCode()

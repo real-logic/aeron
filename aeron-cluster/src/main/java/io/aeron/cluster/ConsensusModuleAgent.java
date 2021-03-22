@@ -2238,6 +2238,7 @@ final class ConsensusModuleAgent implements Agent
                         i.remove();
                         session.close(ctx.countedErrorHandler());
                         ctx.timedOutClientCounter().incrementOrdered();
+                        workCount++;
                     }
                 }
                 else if (session.state() == CLOSING)
@@ -2250,20 +2251,19 @@ final class ConsensusModuleAgent implements Agent
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
                         session.close(ctx.countedErrorHandler());
-
                         if (session.closeReason() == CloseReason.TIMEOUT)
                         {
                             ctx.timedOutClientCounter().incrementOrdered();
                         }
+                        workCount++;
                     }
                 }
                 else
                 {
                     i.remove();
                     session.close(ctx.countedErrorHandler());
+                    workCount++;
                 }
-
-                workCount += 1;
             }
             else if (session.hasOpenEventPending())
             {

@@ -135,15 +135,14 @@ class RecordingSession implements Session
 
         if (State.INACTIVE == state)
         {
+            recordingWriter.close();
             state(State.STOPPED);
+            workCount++;
 
             if (null != recordingEventsProxy)
             {
                 recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
             }
-
-            recordingWriter.close();
-            workCount += 1;
         }
 
         return workCount;
@@ -257,17 +256,19 @@ class RecordingSession implements Session
         }
         catch (final ArchiveException ex)
         {
+            countedErrorHandler.onError(ex);
             errorMessage = ex.getMessage();
             errorCode = ex.errorCode();
             state(State.INACTIVE);
-            throw ex;
         }
         catch (final Throwable ex)
         {
+            countedErrorHandler.onError(ex);
             errorMessage = ex.getClass().getName() + ": " + ex.getMessage();
             state(State.INACTIVE);
-            throw ex;
         }
+
+        return 1;
     }
 
     private void state(final State newState)

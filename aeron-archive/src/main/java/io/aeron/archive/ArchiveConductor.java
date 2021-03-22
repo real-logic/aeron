@@ -1029,8 +1029,8 @@ abstract class ArchiveConductor
             final long position = session.recordedPosition();
             final long recordingId = session.sessionId();
             final long subscriptionId = subscription.registrationId();
-            catalog.recordingStopped(recordingId, position, epochClock.time());
             recordingSessionByIdMap.remove(recordingId);
+            catalog.recordingStopped(recordingId, position, epochClock.time());
 
             session.sendPendingError(controlResponseProxy);
             session.controlSession().attemptSignal(

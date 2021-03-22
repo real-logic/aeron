@@ -41,9 +41,9 @@ final class LogReplication
         final AeronArchive archive,
         final long srcRecordingId,
         final long dstRecordingId,
+        final long stopPosition,
         final int srcArchiveStreamId,
         final String srcArchiveEndpoint,
-        final long stopPosition,
         final long progressCheckTimeoutNs,
         final long progressCheckIntervalNs)
     {

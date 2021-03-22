@@ -71,8 +71,8 @@ class Election
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
     private LogReplication logReplication = null;
-    private long leaderLogReplicationCommitPosition = NULL_POSITION;
-    private long leaderLogReplicationCommitPositionDeadlineNs = NULL_VALUE;
+    private long logReplicationCommitPosition = NULL_POSITION;
+    private long logReplicationCommitPositionDeadlineNs = NULL_VALUE;
 
     Election(
         final boolean isNodeStartup,
@@ -416,7 +416,7 @@ class Election
         }
         else if (FOLLOWER_LOG_REPLICATION == state && leaderMemberId == leaderMember.id())
         {
-            leaderLogReplicationCommitPosition = Math.max(leaderLogReplicationCommitPosition, logPosition);
+            logReplicationCommitPosition = Math.max(logReplicationCommitPosition, logPosition);
         }
         else if (leadershipTermId > this.leadershipTermId && LEADER_READY == state)
         {
@@ -704,7 +704,7 @@ class Election
             {
                 logReplication = consensusModuleAgent.newLogReplication(
                     leaderMember.archiveEndpoint(), leaderRecordingId, logReplicationPosition);
-                leaderLogReplicationCommitPositionDeadlineNs = NULL_VALUE;
+                logReplicationCommitPositionDeadlineNs = NULL_VALUE;
 
                 workCount++;
             }
@@ -727,7 +727,7 @@ class Election
             {
                 logReplication.close();
 
-                if (leaderLogReplicationCommitPosition >= appendPosition)
+                if (logReplicationCommitPosition >= appendPosition)
                 {
                     cleanupReplication();
 
@@ -735,8 +735,8 @@ class Election
 
                     workCount++;
                 }
-                else if (NULL_VALUE != leaderLogReplicationCommitPositionDeadlineNs &&
-                    nowNs >= leaderLogReplicationCommitPositionDeadlineNs)
+                else if (NULL_VALUE != logReplicationCommitPositionDeadlineNs &&
+                    nowNs >= logReplicationCommitPositionDeadlineNs)
                 {
                     throw new ClusterException("Timeout waiting for leader to commit replicated log position");
                 }
@@ -752,31 +752,6 @@ class Election
         }
 
         return workCount;
-    }
-
-    private int updateFollowerPositionForReplication(final long nowNs)
-    {
-        final long position = logReplication.position();
-        if (appendPosition < position)
-        {
-            leaderLogReplicationCommitPositionDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
-        }
-
-        if (appendPosition < position ||
-            nowNs >= (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
-        {
-            appendPosition = position;
-
-            if (consensusPublisher.appendPosition(
-                leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id()))
-            {
-                timeOfLastUpdateNs = nowNs;
-            }
-
-            return 1;
-        }
-
-        return 0;
     }
 
     private int followerReplay(final long nowNs)
@@ -1144,6 +1119,30 @@ class Election
         }
     }
 
+    private int updateFollowerPositionForReplication(final long nowNs)
+    {
+        final long position = logReplication.position();
+        if (appendPosition < position)
+        {
+            logReplicationCommitPositionDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
+        }
+
+        if (appendPosition < position || nowNs >= (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
+        {
+            appendPosition = position;
+
+            if (consensusPublisher.appendPosition(
+                leaderMember.publication(), leadershipTermId, appendPosition, thisMember.id()))
+            {
+                timeOfLastUpdateNs = nowNs;
+            }
+
+            return 1;
+        }
+
+        return 0;
+    }
+
     void stateChange(final ElectionState oldState, final ElectionState newState, final int memberId)
     {
         /*
@@ -1181,8 +1180,8 @@ class Election
             ", clusterMembers=" + Arrays.toString(clusterMembers) +
             ", thisMember=" + thisMember +
             ", clusterMemberByIdMap=" + clusterMemberByIdMap +
-            ", ctx=" + ctx +
             ", logReplication=" + logReplication +
+            ", ctx=" + ctx +
             '}';
     }
 }

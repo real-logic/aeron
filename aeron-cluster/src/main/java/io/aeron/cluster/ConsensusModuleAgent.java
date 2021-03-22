@@ -2546,7 +2546,9 @@ final class ConsensusModuleAgent implements Agent
             logRecordingId,
             ctx.archiveContext().controlRequestStreamId(),
             leaderArchiveEndpoint,
-            stopPosition);
+            stopPosition,
+            ctx.leaderHeartbeatTimeoutNs(),
+            ctx.leaderHeartbeatIntervalNs());
     }
 
     private int updateFollowerPosition(final long nowNs)
@@ -3066,5 +3068,12 @@ final class ConsensusModuleAgent implements Agent
             ingressAdapter.connect(aeron.addSubscription(
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
+    }
+
+    public String toString()
+    {
+        return "ConsensusModuleAgent{" +
+            "election=" + election +
+            '}';
     }
 }

@@ -16,7 +16,6 @@
 package io.aeron.archive;
 
 import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -118,7 +117,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private volatile boolean isAbort;
 
         DedicatedModeRecorder(
-            final ErrorHandler errorHandler,
+            final CountedErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentLinkedQueue<Session> closeQueue,
             final CountDownLatch abortLatch)
@@ -240,7 +239,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private volatile boolean isAbort;
 
         DedicatedModeReplayer(
-            final ErrorHandler errorHandler,
+            final CountedErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentLinkedQueue<Session> closeQueue,
             final CountDownLatch abortLatch)

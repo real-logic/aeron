@@ -1029,16 +1029,23 @@ abstract class ArchiveConductor
             final long position = session.recordedPosition();
             final long recordingId = session.sessionId();
             final long subscriptionId = subscription.registrationId();
-            recordingSessionByIdMap.remove(recordingId);
-            catalog.recordingStopped(recordingId, position, epochClock.time());
 
-            session.sendPendingError(controlResponseProxy);
-            session.controlSession().attemptSignal(
-                session.correlationId(),
-                recordingId,
-                subscriptionId,
-                position,
-                RecordingSignal.STOP);
+            try
+            {
+                recordingSessionByIdMap.remove(recordingId);
+                catalog.recordingStopped(recordingId, position, epochClock.time());
+                session.sendPendingError(controlResponseProxy);
+                session.controlSession().attemptSignal(
+                    session.correlationId(),
+                    recordingId,
+                    subscriptionId,
+                    position,
+                    RecordingSignal.STOP);
+            }
+            catch (final Throwable ex)
+            {
+                errorHandler.onError(ex);
+            }
 
             if (0 == subscriptionRefCountMap.decrementAndGet(subscriptionId) || session.isAutoStop())
             {
@@ -1054,7 +1061,14 @@ abstract class ArchiveConductor
     {
         if (!isAbort)
         {
-            session.sendPendingError(controlResponseProxy);
+            try
+            {
+                session.sendPendingError(controlResponseProxy);
+            }
+            catch (final Throwable ex)
+            {
+                errorHandler.onError(ex);
+            }
         }
 
         replaySessionByIdMap.remove(session.sessionId());

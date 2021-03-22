@@ -15,9 +15,9 @@
  */
 package io.aeron.archive;
 
-import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.CountedErrorHandler;
 
 import java.util.ArrayList;
 
@@ -31,10 +31,10 @@ class SessionWorker<T extends Session> implements Agent
 {
     private final ArrayList<T> sessions = new ArrayList<>();
     private final String roleName;
-    protected final ErrorHandler errorHandler;
+    protected final CountedErrorHandler errorHandler;
     private boolean isClosed = false;
 
-    SessionWorker(final String roleName, final ErrorHandler errorHandler)
+    SessionWorker(final String roleName, final CountedErrorHandler errorHandler)
     {
         this.roleName = roleName;
         this.errorHandler = errorHandler;

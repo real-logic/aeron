@@ -16,8 +16,8 @@
 package io.aeron.archive;
 
 import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.CountedErrorHandler;
 
 final class SharedModeArchiveConductor extends ArchiveConductor
 {
@@ -69,7 +69,7 @@ final class SharedModeArchiveConductor extends ArchiveConductor
 
     class SharedModeRecorder extends SessionWorker<RecordingSession>
     {
-        SharedModeRecorder(final ErrorHandler errorHandler)
+        SharedModeRecorder(final CountedErrorHandler errorHandler)
         {
             super("archive-recorder", errorHandler);
         }
@@ -82,7 +82,7 @@ final class SharedModeArchiveConductor extends ArchiveConductor
 
     class SharedModeReplayer extends SessionWorker<ReplaySession>
     {
-        SharedModeReplayer(final ErrorHandler errorHandler)
+        SharedModeReplayer(final CountedErrorHandler errorHandler)
         {
             super("archive-replayer", errorHandler);
         }

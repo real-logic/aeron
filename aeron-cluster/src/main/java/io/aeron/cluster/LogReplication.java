@@ -164,12 +164,12 @@ final class LogReplication
     {
         final CountersReader counters = archive.context().aeron().countersReader();
         final int counterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
-        if (NULL_COUNTER_ID == counterId)
+        if (NULL_COUNTER_ID != counterId)
         {
-            throw new ClusterException("no recording counter found for recordingId=" + recordingId);
+            return new ReadableCounter(counters, counterId);
         }
 
-        return new ReadableCounter(counters, counterId);
+        return null;
     }
 
     public String toString()

@@ -15,12 +15,13 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.status.ReadableCounter;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,12 +37,14 @@ class LogReplicationTest
 {
     private static final long SRC_RECORDING_ID = 1;
     private static final long DST_RECORDING_ID = 2;
-    private static final int SRC_ARCHIVE_STREAM_ID = 3;
     private static final long REPLICATION_ID = 4;
+    private static final int SRC_ARCHIVE_STREAM_ID = 3;
+
     private static final String ENDPOINT = "localhost:20123";
     private static final long PROGRESS_CHECK_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     private static final long PROGRESS_CHECK_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
+    private final CountersReader countersReader = mock(CountersReader.class);
     private final AeronArchive aeronArchive = mock(AeronArchive.class);
     private final ControlResponsePoller controlResponsePoller = mock(ControlResponsePoller.class);
     private final Subscription subscription = mock(Subscription.class);
@@ -49,6 +52,12 @@ class LogReplicationTest
     @BeforeEach
     void setUp()
     {
+        final AeronArchive.Context ctx = mock(AeronArchive.Context.class);
+        final Aeron aeron = mock(Aeron.class);
+        when(aeronArchive.context()).thenReturn(ctx);
+        when(ctx.aeron()).thenReturn(aeron);
+        when(aeron.countersReader()).thenReturn(countersReader);
+
         when(aeronArchive.controlResponsePoller()).thenReturn(controlResponsePoller);
         when(controlResponsePoller.subscription()).thenReturn(subscription);
         when(aeronArchive.replicate(
@@ -65,7 +74,7 @@ class LogReplicationTest
         final long stopPosition = 982734;
         final long nowNs = 0;
 
-        final LogReplication logReplication = spy(new LogReplication(
+        final LogReplication logReplication = new LogReplication(
             aeronArchive,
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
@@ -74,9 +83,7 @@ class LogReplicationTest
             ENDPOINT,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
-            nowNs));
-
-        doReturn(mock(ReadableCounter.class)).when(logReplication).newRecordingPosition(DST_RECORDING_ID);
+            nowNs);
 
         assertFalse(logReplication.isDone(nowNs));
 
@@ -96,7 +103,7 @@ class LogReplicationTest
         final long stopPosition = 982734;
         final long nowNs = 0;
 
-        final LogReplication logReplication = spy(new LogReplication(
+        final LogReplication logReplication = new LogReplication(
             aeronArchive,
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
@@ -105,9 +112,7 @@ class LogReplicationTest
             ENDPOINT,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
-            nowNs));
-
-        doReturn(mock(ReadableCounter.class)).when(logReplication).newRecordingPosition(DST_RECORDING_ID);
+            nowNs);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
         assertTrue(logReplication.isDone(nowNs));
@@ -191,7 +196,7 @@ class LogReplicationTest
         final long stopPosition = 982734;
         final long t0 = 20L;
 
-        final LogReplication logReplication = spy(new LogReplication(
+        final LogReplication logReplication = new LogReplication(
             aeronArchive,
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
@@ -200,21 +205,15 @@ class LogReplicationTest
             ENDPOINT,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
-            t0));
-
-        final ReadableCounter recordingPosition = mock(ReadableCounter.class);
-        doReturn(recordingPosition).when(logReplication).newRecordingPosition(DST_RECORDING_ID);
+            t0);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, 0, RecordingSignal.EXTEND);
 
         assertFalse(logReplication.isDone(t0));
 
         assertFalse(logReplication.isDone(t0 + (PROGRESS_CHECK_INTERVAL_NS - 1)));
-        verify(recordingPosition, never()).get();
 
-        when(recordingPosition.get()).thenReturn(stopPosition - 1);
         assertFalse(logReplication.isDone(t0 + PROGRESS_CHECK_INTERVAL_NS));
-        verify(recordingPosition).get();
 
         assertThrows(
             ClusterException.class,

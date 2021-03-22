@@ -19,7 +19,6 @@ import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.status.ReadableCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
@@ -31,13 +30,13 @@ final class LogReplication
     private final long progressCheckTimeoutNs;
     private final long progressCheckIntervalNs;
 
+    private int recordingPositionCounterId = NULL_COUNTER_ID;
     private long recordingId;
     private long position = AeronArchive.NULL_POSITION;
 
     private long progressDeadlineNs;
     private long progressCheckDeadlineNs;
     private final AeronArchive archive;
-    private ReadableCounter recordingPosition = null;
     private RecordingSignal lastRecordingSignal = RecordingSignal.NULL_VAL;
 
     private boolean isClosed = false;
@@ -82,10 +81,13 @@ final class LogReplication
         {
             progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
 
-            if (null != recordingPosition)
+            if (NULL_COUNTER_ID != recordingPositionCounterId)
             {
-                final long recordingPosition = this.recordingPosition.get();
-                if (recordingPosition > position)
+                final CountersReader counters = archive.context().aeron().countersReader();
+                final long recordingPosition = counters.getCounterValue(recordingPositionCounterId);
+
+                if (RecordingPos.isActive(counters, recordingPositionCounterId, recordingId) &&
+                    recordingPosition > position)
                 {
                     position = recordingPosition;
                     progressDeadlineNs = nowNs + progressCheckTimeoutNs;
@@ -118,23 +120,20 @@ final class LogReplication
 
     void close()
     {
-        if (isClosed)
+        if (!isClosed)
         {
-            return;
-        }
-
-        if (RecordingSignal.STOP != lastRecordingSignal)
-        {
-            try
+            isClosed = true;
+            if (RecordingSignal.STOP != lastRecordingSignal)
             {
-                archive.stopReplication(replicationId);
-            }
-            catch (final Exception ignore)
-            {
+                try
+                {
+                    archive.stopReplication(replicationId);
+                }
+                catch (final Exception ignore)
+                {
+                }
             }
         }
-
-        isClosed = true;
     }
 
     void onSignal(final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
@@ -143,39 +142,25 @@ final class LogReplication
         {
             if (RecordingSignal.EXTEND == signal)
             {
-                recordingPosition = newRecordingPosition(recordingId);
-            }
-            else if (RecordingSignal.STOP == signal)
-            {
-                recordingPosition = null;
+                final CountersReader counters = archive.context().aeron().countersReader();
+                recordingPositionCounterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
             }
             else if (RecordingSignal.DELETE == signal)
             {
-                throw new ClusterException("recording was deleted during replication, state=" + this);
+                throw new ClusterException("recording was deleted during replication: " + this);
             }
 
             this.recordingId = recordingId;
-            this.lastRecordingSignal = signal;
             this.position = position;
+            this.lastRecordingSignal = signal;
         }
-    }
-
-    ReadableCounter newRecordingPosition(final long recordingId)
-    {
-        final CountersReader counters = archive.context().aeron().countersReader();
-        final int counterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
-        if (NULL_COUNTER_ID != counterId)
-        {
-            return new ReadableCounter(counters, counterId);
-        }
-
-        return null;
     }
 
     public String toString()
     {
         return "LogReplication{" +
             "replicationId=" + replicationId +
+            ", recordingPositionCounterId=" + recordingPositionCounterId +
             ", recordingId=" + recordingId +
             ", position=" + position +
             ", stopPosition=" + stopPosition +

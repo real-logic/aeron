@@ -15,15 +15,18 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
 import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.status.ReadableCounter;
+import org.agrona.concurrent.status.CountersReader;
+
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 final class LogReplication
 {
     private final long replicationId;
-    private final AeronArchive archive;
     private final long stopPosition;
     private final long progressCheckTimeoutNs;
     private final long progressCheckIntervalNs;
@@ -31,8 +34,10 @@ final class LogReplication
     private long recordingId;
     private long position = AeronArchive.NULL_POSITION;
 
-    private long nextProgressCheckDeadlineNs = Aeron.NULL_VALUE;
-    private long progressTimeoutDeadlineNs = Aeron.NULL_VALUE;
+    private long progressDeadlineNs;
+    private long progressCheckDeadlineNs;
+    private final AeronArchive archive;
+    private ReadableCounter recordingPosition = null;
     private RecordingSignal lastRecordingSignal = RecordingSignal.NULL_VAL;
 
     private boolean isClosed = false;
@@ -45,12 +50,15 @@ final class LogReplication
         final int srcArchiveStreamId,
         final String srcArchiveEndpoint,
         final long progressCheckTimeoutNs,
-        final long progressCheckIntervalNs)
+        final long progressCheckIntervalNs,
+        final long nowNs)
     {
         this.archive = archive;
         this.stopPosition = stopPosition;
         this.progressCheckTimeoutNs = progressCheckTimeoutNs;
         this.progressCheckIntervalNs = progressCheckIntervalNs;
+        this.progressDeadlineNs = nowNs + progressCheckTimeoutNs;
+        this.progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
 
         final String srcArchiveChannel = "aeron:udp?endpoint=" + srcArchiveEndpoint;
 
@@ -67,36 +75,27 @@ final class LogReplication
 
         if (position > stopPosition)
         {
-            throw new ClusterException(
-                "Log replication has progressed too far, position > stopPosition, state=" + this);
+            throw new ClusterException("log replication has progressed past stopPosition: " + this);
         }
 
-        if (Aeron.NULL_VALUE == progressTimeoutDeadlineNs)
+        if (nowNs >= progressCheckDeadlineNs)
         {
-            progressTimeoutDeadlineNs = nowNs + progressCheckTimeoutNs;
-        }
+            progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
 
-        if (Aeron.NULL_VALUE == nextProgressCheckDeadlineNs)
-        {
-            nextProgressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
-        }
-
-        if (Aeron.NULL_VALUE != recordingId && nowNs >= nextProgressCheckDeadlineNs)
-        {
-            final long recordingPosition = archive.getRecordingPosition(recordingId);
-            if (recordingPosition > position)
+            if (null != recordingPosition)
             {
-                position = recordingPosition;
-                progressTimeoutDeadlineNs = nowNs + progressCheckTimeoutNs;
+                final long recordingPosition = this.recordingPosition.get();
+                if (recordingPosition > position)
+                {
+                    position = recordingPosition;
+                    progressDeadlineNs = nowNs + progressCheckTimeoutNs;
+                }
             }
-
-            nextProgressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
         }
 
-        if (nowNs >= progressTimeoutDeadlineNs)
+        if (nowNs >= progressDeadlineNs)
         {
-            throw new ClusterException(
-                "Log Replicate has had no progress for " + progressCheckTimeoutNs + "ns, state: " + this);
+            throw new ClusterException("log replication has not progressed: " + this);
         }
 
         return false;
@@ -110,16 +109,6 @@ final class LogReplication
     long recordingId()
     {
         return recordingId;
-    }
-
-    long progressCheckTimeoutNs()
-    {
-        return progressCheckTimeoutNs;
-    }
-
-    long progressCheckIntervalNs()
-    {
-        return progressCheckIntervalNs;
     }
 
     boolean isClosed()
@@ -152,15 +141,35 @@ final class LogReplication
     {
         if (correlationId == replicationId)
         {
-            if (RecordingSignal.DELETE == signal)
+            if (RecordingSignal.EXTEND == signal)
             {
-                throw new ClusterException("Recording was deleted during replication, state=" + this);
+                recordingPosition = newRecordingPosition(recordingId);
+            }
+            else if (RecordingSignal.STOP == signal)
+            {
+                recordingPosition = null;
+            }
+            else if (RecordingSignal.DELETE == signal)
+            {
+                throw new ClusterException("recording was deleted during replication, state=" + this);
             }
 
             this.recordingId = recordingId;
             this.lastRecordingSignal = signal;
             this.position = position;
         }
+    }
+
+    ReadableCounter newRecordingPosition(final long recordingId)
+    {
+        final CountersReader counters = archive.context().aeron().countersReader();
+        final int counterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
+        if (NULL_COUNTER_ID == counterId)
+        {
+            throw new ClusterException("no recording counter found for recordingId=" + recordingId);
+        }
+
+        return new ReadableCounter(counters, counterId);
     }
 
     public String toString()
@@ -171,8 +180,8 @@ final class LogReplication
             ", position=" + position +
             ", stopPosition=" + stopPosition +
             ", lastRecordingSignal=" + lastRecordingSignal +
-            ", nextProgressCheckDeadlineNs=" + nextProgressCheckDeadlineNs +
-            ", progressTimeoutDeadlineNs=" + progressTimeoutDeadlineNs +
+            ", progressDeadlineNs=" + progressDeadlineNs +
+            ", progressCheckDeadlineNs=" + progressCheckDeadlineNs +
             ", progressCheckTimeoutNs=" + progressCheckTimeoutNs +
             ", progressCheckIntervalNs=" + progressCheckIntervalNs +
             '}';

@@ -28,7 +28,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * <b>Note:</b>The user should call {@link #isClosed()} and ensure the result is false to avoid a race on reading a
  * closed {@link io.aeron.Counter}.
  * */
-public class ReadableCounter implements AutoCloseable
+public final class ReadableCounter implements AutoCloseable
 {
     private final long addressOffset;
     private final long registrationId;

@@ -1117,7 +1117,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    public void shouldRecoverWhenFollowerArrivePartWayThroughTerm(final TestInfo testInfo)
+    public void shouldRecoverWhenFollowerArrivesPartWayThroughTerm(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);
         try

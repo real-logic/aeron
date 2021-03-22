@@ -2536,9 +2536,7 @@ final class ConsensusModuleAgent implements Agent
     }
 
     LogReplication newLogReplication(
-        final String leaderArchiveEndpoint,
-        final long leaderRecordingId,
-        final long stopPosition)
+        final String leaderArchiveEndpoint, final long leaderRecordingId, final long stopPosition, final long nowNs)
     {
         return new LogReplication(
             archive,
@@ -2548,7 +2546,8 @@ final class ConsensusModuleAgent implements Agent
             ctx.archiveContext().controlRequestStreamId(),
             leaderArchiveEndpoint,
             ctx.leaderHeartbeatTimeoutNs(),
-            ctx.leaderHeartbeatIntervalNs());
+            ctx.leaderHeartbeatIntervalNs(),
+            nowNs);
     }
 
     private int updateFollowerPosition(final long nowNs)

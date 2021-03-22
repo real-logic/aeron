@@ -703,7 +703,7 @@ class Election
             if (appendPosition < logReplicationPosition)
             {
                 logReplication = consensusModuleAgent.newLogReplication(
-                    leaderMember.archiveEndpoint(), leaderRecordingId, logReplicationPosition);
+                    leaderMember.archiveEndpoint(), leaderRecordingId, logReplicationPosition, nowNs);
                 logReplicationCommitPositionDeadlineNs = NULL_VALUE;
 
                 workCount++;

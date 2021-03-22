@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.generateRandomDirName;
 import static io.aeron.archive.ArchiveSystemTests.*;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -393,19 +394,19 @@ public class ReplicateRecordingTest
 
             assertEquals(RecordingSignal.REPLICATE, awaitSignal(signalRef, adapter));
             assertEquals(RecordingSignal.EXTEND, awaitSignal(signalRef, adapter));
-
-            final CountersReader dstCounters = dstAeron.countersReader();
-            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
-            final int srcCounterId = RecordingPos.findCounterIdByRecording(srcCounters, srcRecordingId);
-
             assertEquals(RecordingSignal.STOP, awaitSignal(signalRef, adapter));
-            awaitPosition(dstCounters, dstCounterId, firstPosition);
 
             offer(publication, messageCount, messagePrefix);
+            final int srcCounterId = RecordingPos.findCounterIdByRecording(srcCounters, srcRecordingId);
             awaitPosition(srcCounters, srcCounterId, publication.position());
 
             assertTrue(firstPosition < publication.position());
-            assertEquals(firstPosition, dstCounters.getCounterValue(dstCounterId));
+            long dstStopPosition;
+            while (NULL_POSITION == (dstStopPosition = dstAeronArchive.getStopPosition(dstRecordingId.get())))
+            {
+                Tests.yield();
+            }
+            assertEquals(firstPosition, dstStopPosition);
         }
 
         srcAeronArchive.stopRecording(subscriptionId);

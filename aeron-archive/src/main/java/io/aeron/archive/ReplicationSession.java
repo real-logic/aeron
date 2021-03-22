@@ -483,7 +483,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             if (srcArchive.archiveProxy().replay(
                 srcRecordingId,
                 replayPosition,
-                NULL_POSITION == dstStopPosition ? Long.MAX_VALUE : dstStopPosition - replayPosition,
+                NULL_POSITION == dstStopPosition ? AeronArchive.NULL_LENGTH : dstStopPosition - replayPosition,
                 channelUri.toString(),
                 replayStreamId,
                 correlationId,

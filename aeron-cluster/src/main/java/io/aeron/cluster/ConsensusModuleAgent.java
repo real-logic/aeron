@@ -1480,7 +1480,10 @@ final class ConsensusModuleAgent implements Agent
 
     void logRecordingId(final long recordingId)
     {
-        logRecordingId = recordingId;
+        if (NULL_VALUE != recordingId)
+        {
+            logRecordingId = recordingId;
+        }
     }
 
     void truncateLogEntry(final long leadershipTermId, final long logPosition)

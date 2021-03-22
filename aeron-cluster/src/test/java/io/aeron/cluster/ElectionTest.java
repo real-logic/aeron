@@ -680,7 +680,8 @@ public class ElectionTest
         when(consensusPublisher.appendPosition(
             liveLeader.publication(), leadershipTermId, leaderLogPosition, thisMember.id()))
             .thenReturn(true);
-        election.doWork(++t1);
+        t1 += ctx.leaderHeartbeatIntervalNs();
+        election.doWork(t1);
 
         verify(consensusPublisher).appendPosition(
             liveLeader.publication(), leadershipTermId, leaderLogPosition, thisMember.id());
@@ -692,7 +693,6 @@ public class ElectionTest
         election.doWork(++t1);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
     }
-
 
     @Test
     void followerShouldTimeoutLeaderIfReplicateLogPositionIsNotCommittedByLeader()
@@ -748,7 +748,7 @@ public class ElectionTest
         election.doWork(++t1);
         election.doWork(++t1);
 
-        verify(consensusModuleAgent, times(4)).pollArchiveEvents();
+        verify(consensusModuleAgent, atLeastOnce()).pollArchiveEvents();
 
         when(logReplication.isDone(anyLong())).thenReturn(true);
         when(logReplication.isClosed()).thenReturn(false);
@@ -757,7 +757,8 @@ public class ElectionTest
         when(consensusPublisher.appendPosition(
             liveLeader.publication(), leadershipTermId, leaderLogPosition, thisMember.id()))
             .thenReturn(true);
-        election.doWork(++t1);
+        t1 += ctx.leaderHeartbeatIntervalNs();
+        election.doWork(t1);
 
         verify(consensusPublisher).appendPosition(
             liveLeader.publication(), leadershipTermId, leaderLogPosition, thisMember.id());
@@ -766,11 +767,7 @@ public class ElectionTest
         reset(countedErrorHandler);
 
         when(logReplication.isClosed()).thenReturn(true);
-        t1 += (ctx.leaderHeartbeatTimeoutNs() - 1);
-        election.doWork(t1);
-        verify(countedErrorHandler, never()).onError(any());
-
-        t1 += 1;
+        t1 += ctx.leaderHeartbeatTimeoutNs();
         election.doWork(t1);
         verify(countedErrorHandler).onError(any(ClusterException.class));
     }
@@ -938,6 +935,7 @@ public class ElectionTest
         when(logReplication.position()).thenReturn(termBaseLogPosition);
         when(logReplication.recordingId()).thenReturn(localRecordingId);
         when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(true);
+        t1 += ctx.leaderHeartbeatIntervalNs();
         election.doWork(++t1);
 
         verify(consensusPublisher).appendPosition(

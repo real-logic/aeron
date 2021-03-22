@@ -540,10 +540,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         int workCount = 0;
 
         final long position = image.position();
-        if (image.isEndOfStream() || image.isClosed() || (NULL_VALUE != srcStopPosition && position >= srcStopPosition))
+        if ((NULL_POSITION != srcStopPosition && position >= srcStopPosition) ||
+            (NULL_POSITION != dstStopPosition && position >= dstStopPosition) ||
+            image.isEndOfStream() || image.isClosed())
         {
-            if ((NULL_VALUE != srcStopPosition && position >= srcStopPosition) ||
-                (NULL_VALUE == srcStopPosition && image.isEndOfStream()))
+            if ((NULL_POSITION != srcStopPosition && position >= srcStopPosition) ||
+                (NULL_POSITION == srcStopPosition && image.isEndOfStream()))
             {
                 srcReplaySessionId = NULL_VALUE;
                 signal(position, SYNC);

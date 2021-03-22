@@ -398,9 +398,7 @@ public class ReplicateRecordingTest
             final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
             final int srcCounterId = RecordingPos.findCounterIdByRecording(srcCounters, srcRecordingId);
 
-            assertEquals(RecordingSignal.SYNC, awaitSignal(signalRef, adapter));
             assertEquals(RecordingSignal.STOP, awaitSignal(signalRef, adapter));
-
             awaitPosition(dstCounters, dstCounterId, firstPosition);
 
             offer(publication, messageCount, messagePrefix);

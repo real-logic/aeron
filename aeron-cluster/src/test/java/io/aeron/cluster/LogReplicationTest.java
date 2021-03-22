@@ -180,7 +180,7 @@ class LogReplicationTest
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
 
-        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition + 1, RecordingSignal.SYNC);
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition + 1, RecordingSignal.STOP);
 
         assertThrows(ClusterException.class, () -> logReplication.isDone(0));
     }

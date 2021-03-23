@@ -318,24 +318,27 @@ final class LogPublisher
         final int memberId,
         final String clusterMembers)
     {
-        long result;
         final int fragmentedLength = computeMembershipChangeEventFragmentedLength(clusterMembers);
 
+        membershipChangeEventEncoder
+            .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
+            .leadershipTermId(leadershipTermId)
+            .timestamp(timestamp)
+            .leaderMemberId(leaderMemberId)
+            .clusterSize(clusterSize)
+            .changeType(changeType)
+            .memberId(memberId)
+            .clusterMembers(clusterMembers);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + membershipChangeEventEncoder.encodedLength();
         int attempts = SEND_ATTEMPTS;
+        long result;
         do
         {
             membershipChangeEventEncoder
-                .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
-                .leadershipTermId(leadershipTermId)
-                .logPosition(publication.position() + fragmentedLength)
-                .timestamp(timestamp)
-                .leaderMemberId(leaderMemberId)
-                .clusterSize(clusterSize)
-                .changeType(changeType)
-                .memberId(memberId)
-                .clusterMembers(clusterMembers);
+                .wrap(expandableArrayBuffer, MessageHeaderEncoder.ENCODED_LENGTH)
+                .logPosition(publication.position() + fragmentedLength);
 
-            final int length = MessageHeaderEncoder.ENCODED_LENGTH + membershipChangeEventEncoder.encodedLength();
             result = publication.offer(expandableArrayBuffer, 0, length, null);
             if (result > 0)
             {

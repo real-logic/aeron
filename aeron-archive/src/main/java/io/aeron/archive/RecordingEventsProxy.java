@@ -70,7 +70,8 @@ class RecordingEventsProxy implements AutoCloseable
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(buffer, 0, recordingStartedEncoder.encodedLength());
+            final int length = MessageHeaderEncoder.ENCODED_LENGTH + recordingStartedEncoder.encodedLength();
+            final long result = publication.offer(buffer, 0, length);
             if (result > 0 || Publication.NOT_CONNECTED == result)
             {
                 break;

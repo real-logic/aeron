@@ -494,7 +494,7 @@ final class ConsensusModuleAgent implements Agent
                     consensusPublisher.newLeadershipTerm(
                         follower.publication(),
                         logLeadershipTermId,
-                        logLeadershipTermId < leadershipTermId ? termEntry.termBaseLogPosition : appendPosition,
+                        termEntry.termBaseLogPosition,
                         leadershipTermId,
                         appendPosition,
                         logRecordingId,

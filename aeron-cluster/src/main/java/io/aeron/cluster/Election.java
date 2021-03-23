@@ -367,8 +367,8 @@ class Election
             this.leadershipTermId = leadershipTermId;
             this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
             this.logSessionId = logSessionId;
-            catchupPosition = logPosition;
             replicationStopPosition = appendPosition < logTruncatePosition ? logTruncatePosition : NULL_POSITION;
+            catchupPosition = logTruncatePosition < logPosition ?  logPosition : NULL_POSITION;
             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
         }
         else if (((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state) &&
@@ -381,8 +381,8 @@ class Election
             this.leadershipTermId = leadershipTermId;
             this.candidateTermId = leadershipTermId;
             this.logSessionId = logSessionId;
-            catchupPosition = appendPosition < logPosition ? logPosition : NULL_POSITION;
             replicationStopPosition = appendPosition < logTruncatePosition ? logTruncatePosition : NULL_POSITION;
+            catchupPosition = logTruncatePosition < logPosition ?  logPosition : NULL_POSITION;
             this.leaderRecordingId = leaderRecordingId;
             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
         }

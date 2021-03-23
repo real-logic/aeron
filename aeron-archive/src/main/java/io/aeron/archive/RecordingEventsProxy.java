@@ -67,10 +67,10 @@ class RecordingEventsProxy implements AutoCloseable
             .channel(channel)
             .sourceIdentity(sourceIdentity);
 
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + recordingStartedEncoder.encodedLength();
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final int length = MessageHeaderEncoder.ENCODED_LENGTH + recordingStartedEncoder.encodedLength();
             final long result = publication.offer(buffer, 0, length);
             if (result > 0 || Publication.NOT_CONNECTED == result)
             {

@@ -251,15 +251,18 @@ class Election
             {
                 if (logLeadershipTermId < leadershipTermId)
                 {
-                    final RecordingLog.Entry termEntry = ctx.recordingLog().getTermEntry(logLeadershipTermId + 1);
+                    final RecordingLog.Entry logNextTermEntry =
+                        ctx.recordingLog().getTermEntry(logLeadershipTermId + 1);
+
                     consensusPublisher.newLeadershipTerm(
                         follower.publication(),
                         logLeadershipTermId,
-                        termEntry.termBaseLogPosition,
+                        logNextTermEntry.termBaseLogPosition,
                         leadershipTermId,
                         appendPosition,
+                        appendPosition,
                         consensusModuleAgent.logRecordingId(),
-                        termEntry.timestamp,
+                        logNextTermEntry.timestamp,
                         thisMember.id(),
                         logSessionId,
                         isLeaderStartup);
@@ -271,17 +274,20 @@ class Election
             }
             else if ((LEADER_INIT == state || LEADER_REPLAY == state) && logLeadershipTermId < leadershipTermId)
             {
-                final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
-                if (null != termEntry)
+                final RecordingLog.Entry logNextTermEntry =
+                    ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
+
+                if (null != logNextTermEntry)
                 {
                     consensusPublisher.newLeadershipTerm(
                         follower.publication(),
                         logLeadershipTermId,
-                        termEntry.termBaseLogPosition,
+                        logNextTermEntry.termBaseLogPosition,
                         leadershipTermId,
                         appendPosition,
+                        appendPosition,
                         consensusModuleAgent.logRecordingId(),
-                        termEntry.timestamp,
+                        logNextTermEntry.timestamp,
                         thisMember.id(),
                         logSessionId,
                         isLeaderStartup);
@@ -346,6 +352,7 @@ class Election
         final long logLeadershipTermId,
         final long logTruncatePosition,
         final long leadershipTermId,
+        final long termBaseLogPosition,
         final long logPosition,
         final long leaderRecordingId,
         final long timestamp,
@@ -370,8 +377,8 @@ class Election
             this.leadershipTermId = leadershipTermId;
             this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
             this.logSessionId = logSessionId;
-            replicationStopPosition = appendPosition < logTruncatePosition ? logTruncatePosition : NULL_POSITION;
-            catchupPosition = logTruncatePosition < logPosition ? logPosition : NULL_POSITION;
+            replicationStopPosition = appendPosition < termBaseLogPosition ? termBaseLogPosition : NULL_POSITION;
+            catchupPosition = termBaseLogPosition < logPosition ? logPosition : NULL_POSITION;
             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
         }
         else if (((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state) &&
@@ -384,8 +391,8 @@ class Election
             this.leadershipTermId = leadershipTermId;
             this.candidateTermId = leadershipTermId;
             this.logSessionId = logSessionId;
-            replicationStopPosition = appendPosition < logTruncatePosition ? logTruncatePosition : NULL_POSITION;
-            catchupPosition = logTruncatePosition < logPosition ? logPosition : NULL_POSITION;
+            replicationStopPosition = appendPosition < termBaseLogPosition ? termBaseLogPosition : NULL_POSITION;
+            catchupPosition = termBaseLogPosition < logPosition ? logPosition : NULL_POSITION;
             this.leaderRecordingId = leaderRecordingId;
             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
         }
@@ -956,6 +963,7 @@ class Election
                     logLeadershipTermId,
                     appendPosition,
                     leadershipTermId,
+                    appendPosition,
                     appendPosition,
                     consensusModuleAgent.logRecordingId(),
                     timestamp,

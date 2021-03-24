@@ -44,9 +44,11 @@ import org.junit.jupiter.api.TestInfo;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -169,6 +171,12 @@ public class TestCluster implements AutoCloseable
     private static void await(final int delayMs)
     {
         Tests.sleep(delayMs);
+        ClusterTests.failOnClusterError();
+    }
+
+    private void await(final int delayMs, final Supplier<String> message)
+    {
+        Tests.sleep(delayMs, message);
         ClusterTests.failOnClusterError();
     }
 
@@ -831,10 +839,14 @@ public class TestCluster implements AutoCloseable
 
     public TestNode awaitLeader(final int skipIndex)
     {
+        final Supplier<String> message = () -> Arrays.stream(nodes)
+            .map(node -> null != node ? node.index() + " " + node.isLeader() + " " + node.electionState() : "null")
+            .collect(Collectors.joining(", "));
+
         TestNode leaderNode;
         while (null == (leaderNode = findLeader(skipIndex)))
         {
-            await(10);
+            await(10, message);
         }
 
         return leaderNode;

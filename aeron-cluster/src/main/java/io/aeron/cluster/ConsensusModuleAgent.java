@@ -2093,17 +2093,12 @@ final class ConsensusModuleAgent implements Agent
             {
                 if (session.isBackupSession())
                 {
-                    final RecordingLog.Entry lastEntry = recordingLog.findLastTerm();
-                    if (null != lastEntry && consensusPublisher.backupResponse(
-                        session.responsePublication(),
-                        session.correlationId(),
-                        recoveryPlan.log.recordingId,
-                        recoveryPlan.log.leadershipTermId,
-                        recoveryPlan.log.termBaseLogPosition,
-                        lastEntry.leadershipTermId,
-                        lastEntry.termBaseLogPosition,
+                    final RecordingLog.Entry entry = recordingLog.findLastTerm();
+                    if (null != entry && consensusPublisher.backupResponse(
+                        session,
                         commitPosition.id(),
                         leaderMember.id(),
+                        entry,
                         recoveryPlan,
                         ClusterMember.encodeAsString(activeMembers)))
                     {

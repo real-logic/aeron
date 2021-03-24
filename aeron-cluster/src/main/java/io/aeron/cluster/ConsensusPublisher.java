@@ -567,25 +567,20 @@ final class ConsensusPublisher
     }
 
     boolean backupResponse(
-        final Publication publication,
-        final long correlationId,
-        final long logRecordingId,
-        final long logLeadershipTermId,
-        final long logTermBaseLogPosition,
-        final long lastLeadershipTermId,
-        final long lastTermBaseLogPosition,
+        final ClusterSession session,
         final int commitPositionCounterId,
         final int leaderMemberId,
+        final RecordingLog.Entry lastEntry,
         final RecordingLog.RecoveryPlan recoveryPlan,
         final String clusterMembers)
     {
         backupResponseEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId)
-            .logRecordingId(logRecordingId)
-            .logLeadershipTermId(logLeadershipTermId)
-            .logTermBaseLogPosition(logTermBaseLogPosition)
-            .lastLeadershipTermId(lastLeadershipTermId)
-            .lastTermBaseLogPosition(lastTermBaseLogPosition)
+            .correlationId(session.correlationId())
+            .logRecordingId(recoveryPlan.log.recordingId)
+            .logLeadershipTermId(recoveryPlan.log.leadershipTermId)
+            .logTermBaseLogPosition(recoveryPlan.log.termBaseLogPosition)
+            .lastLeadershipTermId(lastEntry.leadershipTermId)
+            .lastTermBaseLogPosition(lastEntry.termBaseLogPosition)
             .commitPositionCounterId(commitPositionCounterId)
             .leaderMemberId(leaderMemberId);
 
@@ -611,7 +606,7 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(buffer, 0, length);
+            final long result = session.responsePublication().offer(buffer, 0, length);
             if (result > 0)
             {
                 return true;

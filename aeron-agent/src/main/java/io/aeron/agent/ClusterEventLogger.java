@@ -45,12 +45,13 @@ public final class ClusterEventLogger
 
     /**
      * Log a new leadership term event.
+     *
      * @param logLeadershipTermId term for which log entries are present.
      * @param logTruncatePosition position of the log for the logLeadershipTermId.
      * @param leadershipTermId    new leadership term id.
-     * @param termBaseLogPosition
+     * @param termBaseLogPosition position the log reached at base of new term.
      * @param logPosition         position the log reached for the new term.
-     * @param leaderRecordingId
+     * @param leaderRecordingId   of the log in the leader archive.
      * @param timestamp           of the the new term.
      * @param leaderMemberId      member id for the new leader.
      * @param logSessionId        session id of the log extension.

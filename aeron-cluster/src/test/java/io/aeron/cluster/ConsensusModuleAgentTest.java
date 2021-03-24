@@ -318,7 +318,8 @@ public class ConsensusModuleAgentTest
             "1,localhost:10101,localhost:10102,localhost:10103,localhost:10104,localhost:10104|" +
             "2,localhost:10201,localhost:10202,localhost:10203,localhost:10204,localhost:10204|";
         final RecordingLog recordingLog = mock(RecordingLog.class);
-        final RecordingLog.Entry[] entries = {
+        final RecordingLog.Entry[] entries =
+        {
             new RecordingLog.Entry(0, 0, 0, 250, 1000, 0, RecordingLog.ENTRY_TYPE_TERM, true, 0),
             new RecordingLog.Entry(0, 1, 250, 500, 2000, 0, RecordingLog.ENTRY_TYPE_TERM, true, 1),
             new RecordingLog.Entry(0, 2, 500, 750, 3000, 0, RecordingLog.ENTRY_TYPE_TERM, true, 2),
@@ -329,16 +330,16 @@ public class ConsensusModuleAgentTest
         final RecordingLog.Entry currentTerm = entries[currentLeadershipTermId];
         final RecordingLog.Entry followerNextLeadershipTerm = entries[(int)followerLogLeadershipTermId + 1];
 
-        final SbeMessageValidator sbeMessageValidator = new SbeMessageValidator(
+        final SbeMessageValidator validator = new SbeMessageValidator(
             new MessageHeaderEncoder(),
             new MessageHeaderDecoder(),
             new NewLeadershipTermEncoder(),
             new NewLeadershipTermDecoder());
 
         when(recordingLog.findTermEntry(anyLong()))
-            .thenAnswer(invocation -> entries[(int)(long)invocation.getArgument(0)]);
+            .thenAnswer((invocation) -> entries[(int)(long)invocation.getArgument(0)]);
         when(mockExclusivePublication.tryClaim(anyInt(), any())).thenAnswer(
-            invocation -> sbeMessageValidator.forBufferClaim(invocation.getArgument(0), invocation.getArgument(1)));
+            (invocation) -> validator.forBufferClaim(invocation.getArgument(0), invocation.getArgument(1)));
         when(mockLogPublisher.position()).thenReturn(leaderLogPosition);
 
         ctx.maxConcurrentSessions(1)
@@ -353,7 +354,8 @@ public class ConsensusModuleAgentTest
         agent.logRecordingId(currentTerm.recordingId);
         agent.onCanvassPosition(followerLogLeadershipTermId, 300, 2);
 
-        sbeMessageValidator.body()
+        validator
+            .body()
             .logLeadershipTermId(followerLogLeadershipTermId)
             .logTruncatePosition(followerNextLeadershipTerm.termBaseLogPosition)
             .leadershipTermId(currentLeadershipTermId)
@@ -365,10 +367,10 @@ public class ConsensusModuleAgentTest
             .logSessionId(0)
             .isStartup(BooleanType.FALSE);
 
-        sbeMessageValidator.assertBuffersMatch();
+        validator.assertBuffersMatch();
     }
 
-    private static class SbeMessageValidator
+    static class SbeMessageValidator
     {
         private final AtomicBuffer inputBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
         private final AtomicBuffer expectedBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
@@ -398,19 +400,9 @@ public class ConsensusModuleAgentTest
             expectedBuffer.setMemory(0, inputBuffer.capacity(), (byte)0);
         }
 
-        public MessageHeaderEncoder header()
-        {
-            return headerEncoder;
-        }
-
         public NewLeadershipTermEncoder body()
         {
             return encoder;
-        }
-
-        public AtomicBuffer inputBuffer()
-        {
-            return inputBuffer;
         }
 
         public void assertBuffersMatch()

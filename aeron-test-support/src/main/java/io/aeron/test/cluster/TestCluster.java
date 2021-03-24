@@ -840,7 +840,7 @@ public class TestCluster implements AutoCloseable
     public TestNode awaitLeader(final int skipIndex)
     {
         final Supplier<String> message = () -> Arrays.stream(nodes)
-            .map(node -> null != node ? node.index() + " " + node.isLeader() + " " + node.electionState() : "null")
+            .map((node) -> null != node ? node.index() + " " + node.isLeader() + " " + node.electionState() : "null")
             .collect(Collectors.joining(", "));
 
         TestNode leaderNode;

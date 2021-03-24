@@ -785,10 +785,11 @@ final class ConsensusModuleAgent implements Agent
             else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
                 final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
-                final long now = clusterClock.time();
-                session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
                 session.markAsBackupSession();
                 session.connect(aeron);
+
+                final long now = clusterClock.time();
+                session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
 
                 if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
                 {

@@ -56,7 +56,7 @@ class ClusterEventLoggerTest
         final long timestamp = 2;
         final int leaderMemberId = 0;
         final int logSessionId = 3;
-        final int captureLength = SIZE_OF_LONG * 5 + SIZE_OF_INT * 3;
+        final int captureLength = SIZE_OF_LONG * 7 + SIZE_OF_INT * 3;
         final boolean isStartup = true;
         final long termBaseLogPosition = 982734;
         final long leaderRecordingId = 76434;

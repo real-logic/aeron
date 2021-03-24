@@ -81,7 +81,7 @@ final class ClusterEventEncoder
 
     static int newLeaderShipTermLength()
     {
-        return (SIZE_OF_LONG * 5) + (SIZE_OF_INT * 3);
+        return (SIZE_OF_LONG * 7) + (SIZE_OF_INT * 3);
     }
 
     static <E extends Enum<E>> int encodeStateChange(

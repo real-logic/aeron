@@ -892,7 +892,7 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Append a log entry for a leadership term.
+     * Append a log entry for a leadership term. Terms must be appended in ascending order.
      *
      * @param recordingId         of the log in the archive.
      * @param leadershipTermId    for the appended term.
@@ -906,9 +906,9 @@ public final class RecordingLog implements AutoCloseable
         if (size > 0)
         {
             final Entry entry = findLastTerm();
-            if (null != entry && entry.leadershipTermId != (leadershipTermId - 1))
+            if (null != entry && entry.leadershipTermId >= leadershipTermId)
             {
-                throw new ClusterException("leadershipTermId out of sequence: previous=" +
+                throw new ClusterException("leadershipTermId out of sequence: last=" +
                     entry.leadershipTermId + " appending=" + leadershipTermId);
             }
 
@@ -932,7 +932,7 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Append a log entry for a snapshot.
+     * Append a log entry for a snapshot. Snapshots must be for the current term.
      *
      * @param recordingId         in the archive for the snapshot.
      * @param leadershipTermId    for the current term

@@ -330,8 +330,7 @@ public class BasicArchiveTest
             sourceIdentity) -> fail("Recording was not purged!"));
 
         assertEquals(0, count);
-
-        assertArrayEquals(new String[0], Catalog.listSegmentFiles(archiveDir, recordingId));
+        Tests.await(() -> 0 == Catalog.listSegmentFiles(archiveDir, recordingId).length);
 
         for (final String segmentFile : segmentFiles)
         {

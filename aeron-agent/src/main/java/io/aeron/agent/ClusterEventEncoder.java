@@ -36,7 +36,9 @@ final class ClusterEventEncoder
         final long logLeadershipTermId,
         final long logTruncatePosition,
         final long leadershipTermId,
+        final long termBaseLogPosition,
         final long logPosition,
+        final long leaderRecordingId,
         final long timestamp,
         final int leaderMemberId,
         final int logSessionId,
@@ -53,7 +55,13 @@ final class ClusterEventEncoder
         encodingBuffer.putLong(offset + relativeOffset, leadershipTermId, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
 
+        encodingBuffer.putLong(offset + relativeOffset, termBaseLogPosition, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
         encodingBuffer.putLong(offset + relativeOffset, logPosition, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + relativeOffset, leaderRecordingId, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
 
         encodingBuffer.putLong(offset + relativeOffset, timestamp, LITTLE_ENDIAN);

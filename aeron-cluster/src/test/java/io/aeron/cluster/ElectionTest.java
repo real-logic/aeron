@@ -159,6 +159,7 @@ public class ElectionTest
             logPosition,
             candidateTermId,
             logPosition,
+            logPosition,
             RECORDING_ID,
             t4,
             candidateMember.id(),
@@ -170,6 +171,7 @@ public class ElectionTest
             leadershipTermId,
             logPosition,
             candidateTermId,
+            logPosition,
             logPosition,
             RECORDING_ID,
             t4,
@@ -243,6 +245,7 @@ public class ElectionTest
             leadershipTermId,
             logPosition,
             candidateTermId,
+            logPosition,
             logPosition,
             leaderRecordingId,
             t2,
@@ -415,6 +418,7 @@ public class ElectionTest
             leadershipTermId,
             logPosition,
             leadershipTermId,
+            logPosition,
             logPosition,
             leaderRecordingId,
             t2,
@@ -656,7 +660,16 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_BALLOT.code());
 
         election.onNewLeadershipTerm(
-            0, leaderLogPosition, leadershipTermId, leaderLogPosition, RECORDING_ID, t1, leaderId, 0, true);
+            0,
+            leaderLogPosition,
+            leadershipTermId,
+            leaderLogPosition,
+            leaderLogPosition,
+            RECORDING_ID,
+            t1,
+            leaderId,
+            0,
+            true);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
 
         when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
@@ -733,7 +746,16 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_BALLOT.code());
 
         election.onNewLeadershipTerm(
-            0, leaderLogPosition, leadershipTermId, leaderLogPosition, RECORDING_ID, t1, leaderId, 0, true);
+            0,
+            leaderLogPosition,
+            leadershipTermId,
+            leaderLogPosition,
+            leaderLogPosition,
+            RECORDING_ID,
+            t1,
+            leaderId,
+            0,
+            true);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
 
         when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
@@ -812,7 +834,16 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_BALLOT.code());
 
         election.onNewLeadershipTerm(
-            0, leaderLogPosition, leadershipTermId, leaderLogPosition, RECORDING_ID, t1, leaderId, 0, true);
+            0,
+            leaderLogPosition,
+            leadershipTermId,
+            leaderLogPosition,
+            leaderLogPosition,
+            RECORDING_ID,
+            t1,
+            leaderId,
+            0,
+            true);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
 
         when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
@@ -865,6 +896,7 @@ public class ElectionTest
             leadershipTermId,
             0,
             leadershipTermId,
+            followerLogPosition,
             leaderLogPosition,
             RECORDING_ID,
             t1,
@@ -922,7 +954,16 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
         election.onNewLeadershipTerm(
-            0, termBaseLogPosition, leadershipTermId, leaderLogPosition, RECORDING_ID, t1, leaderId, 0, false);
+            0,
+            termBaseLogPosition,
+            leadershipTermId,
+            termBaseLogPosition,
+            leaderLogPosition,
+            RECORDING_ID,
+            t1,
+            leaderId,
+            0,
+            false);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
 
         when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
@@ -970,7 +1011,7 @@ public class ElectionTest
         final Election election = new Election(
             true,
             leadershipTermId,
-            0,
+            leaderLogPosition,
             leaderLogPosition,
             clusterMembers,
             clusterMemberByIdMap,
@@ -1014,6 +1055,7 @@ public class ElectionTest
             leaderLogPosition,
             candidateTermId,
             leaderLogPosition,
+            leaderLogPosition,
             RECORDING_ID,
             t1,
             leaderId,
@@ -1025,6 +1067,7 @@ public class ElectionTest
             leadershipTermId,
             leaderLogPosition,
             candidateTermId,
+            leaderLogPosition,
             leaderLogPosition,
             RECORDING_ID,
             t1,

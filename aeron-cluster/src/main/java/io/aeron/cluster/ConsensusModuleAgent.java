@@ -486,19 +486,21 @@ final class ConsensusModuleAgent implements Agent
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && logLeadershipTermId <= leadershipTermId)
             {
-                final RecordingLog.Entry termEntry = recordingLog.findTermEntry(
+                final RecordingLog.Entry currentTermEntry = recordingLog.findTermEntry(leadershipTermId);
+                final RecordingLog.Entry nextFollowerEntry = recordingLog.findTermEntry(
                     logLeadershipTermId < leadershipTermId ? logLeadershipTermId + 1 : logLeadershipTermId);
-                if (null != termEntry)
+                if (null != currentTermEntry && null != nextFollowerEntry)
                 {
                     final long appendPosition = logPublisher.position();
                     consensusPublisher.newLeadershipTerm(
                         follower.publication(),
                         logLeadershipTermId,
-                        termEntry.termBaseLogPosition,
+                        nextFollowerEntry.termBaseLogPosition,
                         leadershipTermId,
+                        currentTermEntry.termBaseLogPosition,
                         appendPosition,
                         logRecordingId,
-                        termEntry.timestamp,
+                        nextFollowerEntry.timestamp,
                         memberId,
                         logPublisher.sessionId(),
                         false);
@@ -540,6 +542,7 @@ final class ConsensusModuleAgent implements Agent
         final long logLeadershipTermId,
         final long logTruncatePosition,
         final long leadershipTermId,
+        final long termBaseLogPosition,
         final long logPosition,
         final long leaderRecordingId,
         final long timestamp,
@@ -553,6 +556,7 @@ final class ConsensusModuleAgent implements Agent
                 logLeadershipTermId,
                 logTruncatePosition,
                 leadershipTermId,
+                termBaseLogPosition,
                 logPosition,
                 leaderRecordingId,
                 timestamp,

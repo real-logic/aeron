@@ -152,6 +152,7 @@ final class ConsensusPublisher
         final long logLeadershipTermId,
         final long logTruncatePosition,
         final long leadershipTermId,
+        final long termBaseLogPosition,
         final long logPosition,
         final long leaderRecordingId,
         final long timestamp,
@@ -172,6 +173,7 @@ final class ConsensusPublisher
                     .logLeadershipTermId(logLeadershipTermId)
                     .logTruncatePosition(logTruncatePosition)
                     .leadershipTermId(leadershipTermId)
+                    .termBaseLogPosition(termBaseLogPosition)
                     .logPosition(logPosition)
                     .leaderRecordingId(leaderRecordingId)
                     .timestamp(timestamp)

@@ -1115,6 +1115,51 @@ public class ClusterTest
         }
     }
 
+
+    @Test
+    @Timeout(40)
+    public void shouldRecoverWhenFollowerIsMultipleTermsBehind(final TestInfo testInfo)
+    {
+        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        try
+        {
+            final TestNode originalLeader = cluster.awaitLeader();
+            TestNode currentLeader = originalLeader;
+
+            final int messageCount = 10;
+            cluster.connectClient();
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+
+            cluster.stopNode(originalLeader);
+            currentLeader = cluster.awaitLeader();
+            cluster.reconnectClient();
+
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount * 2);
+
+            cluster.stopNode(currentLeader);
+            cluster.startStaticNode(currentLeader.index(), false);
+            currentLeader = cluster.awaitLeader();
+            cluster.reconnectClient();
+
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount * 3);
+
+            cluster.startStaticNode(originalLeader.index(), false);
+            final TestNode lateJoiningNode = cluster.node(originalLeader.index());
+
+            while (lateJoiningNode.service().messageCount() < messageCount * 3)
+            {
+                Tests.yieldingWait("Waiting for late joining follower to catch up");
+            }
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
     @Test
     @Timeout(40)
     public void shouldRecoverWhenFollowerArrivesPartWayThroughTerm(final TestInfo testInfo)

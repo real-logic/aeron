@@ -17,20 +17,18 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.codecs.CloseReason;
-import io.aeron.cluster.codecs.ClusterAction;
-import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.status.ReadableCounter;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
+import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.CountedErrorHandler;
-import org.agrona.concurrent.NoOpIdleStrategy;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +41,7 @@ import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
 import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -57,6 +56,7 @@ public class ConsensusModuleAgentTest
     private final LogPublisher mockLogPublisher = mock(LogPublisher.class);
     private final Aeron mockAeron = mock(Aeron.class);
     private final ConcurrentPublication mockResponsePublication = mock(ConcurrentPublication.class);
+    private final ExclusivePublication mockExclusivePublication = mock(ExclusivePublication.class);
     private final Counter mockTimedOutClientCounter = mock(Counter.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
@@ -86,6 +86,7 @@ public class ConsensusModuleAgentTest
         when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), any(ClusterAction.class)))
             .thenReturn(TRUE);
         when(mockAeron.addPublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
+        when(mockAeron.addExclusivePublication(anyString(), anyInt())).thenReturn(mockExclusivePublication);
         when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mock(Subscription.class));
         when(mockAeron.addSubscription(anyString(), anyInt(), eq(null), any(UnavailableImageHandler.class)))
             .thenReturn(mock(Subscription.class));
@@ -304,5 +305,144 @@ public class ConsensusModuleAgentTest
             () -> agent.onServiceAck(1024, 100, 0, 55, 0));
 
         verify(countedErrorHandler).onError(hookException);
+    }
+
+    @Test
+    void shouldEmitTermBaseOffsetFromCurrentTerm()
+    {
+        final long followerLogLeadershipTermId = 1;
+        final long leaderLogPosition = 1000;
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        final String members =
+            "0,localhost:10001,localhost:10002,localhost:10003,localhost:10004,localhost:10004|" +
+            "1,localhost:10101,localhost:10102,localhost:10103,localhost:10104,localhost:10104|" +
+            "2,localhost:10201,localhost:10202,localhost:10203,localhost:10204,localhost:10204|";
+        final RecordingLog recordingLog = mock(RecordingLog.class);
+        final RecordingLog.Entry[] entries = {
+            new RecordingLog.Entry(0, 0, 0, 250, 1000, 0, RecordingLog.ENTRY_TYPE_TERM, true, 0),
+            new RecordingLog.Entry(0, 1, 250, 500, 2000, 0, RecordingLog.ENTRY_TYPE_TERM, true, 1),
+            new RecordingLog.Entry(0, 2, 500, 750, 3000, 0, RecordingLog.ENTRY_TYPE_TERM, true, 2),
+            new RecordingLog.Entry(0, 3, 750, 1000, 3000, 0, RecordingLog.ENTRY_TYPE_TERM, true, 3),
+        };
+
+        final int currentLeadershipTermId = entries.length - 1;
+        final RecordingLog.Entry currentTerm = entries[currentLeadershipTermId];
+        final RecordingLog.Entry followerNextLeadershipTerm = entries[(int)followerLogLeadershipTermId + 1];
+
+        final SbeMessageValidator sbeMessageValidator = new SbeMessageValidator(
+            new MessageHeaderEncoder(),
+            new MessageHeaderDecoder(),
+            new NewLeadershipTermEncoder(),
+            new NewLeadershipTermDecoder());
+
+        when(recordingLog.findTermEntry(anyLong()))
+            .thenAnswer(invocation -> entries[(int)(long)invocation.getArgument(0)]);
+        when(mockExclusivePublication.tryClaim(anyInt(), any())).thenAnswer(
+            invocation -> sbeMessageValidator.forBufferClaim(invocation.getArgument(0), invocation.getArgument(1)));
+        when(mockLogPublisher.position()).thenReturn(leaderLogPosition);
+
+        ctx.maxConcurrentSessions(1)
+            .clusterMembers(members)
+            .recordingLog(recordingLog)
+            .epochClock(clock)
+            .clusterClock(clock);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+        agent.role(Cluster.Role.LEADER);
+        agent.leadershipTermId(currentLeadershipTermId);
+        agent.logRecordingId(currentTerm.recordingId);
+        agent.onCanvassPosition(followerLogLeadershipTermId, 300, 2);
+
+        sbeMessageValidator.body()
+            .logLeadershipTermId(followerLogLeadershipTermId)
+            .logTruncatePosition(followerNextLeadershipTerm.termBaseLogPosition)
+            .leadershipTermId(currentLeadershipTermId)
+            .termBaseLogPosition(currentTerm.termBaseLogPosition)
+            .logPosition(leaderLogPosition)
+            .leaderRecordingId(currentTerm.recordingId)
+            .timestamp(currentTerm.timestamp)
+            .leaderMemberId(0)
+            .logSessionId(0)
+            .isStartup(BooleanType.FALSE);
+
+        sbeMessageValidator.assertBuffersMatch();
+    }
+
+    private static class SbeMessageValidator
+    {
+        private final AtomicBuffer inputBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
+        private final AtomicBuffer expectedBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
+        private final MessageHeaderEncoder headerEncoder;
+        private final MessageHeaderDecoder headerDecoder;
+        private final NewLeadershipTermEncoder encoder;
+        private final NewLeadershipTermDecoder decoder;
+
+        SbeMessageValidator(
+            final MessageHeaderEncoder headerEncoder,
+            final MessageHeaderDecoder headerDecoder,
+            final NewLeadershipTermEncoder encoder,
+            final NewLeadershipTermDecoder decoder)
+        {
+            this.headerEncoder = headerEncoder;
+            this.headerDecoder = headerDecoder;
+            this.encoder = encoder;
+            this.decoder = decoder;
+
+            reset();
+            encoder.wrapAndApplyHeader(expectedBuffer, HEADER_LENGTH, headerEncoder);
+        }
+
+        public void reset()
+        {
+            inputBuffer.setMemory(0, inputBuffer.capacity(), (byte)0);
+            expectedBuffer.setMemory(0, inputBuffer.capacity(), (byte)0);
+        }
+
+        public MessageHeaderEncoder header()
+        {
+            return headerEncoder;
+        }
+
+        public NewLeadershipTermEncoder body()
+        {
+            return encoder;
+        }
+
+        public AtomicBuffer inputBuffer()
+        {
+            return inputBuffer;
+        }
+
+        public void assertBuffersMatch()
+        {
+            final int totalLength = HEADER_LENGTH + headerEncoder.encodedLength() + encoder.encodedLength();
+            for (int i = 0; i < totalLength; i++)
+            {
+                if (inputBuffer.getByte(i) != expectedBuffer.getByte(i))
+                {
+                    final String expectedString = toString(expectedBuffer);
+                    final String actualString = toString(inputBuffer);
+                    assertEquals(expectedString, actualString, "Buffers differ at index: " + i);
+                }
+            }
+        }
+
+        private String toString(final DirectBuffer buffer)
+        {
+            headerDecoder.wrap(buffer, HEADER_LENGTH);
+            decoder.wrap(
+                buffer,
+                headerDecoder.offset() + headerDecoder.encodedLength(),
+                headerDecoder.blockLength(),
+                headerDecoder.version());
+            return decoder.toString();
+        }
+
+        public long forBufferClaim(final int length, final BufferClaim bufferClaim)
+        {
+            final int frameLength = HEADER_LENGTH + length;
+            bufferClaim.wrap(inputBuffer, 0, frameLength);
+            return frameLength;
+        }
     }
 }

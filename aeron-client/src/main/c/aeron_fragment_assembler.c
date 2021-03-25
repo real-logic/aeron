@@ -85,9 +85,9 @@ int aeron_buffer_builder_ensure_capacity(aeron_buffer_builder_t *buffer_builder,
             return -1;
         }
 
-        if (aeron_alloc((void **)&buffer_builder->buffer, (size_t)suitable_capacity) < 0)
+        if (aeron_reallocf((void **)&buffer_builder->buffer, (size_t)suitable_capacity) < 0)
         {
-            AERON_APPEND_ERR("%s", "Unable to allocate buffer_builder->builder");
+            AERON_APPEND_ERR("%s", "Unable to reallocate buffer_builder->builder");
             return -1;
         }
 

@@ -2541,35 +2541,8 @@ public final class AeronArchive implements AutoCloseable
                 lock = new ReentrantLock();
             }
 
-            final ChannelUri requestUri = ChannelUri.parse(controlRequestChannel);
-            if (!requestUri.containsKey(CommonContext.TERM_LENGTH_PARAM_NAME))
-            {
-                requestUri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
-            }
-            if (!requestUri.containsKey(CommonContext.MTU_LENGTH_PARAM_NAME))
-            {
-                requestUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
-            }
-            if (!requestUri.containsKey(CommonContext.SPARSE_PARAM_NAME))
-            {
-                requestUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
-            }
-            controlRequestChannel = requestUri.toString();
-
-            final ChannelUri responseUri = ChannelUri.parse(controlResponseChannel);
-            if (!responseUri.containsKey(CommonContext.TERM_LENGTH_PARAM_NAME))
-            {
-                responseUri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
-            }
-            if (!responseUri.containsKey(CommonContext.MTU_LENGTH_PARAM_NAME))
-            {
-                responseUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
-            }
-            if (!responseUri.containsKey(CommonContext.SPARSE_PARAM_NAME))
-            {
-                responseUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
-            }
-            controlResponseChannel = responseUri.toString();
+            controlRequestChannel = applyDefaultParams(controlRequestChannel);
+            controlResponseChannel = applyDefaultParams(controlResponseChannel);
         }
 
         /**
@@ -2987,6 +2960,26 @@ public final class AeronArchive implements AutoCloseable
             {
                 CloseHelper.close(aeron);
             }
+        }
+
+        private String applyDefaultParams(final String channel)
+        {
+            final ChannelUri channelUri = ChannelUri.parse(channel);
+
+            if (!channelUri.containsKey(CommonContext.TERM_LENGTH_PARAM_NAME))
+            {
+                channelUri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
+            }
+            if (!channelUri.containsKey(CommonContext.MTU_LENGTH_PARAM_NAME))
+            {
+                channelUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
+            }
+            if (!channelUri.containsKey(CommonContext.SPARSE_PARAM_NAME))
+            {
+                channelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
+            }
+
+            return channelUri.toString();
         }
     }
 

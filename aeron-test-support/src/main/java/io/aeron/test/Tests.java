@@ -463,12 +463,12 @@ public class Tests
             {
                 mBeanServer.setAttribute(loggingName, new Attribute("Collecting", true));
             }
-            catch (InstanceNotFoundException ex)
+            catch (final InstanceNotFoundException ex)
             {
                 // It must not have been set up for the test.  Expected in many cases.
             }
         }
-        catch (Exception ex)
+        catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
@@ -485,12 +485,12 @@ public class Tests
             {
                 mBeanServer.invoke(loggingName, "reset", new Object[0], new String[0]);
             }
-            catch (InstanceNotFoundException ex)
+            catch (final InstanceNotFoundException ex)
             {
                 // It must not have been set up for the test.  Expected in many cases.
             }
         }
-        catch (Exception ex)
+        catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
@@ -506,14 +506,14 @@ public class Tests
             try
             {
                 mBeanServer.invoke(
-                    loggingName, "writeToFile", new Object[] { filename }, new String[] { "java.lang.String" } );
+                    loggingName, "writeToFile", new Object[] { filename }, new String[] { "java.lang.String" });
             }
-            catch (InstanceNotFoundException ex)
+            catch (final InstanceNotFoundException ex)
             {
                 // It must not have been set up for the test.  Expected in many cases.
             }
         }
-        catch (Exception ex)
+        catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }

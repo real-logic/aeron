@@ -26,11 +26,9 @@ import javax.management.*;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventLogReaderAgent.decodeLogEvent;
-import static java.nio.channels.FileChannel.open;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
@@ -42,7 +40,11 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
 {
     private static final String LOGGING_MBEAN_NAME = "io.aeron:type=logging";
 
-    private enum State { COLLECTING, IGNORING, RESET }
+    private enum State
+    {
+        COLLECTING, IGNORING, RESET
+    }
+
     private final ManyToOneRingBuffer ringBuffer = EventConfiguration.EVENT_RING_BUFFER;
     private final ExpandableArrayBuffer collectingBuffer = new ExpandableArrayBuffer();
     private final MessageHandler messageHandler = this::onMessage;
@@ -62,12 +64,11 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
     {
         try
         {
-            MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-            ObjectName oName = new ObjectName(LOGGING_MBEAN_NAME);
+            final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+            final ObjectName oName = new ObjectName(LOGGING_MBEAN_NAME);
             mBeanServer.registerMBean(this, oName);
         }
-        catch (
-            MalformedObjectNameException |
+        catch (final MalformedObjectNameException |
             InstanceAlreadyExistsException |
             MBeanRegistrationException |
             NotCompliantMBeanException ex)
@@ -123,7 +124,7 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
     /**
      * {@inheritDoc}
      */
-    public void setCollecting(boolean isCollecting)
+    public void setCollecting(final boolean isCollecting)
     {
         this.state = isCollecting ? State.COLLECTING : State.IGNORING;
     }
@@ -149,7 +150,8 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
      */
     public void writeToFile(final String filename)
     {
-        synchronized (mutex) {
+        synchronized (mutex)
+        {
             doOutputToFile(filename);
         }
     }
@@ -167,9 +169,9 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
             int readingPosition = 0;
             while (readingPosition < terminalPosition)
             {
-                int msgTypeId = collectingBuffer.getInt(readingPosition);
+                final int msgTypeId = collectingBuffer.getInt(readingPosition);
                 readingPosition += SIZE_OF_INT;
-                int length = collectingBuffer.getInt(readingPosition);
+                final int length = collectingBuffer.getInt(readingPosition);
                 readingPosition += SIZE_OF_INT;
 
                 final int eventCodeTypeId = msgTypeId >> 16;

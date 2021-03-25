@@ -649,7 +649,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             final ControlResponseCode code = poller.code();
             if (ControlResponseCode.ERROR == code)
             {
-                throw new ArchiveException(poller.errorMessage(), code.value());
+                throw new ArchiveException(poller.errorMessage(), (int)poller.relevantId());
             }
 
             return poller.correlationId() == activeCorrelationId && ControlResponseCode.OK == code;

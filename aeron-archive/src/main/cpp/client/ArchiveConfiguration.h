@@ -170,11 +170,8 @@ public:
             m_ownsAeronClient = true;
         }
 
-        std::shared_ptr<ChannelUri> channelUri = ChannelUri::parse(m_controlRequestChannel);
-        channelUri->put(TERM_LENGTH_PARAM_NAME, std::to_string(m_controlTermBufferLength));
-        channelUri->put(MTU_LENGTH_PARAM_NAME, std::to_string(m_controlMtuLength));
-        channelUri->put(SPARSE_PARAM_NAME, m_controlTermBufferSparse ? "true" : "false");
-        m_controlRequestChannel = channelUri->toString();
+        applyDefaultParams(m_controlRequestChannel);
+        applyDefaultParams(m_controlResponseChannel);
     }
 
     /**
@@ -545,6 +542,26 @@ private:
     exception_handler_t m_errorHandler = nullptr;
 
     CredentialsSupplier m_credentialsSupplier;
+
+    inline void applyDefaultParams(std::string &channel)
+    {
+        std::shared_ptr<ChannelUri> uri = ChannelUri::parse(channel);
+
+        if (!uri->containsKey(TERM_LENGTH_PARAM_NAME))
+        {
+            uri->put(TERM_LENGTH_PARAM_NAME, std::to_string(m_controlTermBufferLength));
+        }
+        if (!uri->containsKey(MTU_LENGTH_PARAM_NAME))
+        {
+            uri->put(MTU_LENGTH_PARAM_NAME, std::to_string(m_controlMtuLength));
+        }
+        if (!uri->containsKey(SPARSE_PARAM_NAME))
+        {
+            uri->put(SPARSE_PARAM_NAME, m_controlTermBufferSparse ? "true" : "false");
+        }
+
+        channel = uri->toString();
+    }
 };
 
 }}}

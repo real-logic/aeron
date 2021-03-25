@@ -232,10 +232,22 @@ subprojects {
     }
 
     task slowTest(type: Test) {
+        dependsOn ":aeron-agent:jar"
+
         maxParallelForks = 1
         useJUnitPlatform {
             includeTags 'slow'
         }
+
+        ext.agentFilename = {
+            project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
+        }
+
+        jvmArgs '-javaagent:' + agentFilename()
+        systemProperty "aeron.event.cluster.log", "all"
+        systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION"
+        systemProperty "aeron.debug.timeout", "3600s"
+        systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
     }
 
     task topologyTest(type: Test) {

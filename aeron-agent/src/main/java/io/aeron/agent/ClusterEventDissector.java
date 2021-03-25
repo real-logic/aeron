@@ -113,12 +113,9 @@ final class ClusterEventDissector
 
         builder.append(": logLeadershipTermId=").append(logLeadershipTermId);
         builder.append(", ");
-        buffer.getStringAscii(absoluteOffset, builder);
         builder.append(" logPosition=").append(logPosition);
         builder.append(", ");
-        buffer.getStringAscii(absoluteOffset, builder);
         builder.append(" followerMemberId=").append(followerMemberId);
-        buffer.getStringAscii(absoluteOffset, builder);
     }
 
     public static void dissectRequestVote(
@@ -141,14 +138,10 @@ final class ClusterEventDissector
 
         builder.append(": logLeadershipTermId=").append(logLeadershipTermId);
         builder.append(", ");
-        buffer.getStringAscii(absoluteOffset, builder);
         builder.append(" logPosition=").append(logPosition);
         builder.append(", ");
-        buffer.getStringAscii(absoluteOffset, builder);
         builder.append(" candidateTermId=").append(candidateTermId);
         builder.append(", ");
-        buffer.getStringAscii(absoluteOffset, builder);
         builder.append(" candidateId=").append(candidateId);
-        buffer.getStringAscii(absoluteOffset, builder);
     }
 }

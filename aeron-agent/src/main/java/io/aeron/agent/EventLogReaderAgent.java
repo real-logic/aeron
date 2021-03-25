@@ -126,8 +126,27 @@ public final class EventLogReaderAgent implements Agent
         final int eventCodeTypeId = msgTypeId >> 16;
         final int eventCodeId = msgTypeId & 0xFFFF;
 
-        builder.setLength(0);
+        this.builder.setLength(0);
 
+        decodeLogEvent(buffer, index, eventCodeTypeId, eventCodeId, this.builder);
+
+        if (null == fileChannel)
+        {
+            out.print(this.builder);
+        }
+        else
+        {
+            appendEvent(this.builder, byteBuffer, fileChannel);
+        }
+    }
+
+    static void decodeLogEvent(
+        final MutableDirectBuffer buffer,
+        final int index,
+        final int eventCodeTypeId,
+        final int eventCodeId,
+        final StringBuilder builder)
+    {
         if (DriverEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
         {
             DriverEventCode.get(eventCodeId).decode(buffer, index, builder);
@@ -146,15 +165,6 @@ public final class EventLogReaderAgent implements Agent
         }
 
         builder.append(lineSeparator());
-
-        if (null == fileChannel)
-        {
-            out.print(builder);
-        }
-        else
-        {
-            appendEvent(builder, byteBuffer, fileChannel);
-        }
     }
 
     private static void appendEvent(final StringBuilder builder, final ByteBuffer buffer, final FileChannel fileChannel)

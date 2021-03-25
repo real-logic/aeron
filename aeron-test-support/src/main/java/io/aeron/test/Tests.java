@@ -29,6 +29,8 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
+import javax.management.*;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
@@ -44,6 +46,7 @@ import static org.mockito.Mockito.doAnswer;
 public class Tests
 {
     public static final IdleStrategy SLEEP_1_MS = new SleepingMillisIdleStrategy(1);
+    private static final String LOGGING_MBEAN_NAME = "io.aeron:type=logging";
 
     /**
      * Set a private field in a class for testing.
@@ -447,5 +450,72 @@ public class Tests
         }
 
         return builder.toString();
+    }
+
+    public static void startLogCollecting()
+    {
+        try
+        {
+            final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+            final ObjectName loggingName = new ObjectName(LOGGING_MBEAN_NAME);
+
+            try
+            {
+                mBeanServer.setAttribute(loggingName, new Attribute("Collecting", true));
+            }
+            catch (final InstanceNotFoundException ex)
+            {
+                // It must not have been set up for the test.  Expected in many cases.
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    public static void resetLogCollecting()
+    {
+        try
+        {
+            final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+            final ObjectName loggingName = new ObjectName("io.aeron:type=logging");
+
+            try
+            {
+                mBeanServer.invoke(loggingName, "reset", new Object[0], new String[0]);
+            }
+            catch (final InstanceNotFoundException ex)
+            {
+                // It must not have been set up for the test.  Expected in many cases.
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    public static void dumpCollectedLogs(final String filename)
+    {
+        try
+        {
+            final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+            final ObjectName loggingName = new ObjectName("io.aeron:type=logging");
+
+            try
+            {
+                mBeanServer.invoke(
+                    loggingName, "writeToFile", new Object[] { filename }, new String[] { "java.lang.String" });
+            }
+            catch (final InstanceNotFoundException ex)
+            {
+                // It must not have been set up for the test.  Expected in many cases.
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 }

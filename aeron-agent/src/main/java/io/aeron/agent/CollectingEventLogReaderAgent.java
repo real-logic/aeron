@@ -127,9 +127,9 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
     /**
      * {@inheritDoc}
      */
-    public void isCollecting(final boolean isCollecting)
+    public void setCollecting(final boolean isCollecting)
     {
-        this.state = isCollecting ? State.COLLECTING : State.IGNORING;
+        state = isCollecting ? State.COLLECTING : State.IGNORING;
     }
 
     /**
@@ -145,7 +145,7 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
      */
     public void reset()
     {
-        this.state = State.RESET;
+        state = State.RESET;
     }
 
     /**

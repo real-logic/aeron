@@ -26,7 +26,7 @@ public interface CollectingEventLogReaderAgentMBean
      *
      * @param isCollecting whether logs should be collected or not.
      */
-    void isCollecting(boolean isCollecting);
+    void setCollecting(boolean isCollecting);
 
     /**
      * Shows whether logs are being collected or not.

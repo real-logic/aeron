@@ -109,7 +109,7 @@ public class ClusterBackupMediaDriver implements AutoCloseable
         }
         catch (final Throwable throwable)
         {
-            CloseHelper.quietCloseAll(driver, archive, clusterBackup);
+            CloseHelper.quietCloseAll(clusterBackup, archive, driver);
             throw throwable;
         }
     }

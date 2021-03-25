@@ -67,11 +67,9 @@ public class TestCluster implements AutoCloseable
     // TODO: Parameterise tests with this.
     // private static final String LOG_CHANNEL =
     //     "aeron:udp?term-length=512k|endpoint=224.20.30.39:24326|interface=localhost";
-    private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
-        "aeron:udp?term-length=64k|endpoint=localhost:8010";
-    private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
-        "aeron:udp?term-length=64k|endpoint=localhost:8020";
-    private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc?term-length=64k";
+    private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8010";
+    private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8020";
+    private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
     private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
     private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k";
     private static final long STARTUP_CANVASS_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
@@ -1283,7 +1281,7 @@ public class TestCluster implements AutoCloseable
             .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)
             .serviceCount(2)
             .clusterDir(new File(baseDirName, "consensus-module"))
-            .ingressChannel("aeron:udp?term-length=64k")
+            .ingressChannel(INGRESS_CHANNEL)
             .logChannel(LOG_CHANNEL)
             .archiveContext(nodeCtx.aeronArchiveCtx.clone())
             .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k")

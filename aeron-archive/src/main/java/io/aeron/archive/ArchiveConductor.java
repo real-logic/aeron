@@ -1059,9 +1059,7 @@ abstract class ArchiveConductor
 
             if (0 == subscriptionRefCountMap.decrementAndGet(subscriptionId) || session.isAutoStop())
             {
-                CloseHelper.close(errorHandler, subscription);
-                subscriptionRefCountMap.remove(subscriptionId);
-                removeRecordingSubscription(subscriptionId);
+                closeAndRemoveRecordingSubscription(subscription);
             }
             closeSession(session);
         }
@@ -1668,9 +1666,7 @@ abstract class ArchiveConductor
             errorHandler.onError(ex);
             if (autoStop)
             {
-                CloseHelper.close(errorHandler, image.subscription());
-                subscriptionRefCountMap.remove(subscriptionId);
-                removeRecordingSubscription(subscriptionId);
+                closeAndRemoveRecordingSubscription(image.subscription());
             }
         }
     }
@@ -2043,6 +2039,23 @@ abstract class ArchiveConductor
         }
 
         return counter;
+    }
+
+    private void closeAndRemoveRecordingSubscription(final Subscription subscription)
+    {
+        final long subscriptionId = subscription.registrationId();
+        subscriptionRefCountMap.remove(subscriptionId);
+
+        for (final RecordingSession session : recordingSessionByIdMap.values())
+        {
+            if (subscription == session.subscription())
+            {
+                session.abort();
+            }
+        }
+
+        removeRecordingSubscription(subscriptionId);
+        CloseHelper.close(errorHandler, subscription);
     }
 
     private boolean isLowStorageSpace(final long correlationId, final ControlSession controlSession)

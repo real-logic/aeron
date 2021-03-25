@@ -2541,11 +2541,35 @@ public final class AeronArchive implements AutoCloseable
                 lock = new ReentrantLock();
             }
 
-            final ChannelUri uri = ChannelUri.parse(controlRequestChannel);
-            uri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
-            uri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
-            uri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
-            controlRequestChannel = uri.toString();
+            final ChannelUri requestUri = ChannelUri.parse(controlRequestChannel);
+            if (!requestUri.containsKey(CommonContext.TERM_LENGTH_PARAM_NAME))
+            {
+                requestUri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
+            }
+            if (!requestUri.containsKey(CommonContext.MTU_LENGTH_PARAM_NAME))
+            {
+                requestUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
+            }
+            if (!requestUri.containsKey(CommonContext.SPARSE_PARAM_NAME))
+            {
+                requestUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
+            }
+            controlRequestChannel = requestUri.toString();
+
+            final ChannelUri responseUri = ChannelUri.parse(controlResponseChannel);
+            if (!responseUri.containsKey(CommonContext.TERM_LENGTH_PARAM_NAME))
+            {
+                responseUri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
+            }
+            if (!responseUri.containsKey(CommonContext.MTU_LENGTH_PARAM_NAME))
+            {
+                responseUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
+            }
+            if (!responseUri.containsKey(CommonContext.SPARSE_PARAM_NAME))
+            {
+                responseUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
+            }
+            controlResponseChannel = responseUri.toString();
         }
 
         /**

@@ -45,7 +45,9 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.MTU_LENGTH_PARAM_NAME;
+import static io.aeron.CommonContext.SPARSE_PARAM_NAME;
 import static io.aeron.CommonContext.SPY_PREFIX;
+import static io.aeron.CommonContext.TERM_LENGTH_PARAM_NAME;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
@@ -331,13 +333,21 @@ abstract class ArchiveConductor
         final ControlSessionDemuxer demuxer)
     {
         final ChannelUri channelUri = ChannelUri.parse(channel);
+
         final String mtuStr = channelUri.get(CommonContext.MTU_LENGTH_PARAM_NAME);
         final int mtuLength = null == mtuStr ?
             ctx.controlMtuLength() : (int)SystemUtil.parseSize(MTU_LENGTH_PARAM_NAME, mtuStr);
-        final String controlChannel = strippedChannelBuilder(channelUri)
+        final String termLengthStr = channelUri.get(TERM_LENGTH_PARAM_NAME);
+        final int termLength = null == termLengthStr ?
+            ctx.controlTermBufferLength() : (int)SystemUtil.parseSize(TERM_LENGTH_PARAM_NAME, termLengthStr);
+        final String isSparseStr = channelUri.get(SPARSE_PARAM_NAME);
+        final boolean isSparse = null == isSparseStr ?
+            ctx.controlTermBufferSparse() : Boolean.parseBoolean(isSparseStr);
+
+        final String responseChannel = strippedChannelBuilder(channelUri)
             .ttl(channelUri)
-            .sparse(ctx.controlTermBufferSparse())
-            .termLength(ctx.controlTermBufferLength())
+            .termLength(termLength)
+            .sparse(isSparse)
             .mtu(mtuLength)
             .build();
 
@@ -354,7 +364,7 @@ abstract class ArchiveConductor
             connectTimeoutMs,
             invalidVersionMessage,
             demuxer,
-            aeron.addExclusivePublication(controlChannel, streamId),
+            aeron.addExclusivePublication(responseChannel, streamId),
             this,
             cachedEpochClock,
             controlResponseProxy,

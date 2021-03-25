@@ -42,10 +42,17 @@ public class ClusterTest
 {
     private TestCluster cluster = null;
 
+    @BeforeEach
+    void before()
+    {
+        Tests.startLogCollecting();
+    }
+
     @AfterEach
     void after()
     {
         CloseHelper.close(cluster);
+        Tests.resetLogCollecting();
     }
 
     @Test

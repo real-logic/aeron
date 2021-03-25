@@ -151,6 +151,8 @@ public final class DataCollector
 
             final Path threadDump = destination.resolve(THREAD_DUMP_FILE_NAME);
             Files.write(threadDump, SystemUtil.threadDump().getBytes(UTF_8));
+            Tests.dumpCollectedLogs(destination.resolve("events.log").toString());
+
             return destination;
         }
         catch (final IOException ex)

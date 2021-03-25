@@ -159,22 +159,26 @@ public final class ClusterBackupAgent implements Agent
      */
     public void onClose()
     {
-        aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
-        state(CLOSED, epochClock.time());
-
-        if (NULL_VALUE != liveLogRecordingSubscriptionId)
+        if (!aeron.isClosed())
         {
-            backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
-        }
+            aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
 
-        if (null != snapshotReplication)
-        {
-            snapshotReplication.close(backupArchive);
-        }
+            if (NULL_VALUE != liveLogRecordingSubscriptionId)
+            {
+                backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
+            }
 
-        if (!ctx.ownsAeronClient())
-        {
-            CloseHelper.closeAll(consensusSubscription, consensusPublication, recordingSubscription);
+            if (null != snapshotReplication)
+            {
+                snapshotReplication.close(backupArchive);
+            }
+
+            if (!ctx.ownsAeronClient())
+            {
+                CloseHelper.closeAll(consensusSubscription, consensusPublication, recordingSubscription);
+            }
+
+            state(CLOSED, epochClock.time());
         }
 
         CloseHelper.closeAll(backupArchive, clusterArchiveAsyncConnect, clusterArchive, recordingLog);
@@ -454,6 +458,10 @@ public final class ClusterBackupAgent implements Agent
     private int slowTick(final long nowMs)
     {
         int workCount = aeronClientInvoker.invoke();
+        if (aeron.isClosed())
+        {
+            throw new AgentTerminationException("unexpected Aeron close");
+        }
 
         if (nowMs >= markFileUpdateDeadlineMs)
         {

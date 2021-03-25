@@ -185,6 +185,16 @@ public final class ClusterMarkFile implements AutoCloseable
     }
 
     /**
+     * Check if the {@link MarkFile} is closed.
+     *
+     * @return true if the {@link MarkFile} is closed.
+     */
+    public boolean isClosed()
+    {
+        return markFile.isClosed();
+    }
+
+    /**
      * Get the current value of a candidate term id if a vote is placed in an election.
      *
      * @return the current candidate term id within an election after voting or {@link Aeron#NULL_VALUE} if
@@ -287,7 +297,10 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public void updateActivityTimestamp(final long nowMs)
     {
-        markFile.timestampOrdered(nowMs);
+        if (!markFile.isClosed())
+        {
+            markFile.timestampOrdered(nowMs);
+        }
     }
 
     /**

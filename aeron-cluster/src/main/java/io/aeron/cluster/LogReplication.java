@@ -19,6 +19,7 @@ import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.AeronException;
 import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
@@ -129,8 +130,9 @@ final class LogReplication
                 {
                     archive.stopReplication(replicationId);
                 }
-                catch (final Exception ignore)
+                catch (final Exception e)
                 {
+                    throw new ClusterException("Failed to stop log replication", e, AeronException.Category.WARN);
                 }
             }
         }

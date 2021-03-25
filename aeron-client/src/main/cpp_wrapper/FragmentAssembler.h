@@ -53,7 +53,8 @@ public:
      */
     explicit FragmentAssembler(
         const fragment_handler_t &delegate, std::size_t initialBufferLength = DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
-        m_initialBufferLength(initialBufferLength), m_delegate(delegate)
+        m_initialBufferLength(initialBufferLength),
+        m_delegate(delegate)
     {
     }
 

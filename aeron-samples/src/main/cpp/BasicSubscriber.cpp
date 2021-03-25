@@ -21,6 +21,7 @@
 #include "Configuration.h"
 #include "util/CommandOptionParser.h"
 #include "Aeron.h"
+#include "FragmentAssembler.h"
 #include "concurrent/SleepingIdleStrategy.h"
 
 using namespace aeron::util;
@@ -68,13 +69,14 @@ Settings parseCmdLine(CommandOptionParser &cp, int argc, char **argv)
 
 fragment_handler_t printStringMessage()
 {
-    return
-        [&](const AtomicBuffer &buffer, util::index_t offset, util::index_t length, const Header &header)
-        {
-            std::cout << "Message to stream " << header.streamId() << " from session " << header.sessionId();
-            std::cout << "(" << length << "@" << offset << ") <<";
-            std::cout << std::string(reinterpret_cast<const char *>(buffer.buffer()) + offset, static_cast<std::size_t>(length)) << ">>" << std::endl;
-        };
+    return [&](const AtomicBuffer &buffer, util::index_t offset, util::index_t length, const Header &header)
+    {
+        std::cout
+            << "Message to stream " << header.streamId() << " from session " << header.sessionId()
+            << "(" << length << "@" << offset << ") <<"
+            << std::string(reinterpret_cast<const char *>(buffer.buffer()) + offset, static_cast<std::size_t>(length))
+            << ">>" << std::endl;
+    };
 }
 
 int main(int argc, char **argv)
@@ -135,11 +137,13 @@ int main(int argc, char **argv)
 
         const std::int64_t channelStatus = subscription->channelStatus();
 
-        std::cout << "Subscription channel status (id=" << subscription->channelStatusId() << ") "
-                  << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ? "ACTIVE" : std::to_string(channelStatus))
-                  << std::endl;
+        std::cout
+            << "Subscription channel status (id=" << subscription->channelStatusId() << ") "
+            << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ? "ACTIVE" : std::to_string(channelStatus))
+            << std::endl;
 
-        fragment_handler_t handler = printStringMessage();
+        FragmentAssembler fragmentAssembler(printStringMessage());
+        fragment_handler_t handler = fragmentAssembler.handler();
         SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS);
 
         while (running)
@@ -147,7 +151,6 @@ int main(int argc, char **argv)
             const int fragmentsRead = subscription->poll(handler, FRAGMENTS_LIMIT);
             idleStrategy.idle(fragmentsRead);
         }
-
     }
     catch (const CommandOptionException &e)
     {

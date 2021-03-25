@@ -463,9 +463,9 @@ public class Tests
             {
                 mBeanServer.setAttribute(loggingName, new Attribute("Collecting", true));
             }
-            catch (final InstanceNotFoundException ex)
+            catch (final InstanceNotFoundException ignore)
             {
-                // It must not have been set up for the test.  Expected in many cases.
+                // It must not have been set up for the test. Expected in many cases.
             }
         }
         catch (final Exception ex)
@@ -479,15 +479,15 @@ public class Tests
         try
         {
             final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-            final ObjectName loggingName = new ObjectName("io.aeron:type=logging");
+            final ObjectName loggingName = new ObjectName(LOGGING_MBEAN_NAME);
 
             try
             {
                 mBeanServer.invoke(loggingName, "reset", new Object[0], new String[0]);
             }
-            catch (final InstanceNotFoundException ex)
+            catch (final InstanceNotFoundException ignore)
             {
-                // It must not have been set up for the test.  Expected in many cases.
+                // It must not have been set up for the test. Expected in many cases.
             }
         }
         catch (final Exception ex)
@@ -501,16 +501,16 @@ public class Tests
         try
         {
             final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-            final ObjectName loggingName = new ObjectName("io.aeron:type=logging");
+            final ObjectName loggingName = new ObjectName(LOGGING_MBEAN_NAME);
 
             try
             {
                 mBeanServer.invoke(
-                    loggingName, "writeToFile", new Object[] { filename }, new String[] { "java.lang.String" });
+                    loggingName, "writeToFile", new Object[]{ filename }, new String[]{ "java.lang.String" });
             }
-            catch (final InstanceNotFoundException ex)
+            catch (final InstanceNotFoundException ignore)
             {
-                // It must not have been set up for the test.  Expected in many cases.
+                // It must not have been set up for the test. Expected in many cases.
             }
         }
         catch (final Exception ex)

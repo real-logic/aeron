@@ -118,7 +118,7 @@ final class ClusterEventDissector
         builder.append(" followerMemberId=").append(followerMemberId);
     }
 
-    public static void dissectRequestVote(
+    static void dissectRequestVote(
         final ClusterEventCode eventCode,
         final MutableDirectBuffer buffer,
         final int offset,

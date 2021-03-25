@@ -17,7 +17,7 @@ package io.aeron.agent;
 
 /**
  * MBean interface for a logging agent that stores events in memory and allows them to be periodically written
- * out.  Useful within tests.
+ * out. Useful within tests.
  */
 public interface CollectingEventLogReaderAgentMBean
 {
@@ -26,7 +26,7 @@ public interface CollectingEventLogReaderAgentMBean
      *
      * @param isCollecting whether logs should be collected or not.
      */
-    void setCollecting(boolean isCollecting);
+    void isCollecting(boolean isCollecting);
 
     /**
      * Shows whether logs are being collected or not.
@@ -36,7 +36,7 @@ public interface CollectingEventLogReaderAgentMBean
     boolean isCollecting();
 
     /**
-     * Reset the internal positions within the collector discarding all previous logs.  Should be called periodically,
+     * Reset the internal positions within the collector discarding all previous logs. Should be called periodically,
      * so to avoid consuming all available memory.
      */
     void reset();
@@ -44,7 +44,7 @@ public interface CollectingEventLogReaderAgentMBean
     /**
      * Output the collected logs to file.
      *
-     * @param filename file to write to.
+     * @param filename of file to write to.
      *
      */
     void writeToFile(String filename);

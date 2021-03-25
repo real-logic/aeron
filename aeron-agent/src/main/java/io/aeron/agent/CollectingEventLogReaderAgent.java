@@ -32,15 +32,18 @@ import static io.aeron.agent.EventLogReaderAgent.decodeLogEvent;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
- * Simple reader of {@link EventConfiguration#EVENT_RING_BUFFER} that is useful for testing.  It will register
+ * Simple reader of {@link EventConfiguration#EVENT_RING_BUFFER} that is useful for testing. It will register
  * itself into JMX and allow users to switch on and off capture of log events in memory and allows the user
  * to periodically write them to a file.
  */
 public final class CollectingEventLogReaderAgent implements Agent, CollectingEventLogReaderAgentMBean
 {
-    private static final String LOGGING_MBEAN_NAME = "io.aeron:type=logging";
+    /**
+     * MBean name for this logging agent.
+     */
+    public static final String LOGGING_MBEAN_NAME = "io.aeron:type=logging";
 
-    private enum State
+    enum State
     {
         COLLECTING, IGNORING, RESET
     }
@@ -124,17 +127,9 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
     /**
      * {@inheritDoc}
      */
-    public void setCollecting(final boolean isCollecting)
+    public void isCollecting(final boolean isCollecting)
     {
         this.state = isCollecting ? State.COLLECTING : State.IGNORING;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void reset()
-    {
-        this.state = State.RESET;
     }
 
     /**
@@ -143,6 +138,14 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
     public boolean isCollecting()
     {
         return state == State.COLLECTING;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void reset()
+    {
+        this.state = State.RESET;
     }
 
     /**
@@ -160,10 +163,9 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
     {
         System.out.println("Dumping to file: " + filename);
 
-        final StringBuilder builder = new StringBuilder();
-
         try (PrintStream out = new PrintStream(filename))
         {
+            final StringBuilder builder = new StringBuilder();
             final int terminalPosition = bufferPosition;
 
             int readingPosition = 0;

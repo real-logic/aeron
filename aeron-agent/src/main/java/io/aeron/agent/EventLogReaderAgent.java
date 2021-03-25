@@ -87,7 +87,7 @@ public final class EventLogReaderAgent implements Agent
         else
         {
             appendEvent(builder, byteBuffer, fileChannel);
-            writeBuffer(byteBuffer, fileChannel);
+            write(byteBuffer, fileChannel);
         }
     }
 
@@ -115,7 +115,7 @@ public final class EventLogReaderAgent implements Agent
         final int eventsRead = ringBuffer.read(messageHandler, EVENT_READER_FRAME_LIMIT);
         if (null != byteBuffer && byteBuffer.position() > 0)
         {
-            writeBuffer(byteBuffer, fileChannel);
+            write(byteBuffer, fileChannel);
         }
 
         return eventsRead;
@@ -126,17 +126,17 @@ public final class EventLogReaderAgent implements Agent
         final int eventCodeTypeId = msgTypeId >> 16;
         final int eventCodeId = msgTypeId & 0xFFFF;
 
-        this.builder.setLength(0);
+        builder.setLength(0);
 
-        decodeLogEvent(buffer, index, eventCodeTypeId, eventCodeId, this.builder);
+        decodeLogEvent(buffer, index, eventCodeTypeId, eventCodeId, builder);
 
         if (null == fileChannel)
         {
-            out.print(this.builder);
+            out.print(builder);
         }
         else
         {
-            appendEvent(this.builder, byteBuffer, fileChannel);
+            appendEvent(builder, byteBuffer, fileChannel);
         }
     }
 
@@ -173,7 +173,7 @@ public final class EventLogReaderAgent implements Agent
 
         if (buffer.position() + length > buffer.capacity())
         {
-            writeBuffer(buffer, fileChannel);
+            write(buffer, fileChannel);
         }
 
         final int position = buffer.position();
@@ -186,7 +186,7 @@ public final class EventLogReaderAgent implements Agent
         buffer.position(position + length);
     }
 
-    private static void writeBuffer(final ByteBuffer buffer, final FileChannel fileChannel)
+    private static void write(final ByteBuffer buffer, final FileChannel fileChannel)
     {
         try
         {

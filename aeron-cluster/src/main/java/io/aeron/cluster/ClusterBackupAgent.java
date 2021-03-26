@@ -28,6 +28,7 @@ import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.*;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
@@ -40,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.TAGS_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.*;
 import static io.aeron.cluster.ClusterBackup.State.*;
 import static io.aeron.exceptions.AeronException.Category;
@@ -270,17 +272,15 @@ public final class ClusterBackupAgent implements Agent
     {
         clusterMembers = null;
         leaderMember = null;
-        snapshotsToRetrieve.clear();
-        snapshotsRetrieved.clear();
         leaderLogEntry = null;
         leaderLastTermEntry = null;
         clusterConsensusEndpointsCursor = NULL_VALUE;
+        liveLogRecCounterId = NULL_COUNTER_ID;
+        liveLogRecordingId = NULL_VALUE;
 
+        snapshotsToRetrieve.clear();
+        snapshotsRetrieved.clear();
         fragmentAssembler.clear();
-        final ExclusivePublication consensusPublication = this.consensusPublication;
-        final AeronArchive clusterArchive = this.clusterArchive;
-        final AeronArchive.AsyncConnect clusterArchiveAsyncConnect = this.clusterArchiveAsyncConnect;
-        final Subscription recordingSubscription = this.recordingSubscription;
 
         if (null != snapshotReplication)
         {
@@ -290,18 +290,28 @@ public final class ClusterBackupAgent implements Agent
 
         if (NULL_VALUE != liveLogRecordingSubscriptionId)
         {
-            backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
+            try
+            {
+                backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
+            }
+            catch (final Throwable ex)
+            {
+                ctx.countedErrorHandler().onError(ex);
+            }
             liveLogRecordingSubscriptionId = NULL_VALUE;
         }
 
-        this.consensusPublication = null;
-        this.clusterArchive = null;
-        this.clusterArchiveAsyncConnect = null;
-        this.recordingSubscription = null;
-        CloseHelper.closeAll(consensusPublication, clusterArchive, clusterArchiveAsyncConnect, recordingSubscription);
+        CloseHelper.closeAll(
+            (ErrorHandler)ctx.countedErrorHandler(),
+            consensusPublication,
+            clusterArchive,
+            clusterArchiveAsyncConnect,
+            recordingSubscription);
 
-        liveLogRecCounterId = NULL_COUNTER_ID;
-        liveLogRecordingId = NULL_VALUE;
+        consensusPublication = null;
+        clusterArchive = null;
+        clusterArchiveAsyncConnect = null;
+        recordingSubscription = null;
     }
 
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -613,13 +623,17 @@ public final class ClusterBackupAgent implements Agent
 
         if (NULL_VALUE == liveLogRecordingSubscriptionId)
         {
-            final String endpoint = ctx.catchupEndpoint();
-            if (endpoint.endsWith(":0"))
+            final String catchupEndpoint = ctx.catchupEndpoint();
+            if (catchupEndpoint.endsWith(":0"))
             {
                 if (null == recordingSubscription)
                 {
-                    recordingChannel = "aeron:udp?tags=" + aeron.nextCorrelationId() + "," + aeron.nextCorrelationId();
-                    final String channel = recordingChannel + "|endpoint=" + endpoint;
+                    final ChannelUri channelUri = ChannelUri.parse(ctx.catchupChannel());
+                    channelUri.remove(ENDPOINT_PARAM_NAME);
+                    channelUri.put(TAGS_PARAM_NAME, aeron.nextCorrelationId() + "," + aeron.nextCorrelationId());
+                    recordingChannel = channelUri.toString();
+
+                    final String channel = recordingChannel + "|endpoint=" + catchupEndpoint;
                     recordingSubscription = aeron.addSubscription(channel, ctx.logStreamId());
                     timeOfLastProgressMs = nowMs;
                     return 1;
@@ -632,32 +646,22 @@ public final class ClusterBackupAgent implements Agent
                         return 0;
                     }
 
-                    final int i = resolvedEndpoint.lastIndexOf(':');
-                    replayChannel = "aeron:udp?endpoint=" +
-                        endpoint.substring(0, endpoint.length() - 2) + resolvedEndpoint.substring(i);
+                    final String endpoint = catchupEndpoint.substring(0, catchupEndpoint.length() - 2) +
+                        resolvedEndpoint.substring(resolvedEndpoint.lastIndexOf(':'));
+                    final ChannelUri channelUri = ChannelUri.parse(ctx.catchupChannel());
+                    channelUri.put(ENDPOINT_PARAM_NAME, endpoint);
+                    replayChannel = channelUri.toString();
                 }
             }
             else
             {
-                replayChannel = "aeron:udp?endpoint=" + endpoint;
+                final ChannelUri channelUri = ChannelUri.parse(ctx.catchupChannel());
+                channelUri.put(ENDPOINT_PARAM_NAME, catchupEndpoint);
+                replayChannel = channelUri.toString();
                 recordingChannel = replayChannel;
             }
 
-            final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
-            if (null == logEntry)
-            {
-                liveLogRecordingSubscriptionId = backupArchive.startRecording(
-                    recordingChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
-            }
-            else
-            {
-                liveLogRecordingSubscriptionId = backupArchive.extendRecording(
-                    logEntry.recordingId, recordingChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
-            }
-
-            CloseHelper.close(recordingSubscription);
-            recordingChannel = null;
-            recordingSubscription = null;
+            liveLogRecordingSubscriptionId = startLogRecording();
         }
 
         timeOfLastProgressMs = nowMs;
@@ -917,6 +921,29 @@ public final class ClusterBackupAgent implements Agent
         }
 
         return workCount;
+    }
+
+    private long startLogRecording()
+    {
+        final long recordingSubscriptionId;
+
+        final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
+        if (null == logEntry)
+        {
+            recordingSubscriptionId = backupArchive.startRecording(
+                recordingChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
+        }
+        else
+        {
+            recordingSubscriptionId = backupArchive.extendRecording(
+                logEntry.recordingId, recordingChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
+        }
+
+        recordingChannel = null;
+        CloseHelper.close(ctx.countedErrorHandler(), recordingSubscription);
+        recordingSubscription = null;
+
+        return recordingSubscriptionId;
     }
 
     private boolean hasProgressStalled(final long nowMs)

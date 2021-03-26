@@ -291,7 +291,7 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Default channel template used for catchup and replication of log and snapshots.
          */
-        public static final String CLUSTER_BACKUP_CATCHUP_CHANNEL_DEFAULT = "aeron:udp?alias=replicate|cc=cubic";
+        public static final String CLUSTER_BACKUP_CATCHUP_CHANNEL_DEFAULT = "aeron:udp?alias=backup|cc=cubic";
 
         /**
          * Interval at which a cluster backup will send backup queries.

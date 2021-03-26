@@ -716,7 +716,6 @@ public final class ClusterBackupAgent implements Agent
                 if (NULL_COUNTER_ID != liveLogRecCounterId)
                 {
                     liveLogPositionCounter.setOrdered(countersReader.getCounterValue(liveLogRecCounterId));
-
                     liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecCounterId);
                     timeOfLastBackupQueryMs = nowMs;
                     timeOfLastProgressMs = nowMs;
@@ -858,15 +857,15 @@ public final class ClusterBackupAgent implements Agent
 
         if (poller.poll() > 0 && poller.isPollComplete())
         {
-            if (poller.controlSessionId() == archive.controlSessionId() && poller.correlationId() == correlationId)
+            if (poller.controlSessionId() == archive.controlSessionId())
             {
-                if (poller.code() == ControlResponseCode.ERROR)
+                final ControlResponseCode code = poller.code();
+                if (ControlResponseCode.ERROR == code)
                 {
-                    throw new ClusterException(
-                        "archive response correlationId=" + correlationId + ", error: " + poller.errorMessage());
+                    throw new ArchiveException(poller.errorMessage(), (int)poller.relevantId(), poller.correlationId());
                 }
 
-                return true;
+                return ControlResponseCode.OK == code && poller.correlationId() == correlationId;
             }
         }
 

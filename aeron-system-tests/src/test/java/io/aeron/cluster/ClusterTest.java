@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.log.EventLogExtension;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestCluster;
@@ -24,6 +25,7 @@ import io.aeron.test.cluster.TestNode;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
@@ -38,21 +40,15 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
+@ExtendWith(EventLogExtension.class)
 public class ClusterTest
 {
     private TestCluster cluster = null;
-
-    @BeforeEach
-    void before()
-    {
-        Tests.startLogCollecting();
-    }
 
     @AfterEach
     void after()
     {
         CloseHelper.close(cluster);
-        Tests.resetLogCollecting();
     }
 
     @Test

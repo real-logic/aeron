@@ -615,6 +615,7 @@ abstract class ArchiveConductor
         final long length,
         final int replayStreamId,
         final String replayChannel,
+        final Counter limitPosition,
         final ControlSession controlSession)
     {
         if (replaySessionByIdMap.size() >= ctx.maxConcurrentReplays())
@@ -646,9 +647,15 @@ abstract class ArchiveConductor
 
         final ExclusivePublication replayPublication = newReplayPublication(
             correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
-
         final long replaySessionId = ((long)(replayId++) << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
-        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+
+        Counter replayLimitPosition = limitPosition;
+        if (null == replayLimitPosition)
+        {
+            final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+            replayLimitPosition = null == recordingSession ? null : recordingSession.recordingPosition();
+        }
+
         final ReplaySession replaySession = new ReplaySession(
             replayPosition,
             length,
@@ -663,7 +670,7 @@ abstract class ArchiveConductor
             cachedEpochClock,
             replayPublication,
             recordingSummary,
-            null == recordingSession ? null : recordingSession.recordingPosition(),
+            replayLimitPosition,
             ctx.replayChecksum());
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
@@ -680,57 +687,33 @@ abstract class ArchiveConductor
         final String replayChannel,
         final ControlSession controlSession)
     {
-        if (replaySessionByIdMap.size() >= ctx.maxConcurrentReplays())
+        Counter replayLimitCounter = counterByIdMap.get(limitCounterId);
+        if (null == replayLimitCounter)
         {
-            final String msg = "max concurrent replays reached " + ctx.maxConcurrentReplays();
-            controlSession.sendErrorResponse(correlationId, MAX_REPLAYS, msg, controlResponseProxy);
-            return;
-        }
-
-        if (!catalog.hasRecording(recordingId))
-        {
-            final String msg = "unknown recording id " + recordingId;
-            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-            return;
-        }
-
-        catalog.recordingSummary(recordingId, recordingSummary);
-        long replayPosition = recordingSummary.startPosition;
-
-        if (NULL_POSITION != position)
-        {
-            if (isInvalidReplayPosition(correlationId, controlSession, recordingId, position, recordingSummary))
+            try
             {
+                replayLimitCounter = new Counter(aeron.countersReader(), NULL_VALUE, limitCounterId);
+            }
+            catch (final Throwable ex)
+            {
+                final String msg = "unable to create replay limit counter id= " + limitCounterId +
+                    " because of: " + ex.getMessage();
+                controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
                 return;
             }
 
-            replayPosition = position;
+            counterByIdMap.put(limitCounterId, replayLimitCounter);
         }
 
-        final ExclusivePublication replayPublication = newReplayPublication(
-            correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
-        final Counter limitCounter = getOrAddCounter(limitCounterId);
-
-        final long replaySessionId = ((long)(replayId++) << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
-        final ReplaySession replaySession = new ReplaySession(
-            replayPosition,
-            length,
-            replaySessionId,
-            connectTimeoutMs,
+        startReplay(
             correlationId,
-            controlSession,
-            controlResponseProxy,
-            ctx.replayBuffer(),
-            catalog,
-            archiveDir,
-            cachedEpochClock,
-            replayPublication,
-            recordingSummary,
-            limitCounter,
-            ctx.replayChecksum());
-
-        replaySessionByIdMap.put(replaySessionId, replaySession);
-        replayer.addSession(replaySession);
+            recordingId,
+            position,
+            length,
+            replayStreamId,
+            replayChannel,
+            replayLimitCounter,
+            controlSession);
     }
 
     void stopReplay(final long correlationId, final long replaySessionId, final ControlSession controlSession)
@@ -2026,19 +2009,6 @@ abstract class ArchiveConductor
         }
 
         return true;
-    }
-
-    private Counter getOrAddCounter(final int counterId)
-    {
-        Counter counter = counterByIdMap.get(counterId);
-
-        if (null == counter)
-        {
-            counter = new Counter(aeron.countersReader(), NULL_VALUE, counterId);
-            counterByIdMap.put(counterId, counter);
-        }
-
-        return counter;
     }
 
     private void closeAndRemoveRecordingSubscription(final Subscription subscription)

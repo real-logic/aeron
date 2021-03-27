@@ -324,7 +324,8 @@ final class ControlSession implements Session
         attemptToActivate();
         if (State.ACTIVE == state)
         {
-            conductor.startReplay(correlationId, recordingId, position, length, replayStreamId, replayChannel, this);
+            conductor.startReplay(
+                correlationId, recordingId, position, length, replayStreamId, replayChannel, null, this);
         }
     }
 

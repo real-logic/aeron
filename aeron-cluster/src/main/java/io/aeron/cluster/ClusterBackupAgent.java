@@ -246,6 +246,10 @@ public final class ClusterBackupAgent implements Agent
                 state(RESET_BACKUP, nowMs);
             }
         }
+        catch (final AgentTerminationException ex)
+        {
+            throw ex;
+        }
         catch (final Exception ex)
         {
             if (null != eventsListener)
@@ -740,51 +744,59 @@ public final class ClusterBackupAgent implements Agent
     private int updateRecordingLog(final long nowMs)
     {
         boolean wasRecordingLogUpdated = false;
-        final long snapshotLeadershipTermId = snapshotsRetrieved.isEmpty() ?
-            NULL_VALUE : snapshotsRetrieved.get(0).leadershipTermId;
-
-        if (null != leaderLogEntry &&
-            recordingLog.isUnknown(leaderLogEntry.leadershipTermId) &&
-            leaderLogEntry.leadershipTermId <= snapshotLeadershipTermId)
+        try
         {
-            recordingLog.appendTerm(
-                liveLogRecordingId,
-                leaderLogEntry.leadershipTermId,
-                leaderLogEntry.termBaseLogPosition,
-                leaderLogEntry.timestamp);
+            final long snapshotLeadershipTermId = snapshotsRetrieved.isEmpty() ?
+                NULL_VALUE : snapshotsRetrieved.get(0).leadershipTermId;
 
-            wasRecordingLogUpdated = true;
-            leaderLogEntry = null;
-        }
-
-        if (!snapshotsRetrieved.isEmpty())
-        {
-            for (int i = snapshotsRetrieved.size() - 1; i >= 0; i--)
+            if (null != leaderLogEntry &&
+                recordingLog.isUnknown(leaderLogEntry.leadershipTermId) &&
+                leaderLogEntry.leadershipTermId <= snapshotLeadershipTermId)
             {
-                final RecordingLog.Snapshot snapshot = snapshotsRetrieved.get(i);
+                recordingLog.appendTerm(
+                    liveLogRecordingId,
+                    leaderLogEntry.leadershipTermId,
+                    leaderLogEntry.termBaseLogPosition,
+                    leaderLogEntry.timestamp);
 
-                recordingLog.appendSnapshot(
-                    snapshot.recordingId,
-                    snapshot.leadershipTermId,
-                    snapshot.termBaseLogPosition,
-                    snapshot.logPosition,
-                    snapshot.timestamp,
-                    snapshot.serviceId);
+                wasRecordingLogUpdated = true;
+                leaderLogEntry = null;
             }
 
-            wasRecordingLogUpdated = true;
+            if (!snapshotsRetrieved.isEmpty())
+            {
+                for (int i = snapshotsRetrieved.size() - 1; i >= 0; i--)
+                {
+                    final RecordingLog.Snapshot snapshot = snapshotsRetrieved.get(i);
+
+                    recordingLog.appendSnapshot(
+                        snapshot.recordingId,
+                        snapshot.leadershipTermId,
+                        snapshot.termBaseLogPosition,
+                        snapshot.logPosition,
+                        snapshot.timestamp,
+                        snapshot.serviceId);
+                }
+
+                wasRecordingLogUpdated = true;
+            }
+
+            if (null != leaderLastTermEntry && recordingLog.isUnknown(leaderLastTermEntry.leadershipTermId))
+            {
+                recordingLog.appendTerm(
+                    liveLogRecordingId,
+                    leaderLastTermEntry.leadershipTermId,
+                    leaderLastTermEntry.termBaseLogPosition,
+                    leaderLastTermEntry.timestamp);
+
+                wasRecordingLogUpdated = true;
+                leaderLastTermEntry = null;
+            }
         }
-
-        if (null != leaderLastTermEntry && recordingLog.isUnknown(leaderLastTermEntry.leadershipTermId))
+        catch (final Throwable ex)
         {
-            recordingLog.appendTerm(
-                liveLogRecordingId,
-                leaderLastTermEntry.leadershipTermId,
-                leaderLastTermEntry.termBaseLogPosition,
-                leaderLastTermEntry.timestamp);
-
-            wasRecordingLogUpdated = true;
-            leaderLastTermEntry = null;
+            ctx.countedErrorHandler().onError(ex);
+            throw new AgentTerminationException("failed to update recording log", ex);
         }
 
         if (wasRecordingLogUpdated && null != eventsListener)

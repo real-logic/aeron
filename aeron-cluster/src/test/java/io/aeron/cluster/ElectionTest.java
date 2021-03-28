@@ -116,8 +116,8 @@ public class ElectionTest
         election.doWork(t1);
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
-        election.onCanvassPosition(leadershipTermId, logPosition, 1);
-        election.onCanvassPosition(leadershipTermId, logPosition, 2);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 1);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 2);
 
         final long t2 = 2;
         election.doWork(t2);
@@ -294,12 +294,12 @@ public class ElectionTest
         final long t2 = t1 + ctx.electionStatusIntervalNs();
         election.doWork(t2);
         verify(consensusPublisher).canvassPosition(
-            clusterMembers[0].publication(), leadershipTermId, logPosition, followerMember.id());
+            clusterMembers[0].publication(), leadershipTermId, logPosition, leadershipTermId, followerMember.id());
         verify(consensusPublisher).canvassPosition(
-            clusterMembers[2].publication(), leadershipTermId, logPosition, followerMember.id());
+            clusterMembers[2].publication(), leadershipTermId, logPosition, leadershipTermId, followerMember.id());
 
-        election.onCanvassPosition(leadershipTermId, logPosition, 0);
-        election.onCanvassPosition(leadershipTermId, logPosition, 2);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 0);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 2);
 
         final long t3 = t2 + 1;
         election.doWork(t3);
@@ -323,8 +323,8 @@ public class ElectionTest
         final long t2 = t1 + ctx.electionStatusIntervalNs();
         election.doWork(t2);
 
-        election.onCanvassPosition(leadershipTermId, logPosition, 0);
-        election.onCanvassPosition(leadershipTermId, logPosition, 2);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 0);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 2);
 
         final long t3 = t2 + 1;
         election.doWork(t3);
@@ -375,8 +375,8 @@ public class ElectionTest
         election.doWork(t1);
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
-        election.onCanvassPosition(leadershipTermId, logPosition, 0);
-        election.onCanvassPosition(leadershipTermId, logPosition, 2);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 0);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 2);
 
         final long t2 = t1 + 1;
         election.doWork(t2);
@@ -453,8 +453,8 @@ public class ElectionTest
         election.doWork(t1);
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
-        election.onCanvassPosition(leadershipTermId, logPosition, 0);
-        election.onCanvassPosition(leadershipTermId, logPosition, 2);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 0);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 2);
 
         final long t2 = t1 + 1;
         election.doWork(t2);
@@ -490,8 +490,8 @@ public class ElectionTest
         final InOrder inOrder = Mockito.inOrder(electionStateCounter);
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
-        election.onCanvassPosition(leadershipTermId, logPosition, 0);
-        election.onCanvassPosition(leadershipTermId, logPosition, 2);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 0);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 2);
 
         final long t2 = t1 + 1;
         election.doWork(t2);
@@ -522,7 +522,7 @@ public class ElectionTest
         final InOrder inOrder = Mockito.inOrder(electionStateCounter);
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
-        election.onCanvassPosition(leadershipTermId, logPosition, 0);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 0);
 
         final long t2 = t1 + ctx.startupCanvassTimeoutNs();
         election.doWork(t2);
@@ -542,7 +542,7 @@ public class ElectionTest
         election.doWork(t5);
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
-        election.onCanvassPosition(leadershipTermId, logPosition, 0);
+        election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 0);
 
         final long t6 = t5 + 1;
         election.doWork(t6);
@@ -1026,8 +1026,8 @@ public class ElectionTest
         election.doWork(++t1);
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
-        election.onCanvassPosition(leadershipTermId, leaderLogPosition, leaderId);
-        election.onCanvassPosition(leadershipTermId, followerLogPosition, followerId);
+        election.onCanvassPosition(leadershipTermId, leaderLogPosition, leadershipTermId, leaderId);
+        election.onCanvassPosition(leadershipTermId, followerLogPosition, leadershipTermId, followerId);
 
         t1 += (2 * ctx.startupCanvassTimeoutNs());
         election.doWork(t1);

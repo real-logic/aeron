@@ -352,7 +352,7 @@ public class ConsensusModuleAgentTest
         agent.role(Cluster.Role.LEADER);
         agent.leadershipTermId(currentLeadershipTermId);
         agent.logRecordingId(currentTerm.recordingId);
-        agent.onCanvassPosition(followerLogLeadershipTermId, 300, 2);
+        agent.onCanvassPosition(followerLogLeadershipTermId, 300, currentTerm.leadershipTermId, 2);
 
         validator
             .body()

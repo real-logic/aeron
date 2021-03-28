@@ -95,6 +95,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                 consensusModuleAgent.onCanvassPosition(
                     canvassPositionDecoder.logLeadershipTermId(),
                     canvassPositionDecoder.logPosition(),
+                    canvassPositionDecoder.leadershipTermId(),
                     canvassPositionDecoder.followerMemberId());
                 break;
 

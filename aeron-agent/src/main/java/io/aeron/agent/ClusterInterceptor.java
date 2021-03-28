@@ -85,7 +85,10 @@ class ClusterInterceptor
     {
         @Advice.OnMethodEnter
         static void onCanvassPosition(
-            final long logLeadershipTermId, final long logPosition, final int followerMemberId)
+            final long logLeadershipTermId,
+            final long logPosition,
+            final long leadershipTermId,
+            final int followerMemberId)
         {
             LOGGER.logCanvassPosition(logLeadershipTermId, logPosition, followerMemberId);
         }

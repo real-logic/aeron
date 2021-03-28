@@ -51,6 +51,7 @@ final class ConsensusPublisher
         final ExclusivePublication publication,
         final long logLeadershipTermId,
         final long logPosition,
+        final long leadershipTermId,
         final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CanvassPositionEncoder.BLOCK_LENGTH;
@@ -65,6 +66,7 @@ final class ConsensusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logLeadershipTermId(logLeadershipTermId)
                     .logPosition(logPosition)
+                    .leadershipTermId(leadershipTermId)
                     .followerMemberId(followerMemberId);
 
                 bufferClaim.commit();

@@ -476,20 +476,24 @@ final class ConsensusModuleAgent implements Agent
         return false;
     }
 
-    void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
+    void onCanvassPosition(
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long leadershipTermId,
+        final int followerMemberId)
     {
         if (null != election)
         {
-            election.onCanvassPosition(logLeadershipTermId, logPosition, followerMemberId);
+            election.onCanvassPosition(logLeadershipTermId, logPosition, leadershipTermId, followerMemberId);
         }
         else if (Cluster.Role.LEADER == role)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-            if (null != follower && logLeadershipTermId <= leadershipTermId)
+            if (null != follower && logLeadershipTermId <= this.leadershipTermId)
             {
-                final RecordingLog.Entry currentTermEntry = recordingLog.findTermEntry(leadershipTermId);
+                final RecordingLog.Entry currentTermEntry = recordingLog.findTermEntry(this.leadershipTermId);
                 final RecordingLog.Entry nextFollowerEntry = recordingLog.findTermEntry(
-                    logLeadershipTermId < leadershipTermId ? logLeadershipTermId + 1 : logLeadershipTermId);
+                    logLeadershipTermId < this.leadershipTermId ? logLeadershipTermId + 1 : logLeadershipTermId);
                 if (null != currentTermEntry && null != nextFollowerEntry)
                 {
                     final long appendPosition = logPublisher.position();
@@ -497,7 +501,7 @@ final class ConsensusModuleAgent implements Agent
                         follower.publication(),
                         logLeadershipTermId,
                         nextFollowerEntry.termBaseLogPosition,
-                        leadershipTermId,
+                        this.leadershipTermId,
                         currentTermEntry.termBaseLogPosition,
                         appendPosition,
                         logRecordingId,

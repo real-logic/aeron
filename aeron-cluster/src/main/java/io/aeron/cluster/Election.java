@@ -238,7 +238,11 @@ class Election
         }
     }
 
-    void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
+    void onCanvassPosition(
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long leadershipTermId,
+        final int followerMemberId)
     {
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
         if (null != follower && thisMember.id() != followerMemberId)
@@ -249,7 +253,7 @@ class Election
 
             if (LEADER_READY == state)
             {
-                if (logLeadershipTermId < leadershipTermId)
+                if (logLeadershipTermId < this.leadershipTermId)
                 {
                     final RecordingLog.Entry logNextTermEntry =
                         ctx.recordingLog().getTermEntry(logLeadershipTermId + 1);
@@ -258,7 +262,7 @@ class Election
                         follower.publication(),
                         logLeadershipTermId,
                         logNextTermEntry.termBaseLogPosition,
-                        leadershipTermId,
+                        this.leadershipTermId,
                         appendPosition,
                         appendPosition,
                         consensusModuleAgent.logRecordingId(),
@@ -272,7 +276,7 @@ class Election
                     throw new ClusterException("new potential election", AeronException.Category.WARN);
                 }
             }
-            else if ((LEADER_INIT == state || LEADER_REPLAY == state) && logLeadershipTermId < leadershipTermId)
+            else if ((LEADER_INIT == state || LEADER_REPLAY == state) && logLeadershipTermId < this.leadershipTermId)
             {
                 final RecordingLog.Entry logNextTermEntry =
                     ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
@@ -283,7 +287,7 @@ class Election
                         follower.publication(),
                         logLeadershipTermId,
                         logNextTermEntry.termBaseLogPosition,
-                        leadershipTermId,
+                        this.leadershipTermId,
                         appendPosition,
                         appendPosition,
                         consensusModuleAgent.logRecordingId(),
@@ -516,7 +520,7 @@ class Election
                 if (member.id() != thisMember.id())
                 {
                     consensusPublisher.canvassPosition(
-                        member.publication(), leadershipTermId, appendPosition, thisMember.id());
+                        member.publication(), logLeadershipTermId, appendPosition, leadershipTermId, thisMember.id());
                 }
             }
 

@@ -2301,10 +2301,9 @@ public final class Archive implements AutoCloseable
          */
         public void close()
         {
+            CloseHelper.close(countedErrorHandler, archiveDirChannel);
             CloseHelper.close(countedErrorHandler, catalog);
             CloseHelper.close(countedErrorHandler, markFile);
-            CloseHelper.close(countedErrorHandler, archiveDirChannel);
-            archiveDirChannel = null;
 
             CloseHelper.quietClose(errorCounter);
             if (errorHandler instanceof AutoCloseable)

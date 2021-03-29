@@ -214,6 +214,7 @@ abstract class ArchiveConductor
             }
         }
 
+        markFile.updateActivityTimestamp(NULL_VALUE);
         ctx.close();
     }
 

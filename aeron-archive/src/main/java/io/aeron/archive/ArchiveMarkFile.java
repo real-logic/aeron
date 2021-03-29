@@ -229,7 +229,10 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public void updateActivityTimestamp(final long nowMs)
     {
-        markFile.timestampOrdered(nowMs);
+        if (!markFile.isClosed())
+        {
+            markFile.timestampOrdered(nowMs);
+        }
     }
 
     /**

@@ -148,6 +148,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             }
         }
 
+        markFile.updateActivityTimestamp(NULL_VALUE);
         ctx.close();
     }
 
@@ -688,7 +689,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         memberId = activeLog.memberId;
-        ctx.clusterMarkFile().memberId(memberId);
+        markFile.memberId(memberId);
 
         if (Role.LEADER == activeLog.role)
         {
@@ -904,8 +905,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             if (nowMs >= markFileUpdateDeadlineMs)
             {
-                markFile.updateActivityTimestamp(nowMs);
                 markFileUpdateDeadlineMs = nowMs + MARK_FILE_UPDATE_INTERVAL_MS;
+                markFile.updateActivityTimestamp(nowMs);
             }
 
             return true;

@@ -239,6 +239,7 @@ final class ConsensusModuleAgent implements Agent
             state(ConsensusModule.State.CLOSED);
         }
 
+        markFile.updateActivityTimestamp(NULL_VALUE);
         ctx.close();
     }
 
@@ -1890,8 +1891,8 @@ final class ConsensusModuleAgent implements Agent
 
         if (nowNs >= markFileUpdateDeadlineNs)
         {
-            markFile.updateActivityTimestamp(nowMs);
             markFileUpdateDeadlineNs = nowNs + MARK_FILE_UPDATE_INTERVAL_NS;
+            markFile.updateActivityTimestamp(nowMs);
         }
 
         workCount += pollArchiveEvents();

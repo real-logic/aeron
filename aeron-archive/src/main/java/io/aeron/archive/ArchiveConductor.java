@@ -269,8 +269,8 @@ abstract class ArchiveConductor
 
             if (nowMs >= markFileUpdateDeadlineMs)
             {
-                markFile.updateActivityTimestamp(nowMs);
                 markFileUpdateDeadlineMs = nowMs + MARK_FILE_UPDATE_INTERVAL_MS;
+                markFile.updateActivityTimestamp(nowMs);
             }
         }
 

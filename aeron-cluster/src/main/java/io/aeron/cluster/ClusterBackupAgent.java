@@ -184,6 +184,7 @@ public final class ClusterBackupAgent implements Agent
         }
 
         CloseHelper.closeAll(backupArchive, clusterArchiveAsyncConnect, clusterArchive, recordingLog);
+        markFile.updateActivityTimestamp(NULL_VALUE);
         ctx.close();
     }
 

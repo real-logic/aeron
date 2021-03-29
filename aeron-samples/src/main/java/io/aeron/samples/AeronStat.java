@@ -66,6 +66,11 @@ public class AeronStat
     private static final String WATCH = "watch";
 
     /**
+     * Whether to output in Influx format
+     */
+    private static final String TELEGRAF = "telegraf";
+
+    /**
      * Types of the counters.
      * <ul>
      * <li>0: System Counters</li>
@@ -106,6 +111,7 @@ public class AeronStat
     {
         long delayMs = 1000L;
         boolean watch = true;
+        boolean telegraf = true;
         Pattern typeFilter = null;
         Pattern identityFilter = null;
         Pattern sessionFilter = null;
@@ -132,6 +138,10 @@ public class AeronStat
                 {
                     case WATCH:
                         watch = Boolean.parseBoolean(argValue);
+                        break;
+
+                    case TELEGRAF:
+                        telegraf = Boolean.parseBoolean(argValue);
                         break;
 
                     case DELAY:
@@ -174,6 +184,11 @@ public class AeronStat
         {
             workLoop(delayMs, () -> printOutput(cncFileReader, counterFilter));
         }
+        else if (telegraf)
+        {
+            final StringBuilder telegrafMetric = new StringBuilder();
+            telegrafOutput(cncFileReader, telegrafMetric);
+        }
         else
         {
             printOutput(cncFileReader, counterFilter);
@@ -193,6 +208,25 @@ public class AeronStat
             Thread.sleep(delayMs);
         }
         while (running.get());
+    }
+
+    private static void telegrafOutput(final CncFileReader cncFileReader, final StringBuilder telegrafMetric)
+    {
+        final CountersReader counters = cncFileReader.countersReader();
+        telegrafMetric.append("aeron");
+        counters.forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if (counterId <= 24)
+                {
+                    final long cv = counters.getCounterValue(counterId);
+                    final String cl = counters.getCounterLabel(counterId).replaceAll("( |,|\\.|-)", "_").toLowerCase();
+                    final String o = String.format(",%s=%s", cl, cv);
+                    telegrafMetric.append(o);
+                }
+            }
+        );
+        System.out.println(telegrafMetric);
     }
 
     private static void printOutput(final CncFileReader cncFileReader, final CounterFilter counterFilter)

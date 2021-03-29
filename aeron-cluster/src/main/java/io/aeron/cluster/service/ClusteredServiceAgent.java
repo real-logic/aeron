@@ -61,6 +61,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private long logPosition = NULL_POSITION;
 
     private final IdleStrategy idleStrategy;
+    private final ClusterMarkFile markFile;
     private final ClusteredServiceContainer.Context ctx;
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -87,6 +88,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         logAdapter = new BoundedLogAdapter(this, ctx.logFragmentLimit());
         this.ctx = ctx;
 
+        markFile = ctx.clusterMarkFile();
         aeron = ctx.aeron();
         aeronAgentInvoker = ctx.aeron().conductorAgentInvoker();
         service = ctx.clusteredService();
@@ -902,7 +904,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             if (nowMs >= markFileUpdateDeadlineMs)
             {
-                ctx.clusterMarkFile().updateActivityTimestamp(nowMs);
+                markFile.updateActivityTimestamp(nowMs);
                 markFileUpdateDeadlineMs = nowMs + MARK_FILE_UPDATE_INTERVAL_MS;
             }
 

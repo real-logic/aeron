@@ -357,7 +357,9 @@ public class ConsensusModuleAgentTest
         validator
             .body()
             .logLeadershipTermId(followerLogLeadershipTermId)
-            .logTruncatePosition(followerNextLeadershipTerm.termBaseLogPosition)
+            .nextLeadershipTermId(followerNextLeadershipTerm.leadershipTermId)
+            .nextTermBaseLogPosition(followerNextLeadershipTerm.termBaseLogPosition)
+            .nextLogPosition(followerNextLeadershipTerm.logPosition)
             .leadershipTermId(currentLeadershipTermId)
             .termBaseLogPosition(currentTerm.termBaseLogPosition)
             .logPosition(leaderLogPosition)

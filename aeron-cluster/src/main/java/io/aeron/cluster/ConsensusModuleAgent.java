@@ -491,25 +491,45 @@ final class ConsensusModuleAgent implements Agent
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && logLeadershipTermId <= this.leadershipTermId)
             {
-                final RecordingLog.Entry currentTermEntry = recordingLog.findTermEntry(this.leadershipTermId);
-                final RecordingLog.Entry nextFollowerEntry = recordingLog.findTermEntry(
-                    logLeadershipTermId < this.leadershipTermId ? logLeadershipTermId + 1 : logLeadershipTermId);
-                if (null != currentTermEntry && null != nextFollowerEntry)
+                final RecordingLog.Entry currentTermEntry = recordingLog.getTermEntry(this.leadershipTermId);
+                final long termBaseLogPosition = currentTermEntry.termBaseLogPosition;
+                final long timestamp = ctx.clusterClock().timeNanos();
+                final long nextLogLeadershipTermId;
+                final long nextTermBaseLogPosition;
+                final long nextLogPosition;
+
+                if (logLeadershipTermId < this.leadershipTermId)
                 {
-                    final long appendPosition = logPublisher.position();
-                    consensusPublisher.newLeadershipTerm(
-                        follower.publication(),
-                        logLeadershipTermId,
-                        nextFollowerEntry.termBaseLogPosition,
-                        this.leadershipTermId,
-                        currentTermEntry.termBaseLogPosition,
-                        appendPosition,
-                        logRecordingId,
-                        nextFollowerEntry.timestamp,
-                        memberId,
-                        logPublisher.sessionId(),
-                        false);
+                    final RecordingLog.Entry nextLogEntry = recordingLog.findTermEntry(logLeadershipTermId + 1);
+                    nextLogLeadershipTermId = null != nextLogEntry ?
+                        nextLogEntry.leadershipTermId : this.leadershipTermId;
+                    nextTermBaseLogPosition = null != nextLogEntry ?
+                        nextLogEntry.termBaseLogPosition : termBaseLogPosition;
+                    nextLogPosition = null != nextLogEntry ? nextLogEntry.logPosition : NULL_POSITION;
                 }
+                else
+                {
+                    nextLogLeadershipTermId = NULL_VALUE;
+                    nextTermBaseLogPosition = NULL_POSITION;
+                    nextLogPosition = NULL_POSITION;
+                }
+
+                final long appendPosition = logPublisher.position();
+
+                consensusPublisher.newLeadershipTerm(
+                    follower.publication(),
+                    logLeadershipTermId,
+                    nextLogLeadershipTermId,
+                    nextTermBaseLogPosition,
+                    nextLogPosition,
+                    this.leadershipTermId,
+                    termBaseLogPosition,
+                    appendPosition,
+                    logRecordingId,
+                    timestamp,
+                    memberId,
+                    logPublisher.sessionId(),
+                    false);
             }
         }
     }
@@ -545,7 +565,9 @@ final class ConsensusModuleAgent implements Agent
 
     void onNewLeadershipTerm(
         final long logLeadershipTermId,
-        final long logTruncatePosition,
+        final long nextLeadershipTermId,
+        final long nextTermBaseLogPosition,
+        final long nextLogPosition,
         final long leadershipTermId,
         final long termBaseLogPosition,
         final long logPosition,
@@ -559,7 +581,9 @@ final class ConsensusModuleAgent implements Agent
         {
             election.onNewLeadershipTerm(
                 logLeadershipTermId,
-                logTruncatePosition,
+                nextLeadershipTermId,
+                nextTermBaseLogPosition,
+                nextLogPosition,
                 leadershipTermId,
                 termBaseLogPosition,
                 logPosition,

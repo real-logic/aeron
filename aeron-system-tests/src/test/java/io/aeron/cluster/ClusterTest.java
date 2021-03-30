@@ -887,6 +887,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
+    @Disabled
     public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);
@@ -979,6 +980,7 @@ public class ClusterTest
 
     @Test
     @Timeout(30)
+    @Disabled
     public void shouldReplayMultipleSnapshotsWithEmptyFollowerLog(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);
@@ -1117,7 +1119,6 @@ public class ClusterTest
             cluster.dumpData(testInfo, ex);
         }
     }
-
 
     @Test
     @Timeout(40)

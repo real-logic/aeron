@@ -38,25 +38,27 @@ class ClusterInterceptor
         @Advice.OnMethodEnter
         static void onNewLeadershipTerm(
             final long logLeadershipTermId,
-            final long logTruncatePosition,
+            final long nextLeadershipTermId,
+            final long nextTermBaseLogPosition,
+            final long nextLogPosition,
             final long leadershipTermId,
             final long termBaseLogPosition,
             final long logPosition,
             final long leaderRecordingId,
             final long timestamp,
-            final int leaderMemberId,
+            final int leaderId,
             final int logSessionId,
             final boolean isStartup)
         {
             LOGGER.logNewLeadershipTerm(
                 logLeadershipTermId,
-                logTruncatePosition,
+                nextTermBaseLogPosition,
                 leadershipTermId,
                 termBaseLogPosition,
                 logPosition,
                 leaderRecordingId,
                 timestamp,
-                leaderMemberId,
+                leaderId,
                 logSessionId,
                 isStartup);
         }

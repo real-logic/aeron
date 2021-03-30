@@ -152,7 +152,9 @@ final class ConsensusPublisher
     void newLeadershipTerm(
         final ExclusivePublication publication,
         final long logLeadershipTermId,
-        final long logTruncatePosition,
+        final long nextLeadershipTermId,
+        final long nextTermBaseLogPosition,
+        final long nextLogPosition,
         final long leadershipTermId,
         final long termBaseLogPosition,
         final long logPosition,
@@ -173,7 +175,9 @@ final class ConsensusPublisher
                 newLeadershipTermEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logLeadershipTermId(logLeadershipTermId)
-                    .logTruncatePosition(logTruncatePosition)
+                    .nextLeadershipTermId(nextLeadershipTermId)
+                    .nextTermBaseLogPosition(nextTermBaseLogPosition)
+                    .nextLogPosition(nextLogPosition)
                     .leadershipTermId(leadershipTermId)
                     .termBaseLogPosition(termBaseLogPosition)
                     .logPosition(logPosition)

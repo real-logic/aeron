@@ -25,7 +25,7 @@ final class SnapshotReplication
     private final long replicationId;
     private long recordingId = RecordingPos.NULL_RECORDING_ID;
     private boolean isDone = false;
-    private boolean isSync = false;
+    private boolean hasSync = false;
     private String errorMessage;
 
     SnapshotReplication(final long replicationId)
@@ -82,11 +82,11 @@ final class SnapshotReplication
             }
             else if (RecordingSignal.SYNC == signal)
             {
-                isSync = true;
+                hasSync = true;
             }
             else if (RecordingSignal.STOP == signal)
             {
-                if (isSync)
+                if (hasSync)
                 {
                     isDone = true;
                 }

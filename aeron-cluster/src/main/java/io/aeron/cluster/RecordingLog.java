@@ -1009,13 +1009,6 @@ public final class RecordingLog implements AutoCloseable
         if (!restoreInvalidSnapshot(
             recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
         {
-            final Entry entry = findLastTerm();
-            if (null != entry && entry.leadershipTermId != leadershipTermId)
-            {
-                throw new ClusterException("snapshot not for current leadership term=" + entry.leadershipTermId +
-                    " snapshot=" + leadershipTermId);
-            }
-
             append(
                 ENTRY_TYPE_SNAPSHOT,
                 recordingId,

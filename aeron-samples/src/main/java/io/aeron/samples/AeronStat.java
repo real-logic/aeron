@@ -112,7 +112,7 @@ public class AeronStat
     {
         long delayMs = 1000L;
         boolean watch = true;
-        boolean telegraf = true;
+        boolean telegraf = false;
         Pattern typeFilter = null;
         Pattern identityFilter = null;
         Pattern sessionFilter = null;

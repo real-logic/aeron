@@ -21,16 +21,19 @@ import io.aeron.cluster.client.ClusterException;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -40,12 +43,17 @@ import static org.mockito.Mockito.when;
 public class RecordingLogTest
 {
     private static final File TEMP_DIR = new File(SystemUtil.tmpDirName());
-    private boolean ignoreMissingRecordingFile = false;
+
+    @BeforeEach
+    public void before()
+    {
+        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_LOG_FILE_NAME), true);
+    }
 
     @AfterEach
     public void after()
     {
-        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_LOG_FILE_NAME), ignoreMissingRecordingFile);
+        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_LOG_FILE_NAME), false);
     }
 
     @Test
@@ -270,8 +278,6 @@ public class RecordingLogTest
     @Test
     public void shouldCorrectlyOrderSnapshots()
     {
-        ignoreMissingRecordingFile = true;
-
         final ArrayList<RecordingLog.Snapshot> snapshots = new ArrayList<>();
         final ArrayList<RecordingLog.Entry> entries = new ArrayList<>();
 
@@ -463,6 +469,34 @@ public class RecordingLogTest
             assertThrows(ClusterException.class, () -> recordingLog.appendSnapshot(7L, 0L, 20, 999L, 0, 0));
             assertThrows(ClusterException.class, () -> recordingLog.appendSnapshot(7L, 1L, 21, 999L, 0, 0));
             assertThrows(ClusterException.class, () -> recordingLog.appendSnapshot(7L, 1L, 20, 999L, 0, 1));
+        }
+    }
+
+    @Test
+    void shouldAppendTermWithLeadershipTermIdOutOfOrder()
+    {
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendTerm(0, 0, 0, 0);
+            recordingLog.appendTerm(0, 2, 2048, 0);
+            recordingLog.appendTerm(0, 1, 500, 100);
+            recordingLog.appendTerm(1, 1, 700, 0);
+            recordingLog.appendTerm(1, 2, 3096, 1000);
+            recordingLog.appendTerm(2, 1, 1200, 200);
+
+            assertEquals(6, recordingLog.nextEntryIndex());
+            final List<RecordingLog.Entry> entries = recordingLog.entries();
+            assertEquals(asList(
+                new RecordingLog.Entry(0, 0, 0, 1200, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 0),
+                new RecordingLog.Entry(0, 1, 500, 2048, 100, NULL_VALUE, ENTRY_TYPE_TERM, true, 2),
+                new RecordingLog.Entry(1, 1, 700, 3096, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 3),
+                new RecordingLog.Entry(2, 1, 1200, 3096, 200, NULL_VALUE, ENTRY_TYPE_TERM, true, 5),
+                new RecordingLog.Entry(0, 2, 2048, NULL_POSITION, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 1),
+                new RecordingLog.Entry(1, 2, 3096, NULL_POSITION, 1000, NULL_VALUE, ENTRY_TYPE_TERM, true, 4)),
+                entries);
+            assertEquals(0, recordingLog.getTermEntry(0).recordingId);
+            assertEquals(2, recordingLog.getTermEntry(1).recordingId);
+            assertEquals(1, recordingLog.getTermEntry(2).recordingId);
         }
     }
 

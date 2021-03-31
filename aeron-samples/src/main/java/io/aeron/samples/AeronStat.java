@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.StringJoiner;
 
 import static io.aeron.driver.status.PerImageIndicator.PER_IMAGE_TYPE_ID;
 import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
@@ -186,7 +187,7 @@ public class AeronStat
         }
         else if (telegraf)
         {
-            final StringBuilder telegrafMetric = new StringBuilder();
+            final StringJoiner telegrafMetric = new StringJoiner(",", " ", "");
             telegrafOutput(cncFileReader, telegrafMetric);
         }
         else
@@ -210,10 +211,9 @@ public class AeronStat
         while (running.get());
     }
 
-    private static void telegrafOutput(final CncFileReader cncFileReader, final StringBuilder telegrafMetric)
+    private static void telegrafOutput(final CncFileReader cncFileReader, final StringJoiner telegrafMetric)
     {
         final CountersReader counters = cncFileReader.countersReader();
-        telegrafMetric.append("aeron");
         counters.forEach(
             (counterId, typeId, keyBuffer, label) ->
             {
@@ -221,12 +221,12 @@ public class AeronStat
                 {
                     final long cv = counters.getCounterValue(counterId);
                     final String cl = counters.getCounterLabel(counterId).replaceAll("( |,|\\.|-)", "_").toLowerCase();
-                    final String o = String.format(",%s=%s", cl, cv);
-                    telegrafMetric.append(o);
+                    final String o = String.format("%s=%s", cl, cv);
+                    telegrafMetric.add(o);
                 }
             }
         );
-        System.out.println(telegrafMetric);
+        System.out.println("aeron" + telegrafMetric);
     }
 
     private static void printOutput(final CncFileReader cncFileReader, final CounterFilter counterFilter)

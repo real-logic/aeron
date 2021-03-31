@@ -1233,7 +1233,8 @@ public final class RecordingLog implements AutoCloseable
         for (int i = size - 1; i >= 0; i--)
         {
             final Entry e = entries.get(i);
-            if (e.leadershipTermId > leadershipTermId)
+            if (e.leadershipTermId > leadershipTermId ||
+                leadershipTermId == e.leadershipTermId && e.logPosition > logPosition)
             {
                 index--;
             }

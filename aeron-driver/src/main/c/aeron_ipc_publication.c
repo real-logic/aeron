@@ -211,41 +211,42 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
 
     if (AERON_IPC_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state)
     {
-        int64_t min_sub_pos = INT64_MAX;
-        int64_t max_sub_pos = publication->conductor_fields.consumer_position;
-
-        for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
-        {
-            aeron_tetherable_position_t *tetherable_position = &publication->conductor_fields.subscribable.array[i];
-
-            if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
-            {
-                int64_t position = aeron_counter_get_volatile(tetherable_position->value_addr);
-
-                min_sub_pos = position < min_sub_pos ? position : min_sub_pos;
-                max_sub_pos = position > max_sub_pos ? position : max_sub_pos;
-            }
-        }
+        int64_t consumer_position = publication->conductor_fields.consumer_position;
 
         if (publication->conductor_fields.subscribable.length > 0)
         {
+            int64_t min_sub_pos = INT64_MAX;
+            int64_t max_sub_pos = consumer_position;
+
+            for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
+            {
+                aeron_tetherable_position_t *tetherable_position = &publication->conductor_fields.subscribable.array[i];
+
+                if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
+                {
+                    int64_t position = aeron_counter_get_volatile(tetherable_position->value_addr);
+
+                    min_sub_pos = position < min_sub_pos ? position : min_sub_pos;
+                    max_sub_pos = position > max_sub_pos ? position : max_sub_pos;
+                }
+            }
+
             int64_t proposed_limit = min_sub_pos + publication->term_window_length;
             if (proposed_limit > publication->conductor_fields.trip_limit)
             {
                 aeron_ipc_publication_clean_buffer(publication, min_sub_pos);
                 aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, proposed_limit);
                 publication->conductor_fields.trip_limit = proposed_limit + publication->trip_gain;
-
-                work_count += 1;
+                work_count++;
             }
 
             publication->conductor_fields.consumer_position = max_sub_pos;
         }
-        else if (*publication->pub_lmt_position.value_addr > max_sub_pos)
+        else if (*publication->pub_lmt_position.value_addr > consumer_position)
         {
-            aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, max_sub_pos);
-            publication->conductor_fields.trip_limit = max_sub_pos;
-            aeron_ipc_publication_clean_buffer(publication, max_sub_pos);
+            aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, consumer_position);
+            publication->conductor_fields.trip_limit = consumer_position;
+            aeron_ipc_publication_clean_buffer(publication, consumer_position);
         }
     }
 

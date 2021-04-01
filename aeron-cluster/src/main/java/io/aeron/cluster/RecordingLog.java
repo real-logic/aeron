@@ -32,12 +32,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
+import static java.util.Comparator.comparingInt;
+import static java.util.Comparator.comparingLong;
 import static org.agrona.BitUtil.*;
 
 /**
@@ -84,6 +87,12 @@ import static org.agrona.BitUtil.*;
  */
 public final class RecordingLog implements AutoCloseable
 {
+
+    private static final Comparator<Entry> ENTRY_COMPARATOR =
+        comparingLong((Entry o) -> o.leadershipTermId)
+        .thenComparingInt(o -> o.type)
+        .thenComparingLong(o -> o.logPosition);
+
     /**
      * Representation of the entry in the {@link RecordingLog}.
      */
@@ -694,6 +703,22 @@ public final class RecordingLog implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
+
+        entriesCache.sort(ENTRY_COMPARATOR);
+        for (int i = 0, size = entriesCache.size(); i < size; i++)
+        {
+            final Entry entry = entriesCache.get(i);
+
+            if (isValidTerm(entry))
+            {
+                cacheIndexByLeadershipTermIdMap.put(entry.leadershipTermId, i);
+            }
+
+            if (ENTRY_TYPE_SNAPSHOT == entry.type && !entry.isValid)
+            {
+                invalidSnapshots.add(i);
+            }
+        }
     }
 
     /**
@@ -1234,7 +1259,7 @@ public final class RecordingLog implements AutoCloseable
         {
             final Entry e = entries.get(i);
             if (e.leadershipTermId > leadershipTermId ||
-                leadershipTermId == e.leadershipTermId && e.logPosition > logPosition)
+                leadershipTermId == e.leadershipTermId && ENTRY_TYPE_SNAPSHOT == e.type && e.logPosition > logPosition)
             {
                 index--;
             }
@@ -1337,16 +1362,6 @@ public final class RecordingLog implements AutoCloseable
                     nextEntryIndex);
 
                 entries.add(entry);
-
-                if (isValidTerm(entry))
-                {
-                    cacheIndexByLeadershipTermIdMap.put(entry.leadershipTermId, entries.size() - 1);
-                }
-
-                if (ENTRY_TYPE_SNAPSHOT == entry.type && !entry.isValid)
-                {
-                    invalidSnapshots.add(entries.size() - 1);
-                }
             }
 
             ++nextEntryIndex;

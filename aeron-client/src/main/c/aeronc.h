@@ -61,6 +61,7 @@ typedef struct aeron_header_values_stct
 {
     aeron_header_values_frame_t frame;
     int32_t initial_term_id;
+    size_t position_bits_to_shift;
 }
 aeron_header_values_t;
 #pragma pack(pop)
@@ -1429,6 +1430,13 @@ int aeron_header_values(aeron_header_t *header, aeron_header_values_t *values);
  * @return the current position to which the Image has advanced on reading this message.
  */
 int64_t aeron_header_position(aeron_header_t *header);
+
+/**
+ * Get the number of times to left shift the term count to multiply by term length.
+ *
+ * @return number of times to left shift the term count to multiply by term length.
+ */
+size_t aeron_header_position_bits_to_shift(aeron_header_t *header);
 
 typedef struct aeron_subscription_constants_stct
 {

@@ -102,7 +102,7 @@ int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *
 
 inline int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image)
 {
-    size_t length = (NULL == image_list) ? 0 : image_list->length;
+    size_t length = NULL == image_list ? 0 : image_list->length;
 
     for (size_t i = 0; i < length; i++)
     {

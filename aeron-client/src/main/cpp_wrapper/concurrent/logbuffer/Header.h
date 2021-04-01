@@ -35,7 +35,9 @@ using namespace aeron::util;
 class Header
 {
 public:
-    Header(aeron_header_t *header, void *context) : m_header(header), m_context(context)
+    Header(aeron_header_t *header, void *context) :
+        m_header(header),
+        m_context(context)
     {
         if (aeron_header_values(m_header, &m_headerValues) < 0)
         {
@@ -134,6 +136,16 @@ public:
     inline std::int64_t position() const
     {
         return aeron_header_position(m_header);
+    }
+
+    /**
+     * The number of times to left shift the term count to multiply by term length.
+     *
+     * @return number of times to left shift the term count to multiply by term length.
+     */
+    inline std::int32_t positionBitsToShift() const
+    {
+        return static_cast<std::int32_t>(m_headerValues.position_bits_to_shift);
     }
 
     /**

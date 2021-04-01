@@ -30,9 +30,11 @@ class Header
 {
 public:
     Header(std::int32_t initialTermId, util::index_t capacity, void *context) :
-        m_context(context), m_offset(0), m_initialTermId(initialTermId)
+        m_context(context),
+        m_offset(0),
+        m_initialTermId(initialTermId),
+        m_positionBitsToShift(util::BitUtil::numberOfTrailingZeroes(capacity))
     {
-        m_positionBitsToShift = util::BitUtil::numberOfTrailingZeroes(capacity);
     }
 
     /**
@@ -165,6 +167,16 @@ public:
         const std::int32_t resultingOffset = util::BitUtil::align(
             termOffset() + frameLength(), FrameDescriptor::FRAME_ALIGNMENT);
         return LogBufferDescriptor::computePosition(termId(), resultingOffset, m_positionBitsToShift, m_initialTermId);
+    }
+
+    /**
+     * The number of times to left shift the term count to multiply by term length.
+     *
+     * @return number of times to left shift the term count to multiply by term length.
+     */
+    inline std::int32_t positionBitsToShift() const
+    {
+        return m_positionBitsToShift;
     }
 
     /**

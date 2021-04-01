@@ -491,6 +491,7 @@ TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnBreak)
         EXPECT_EQ(header->frame->frame_header.type, AERON_HDR_TYPE_DATA);
         EXPECT_EQ(values.frame.type, AERON_HDR_TYPE_DATA);
         EXPECT_EQ(image_constants.initial_term_id, values.initial_term_id);
+        EXPECT_EQ(image_constants.position_bits_to_shift, values.position_bits_to_shift);
         EXPECT_EQ(alignedMessageLength, aeron_header_position(header));
 
         return AERON_ACTION_BREAK;

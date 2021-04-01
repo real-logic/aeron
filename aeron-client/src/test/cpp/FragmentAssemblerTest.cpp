@@ -95,6 +95,8 @@ TEST_F(FragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
             called = true;
             EXPECT_EQ(offset, DataFrameHeader::LENGTH);
             EXPECT_EQ(length, msgLength);
+            EXPECT_EQ(header.positionBitsToShift(), POSITION_BITS_TO_SHIFT);
+            EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
             EXPECT_EQ(header.sessionId(), SESSION_ID);
             EXPECT_EQ(header.streamId(), STREAM_ID);
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
@@ -166,6 +168,8 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromThreeFragments)
             called = true;
             EXPECT_EQ(offset, DataFrameHeader::LENGTH);
             EXPECT_EQ(length, msgLength * 3);
+            EXPECT_EQ(header.positionBitsToShift(), POSITION_BITS_TO_SHIFT);
+            EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
             EXPECT_EQ(header.sessionId(), SESSION_ID);
             EXPECT_EQ(header.streamId(), STREAM_ID);
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);

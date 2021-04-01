@@ -50,22 +50,22 @@ public class LogBufferDescriptor
     public static final int LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
 
     /**
-     * Minimum buffer length for a log term
+     * Minimum buffer length for a log term.
      */
     public static final int TERM_MIN_LENGTH = 64 * 1024;
 
     /**
-     * Maximum buffer length for a log term
+     * Maximum buffer length for a log term.
      */
     public static final int TERM_MAX_LENGTH = 1024 * 1024 * 1024;
 
     /**
-     * Minimum page size
+     * Minimum page size.
      */
     public static final int PAGE_MIN_SIZE = 4 * 1024;
 
     /**
-     * Maximum page size
+     * Maximum page size.
      */
     public static final int PAGE_MAX_SIZE = 1024 * 1024 * 1024;
 
@@ -397,7 +397,7 @@ public class LogBufferDescriptor
      * Set whether the log is considered connected or not by the driver.
      *
      * @param metadataBuffer containing the meta data.
-     * @param isConnected    or not
+     * @param isConnected    or not.
      */
     public static void isConnected(final UnsafeBuffer metadataBuffer, final boolean isConnected)
     {
@@ -441,7 +441,7 @@ public class LogBufferDescriptor
      * Set the value of the end of stream position.
      *
      * @param metadataBuffer containing the meta data.
-     * @param position       value of the end of stream position
+     * @param position       value of the end of stream position.
      */
     public static void endOfStreamPosition(final UnsafeBuffer metadataBuffer, final long position)
     {
@@ -475,8 +475,8 @@ public class LogBufferDescriptor
      * Compare and set the value of the current active term count.
      *
      * @param metadataBuffer    containing the meta data.
-     * @param expectedTermCount value of the active term count expected in the log
-     * @param updateTermCount   value of the active term count to be updated in the log
+     * @param expectedTermCount value of the active term count expected in the log.
+     * @param updateTermCount   value of the active term count to be updated in the log.
      * @return true if successful otherwise false.
      */
     public static boolean casActiveTermCount(
@@ -499,8 +499,8 @@ public class LogBufferDescriptor
     /**
      * Rotate to the next partition in sequence for the term id.
      *
-     * @param currentIndex partition index
-     * @return the next partition index
+     * @param currentIndex partition index.
+     * @return the next partition index.
      */
     public static int nextPartitionIndex(final int currentIndex)
     {
@@ -510,9 +510,9 @@ public class LogBufferDescriptor
     /**
      * Determine the partition index to be used given the initial term and active term ids.
      *
-     * @param initialTermId at which the log buffer usage began
-     * @param activeTermId  that is in current usage
-     * @return the index of which buffer should be used
+     * @param initialTermId at which the log buffer usage began.
+     * @param activeTermId  that is in current usage.
+     * @return the index of which buffer should be used.
      */
     public static int indexByTerm(final int initialTermId, final int activeTermId)
     {
@@ -534,8 +534,8 @@ public class LogBufferDescriptor
      * Determine the partition index given a stream position.
      *
      * @param position            in the stream in bytes.
-     * @param positionBitsToShift number of times to right shift the position for term count
-     * @return the partition index for the position
+     * @param positionBitsToShift number of times to left shift the term count to multiply by term length.
+     * @return the partition index for the position.
      */
     public static int indexByPosition(final long position, final int positionBitsToShift)
     {
@@ -547,9 +547,9 @@ public class LogBufferDescriptor
      *
      * @param activeTermId        active term id.
      * @param termOffset          in the term.
-     * @param positionBitsToShift number of times to left shift the term count
-     * @param initialTermId       the initial term id that this stream started on
-     * @return the absolute position in bytes
+     * @param positionBitsToShift number of times to left shift the term count to multiply by term length.
+     * @param initialTermId       the initial term id that this stream started on.
+     * @return the absolute position in bytes.
      */
     public static long computePosition(
         final int activeTermId, final int termOffset, final int positionBitsToShift, final int initialTermId)
@@ -563,9 +563,9 @@ public class LogBufferDescriptor
      * Compute the current position in absolute number of bytes for the beginning of a term.
      *
      * @param activeTermId        active term id.
-     * @param positionBitsToShift number of times to left shift the term count
-     * @param initialTermId       the initial term id that this stream started on
-     * @return the absolute position in bytes
+     * @param positionBitsToShift number of times to left shift the term count to multiply by term length.
+     * @param initialTermId       the initial term id that this stream started on.
+     * @return the absolute position in bytes.
      */
     public static long computeTermBeginPosition(
         final int activeTermId, final int positionBitsToShift, final int initialTermId)
@@ -579,9 +579,9 @@ public class LogBufferDescriptor
      * Compute the term id from a position.
      *
      * @param position            to calculate from
-     * @param positionBitsToShift number of times to right shift the position
-     * @param initialTermId       the initial term id that this stream started on
-     * @return the term id according to the position
+     * @param positionBitsToShift number of times to left shift the term count to multiply by term length.
+     * @param initialTermId       the initial term id that this stream started on.
+     * @return the term id according to the position.
      */
     public static int computeTermIdFromPosition(
         final long position, final int positionBitsToShift, final int initialTermId)
@@ -613,7 +613,7 @@ public class LogBufferDescriptor
      *
      * @param metadataBuffer into which the default headers should be stored.
      * @param defaultHeader  to be stored.
-     * @throws IllegalArgumentException if the defaultHeader larger than {@link #LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH}
+     * @throws IllegalArgumentException if the defaultHeader larger than {@link #LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH}.
      */
     public static void storeDefaultFrameHeader(final UnsafeBuffer metadataBuffer, final DirectBuffer defaultHeader)
     {
@@ -698,7 +698,7 @@ public class LogBufferDescriptor
     /**
      * Get the termId from a packed raw tail value.
      *
-     * @param rawTail containing the termId
+     * @param rawTail containing the termId.
      * @return the termId from a packed raw tail value.
      */
     public static int termId(final long rawTail)
@@ -724,7 +724,7 @@ public class LogBufferDescriptor
      * The termOffset as a result of the append
      *
      * @param result into which the termOffset value has been packed.
-     * @return the termOffset after the append
+     * @return the termOffset after the append.
      */
     public static int termOffset(final long result)
     {
@@ -748,7 +748,7 @@ public class LogBufferDescriptor
      *
      * @param metadataBuffer containing the tail counters.
      * @param partitionIndex for the tail counter.
-     * @param rawTail        to be stored
+     * @param rawTail        to be stored.
      */
     public static void rawTail(final UnsafeBuffer metadataBuffer, final int partitionIndex, final long rawTail)
     {
@@ -772,7 +772,7 @@ public class LogBufferDescriptor
      *
      * @param metadataBuffer containing the tail counters.
      * @param partitionIndex for the tail counter.
-     * @param rawTail        to be stored
+     * @param rawTail        to be stored.
      */
     public static void rawTailVolatile(final UnsafeBuffer metadataBuffer, final int partitionIndex, final long rawTail)
     {

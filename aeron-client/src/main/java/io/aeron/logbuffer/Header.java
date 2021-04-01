@@ -86,6 +86,16 @@ public final class Header
     }
 
     /**
+     * The number of times to left shift the term count to multiply by term length.
+     *
+     * @return number of times to left shift the term count to multiply by term length.
+     */
+    public int positionBitsToShift()
+    {
+        return positionBitsToShift;
+    }
+
+    /**
      * Get the initial term id this stream started at.
      *
      * @return the initial term id this stream started at.

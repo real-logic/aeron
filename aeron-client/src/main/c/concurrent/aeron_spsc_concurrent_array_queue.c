@@ -31,11 +31,11 @@ int aeron_spsc_concurrent_array_queue_init(aeron_spsc_concurrent_array_queue_t *
         queue->buffer[i] = NULL;
     }
 
-    queue->producer.head_cache = 0;
-    queue->producer.tail = 0;
-    queue->consumer.head = 0;
     queue->capacity = length;
     queue->mask = length - 1;
+    queue->producer.head_cache = 0;
+    AERON_PUT_ORDERED(queue->producer.tail, (uint64_t)0);
+    AERON_PUT_ORDERED(queue->consumer.head, (uint64_t)0);
 
     return 0;
 }

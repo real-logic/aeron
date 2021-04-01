@@ -214,14 +214,18 @@ public class AeronStat
     private static void telegrafOutput(final CncFileReader cncFileReader, final StringJoiner telegrafMetric)
     {
         final CountersReader counters = cncFileReader.countersReader();
+        final String replaceRegex = "( |,|\\.|-)";
+        final Pattern pattern = Pattern.compile(replaceRegex);
+
         counters.forEach(
             (counterId, typeId, keyBuffer, label) ->
             {
                 if (counterId <= 24)
                 {
                     final long cv = counters.getCounterValue(counterId);
-                    final String cl = counters.getCounterLabel(counterId).replaceAll("( |,|\\.|-)", "_").toLowerCase();
-                    final String o = String.format("%s=%s", cl, cv);
+                    final String cl = pattern.matcher(counters.getCounterLabel(counterId)
+                        .toLowerCase()).replaceAll("_");
+                    final String o = cl + "=" + cv;
                     telegrafMetric.add(o);
                 }
             }

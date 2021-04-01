@@ -320,18 +320,18 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
         if (State.ACTIVE == state)
         {
-            long minSubscriberPosition = Long.MAX_VALUE;
-            long maxSubscriberPosition = consumerPosition;
-
-            for (final ReadablePosition subscriberPosition : subscriberPositions)
-            {
-                final long position = subscriberPosition.getVolatile();
-                minSubscriberPosition = Math.min(minSubscriberPosition, position);
-                maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
-            }
-
             if (subscriberPositions.length > 0)
             {
+                long minSubscriberPosition = Long.MAX_VALUE;
+                long maxSubscriberPosition = consumerPosition;
+
+                for (final ReadablePosition subscriberPosition : subscriberPositions)
+                {
+                    final long position = subscriberPosition.getVolatile();
+                    minSubscriberPosition = Math.min(minSubscriberPosition, position);
+                    maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
+                }
+
                 if (maxSubscriberPosition > consumerPosition)
                 {
                     consumerPosition = maxSubscriberPosition;
@@ -343,7 +343,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                     cleanBufferTo(minSubscriberPosition);
                     publisherLimit.setOrdered(proposedLimit);
                     tripLimit = proposedLimit + tripGain;
-
                     workCount = 1;
                 }
             }

@@ -1384,14 +1384,13 @@ final class ConsensusModuleAgent implements Agent
 
     void joinLogAsFollower(final Image image, final boolean isLeaderStartup)
     {
-        appendDynamicJoinTermAndSnapshots();
-
         final Subscription logSubscription = image.subscription();
         final int streamId = logSubscription.streamId();
         final String channel = logSubscription.channel();
 
         startLogRecording(channel, streamId, SourceLocation.REMOTE);
         createAppendPosition(image.sessionId());
+        appendDynamicJoinTermAndSnapshots();
 
         logAdapter.image(image);
         lastAppendPosition = image.joinPosition();

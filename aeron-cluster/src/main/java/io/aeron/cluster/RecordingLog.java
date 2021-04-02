@@ -571,7 +571,7 @@ public final class RecordingLog implements AutoCloseable
         .thenComparingInt(o -> o.type)
         .thenComparingLong(o -> o.logPosition);
 
-    private long recordingId = NULL_VALUE;
+    private long termRecordingId = NULL_VALUE;
     private int nextEntryIndex;
     private final FileChannel fileChannel;
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
@@ -983,7 +983,7 @@ public final class RecordingLog implements AutoCloseable
     public void appendTerm(
         final long recordingId, final long leadershipTermId, final long termBaseLogPosition, final long timestamp)
     {
-        validateRecordingId(recordingId);
+        validateTermRecordingId(recordingId);
 
         final int size = entriesCache.size();
         long logPosition = NULL_POSITION;
@@ -991,7 +991,7 @@ public final class RecordingLog implements AutoCloseable
         {
             if (cacheIndexByLeadershipTermIdMap.containsKey(leadershipTermId))
             {
-                throw new ClusterException("duplicate term entry for leadershipTermId=" + leadershipTermId);
+                throw new ClusterException("duplicate TERM entry for leadershipTermId=" + leadershipTermId);
             }
 
             for (int i = size - 1; i >= 0; i--)
@@ -1001,7 +1001,7 @@ public final class RecordingLog implements AutoCloseable
                 {
                     if (ENTRY_TYPE_SNAPSHOT == entry.type)
                     {
-                        throw new ClusterException("term cannot be added for leadershipTermId=" + leadershipTermId +
+                        throw new ClusterException("TERM cannot be added for leadershipTermId=" + leadershipTermId +
                             ", because a snapshot already exists");
                     }
                     break;
@@ -1035,26 +1035,6 @@ public final class RecordingLog implements AutoCloseable
             NULL_VALUE);
 
         cacheIndexByLeadershipTermIdMap.put(leadershipTermId, index);
-    }
-
-    private void validateRecordingId(final long recordingId)
-    {
-        if (NULL_VALUE == recordingId)
-        {
-            throw new ClusterException("invalid recordingId=" + recordingId);
-        }
-        else if (recordingId != this.recordingId)
-        {
-            if (NULL_VALUE == this.recordingId)
-            {
-                this.recordingId = recordingId;
-            }
-            else
-            {
-                throw new ClusterException(
-                    "invalid recordingId=" + recordingId + ", expected recordingId=" + this.recordingId);
-            }
-        }
     }
 
     /**
@@ -1233,6 +1213,31 @@ public final class RecordingLog implements AutoCloseable
         }
     }
 
+    private static void validateRecordingId(final long recordingId)
+    {
+        if (NULL_VALUE == recordingId)
+        {
+            throw new ClusterException("invalid recordingId=" + recordingId);
+        }
+    }
+
+    private void validateTermRecordingId(final long recordingId)
+    {
+        validateRecordingId(recordingId);
+        if (recordingId != termRecordingId)
+        {
+            if (NULL_VALUE == termRecordingId)
+            {
+                termRecordingId = recordingId;
+            }
+            else
+            {
+                throw new ClusterException(
+                    "invalid TERM recordingId=" + recordingId + ", expected recordingId=" + termRecordingId);
+            }
+        }
+    }
+
     private boolean restoreInvalidSnapshot(
         final long recordingId,
         final long leadershipTermId,
@@ -1406,7 +1411,10 @@ public final class RecordingLog implements AutoCloseable
                     isValid,
                     nextEntryIndex);
 
-                validateRecordingId(entry.recordingId);
+                if (ENTRY_TYPE_TERM == type)
+                {
+                    validateTermRecordingId(entry.recordingId);
+                }
 
                 entries.add(entry);
             }

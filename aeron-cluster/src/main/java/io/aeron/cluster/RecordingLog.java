@@ -568,8 +568,8 @@ public final class RecordingLog implements AutoCloseable
 
     private static final Comparator<Entry> ENTRY_COMPARATOR =
         comparingLong((Entry o) -> o.leadershipTermId)
-            .thenComparingInt(o -> o.type)
-            .thenComparingLong(o -> o.logPosition);
+        .thenComparingInt(o -> o.type)
+        .thenComparingLong(o -> o.logPosition);
 
     private long recordingId = NULL_VALUE;
     private int nextEntryIndex;
@@ -992,6 +992,24 @@ public final class RecordingLog implements AutoCloseable
             if (cacheIndexByLeadershipTermIdMap.containsKey(leadershipTermId))
             {
                 throw new ClusterException("duplicate term entry for leadershipTermId=" + leadershipTermId);
+            }
+
+            for (int i = size - 1; i >= 0; i--)
+            {
+                final Entry entry = entriesCache.get(i);
+                if (leadershipTermId == entry.leadershipTermId)
+                {
+                    if (ENTRY_TYPE_SNAPSHOT == entry.type)
+                    {
+                        throw new ClusterException("term cannot be added for leadershipTermId=" + leadershipTermId +
+                            ", because a snapshot already exists");
+                    }
+                    break;
+                }
+                else if (entry.leadershipTermId < leadershipTermId)
+                {
+                    break;
+                }
             }
 
             final long previousLeadershipTermId = leadershipTermId - 1;

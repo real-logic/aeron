@@ -623,7 +623,6 @@ public class RecordingLogTest
         }
     }
 
-
     @Test
     void appendTermShouldSecondValidTermForTheSameLeadershipTermId()
     {
@@ -638,6 +637,23 @@ public class RecordingLogTest
             final ClusterException exception = assertThrows(ClusterException.class,
                 () -> recordingLog.appendTerm(8, 1, 5, 5));
             assertEquals("ERROR - duplicate term entry for leadershipTermId=1", exception.getMessage());
+            assertEquals(3, recordingLog.entries().size());
+        }
+    }
+
+    @Test
+    void aTermEntryCanOnlyBeAddedAsFirstEntryForTheLeadershipTermId()
+    {
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendTerm(4, 0, 0, 0);
+            recordingLog.appendSnapshot(4, 1, 1024, 2048, 200, SERVICE_ID);
+            recordingLog.appendTerm(4, 6, 6, 6);
+
+            final ClusterException exception = assertThrows(ClusterException.class,
+                () -> recordingLog.appendTerm(4, 1, 0, 5000));
+            assertEquals("ERROR - term cannot be added for leadershipTermId=1, because a snapshot already exists",
+                exception.getMessage());
             assertEquals(3, recordingLog.entries().size());
         }
     }

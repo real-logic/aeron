@@ -39,7 +39,6 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
-import static java.util.Comparator.comparingInt;
 import static java.util.Comparator.comparingLong;
 import static org.agrona.BitUtil.*;
 
@@ -87,12 +86,6 @@ import static org.agrona.BitUtil.*;
  */
 public final class RecordingLog implements AutoCloseable
 {
-
-    private static final Comparator<Entry> ENTRY_COMPARATOR =
-        comparingLong((Entry o) -> o.leadershipTermId)
-        .thenComparingInt(o -> o.type)
-        .thenComparingLong(o -> o.logPosition);
-
     /**
      * Representation of the entry in the {@link RecordingLog}.
      */
@@ -573,6 +566,12 @@ public final class RecordingLog implements AutoCloseable
      */
     private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
+    private static final Comparator<Entry> ENTRY_COMPARATOR =
+        comparingLong((Entry o) -> o.leadershipTermId)
+        .thenComparingInt(o -> o.type)
+        .thenComparingLong(o -> o.logPosition);
+
+    private long recordingId = NULL_VALUE;
     private int nextEntryIndex;
     private final FileChannel fileChannel;
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
@@ -984,6 +983,8 @@ public final class RecordingLog implements AutoCloseable
     public void appendTerm(
         final long recordingId, final long leadershipTermId, final long termBaseLogPosition, final long timestamp)
     {
+        validateRecordingId(recordingId);
+
         final int size = entriesCache.size();
         long logPosition = NULL_POSITION;
         if (size > 0)
@@ -1013,6 +1014,26 @@ public final class RecordingLog implements AutoCloseable
         cacheIndexByLeadershipTermIdMap.put(leadershipTermId, index);
     }
 
+    private void validateRecordingId(final long recordingId)
+    {
+        if (NULL_VALUE == recordingId)
+        {
+            throw new ClusterException("invalid recordingId=" + recordingId);
+        }
+        else if (recordingId != this.recordingId)
+        {
+            if (NULL_VALUE == this.recordingId)
+            {
+                this.recordingId = recordingId;
+            }
+            else
+            {
+                throw new ClusterException(
+                    "invalid recordingId=" + recordingId + ", expected recordingId=" + this.recordingId);
+            }
+        }
+    }
+
     /**
      * Append a log entry for a snapshot. Snapshots must be for the current term.
      *
@@ -1031,6 +1052,7 @@ public final class RecordingLog implements AutoCloseable
         final long timestamp,
         final int serviceId)
     {
+        validateRecordingId(recordingId);
         if (!restoreInvalidSnapshot(
             recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
         {
@@ -1214,7 +1236,7 @@ public final class RecordingLog implements AutoCloseable
                     true,
                     entry.entryIndex);
 
-                writeEntryToBuffer(validatedEntry, buffer, byteBuffer);
+                writeEntryToBuffer(validatedEntry, buffer);
                 writeToDisc(entry.entryIndex, 0, ENTRY_LENGTH);
 
                 entriesCache.set(entryCacheIndex, validatedEntry);
@@ -1247,7 +1269,7 @@ public final class RecordingLog implements AutoCloseable
             true,
             nextEntryIndex);
 
-        writeEntryToBuffer(entry, buffer, byteBuffer);
+        writeEntryToBuffer(entry, buffer);
         writeToDisc(entry.entryIndex, 0, ENTRY_LENGTH);
 
         nextEntryIndex++;
@@ -1309,7 +1331,7 @@ public final class RecordingLog implements AutoCloseable
         return index;
     }
 
-    private void writeEntryToBuffer(final Entry entry, final UnsafeBuffer buffer, final ByteBuffer byteBuffer)
+    private void writeEntryToBuffer(final Entry entry, final UnsafeBuffer buffer)
     {
         buffer.putLong(RECORDING_ID_OFFSET, entry.recordingId, LITTLE_ENDIAN);
         buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, entry.leadershipTermId, LITTLE_ENDIAN);
@@ -1360,6 +1382,8 @@ public final class RecordingLog implements AutoCloseable
                     type,
                     isValid,
                     nextEntryIndex);
+
+                validateRecordingId(entry.recordingId);
 
                 entries.add(entry);
             }

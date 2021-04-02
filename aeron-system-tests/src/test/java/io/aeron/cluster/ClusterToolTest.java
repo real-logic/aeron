@@ -23,7 +23,10 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -134,6 +137,76 @@ class ClusterToolTest
         assertThat(
             capturingPrintStream.flushAndGetContent(),
             containsString("cluster-mark.dat does not exist"));
+    }
+
+    @Test
+    void sortRecordingLogIsANoOpIfRecordLogIsEmpty(final @TempDir Path emptyClusterDir) throws IOException
+    {
+        final File clusterDir = emptyClusterDir.toFile();
+        final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+
+        final boolean result =
+            ClusterTool.sortRecordingLog(capturingPrintStream.resetAndGetPrintStream(), clusterDir);
+
+        assertFalse(result);
+        assertArrayEquals(new byte[0], Files.readAllBytes(logFile));
+    }
+
+    @Test
+    void sortRecordingLogIsANoOpIfRecordLogIsAlreadySorted(final @TempDir Path emptyClusterDir) throws IOException
+    {
+        final File clusterDir = emptyClusterDir.toFile();
+        final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        {
+            recordingLog.appendTerm(21, 0, 100, 100);
+            recordingLog.appendSnapshot(0, 0, 0, 0, 200, 0);
+            recordingLog.appendTerm(21, 1, 1024, 200);
+        }
+        final byte[] originalBytes = Files.readAllBytes(logFile);
+        assertNotEquals(0, originalBytes.length);
+
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+
+        final boolean result =
+            ClusterTool.sortRecordingLog(capturingPrintStream.resetAndGetPrintStream(), clusterDir);
+
+        assertFalse(result);
+        assertArrayEquals(originalBytes, Files.readAllBytes(logFile));
+    }
+
+    @Test
+    void sortRecordingLogShouldRearrangeDataOnDisc(final @TempDir Path emptyClusterDir) throws IOException
+    {
+        final File clusterDir = emptyClusterDir.toFile();
+        final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        {
+            recordingLog.appendTerm(21, 2, 100, 100);
+            recordingLog.appendSnapshot(0, 0, 0, 0, 200, 0);
+            recordingLog.appendTerm(21, 1, 1024, 200);
+            recordingLog.appendSnapshot(1, 2, 50, 60, 42, 89);
+        }
+        final byte[] originalBytes = Files.readAllBytes(logFile);
+        assertNotEquals(0, originalBytes.length);
+
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+
+        final boolean result =
+            ClusterTool.sortRecordingLog(capturingPrintStream.resetAndGetPrintStream(), clusterDir);
+
+        assertTrue(result);
+        assertFalse(Arrays.equals(originalBytes, Files.readAllBytes(logFile)));
+        assertArrayEquals(new String[]{ RecordingLog.RECORDING_LOG_FILE_NAME }, clusterDir.list());
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        {
+            final List<RecordingLog.Entry> entries = recordingLog.entries();
+            for (int i = entries.size() - 1; i >= 0; i--)
+            {
+                assertEquals(i, entries.get(i).entryIndex);
+            }
+        }
     }
 
     static class CapturingPrintStream

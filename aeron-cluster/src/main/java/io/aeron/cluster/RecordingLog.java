@@ -564,7 +564,7 @@ public final class RecordingLog implements AutoCloseable
     /**
      * The length of each entry in the recording log (not the recordings in the archive).
      */
-    private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
+    static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
     private static final Comparator<Entry> ENTRY_COMPARATOR =
         comparingLong((Entry o) -> o.leadershipTermId)
@@ -1359,7 +1359,7 @@ public final class RecordingLog implements AutoCloseable
         return index;
     }
 
-    private void writeEntryToBuffer(final Entry entry, final UnsafeBuffer buffer)
+    static void writeEntryToBuffer(final Entry entry, final UnsafeBuffer buffer)
     {
         buffer.putLong(RECORDING_ID_OFFSET, entry.recordingId, LITTLE_ENDIAN);
         buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, entry.leadershipTermId, LITTLE_ENDIAN);

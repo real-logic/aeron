@@ -488,28 +488,26 @@ public class RecordingLogTest
     void shouldAppendTermWithLeadershipTermIdOutOfOrder()
     {
         final List<RecordingLog.Entry> sortedEntries = asList(
-            new RecordingLog.Entry(0, 0, 0, 1200, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 0),
-            new RecordingLog.Entry(0, 1, 500, 2048, 100, NULL_VALUE, ENTRY_TYPE_TERM, true, 2),
-            new RecordingLog.Entry(0, 1, 700, 3096, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 3),
-            new RecordingLog.Entry(0, 1, 1200, 3096, 200, NULL_VALUE, ENTRY_TYPE_TERM, true, 5),
-            new RecordingLog.Entry(0, 2, 2048, NULL_POSITION, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 1),
-            new RecordingLog.Entry(0, 2, 3096, NULL_POSITION, 1000, NULL_VALUE, ENTRY_TYPE_TERM, true, 4));
+            new RecordingLog.Entry(0, -1, 3096, 0, 1000, NULL_VALUE, ENTRY_TYPE_TERM, true, 4),
+            new RecordingLog.Entry(0, 0, 0, 700, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 0),
+            new RecordingLog.Entry(0, 1, 700, 2048, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 3),
+            new RecordingLog.Entry(0, 2, 2048, 500, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 1),
+            new RecordingLog.Entry(0, 3, 500, NULL_POSITION, 100, NULL_VALUE, ENTRY_TYPE_TERM, true, 2));
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
             recordingLog.appendTerm(0, 0, 0, 0);
             recordingLog.appendTerm(0, 2, 2048, 0);
-            recordingLog.appendTerm(0, 1, 500, 100);
+            recordingLog.appendTerm(0, 3, 500, 100);
             recordingLog.appendTerm(0, 1, 700, 0);
-            recordingLog.appendTerm(0, 2, 3096, 1000);
-            recordingLog.appendTerm(0, 1, 1200, 200);
+            recordingLog.appendTerm(0, -1, 3096, 1000);
 
-            assertEquals(6, recordingLog.nextEntryIndex());
+            assertEquals(5, recordingLog.nextEntryIndex());
             final List<RecordingLog.Entry> entries = recordingLog.entries();
             assertEquals(sortedEntries, entries);
-            assertSame(entries.get(0), recordingLog.getTermEntry(0));
-            assertSame(entries.get(3), recordingLog.getTermEntry(1));
-            assertSame(entries.get(5), recordingLog.getTermEntry(2));
+            assertSame(entries.get(1), recordingLog.getTermEntry(0));
+            assertSame(entries.get(2), recordingLog.getTermEntry(1));
+            assertSame(entries.get(3), recordingLog.getTermEntry(2));
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -565,6 +563,7 @@ public class RecordingLogTest
             final ClusterException exception = assertThrows(ClusterException.class,
                 () -> recordingLog.appendTerm(NULL_VALUE, 0, 0, 0));
             assertEquals("ERROR - invalid recordingId=-1", exception.getMessage());
+            assertEquals(0, recordingLog.entries().size());
         }
     }
 
@@ -576,6 +575,7 @@ public class RecordingLogTest
             final ClusterException exception = assertThrows(ClusterException.class,
                 () -> recordingLog.appendSnapshot(NULL_VALUE, 0, 0, 0, 0, 0));
             assertEquals("ERROR - invalid recordingId=-1", exception.getMessage());
+            assertEquals(0, recordingLog.entries().size());
         }
     }
 
@@ -589,6 +589,7 @@ public class RecordingLogTest
             final ClusterException exception = assertThrows(ClusterException.class,
                 () -> recordingLog.appendTerm(21, 1, 0, 0));
             assertEquals("ERROR - invalid recordingId=21, expected recordingId=42", exception.getMessage());
+            assertEquals(1, recordingLog.entries().size());
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -596,6 +597,7 @@ public class RecordingLogTest
             final ClusterException exception = assertThrows(ClusterException.class,
                 () -> recordingLog.appendTerm(-5, -5, -5, -5));
             assertEquals("ERROR - invalid recordingId=-5, expected recordingId=42", exception.getMessage());
+            assertEquals(1, recordingLog.entries().size());
         }
     }
 
@@ -609,6 +611,7 @@ public class RecordingLogTest
             final ClusterException exception = assertThrows(ClusterException.class,
                 () -> recordingLog.appendSnapshot(17, 0, 0, 100, 100, SERVICE_ID));
             assertEquals("ERROR - invalid recordingId=17, expected recordingId=19", exception.getMessage());
+            assertEquals(1, recordingLog.entries().size());
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -616,6 +619,26 @@ public class RecordingLogTest
             final ClusterException exception = assertThrows(ClusterException.class,
                 () -> recordingLog.appendSnapshot(333, 1, 1, 1, 1, 1));
             assertEquals("ERROR - invalid recordingId=333, expected recordingId=19", exception.getMessage());
+            assertEquals(1, recordingLog.entries().size());
+        }
+    }
+
+
+    @Test
+    void appendTermShouldSecondValidTermForTheSameLeadershipTermId()
+    {
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendTerm(8, 0, 0, 0);
+            recordingLog.appendTerm(8, 1, 1, 1);
+
+            recordingLog.invalidateEntry(0, 0);
+            recordingLog.appendTerm(8, 0, 100, 100);
+
+            final ClusterException exception = assertThrows(ClusterException.class,
+                () -> recordingLog.appendTerm(8, 1, 5, 5));
+            assertEquals("ERROR - duplicate term entry for leadershipTermId=1", exception.getMessage());
+            assertEquals(3, recordingLog.entries().size());
         }
     }
 

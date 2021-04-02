@@ -69,55 +69,50 @@ public enum ElectionState
      */
     LEADER_READY(8),
 
-    FOLLOWER_LOG_REPLICATION_INIT(9),
-
     /**
      * Replicate missing log entries from the leader.
      */
-    FOLLOWER_LOG_REPLICATION(10),
-
-    FOLLOWER_LOG_REPLICATION_AWAIT(11),
-
+    FOLLOWER_LOG_REPLICATION(9),
 
     /**
      * Replay local appended log in preparation for following new leader.
      */
-    FOLLOWER_REPLAY(12),
+    FOLLOWER_REPLAY(10),
 
     /**
      * Initialise catch-up in preparation of receiving a replay from the leader to catch up.
      */
-    FOLLOWER_CATCHUP_INIT(13),
+    FOLLOWER_CATCHUP_INIT(11),
 
     /**
      * Await joining a replay from leader to catch-up.
      */
-    FOLLOWER_CATCHUP_AWAIT(14),
+    FOLLOWER_CATCHUP_AWAIT(12),
 
     /**
      * Catch-up to leader until live log position is reached.
      */
-    FOLLOWER_CATCHUP(15),
+    FOLLOWER_CATCHUP(13),
 
     /**
      * Initialise follower in preparation for joining the live log.
      */
-    FOLLOWER_LOG_INIT(16),
+    FOLLOWER_LOG_INIT(14),
 
     /**
      * Await joining the live log from the leader.
      */
-    FOLLOWER_LOG_AWAIT(17),
+    FOLLOWER_LOG_AWAIT(15),
 
     /**
      * Publish append position to leader to signify ready for new term.
      */
-    FOLLOWER_READY(18),
+    FOLLOWER_READY(16),
 
     /**
      * Election is closed after new leader is established.
      */
-    CLOSED(19);
+    CLOSED(17);
 
     static final ElectionState[] STATES = values();
 

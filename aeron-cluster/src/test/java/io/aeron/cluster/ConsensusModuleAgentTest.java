@@ -338,6 +338,8 @@ public class ConsensusModuleAgentTest
 
         when(recordingLog.findTermEntry(anyLong()))
             .thenAnswer((invocation) -> entries[(int)(long)invocation.getArgument(0)]);
+        when(recordingLog.getTermEntry(anyLong()))
+            .thenAnswer((invocation) -> entries[(int)(long)invocation.getArgument(0)]);
         when(mockExclusivePublication.tryClaim(anyInt(), any())).thenAnswer(
             (invocation) -> validator.forBufferClaim(invocation.getArgument(0), invocation.getArgument(1)));
         when(mockLogPublisher.position()).thenReturn(leaderLogPosition);
@@ -364,7 +366,7 @@ public class ConsensusModuleAgentTest
             .termBaseLogPosition(currentTerm.termBaseLogPosition)
             .logPosition(leaderLogPosition)
             .leaderRecordingId(currentTerm.recordingId)
-            .timestamp(currentTerm.timestamp)
+            .timestamp(0)
             .leaderMemberId(0)
             .logSessionId(0)
             .isStartup(BooleanType.FALSE);

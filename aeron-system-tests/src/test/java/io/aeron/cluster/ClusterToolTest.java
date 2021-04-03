@@ -144,10 +144,8 @@ class ClusterToolTest
     {
         final File clusterDir = emptyClusterDir.toFile();
         final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
-        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
 
-        final boolean result =
-            ClusterTool.sortRecordingLog(capturingPrintStream.resetAndGetPrintStream(), clusterDir);
+        final boolean result = ClusterTool.sortRecordingLog(clusterDir);
 
         assertFalse(result);
         assertArrayEquals(new byte[0], Files.readAllBytes(logFile));
@@ -164,13 +162,11 @@ class ClusterToolTest
             recordingLog.appendSnapshot(0, 0, 0, 0, 200, 0);
             recordingLog.appendTerm(21, 1, 1024, 200);
         }
+
         final byte[] originalBytes = Files.readAllBytes(logFile);
         assertNotEquals(0, originalBytes.length);
 
-        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
-
-        final boolean result =
-            ClusterTool.sortRecordingLog(capturingPrintStream.resetAndGetPrintStream(), clusterDir);
+        final boolean result = ClusterTool.sortRecordingLog(clusterDir);
 
         assertFalse(result);
         assertArrayEquals(originalBytes, Files.readAllBytes(logFile));
@@ -188,13 +184,11 @@ class ClusterToolTest
             recordingLog.appendTerm(21, 1, 1024, 200);
             recordingLog.appendSnapshot(1, 2, 50, 60, 42, 89);
         }
+
         final byte[] originalBytes = Files.readAllBytes(logFile);
         assertNotEquals(0, originalBytes.length);
 
-        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
-
-        final boolean result =
-            ClusterTool.sortRecordingLog(capturingPrintStream.resetAndGetPrintStream(), clusterDir);
+        final boolean result = ClusterTool.sortRecordingLog(clusterDir);
 
         assertTrue(result);
         assertFalse(Arrays.equals(originalBytes, Files.readAllBytes(logFile)));

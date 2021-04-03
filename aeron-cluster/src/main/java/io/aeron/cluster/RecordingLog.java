@@ -37,6 +37,7 @@ import java.util.List;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.driver.Configuration.FILE_PAGE_SIZE_DEFAULT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
 import static java.util.Comparator.comparingLong;
@@ -395,8 +396,7 @@ public final class RecordingLog implements AutoCloseable
          */
         public final int sessionId;
 
-        Log(
-            final long recordingId,
+        Log(final long recordingId,
             final long leadershipTermId,
             final long termBaseLogPosition,
             final long logPosition,
@@ -568,13 +568,13 @@ public final class RecordingLog implements AutoCloseable
 
     private static final Comparator<Entry> ENTRY_COMPARATOR =
         comparingLong((Entry o) -> o.leadershipTermId)
-        .thenComparingInt(o -> o.type)
-        .thenComparingLong(o -> o.logPosition);
+        .thenComparingInt((o) -> o.type)
+        .thenComparingLong((o) -> o.logPosition);
 
     private long termRecordingId = NULL_VALUE;
     private int nextEntryIndex;
     private final FileChannel fileChannel;
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
+    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(FILE_PAGE_SIZE_DEFAULT).order(LITTLE_ENDIAN);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
     private final ArrayList<Entry> entriesCache = new ArrayList<>();
     private final Long2LongHashMap cacheIndexByLeadershipTermIdMap = new Long2LongHashMap(NULL_VALUE);
@@ -885,9 +885,7 @@ public final class RecordingLog implements AutoCloseable
      * @return a new {@link RecoveryPlan} for the cluster.
      */
     public RecoveryPlan createRecoveryPlan(
-        final AeronArchive archive,
-        final int serviceCount,
-        final long replicatedRecordingId)
+        final AeronArchive archive, final int serviceCount, final long replicatedRecordingId)
     {
         final ArrayList<Snapshot> snapshots = new ArrayList<>();
         final MutableReference<Log> logRef = new MutableReference<>();
@@ -1088,7 +1086,6 @@ public final class RecordingLog implements AutoCloseable
         if (entry.logPosition != logPosition)
         {
             commitEntryLogPosition(entry.entryIndex, logPosition);
-
             entriesCache.set(index, entry.logPosition(logPosition));
         }
     }
@@ -1130,7 +1127,7 @@ public final class RecordingLog implements AutoCloseable
 
         final int invalidEntryType = ENTRY_TYPE_INVALID_FLAG | invalidEntry.type;
         buffer.putInt(0, invalidEntryType, LITTLE_ENDIAN);
-        writeToDisc(entryIndex, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
+        persistToStorage(entryIndex, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
     }
 
     /**
@@ -1158,7 +1155,7 @@ public final class RecordingLog implements AutoCloseable
         }
 
         buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
-        writeToDisc(index, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
+        persistToStorage(index, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
 
         reload();
     }
@@ -1251,7 +1248,7 @@ public final class RecordingLog implements AutoCloseable
             final int entryCacheIndex = invalidSnapshots.getInt(i);
             final Entry entry = entriesCache.get(entryCacheIndex);
 
-            if (entryMatches(entry, leadershipTermId, termBaseLogPosition, logPosition, serviceId))
+            if (matchesEntry(entry, leadershipTermId, termBaseLogPosition, logPosition, serviceId))
             {
                 final Entry validatedEntry = new Entry(
                     recordingId,
@@ -1265,7 +1262,7 @@ public final class RecordingLog implements AutoCloseable
                     entry.entryIndex);
 
                 writeEntryToBuffer(validatedEntry, buffer);
-                writeToDisc(entry.entryIndex, 0, ENTRY_LENGTH);
+                persistToStorage(entry.entryIndex, 0, ENTRY_LENGTH);
 
                 entriesCache.set(entryCacheIndex, validatedEntry);
                 invalidSnapshots.fastUnorderedRemove(i);
@@ -1298,7 +1295,7 @@ public final class RecordingLog implements AutoCloseable
             nextEntryIndex);
 
         writeEntryToBuffer(entry, buffer);
-        writeToDisc(entry.entryIndex, 0, ENTRY_LENGTH);
+        persistToStorage(entry.entryIndex, 0, ENTRY_LENGTH);
 
         nextEntryIndex++;
 
@@ -1309,7 +1306,9 @@ public final class RecordingLog implements AutoCloseable
         {
             final Entry e = entries.get(i);
             if (e.leadershipTermId > leadershipTermId ||
-                leadershipTermId == e.leadershipTermId && ENTRY_TYPE_SNAPSHOT == e.type && e.logPosition > logPosition)
+                (leadershipTermId == e.leadershipTermId &&
+                ENTRY_TYPE_SNAPSHOT == e.type &&
+                e.logPosition > logPosition))
             {
                 index--;
             }
@@ -1327,7 +1326,6 @@ public final class RecordingLog implements AutoCloseable
             }
             entries.set(index, entry);
 
-            // Update entries in the cache
             final Long2LongHashMap.EntryIterator entryIterator = cacheIndexByLeadershipTermIdMap.entrySet().iterator();
             while (entryIterator.hasNext())
             {
@@ -1338,7 +1336,6 @@ public final class RecordingLog implements AutoCloseable
                 }
             }
 
-            // Update invalid snapshot indices that could have shifted
             for (int i = invalidSnapshots.size() - 1; i >= 0; i--)
             {
                 final int snapshotIndex = invalidSnapshots.getInt(i);
@@ -1370,7 +1367,7 @@ public final class RecordingLog implements AutoCloseable
         buffer.putInt(ENTRY_TYPE_OFFSET, entry.type, LITTLE_ENDIAN);
     }
 
-    private void writeToDisc(final int entryIndex, final int offset, final int length)
+    private void persistToStorage(final int entryIndex, final int offset, final int length)
     {
         byteBuffer.limit(length).position(0);
         final long position = (entryIndex * (long)ENTRY_LENGTH) + offset;
@@ -1437,7 +1434,7 @@ public final class RecordingLog implements AutoCloseable
     private void commitEntryLogPosition(final int entryIndex, final long value)
     {
         buffer.putLong(0, value, LITTLE_ENDIAN);
-        writeToDisc(entryIndex, LOG_POSITION_OFFSET, SIZE_OF_LONG);
+        persistToStorage(entryIndex, LOG_POSITION_OFFSET, SIZE_OF_LONG);
     }
 
     private static void planRecovery(
@@ -1538,7 +1535,7 @@ public final class RecordingLog implements AutoCloseable
         return ENTRY_TYPE_TERM == entry.type && entry.isValid;
     }
 
-    private static boolean entryMatches(
+    private static boolean matchesEntry(
         final Entry entry,
         final long leadershipTermId,
         final long termBaseLogPosition,

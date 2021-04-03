@@ -27,7 +27,6 @@ import io.aeron.cluster.service.ClusterNodeControlProperties;
 import io.aeron.cluster.service.ConsensusModuleProxy;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
-import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.MutableBoolean;
@@ -41,6 +40,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -140,7 +140,7 @@ public class ClusterTool
                 break;
 
             case "sort-recording-log":
-                sortRecordingLog(System.out, clusterDir);
+                sortRecordingLog(clusterDir);
                 break;
 
             case "errors":
@@ -293,24 +293,23 @@ public class ClusterTool
     /**
      * Print out the {@link RecordingLog} for the cluster.
      *
-     * @param out        to print the output to.
      * @param clusterDir where the cluster is running.
      * @return {@code true} if file contents was changed or {@code false} if it was already in the correct order.
      */
-    public static boolean sortRecordingLog(final PrintStream out, final File clusterDir)
+    public static boolean sortRecordingLog(final File clusterDir)
     {
         final List<RecordingLog.Entry> entries;
         try (RecordingLog recordingLog = new RecordingLog(clusterDir))
         {
             entries = recordingLog.entries();
-            if (recordingLogSorted(entries))
+            if (isRecordingLogSorted(entries))
             {
                 return false;
             }
         }
 
         final int size = entries.size();
-        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
+        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
         final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
         final File newLogFile = new File(clusterDir, RecordingLog.RECORDING_LOG_FILE_NAME + ".sorted");
         try
@@ -335,15 +334,15 @@ public class ClusterTool
             Files.delete(logFile);
             Files.move(newLogFile.toPath(), logFile);
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
-            LangUtil.rethrowUnchecked(e);
+            throw new UncheckedIOException(ex);
         }
 
         return true;
     }
 
-    private static boolean recordingLogSorted(final List<RecordingLog.Entry> entries)
+    private static boolean isRecordingLogSorted(final List<RecordingLog.Entry> entries)
     {
         for (int i = entries.size() - 1; i >= 0; i--)
         {
@@ -352,6 +351,7 @@ public class ClusterTool
                 return false;
             }
         }
+
         return true;
     }
 

@@ -32,12 +32,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
+import static java.util.Comparator.comparingLong;
 import static org.agrona.BitUtil.*;
 
 /**
@@ -182,6 +184,64 @@ public final class RecordingLog implements AutoCloseable
                 type,
                 false,
                 entryIndex);
+        }
+
+        Entry logPosition(final long logPosition)
+        {
+            return new Entry(
+                recordingId,
+                leadershipTermId,
+                termBaseLogPosition,
+                logPosition,
+                timestamp,
+                serviceId,
+                type,
+                isValid,
+                entryIndex);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public boolean equals(final Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+
+            final Entry entry = (Entry)o;
+
+            return recordingId == entry.recordingId &&
+                leadershipTermId == entry.leadershipTermId &&
+                termBaseLogPosition == entry.termBaseLogPosition &&
+                logPosition == entry.logPosition &&
+                timestamp == entry.timestamp &&
+                serviceId == entry.serviceId &&
+                type == entry.type &&
+                entryIndex == entry.entryIndex &&
+                isValid == entry.isValid;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int hashCode()
+        {
+            int result = (int)(recordingId ^ (recordingId >>> 32));
+            result = 31 * result + (int)(leadershipTermId ^ (leadershipTermId >>> 32));
+            result = 31 * result + (int)(termBaseLogPosition ^ (termBaseLogPosition >>> 32));
+            result = 31 * result + (int)(logPosition ^ (logPosition >>> 32));
+            result = 31 * result + (int)(timestamp ^ (timestamp >>> 32));
+            result = 31 * result + serviceId;
+            result = 31 * result + type;
+            result = 31 * result + entryIndex;
+            result = 31 * result + (isValid ? 1 : 0);
+            return result;
         }
 
         /**
@@ -504,9 +564,14 @@ public final class RecordingLog implements AutoCloseable
     /**
      * The length of each entry in the recording log (not the recordings in the archive).
      */
-    private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
+    static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
-    private long filePosition = 0;
+    private static final Comparator<Entry> ENTRY_COMPARATOR =
+        comparingLong((Entry o) -> o.leadershipTermId)
+        .thenComparingInt(o -> o.type)
+        .thenComparingLong(o -> o.logPosition);
+
+    private long termRecordingId = NULL_VALUE;
     private int nextEntryIndex;
     private final FileChannel fileChannel;
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
@@ -597,7 +662,6 @@ public final class RecordingLog implements AutoCloseable
      */
     public void reload()
     {
-        filePosition = 0;
         entriesCache.clear();
         cacheIndexByLeadershipTermIdMap.clear();
         invalidSnapshots.clear();
@@ -608,6 +672,7 @@ public final class RecordingLog implements AutoCloseable
 
         try
         {
+            long filePosition = 0;
             while (true)
             {
                 final int bytesRead = fileChannel.read(byteBuffer, filePosition);
@@ -636,6 +701,22 @@ public final class RecordingLog implements AutoCloseable
         catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
+        }
+
+        entriesCache.sort(ENTRY_COMPARATOR);
+        for (int i = 0, size = entriesCache.size(); i < size; i++)
+        {
+            final Entry entry = entriesCache.get(i);
+
+            if (isValidTerm(entry))
+            {
+                cacheIndexByLeadershipTermIdMap.put(entry.leadershipTermId, i);
+            }
+
+            if (ENTRY_TYPE_SNAPSHOT == entry.type && !entry.isValid)
+            {
+                invalidSnapshots.add(i);
+            }
         }
     }
 
@@ -798,8 +879,8 @@ public final class RecordingLog implements AutoCloseable
      * Create a recovery plan for the cluster so that when the steps are replayed the plan will bring the cluster
      * back to the latest stable state.
      *
-     * @param archive      to lookup recording descriptors.
-     * @param serviceCount of services that may have snapshots.
+     * @param archive               to lookup recording descriptors.
+     * @param serviceCount          of services that may have snapshots.
      * @param replicatedRecordingId leader's recordingId used for replicating
      * @return a new {@link RecoveryPlan} for the cluster.
      */
@@ -902,14 +983,33 @@ public final class RecordingLog implements AutoCloseable
     public void appendTerm(
         final long recordingId, final long leadershipTermId, final long termBaseLogPosition, final long timestamp)
     {
+        validateTermRecordingId(recordingId);
+
         final int size = entriesCache.size();
+        long logPosition = NULL_POSITION;
         if (size > 0)
         {
-            final Entry entry = findLastTerm();
-            if (null != entry && entry.leadershipTermId >= leadershipTermId)
+            if (cacheIndexByLeadershipTermIdMap.containsKey(leadershipTermId))
             {
-                throw new ClusterException("leadershipTermId out of sequence: last=" +
-                    entry.leadershipTermId + " appending=" + leadershipTermId);
+                throw new ClusterException("duplicate TERM entry for leadershipTermId=" + leadershipTermId);
+            }
+
+            for (int i = size - 1; i >= 0; i--)
+            {
+                final Entry entry = entriesCache.get(i);
+                if (leadershipTermId == entry.leadershipTermId)
+                {
+                    if (ENTRY_TYPE_SNAPSHOT == entry.type)
+                    {
+                        throw new ClusterException("TERM cannot be added for leadershipTermId=" + leadershipTermId +
+                            ", because a snapshot already exists");
+                    }
+                    break;
+                }
+                else if (entry.leadershipTermId < leadershipTermId)
+                {
+                    break;
+                }
             }
 
             final long previousLeadershipTermId = leadershipTermId - 1;
@@ -917,18 +1017,24 @@ public final class RecordingLog implements AutoCloseable
             {
                 commitLogPosition(previousLeadershipTermId, termBaseLogPosition);
             }
+
+            final Entry nextTermEntry = findTermEntry(leadershipTermId + 1);
+            if (null != nextTermEntry)
+            {
+                logPosition = nextTermEntry.termBaseLogPosition;
+            }
         }
 
-        append(
+        final int index = append(
             ENTRY_TYPE_TERM,
             recordingId,
             leadershipTermId,
             termBaseLogPosition,
-            NULL_POSITION,
+            logPosition,
             timestamp,
             NULL_VALUE);
 
-        cacheIndexByLeadershipTermIdMap.put(leadershipTermId, entriesCache.size() - 1);
+        cacheIndexByLeadershipTermIdMap.put(leadershipTermId, index);
     }
 
     /**
@@ -949,16 +1055,10 @@ public final class RecordingLog implements AutoCloseable
         final long timestamp,
         final int serviceId)
     {
+        validateRecordingId(recordingId);
         if (!restoreInvalidSnapshot(
             recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
         {
-            final Entry entry = findLastTerm();
-            if (null != entry && entry.leadershipTermId != leadershipTermId)
-            {
-                throw new ClusterException("snapshot not for current leadership term=" + entry.leadershipTermId +
-                    " snapshot=" + leadershipTermId);
-            }
-
             append(
                 ENTRY_TYPE_SNAPSHOT,
                 recordingId,
@@ -989,16 +1089,7 @@ public final class RecordingLog implements AutoCloseable
         {
             commitEntryLogPosition(entry.entryIndex, logPosition);
 
-            entriesCache.set(index, new Entry(
-                entry.recordingId,
-                entry.leadershipTermId,
-                entry.termBaseLogPosition,
-                logPosition,
-                entry.timestamp,
-                entry.serviceId,
-                entry.type,
-                entry.isValid,
-                entry.entryIndex));
+            entriesCache.set(index, entry.logPosition(logPosition));
         }
     }
 
@@ -1039,20 +1130,7 @@ public final class RecordingLog implements AutoCloseable
 
         final int invalidEntryType = ENTRY_TYPE_INVALID_FLAG | invalidEntry.type;
         buffer.putInt(0, invalidEntryType, LITTLE_ENDIAN);
-        byteBuffer.limit(SIZE_OF_INT).position(0);
-        final long position = (invalidEntry.entryIndex * (long)ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
-
-        try
-        {
-            if (SIZE_OF_INT != fileChannel.write(byteBuffer, position))
-            {
-                throw new ClusterException("failed to write field atomically");
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        writeToDisc(entryIndex, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
     }
 
     /**
@@ -1080,22 +1158,9 @@ public final class RecordingLog implements AutoCloseable
         }
 
         buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
-        byteBuffer.limit(SIZE_OF_INT).position(0);
-        final long position = (index * (long)ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
+        writeToDisc(index, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
 
-        try
-        {
-            if (SIZE_OF_INT != fileChannel.write(byteBuffer, position))
-            {
-                throw new ClusterException("failed to write field atomically");
-            }
-
-            reload();
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        reload();
     }
 
     /**
@@ -1148,6 +1213,31 @@ public final class RecordingLog implements AutoCloseable
         }
     }
 
+    private static void validateRecordingId(final long recordingId)
+    {
+        if (NULL_VALUE == recordingId)
+        {
+            throw new ClusterException("invalid recordingId=" + recordingId);
+        }
+    }
+
+    private void validateTermRecordingId(final long recordingId)
+    {
+        validateRecordingId(recordingId);
+        if (recordingId != termRecordingId)
+        {
+            if (NULL_VALUE == termRecordingId)
+            {
+                termRecordingId = recordingId;
+            }
+            else
+            {
+                throw new ClusterException(
+                    "invalid TERM recordingId=" + recordingId + ", expected recordingId=" + termRecordingId);
+            }
+        }
+    }
+
     private boolean restoreInvalidSnapshot(
         final long recordingId,
         final long leadershipTermId,
@@ -1174,19 +1264,8 @@ public final class RecordingLog implements AutoCloseable
                     true,
                     entry.entryIndex);
 
-                writeEntryToBuffer(validatedEntry, buffer, byteBuffer);
-                final long position = (entry.entryIndex * (long)ENTRY_LENGTH);
-                try
-                {
-                    if (ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
-                    {
-                        throw new ClusterException("failed to write entry atomically");
-                    }
-                }
-                catch (final IOException ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                }
+                writeEntryToBuffer(validatedEntry, buffer);
+                writeToDisc(entry.entryIndex, 0, ENTRY_LENGTH);
 
                 entriesCache.set(entryCacheIndex, validatedEntry);
                 invalidSnapshots.fastUnorderedRemove(i);
@@ -1198,7 +1277,7 @@ public final class RecordingLog implements AutoCloseable
         return false;
     }
 
-    private void append(
+    private int append(
         final int entryType,
         final long recordingId,
         final long leadershipTermId,
@@ -1218,26 +1297,69 @@ public final class RecordingLog implements AutoCloseable
             true,
             nextEntryIndex);
 
-        writeEntryToBuffer(entry, buffer, byteBuffer);
-        try
-        {
-            final int bytesWritten = fileChannel.write(byteBuffer, filePosition);
-            if (ENTRY_LENGTH != bytesWritten)
-            {
-                throw new ClusterException("failed to write entry atomically");
-            }
-            filePosition += bytesWritten;
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        writeEntryToBuffer(entry, buffer);
+        writeToDisc(entry.entryIndex, 0, ENTRY_LENGTH);
 
         nextEntryIndex++;
-        entriesCache.add(entry);
+
+        final ArrayList<Entry> entries = this.entriesCache;
+        final int size = entries.size();
+        int index = size;
+        for (int i = size - 1; i >= 0; i--)
+        {
+            final Entry e = entries.get(i);
+            if (e.leadershipTermId > leadershipTermId ||
+                leadershipTermId == e.leadershipTermId && ENTRY_TYPE_SNAPSHOT == e.type && e.logPosition > logPosition)
+            {
+                index--;
+            }
+            else
+            {
+                break;
+            }
+        }
+        if (index < size)
+        {
+            entries.add(null);
+            for (int i = size - 1; i >= index; i--)
+            {
+                entries.set(i + 1, entries.get(i));
+            }
+            entries.set(index, entry);
+
+            // Update entries in the cache
+            final Long2LongHashMap.EntryIterator entryIterator = cacheIndexByLeadershipTermIdMap.entrySet().iterator();
+            while (entryIterator.hasNext())
+            {
+                entryIterator.next();
+                if (entryIterator.getLongKey() > leadershipTermId)
+                {
+                    entryIterator.setValue(entryIterator.getLongValue() + 1);
+                }
+            }
+
+            // Update invalid snapshot indices that could have shifted
+            for (int i = invalidSnapshots.size() - 1; i >= 0; i--)
+            {
+                final int snapshotIndex = invalidSnapshots.getInt(i);
+                if (snapshotIndex >= index)
+                {
+                    invalidSnapshots.set(i, snapshotIndex + 1);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            entries.add(entry);
+        }
+        return index;
     }
 
-    private void writeEntryToBuffer(final Entry entry, final UnsafeBuffer buffer, final ByteBuffer byteBuffer)
+    static void writeEntryToBuffer(final Entry entry, final UnsafeBuffer buffer)
     {
         buffer.putLong(RECORDING_ID_OFFSET, entry.recordingId, LITTLE_ENDIAN);
         buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, entry.leadershipTermId, LITTLE_ENDIAN);
@@ -1246,8 +1368,24 @@ public final class RecordingLog implements AutoCloseable
         buffer.putLong(TIMESTAMP_OFFSET, entry.timestamp, LITTLE_ENDIAN);
         buffer.putInt(SERVICE_ID_OFFSET, entry.serviceId, LITTLE_ENDIAN);
         buffer.putInt(ENTRY_TYPE_OFFSET, entry.type, LITTLE_ENDIAN);
+    }
 
-        byteBuffer.limit(ENTRY_LENGTH).position(0);
+    private void writeToDisc(final int entryIndex, final int offset, final int length)
+    {
+        byteBuffer.limit(length).position(0);
+        final long position = (entryIndex * (long)ENTRY_LENGTH) + offset;
+
+        try
+        {
+            if (length != fileChannel.write(byteBuffer, position))
+            {
+                throw new ClusterException("failed to write field atomically");
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
     private void captureEntriesFromBuffer(
@@ -1273,17 +1411,12 @@ public final class RecordingLog implements AutoCloseable
                     isValid,
                     nextEntryIndex);
 
+                if (ENTRY_TYPE_TERM == type)
+                {
+                    validateTermRecordingId(entry.recordingId);
+                }
+
                 entries.add(entry);
-
-                if (isValidTerm(entry))
-                {
-                    cacheIndexByLeadershipTermIdMap.put(entry.leadershipTermId, entries.size() - 1);
-                }
-
-                if (ENTRY_TYPE_SNAPSHOT == entry.type && !entry.isValid)
-                {
-                    invalidSnapshots.add(entries.size() - 1);
-                }
             }
 
             ++nextEntryIndex;
@@ -1304,20 +1437,7 @@ public final class RecordingLog implements AutoCloseable
     private void commitEntryLogPosition(final int entryIndex, final long value)
     {
         buffer.putLong(0, value, LITTLE_ENDIAN);
-        byteBuffer.limit(SIZE_OF_LONG).position(0);
-        final long position = (entryIndex * (long)ENTRY_LENGTH) + LOG_POSITION_OFFSET;
-
-        try
-        {
-            if (SIZE_OF_LONG != fileChannel.write(byteBuffer, position))
-            {
-                throw new ClusterException("failed to write field atomically");
-            }
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        writeToDisc(entryIndex, LOG_POSITION_OFFSET, SIZE_OF_LONG);
     }
 
     private static void planRecovery(

@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BooleanType;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.ClusterMarkFile;
@@ -26,25 +27,33 @@ import io.aeron.cluster.service.ClusterNodeControlProperties;
 import io.aeron.cluster.service.ConsensusModuleProxy;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.nio.file.StandardOpenOption.*;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
@@ -56,6 +65,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *                         pid: prints PID of cluster component.
  *               recovery-plan: [service count] prints recovery plan of cluster component.
  *               recording-log: prints recording log of cluster component.
+ *          sort-recording-log: re-arranges entries in the recording log to match the order in memory.
  *                      errors: prints Aeron and cluster component error logs.
  *                list-members: print leader memberId, active members list, and passive members list.
  *               remove-member: [memberId] requests removal of a member specified in memberId.
@@ -127,6 +137,10 @@ public class ClusterTool
 
             case "recording-log":
                 recordingLog(System.out, clusterDir);
+                break;
+
+            case "sort-recording-log":
+                sortRecordingLog(System.out, clusterDir);
                 break;
 
             case "errors":
@@ -274,6 +288,71 @@ public class ClusterTool
         {
             out.println(recordingLog.toString());
         }
+    }
+
+    /**
+     * Print out the {@link RecordingLog} for the cluster.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     * @return {@code true} if file contents was changed or {@code false} if it was already in the correct order.
+     */
+    public static boolean sortRecordingLog(final PrintStream out, final File clusterDir)
+    {
+        final List<RecordingLog.Entry> entries;
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        {
+            entries = recordingLog.entries();
+            if (recordingLogSorted(entries))
+            {
+                return false;
+            }
+        }
+
+        final int size = entries.size();
+        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
+        final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
+        final File newLogFile = new File(clusterDir, RecordingLog.RECORDING_LOG_FILE_NAME + ".sorted");
+        try
+        {
+            try (FileChannel fileChannel = FileChannel.open(newLogFile.toPath(), CREATE, READ, WRITE))
+            {
+                long position = 0;
+                for (int i = 0; i < size; i++)
+                {
+                    RecordingLog.writeEntryToBuffer(entries.get(0), buffer);
+                    byteBuffer.limit(RecordingLog.ENTRY_LENGTH).position(0);
+
+                    if (RecordingLog.ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
+                    {
+                        throw new ClusterException("failed to write recording");
+                    }
+                    position += RecordingLog.ENTRY_LENGTH;
+                }
+            }
+
+            final Path logFile = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
+            Files.delete(logFile);
+            Files.move(newLogFile.toPath(), logFile);
+        }
+        catch (final IOException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+
+        return true;
+    }
+
+    private static boolean recordingLogSorted(final List<RecordingLog.Entry> entries)
+    {
+        for (int i = entries.size() - 1; i >= 0; i--)
+        {
+            if (entries.get(i).entryIndex != i)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1035,6 +1114,7 @@ public class ClusterTool
             "                        pid: prints PID of cluster component%n" +
             "              recovery-plan: [service count] prints recovery plan of cluster component%n" +
             "              recording-log: prints recording log of cluster component%n" +
+            "         sort-recording-log: re-arranges entries in the recording log to match the order in memory%n" +
             "                     errors: prints Aeron and cluster component error logs%n" +
             "               list-members: print leader memberId, active members list, and passive members list%n" +
             "              remove-member: [memberId] requests removal of a member specified in memberId%n" +

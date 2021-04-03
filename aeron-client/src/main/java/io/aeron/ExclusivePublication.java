@@ -138,12 +138,11 @@ public final class ExclusivePublication extends ExclusivePublicationValues
             originalRegistrationId,
             registrationId);
 
-        final UnsafeBuffer[] buffers = logBuffers.duplicateTermBuffers();
         final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new ExclusiveTermAppender(buffers[i], logMetaDataBuffer, i);
+            termAppenders[i] = new ExclusiveTermAppender(termBuffers[i], logMetaDataBuffer, i);
         }
 
         final int termCount = LogBufferDescriptor.activeTermCount(logMetaDataBuffer);

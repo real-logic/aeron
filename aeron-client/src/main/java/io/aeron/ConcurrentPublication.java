@@ -17,7 +17,6 @@ package io.aeron;
 
 import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -61,11 +60,9 @@ public final class ConcurrentPublication extends Publication
             originalRegistrationId,
             registrationId);
 
-        final UnsafeBuffer[] buffers = logBuffers.duplicateTermBuffers();
-
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new TermAppender(buffers[i], logMetaDataBuffer, i);
+            termAppenders[i] = new TermAppender(termBuffers[i], logMetaDataBuffer, i);
         }
     }
 

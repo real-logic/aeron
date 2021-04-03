@@ -224,6 +224,8 @@ public final class LogBuffers implements AutoCloseable
             error = t;
         }
 
+        logMetaDataBuffer.wrap(0, 0);
+
         for (int i = 0, length = mappedByteBuffers.length; i < length; i++)
         {
             final MappedByteBuffer mappedByteBuffer = mappedByteBuffers[i];

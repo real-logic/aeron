@@ -1317,6 +1317,7 @@ public final class RecordingLog implements AutoCloseable
                 break;
             }
         }
+
         if (index < size)
         {
             entries.add(null);
@@ -1353,6 +1354,7 @@ public final class RecordingLog implements AutoCloseable
         {
             entries.add(entry);
         }
+
         return index;
     }
 

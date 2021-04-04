@@ -237,7 +237,7 @@ typedef struct aeron_client_conductor_stct
     bool invoker_mode;
     bool pre_touch;
     bool is_terminating;
-    bool is_closed;
+    volatile bool is_closed;
 }
 aeron_client_conductor_t;
 

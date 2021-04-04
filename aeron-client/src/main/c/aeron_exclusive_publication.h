@@ -51,7 +51,7 @@ typedef struct aeron_exclusive_publication_stct
     aeron_notification_t on_close_complete;
     void *on_close_complete_clientd;
 
-    bool is_closed;
+    volatile bool is_closed;
 
     uint8_t pre_fields_padding[AERON_CACHE_LINE_LENGTH];
     int64_t term_begin_position;

@@ -64,7 +64,7 @@ typedef struct aeron_subscription_stct
     int32_t channel_status_indicator_id;
     size_t round_robin_index;
 
-    bool is_closed;
+    volatile bool is_closed;
     uint8_t post_fields_padding[AERON_CACHE_LINE_LENGTH];
 }
 aeron_subscription_t;

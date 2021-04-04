@@ -108,7 +108,6 @@ int aeron_exclusive_publication_close(
     if (NULL != publication)
     {
         bool is_closed;
-
         AERON_GET_VOLATILE(is_closed, publication->is_closed);
         if (!is_closed)
         {
@@ -132,7 +131,6 @@ int64_t aeron_exclusive_publication_offer(
     void *clientd)
 {
     int64_t new_position = AERON_PUBLICATION_CLOSED;
-    bool is_closed;
 
     if (NULL == publication || NULL == buffer)
     {
@@ -144,6 +142,7 @@ int64_t aeron_exclusive_publication_offer(
         return AERON_PUBLICATION_ERROR;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, publication->is_closed);
     if (!is_closed)
     {
@@ -214,7 +213,6 @@ int64_t aeron_exclusive_publication_offerv(
     void *clientd)
 {
     int64_t new_position = AERON_PUBLICATION_CLOSED;
-    bool is_closed;
 
     if (NULL == publication || NULL == iov)
     {
@@ -232,6 +230,7 @@ int64_t aeron_exclusive_publication_offerv(
         length += iov[i].iov_len;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, publication->is_closed);
     if (!is_closed)
     {
@@ -300,7 +299,6 @@ int64_t aeron_exclusive_publication_try_claim(
     aeron_exclusive_publication_t *publication, size_t length, aeron_buffer_claim_t *buffer_claim)
 {
     int64_t new_position = AERON_PUBLICATION_CLOSED;
-    bool is_closed;
 
     if (NULL == publication || NULL == buffer_claim)
     {
@@ -321,6 +319,7 @@ int64_t aeron_exclusive_publication_try_claim(
         return AERON_PUBLICATION_ERROR;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, publication->is_closed);
     if (!is_closed)
     {
@@ -355,7 +354,6 @@ int64_t aeron_exclusive_publication_try_claim(
 int64_t aeron_exclusive_publication_append_padding(aeron_exclusive_publication_t *publication, size_t length)
 {
     int64_t new_position = AERON_PUBLICATION_CLOSED;
-    bool is_closed;
 
     if (NULL == publication)
     {
@@ -372,6 +370,7 @@ int64_t aeron_exclusive_publication_append_padding(aeron_exclusive_publication_t
         return AERON_PUBLICATION_ERROR;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, publication->is_closed);
     if (!is_closed)
     {
@@ -405,14 +404,13 @@ int64_t aeron_exclusive_publication_append_padding(aeron_exclusive_publication_t
 int64_t aeron_exclusive_publication_offer_block(
     aeron_exclusive_publication_t *publication, const uint8_t *buffer, size_t length)
 {
-    bool is_closed;
-
     if (NULL == publication)
     {
         AERON_SET_ERR(EINVAL, "%s", "aeron_exclusive_publication_offer_block(NULL)");
         return AERON_PUBLICATION_ERROR;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, publication->is_closed);
     if (is_closed)
     {
@@ -483,7 +481,7 @@ int64_t aeron_exclusive_publication_offer_block(
 
 bool aeron_exclusive_publication_is_closed(aeron_exclusive_publication_t *publication)
 {
-    bool is_closed = false;
+    bool is_closed = true;
 
     if (NULL != publication)
     {
@@ -551,14 +549,13 @@ int64_t aeron_exclusive_publication_channel_status(aeron_exclusive_publication_t
 
 int64_t aeron_exclusive_publication_position(aeron_exclusive_publication_t *publication)
 {
-    bool is_closed;
-
     if (NULL == publication)
     {
         AERON_SET_ERR(EINVAL, "Parameters must not be null, publication: %s", AERON_NULL_STR(publication));
         return AERON_PUBLICATION_ERROR;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, publication->is_closed);
     if (is_closed)
     {
@@ -570,14 +567,13 @@ int64_t aeron_exclusive_publication_position(aeron_exclusive_publication_t *publ
 
 int64_t aeron_exclusive_publication_position_limit(aeron_exclusive_publication_t *publication)
 {
-    bool is_closed;
-
     if (NULL == publication)
     {
         AERON_SET_ERR(EINVAL, "Parameters must not be null, publication: %s", AERON_NULL_STR(publication));
         return AERON_PUBLICATION_ERROR;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, publication->is_closed);
     if (is_closed)
     {

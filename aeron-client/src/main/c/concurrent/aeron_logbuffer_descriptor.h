@@ -36,12 +36,12 @@
 #pragma pack(4)
 typedef struct aeron_logbuffer_metadata_stct
 {
-    int64_t term_tail_counters[AERON_LOGBUFFER_PARTITION_COUNT];
-    int32_t active_term_count;
+    volatile int64_t term_tail_counters[AERON_LOGBUFFER_PARTITION_COUNT];
+    volatile int32_t active_term_count;
     uint8_t pad1[(2 * AERON_CACHE_LINE_LENGTH) - ((AERON_LOGBUFFER_PARTITION_COUNT * sizeof(int64_t)) + sizeof(int32_t))];
-    int64_t end_of_stream_position;
-    int32_t is_connected;
-    int32_t active_transport_count;
+    volatile int64_t end_of_stream_position;
+    volatile int32_t is_connected;
+    volatile int32_t active_transport_count;
     uint8_t pad2[(2 * AERON_CACHE_LINE_LENGTH) - (sizeof(int64_t) + (2 * sizeof(int32_t)))];
     int64_t correlation_id;
     int32_t initial_term_id;
@@ -81,7 +81,7 @@ inline int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length
 {
     int32_t offset = (int32_t)(raw_tail & 0xFFFFFFFFL);
 
-    return (offset < term_length) ? offset : term_length;
+    return offset < term_length ? offset : term_length;
 }
 
 inline int32_t aeron_logbuffer_term_id(int64_t raw_tail)

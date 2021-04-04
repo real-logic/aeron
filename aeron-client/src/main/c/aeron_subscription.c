@@ -555,6 +555,7 @@ int aeron_subscription_local_sockaddrs(
             AERON_NULL_STR(address_vec));
         return -1;
     }
+
     if (address_vec_len < 1)
     {
         AERON_SET_ERR(
@@ -580,6 +581,7 @@ int aeron_subscription_resolved_endpoint(
             AERON_NULL_STR(address));
         return -1;
     }
+
     if (address_len < 1)
     {
         AERON_SET_ERR(
@@ -642,6 +644,7 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
             AERON_NULL_STR(uri));
         return -1;
     }
+
     if (uri_len < 1)
     {
         AERON_SET_ERR(

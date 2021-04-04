@@ -158,14 +158,13 @@ int aeron_image_constants(aeron_image_t *image, aeron_image_constants_t *constan
 
 int64_t aeron_image_position(aeron_image_t *image)
 {
-    bool is_closed;
-
     if (NULL == image)
     {
         AERON_SET_ERR(EINVAL, "Parameters must not be null, image: %s", AERON_NULL_STR(image));
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (is_closed)
     {
@@ -177,14 +176,13 @@ int64_t aeron_image_position(aeron_image_t *image)
 
 int aeron_image_set_position(aeron_image_t *image, int64_t position)
 {
-    bool is_closed;
-
     if (NULL == image)
     {
         AERON_SET_ERR(EINVAL, "Parameters must not be null, image: %s", AERON_NULL_STR(image));
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (!is_closed)
     {
@@ -201,21 +199,20 @@ int aeron_image_set_position(aeron_image_t *image, int64_t position)
 
 bool aeron_image_is_end_of_stream(aeron_image_t *image)
 {
-    bool is_closed;
-    int64_t end_of_stream_position, subscriber_position;
-
     if (NULL == image)
     {
         AERON_SET_ERR(EINVAL, "Parameters must not be null, image: %s", AERON_NULL_STR(image));
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (is_closed)
     {
         return image->is_eos;
     }
 
+    int64_t end_of_stream_position, subscriber_position;
     AERON_GET_VOLATILE(end_of_stream_position, image->metadata->end_of_stream_position);
     AERON_GET_VOLATILE(subscriber_position, *image->subscriber_position);
 
@@ -224,21 +221,20 @@ bool aeron_image_is_end_of_stream(aeron_image_t *image)
 
 int aeron_image_active_transport_count(aeron_image_t *image)
 {
-    int32_t active_transport_count;
-    bool is_closed;
-
     if (NULL == image)
     {
         AERON_SET_ERR(EINVAL, "Parameters must not be null, image: %s", AERON_NULL_STR(image));
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (is_closed)
     {
         return 0;
     }
 
+    int32_t active_transport_count;
     AERON_GET_VOLATILE(active_transport_count, image->metadata->active_transport_count);
 
     return (int)active_transport_count;
@@ -246,9 +242,6 @@ int aeron_image_active_transport_count(aeron_image_t *image)
 
 int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, void *clientd, size_t fragment_limit)
 {
-    bool is_closed;
-    size_t fragments_read = 0;
-
     if (NULL == image || NULL == handler)
     {
         AERON_SET_ERR(
@@ -259,12 +252,14 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (is_closed)
     {
         return 0;
     }
 
+    size_t fragments_read = 0;
     const int64_t initial_position = *image->subscriber_position;
     const size_t index = aeron_logbuffer_index_by_position(initial_position, image->position_bits_to_shift);
     const uint8_t *term_buffer = image->log_buffer->mapped_raw_log.term_buffers[index].addr;
@@ -317,9 +312,6 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
 int aeron_image_controlled_poll(
     aeron_image_t *image, aeron_controlled_fragment_handler_t handler, void *clientd, size_t fragment_limit)
 {
-    bool is_closed;
-    size_t fragments_read = 0;
-
     if (NULL == image || NULL == handler)
     {
         AERON_SET_ERR(
@@ -330,12 +322,14 @@ int aeron_image_controlled_poll(
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (is_closed)
     {
         return 0;
     }
 
+    size_t fragments_read = 0;
     int64_t initial_position = *image->subscriber_position;
     const size_t index = aeron_logbuffer_index_by_position(initial_position, image->position_bits_to_shift);
     const uint8_t *term_buffer = image->log_buffer->mapped_raw_log.term_buffers[index].addr;
@@ -413,9 +407,6 @@ int aeron_image_bounded_poll(
     int64_t limit_position,
     size_t fragment_limit)
 {
-    bool is_closed;
-    size_t fragments_read = 0;
-
     if (NULL == image || NULL == handler)
     {
         AERON_SET_ERR(
@@ -426,12 +417,14 @@ int aeron_image_bounded_poll(
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (is_closed)
     {
         return 0;
     }
 
+    size_t fragments_read = 0;
     const int64_t initial_position = *image->subscriber_position;
     const size_t index = aeron_logbuffer_index_by_position(initial_position, image->position_bits_to_shift);
     const uint8_t *term_buffer = image->log_buffer->mapped_raw_log.term_buffers[index].addr;
@@ -490,9 +483,6 @@ int aeron_image_bounded_controlled_poll(
     int64_t limit_position,
     size_t fragment_limit)
 {
-    bool is_closed;
-    size_t fragments_read = 0;
-
     if (NULL == image || NULL == handler)
     {
         AERON_SET_ERR(
@@ -503,12 +493,14 @@ int aeron_image_bounded_controlled_poll(
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (is_closed)
     {
         return 0;
     }
 
+    size_t fragments_read = 0;
     int64_t initial_position = *image->subscriber_position;
     const size_t index = aeron_logbuffer_index_by_position(initial_position, image->position_bits_to_shift);
     const uint8_t *term_buffer = image->log_buffer->mapped_raw_log.term_buffers[index].addr;
@@ -588,8 +580,6 @@ int64_t aeron_image_controlled_peek(
     void *clientd,
     int64_t limit_position)
 {
-    bool is_closed;
-
     if (NULL == image || NULL == handler)
     {
         AERON_SET_ERR(
@@ -600,6 +590,7 @@ int64_t aeron_image_controlled_peek(
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (is_closed)
     {
@@ -687,8 +678,6 @@ int64_t aeron_image_controlled_peek(
 int aeron_image_block_poll(
     aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit)
 {
-    bool is_closed;
-
     if (NULL == image || NULL == handler)
     {
         AERON_SET_ERR(
@@ -699,6 +688,7 @@ int aeron_image_block_poll(
         return -1;
     }
 
+    bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);
     if (is_closed)
     {
@@ -768,7 +758,7 @@ int aeron_image_block_poll(
 
 bool aeron_image_is_closed(aeron_image_t *image)
 {
-    bool is_closed = false;
+    bool is_closed = true;
 
     if (NULL != image)
     {

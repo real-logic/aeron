@@ -50,7 +50,7 @@ typedef struct aeron_subscription_stct
 
     int64_t *channel_status_indicator;
 
-    int64_t last_image_list_change_number;
+    volatile int64_t last_image_list_change_number;
 
     aeron_on_available_image_t on_available_image;
     void *on_available_image_clientd;

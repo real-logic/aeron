@@ -25,7 +25,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.concurrent.TimeUnit;
 
@@ -66,11 +66,9 @@ class LogReplicationTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "START", "STOP", "SYNC", "EXTEND", "REPLICATE", "MERGE" })
-    void shouldBeDoneWhenRecordingPositionMatchesStopPositionRegardlessOfSignal(final String recordingSignalString)
+    @EnumSource(value = RecordingSignal.class, mode = EnumSource.Mode.EXCLUDE, names = { "DELETE", "NULL_VAL" })
+    void shouldBeDoneWhenRecordingPositionMatchesStopPositionRegardlessOfSignal(final RecordingSignal recordingSignal)
     {
-        final RecordingSignal recordingSignal = RecordingSignal.valueOf(recordingSignalString);
-
         final long stopPosition = 982734;
         final long nowNs = 0;
 
@@ -95,11 +93,9 @@ class LogReplicationTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "START", "SYNC", "EXTEND", "REPLICATE", "MERGE" })
-    void shouldStopReplicationIfNotAlreadyStopped(final String recordingSignalString)
+    @EnumSource(value = RecordingSignal.class, names = { "START", "SYNC", "EXTEND", "REPLICATE", "MERGE" })
+    void shouldStopReplicationIfNotAlreadyStopped(final RecordingSignal recordingSignal)
     {
-        final RecordingSignal recordingSignal = RecordingSignal.valueOf(recordingSignalString);
-
         final long stopPosition = 982734;
         final long nowNs = 0;
 

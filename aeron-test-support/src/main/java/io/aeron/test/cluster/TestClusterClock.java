@@ -20,10 +20,11 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TestClusterClock implements ClusterClock, EpochClock, NanoClock
 {
-    private volatile long tick;
+    private final AtomicLong tick = new AtomicLong();
     private final TimeUnit timeUnit;
 
     public TestClusterClock(final TimeUnit timeUnit)
@@ -38,26 +39,25 @@ public class TestClusterClock implements ClusterClock, EpochClock, NanoClock
 
     public long time()
     {
-        return timeUnit.toMillis(tick);
+        return timeUnit.toMillis(tick.get());
     }
 
     public long nanoTime()
     {
-        return timeUnit.toNanos(tick);
+        return timeUnit.toNanos(tick.get());
     }
 
     public void update(final long tick, final TimeUnit tickTimeUnit)
     {
-        this.tick = tickTimeUnit.convert(tick, tickTimeUnit);
+        this.tick.set(tickTimeUnit.convert(tick, tickTimeUnit));
     }
 
-    public synchronized long increment(final long tick, final TimeUnit tickTimeUnit)
+    public long increment(final long tick, final TimeUnit tickTimeUnit)
     {
-        this.tick += tickTimeUnit.convert(tick, tickTimeUnit);
-        return this.tick;
+        return this.tick.addAndGet(tickTimeUnit.convert(tick, tickTimeUnit));
     }
 
-    public synchronized long increment(final long tick)
+    public long increment(final long tick)
     {
         return increment(tick, timeUnit());
     }

@@ -54,7 +54,7 @@ public class ArchiveException extends AeronException
     public static final int UNKNOWN_RECORDING = 5;
 
     /**
-     * The replay identity for the operation is not know to the archive.
+     * The replay identity for the operation is not known to the archive.
      */
     public static final int UNKNOWN_REPLAY = 6;
 
@@ -82,6 +82,11 @@ public class ArchiveException extends AeronException
      * The archive storage is at minimum threshold or exhausted.
      */
     public static final int STORAGE_SPACE = 11;
+
+    /**
+     * The replication identity for this operation is not known to the archive.
+     */
+    public static final int UNKNOWN_REPLICATION = 12;
 
     private final int errorCode;
     private final long correlationId;

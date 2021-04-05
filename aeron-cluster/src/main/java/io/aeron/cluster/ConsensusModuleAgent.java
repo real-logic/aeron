@@ -3037,6 +3037,18 @@ final class ConsensusModuleAgent implements Agent
 
             logSubscriptionId = NULL_VALUE;
         }
+
+        if (NULL_VALUE != logRecordingId)
+        {
+            try
+            {
+                archive.tryStopRecordingByIdentity(logRecordingId);
+            }
+            catch (final Exception ex)
+            {
+                ctx.countedErrorHandler().onError(new ClusterException(ex, WARN));
+            }
+        }
     }
 
     private long getLastAppendedPosition()

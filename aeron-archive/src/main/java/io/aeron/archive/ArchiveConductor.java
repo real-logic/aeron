@@ -1126,7 +1126,7 @@ abstract class ArchiveConductor
         if (null == session)
         {
             final String msg = "unknown replication id " + replicationId;
-            controlSession.sendErrorResponse(correlationId, replicationId, msg, controlResponseProxy);
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_REPLICATION, msg, controlResponseProxy);
         }
         else
         {

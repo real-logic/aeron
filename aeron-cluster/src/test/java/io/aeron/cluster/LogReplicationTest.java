@@ -89,7 +89,14 @@ class LogReplicationTest
         assertFalse(logReplication.isDone(nowNs));
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
-        assertTrue(logReplication.isDone(nowNs));
+        if (RecordingSignal.STOP == recordingSignal)
+        {
+            assertTrue(logReplication.isDone(nowNs));
+        }
+        else
+        {
+            assertFalse(logReplication.isDone(nowNs));
+        }
     }
 
     @ParameterizedTest
@@ -111,10 +118,10 @@ class LogReplicationTest
             nowNs);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
-        assertTrue(logReplication.isDone(nowNs));
+        assertFalse(logReplication.isDone(nowNs));
 
         logReplication.close();
-        verify(aeronArchive).stopReplication(REPLICATION_ID);
+        verify(aeronArchive).tryStopReplication(REPLICATION_ID);
     }
 
     @Test

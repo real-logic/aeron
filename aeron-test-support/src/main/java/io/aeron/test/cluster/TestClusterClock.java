@@ -50,4 +50,15 @@ public class TestClusterClock implements ClusterClock, EpochClock, NanoClock
     {
         this.tick = tickTimeUnit.convert(tick, tickTimeUnit);
     }
+
+    public synchronized long increment(final long tick, final TimeUnit tickTimeUnit)
+    {
+        this.tick += tickTimeUnit.convert(tick, tickTimeUnit);
+        return this.tick;
+    }
+
+    public synchronized long increment(final long tick)
+    {
+        return increment(tick, timeUnit());
+    }
 }

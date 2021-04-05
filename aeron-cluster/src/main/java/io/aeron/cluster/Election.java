@@ -51,6 +51,7 @@ class Election
     private int logSessionId = CommonContext.NULL_SESSION_ID;
     private long timeOfLastStateChangeNs;
     private long timeOfLastUpdateNs;
+    private final long initialTimeOfLastUpdateNs;
     private long nominationDeadlineNs;
     private long logPosition;
     private long appendPosition;
@@ -99,6 +100,8 @@ class Election
         this.consensusPublisher = consensusPublisher;
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
+        this.initialTimeOfLastUpdateNs = ctx.clusterClock().timeNanos() - TimeUnit.DAYS.toNanos(1);
+        this.timeOfLastUpdateNs = initialTimeOfLastUpdateNs;
 
         Objects.requireNonNull(thisMember);
         ctx.electionStateCounter().setOrdered(INIT.code());
@@ -529,7 +532,7 @@ class Election
     {
         int workCount = 0;
 
-        if (nowNs >= (timeOfLastUpdateNs + ctx.electionStatusIntervalNs()))
+        if (hasTimeElapsedSinceLastUpdate(nowNs, ctx.electionStatusIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
             for (final ClusterMember member : clusterMembers)
@@ -732,8 +735,6 @@ class Election
 
         if (null == logReplication)
         {
-            // TODO: Ensure that all replication has completed.
-
             if (appendPosition < replicationStopPosition)
             {
                 logReplication = consensusModuleAgent.newLogReplication(
@@ -967,7 +968,7 @@ class Election
     {
         int workCount = 0;
 
-        if (nowNs >= (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
+        if (hasTimeElapsedSinceLastUpdate(nowNs, ctx.leaderHeartbeatIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
             publishNewLeadershipTerm(ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
@@ -1023,7 +1024,7 @@ class Election
     private int publishFollowerReplicationPosition(final long nowNs)
     {
         final long position = logReplication.position();
-        if (position > appendPosition && nowNs >= (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
+        if (position > appendPosition && hasTimeElapsedSinceLastUpdate(nowNs, ctx.leaderHeartbeatIntervalNs()))
         {
             if (consensusPublisher.appendPosition(
                 leaderMember.publication(), leadershipTermId, position, thisMember.id()))
@@ -1106,7 +1107,7 @@ class Election
             state = newState;
             ctx.electionStateCounter().setOrdered(newState.code());
             timeOfLastStateChangeNs = nowNs;
-            timeOfLastUpdateNs = 0;
+            timeOfLastUpdateNs = initialTimeOfLastUpdateNs;
         }
     }
 
@@ -1204,6 +1205,11 @@ class Election
                 "joinPosition=" + image.joinPosition() + " != logPosition=" + logPosition,
                 ClusterException.Category.WARN);
         }
+    }
+
+    private boolean hasTimeElapsedSinceLastUpdate(final long nowNs, final long intervalNs)
+    {
+        return (nowNs - timeOfLastUpdateNs) >= intervalNs;
     }
 
     void stateChange(final ElectionState oldState, final ElectionState newState, final int memberId)

@@ -594,6 +594,24 @@ class DriverEventDissectorTest
             " [17/27]: 127.0.0.1:4848", builder.toString());
     }
 
+    @Test
+    void dissectFlowControlReceiver()
+    {
+        final int offset = 24;
+        internalEncodeLogHeader(buffer, offset, 42, 48, () -> 2_500_000_000L);
+        buffer.putInt(offset + LOG_HEADER_LENGTH, 5, LITTLE_ENDIAN);
+        buffer.putLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, -45754449919191L, LITTLE_ENDIAN);
+        buffer.putInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, 11, LITTLE_ENDIAN);
+        buffer.putInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, 4, LITTLE_ENDIAN);
+        buffer.putStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 3 + SIZE_OF_LONG, "ABC");
+
+        DriverEventDissector.dissectFlowControlReceiver(FLOW_CONTROL_RECEIVER_ADDED, buffer, offset, builder);
+
+        assertEquals("[2.5] " + CONTEXT + ": " + FLOW_CONTROL_RECEIVER_ADDED.name() +
+            " [42/48]: receiverCount=5 receiverId=-45754449919191 sessionId=11 streamId=4 channel=ABC",
+            builder.toString());
+    }
+
     private DirectBuffer newBuffer(final byte[] bytes)
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(allocate(bytes.length));

@@ -28,6 +28,7 @@ import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.lang.instrument.Instrumentation;
+import java.util.EnumSet;
 
 import static io.aeron.agent.EventConfiguration.*;
 import static net.bytebuddy.asm.Advice.to;
@@ -140,11 +141,18 @@ public final class EventLogAgent
         tempBuilder = addDriverSenderProxyInstrumentation(tempBuilder);
         tempBuilder = addDriverReceiverProxyInstrumentation(tempBuilder);
         tempBuilder = addDriverUdpChannelTransportInstrumentation(tempBuilder);
-        tempBuilder = addDriverUntetheredSubscriptionInstrumentation(tempBuilder);
-        tempBuilder = addDriverNameResolutionNeighbourChangeInstrumentation(
-            tempBuilder, DriverEventCode.NAME_RESOLUTION_NEIGHBOR_ADDED, "neighborAdded");
-        tempBuilder = addDriverNameResolutionNeighbourChangeInstrumentation(
-            tempBuilder, DriverEventCode.NAME_RESOLUTION_NEIGHBOR_REMOVED, "neighborRemoved");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.UNTETHERED_SUBSCRIPTION_STATE_CHANGE,
+            "UntetheredSubscription",
+            DriverInterceptor.UntetheredSubscriptionStateChange.class,
+            "stateChange");
+
+        tempBuilder = addDriverNameResolutionInstrumentation(tempBuilder);
+
+        tempBuilder = addDriverFlowControlInstrumentation(tempBuilder);
 
         return tempBuilder;
     }
@@ -205,137 +213,156 @@ public final class EventLogAgent
 
     private static AgentBuilder addDriverSenderProxyInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean hasChannelRegister = DRIVER_EVENT_CODES.contains(DriverEventCode.SEND_CHANNEL_CREATION);
-        final boolean hasCloseChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.SEND_CHANNEL_CLOSE);
+        AgentBuilder tempBuilder = agentBuilder;
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.SEND_CHANNEL_CREATION,
+            "SenderProxy",
+            ChannelEndpointInterceptor.SenderProxy.RegisterSendChannelEndpoint.class,
+            "registerSendChannelEndpoint");
 
-        if (!hasChannelRegister && !hasCloseChannel)
-        {
-            return agentBuilder;
-        }
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.SEND_CHANNEL_CLOSE,
+            "SenderProxy",
+            ChannelEndpointInterceptor.SenderProxy.CloseSendChannelEndpoint.class,
+            "closeSendChannelEndpoint");
 
-        return agentBuilder
-            .type(nameEndsWith("SenderProxy"))
-            .transform((builder, typeDescription, classLoader, javaModule) ->
-            {
-                if (hasChannelRegister)
-                {
-                    builder = builder
-                        .visit(to(ChannelEndpointInterceptor.SenderProxy.RegisterSendChannelEndpoint.class)
-                            .on(named("registerSendChannelEndpoint")));
-                }
-                if (hasCloseChannel)
-                {
-                    builder = builder
-                        .visit(to(ChannelEndpointInterceptor.SenderProxy.CloseSendChannelEndpoint.class)
-                            .on(named("closeSendChannelEndpoint")));
-                }
-
-                return builder;
-            });
+        return tempBuilder;
     }
 
     private static AgentBuilder addDriverReceiverProxyInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean hasRegisterChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.RECEIVE_CHANNEL_CREATION);
-        final boolean hasCloseChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.RECEIVE_CHANNEL_CLOSE);
+        AgentBuilder tempBuilder = agentBuilder;
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.RECEIVE_CHANNEL_CREATION,
+            "ReceiverProxy",
+            ChannelEndpointInterceptor.ReceiverProxy.RegisterReceiveChannelEndpoint.class,
+            "registerReceiveChannelEndpoint");
 
-        if (!hasRegisterChannel && !hasCloseChannel)
-        {
-            return agentBuilder;
-        }
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.RECEIVE_CHANNEL_CLOSE,
+            "ReceiverProxy",
+            ChannelEndpointInterceptor.ReceiverProxy.CloseReceiveChannelEndpoint.class,
+            "closeReceiveChannelEndpoint");
 
-        return agentBuilder
-            .type(nameEndsWith("ReceiverProxy"))
-            .transform((builder, typeDescription, classLoader, javaModule) ->
-            {
-                if (hasRegisterChannel)
-                {
-                    builder = builder
-                        .visit(to(ChannelEndpointInterceptor.ReceiverProxy.RegisterReceiveChannelEndpoint.class)
-                            .on(named("registerReceiveChannelEndpoint")));
-                }
-                if (hasCloseChannel)
-                {
-                    builder = builder
-                        .visit(to(ChannelEndpointInterceptor.ReceiverProxy.CloseReceiveChannelEndpoint.class)
-                            .on(named("closeReceiveChannelEndpoint")));
-                }
-
-                return builder;
-            });
+        return tempBuilder;
     }
 
     private static AgentBuilder addDriverUdpChannelTransportInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean hasFrameOut = DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_OUT);
-        final boolean hasFrameIn = DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_IN);
+        AgentBuilder tempBuilder = agentBuilder;
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.FRAME_OUT,
+            "UdpChannelTransport",
+            ChannelEndpointInterceptor.UdpChannelTransport.SendHook.class,
+            "sendHook");
 
-        if (!hasFrameOut && !hasFrameIn)
-        {
-            return agentBuilder;
-        }
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.FRAME_IN,
+            "UdpChannelTransport",
+            ChannelEndpointInterceptor.UdpChannelTransport.ReceiveHook.class,
+            "receiveHook");
 
-        return agentBuilder
-            .type(nameEndsWith("UdpChannelTransport"))
-            .transform((builder, typeDescription, classLoader, javaModule) ->
-            {
-                if (hasFrameOut)
-                {
-                    builder = builder
-                        .visit(to(ChannelEndpointInterceptor.UdpChannelTransport.SendHook.class)
-                            .on(named("sendHook")));
-                }
-                if (hasFrameIn)
-                {
-                    builder = builder
-                        .visit(to(ChannelEndpointInterceptor.UdpChannelTransport.ReceiveHook.class)
-                            .on(named("receiveHook")));
-                }
-
-                return builder;
-            });
+        return tempBuilder;
     }
 
-    private static AgentBuilder addDriverUntetheredSubscriptionInstrumentation(final AgentBuilder agentBuilder)
+    private static AgentBuilder addDriverNameResolutionInstrumentation(final AgentBuilder agentBuilder)
     {
-        if (!DRIVER_EVENT_CODES.contains(DriverEventCode.UNTETHERED_SUBSCRIPTION_STATE_CHANGE))
-        {
-            return agentBuilder;
-        }
+        AgentBuilder tempBuilder = agentBuilder;
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.NAME_RESOLUTION_NEIGHBOR_ADDED,
+            "Neighbor",
+            DriverInterceptor.NameResolution.NeighborAdded.class,
+            "neighborAdded");
 
-        return agentBuilder
-            .type(nameEndsWith("UntetheredSubscription"))
-            .transform((builder, typeDescription, classLoader, javaModule) ->
-                builder
-                    .visit(to(DriverInterceptor.UntetheredSubscriptionStateChange.class)
-                        .on(named("stateChange"))));
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.NAME_RESOLUTION_NEIGHBOR_REMOVED,
+            "Neighbor",
+            DriverInterceptor.NameResolution.NeighborRemoved.class,
+            "neighborRemoved");
+        return tempBuilder;
     }
 
-    private static AgentBuilder addDriverNameResolutionNeighbourChangeInstrumentation(
-        final AgentBuilder agentBuilder, final DriverEventCode code, final String methodName)
+    private static AgentBuilder addDriverFlowControlInstrumentation(final AgentBuilder agentBuilder)
     {
-        if (!DRIVER_EVENT_CODES.contains(code))
-        {
-            return agentBuilder;
-        }
+        AgentBuilder tempBuilder = agentBuilder;
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.FLOW_CONTROL_RECEIVER_ADDED,
+            "AbstractMinMulticastFlowControl",
+            DriverInterceptor.FlowControl.ReceiverAdded.class,
+            "receiverAdded");
 
-        return agentBuilder
-            .type(nameEndsWith("Neighbor"))
-            .transform((builder, typeDescription, classLoader, javaModule) ->
-                builder
-                    .visit(to(DriverInterceptor.Neighbour.class)
-                        .on(named(methodName))));
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.FLOW_CONTROL_RECEIVER_REMOVED,
+            "AbstractMinMulticastFlowControl",
+            DriverInterceptor.FlowControl.ReceiverRemoved.class,
+            "receiverRemoved");
+        return tempBuilder;
     }
 
     private static AgentBuilder addArchiveInstrumentation(final AgentBuilder agentBuilder)
     {
         AgentBuilder tempBuilder = agentBuilder;
         tempBuilder = addArchiveControlSessionDemuxerInstrumentation(tempBuilder);
-        tempBuilder = addArchiveControlResponseProxyInstrumentation(tempBuilder);
-        tempBuilder = addArchiveReplicationSessionInstrumentation(tempBuilder);
-        tempBuilder = addArchiveControlSessionInstrumentation(tempBuilder);
-        tempBuilder = addArchiveReplaySessionInstrumentation(tempBuilder);
-        tempBuilder = addArchiveCatalogInstrumentation(tempBuilder);
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            ARCHIVE_EVENT_CODES,
+            ArchiveEventCode.CMD_OUT_RESPONSE,
+            "ControlResponseProxy",
+            ControlInterceptor.ControlResponse.class,
+            "sendResponseHook");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            ARCHIVE_EVENT_CODES,
+            ArchiveEventCode.REPLICATION_SESSION_STATE_CHANGE,
+            "ReplicationSession",
+            ArchiveInterceptor.ReplicationSessionStateChange.class,
+            "stateChange");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            ARCHIVE_EVENT_CODES,
+            ArchiveEventCode.CONTROL_SESSION_STATE_CHANGE,
+            "ControlSession",
+            ArchiveInterceptor.ControlSessionStateChange.class,
+            "stateChange");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            ARCHIVE_EVENT_CODES,
+            ArchiveEventCode.REPLAY_SESSION_ERROR,
+            "ReplaySession",
+            ArchiveInterceptor.ReplaySession.class,
+            "onPendingError");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            ARCHIVE_EVENT_CODES,
+            ArchiveEventCode.CATALOG_RESIZE,
+            "Catalog",
+            ArchiveInterceptor.Catalog.class,
+            "catalogResized");
 
         return tempBuilder;
     }
@@ -354,148 +381,84 @@ public final class EventLogAgent
                     .on(named("onFragment")))));
     }
 
-    private static AgentBuilder addArchiveControlResponseProxyInstrumentation(final AgentBuilder agentBuilder)
-    {
-        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CMD_OUT_RESPONSE))
-        {
-            return agentBuilder;
-        }
-
-        return agentBuilder
-            .type(nameEndsWith("ControlResponseProxy"))
-            .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ControlInterceptor.ControlResponse.class)
-                    .on(named("sendResponseHook")))));
-    }
-
-    private static AgentBuilder addArchiveReplicationSessionInstrumentation(final AgentBuilder agentBuilder)
-    {
-        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.REPLICATION_SESSION_STATE_CHANGE))
-        {
-            return agentBuilder;
-        }
-
-        return agentBuilder
-            .type(nameEndsWith("ReplicationSession"))
-            .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ArchiveInterceptor.ReplicationSessionStateChange.class)
-                    .on(named("stateChange")))));
-    }
-
-    private static AgentBuilder addArchiveControlSessionInstrumentation(final AgentBuilder agentBuilder)
-    {
-        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CONTROL_SESSION_STATE_CHANGE))
-        {
-            return agentBuilder;
-        }
-
-        return agentBuilder
-            .type(nameEndsWith("ControlSession"))
-            .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ArchiveInterceptor.ControlSessionStateChange.class)
-                    .on(named("stateChange")))));
-    }
-
-    private static AgentBuilder addArchiveReplaySessionInstrumentation(final AgentBuilder agentBuilder)
-    {
-        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.REPLAY_SESSION_ERROR))
-        {
-            return agentBuilder;
-        }
-
-        return agentBuilder
-            .type(nameEndsWith("ReplaySession"))
-            .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ArchiveInterceptor.ReplaySession.class)
-                    .on(named("onPendingError")))));
-    }
-
-    private static AgentBuilder addArchiveCatalogInstrumentation(final AgentBuilder agentBuilder)
-    {
-        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CATALOG_RESIZE))
-        {
-            return agentBuilder;
-        }
-
-        return agentBuilder
-            .type(nameEndsWith("Catalog"))
-            .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ArchiveInterceptor.Catalog.class)
-                    .on(named("catalogResized")))));
-    }
-
     private static AgentBuilder addClusterInstrumentation(final AgentBuilder agentBuilder)
     {
         AgentBuilder tempBuilder = agentBuilder;
-        tempBuilder = addClusterElectionInstrumentation(tempBuilder);
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.ELECTION_STATE_CHANGE,
+            "Election",
+            ClusterInterceptor.ElectionStateChange.class,
+            "stateChange");
+
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
 
         return tempBuilder;
     }
 
-    private static AgentBuilder addClusterElectionInstrumentation(final AgentBuilder agentBuilder)
+    private static AgentBuilder addClusterConsensusModuleAgentInstrumentation(final AgentBuilder agentBuilder)
     {
-        if (!CLUSTER_EVENT_CODES.contains(ClusterEventCode.ELECTION_STATE_CHANGE))
+        AgentBuilder tempBuilder = agentBuilder;
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.NEW_LEADERSHIP_TERM,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.NewLeadershipTerm.class,
+            "onNewLeadershipTerm");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.STATE_CHANGE,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.ConsensusModuleStateChange.class,
+            "stateChange");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.ROLE_CHANGE,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.ConsensusModuleRoleChange.class,
+            "roleChange");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.CANVASS_POSITION,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.CanvassPosition.class,
+            "onCanvassPosition");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.REQUEST_VOTE,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.RequestVote.class,
+            "onRequestVote");
+        return tempBuilder;
+    }
+
+    private static <E extends Enum<E>> AgentBuilder addEventInstrumentation(
+        final AgentBuilder agentBuilder,
+        final EnumSet<E> enabledEvents,
+        final E code,
+        final String typeName,
+        final Class<?> interceptorClass,
+        final String interceptorMethod)
+    {
+        if (!enabledEvents.contains(code))
         {
             return agentBuilder;
         }
 
         return agentBuilder
-            .type(nameEndsWith("Election"))
-            .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ClusterInterceptor.ElectionStateChange.class)
-                    .on(named("stateChange")))));
-    }
-
-    private static AgentBuilder addClusterConsensusModuleAgentInstrumentation(final AgentBuilder agentBuilder)
-    {
-        final boolean hasNewLeadershipTerm = CLUSTER_EVENT_CODES.contains(ClusterEventCode.NEW_LEADERSHIP_TERM);
-        final boolean hasStateChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.STATE_CHANGE);
-        final boolean hasRoleChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.ROLE_CHANGE);
-        final boolean hasCanvasPosition = CLUSTER_EVENT_CODES.contains(ClusterEventCode.CANVASS_POSITION);
-        final boolean hasRequestVote = CLUSTER_EVENT_CODES.contains(ClusterEventCode.REQUEST_VOTE);
-
-        if (!hasNewLeadershipTerm && !hasStateChange && !hasRoleChange && !hasCanvasPosition && !hasRequestVote)
-        {
-            return agentBuilder;
-        }
-
-        return agentBuilder.type(nameEndsWith("ConsensusModuleAgent"))
-            .transform(((builder, typeDescription, classLoader, module) ->
-            {
-                if (hasNewLeadershipTerm)
-                {
-                    builder = builder
-                        .visit(to(ClusterInterceptor.NewLeadershipTerm.class)
-                            .on(named("onNewLeadershipTerm")));
-                }
-                if (hasStateChange)
-                {
-                    builder = builder
-                        .visit(to(ClusterInterceptor.ConsensusModuleStateChange.class)
-                            .on(named("stateChange")));
-                }
-                if (hasRoleChange)
-                {
-                    builder = builder
-                        .visit(to(ClusterInterceptor.ConsensusModuleRoleChange.class)
-                            .on(named("roleChange")));
-                }
-                if (hasCanvasPosition)
-                {
-                    builder = builder
-                        .visit(to(ClusterInterceptor.CanvassPosition.class)
-                            .on(named("onCanvassPosition")));
-                }
-                if (hasRequestVote)
-                {
-                    builder = builder
-                        .visit(to(ClusterInterceptor.RequestVote.class)
-                            .on(named("onRequestVote")));
-                }
-
-                return builder;
-            }));
+            .type(nameEndsWith(typeName))
+            .transform((builder, typeDescription, classLoader, javaModule) ->
+                builder.visit(to(interceptorClass).on(named(interceptorMethod))));
     }
 
     private static Agent newReaderAgent()

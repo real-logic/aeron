@@ -329,6 +329,51 @@ public final class DriverEventLogger
         }
     }
 
+    /**
+     * Log the information about receiver for the corresponding flow control event.
+     *  @param code         flow control event type.
+     * @param receiverId   id of the receiver.
+     * @param sessionId    id of the session.
+     * @param streamId     id of the stream.
+     * @param channel      uri of the channel.
+     * @param receiverCount number of the receivers after the event.
+     */
+    public void logFlowControlReceiver(
+        final DriverEventCode code,
+        final long receiverId,
+        final int sessionId,
+        final int streamId,
+        final String channel,
+        final int receiverCount)
+    {
+        final int length = SIZE_OF_INT * 4 + SIZE_OF_LONG + channel.length();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(code), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeFlowControlReceiver(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    receiverId,
+                    sessionId,
+                    streamId,
+                    channel,
+                    receiverCount);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
     static int toEventCodeId(final DriverEventCode code)
     {
         return EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);

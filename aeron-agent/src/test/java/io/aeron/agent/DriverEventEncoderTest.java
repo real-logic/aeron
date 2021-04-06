@@ -199,4 +199,60 @@ class DriverEventEncoderTest
         assertEquals(from.name() + STATE_SEPARATOR + to.name(),
             buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG + SIZE_OF_INT * 2, LITTLE_ENDIAN));
     }
+
+    @Test
+    void encodeFlowControlReceiverShouldWriteChannelLast()
+    {
+        final int offset = 48;
+        final long receiverId = 1947384623864823283L;
+        final int sessionId = 219;
+        final int streamId = 3;
+        final String channel = "my channel";
+        final int receiverCount = 17;
+        final int length = 4 * SIZE_OF_INT + SIZE_OF_LONG + channel.length();
+        final int captureLength = captureLength(length);
+
+        encodeFlowControlReceiver(
+            buffer, offset, captureLength, length, receiverId, sessionId, streamId, channel, receiverCount);
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(receiverCount, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(receiverId, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(streamId,
+            buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(channel,
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 3 + SIZE_OF_LONG, LITTLE_ENDIAN));
+    }
+
+    @Test
+    void encodeFlowControlReceiverShouldTruncateChannelUriIfTooLong()
+    {
+        final char[] uri = new char[MAX_EVENT_LENGTH + 11];
+        fill(uri, 'x');
+        final int offset = 16;
+        final long receiverId = Long.MIN_VALUE;
+        final int sessionId = 42;
+        final int streamId = 0;
+        final String channel = new String(uri);
+        final int receiverCount = 0;
+        final int length = 4 * SIZE_OF_INT + SIZE_OF_LONG + uri.length;
+        final int captureLength = captureLength(length);
+
+        encodeFlowControlReceiver(
+            buffer, offset, captureLength, length, receiverId, sessionId, streamId, channel, receiverCount);
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(receiverCount, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(receiverId, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(streamId,
+            buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(channel.substring(0, captureLength - SIZE_OF_LONG - SIZE_OF_INT * 4 - 3) + "...",
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 3 + SIZE_OF_LONG, LITTLE_ENDIAN));
+    }
 }

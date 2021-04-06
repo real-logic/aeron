@@ -1615,7 +1615,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
             fprintf(
                 logfp,
-                "%s: sessionId=%d, streamId=%d, uri=%.*s\n",
+                "%s: sessionId=%d, streamId=%d, channel=%.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->session_id,
                 hdr->stream_id,
@@ -1630,7 +1630,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
             fprintf(
                 logfp,
-                "%s: streamId=%d, id=%" PRId64 ", uri=%.*s\n",
+                "%s: streamId=%d, id=%" PRId64 ", channel=%.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->stream_id,
                 hdr->id,
@@ -1645,7 +1645,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
             fprintf(
                 logfp,
-                "%s: sessionId=%d, streamId=%d, id=%" PRId64 ", uri=%.*s\n",
+                "%s: sessionId=%d, streamId=%d, id=%" PRId64 ", channel=%.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->session_id,
                 hdr->stream_id,

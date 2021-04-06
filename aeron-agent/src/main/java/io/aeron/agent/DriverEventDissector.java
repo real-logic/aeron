@@ -232,10 +232,10 @@ final class DriverEventDissector
         builder.append(": sessionId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        builder.append(" streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", channel=");
+        builder.append(" channel=");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -248,10 +248,10 @@ final class DriverEventDissector
         builder.append(": streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", id=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
+        builder.append(" id=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_LONG;
 
-        builder.append(", channel=");
+        builder.append(" channel=");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -264,13 +264,13 @@ final class DriverEventDissector
         builder.append(": sessionId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        builder.append(" streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", id=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
+        builder.append(" id=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_LONG;
 
-        builder.append(", channel=");
+        builder.append(" channel=");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -284,13 +284,13 @@ final class DriverEventDissector
         builder.append(": subscriptionId=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_LONG;
 
-        builder.append(", streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        builder.append(" streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", sessionId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        builder.append(" sessionId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", ");
+        builder.append(" ");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 

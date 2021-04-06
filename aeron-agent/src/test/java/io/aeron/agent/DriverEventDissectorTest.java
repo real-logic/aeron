@@ -54,7 +54,7 @@ class DriverEventDissectorTest
         DriverEventDissector.dissectRemovePublicationCleanup(buffer, offset, builder);
 
         assertEquals("[2.5] " + CONTEXT + ": " + REMOVE_PUBLICATION_CLEANUP.name() +
-            " [22/88]: sessionId=42, streamId=11, uri=channel uri",
+            " [22/88]: sessionId=42, streamId=11, channel=channel uri",
             builder.toString());
     }
 
@@ -70,7 +70,7 @@ class DriverEventDissectorTest
         DriverEventDissector.dissectRemoveSubscriptionCleanup(buffer, offset, builder);
 
         assertEquals("[0.1] " + CONTEXT + ": " + REMOVE_SUBSCRIPTION_CLEANUP.name() +
-            " [100/100]: streamId=33, id=111111111111, uri=test",
+            " [100/100]: streamId=33, id=111111111111, channel=test",
             builder.toString());
     }
 
@@ -87,7 +87,7 @@ class DriverEventDissectorTest
         DriverEventDissector.dissectRemoveImageCleanup(buffer, offset, builder);
 
         assertEquals("[12.3456789] " + CONTEXT + ": " + REMOVE_IMAGE_CLEANUP.name() +
-            " [66/99]: sessionId=77, streamId=55, id=1000000, uri=URI",
+            " [66/99]: sessionId=77, streamId=55, id=1000000, channel=URI",
             builder.toString());
     }
 

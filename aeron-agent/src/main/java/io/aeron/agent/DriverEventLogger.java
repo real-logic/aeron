@@ -149,13 +149,13 @@ public final class DriverEventLogger
     /**
      * Log the removal of a publication.
      *
-     * @param uri       for the channel.
+     * @param channel   for the channel.
      * @param sessionId for the publication.
      * @param streamId  within the channel.
      */
-    public void logPublicationRemoval(final String uri, final int sessionId, final int streamId)
+    public void logPublicationRemoval(final String channel, final int sessionId, final int streamId)
     {
-        final int length = SIZE_OF_INT * 3 + uri.length();
+        final int length = SIZE_OF_INT * 3 + channel.length();
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
@@ -166,7 +166,7 @@ public final class DriverEventLogger
             try
             {
                 final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
-                encodePublicationRemoval(buffer, index, captureLength, length, uri, sessionId, streamId);
+                encodePublicationRemoval(buffer, index, captureLength, length, channel, sessionId, streamId);
             }
             finally
             {
@@ -178,13 +178,13 @@ public final class DriverEventLogger
     /**
      * Log the removal of a subscription.
      *
-     * @param uri            for the channel.
+     * @param channel        for the channel.
      * @param streamId       within the channel.
      * @param subscriptionId for the subscription.
      */
-    public void logSubscriptionRemoval(final String uri, final int streamId, final long subscriptionId)
+    public void logSubscriptionRemoval(final String channel, final int streamId, final long subscriptionId)
     {
-        final int length = SIZE_OF_INT * 2 + SIZE_OF_LONG + uri.length();
+        final int length = SIZE_OF_INT * 2 + SIZE_OF_LONG + channel.length();
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
@@ -195,7 +195,7 @@ public final class DriverEventLogger
             try
             {
                 final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
-                encodeSubscriptionRemoval(buffer, index, captureLength, length, uri, streamId, subscriptionId);
+                encodeSubscriptionRemoval(buffer, index, captureLength, length, channel, streamId, subscriptionId);
             }
             finally
             {
@@ -207,14 +207,14 @@ public final class DriverEventLogger
     /**
      * Log the removal of an image from the driver.
      *
-     * @param uri           for the channel.
+     * @param channel       for the channel.
      * @param sessionId     for the image.
      * @param streamId      for the image.
      * @param correlationId for the image.
      */
-    public void logImageRemoval(final String uri, final int sessionId, final int streamId, final long correlationId)
+    public void logImageRemoval(final String channel, final int sessionId, final int streamId, final long correlationId)
     {
-        final int length = SIZE_OF_INT * 3 + SIZE_OF_LONG + uri.length();
+        final int length = SIZE_OF_INT * 3 + SIZE_OF_LONG + channel.length();
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
@@ -225,7 +225,7 @@ public final class DriverEventLogger
             try
             {
                 final UnsafeBuffer buffer = (UnsafeBuffer)ringBuffer.buffer();
-                encodeImageRemoval(buffer, index, captureLength, length, uri, sessionId, streamId, correlationId);
+                encodeImageRemoval(buffer, index, captureLength, length, channel, sessionId, streamId, correlationId);
             }
             finally
             {
@@ -331,11 +331,12 @@ public final class DriverEventLogger
 
     /**
      * Log the information about receiver for the corresponding flow control event.
-     *  @param code         flow control event type.
-     * @param receiverId   id of the receiver.
-     * @param sessionId    id of the session.
-     * @param streamId     id of the stream.
-     * @param channel      uri of the channel.
+     *
+     * @param code          flow control event type.
+     * @param receiverId    of the receiver.
+     * @param sessionId     of the image.
+     * @param streamId      of the image.
+     * @param channel       uri of the channel.
      * @param receiverCount number of the receivers after the event.
      */
     public void logFlowControlReceiver(

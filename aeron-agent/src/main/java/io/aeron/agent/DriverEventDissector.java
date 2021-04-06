@@ -235,7 +235,7 @@ final class DriverEventDissector
         builder.append(", streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", uri=");
+        builder.append(", channel=");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -251,7 +251,7 @@ final class DriverEventDissector
         builder.append(", id=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_LONG;
 
-        builder.append(", uri=");
+        builder.append(", channel=");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -270,7 +270,7 @@ final class DriverEventDissector
         builder.append(", id=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_LONG;
 
-        builder.append(", uri=");
+        builder.append(", channel=");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 

@@ -38,6 +38,7 @@ import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.agent.DriverEventCode.*;
@@ -49,7 +50,8 @@ import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 public class DriverLoggingAgentTest
 {
-    private static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:24325";
+    private static final String NETWORK_CHANNEL =
+        "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min,t:1ns";
     private static final int STREAM_ID = 1777;
 
     private static final Set<DriverEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(DriverEventCode.class));
@@ -90,7 +92,9 @@ public class DriverLoggingAgentTest
             CMD_OUT_SUBSCRIPTION_READY,
             CMD_OUT_ON_UNAVAILABLE_COUNTER,
             CMD_OUT_COUNTER_READY,
-            CMD_IN_CLIENT_CLOSE));
+            CMD_IN_CLIENT_CLOSE,
+            FLOW_CONTROL_RECEIVER_ADDED,
+            FLOW_CONTROL_RECEIVER_REMOVED));
     }
 
     @Test
@@ -174,7 +178,11 @@ public class DriverLoggingAgentTest
                 assertEquals(counter.get(), 1);
             }
 
-            Tests.await(WAIT_LIST::isEmpty);
+            final Supplier<String> errorMessage = () -> "Pending events: " + WAIT_LIST.toString();
+            while (!WAIT_LIST.isEmpty())
+            {
+                Tests.yieldingWait(errorMessage);
+            }
         }
     }
 

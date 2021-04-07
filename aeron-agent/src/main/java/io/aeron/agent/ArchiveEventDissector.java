@@ -418,11 +418,11 @@ final class ArchiveEventDissector
             HEADER_DECODER.version());
 
         builder.append(": controlSessionId=").append(CONTROL_RESPONSE_DECODER.controlSessionId())
-            .append(", correlationId=").append(CONTROL_RESPONSE_DECODER.correlationId())
-            .append(", relevantId=").append(CONTROL_RESPONSE_DECODER.relevantId())
-            .append(", code=").append(CONTROL_RESPONSE_DECODER.code())
-            .append(", version=").append(CONTROL_RESPONSE_DECODER.version())
-            .append(", errorMessage=");
+            .append(" correlationId=").append(CONTROL_RESPONSE_DECODER.correlationId())
+            .append(" relevantId=").append(CONTROL_RESPONSE_DECODER.relevantId())
+            .append(" code=").append(CONTROL_RESPONSE_DECODER.code())
+            .append(" version=").append(CONTROL_RESPONSE_DECODER.version())
+            .append(" errorMessage=");
 
         CONTROL_RESPONSE_DECODER.getErrorMessage(builder);
     }
@@ -437,7 +437,7 @@ final class ArchiveEventDissector
         absoluteOffset += SIZE_OF_LONG;
 
         builder.append(": replicationId=").append(replicationId);
-        builder.append(", ");
+        builder.append(" ");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -451,7 +451,7 @@ final class ArchiveEventDissector
         absoluteOffset += SIZE_OF_LONG;
 
         builder.append(": controlSessionId=").append(controlSessionId);
-        builder.append(", ");
+        builder.append(" ");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -468,8 +468,8 @@ final class ArchiveEventDissector
         absoluteOffset += SIZE_OF_LONG;
 
         builder.append(": sessionId=").append(sessionId);
-        builder.append(", recordingId=").append(recordingId);
-        builder.append(", errorMessage=");
+        builder.append(" recordingId=").append(recordingId);
+        builder.append(" errorMessage=");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -497,9 +497,9 @@ final class ArchiveEventDissector
     private static void appendConnect(final StringBuilder builder)
     {
         builder.append(": correlationId=").append(CONNECT_REQUEST_DECODER.correlationId())
-            .append(", responseStreamId=").append(CONNECT_REQUEST_DECODER.responseStreamId())
-            .append(", version=").append(CONNECT_REQUEST_DECODER.version())
-            .append(", responseChannel=");
+            .append(" responseStreamId=").append(CONNECT_REQUEST_DECODER.responseStreamId())
+            .append(" version=").append(CONNECT_REQUEST_DECODER.version())
+            .append(" responseChannel=");
 
         CONNECT_REQUEST_DECODER.getResponseChannel(builder);
     }
@@ -507,13 +507,13 @@ final class ArchiveEventDissector
     private static void appendAuthConnect(final StringBuilder builder)
     {
         builder.append(": correlationId=").append(AUTH_CONNECT_REQUEST_DECODER.correlationId())
-            .append(", responseStreamId=").append(AUTH_CONNECT_REQUEST_DECODER.responseStreamId())
-            .append(", version=").append(AUTH_CONNECT_REQUEST_DECODER.version())
-            .append(", responseChannel=");
+            .append(" responseStreamId=").append(AUTH_CONNECT_REQUEST_DECODER.responseStreamId())
+            .append(" version=").append(AUTH_CONNECT_REQUEST_DECODER.version())
+            .append(" responseChannel=");
 
         AUTH_CONNECT_REQUEST_DECODER.getResponseChannel(builder);
 
-        builder.append(", encodedCredentialsLength=").append(AUTH_CONNECT_REQUEST_DECODER.encodedCredentialsLength());
+        builder.append(" encodedCredentialsLength=").append(AUTH_CONNECT_REQUEST_DECODER.encodedCredentialsLength());
     }
 
     private static void appendCloseSession(final StringBuilder builder)
@@ -524,10 +524,10 @@ final class ArchiveEventDissector
     private static void appendStartRecording(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(START_RECORDING_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(START_RECORDING_REQUEST_DECODER.correlationId())
-            .append(", streamId=").append(START_RECORDING_REQUEST_DECODER.streamId())
-            .append(", sourceLocation=").append(START_RECORDING_REQUEST_DECODER.sourceLocation())
-            .append(", channel=");
+            .append(" correlationId=").append(START_RECORDING_REQUEST_DECODER.correlationId())
+            .append(" streamId=").append(START_RECORDING_REQUEST_DECODER.streamId())
+            .append(" sourceLocation=").append(START_RECORDING_REQUEST_DECODER.sourceLocation())
+            .append(" channel=");
 
         START_RECORDING_REQUEST_DECODER.getChannel(builder);
     }
@@ -535,11 +535,11 @@ final class ArchiveEventDissector
     private static void appendStartRecording2(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(START_RECORDING_REQUEST2_DECODER.controlSessionId())
-            .append(", correlationId=").append(START_RECORDING_REQUEST2_DECODER.correlationId())
-            .append(", streamId=").append(START_RECORDING_REQUEST2_DECODER.streamId())
-            .append(", sourceLocation=").append(START_RECORDING_REQUEST2_DECODER.sourceLocation())
-            .append(", autoStop=").append(START_RECORDING_REQUEST2_DECODER.autoStop())
-            .append(", channel=");
+            .append(" correlationId=").append(START_RECORDING_REQUEST2_DECODER.correlationId())
+            .append(" streamId=").append(START_RECORDING_REQUEST2_DECODER.streamId())
+            .append(" sourceLocation=").append(START_RECORDING_REQUEST2_DECODER.sourceLocation())
+            .append(" autoStop=").append(START_RECORDING_REQUEST2_DECODER.autoStop())
+            .append(" channel=");
 
         START_RECORDING_REQUEST2_DECODER.getChannel(builder);
     }
@@ -547,9 +547,9 @@ final class ArchiveEventDissector
     private static void appendStopRecording(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(STOP_RECORDING_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(STOP_RECORDING_REQUEST_DECODER.correlationId())
-            .append(", streamId=").append(STOP_RECORDING_REQUEST_DECODER.streamId())
-            .append(", channel=");
+            .append(" correlationId=").append(STOP_RECORDING_REQUEST_DECODER.correlationId())
+            .append(" streamId=").append(STOP_RECORDING_REQUEST_DECODER.streamId())
+            .append(" channel=");
 
         STOP_RECORDING_REQUEST_DECODER.getChannel(builder);
     }
@@ -557,12 +557,12 @@ final class ArchiveEventDissector
     private static void appendReplay(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(REPLAY_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(REPLAY_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(REPLAY_REQUEST_DECODER.recordingId())
-            .append(", position=").append(REPLAY_REQUEST_DECODER.position())
-            .append(", length=").append(REPLAY_REQUEST_DECODER.length())
-            .append(", replayStreamId=").append(REPLAY_REQUEST_DECODER.replayStreamId())
-            .append(", replayChannel=");
+            .append(" correlationId=").append(REPLAY_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(REPLAY_REQUEST_DECODER.recordingId())
+            .append(" position=").append(REPLAY_REQUEST_DECODER.position())
+            .append(" length=").append(REPLAY_REQUEST_DECODER.length())
+            .append(" replayStreamId=").append(REPLAY_REQUEST_DECODER.replayStreamId())
+            .append(" replayChannel=");
 
         REPLAY_REQUEST_DECODER.getReplayChannel(builder);
     }
@@ -570,33 +570,33 @@ final class ArchiveEventDissector
     private static void appendStopReplay(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(STOP_REPLAY_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(STOP_REPLAY_REQUEST_DECODER.correlationId())
-            .append(", replaySessionId=").append(STOP_REPLAY_REQUEST_DECODER.replaySessionId());
+            .append(" correlationId=").append(STOP_REPLAY_REQUEST_DECODER.correlationId())
+            .append(" replaySessionId=").append(STOP_REPLAY_REQUEST_DECODER.replaySessionId());
     }
 
     private static void appendListRecordings(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(LIST_RECORDINGS_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(LIST_RECORDINGS_REQUEST_DECODER.correlationId())
-            .append(", fromRecordingId=").append(LIST_RECORDINGS_REQUEST_DECODER.fromRecordingId())
-            .append(", recordCount=").append(LIST_RECORDINGS_REQUEST_DECODER.recordCount());
+            .append(" correlationId=").append(LIST_RECORDINGS_REQUEST_DECODER.correlationId())
+            .append(" fromRecordingId=").append(LIST_RECORDINGS_REQUEST_DECODER.fromRecordingId())
+            .append(" recordCount=").append(LIST_RECORDINGS_REQUEST_DECODER.recordCount());
     }
 
     private static void appendListRecording(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(LIST_RECORDING_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(LIST_RECORDING_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(LIST_RECORDING_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(LIST_RECORDING_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(LIST_RECORDING_REQUEST_DECODER.recordingId());
     }
 
     private static void appendListRecordingsForUri(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.correlationId())
-            .append(", fromRecordingId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.fromRecordingId())
-            .append(", recordCount=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.recordCount())
-            .append(", streamId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.streamId())
-            .append(", channel=");
+            .append(" correlationId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.correlationId())
+            .append(" fromRecordingId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.fromRecordingId())
+            .append(" recordCount=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.recordCount())
+            .append(" streamId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.streamId())
+            .append(" channel=");
 
         LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.getChannel(builder);
     }
@@ -604,11 +604,11 @@ final class ArchiveEventDissector
     private static void appendExtendRecording(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(EXTEND_RECORDING_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(EXTEND_RECORDING_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(EXTEND_RECORDING_REQUEST_DECODER.recordingId())
-            .append(", streamId=").append(EXTEND_RECORDING_REQUEST_DECODER.streamId())
-            .append(", sourceLocation=").append(EXTEND_RECORDING_REQUEST_DECODER.sourceLocation())
-            .append(", channel=");
+            .append(" correlationId=").append(EXTEND_RECORDING_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(EXTEND_RECORDING_REQUEST_DECODER.recordingId())
+            .append(" streamId=").append(EXTEND_RECORDING_REQUEST_DECODER.streamId())
+            .append(" sourceLocation=").append(EXTEND_RECORDING_REQUEST_DECODER.sourceLocation())
+            .append(" channel=");
 
         EXTEND_RECORDING_REQUEST_DECODER.getChannel(builder);
     }
@@ -616,12 +616,12 @@ final class ArchiveEventDissector
     private static void appendExtendRecording2(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(EXTEND_RECORDING_REQUEST2_DECODER.controlSessionId())
-            .append(", correlationId=").append(EXTEND_RECORDING_REQUEST2_DECODER.correlationId())
-            .append(", recordingId=").append(EXTEND_RECORDING_REQUEST2_DECODER.recordingId())
-            .append(", streamId=").append(EXTEND_RECORDING_REQUEST2_DECODER.streamId())
-            .append(", sourceLocation=").append(EXTEND_RECORDING_REQUEST2_DECODER.sourceLocation())
-            .append(", autoStop=").append(EXTEND_RECORDING_REQUEST2_DECODER.autoStop())
-            .append(", channel=");
+            .append(" correlationId=").append(EXTEND_RECORDING_REQUEST2_DECODER.correlationId())
+            .append(" recordingId=").append(EXTEND_RECORDING_REQUEST2_DECODER.recordingId())
+            .append(" streamId=").append(EXTEND_RECORDING_REQUEST2_DECODER.streamId())
+            .append(" sourceLocation=").append(EXTEND_RECORDING_REQUEST2_DECODER.sourceLocation())
+            .append(" autoStop=").append(EXTEND_RECORDING_REQUEST2_DECODER.autoStop())
+            .append(" channel=");
 
         EXTEND_RECORDING_REQUEST2_DECODER.getChannel(builder);
     }
@@ -629,47 +629,47 @@ final class ArchiveEventDissector
     private static void appendRecordingPosition(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(RECORDING_POSITION_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(RECORDING_POSITION_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(RECORDING_POSITION_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(RECORDING_POSITION_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(RECORDING_POSITION_REQUEST_DECODER.recordingId());
     }
 
     private static void appendTruncateRecording(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(TRUNCATE_RECORDING_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(TRUNCATE_RECORDING_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(TRUNCATE_RECORDING_REQUEST_DECODER.recordingId())
-            .append(", position=").append(TRUNCATE_RECORDING_REQUEST_DECODER.position());
+            .append(" correlationId=").append(TRUNCATE_RECORDING_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(TRUNCATE_RECORDING_REQUEST_DECODER.recordingId())
+            .append(" position=").append(TRUNCATE_RECORDING_REQUEST_DECODER.position());
     }
 
     private static void appendStopRecordingSubscription(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.correlationId())
-            .append(", subscriptionId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.subscriptionId());
+            .append(" correlationId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.correlationId())
+            .append(" subscriptionId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.subscriptionId());
     }
 
     private static void appendStopRecordingByIdentity(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.recordingId());
     }
 
     private static void appendStopPosition(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(STOP_POSITION_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(STOP_POSITION_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(STOP_POSITION_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(STOP_POSITION_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(STOP_POSITION_REQUEST_DECODER.recordingId());
     }
 
     private static void appendFindLastMatchingRecord(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.correlationId())
-            .append(", minRecordingId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.minRecordingId())
-            .append(", sessionId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.sessionId())
-            .append(", streamId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.streamId())
-            .append(", channel=");
+            .append(" correlationId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.correlationId())
+            .append(" minRecordingId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.minRecordingId())
+            .append(" sessionId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.sessionId())
+            .append(" streamId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.streamId())
+            .append(" channel=");
 
         FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.getChannel(builder);
     }
@@ -677,12 +677,12 @@ final class ArchiveEventDissector
     private static void appendListRecordingSubscriptions(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.correlationId())
-            .append(", pseudoIndex=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.pseudoIndex())
-            .append(", applyStreamId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.applyStreamId())
-            .append(", subscriptionCount=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.subscriptionCount())
-            .append(", streamId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.streamId())
-            .append(", channel=");
+            .append(" correlationId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.correlationId())
+            .append(" pseudoIndex=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.pseudoIndex())
+            .append(" applyStreamId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.applyStreamId())
+            .append(" subscriptionCount=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.subscriptionCount())
+            .append(" streamId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.streamId())
+            .append(" channel=");
 
         LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.getChannel(builder);
     }
@@ -690,13 +690,13 @@ final class ArchiveEventDissector
     private static void appendStartBoundedReplay(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(BOUNDED_REPLAY_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(BOUNDED_REPLAY_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(BOUNDED_REPLAY_REQUEST_DECODER.recordingId())
-            .append(", position=").append(BOUNDED_REPLAY_REQUEST_DECODER.position())
-            .append(", length=").append(BOUNDED_REPLAY_REQUEST_DECODER.length())
-            .append(", limitCounterId=").append(BOUNDED_REPLAY_REQUEST_DECODER.limitCounterId())
-            .append(", replayStreamId=").append(BOUNDED_REPLAY_REQUEST_DECODER.replayStreamId())
-            .append(", replayChannel=");
+            .append(" correlationId=").append(BOUNDED_REPLAY_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(BOUNDED_REPLAY_REQUEST_DECODER.recordingId())
+            .append(" position=").append(BOUNDED_REPLAY_REQUEST_DECODER.position())
+            .append(" length=").append(BOUNDED_REPLAY_REQUEST_DECODER.length())
+            .append(" limitCounterId=").append(BOUNDED_REPLAY_REQUEST_DECODER.limitCounterId())
+            .append(" replayStreamId=").append(BOUNDED_REPLAY_REQUEST_DECODER.replayStreamId())
+            .append(" replayChannel=");
 
         BOUNDED_REPLAY_REQUEST_DECODER.getReplayChannel(builder);
     }
@@ -704,103 +704,103 @@ final class ArchiveEventDissector
     private static void appendStopAllReplays(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(STOP_ALL_REPLAYS_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(STOP_ALL_REPLAYS_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(STOP_ALL_REPLAYS_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(STOP_ALL_REPLAYS_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(STOP_ALL_REPLAYS_REQUEST_DECODER.recordingId());
     }
 
     private static void appendReplicate(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(REPLICATE_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(REPLICATE_REQUEST_DECODER.correlationId())
-            .append(", srcRecordingId=").append(REPLICATE_REQUEST_DECODER.srcRecordingId())
-            .append(", dstRecordingId=").append(REPLICATE_REQUEST_DECODER.dstRecordingId())
-            .append(", srcControlStreamId=").append(REPLICATE_REQUEST_DECODER.srcControlStreamId())
-            .append(", srcControlChannel=");
+            .append(" correlationId=").append(REPLICATE_REQUEST_DECODER.correlationId())
+            .append(" srcRecordingId=").append(REPLICATE_REQUEST_DECODER.srcRecordingId())
+            .append(" dstRecordingId=").append(REPLICATE_REQUEST_DECODER.dstRecordingId())
+            .append(" srcControlStreamId=").append(REPLICATE_REQUEST_DECODER.srcControlStreamId())
+            .append(" srcControlChannel=");
 
         REPLICATE_REQUEST_DECODER.getSrcControlChannel(builder);
 
-        builder.append(", liveDestination=");
+        builder.append(" liveDestination=");
         REPLICATE_REQUEST_DECODER.getLiveDestination(builder);
     }
 
     private static void appendStopReplication(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(STOP_REPLICATION_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(STOP_REPLICATION_REQUEST_DECODER.correlationId())
-            .append(", replicationId=").append(STOP_REPLICATION_REQUEST_DECODER.replicationId());
+            .append(" correlationId=").append(STOP_REPLICATION_REQUEST_DECODER.correlationId())
+            .append(" replicationId=").append(STOP_REPLICATION_REQUEST_DECODER.replicationId());
     }
 
     private static void appendStartPosition(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(START_POSITION_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(START_POSITION_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(START_POSITION_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(START_POSITION_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(START_POSITION_REQUEST_DECODER.recordingId());
     }
 
     private static void appendDetachSegments(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(DETACH_SEGMENTS_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(DETACH_SEGMENTS_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(DETACH_SEGMENTS_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(DETACH_SEGMENTS_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(DETACH_SEGMENTS_REQUEST_DECODER.recordingId());
     }
 
     private static void appendDeleteDetachedSegments(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(DELETE_DETACHED_SEGMENTS_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(DELETE_DETACHED_SEGMENTS_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(DELETE_DETACHED_SEGMENTS_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(DELETE_DETACHED_SEGMENTS_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(DELETE_DETACHED_SEGMENTS_REQUEST_DECODER.recordingId());
     }
 
     private static void appendPurgeSegments(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(PURGE_SEGMENTS_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(PURGE_SEGMENTS_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(PURGE_SEGMENTS_REQUEST_DECODER.recordingId())
-            .append(", newStartPosition=").append(PURGE_SEGMENTS_REQUEST_DECODER.newStartPosition());
+            .append(" correlationId=").append(PURGE_SEGMENTS_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(PURGE_SEGMENTS_REQUEST_DECODER.recordingId())
+            .append(" newStartPosition=").append(PURGE_SEGMENTS_REQUEST_DECODER.newStartPosition());
     }
 
     private static void appendAttachSegments(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(ATTACH_SEGMENTS_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(ATTACH_SEGMENTS_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(ATTACH_SEGMENTS_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(ATTACH_SEGMENTS_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(ATTACH_SEGMENTS_REQUEST_DECODER.recordingId());
     }
 
     private static void appendMigrateSegments(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.correlationId())
-            .append(", srcRecordingId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.srcRecordingId())
-            .append(", dstRecordingId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.dstRecordingId());
+            .append(" correlationId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.correlationId())
+            .append(" srcRecordingId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.srcRecordingId())
+            .append(" dstRecordingId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.dstRecordingId());
     }
 
     private static void appendKeepAlive(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(KEEP_ALIVE_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(KEEP_ALIVE_REQUEST_DECODER.correlationId());
+            .append(" correlationId=").append(KEEP_ALIVE_REQUEST_DECODER.correlationId());
     }
 
     private static void appendTaggedReplicate(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(TAGGED_REPLICATE_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(TAGGED_REPLICATE_REQUEST_DECODER.correlationId())
-            .append(", srcRecordingId=").append(TAGGED_REPLICATE_REQUEST_DECODER.srcRecordingId())
-            .append(", dstRecordingId=").append(TAGGED_REPLICATE_REQUEST_DECODER.dstRecordingId())
-            .append(", channelTagId=").append(TAGGED_REPLICATE_REQUEST_DECODER.channelTagId())
-            .append(", subscriptionTagId=").append(TAGGED_REPLICATE_REQUEST_DECODER.subscriptionTagId())
-            .append(", srcControlStreamId=").append(TAGGED_REPLICATE_REQUEST_DECODER.srcControlStreamId())
-            .append(", srcControlChannel=");
+            .append(" correlationId=").append(TAGGED_REPLICATE_REQUEST_DECODER.correlationId())
+            .append(" srcRecordingId=").append(TAGGED_REPLICATE_REQUEST_DECODER.srcRecordingId())
+            .append(" dstRecordingId=").append(TAGGED_REPLICATE_REQUEST_DECODER.dstRecordingId())
+            .append(" channelTagId=").append(TAGGED_REPLICATE_REQUEST_DECODER.channelTagId())
+            .append(" subscriptionTagId=").append(TAGGED_REPLICATE_REQUEST_DECODER.subscriptionTagId())
+            .append(" srcControlStreamId=").append(TAGGED_REPLICATE_REQUEST_DECODER.srcControlStreamId())
+            .append(" srcControlChannel=");
 
         TAGGED_REPLICATE_REQUEST_DECODER.getSrcControlChannel(builder);
 
-        builder.append(", liveDestination=");
+        builder.append(" liveDestination=");
         TAGGED_REPLICATE_REQUEST_DECODER.getLiveDestination(builder);
     }
 
     private static void appendPurgeRecording(final StringBuilder builder)
     {
         builder.append(": controlSessionId=").append(PURGE_RECORDING_REQUEST_DECODER.controlSessionId())
-            .append(", correlationId=").append(PURGE_RECORDING_REQUEST_DECODER.correlationId())
-            .append(", recordingId=").append(PURGE_RECORDING_REQUEST_DECODER.recordingId());
+            .append(" correlationId=").append(PURGE_RECORDING_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(PURGE_RECORDING_REQUEST_DECODER.recordingId());
     }
 }

@@ -70,6 +70,8 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE = 45,
     AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED = 46,
     AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED = 47,
+    AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_ADDED = 48,
+    AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_REMOVED = 49,
 
     // C-specific events. Note: event IDs are dynamic to avoid gaps in the sparse arrays.
     AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR,
@@ -150,6 +152,17 @@ typedef struct aeron_driver_agent_dynamic_event_header_stct
 }
 aeron_driver_agent_dynamic_event_header_t;
 
+typedef struct aeron_driver_agent_flow_control_receiver_change_log_header_stct
+{
+    int64_t time_ns;
+    int64_t receiver_id;
+    int32_t session_id;
+    int32_t stream_id;
+    int32_t channel_length;
+    int32_t receiver_count;
+}
+aeron_driver_agent_flow_control_receiver_change_log_header_t;
+
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
@@ -220,5 +233,21 @@ void aeron_driver_agent_receiver_proxy_on_remove_endpoint(const void *channel);
 int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_dissector_func_t func);
 
 void aeron_driver_agent_log_dynamic_event(int64_t index, const void *message, size_t length);
+
+void aeron_driver_agent_flow_control_on_receiver_added(
+    int64_t receiver_id,
+    int32_t session_id,
+    int32_t stream_id,
+    size_t channel_length,
+    const char *channel,
+    size_t receiver_count);
+
+void aeron_driver_agent_flow_control_on_receiver_removed(
+    int64_t receiver_id,
+    int32_t session_id,
+    int32_t stream_id,
+    size_t channel_length,
+    const char *channel,
+    size_t receiver_count);
 
 #endif //AERON_DRIVER_AGENT_H

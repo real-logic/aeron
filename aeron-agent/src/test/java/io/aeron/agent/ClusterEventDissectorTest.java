@@ -50,9 +50,9 @@ class ClusterEventDissectorTest
 
         ClusterEventDissector.dissectNewLeadershipTerm(buffer, 0, builder);
 
-        assertEquals("[33.0] " + CONTEXT + ": " + NEW_LEADERSHIP_TERM.name() + " [8/9]: logLeadershipTermId=1," +
-            " logTruncatePosition=2, leadershipTermId=3, termBaseLogPosition=4, logPosition=5, leaderRecordingId=6, " +
-            "timestamp=7, leaderMemberId=100, logSessionId=200, isStartup=true",
+        assertEquals("[33.0] " + CONTEXT + ": " + NEW_LEADERSHIP_TERM.name() +
+            " [8/9]: logLeadershipTermId=1 logTruncatePosition=2 leadershipTermId=3 termBaseLogPosition=4 " +
+            "logPosition=5 leaderRecordingId=6 timestamp=7 leaderMemberId=100 logSessionId=200 isStartup=true",
             builder.toString());
     }
 
@@ -65,7 +65,7 @@ class ClusterEventDissectorTest
 
         ClusterEventDissector.dissectStateChange(ELECTION_STATE_CHANGE, buffer, 0, builder);
 
-        assertEquals("[-1.0] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: memberId=42, a -> b",
+        assertEquals("[-1.0] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: memberId=42 a -> b",
             builder.toString());
     }
 }

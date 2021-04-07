@@ -958,6 +958,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->name_resolution_on_neighbor_added_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;
     _context->name_resolution_on_neighbor_removed_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;
 
+    _context->flow_control_on_receiver_added_func = NULL;
+    _context->flow_control_on_receiver_removed_func = NULL;
+
     if ((_context->termination_validator_func = aeron_driver_termination_validator_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_DRIVER_TERMINATION_VALIDATOR_ENV_VAR, "deny"))) == NULL)
     {

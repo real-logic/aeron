@@ -54,11 +54,11 @@ class ArchiveEventDissectorTest
 
         assertEquals("[1.25] " + CONTEXT + ": " + CMD_OUT_RESPONSE.name() + " [100/100]: " +
             "controlSessionId=13" +
-            ", correlationId=42" +
-            ", relevantId=8" +
-            ", code=" + NULL_VAL +
-            ", version=111" +
-            ", errorMessage=the %ERR% msg",
+            " correlationId=42" +
+            " relevantId=8" +
+            " code=" + NULL_VAL +
+            " version=111" +
+            " errorMessage=the %ERR% msg",
             builder.toString());
     }
 
@@ -77,9 +77,9 @@ class ArchiveEventDissectorTest
 
         assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_CONNECT.name() + " [32/64]: " +
             "correlationId=88" +
-            ", responseStreamId=42" +
-            ", version=-10" +
-            ", responseChannel=call me maybe",
+            " responseStreamId=42" +
+            " version=-10" +
+            " responseChannel=call me maybe",
             builder.toString());
     }
 
@@ -113,10 +113,10 @@ class ArchiveEventDissectorTest
 
         assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_START_RECORDING.name() + " [32/64]:" +
             " controlSessionId=5" +
-            ", correlationId=13" +
-            ", streamId=7" +
-            ", sourceLocation=" + SourceLocation.REMOTE +
-            ", channel=foo",
+            " correlationId=13" +
+            " streamId=7" +
+            " sourceLocation=" + SourceLocation.REMOTE +
+            " channel=foo",
             builder.toString());
     }
 
@@ -137,11 +137,11 @@ class ArchiveEventDissectorTest
 
         assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_START_RECORDING2.name() + " [32/64]:" +
             " controlSessionId=5" +
-            ", correlationId=13" +
-            ", streamId=7" +
-            ", sourceLocation=" + SourceLocation.REMOTE +
-            ", autoStop=" + BooleanType.TRUE +
-            ", channel=foo",
+            " correlationId=13" +
+            " streamId=7" +
+            " sourceLocation=" + SourceLocation.REMOTE +
+            " autoStop=" + BooleanType.TRUE +
+            " channel=foo",
             builder.toString());
     }
 
@@ -160,9 +160,9 @@ class ArchiveEventDissectorTest
 
         assertEquals("[5.6] " + CONTEXT + ": " + CMD_IN_STOP_RECORDING.name() + " [32/64]:" +
             " controlSessionId=5" +
-            ", correlationId=42" +
-            ", streamId=7" +
-            ", channel=bar",
+            " correlationId=42" +
+            " streamId=7" +
+            " channel=bar",
             builder.toString());
     }
 
@@ -184,12 +184,12 @@ class ArchiveEventDissectorTest
 
         assertEquals("[1.125] " + CONTEXT + ": " + CMD_IN_REPLAY.name() + " [90/90]:" +
             " controlSessionId=5" +
-            ", correlationId=42" +
-            ", recordingId=178" +
-            ", position=" + Long.MAX_VALUE +
-            ", length=2000" +
-            ", replayStreamId=99" +
-            ", replayChannel=replay channel",
+            " correlationId=42" +
+            " recordingId=178" +
+            " position=" + Long.MAX_VALUE +
+            " length=2000" +
+            " replayStreamId=99" +
+            " replayChannel=replay channel",
             builder.toString());
     }
 
@@ -207,8 +207,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[1.125] " + CONTEXT + ": " + CMD_IN_STOP_REPLAY.name() + " [90/90]:" +
             " controlSessionId=5" +
-            ", correlationId=42" +
-            ", replaySessionId=66",
+            " correlationId=42" +
+            " replaySessionId=66",
             builder.toString());
     }
 
@@ -227,9 +227,9 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.1] " + CONTEXT + ": " + CMD_IN_LIST_RECORDINGS.name() + " [32/32]:" +
             " controlSessionId=9" +
-            ", correlationId=78" +
-            ", fromRecordingId=45" +
-            ", recordCount=10",
+            " correlationId=78" +
+            " fromRecordingId=45" +
+            " recordCount=10",
             builder.toString());
     }
 
@@ -250,11 +250,11 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.1] " + CONTEXT + ": " + CMD_IN_LIST_RECORDINGS_FOR_URI.name() + " [32/32]:" +
             " controlSessionId=9" +
-            ", correlationId=78" +
-            ", fromRecordingId=45" +
-            ", recordCount=10" +
-            ", streamId=200" +
-            ", channel=CH",
+            " correlationId=78" +
+            " fromRecordingId=45" +
+            " recordCount=10" +
+            " streamId=200" +
+            " channel=CH",
             builder.toString());
     }
 
@@ -272,8 +272,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.1] " + CONTEXT + ": " + CMD_IN_LIST_RECORDING.name() + " [32/32]:" +
             " controlSessionId=19" +
-            ", correlationId=178" +
-            ", recordingId=1010101",
+            " correlationId=178" +
+            " recordingId=1010101",
             builder.toString());
     }
 
@@ -294,11 +294,11 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_EXTEND_RECORDING.name() + " [12/32]:" +
             " controlSessionId=9" +
-            ", correlationId=78" +
-            ", recordingId=1010101" +
-            ", streamId=43" +
-            ", sourceLocation=" + SourceLocation.LOCAL +
-            ", channel=extend me",
+            " correlationId=78" +
+            " recordingId=1010101" +
+            " streamId=43" +
+            " sourceLocation=" + SourceLocation.LOCAL +
+            " channel=extend me",
             builder.toString());
     }
 
@@ -320,12 +320,12 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_EXTEND_RECORDING2.name() + " [12/32]:" +
             " controlSessionId=9" +
-            ", correlationId=78" +
-            ", recordingId=1010101" +
-            ", streamId=43" +
-            ", sourceLocation=" + SourceLocation.LOCAL +
-            ", autoStop=" + BooleanType.TRUE +
-            ", channel=extend me",
+            " correlationId=78" +
+            " recordingId=1010101" +
+            " streamId=43" +
+            " sourceLocation=" + SourceLocation.LOCAL +
+            " autoStop=" + BooleanType.TRUE +
+            " channel=extend me",
             builder.toString());
     }
 
@@ -343,8 +343,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_RECORDING_POSITION.name() + " [12/32]:" +
             " controlSessionId=2" +
-            ", correlationId=3" +
-            ", recordingId=6",
+            " correlationId=3" +
+            " recordingId=6",
             builder.toString());
     }
 
@@ -363,9 +363,9 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_TRUNCATE_RECORDING.name() + " [12/32]:" +
             " controlSessionId=2" +
-            ", correlationId=3" +
-            ", recordingId=8" +
-            ", position=1000000",
+            " correlationId=3" +
+            " recordingId=8" +
+            " position=1000000",
             builder.toString());
     }
 
@@ -383,8 +383,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_STOP_RECORDING_SUBSCRIPTION.name() + " [12/32]:" +
             " controlSessionId=22" +
-            ", correlationId=33" +
-            ", subscriptionId=888",
+            " correlationId=33" +
+            " subscriptionId=888",
             builder.toString());
     }
 
@@ -402,8 +402,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_STOP_RECORDING_BY_IDENTITY.name() + " [12/32]:" +
             " controlSessionId=22" +
-            ", correlationId=33" +
-            ", recordingId=777",
+            " correlationId=33" +
+            " recordingId=777",
             builder.toString());
     }
 
@@ -421,8 +421,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.0] " + CONTEXT + ": " + CMD_IN_STOP_POSITION.name() + " [12/32]:" +
             " controlSessionId=22" +
-            ", correlationId=33" +
-            ", recordingId=44",
+            " correlationId=33" +
+            " recordingId=44",
             builder.toString());
     }
 
@@ -443,11 +443,11 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.325] " + CONTEXT + ": " + CMD_IN_FIND_LAST_MATCHING_RECORD.name() + " [90/90]:" +
             " controlSessionId=1" +
-            ", correlationId=2" +
-            ", minRecordingId=3" +
-            ", sessionId=4" +
-            ", streamId=5" +
-            ", channel=this is a channel",
+            " correlationId=2" +
+            " minRecordingId=3" +
+            " sessionId=4" +
+            " streamId=5" +
+            " channel=this is a channel",
             builder.toString());
     }
 
@@ -469,12 +469,12 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.325] " + CONTEXT + ": " + CMD_IN_LIST_RECORDING_SUBSCRIPTIONS.name() + " [90/90]:" +
             " controlSessionId=1" +
-            ", correlationId=2" +
-            ", pseudoIndex=1111111" +
-            ", applyStreamId=" + BooleanType.TRUE +
-            ", subscriptionCount=777" +
-            ", streamId=555" +
-            ", channel=ch2",
+            " correlationId=2" +
+            " pseudoIndex=1111111" +
+            " applyStreamId=" + BooleanType.TRUE +
+            " subscriptionCount=777" +
+            " streamId=555" +
+            " channel=ch2",
             builder.toString());
     }
 
@@ -497,13 +497,13 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.325] " + CONTEXT + ": " + CMD_IN_START_BOUNDED_REPLAY.name() + " [90/90]:" +
             " controlSessionId=10" +
-            ", correlationId=20" +
-            ", recordingId=30" +
-            ", position=40" +
-            ", length=50" +
-            ", limitCounterId=-123" +
-            ", replayStreamId=14" +
-            ", replayChannel=rep ch",
+            " correlationId=20" +
+            " recordingId=30" +
+            " position=40" +
+            " length=50" +
+            " limitCounterId=-123" +
+            " replayStreamId=14" +
+            " replayChannel=rep ch",
             builder.toString());
     }
 
@@ -521,8 +521,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[10.325] " + CONTEXT + ": " + CMD_IN_STOP_ALL_REPLAYS.name() + " [90/90]:" +
             " controlSessionId=10" +
-            ", correlationId=20" +
-            ", recordingId=30",
+            " correlationId=20" +
+            " recordingId=30",
             builder.toString());
     }
 
@@ -544,12 +544,12 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_REPLICATE.name() + " [1000/1000]:" +
             " controlSessionId=2" +
-            ", correlationId=5" +
-            ", srcRecordingId=17" +
-            ", dstRecordingId=2048" +
-            ", srcControlStreamId=10" +
-            ", srcControlChannel=CTRL ch" +
-            ", liveDestination=live destination",
+            " correlationId=5" +
+            " srcRecordingId=17" +
+            " dstRecordingId=2048" +
+            " srcControlStreamId=10" +
+            " srcControlChannel=CTRL ch" +
+            " liveDestination=live destination",
             builder.toString());
     }
 
@@ -567,8 +567,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_STOP_REPLICATION.name() + " [1000/1000]:" +
             " controlSessionId=-2" +
-            ", correlationId=-5" +
-            ", replicationId=-999",
+            " correlationId=-5" +
+            " replicationId=-999",
             builder.toString());
     }
 
@@ -586,8 +586,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_START_POSITION.name() + " [1000/1000]:" +
             " controlSessionId=3" +
-            ", correlationId=16" +
-            ", recordingId=1",
+            " correlationId=16" +
+            " recordingId=1",
             builder.toString());
     }
 
@@ -605,8 +605,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_DETACH_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=3" +
-            ", correlationId=16" +
-            ", recordingId=1",
+            " correlationId=16" +
+            " recordingId=1",
             builder.toString());
     }
 
@@ -624,8 +624,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_DELETE_DETACHED_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=53" +
-            ", correlationId=516" +
-            ", recordingId=51",
+            " correlationId=516" +
+            " recordingId=51",
             builder.toString());
     }
 
@@ -644,9 +644,9 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_PURGE_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=3" +
-            ", correlationId=56" +
-            ", recordingId=15" +
-            ", newStartPosition=100",
+            " correlationId=56" +
+            " recordingId=15" +
+            " newStartPosition=100",
             builder.toString());
     }
 
@@ -664,8 +664,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_ATTACH_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=30" +
-            ", correlationId=560" +
-            ", recordingId=50",
+            " correlationId=560" +
+            " recordingId=50",
             builder.toString());
     }
 
@@ -684,9 +684,9 @@ class ArchiveEventDissectorTest
 
         assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_MIGRATE_SEGMENTS.name() + " [1000/1000]:" +
             " controlSessionId=7" +
-            ", correlationId=6" +
-            ", srcRecordingId=1" +
-            ", dstRecordingId=21902",
+            " correlationId=6" +
+            " srcRecordingId=1" +
+            " dstRecordingId=21902",
             builder.toString());
     }
 
@@ -706,10 +706,10 @@ class ArchiveEventDissectorTest
 
         assertEquals("[5.5] " + CONTEXT + ": " + CMD_IN_AUTH_CONNECT.name() + " [3/6]:" +
             " correlationId=16" +
-            ", responseStreamId=19" +
-            ", version=2" +
-            ", responseChannel=English Channel" +
-            ", encodedCredentialsLength=5",
+            " responseStreamId=19" +
+            " version=2" +
+            " responseChannel=English Channel" +
+            " encodedCredentialsLength=5",
             builder.toString());
     }
 
@@ -726,7 +726,7 @@ class ArchiveEventDissectorTest
 
         assertEquals("[5.5] " + CONTEXT + ": " + CMD_IN_KEEP_ALIVE.name() + " [3/6]:" +
             " controlSessionId=31" +
-            ", correlationId=119",
+            " correlationId=119",
             builder.toString());
     }
 
@@ -750,14 +750,14 @@ class ArchiveEventDissectorTest
 
         assertEquals("[5.5] " + CONTEXT + ": " + CMD_IN_TAGGED_REPLICATE.name() + " [3/6]:" +
             " controlSessionId=1" +
-            ", correlationId=-10" +
-            ", srcRecordingId=9" +
-            ", dstRecordingId=31" +
-            ", channelTagId=4" +
-            ", subscriptionTagId=7" +
-            ", srcControlStreamId=15" +
-            ", srcControlChannel=src" +
-            ", liveDestination=alive and well",
+            " correlationId=-10" +
+            " srcRecordingId=9" +
+            " dstRecordingId=31" +
+            " channelTagId=4" +
+            " subscriptionTagId=7" +
+            " srcControlStreamId=15" +
+            " srcControlChannel=src" +
+            " liveDestination=alive and well",
             builder.toString());
     }
 
@@ -784,7 +784,7 @@ class ArchiveEventDissectorTest
 
         assertEquals("[1.5] " + CONTEXT + ": " + REPLICATION_SESSION_STATE_CHANGE.name() + " [10/20]:" +
             " replicationId=10000000000" +
-            ", x -> y",
+            " x -> y",
             builder.toString());
     }
 
@@ -799,7 +799,7 @@ class ArchiveEventDissectorTest
 
         assertEquals("[1.5] " + CONTEXT + ": " + CONTROL_SESSION_STATE_CHANGE.name() + " [10/20]:" +
             " controlSessionId=-10000000000" +
-            ", x -> y",
+            " x -> y",
             builder.toString());
     }
 
@@ -814,7 +814,7 @@ class ArchiveEventDissectorTest
         dissectReplaySessionError(buffer, 0, builder);
 
         assertEquals("[5.6] " + CONTEXT + ": " + REPLAY_SESSION_ERROR.name() + " [6/100]:" +
-            " sessionId=-8, recordingId=42, errorMessage=something went wrong",
+            " sessionId=-8 recordingId=42 errorMessage=something went wrong",
             builder.toString());
     }
 
@@ -848,8 +848,8 @@ class ArchiveEventDissectorTest
 
         assertEquals("[1.125] " + CONTEXT + ": " + CMD_IN_PURGE_RECORDING.name() + " [56/901]:" +
             " controlSessionId=15" +
-            ", correlationId=421" +
-            ", recordingId=6",
+            " correlationId=421" +
+            " recordingId=6",
             builder.toString());
     }
 

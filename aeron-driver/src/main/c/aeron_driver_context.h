@@ -64,6 +64,14 @@ aeron_driver_context_bindings_clientd_entry_t;
 
 typedef void (*aeron_driver_name_resolver_on_neighbor_change_func_t)(const struct sockaddr_storage *addr);
 
+typedef void (*aeron_driver_flow_control_strategy_on_receiver_change_func_t)(
+    int64_t receiver_id,
+    int32_t session_id,
+    int32_t stream_id,
+    size_t channel_length,
+    const char *channel,
+    size_t receiver_count);
+
 typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                                        /* aeron.dir */
@@ -213,6 +221,9 @@ typedef struct aeron_driver_context_stct
 
     aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_added_func;
     aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_removed_func;
+
+    aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_added_func;
+    aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_removed_func;
 
     aeron_driver_termination_validator_func_t termination_validator_func;
     void *termination_validator_state;

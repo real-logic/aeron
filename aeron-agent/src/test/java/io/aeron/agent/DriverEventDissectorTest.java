@@ -54,7 +54,7 @@ class DriverEventDissectorTest
         DriverEventDissector.dissectRemovePublicationCleanup(buffer, offset, builder);
 
         assertEquals("[2.5] " + CONTEXT + ": " + REMOVE_PUBLICATION_CLEANUP.name() +
-            " [22/88]: sessionId=42, streamId=11, uri=channel uri",
+            " [22/88]: sessionId=42 streamId=11 channel=channel uri",
             builder.toString());
     }
 
@@ -70,7 +70,7 @@ class DriverEventDissectorTest
         DriverEventDissector.dissectRemoveSubscriptionCleanup(buffer, offset, builder);
 
         assertEquals("[0.1] " + CONTEXT + ": " + REMOVE_SUBSCRIPTION_CLEANUP.name() +
-            " [100/100]: streamId=33, id=111111111111, uri=test",
+            " [100/100]: streamId=33 id=111111111111 channel=test",
             builder.toString());
     }
 
@@ -87,7 +87,7 @@ class DriverEventDissectorTest
         DriverEventDissector.dissectRemoveImageCleanup(buffer, offset, builder);
 
         assertEquals("[12.3456789] " + CONTEXT + ": " + REMOVE_IMAGE_CLEANUP.name() +
-            " [66/99]: sessionId=77, streamId=55, id=1000000, uri=URI",
+            " [66/99]: sessionId=77 streamId=55 id=1000000 channel=URI",
             builder.toString());
     }
 
@@ -576,7 +576,7 @@ class DriverEventDissectorTest
         DriverEventDissector.dissectUntetheredSubscriptionStateChange(buffer, offset, builder);
 
         assertEquals("[1.5] " + CONTEXT + ": " + UNTETHERED_SUBSCRIPTION_STATE_CHANGE.name() +
-            " [22/88]: subscriptionId=88, streamId=123, sessionId=777, state changed",
+            " [22/88]: subscriptionId=88 streamId=123 sessionId=777 state changed",
             builder.toString());
     }
 
@@ -592,6 +592,24 @@ class DriverEventDissectorTest
 
         assertEquals("[2.5] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOR_ADDED.name() +
             " [17/27]: 127.0.0.1:4848", builder.toString());
+    }
+
+    @Test
+    void dissectFlowControlReceiver()
+    {
+        final int offset = 24;
+        internalEncodeLogHeader(buffer, offset, 42, 48, () -> 2_500_000_000L);
+        buffer.putInt(offset + LOG_HEADER_LENGTH, 5, LITTLE_ENDIAN);
+        buffer.putLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, -45754449919191L, LITTLE_ENDIAN);
+        buffer.putInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, 11, LITTLE_ENDIAN);
+        buffer.putInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, 4, LITTLE_ENDIAN);
+        buffer.putStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 3 + SIZE_OF_LONG, "ABC");
+
+        DriverEventDissector.dissectFlowControlReceiver(FLOW_CONTROL_RECEIVER_ADDED, buffer, offset, builder);
+
+        assertEquals("[2.5] " + CONTEXT + ": " + FLOW_CONTROL_RECEIVER_ADDED.name() +
+            " [42/48]: receiverCount=5 receiverId=-45754449919191 sessionId=11 streamId=4 channel=ABC",
+            builder.toString());
     }
 
     private DirectBuffer newBuffer(final byte[] bytes)

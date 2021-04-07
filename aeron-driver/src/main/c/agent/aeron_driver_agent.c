@@ -123,6 +123,8 @@ static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NU
         { "UNTETHERED_SUBSCRIPTION_STATE_CHANGE", AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "NAME_RESOLUTION_NEIGHBOR_ADDED",       AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "NAME_RESOLUTION_NEIGHBOR_REMOVED",     AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "FLOW_CONTROL_RECEIVER_ADDED",          AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "FLOW_CONTROL_RECEIVER_REMOVED",        AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "ADD_DYNAMIC_DISSECTOR",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
     };
@@ -816,6 +818,74 @@ void aeron_driver_agent_name_resolution_on_neighbor_removed(const struct sockadd
     log_name_resolution_neighbor_change(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED, addr);
 }
 
+void log_flow_control_on_receiver_change(
+    const aeron_driver_agent_event_t event_id,
+    const int64_t receiver_id,
+    const int32_t session_id,
+    const int32_t stream_id,
+    const size_t channel_length,
+    const char *channel,
+    const size_t receiver_count)
+{
+    int32_t offset = aeron_mpsc_rb_try_claim(
+        &logging_mpsc_rb,
+        event_id,
+        sizeof(aeron_driver_agent_flow_control_receiver_change_log_header_t) + channel_length);
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_flow_control_receiver_change_log_header_t *hdr =
+            (aeron_driver_agent_flow_control_receiver_change_log_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        hdr->receiver_id = receiver_id;
+        hdr->session_id = session_id;
+        hdr->stream_id = stream_id;
+        hdr->channel_length = (int32_t)channel_length;
+        hdr->receiver_count = (int32_t)receiver_count;
+
+        memcpy(ptr + sizeof(aeron_driver_agent_flow_control_receiver_change_log_header_t), channel, channel_length);
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
+}
+
+void aeron_driver_agent_flow_control_on_receiver_added(
+    int64_t receiver_id,
+    int32_t session_id,
+    int32_t stream_id,
+    size_t channel_length,
+    const char *channel,
+    size_t receiver_count)
+{
+    log_flow_control_on_receiver_change(
+        AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_ADDED,
+        receiver_id,
+        session_id,
+        stream_id,
+        channel_length,
+        channel,
+        receiver_count);
+}
+
+void aeron_driver_agent_flow_control_on_receiver_removed(
+    int64_t receiver_id,
+    int32_t session_id,
+    int32_t stream_id,
+    size_t channel_length,
+    const char *channel,
+    size_t receiver_count)
+{
+    log_flow_control_on_receiver_change(
+        AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_REMOVED,
+        receiver_id,
+        session_id,
+        stream_id,
+        channel_length,
+        channel,
+        receiver_count);
+}
+
 int aeron_driver_agent_interceptor_init(
     void **interceptor_state, aeron_driver_context_t *context, aeron_udp_channel_transport_affinity_t affinity)
 {
@@ -960,6 +1030,16 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED))
     {
         context->name_resolution_on_neighbor_removed_func = aeron_driver_agent_name_resolution_on_neighbor_removed;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_ADDED))
+    {
+        context->flow_control_on_receiver_added_func = aeron_driver_agent_flow_control_on_receiver_added;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_REMOVED))
+    {
+        context->flow_control_on_receiver_removed_func = aeron_driver_agent_flow_control_on_receiver_removed;
     }
 
     return 0;
@@ -1615,7 +1695,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
             fprintf(
                 logfp,
-                "%s: sessionId=%d, streamId=%d, uri=%.*s\n",
+                "%s: sessionId=%d streamId=%d channel=%.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->session_id,
                 hdr->stream_id,
@@ -1630,7 +1710,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
             fprintf(
                 logfp,
-                "%s: streamId=%d, id=%" PRId64 ", uri=%.*s\n",
+                "%s: streamId=%d id=%" PRId64 " channel=%.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->stream_id,
                 hdr->id,
@@ -1645,7 +1725,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *channel = (const char *)message + sizeof(aeron_driver_agent_remove_resource_cleanup_t);
             fprintf(
                 logfp,
-                "%s: sessionId=%d, streamId=%d, id=%" PRId64 ", uri=%.*s\n",
+                "%s: sessionId=%d streamId=%d id=%" PRId64 " channel=%.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->session_id,
                 hdr->stream_id,
@@ -1678,7 +1758,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
             fprintf(
                 logfp,
-                "%s: subscriptionId=%" PRId64 ", streamId=%d, sessionId=%d, %s -> %s\n",
+                "%s: subscriptionId=%" PRId64 " streamId=%d sessionId=%d %s -> %s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 hdr->subscription_id,
                 hdr->stream_id,
@@ -1703,6 +1783,25 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 dissect_sockaddr(addr));
             break;
         }
+
+        case AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_ADDED:
+        case AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_REMOVED:
+        {
+            aeron_driver_agent_flow_control_receiver_change_log_header_t *hdr = (aeron_driver_agent_flow_control_receiver_change_log_header_t *)message;
+            const char *channel = (const char *)message + sizeof(aeron_driver_agent_flow_control_receiver_change_log_header_t);
+            fprintf(
+                logfp,
+                "%s: receiverCount=%d receiverId=%" PRId64 " sessionId=%d streamId=%d channel=%.*s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                hdr->receiver_count,
+                hdr->receiver_id,
+                hdr->session_id,
+                hdr->stream_id,
+                hdr->channel_length,
+                channel);
+            break;
+        }
+
         case AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR:
         {
             aeron_driver_agent_add_dissector_header_t *hdr = (aeron_driver_agent_add_dissector_header_t *)message;

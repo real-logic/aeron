@@ -36,6 +36,8 @@ typedef struct aeron_min_flow_control_strategy_receiver_stct
     int64_t last_position_plus_window;
     int64_t time_of_last_status_message_ns;
     int64_t receiver_id;
+    int32_t session_id;
+    int32_t stream_id;
     uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 }
 aeron_min_flow_control_strategy_receiver_t;
@@ -53,7 +55,12 @@ typedef struct aeron_min_flow_control_strategy_state_stct
     int64_t receiver_timeout_ns;
     int32_t group_min_size;
     int64_t group_tag;
+    char channel[AERON_MAX_PATH];
+    size_t channel_length;
     aeron_distinct_error_log_t *error_log;
+
+    aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_added;
+    aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_removed;
 }
 aeron_min_flow_control_strategy_state_t;
 
@@ -78,8 +85,9 @@ int64_t aeron_min_flow_control_strategy_on_idle(
 {
     aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
     int64_t min_limit_position = INT64_MAX;
+    size_t receiver_count = strategy_state->receivers.length;
 
-    for (int last_index = (int)strategy_state->receivers.length - 1, i = last_index; i >= 0; i--)
+    for (int last_index = (int)receiver_count - 1, i = last_index; i >= 0; i--)
     {
         aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[i];
 
@@ -91,7 +99,19 @@ int64_t aeron_min_flow_control_strategy_on_idle(
                 (size_t)i,
                 (size_t)last_index);
             last_index--;
-            aeron_min_flow_control_strategy_state_set_length(strategy_state, strategy_state->receivers.length - 1);
+            receiver_count--;
+            aeron_min_flow_control_strategy_state_set_length(strategy_state, receiver_count);
+            aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_removed = strategy_state->receiver_removed;
+            if (NULL != receiver_removed)
+            {
+                receiver_removed(
+                    receiver->receiver_id,
+                    receiver->session_id,
+                    receiver->stream_id,
+                    strategy_state->channel_length,
+                    strategy_state->channel,
+                    receiver_count);
+            }
         }
         else
         {
@@ -146,7 +166,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
     {
         int ensure_capacity_result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(
-            ensure_capacity_result,strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t);
+            ensure_capacity_result, strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t);
 
         if (ensure_capacity_result >= 0)
         {
@@ -158,8 +178,22 @@ int64_t aeron_min_flow_control_strategy_process_sm(
             receiver->last_position_plus_window = position + window_length;
             receiver->time_of_last_status_message_ns = now_ns;
             receiver->receiver_id = receiver_id;
+            receiver->session_id = status_message_header->session_id;
+            receiver->stream_id = status_message_header->stream_id;
 
             min_position = (position + window_length) < min_position ? (position + window_length) : min_position;
+
+            aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_added = strategy_state->receiver_added;
+            if (NULL != receiver_added)
+            {
+                receiver_added(
+                    receiver->receiver_id,
+                    receiver->session_id,
+                    receiver->stream_id,
+                    strategy_state->channel_length,
+                    strategy_state->channel,
+                    receivers_length + 1);
+            }
         }
         else
         {
@@ -297,6 +331,9 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     state->receivers.capacity = 0;
     aeron_min_flow_control_strategy_state_set_length(state, 0);
 
+    state->channel_length = channel->uri_length;
+    strncpy(state->channel, channel->original_uri, state->channel_length);
+
     state->receiver_timeout_ns = options.timeout_ns.is_present ?
         options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
     state->group_min_size = options.group_min_size.is_present ?
@@ -304,6 +341,9 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     state->group_tag = options.group_tag.is_present ? options.group_tag.value : context->flow_control.group_tag;
 
     state->error_log = context->error_log;
+
+    state->receiver_added = context->flow_control_on_receiver_added_func;
+    state->receiver_removed = context->flow_control_on_receiver_removed_func;
 
     *strategy = _strategy;
 

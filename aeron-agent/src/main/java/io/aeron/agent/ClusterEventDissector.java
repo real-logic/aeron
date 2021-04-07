@@ -67,15 +67,15 @@ final class ClusterEventDissector
         final boolean isStartup = 1 == buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
 
         builder.append(": logLeadershipTermId=").append(logLeadershipTermId)
-            .append(", logTruncatePosition=").append(logTruncatePosition)
-            .append(", leadershipTermId=").append(leadershipTermId)
-            .append(", termBaseLogPosition=").append(termBaseLogPosition)
-            .append(", logPosition=").append(logPosition)
-            .append(", leaderRecordingId=").append(leaderRecordingId)
-            .append(", timestamp=").append(timestamp)
-            .append(", leaderMemberId=").append(leaderMemberId)
-            .append(", logSessionId=").append(logSessionId)
-            .append(", isStartup=").append(isStartup);
+            .append(" logTruncatePosition=").append(logTruncatePosition)
+            .append(" leadershipTermId=").append(leadershipTermId)
+            .append(" termBaseLogPosition=").append(termBaseLogPosition)
+            .append(" logPosition=").append(logPosition)
+            .append(" leaderRecordingId=").append(leaderRecordingId)
+            .append(" timestamp=").append(timestamp)
+            .append(" leaderMemberId=").append(leaderMemberId)
+            .append(" logSessionId=").append(logSessionId)
+            .append(" isStartup=").append(isStartup);
     }
 
     static void dissectStateChange(
@@ -91,7 +91,7 @@ final class ClusterEventDissector
         absoluteOffset += SIZE_OF_INT;
 
         builder.append(": memberId=").append(memberId);
-        builder.append(", ");
+        builder.append(' ');
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -109,12 +109,11 @@ final class ClusterEventDissector
         final long logPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
         final int followerMemberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_INT;
 
         builder.append(": logLeadershipTermId=").append(logLeadershipTermId);
-        builder.append(", ");
+        builder.append(' ');
         builder.append(" logPosition=").append(logPosition);
-        builder.append(", ");
+        builder.append(' ');
         builder.append(" followerMemberId=").append(followerMemberId);
     }
 
@@ -134,14 +133,13 @@ final class ClusterEventDissector
         final long candidateTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
         final int candidateId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_INT;
 
         builder.append(": logLeadershipTermId=").append(logLeadershipTermId);
-        builder.append(", ");
+        builder.append(' ');
         builder.append(" logPosition=").append(logPosition);
-        builder.append(", ");
+        builder.append(' ');
         builder.append(" candidateTermId=").append(candidateTermId);
-        builder.append(", ");
+        builder.append(' ');
         builder.append(" candidateId=").append(candidateId);
     }
 }

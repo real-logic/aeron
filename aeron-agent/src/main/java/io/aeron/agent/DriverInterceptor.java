@@ -19,8 +19,7 @@ import net.bytebuddy.asm.Advice;
 
 import java.net.InetSocketAddress;
 
-import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOR_ADDED;
-import static io.aeron.agent.DriverEventCode.NAME_RESOLUTION_NEIGHBOR_REMOVED;
+import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 
 class DriverInterceptor
@@ -35,18 +34,57 @@ class DriverInterceptor
         }
     }
 
-    static class Neighbour
+    static class NameResolution
     {
-        @Advice.OnMethodEnter
-        static void neighborAdded(final long nowMs, final InetSocketAddress address)
+        static class NeighborAdded
         {
-            LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOR_ADDED, address);
+            @Advice.OnMethodEnter
+            static void neighborAdded(final long nowMs, final InetSocketAddress address)
+            {
+                LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOR_ADDED, address);
+            }
         }
 
-        @Advice.OnMethodEnter
-        static void neighborRemoved(final long nowMs, final InetSocketAddress address)
+        static class NeighborRemoved
         {
-            LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOR_REMOVED, address);
+            @Advice.OnMethodEnter
+            static void neighborRemoved(final long nowMs, final InetSocketAddress address)
+            {
+                LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOR_REMOVED, address);
+            }
+        }
+    }
+
+    static class FlowControl
+    {
+        static class ReceiverAdded
+        {
+            @Advice.OnMethodEnter
+            static void receiverAdded(
+                final long receiverId,
+                final int sessionId,
+                final int streamId,
+                final String channel,
+                final int receiverCount)
+            {
+                LOGGER.logFlowControlReceiver(
+                    FLOW_CONTROL_RECEIVER_ADDED, receiverId, sessionId, streamId, channel, receiverCount);
+            }
+        }
+
+        static class ReceiverRemoved
+        {
+            @Advice.OnMethodEnter
+            static void receiverRemoved(
+                final long receiverId,
+                final int sessionId,
+                final int streamId,
+                final String channel,
+                final int receiverCount)
+            {
+                LOGGER.logFlowControlReceiver(
+                    FLOW_CONTROL_RECEIVER_REMOVED, receiverId, sessionId, streamId, channel, receiverCount);
+            }
         }
     }
 }

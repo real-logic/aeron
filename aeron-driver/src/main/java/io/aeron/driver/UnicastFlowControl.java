@@ -73,4 +73,12 @@ public class UnicastFlowControl implements FlowControl
     {
         return senderLimit;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean hasRequiredReceivers()
+    {
+        return true;
+    }
 }

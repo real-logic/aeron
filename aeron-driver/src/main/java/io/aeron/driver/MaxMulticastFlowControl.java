@@ -78,4 +78,13 @@ public class MaxMulticastFlowControl implements FlowControl
     {
         return senderLimit;
     }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean hasRequiredReceivers()
+    {
+        return true;
+    }
 }

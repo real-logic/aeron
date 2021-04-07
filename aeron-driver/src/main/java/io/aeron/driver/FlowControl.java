@@ -71,8 +71,5 @@ public interface FlowControl
      *
      * @return true if the required group of receivers are connected, otherwise false.
      */
-    default boolean hasRequiredReceivers()
-    {
-        return true;
-    }
+    boolean hasRequiredReceivers();
 }

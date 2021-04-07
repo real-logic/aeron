@@ -38,12 +38,13 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
 {
     static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
 
+    private volatile boolean hasRequiredReceivers;
     private final boolean isGroupTagAware;
     private long receiverTimeoutNs;
     private long groupTag;
     private int groupMinSize;
     private String channel;
-    private volatile Receiver[] receivers = EMPTY_RECEIVERS;
+    private Receiver[] receivers = EMPTY_RECEIVERS;
 
     /**
      * Base constructor for use by specialised implementations.
@@ -70,6 +71,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         channel = udpChannel.originalUriString();
 
         parseUriParam(udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME));
+        hasRequiredReceivers = receivers.length >= groupMinSize;
     }
 
     /**
@@ -103,6 +105,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         if (removed > 0)
         {
             receivers = truncateReceivers(receivers, removed);
+            hasRequiredReceivers = receivers.length >= groupMinSize;
             this.receivers = receivers;
         }
 
@@ -116,7 +119,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
      */
     public boolean hasRequiredReceivers()
     {
-        return receivers.length >= groupMinSize;
+        return hasRequiredReceivers;
     }
 
     /**
@@ -170,6 +173,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
             final Receiver receiver = new Receiver(
                 receiverId, flyweight.sessionId(), flyweight.streamId(), position, lastPositionPlusWindow, timeNs);
             receivers = add(receivers, receiver);
+            hasRequiredReceivers = receivers.length >= groupMinSize;
             this.receivers = receivers;
             minPosition = Math.min(minPosition, lastPositionPlusWindow);
             receiverAdded(receiver.receiverId, receiver.sessionId, receiver.streamId, channel, receivers.length);
@@ -292,9 +296,9 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
 
     static class Receiver
     {
-        final long receiverId;
         final int sessionId;
         final int streamId;
+        final long receiverId;
         long lastPosition;
         long lastPositionPlusWindow;
         long timeOfLastStatusMessageNs;

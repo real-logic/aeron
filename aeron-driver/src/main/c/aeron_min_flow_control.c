@@ -86,8 +86,8 @@ int64_t aeron_min_flow_control_strategy_on_idle(
             last_index--;
             receiver_count--;
             strategy_state->receivers.length = receiver_count;
-            AERON_PUT_ORDERED(
-                strategy_state->has_required_receivers, receiver_count >= strategy_state->group_min_size);
+            bool has_required_receivers = receiver_count >= (size_t)strategy_state->group_min_size;
+            AERON_PUT_ORDERED(strategy_state->has_required_receivers, has_required_receivers);
 
             aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_removed =
                 strategy_state->receiver_removed;
@@ -171,9 +171,8 @@ int64_t aeron_min_flow_control_strategy_process_sm(
 
             min_position = (position + window_length) < min_position ? (position + window_length) : min_position;
 
-            AERON_PUT_ORDERED(
-                strategy_state->has_required_receivers,
-                strategy_state->receivers.length >= strategy_state->group_min_size);
+            bool has_required_receivers = (receivers_length + 1) >= (size_t)strategy_state->group_min_size;
+            AERON_PUT_ORDERED(strategy_state->has_required_receivers, has_required_receivers);
 
             aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_added =
                 strategy_state->receiver_added;
@@ -339,7 +338,8 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     state->receiver_added = context->flow_control_on_receiver_added_func;
     state->receiver_removed = context->flow_control_on_receiver_removed_func;
 
-    AERON_PUT_ORDERED(state->has_required_receivers, state->receivers.length >= state->group_min_size);
+    bool has_required_receivers = state->receivers.length >= (size_t)state->group_min_size;
+    AERON_PUT_ORDERED(state->has_required_receivers, has_required_receivers);
 
     *strategy = _strategy;
 

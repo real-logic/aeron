@@ -78,8 +78,9 @@ int64_t aeron_min_flow_control_strategy_on_idle(
 {
     aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
     int64_t min_limit_position = INT64_MAX;
+    size_t receiver_count = strategy_state->receivers.length;
 
-    for (int last_index = (int)strategy_state->receivers.length - 1, i = last_index; i >= 0; i--)
+    for (int last_index = (int)receiver_count - 1, i = last_index; i >= 0; i--)
     {
         aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[i];
 
@@ -91,7 +92,8 @@ int64_t aeron_min_flow_control_strategy_on_idle(
                 (size_t)i,
                 (size_t)last_index);
             last_index--;
-            aeron_min_flow_control_strategy_state_set_length(strategy_state, strategy_state->receivers.length - 1);
+            receiver_count--;
+            aeron_min_flow_control_strategy_state_set_length(strategy_state, receiver_count);
         }
         else
         {

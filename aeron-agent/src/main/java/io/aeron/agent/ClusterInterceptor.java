@@ -52,7 +52,9 @@ class ClusterInterceptor
         {
             LOGGER.logNewLeadershipTerm(
                 logLeadershipTermId,
+                nextLeadershipTermId,
                 nextTermBaseLogPosition,
+                nextLogPosition,
                 leadershipTermId,
                 termBaseLogPosition,
                 logPosition,

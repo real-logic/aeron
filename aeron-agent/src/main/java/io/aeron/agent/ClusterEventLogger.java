@@ -47,7 +47,9 @@ public final class ClusterEventLogger
      * Log a new leadership term event.
      *
      * @param logLeadershipTermId term for which log entries are present.
-     * @param logTruncatePosition position of the log for the logLeadershipTermId.
+     * @param nextLeadershipTermId next term relative to the logLeadershipTermId
+     * @param nextTermBaseLogPosition base log position for the next term
+     * @param nextLogPosition     committed log position for next term
      * @param leadershipTermId    new leadership term id.
      * @param termBaseLogPosition position the log reached at base of new term.
      * @param logPosition         position the log reached for the new term.
@@ -59,7 +61,9 @@ public final class ClusterEventLogger
      */
     public void logNewLeadershipTerm(
         final long logLeadershipTermId,
-        final long logTruncatePosition,
+        final long nextLeadershipTermId,
+        final long nextTermBaseLogPosition,
+        final long nextLogPosition,
         final long leadershipTermId,
         final long termBaseLogPosition,
         final long logPosition,
@@ -85,7 +89,9 @@ public final class ClusterEventLogger
                     captureLength,
                     length,
                     logLeadershipTermId,
-                    logTruncatePosition,
+                    nextLeadershipTermId,
+                    nextTermBaseLogPosition,
+                    nextLogPosition,
                     leadershipTermId,
                     termBaseLogPosition,
                     logPosition,

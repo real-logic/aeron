@@ -545,7 +545,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommandBigMessage)
             EXPECT_EQ(
                 memcmp("a", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_publication_command_t), 1),
                 0);
-            EXPECT_EQ(memcmp("z", buffer + length -1, 1), 0);
+            EXPECT_EQ(memcmp("z", buffer + length - 1, 1), 0);
         };
 
     size_t timesCalled = 0;
@@ -642,7 +642,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommandBigMessage)
             EXPECT_EQ(
                 memcmp("a", buffer + sizeof(aeron_driver_agent_cmd_log_header_t) + sizeof(aeron_subscription_command_t), 1),
                 0);
-            EXPECT_EQ(memcmp("z", buffer + length -1, 1), 0);
+            EXPECT_EQ(memcmp("z", buffer + length - 1, 1), 0);
         };
 
     size_t timesCalled = 0;
@@ -870,7 +870,7 @@ TEST_F(DriverAgentTest, shouldLogRemovePublicationCleanup)
 {
     aeron_driver_agent_logging_ring_buffer_init();
 
-    aeron_driver_agent_remove_publication_cleanup(42, 10, 5,"channel");
+    aeron_driver_agent_remove_publication_cleanup(42, 10, 5, "channel");
 
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)

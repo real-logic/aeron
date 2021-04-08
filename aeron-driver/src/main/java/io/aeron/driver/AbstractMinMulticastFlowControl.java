@@ -38,13 +38,13 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
 {
     static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
 
-    private volatile boolean hasRequiredReceivers;
     private final boolean isGroupTagAware;
-    private long receiverTimeoutNs;
-    private long groupTag;
+    private volatile boolean hasRequiredReceivers;
     private int groupMinSize;
-    private String channel;
+    private long groupTag;
+    private long receiverTimeoutNs;
     private Receiver[] receivers = EMPTY_RECEIVERS;
+    private String channel;
 
     /**
      * Base constructor for use by specialised implementations.
@@ -294,7 +294,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
 //            ", channel=" + channel);
     }
 
-    static class Receiver
+    static final class Receiver
     {
         final int sessionId;
         final int streamId;

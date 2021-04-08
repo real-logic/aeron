@@ -40,7 +40,7 @@ final class LogReplication
     private final AeronArchive archive;
     private RecordingSignal lastRecordingSignal = RecordingSignal.NULL_VAL;
 
-    private boolean stopped = false;
+    private boolean isStopped = false;
 
     LogReplication(
         final AeronArchive archive,
@@ -68,7 +68,7 @@ final class LogReplication
 
     boolean isDone(final long nowNs)
     {
-        if (position == stopPosition && stopped)
+        if (position == stopPosition && isStopped)
         {
             return true;
         }
@@ -123,12 +123,12 @@ final class LogReplication
 
     void close()
     {
-        if (!stopped)
+        if (!isStopped)
         {
             try
             {
                 archive.tryStopReplication(replicationId);
-                stopped = true;
+                isStopped = true;
             }
             catch (final Exception e)
             {
@@ -150,7 +150,7 @@ final class LogReplication
                 case DELETE:
                     throw new ClusterException("recording was deleted during replication: " + this);
                 case STOP:
-                    this.stopped = true;
+                    this.isStopped = true;
                     break;
             }
 
@@ -168,7 +168,7 @@ final class LogReplication
             ", recordingId=" + recordingId +
             ", position=" + position +
             ", stopPosition=" + stopPosition +
-            ", stopped=" + stopped +
+            ", stopped=" + isStopped +
             ", lastRecordingSignal=" + lastRecordingSignal +
             ", progressDeadlineNs=" + progressDeadlineNs +
             ", progressCheckDeadlineNs=" + progressCheckDeadlineNs +

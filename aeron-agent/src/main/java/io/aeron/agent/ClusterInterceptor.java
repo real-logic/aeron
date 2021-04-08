@@ -46,7 +46,7 @@ class ClusterInterceptor
             final long logPosition,
             final long leaderRecordingId,
             final long timestamp,
-            final int leaderId,
+            final int leaderMemberId,
             final int logSessionId,
             final boolean isStartup)
         {
@@ -60,7 +60,7 @@ class ClusterInterceptor
                 logPosition,
                 leaderRecordingId,
                 timestamp,
-                leaderId,
+                leaderMemberId,
                 logSessionId,
                 isStartup);
         }

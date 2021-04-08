@@ -532,7 +532,7 @@ class Election
     {
         int workCount = 0;
 
-        if (hasTimeElapsedSinceLastUpdate(nowNs, ctx.electionStatusIntervalNs()))
+        if (hasIntervalExpired(nowNs, ctx.electionStatusIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
             for (final ClusterMember member : clusterMembers)
@@ -968,7 +968,7 @@ class Election
     {
         int workCount = 0;
 
-        if (hasTimeElapsedSinceLastUpdate(nowNs, ctx.leaderHeartbeatIntervalNs()))
+        if (hasIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
             publishNewLeadershipTerm(ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
@@ -1024,7 +1024,7 @@ class Election
     private int publishFollowerReplicationPosition(final long nowNs)
     {
         final long position = logReplication.position();
-        if (position > appendPosition && hasTimeElapsedSinceLastUpdate(nowNs, ctx.leaderHeartbeatIntervalNs()))
+        if (position > appendPosition && hasIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs()))
         {
             if (consensusPublisher.appendPosition(
                 leaderMember.publication(), leadershipTermId, position, thisMember.id()))
@@ -1140,6 +1140,7 @@ class Election
             logReplication.close();
             logReplication = null;
         }
+        replicationCommitPosition = 0;
         replicationCommitPositionDeadlineNs = 0;
     }
 
@@ -1207,7 +1208,7 @@ class Election
         }
     }
 
-    private boolean hasTimeElapsedSinceLastUpdate(final long nowNs, final long intervalNs)
+    private boolean hasIntervalExpired(final long nowNs, final long intervalNs)
     {
         return (nowNs - timeOfLastUpdateNs) >= intervalNs;
     }

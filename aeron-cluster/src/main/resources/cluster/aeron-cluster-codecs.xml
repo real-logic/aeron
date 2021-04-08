@@ -421,17 +421,17 @@
                  description="A leader has been successfully elected and has begun a new term.">
         <field name="logLeadershipTermId"       id="1"  type="int64"/>
         <field name="nextLeadershipTermId"      id="2"  type="int64"/>
-        <field name="nextTermBaseLogPosition"   id="4"  type="int64"/>
-        <field name="nextLogPosition"           id="5"  type="int64"/>
-        <field name="leadershipTermId"          id="6"  type="int64"/>
-        <field name="termBaseLogPosition"       id="7"  type="int64"/>
-        <field name="logPosition"               id="8"  type="int64"/>
-        <field name="leaderRecordingId"         id="9"  type="int64"/>
-        <field name="timestamp"                 id="10" type="time_t"/>
-        <field name="leaderMemberId"            id="11" type="int32"/>
-        <field name="logSessionId"              id="12" type="int32"/>
-        <field name="appVersion"                id="13" type="version_t"/>
-        <field name="isStartup"                 id="14" type="BooleanType"/>
+        <field name="nextTermBaseLogPosition"   id="3"  type="int64"/>
+        <field name="nextLogPosition"           id="4"  type="int64"/>
+        <field name="leadershipTermId"          id="5"  type="int64"/>
+        <field name="termBaseLogPosition"       id="6"  type="int64"/>
+        <field name="logPosition"               id="7"  type="int64"/>
+        <field name="leaderRecordingId"         id="8"  type="int64"/>
+        <field name="timestamp"                 id="9" type="time_t"/>
+        <field name="leaderMemberId"            id="10" type="int32"/>
+        <field name="logSessionId"              id="11" type="int32"/>
+        <field name="appVersion"                id="12" type="version_t"/>
+        <field name="isStartup"                 id="13" type="BooleanType"/>
     </sbe:message>
 
     <!-- keep this under 32 - 8 = 24 bytes for efficiency -->

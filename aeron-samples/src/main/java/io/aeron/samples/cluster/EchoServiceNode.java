@@ -140,7 +140,6 @@ public final class EchoServiceNode
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(archiveContext.localControlChannel())
-            .controlRequestStreamId(archiveContext.localControlStreamId())
             .controlResponseChannel(archiveContext.localControlChannel())
             .aeronDirectoryName(aeronDirName);
 

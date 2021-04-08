@@ -129,12 +129,16 @@ final class ClusterEventEncoder
         final int captureLength,
         final int length,
         final long logLeadershipTermId,
+        final long leadershipTermId,
         final long logPosition,
         final int followerMemberId)
     {
         int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
         encodingBuffer.putLong(offset + relativeOffset, logLeadershipTermId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + relativeOffset, leadershipTermId, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
 
         encodingBuffer.putLong(offset + relativeOffset, logPosition, LITTLE_ENDIAN);
@@ -148,7 +152,7 @@ final class ClusterEventEncoder
 
     static int canvassPositionLength()
     {
-        return (2 * SIZE_OF_LONG) + SIZE_OF_INT;
+        return (3 * SIZE_OF_LONG) + SIZE_OF_INT;
     }
 
     static int encodeRequestVote(

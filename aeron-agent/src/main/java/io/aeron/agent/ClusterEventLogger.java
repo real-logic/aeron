@@ -150,10 +150,15 @@ public final class ClusterEventLogger
      * Log a canvass position event received by the cluster node.
      *
      * @param logLeadershipTermId leadershipTermId reached by the member for it recorded log.
+     * @param leadershipTermId    the most current leadershipTermId a member has seen.
      * @param logPosition         position the member has durably recorded.
      * @param followerMemberId    member who sent the event.
      */
-    public void logCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
+    public void logCanvassPosition(
+        final long logLeadershipTermId,
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId)
     {
         final int length = canvassPositionLength();
         final int captureLength = captureLength(length);
@@ -171,6 +176,7 @@ public final class ClusterEventLogger
                     captureLength,
                     length,
                     logLeadershipTermId,
+                    leadershipTermId,
                     logPosition,
                     followerMemberId);
             }

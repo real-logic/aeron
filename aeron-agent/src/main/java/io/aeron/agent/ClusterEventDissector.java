@@ -114,12 +114,16 @@ final class ClusterEventDissector
 
         final long logLeadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
+        final long leadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
         final long logPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
         final int followerMemberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_INT;
 
         builder.append(": logLeadershipTermId=").append(logLeadershipTermId);
+        builder.append(", ");
+        builder.append(" leadershipTermId=").append(leadershipTermId);
         builder.append(", ");
         builder.append(" logPosition=").append(logPosition);
         builder.append(", ");

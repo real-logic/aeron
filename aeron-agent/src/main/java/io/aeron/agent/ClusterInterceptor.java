@@ -94,7 +94,7 @@ class ClusterInterceptor
             final long leadershipTermId,
             final int followerMemberId)
         {
-            LOGGER.logCanvassPosition(logLeadershipTermId, logPosition, followerMemberId);
+            LOGGER.logCanvassPosition(logLeadershipTermId, leadershipTermId, logPosition, followerMemberId);
         }
     }
 

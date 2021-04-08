@@ -144,6 +144,12 @@ allprojects {
     configurations.all {
         resolutionStrategy {
             failOnVersionConflict()
+
+            force "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
+                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
+                  "org.junit.jupiter:junit-jupiter-api:${junitVersion}",
+                  "org.junit.jupiter:junit-jupiter-params:${junitVersion}",
+                  "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
         }
     }
 
@@ -159,10 +165,7 @@ subprojects {
 
     dependencies {
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
-        testImplementation ("org.mockito:mockito-junit-jupiter:${mockitoVersion}") {
-            exclude group: 'org.junit.jupiter'
-            exclude group: 'net.bytebuddy'
-        }
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
@@ -306,10 +309,7 @@ project(':aeron-client') {
             }
         }
         testImplementation project(':aeron-test-support')
-        testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
-            exclude group: 'org.junit.jupiter'
-            exclude group: 'net.bytebuddy'
-        }
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
@@ -371,10 +371,7 @@ project(':aeron-driver') {
     dependencies {
         api project(':aeron-client')
         testImplementation project(':aeron-test-support')
-        testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
-            exclude group: 'org.junit.jupiter'
-            exclude group: 'net.bytebuddy'
-        }
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
@@ -447,10 +444,7 @@ project(':aeron-archive') {
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
         testImplementation project(':aeron-test-support')
-        testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
-            exclude group: 'org.junit.jupiter'
-            exclude group: 'net.bytebuddy'
-        }
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
@@ -571,10 +565,7 @@ project(':aeron-cluster') {
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
         testImplementation project(':aeron-test-support')
-        testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
-            exclude group: 'org.junit.jupiter'
-            exclude group: 'net.bytebuddy'
-        }
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
@@ -823,9 +814,6 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
         testImplementation project(path: ':aeron-cluster')
-        testImplementation ("org.mockito:mockito-core:${mockitoVersion}") {
-            exclude group: 'org.junit.jupiter'
-        }
         if (buildJavaVersion == 8) {
             def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
             testImplementation files(jdkHome.resolve("lib/tools.jar").toFile())
@@ -845,10 +833,7 @@ project(':aeron-test-support') {
         api project(':aeron-client')
         api project(':aeron-cluster')
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
-        implementation ("org.mockito:mockito-junit-jupiter:${mockitoVersion}") {
-            exclude group: 'org.junit.jupiter'
-            exclude group: 'net.bytebuddy'
-        }
+        implementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
     javadoc.enabled = false

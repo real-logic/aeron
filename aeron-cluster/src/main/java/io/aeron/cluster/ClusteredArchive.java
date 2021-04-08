@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.CommonContext;
 import io.aeron.archive.Archive;
 import io.aeron.driver.MediaDriver;
 import org.agrona.CloseHelper;
@@ -47,7 +48,7 @@ public class ClusteredArchive implements AutoCloseable
         try (ClusteredArchive driver = launch())
         {
             driver.consensusModule().context().shutdownSignalBarrier().await();
-            System.out.println("Shutdown ClusteredMediaDriver...");
+            System.out.println("Shutdown ClusteredArchive...");
         }
     }
 
@@ -58,8 +59,7 @@ public class ClusteredArchive implements AutoCloseable
      */
     public static ClusteredArchive launch()
     {
-        return launch(
-            new MediaDriver.Context().aeronDirectoryName(), new Archive.Context(), new ConsensusModule.Context());
+        return launch(CommonContext.getAeronDirectoryName(), new Archive.Context(), new ConsensusModule.Context());
     }
 
     /**

@@ -116,7 +116,7 @@ constexpr const std::int32_t CONTROL_REQUEST_STREAM_ID_DEFAULT = 10;
 /// Channel for sending control messages to a driver local archive. Default to IPC.
 constexpr const char LOCAL_CONTROL_REQUEST_CHANNEL_DEFAULT[] = "aeron:ipc";
 /// Stream id within a channel for sending control messages to a driver local archive.
-constexpr const std::int32_t LOCAL_CONTROL_REQUEST_STREAM_ID_DEFAULT = 11;
+constexpr const std::int32_t LOCAL_CONTROL_REQUEST_STREAM_ID_DEFAULT = CONTROL_REQUEST_STREAM_ID_DEFAULT;
 
 /// Channel for receiving control response messages from an archive.
 constexpr const char CONTROL_RESPONSE_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:0";

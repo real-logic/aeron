@@ -121,12 +121,12 @@ public class MultiModuleSharedDriverTest
                 client0 = AeronCluster.connect(new AeronCluster.Context()
                     .egressListener(egressListener)
                     .ingressChannel(moduleCtx0.ingressChannel())
-                    .egressChannel("aeron:udp?endpoint=localhost:9020"));
+                    .egressChannel("aeron:udp?endpoint=localhost:0"));
 
                 client1 = AeronCluster.connect(new AeronCluster.Context()
                     .egressListener(egressListener)
                     .ingressChannel(moduleCtx1.ingressChannel())
-                    .egressChannel("aeron:udp?endpoint=localhost:9021"));
+                    .egressChannel("aeron:udp?endpoint=localhost:0"));
 
                 echoMessage(client0, "Message 0", egress);
                 echoMessage(client1, "Message 1", egress);

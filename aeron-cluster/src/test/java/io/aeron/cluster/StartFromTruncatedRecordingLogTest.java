@@ -339,7 +339,6 @@ public class StartFromTruncatedRecordingLogTest
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(LOCAL_ARCHIVE_CONTROL_CHANNEL)
-            .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
             .controlResponseChannel(LOCAL_ARCHIVE_CONTROL_CHANNEL)
             .aeronDirectoryName(baseDirName);
 
@@ -357,7 +356,6 @@ public class StartFromTruncatedRecordingLogTest
                 .archiveDir(new File(baseDirName, "archive"))
                 .controlChannel(ARCHIVE_CONTROL_REQUEST_CHANNEL + index)
                 .localControlChannel(LOCAL_ARCHIVE_CONTROL_CHANNEL)
-                .localControlStreamId(archiveCtx.controlRequestStreamId())
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .errorHandler(ClusterTests.errorHandler(index))

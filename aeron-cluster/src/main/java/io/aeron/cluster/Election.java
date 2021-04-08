@@ -706,7 +706,8 @@ class Election
 
     private int leaderReady(final long nowNs)
     {
-        int workCount = publishNewLeadershipTermOnInterval(nowNs);
+        int workCount = consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
+        workCount += publishNewLeadershipTermOnInterval(nowNs);
 
         if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition, leadershipTermId))
         {

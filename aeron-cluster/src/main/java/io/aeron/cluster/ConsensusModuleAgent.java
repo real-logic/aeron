@@ -2574,7 +2574,6 @@ final class ConsensusModuleAgent implements Agent
             leaderRecordingId,
             logRecordingId,
             stopPosition,
-            ctx.archiveContext().controlRequestStreamId(),
             leaderArchiveEndpoint,
             ctx.leaderHeartbeatTimeoutNs(),
             ctx.leaderHeartbeatIntervalNs(),

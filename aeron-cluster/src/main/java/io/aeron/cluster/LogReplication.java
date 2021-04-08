@@ -47,7 +47,6 @@ final class LogReplication
         final long srcRecordingId,
         final long dstRecordingId,
         final long stopPosition,
-        final int srcArchiveStreamId,
         final String srcArchiveEndpoint,
         final long progressCheckTimeoutNs,
         final long progressCheckIntervalNs,
@@ -62,8 +61,9 @@ final class LogReplication
 
         final String srcArchiveChannel = "aeron:udp?endpoint=" + srcArchiveEndpoint;
 
+        final int srcControlStreamId = archive.context().controlRequestStreamId();
         replicationId = archive.replicate(
-            srcRecordingId, dstRecordingId, stopPosition, srcArchiveStreamId, srcArchiveChannel, null, null);
+            srcRecordingId, dstRecordingId, stopPosition, srcControlStreamId, srcArchiveChannel, null, null);
     }
 
     boolean isDone(final long nowNs)

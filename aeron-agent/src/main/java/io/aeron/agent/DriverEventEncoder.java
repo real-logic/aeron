@@ -98,7 +98,7 @@ final class DriverEventEncoder
         final int offset,
         final int captureLength,
         final int length,
-        final String uri,
+        final String channel,
         final int sessionId,
         final int streamId)
     {
@@ -110,7 +110,7 @@ final class DriverEventEncoder
         encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength - (SIZE_OF_INT * 2), uri);
+        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT * 2, channel);
     }
 
     static void encodeSubscriptionRemoval(
@@ -118,7 +118,7 @@ final class DriverEventEncoder
         final int offset,
         final int captureLength,
         final int length,
-        final String uri,
+        final String channel,
         final int streamId,
         final long id)
     {
@@ -130,7 +130,8 @@ final class DriverEventEncoder
         encodingBuffer.putLong(offset + relativeOffset, id, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
 
-        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT - SIZE_OF_LONG, uri);
+        encodeTrailingString(
+            encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT - SIZE_OF_LONG, channel);
     }
 
     static void encodeImageRemoval(
@@ -138,7 +139,7 @@ final class DriverEventEncoder
         final int offset,
         final int captureLength,
         final int length,
-        final String uri,
+        final String channel,
         final int sessionId,
         final int streamId,
         final long id)
@@ -155,7 +156,7 @@ final class DriverEventEncoder
         relativeOffset += SIZE_OF_LONG;
 
         encodeTrailingString(
-            encodingBuffer, offset + relativeOffset, captureLength - (SIZE_OF_INT * 2) - SIZE_OF_LONG, uri);
+            encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT * 2 - SIZE_OF_LONG, channel);
     }
 
     static <E extends Enum<E>> int untetheredSubscriptionStateChangeLength(final E from, final E to)
@@ -193,5 +194,34 @@ final class DriverEventEncoder
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, fromName);
         relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, STATE_SEPARATOR);
         encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, toName);
+    }
+
+    static void encodeFlowControlReceiver(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final long receiverId,
+        final int sessionId,
+        final int streamId,
+        final String channel,
+        final int receiverCount)
+    {
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putInt(offset + relativeOffset, receiverCount, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        encodingBuffer.putLong(offset + relativeOffset, receiverId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        encodeTrailingString(
+            encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT * 3 - SIZE_OF_LONG, channel);
     }
 }

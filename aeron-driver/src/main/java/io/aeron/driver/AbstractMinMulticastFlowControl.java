@@ -38,11 +38,13 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
 {
     static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
 
+    private volatile boolean hasRequiredReceivers;
+    private final boolean isGroupTagAware;
     private long receiverTimeoutNs;
     private long groupTag;
     private int groupMinSize;
-    private final boolean isGroupTagAware;
-    private volatile Receiver[] receivers = EMPTY_RECEIVERS;
+    private String channel;
+    private Receiver[] receivers = EMPTY_RECEIVERS;
 
     /**
      * Base constructor for use by specialised implementations.
@@ -66,8 +68,10 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         receiverTimeoutNs = context.flowControlReceiverTimeoutNs();
         groupTag = isGroupTagAware ? context.flowControlGroupTag() : 0;
         groupMinSize = context.flowControlGroupMinSize();
+        channel = udpChannel.originalUriString();
 
         parseUriParam(udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME));
+        hasRequiredReceivers = receivers.length >= groupMinSize;
     }
 
     /**
@@ -89,6 +93,8 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
                     receivers[i] = receivers[lastIndex--];
                 }
                 removed++;
+                receiverRemoved(
+                    receiver.receiverId, receiver.sessionId, receiver.streamId, channel, receivers.length - removed);
             }
             else
             {
@@ -99,6 +105,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         if (removed > 0)
         {
             receivers = truncateReceivers(receivers, removed);
+            hasRequiredReceivers = receivers.length >= groupMinSize;
             this.receivers = receivers;
         }
 
@@ -112,7 +119,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
      */
     public boolean hasRequiredReceivers()
     {
-        return receivers.length >= groupMinSize;
+        return hasRequiredReceivers;
     }
 
     /**
@@ -163,10 +170,13 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
 
         if (matchesTag && !isExisting)
         {
-            final Receiver receiver = new Receiver(position, lastPositionPlusWindow, timeNs, receiverId);
+            final Receiver receiver = new Receiver(
+                receiverId, flyweight.sessionId(), flyweight.streamId(), position, lastPositionPlusWindow, timeNs);
             receivers = add(receivers, receiver);
+            hasRequiredReceivers = receivers.length >= groupMinSize;
             this.receivers = receivers;
             minPosition = Math.min(minPosition, lastPositionPlusWindow);
+            receiverAdded(receiver.receiverId, receiver.sessionId, receiver.streamId, channel, receivers.length);
         }
 
         if (receivers.length < groupMinSize)
@@ -268,19 +278,45 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         }
     }
 
+    private void receiverAdded(
+        final long receiverId, final int sessionId, final int streamId, final String channel, final int receiverCount)
+    {
+//        System.out.println("Receiver added: receiverCount=" + receiverCount +
+//            ", receiverId=" + receiverId + ", sessionId=" + sessionId + ", streamId=" + streamId +
+//            ", channel=" + channel);
+    }
+
+    private void receiverRemoved(
+        final long receiverId, final int sessionId, final int streamId, final String channel, final int receiverCount)
+    {
+//        System.out.println("Receiver removed: receiverCount=" + receiverCount +
+//            ", receiverId=" + receiverId + ", sessionId=" + sessionId + ", streamId=" + streamId +
+//            ", channel=" + channel);
+    }
+
     static class Receiver
     {
+        final int sessionId;
+        final int streamId;
+        final long receiverId;
         long lastPosition;
         long lastPositionPlusWindow;
         long timeOfLastStatusMessageNs;
-        final long receiverId;
 
-        Receiver(final long lastPosition, final long lastPositionPlusWindow, final long timeNs, final long receiverId)
+        Receiver(
+            final long receiverId,
+            final int sessionId,
+            final int streamId,
+            final long lastPosition,
+            final long lastPositionPlusWindow,
+            final long timeNs)
         {
+            this.receiverId = receiverId;
+            this.sessionId = sessionId;
+            this.streamId = streamId;
             this.lastPosition = lastPosition;
             this.lastPositionPlusWindow = lastPositionPlusWindow;
             this.timeOfLastStatusMessageNs = timeNs;
-            this.receiverId = receiverId;
         }
     }
 }

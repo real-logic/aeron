@@ -122,9 +122,7 @@ int aeron_tagged_flow_control_strategy_supplier(
     size_t term_buffer_capacity);
 
 int aeron_tagged_flow_control_strategy_to_string(
-    aeron_flow_control_strategy_t *strategy,
-    char *buffer,
-    size_t buffer_len);
+    aeron_flow_control_strategy_t *strategy, char *buffer, size_t buffer_len);
 
 int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
@@ -143,8 +141,6 @@ typedef struct aeron_flow_control_strategy_supplier_func_table_entry_stct
 aeron_flow_control_strategy_supplier_func_table_entry_t;
 
 int aeron_flow_control_parse_tagged_options(
-    size_t options_length,
-    const char *options,
-    aeron_flow_control_tagged_options_t *flow_control_options);
+    size_t options_length, const char *options, aeron_flow_control_tagged_options_t *flow_control_options);
 
 #endif //AERON_FLOW_CONTROL_H

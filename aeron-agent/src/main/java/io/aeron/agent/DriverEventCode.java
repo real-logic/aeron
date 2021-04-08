@@ -77,7 +77,10 @@ public enum DriverEventCode implements EventCode
         (code, buffer, offset, builder) -> dissectUntetheredSubscriptionStateChange(buffer, offset, builder)),
 
     NAME_RESOLUTION_NEIGHBOR_ADDED(46, DriverEventDissector::dissectAddress),
-    NAME_RESOLUTION_NEIGHBOR_REMOVED(47, DriverEventDissector::dissectAddress);
+    NAME_RESOLUTION_NEIGHBOR_REMOVED(47, DriverEventDissector::dissectAddress),
+
+    FLOW_CONTROL_RECEIVER_ADDED(48, DriverEventDissector::dissectFlowControlReceiver),
+    FLOW_CONTROL_RECEIVER_REMOVED(49, DriverEventDissector::dissectFlowControlReceiver);
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 

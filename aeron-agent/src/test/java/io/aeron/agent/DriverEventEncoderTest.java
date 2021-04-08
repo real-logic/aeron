@@ -36,99 +36,99 @@ class DriverEventEncoderTest
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH * 10]);
 
     @Test
-    void encodePublicationRemovalShouldWriteUriLast()
+    void encodePublicationRemovalShouldWriteChannelLast()
     {
         final int offset = 10;
-        final String uri = "aeron:udp?endpoint=224.10.9.8";
+        final String channel = "aeron:udp?endpoint=224.10.9.8";
         final int sessionId = 42;
         final int streamId = 5;
-        final int captureLength = 3 * SIZE_OF_INT + uri.length();
+        final int captureLength = 3 * SIZE_OF_INT + channel.length();
 
-        encodePublicationRemoval(buffer, offset, captureLength, captureLength, uri, sessionId, streamId);
+        encodePublicationRemoval(buffer, offset, captureLength, captureLength, channel, sessionId, streamId);
 
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(captureLength, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
         assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
         assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
         assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(uri, buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(channel, buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
     }
 
     @Test
-    void encodePublicationRemovalShouldTruncateUriIfItExceedsMaxMessageLength()
+    void encodePublicationRemovalShouldTruncateChannelIfItExceedsMaxMessageLength()
     {
         final int offset = 121;
         final char[] data = new char[MAX_EVENT_LENGTH];
         fill(data, 'z');
-        final String uri = new String(data);
+        final String channel = new String(data);
         final int length = data.length + 3 * SIZE_OF_INT;
         final int captureLength = captureLength(length);
 
-        encodePublicationRemoval(buffer, offset, captureLength, length, uri, 1, -1);
+        encodePublicationRemoval(buffer, offset, captureLength, length, channel, 1, -1);
 
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
         assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
         assertEquals(1, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
         assertEquals(-1, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(uri.substring(0, captureLength - 3 * SIZE_OF_INT - 3) + "...",
+        assertEquals(channel.substring(0, captureLength - 3 * SIZE_OF_INT - 3) + "...",
             buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
     }
 
     @Test
-    void encodeSubscriptionRemovalShouldWriteUriLast()
+    void encodeSubscriptionRemovalShouldWriteChannelLast()
     {
         final int offset = 0;
-        final String uri = "aeron:udp?endpoint=224.10.9.8";
+        final String channel = "aeron:udp?endpoint=224.10.9.8";
         final int streamId = 13;
         final long id = Long.MAX_VALUE;
-        final int captureLength = 2 * SIZE_OF_INT + SIZE_OF_LONG + uri.length();
+        final int captureLength = 2 * SIZE_OF_INT + SIZE_OF_LONG + channel.length();
 
-        encodeSubscriptionRemoval(buffer, offset, captureLength, captureLength, uri, streamId, id);
+        encodeSubscriptionRemoval(buffer, offset, captureLength, captureLength, channel, streamId, id);
 
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(captureLength, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
         assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
         assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
         assertEquals(id, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(uri,
+        assertEquals(channel,
             buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
 
     @Test
-    void encodeSubscriptionRemovalShouldTruncateUriIfItExceedsMaxMessageLength()
+    void encodeSubscriptionRemovalShouldTruncateChannelIfItExceedsMaxMessageLength()
     {
         final char[] data = new char[MAX_EVENT_LENGTH * 3 + 5];
         fill(data, 'a');
         final int offset = 0;
         final int length = SIZE_OF_INT * 2 + SIZE_OF_LONG + data.length;
         final int captureLength = captureLength(length);
-        final String uri = new String(data);
+        final String channel = new String(data);
         final int streamId = 1;
         final long id = -1;
 
-        encodeSubscriptionRemoval(buffer, offset, captureLength, length, uri, streamId, id);
+        encodeSubscriptionRemoval(buffer, offset, captureLength, length, channel, streamId, id);
 
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
         assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
         assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
         assertEquals(id, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(uri.substring(0, captureLength - SIZE_OF_INT * 2 - SIZE_OF_LONG - 3) + "...",
+        assertEquals(channel.substring(0, captureLength - SIZE_OF_INT * 2 - SIZE_OF_LONG - 3) + "...",
             buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
 
     @Test
-    void encodeImageRemovalShouldWriteUriLast()
+    void encodeImageRemovalShouldWriteChannelLast()
     {
         final int offset = 0;
-        final String uri = "aeron:udp?endpoint=224.10.9.8";
+        final String channel = "aeron:udp?endpoint=224.10.9.8";
         final int sessionId = 13;
         final int streamId = 42;
         final long id = Long.MAX_VALUE;
-        final int captureLength = 3 * SIZE_OF_INT + SIZE_OF_LONG + uri.length();
+        final int captureLength = 3 * SIZE_OF_INT + SIZE_OF_LONG + channel.length();
 
-        encodeImageRemoval(buffer, offset, captureLength, captureLength, uri, sessionId, streamId, id);
+        encodeImageRemoval(buffer, offset, captureLength, captureLength, channel, sessionId, streamId, id);
 
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(captureLength, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
@@ -136,24 +136,24 @@ class DriverEventEncoderTest
         assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
         assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
         assertEquals(id, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(uri,
+        assertEquals(channel,
             buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
 
     @Test
-    void encodeImageRemovalShouldTruncateUriIfItExceedsMaxMessageLength()
+    void encodeImageRemovalShouldTruncateChannelIfItExceedsMaxMessageLength()
     {
         final char[] data = new char[MAX_EVENT_LENGTH + 8];
         fill(data, 'a');
         final int offset = 0;
         final int length = data.length + SIZE_OF_LONG + SIZE_OF_INT * 3;
         final int captureLength = captureLength(length);
-        final String uri = new String(data);
+        final String channel = new String(data);
         final int sessionId = -1;
         final int streamId = 1;
         final long id = 0;
 
-        encodeImageRemoval(buffer, offset, captureLength, length, uri, sessionId, streamId, id);
+        encodeImageRemoval(buffer, offset, captureLength, length, channel, sessionId, streamId, id);
 
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
@@ -161,7 +161,7 @@ class DriverEventEncoderTest
         assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
         assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
         assertEquals(id, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(uri.substring(0, captureLength - SIZE_OF_LONG - SIZE_OF_INT * 3 - 3) + "...",
+        assertEquals(channel.substring(0, captureLength - SIZE_OF_LONG - SIZE_OF_INT * 3 - 3) + "...",
             buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
 
@@ -198,5 +198,61 @@ class DriverEventEncoderTest
         assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG + SIZE_OF_INT, LITTLE_ENDIAN));
         assertEquals(from.name() + STATE_SEPARATOR + to.name(),
             buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+    }
+
+    @Test
+    void encodeFlowControlReceiverShouldWriteChannelLast()
+    {
+        final int offset = 48;
+        final long receiverId = 1947384623864823283L;
+        final int sessionId = 219;
+        final int streamId = 3;
+        final String channel = "my channel";
+        final int receiverCount = 17;
+        final int length = 4 * SIZE_OF_INT + SIZE_OF_LONG + channel.length();
+        final int captureLength = captureLength(length);
+
+        encodeFlowControlReceiver(
+            buffer, offset, captureLength, length, receiverId, sessionId, streamId, channel, receiverCount);
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(receiverCount, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(receiverId, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(streamId,
+            buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(channel,
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 3 + SIZE_OF_LONG, LITTLE_ENDIAN));
+    }
+
+    @Test
+    void encodeFlowControlReceiverShouldTruncateChannelChannelIfTooLong()
+    {
+        final char[] data = new char[MAX_EVENT_LENGTH + 11];
+        fill(data, 'x');
+        final int offset = 16;
+        final long receiverId = Long.MIN_VALUE;
+        final int sessionId = 42;
+        final int streamId = 0;
+        final String channel = new String(data);
+        final int receiverCount = 0;
+        final int length = 4 * SIZE_OF_INT + SIZE_OF_LONG + data.length;
+        final int captureLength = captureLength(length);
+
+        encodeFlowControlReceiver(
+            buffer, offset, captureLength, length, receiverId, sessionId, streamId, channel, receiverCount);
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(receiverCount, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(receiverId, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(streamId,
+            buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(channel.substring(0, captureLength - SIZE_OF_LONG - SIZE_OF_INT * 4 - 3) + "...",
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 3 + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
 }

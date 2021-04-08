@@ -2235,7 +2235,7 @@ public final class AeronArchive implements AutoCloseable
         /**
          * Stream id within a channel for sending control messages to a driver local archive.
          */
-        public static final int LOCAL_CONTROL_STREAM_ID_DEFAULT = 11;
+        public static final int LOCAL_CONTROL_STREAM_ID_DEFAULT = CONTROL_STREAM_ID_DEFAULT;
 
         /**
          * Channel for receiving control response messages from an archive.

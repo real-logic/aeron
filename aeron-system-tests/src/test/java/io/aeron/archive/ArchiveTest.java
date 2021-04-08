@@ -64,11 +64,11 @@ public class ArchiveTest
     }
 
     private static final String CONTROL_RESPONSE_URI = CommonContext.IPC_CHANNEL;
-    private static final int CONTROL_RESPONSE_STREAM_ID = 100;
+    private static final int CONTROL_RESPONSE_STREAM_ID = AeronArchive.Configuration.controlResponseStreamId();
     private static final String REPLAY_URI = CommonContext.IPC_CHANNEL;
     private static final int MESSAGE_COUNT = 5000;
     private static final int SYNC_LEVEL = 0;
-    private static final int PUBLISH_STREAM_ID = 1;
+    private static final int PUBLISH_STREAM_ID = 1033;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final int REPLAY_STREAM_ID = 101;
 

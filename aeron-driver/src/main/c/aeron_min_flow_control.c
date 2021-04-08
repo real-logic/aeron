@@ -31,14 +31,14 @@
 
 typedef struct aeron_min_flow_control_strategy_receiver_stct
 {
-    uint8_t padding_before[AERON_CACHE_LINE_LENGTH];
+    uint8_t padding_before[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
     int64_t last_position;
     int64_t last_position_plus_window;
     int64_t time_of_last_status_message_ns;
     int64_t receiver_id;
     int32_t session_id;
     int32_t stream_id;
-    uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
+    uint8_t padding_after[AERON_CACHE_LINE_LENGTH - (3 * sizeof(int64_t))];
 }
 aeron_min_flow_control_strategy_receiver_t;
 
@@ -56,10 +56,9 @@ typedef struct aeron_min_flow_control_strategy_state_stct
     int64_t receiver_timeout_ns;
     int32_t group_min_size;
     int64_t group_tag;
-    size_t channel_length;
-    char channel[AERON_MAX_PATH];
-    aeron_distinct_error_log_t *error_log;
+    const aeron_udp_channel_t *channel;
 
+    aeron_distinct_error_log_t *error_log;
     aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_added;
     aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_removed;
 }
@@ -97,8 +96,8 @@ int64_t aeron_min_flow_control_strategy_on_idle(
                     receiver->receiver_id,
                     receiver->session_id,
                     receiver->stream_id,
-                    strategy_state->channel_length,
-                    strategy_state->channel,
+                    strategy_state->channel->uri_length,
+                    strategy_state->channel->original_uri,
                     receiver_count);
             }
         }
@@ -182,8 +181,8 @@ int64_t aeron_min_flow_control_strategy_process_sm(
                     receiver->receiver_id,
                     receiver->session_id,
                     receiver->stream_id,
-                    strategy_state->channel_length,
-                    strategy_state->channel,
+                    strategy_state->channel->uri_length,
+                    strategy_state->channel->original_uri,
                     receivers_length + 1);
             }
         }
@@ -324,8 +323,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     state->receivers.capacity = 0;
     state->receivers.length = 0;
 
-    state->channel_length = channel->uri_length;
-    strncpy(state->channel, channel->original_uri, state->channel_length);
+    state->channel = channel;
 
     state->receiver_timeout_ns = options.timeout_ns.is_present ?
         options.timeout_ns.value : context->flow_control.receiver_timeout_ns;

@@ -269,9 +269,7 @@ public class TestCluster implements AutoCloseable
         context.aeronArchiveContext
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
-            .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
 
         context.mediaDriverContext
@@ -286,10 +284,8 @@ public class TestCluster implements AutoCloseable
             .catalogCapacity(CATALOG_CAPACITY)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
-            .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
@@ -339,9 +335,7 @@ public class TestCluster implements AutoCloseable
         context.aeronArchiveContext
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
-            .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
 
         context.mediaDriverContext
@@ -357,9 +351,7 @@ public class TestCluster implements AutoCloseable
             .segmentFileLength(SEGMENT_FILE_LENGTH)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-            .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
@@ -408,9 +400,7 @@ public class TestCluster implements AutoCloseable
         context.aeronArchiveContext
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
-            .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
 
         context.mediaDriverContext
@@ -425,10 +415,8 @@ public class TestCluster implements AutoCloseable
             .catalogCapacity(CATALOG_CAPACITY)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
-            .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(false);
@@ -471,9 +459,7 @@ public class TestCluster implements AutoCloseable
 
         context.aeronArchiveContext
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
-            .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
 
         context.mediaDriverContext
@@ -489,9 +475,7 @@ public class TestCluster implements AutoCloseable
             .segmentFileLength(SEGMENT_FILE_LENGTH)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-            .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
@@ -533,9 +517,7 @@ public class TestCluster implements AutoCloseable
 
         context.aeronArchiveContext
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, backupNodeIndex))
-            .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, backupNodeIndex))
-            .controlResponseStreamId(110 + backupNodeIndex)
             .aeronDirectoryName(aeronDirName);
 
         context.mediaDriverContext
@@ -549,9 +531,7 @@ public class TestCluster implements AutoCloseable
             .catalogCapacity(CATALOG_CAPACITY)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-            .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(false);
@@ -1224,9 +1204,7 @@ public class TestCluster implements AutoCloseable
 
         serviceCtx.aeronArchiveCtx
             .controlRequestChannel(nodeCtx.archiveCtx.localControlChannel())
-            .controlRequestStreamId(nodeCtx.archiveCtx.localControlStreamId())
             .controlResponseChannel(nodeCtx.archiveCtx.localControlChannel())
-            .controlResponseStreamId(1100 + serviceIndex)
             .recordingEventsChannel(nodeCtx.archiveCtx.recordingEventsChannel());
 
         serviceCtx.serviceContainerCtx
@@ -1259,18 +1237,14 @@ public class TestCluster implements AutoCloseable
             .segmentFileLength(256 * 1024)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlStreamId(100)
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
-            .localControlStreamId(100)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
 
         nodeCtx.aeronArchiveCtx
             .controlRequestChannel(nodeCtx.archiveCtx.localControlChannel())
-            .controlRequestStreamId(nodeCtx.archiveCtx.localControlStreamId())
             .controlResponseChannel(nodeCtx.archiveCtx.localControlChannel())
-            .controlResponseStreamId(110 + index)
             .recordingEventsChannel(nodeCtx.archiveCtx.recordingEventsChannel())
             .aeronDirectoryName(aeronDirName);
 

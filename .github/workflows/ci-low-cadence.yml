@@ -54,7 +54,7 @@ jobs:
         with:
           java-version: 8
       - name: Build and Run Slow Tests with Gradle
-        run: java -Xinternalversion && ./gradlew slowTest
+        run: ./gradlew slowTest
         env:
           BUILD_JAVA_VERSION: ${{ matrix.java }}
       - name: Copy test logs
@@ -102,6 +102,7 @@ jobs:
           java-version: 8
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
         run: |
+          java -Xinternalversion
           echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
@@ -154,6 +155,7 @@ jobs:
           java-version: 8
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
         run: |
+          java -Xinternalversion
           echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Build
@@ -203,6 +205,7 @@ jobs:
           java-version: 8
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
         run: |
+          java -Xinternalversion
           echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler

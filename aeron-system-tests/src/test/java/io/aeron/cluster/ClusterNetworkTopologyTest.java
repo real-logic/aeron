@@ -142,42 +142,18 @@ public class ClusterNetworkTopologyTest
     {
         assertNotNull(hostnames);
         assertEquals(3, hostnames.size());
+        final String ingressEndpoints = ingressChannel.contains("endpoint") ?
+            null : BasicAuctionClusterClient.ingressEndpoints(hostnames);
 
         try (
             RemoteLaunchClient remote0 = RemoteLaunchClient.connect(hostnames.get(0), REMOTE_LAUNCH_PORT);
             RemoteLaunchClient remote1 = RemoteLaunchClient.connect(hostnames.get(1), REMOTE_LAUNCH_PORT);
             RemoteLaunchClient remote2 = RemoteLaunchClient.connect(hostnames.get(2), REMOTE_LAUNCH_PORT))
         {
-            final String[] command0 = deriveCommand(0, hostnames, internalHostnames, ingressChannel, logChannel);
-            final String[] command1 = deriveCommand(1, hostnames, internalHostnames, ingressChannel, logChannel);
-            final String[] command2 = deriveCommand(2, hostnames, internalHostnames, ingressChannel, logChannel);
-            final String ingressEndpoints = ingressChannel.contains("endpoint") ?
-                null : BasicAuctionClusterClient.ingressEndpoints(hostnames);
-
-            final SocketChannel execute0 = remote0.execute(false, command0);
-            final SocketChannel execute1 = remote1.execute(false, command1);
-            final SocketChannel execute2 = remote2.execute(false, command2);
-
-            final Node node0 = new Node("Node 0");
-            final Node node1 = new Node("Node 1");
-            final Node node2 = new Node("Node 2");
-
             final Selector selector = Selector.open();
-            execute0.register(selector, SelectionKey.OP_READ, node0);
-            execute1.register(selector, SelectionKey.OP_READ, node1);
-            execute2.register(selector, SelectionKey.OP_READ, node2);
-
-            boolean node0Started = false;
-            boolean node1Started = false;
-            boolean node2Started = false;
-
-            while (!node0Started || !node1Started || !node2Started)
-            {
-                pollSelector(selector);
-                node0Started = node0Started || node0.checkOutput("Started Cluster Node");
-                node1Started = node1Started || node1.checkOutput("Started Cluster Node");
-                node2Started = node2Started || node2.checkOutput("Started Cluster Node");
-            }
+            launchNode(hostnames, internalHostnames, ingressChannel, logChannel, remote0, selector, 0);
+            launchNode(hostnames, internalHostnames, ingressChannel, logChannel, remote1, selector, 1);
+            launchNode(hostnames, internalHostnames, ingressChannel, logChannel, remote2, selector, 2);
 
             connectAndSendMessages(ingressChannel, ingressEndpoints, selector, 1);
         }

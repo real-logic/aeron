@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ClusterNetworkTopologyTest
 {
     private static final int REMOTE_LAUNCH_PORT = 11112;
+    private static final long CLUSTER_START_ELECTION_TIMEOUT_S = 10;
     private static final List<String> HOSTNAMES = Arrays.asList("10.42.0.10", "10.42.0.11", "10.42.0.12");
     private static final List<String> INTERNAL_HOSTNAMES = Arrays.asList("10.42.1.10", "10.42.1.11", "10.42.1.12");
 
@@ -115,13 +117,19 @@ public class ClusterNetworkTopologyTest
             Arguments.of(
                 HOSTNAMES, null, "aeron:udp", null),
             Arguments.of(
-                HOSTNAMES, null, "aeron:udp?endpoint=239.20.90.11:9152|interface=10.42.0.0/24", null, null),
+                HOSTNAMES, null, "aeron:udp?endpoint=239.20.90.11:9152|interface=10.42.0.0/24", null),
             Arguments.of(
                 HOSTNAMES, null, "aeron:udp", "aeron:udp?endpoint=239.20.90.13:9152|interface=10.42.0.0/24"),
             Arguments.of(
                 HOSTNAMES, null, "aeron:udp", "aeron:udp?endpoint=239.20.90.13:9152|interface=10.42.1.0/24"),
             Arguments.of(
                 HOSTNAMES, INTERNAL_HOSTNAMES, "aeron:udp", null));
+    }
+
+    private static Stream<Arguments> singleTopologyConfigurations()
+    {
+        return Stream.of(Arguments.of(
+            HOSTNAMES, null, "aeron:udp?endpoint=239.20.90.11:9152|interface=10.42.0.0/24", null));
     }
 
     @ParameterizedTest
@@ -171,31 +179,101 @@ public class ClusterNetworkTopologyTest
                 node2Started = node2Started || node2.checkOutput("Started Cluster Node");
             }
 
-            final String message = "Hello World!";
-            final MutableDirectBuffer messageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128));
-            final int length = messageBuffer.putStringAscii(0, message);
-            final MutableReference<String> egressResponse = new MutableReference<>();
+            connectAndSendMessages(ingressChannel, ingressEndpoints, selector, 1);
+        }
+    }
 
-            final EgressListener egressListener =
-                (clusterSessionId, timestamp, buffer, offset, length1, header) ->
-                {
-                    final String stringAscii = buffer.getStringAscii(offset);
-                    System.out.println("Response: " + stringAscii);
-                    egressResponse.set(stringAscii);
-                };
+    @ParameterizedTest
+    @MethodSource("singleTopologyConfigurations")
+    void shouldLogReplicate(
+        final List<String> hostnames,
+        final List<String> internalHostnames,
+        final String ingressChannel,
+        final String logChannel) throws Exception
+    {
+        assertNotNull(hostnames);
+        assertEquals(3, hostnames.size());
+        final String ingressEndpoints = ingressChannel.contains("endpoint") ?
+            null : BasicAuctionClusterClient.ingressEndpoints(hostnames);
 
-            try (
-                MediaDriver mediaDriver = MediaDriver.launchEmbedded(new MediaDriver.Context()
-                    .threadingMode(ThreadingMode.SHARED)
-                    .dirDeleteOnStart(true)
-                    .dirDeleteOnShutdown(true));
-                AeronCluster aeronCluster = AeronCluster.connect(
-                    new AeronCluster.Context()
-                    .egressListener(egressListener)
-                    .egressChannel("aeron:udp?endpoint=10.42.0.1:0")
-                    .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-                    .ingressChannel(ingressChannel)
-                    .ingressEndpoints(ingressEndpoints)))
+        try (
+            RemoteLaunchClient remote0 = RemoteLaunchClient.connect(hostnames.get(0), REMOTE_LAUNCH_PORT);
+            RemoteLaunchClient remote1 = RemoteLaunchClient.connect(hostnames.get(1), REMOTE_LAUNCH_PORT))
+        {
+            final Selector selector = Selector.open();
+            launchNode(hostnames, internalHostnames, ingressChannel, logChannel, remote0, selector, 0);
+            launchNode(hostnames, internalHostnames, ingressChannel, logChannel, remote1, selector, 1);
+
+            connectAndSendMessages(ingressChannel, ingressEndpoints, selector, 10);
+        }
+
+        Thread.sleep(5_000);
+
+        try (
+            RemoteLaunchClient remote0 = RemoteLaunchClient.connect(hostnames.get(0), REMOTE_LAUNCH_PORT);
+            RemoteLaunchClient remote2 = RemoteLaunchClient.connect(hostnames.get(2), REMOTE_LAUNCH_PORT))
+        {
+            final Selector selector = Selector.open();
+            launchNode(hostnames, internalHostnames, ingressChannel, logChannel, remote0, selector, 0);
+            launchNode(hostnames, internalHostnames, ingressChannel, logChannel, remote2, selector, 2);
+
+            connectAndSendMessages(ingressChannel, ingressEndpoints, selector, 10);
+        }
+    }
+
+    private void launchNode(
+        final List<String> hostnames,
+        final List<String> internalHostnames,
+        final String ingressChannel,
+        final String logChannel,
+        final RemoteLaunchClient remote0,
+        final Selector selector,
+        final int nodeId) throws IOException
+    {
+        final String[] command0 = deriveCommand(nodeId, hostnames, internalHostnames, ingressChannel, logChannel);
+        final SocketChannel execute0 = remote0.execute(false, command0);
+        final Node node0 = new Node("Node " + nodeId);
+        execute0.register(selector, SelectionKey.OP_READ, node0);
+        while (node0.checkOutput("Started Cluster Node"))
+        {
+            pollSelector(selector);
+        }
+    }
+
+    private void connectAndSendMessages(
+        final String ingressChannel,
+        final String ingressEndpoints,
+        final Selector selector,
+        final double messageCount)
+    {
+        final String message = "Hello World!";
+        final MutableDirectBuffer messageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128));
+        final int length = messageBuffer.putStringAscii(0, message);
+        final MutableReference<String> egressResponse = new MutableReference<>();
+
+        final EgressListener egressListener =
+            (clusterSessionId, timestamp, buffer, offset, length1, header) ->
+            {
+                final String stringAscii = buffer.getStringAscii(offset);
+                System.out.println("Response: " + stringAscii);
+                egressResponse.set(stringAscii);
+            };
+
+        try (
+            MediaDriver mediaDriver = MediaDriver.launchEmbedded(new MediaDriver.Context()
+                .threadingMode(ThreadingMode.SHARED)
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(true));
+            AeronCluster.AsyncConnect asyncConnect = AeronCluster.asyncConnect(new AeronCluster.Context()
+                .messageTimeoutNs(TimeUnit.SECONDS.toNanos(CLUSTER_START_ELECTION_TIMEOUT_S * 2))
+                .egressListener(egressListener)
+                .egressChannel("aeron:udp?endpoint=10.42.0.1:0")
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .ingressChannel(ingressChannel)
+                .ingressEndpoints(ingressEndpoints));
+            AeronCluster aeronCluster = pollUntilConnected(asyncConnect, selector))
+        {
+            for (int i = 0; i < messageCount; i++)
             {
                 Tests.await(
                     () ->
@@ -216,6 +294,19 @@ public class ClusterNetworkTopologyTest
                     SECONDS.toNanos(5));
             }
         }
+    }
+
+    private AeronCluster pollUntilConnected(
+        final AeronCluster.AsyncConnect asyncConnect,
+        final Selector selector)
+    {
+        AeronCluster aeronCluster;
+        while (null == (aeronCluster = asyncConnect.poll()))
+        {
+            pollSelector(selector);
+            Tests.sleep(1);
+        }
+        return aeronCluster;
     }
 
     @Test
@@ -292,10 +383,13 @@ public class ClusterNetworkTopologyTest
 
             assert initialTextPosition <= resultTextPosition;
 
-            textOutputDup.clear().position(initialTextPosition).limit(resultTextPosition);
-            System.out.print(name);
-            System.out.print(": ");
-            System.out.print(textOutputDup);
+            if (initialTextPosition < resultTextPosition)
+            {
+                textOutputDup.clear().position(initialTextPosition).limit(resultTextPosition);
+                System.out.print(name);
+                System.out.print(": ");
+                System.out.print(textOutputDup);
+            }
         }
 
         private void applyResponseData(final ByteBuffer data)
@@ -369,7 +463,9 @@ public class ClusterNetworkTopologyTest
         command.add("-Djava.net.preferIPv4Stack=true");
         command.add("-Daeron.dir.delete.on.start=true");
         command.add("-Daeron.event.cluster.log=all");
+        command.add("-Daeron.event.cluster.log.disable=CANVASS_POSITION");
         command.add("-Daeron.driver.resolver.name=node" + nodeId);
+        command.add("-Daeron.cluster.startup.canvass.timeout=" + CLUSTER_START_ELECTION_TIMEOUT_S + "s");
 
         if (null != ingressChannel)
         {

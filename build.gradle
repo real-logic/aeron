@@ -146,10 +146,7 @@ allprojects {
             failOnVersionConflict()
 
             force "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
-                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
-                  "org.junit.jupiter:junit-jupiter-api:${junitVersion}",
-                  "org.junit.jupiter:junit-jupiter-params:${junitVersion}",
-                  "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         }
     }
 
@@ -310,8 +307,6 @@ project(':aeron-client') {
         }
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     jar {
@@ -372,8 +367,6 @@ project(':aeron-driver') {
         api project(':aeron-client')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     jar {
@@ -445,8 +438,6 @@ project(':aeron-archive') {
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     def generatedDir = file("${buildDir}/generated-src")
@@ -566,8 +557,6 @@ project(':aeron-cluster') {
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     def generatedDir = file("${buildDir}/generated-src")

@@ -1093,10 +1093,13 @@ abstract class ArchiveConductor
             catalog.recordingSummary(dstRecordingId, recordingSummary);
         }
 
+        final String resolvedReplicationChannel = Strings.isEmpty(replicationChannel) ?
+            ctx.replicationChannel() : replicationChannel;
+
         final AeronArchive.Context remoteArchiveContext = ctx.archiveClientContext().clone()
             .controlRequestChannel(srcControlChannel)
             .controlRequestStreamId(srcControlStreamId)
-            .controlResponseChannel(replicationChannel);
+            .controlResponseChannel(resolvedReplicationChannel);
 
         final long replicationId = nextSessionId++;
         final ReplicationSession replicationSession = new ReplicationSession(
@@ -1107,7 +1110,7 @@ abstract class ArchiveConductor
             replicationId,
             stopPosition,
             liveDestination,
-            Strings.isEmpty(replicationChannel) ? ctx.replicationChannel() : replicationChannel,
+            resolvedReplicationChannel,
             hasRecording ? recordingSummary : null,
             remoteArchiveContext,
             cachedEpochClock,

@@ -381,7 +381,9 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 
 Because Cluster's Consensus Module requires that we write a log file to support the Raft protocol, we need a client for
 the constructed Archive for it to use. As the Consensus Module should always be deployed on the same node as its
-archive, we're going to use the local (IPC) configuration.
+archive, we're going to use the local (IPC) configuration.  It is also worth noting that we haven't changed the
+controlRequestStreamId in our setup.  The defaults in this situation are the most appropriate (from Aeron version 1.33.0
+onwards).
 
 ==== Consensus Module
 

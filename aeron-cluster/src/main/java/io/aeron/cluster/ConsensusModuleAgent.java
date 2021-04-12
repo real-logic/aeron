@@ -2993,7 +2993,7 @@ final class ConsensusModuleAgent implements Agent
     {
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
-        terminateAgent(new ClusterTerminationException());
+        terminateAgent();
     }
 
     private void unexpectedTermination()
@@ -3002,21 +3002,21 @@ final class ConsensusModuleAgent implements Agent
         serviceProxy.terminationPosition(0, ctx.countedErrorHandler());
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
-        terminateAgent(new ClusterTerminationException());
+        terminateAgent();
     }
 
-    private void terminateAgent(final AgentTerminationException ex)
+    private void terminateAgent()
     {
         try
         {
             ctx.terminationHook().run();
         }
-        catch (final Throwable t)
+        catch (final Throwable ex)
         {
-            ctx.countedErrorHandler().onError(t);
+            ctx.countedErrorHandler().onError(ex);
         }
 
-        throw ex;
+        throw new ClusterTerminationException();
     }
 
     private void tryStopLogRecording()

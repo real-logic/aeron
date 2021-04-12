@@ -44,10 +44,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.CommonContext.MTU_LENGTH_PARAM_NAME;
-import static io.aeron.CommonContext.SPARSE_PARAM_NAME;
-import static io.aeron.CommonContext.SPY_PREFIX;
-import static io.aeron.CommonContext.TERM_LENGTH_PARAM_NAME;
+import static io.aeron.CommonContext.*;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
@@ -1095,7 +1092,8 @@ abstract class ArchiveConductor
 
         final AeronArchive.Context remoteArchiveContext = ctx.archiveClientContext().clone()
             .controlRequestChannel(srcControlChannel)
-            .controlRequestStreamId(srcControlStreamId);
+            .controlRequestStreamId(srcControlStreamId)
+            .controlResponseChannel(ctx.controlChannel());
 
         final long replicationId = nextSessionId++;
         final ReplicationSession replicationSession = new ReplicationSession(

@@ -1095,8 +1095,7 @@ abstract class ArchiveConductor
 
         final AeronArchive.Context remoteArchiveContext = ctx.archiveClientContext().clone()
             .controlRequestChannel(srcControlChannel)
-            .controlRequestStreamId(srcControlStreamId)
-            .controlResponseChannel(replicationChannel);
+            .controlRequestStreamId(srcControlStreamId);
 
         final long replicationId = nextSessionId++;
         final ReplicationSession replicationSession = new ReplicationSession(

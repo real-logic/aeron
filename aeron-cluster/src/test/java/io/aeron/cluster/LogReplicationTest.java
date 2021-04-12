@@ -41,7 +41,6 @@ class LogReplicationTest
     private static final int SRC_ARCHIVE_STREAM_ID = 3;
 
     private static final String ENDPOINT = "localhost:20123";
-    private static final String REPLICATION_ENDPOINT = "localhost:0";
     private static final long PROGRESS_CHECK_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     private static final long PROGRESS_CHECK_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
@@ -79,9 +78,9 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
-            REPLICATION_ENDPOINT,
             PROGRESS_CHECK_TIMEOUT_NS,
-            PROGRESS_CHECK_INTERVAL_NS, nowNs);
+            PROGRESS_CHECK_INTERVAL_NS,
+            nowNs);
 
         assertFalse(logReplication.isDone(nowNs));
 
@@ -112,9 +111,9 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
-            REPLICATION_ENDPOINT,
             PROGRESS_CHECK_TIMEOUT_NS,
-            PROGRESS_CHECK_INTERVAL_NS, nowNs);
+            PROGRESS_CHECK_INTERVAL_NS,
+            nowNs);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
         assertFalse(logReplication.isDone(nowNs));
@@ -135,9 +134,9 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
-            REPLICATION_ENDPOINT,
             PROGRESS_CHECK_TIMEOUT_NS,
-            PROGRESS_CHECK_INTERVAL_NS, nowNs);
+            PROGRESS_CHECK_INTERVAL_NS,
+            nowNs);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, RecordingSignal.STOP);
         assertTrue(logReplication.isDone(nowNs));
@@ -159,9 +158,9 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
-            REPLICATION_ENDPOINT,
             PROGRESS_CHECK_TIMEOUT_NS,
-            PROGRESS_CHECK_INTERVAL_NS, nowNs);
+            PROGRESS_CHECK_INTERVAL_NS,
+            nowNs);
 
         assertThrows(
             ClusterException.class,
@@ -180,9 +179,9 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
-            REPLICATION_ENDPOINT,
             PROGRESS_CHECK_TIMEOUT_NS,
-            PROGRESS_CHECK_INTERVAL_NS, nowNs);
+            PROGRESS_CHECK_INTERVAL_NS,
+            nowNs);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition + 1, RecordingSignal.STOP);
 
@@ -201,9 +200,9 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
-            REPLICATION_ENDPOINT,
             PROGRESS_CHECK_TIMEOUT_NS,
-            PROGRESS_CHECK_INTERVAL_NS, t0);
+            PROGRESS_CHECK_INTERVAL_NS,
+            t0);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, 0, RecordingSignal.EXTEND);
 

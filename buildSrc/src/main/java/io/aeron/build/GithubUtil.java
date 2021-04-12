@@ -19,8 +19,12 @@ import org.eclipse.jgit.transport.URIish;
 
 import java.net.URISyntaxException;
 
-public class GithubUtil
+final class GithubUtil
 {
+    private GithubUtil()
+    {
+    }
+
     public static String getWikiUriFromOriginUri(final String remoteUri) throws URISyntaxException
     {
         final URIish urIish = new URIish(remoteUri);

@@ -34,7 +34,7 @@ import java.util.List;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DistinctErrorLogTestWatcher implements TestWatcher
+public final class DistinctErrorLogTestWatcher implements TestWatcher
 {
     private final LongArrayList observationValues = new LongArrayList();
     private final List<String> errors = new ArrayList<>();
@@ -50,16 +50,14 @@ public class DistinctErrorLogTestWatcher implements TestWatcher
         for (int i = 0, size = errors.size(); i < size; i++)
         {
             final int observationValuesIndex = i * 3;
+            final String errorMsg =
+                "Observation count: " + observationValues.getLong(observationValuesIndex) +
+                ", first timestamp: " + observationValues.getLong(observationValuesIndex + 1) +
+                ", last timestamp: " + observationValues.getLong(observationValuesIndex + 2) +
+                "\n" +
+                errors.get(i);
 
-            System.out.print("Observation count: ");
-            System.out.print(observationValues.getLong(observationValuesIndex));
-            System.out.print(", first timestamp: ");
-            System.out.print(observationValues.getLong(observationValuesIndex + 1));
-            System.out.print(", last timestamp: ");
-            System.out.print(observationValues.getLong(observationValuesIndex + 2));
-            System.out.println();
-            System.out.println(errors.get(i));
-            System.out.println();
+            System.out.println(errorMsg);
         }
     }
 

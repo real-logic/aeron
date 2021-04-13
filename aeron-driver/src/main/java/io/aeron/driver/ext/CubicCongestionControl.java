@@ -56,11 +56,9 @@ public class CubicCongestionControl implements CongestionControl
      */
     public static final String CC_PARAM_VALUE = "cubic";
 
-    private static final long RTT_MEASUREMENT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final long SECOND_IN_NS = TimeUnit.SECONDS.toNanos(1);
-    private static final long RTT_MAX_TIMEOUT_NS = SECOND_IN_NS;
-    private static final int MAX_OUTSTANDING_RTT_MEASUREMENTS = 1;
     private static final int INITCWND = 10;
+    private static final int RTT_TIMEOUT_MULTIPLE = 4;
 
     private static final double C = 0.4;
     private static final double B = 0.2;
@@ -68,7 +66,6 @@ public class CubicCongestionControl implements CongestionControl
     private final int mtu;
     private final int maxCwnd;
     private final int initialWindowLength;
-    private int outstandingRttMeasurements = 0;
 
     private double k;
     private int w_max;
@@ -79,6 +76,7 @@ public class CubicCongestionControl implements CongestionControl
     private long lastLossTimestampNs;
     private long lastRttTimestampNs = 0;
     private long rttNs;
+    private long rttTimeoutNs;
     private final long windowUpdateTimeoutNs;
 
     private final ErrorHandler errorHandler;
@@ -131,6 +129,7 @@ public class CubicCongestionControl implements CongestionControl
             // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
             rttNs = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
             windowUpdateTimeoutNs = rttNs;
+            rttTimeoutNs = rttNs * RTT_TIMEOUT_MULTIPLE;
 
             rttIndicator = PerImageIndicator.allocate(
                 context.tempBuffer(),
@@ -179,9 +178,7 @@ public class CubicCongestionControl implements CongestionControl
     public boolean shouldMeasureRtt(final long nowNs)
     {
         return CubicCongestionControlConfiguration.MEASURE_RTT &&
-            outstandingRttMeasurements < MAX_OUTSTANDING_RTT_MEASUREMENTS &&
-            (((lastRttTimestampNs + RTT_MAX_TIMEOUT_NS) - nowNs < 0) ||
-                ((lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS) - nowNs < 0));
+            ((lastRttTimestampNs + rttTimeoutNs) - nowNs < 0);
     }
 
     /**
@@ -189,7 +186,6 @@ public class CubicCongestionControl implements CongestionControl
      */
     public void onRttMeasurementSent(final long nowNs)
     {
-        outstandingRttMeasurements++;
         lastRttTimestampNs = nowNs;
     }
 
@@ -198,10 +194,10 @@ public class CubicCongestionControl implements CongestionControl
      */
     public void onRttMeasurement(final long nowNs, final long rttNs, final InetSocketAddress srcAddress)
     {
-        outstandingRttMeasurements--;
         lastRttTimestampNs = nowNs;
         this.rttNs = rttNs;
         rttIndicator.setOrdered(rttNs);
+        rttTimeoutNs = Math.max(rttNs, CubicCongestionControlConfiguration.INITIAL_RTT_NS) * RTT_TIMEOUT_MULTIPLE;
     }
 
     /**

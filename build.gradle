@@ -663,8 +663,8 @@ project(':aeron-agent') {
     dependencies {
         implementation aeronClusterProject
         implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        implementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testImplementation project(':aeron-test-support')
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
     }
 
     shadowJar {

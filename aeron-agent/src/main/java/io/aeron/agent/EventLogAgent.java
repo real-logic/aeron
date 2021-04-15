@@ -23,13 +23,17 @@ import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.TypeValidation;
 import net.bytebuddy.utility.JavaModule;
 import org.agrona.CloseHelper;
+import org.agrona.Strings;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Constructor;
+import java.util.EnumMap;
 import java.util.EnumSet;
 
+import static io.aeron.agent.ConfigOption.*;
 import static io.aeron.agent.EventConfiguration.*;
 import static net.bytebuddy.asm.Advice.to;
 import static net.bytebuddy.matcher.ElementMatchers.nameEndsWith;
@@ -38,17 +42,11 @@ import static net.bytebuddy.matcher.ElementMatchers.named;
 /**
  * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by
  * {@link DriverEventCode}. Events are recorded to an in-memory {@link org.agrona.concurrent.ringbuffer.RingBuffer}
- * which is consumed and appended asynchronous to a log as defined by the class {@link #READER_CLASSNAME_PROP_NAME}
+ * which is consumed and appended asynchronous to a log as defined by the class {@link ConfigOption#READER_CLASSNAME}
  * which defaults to {@link EventLogReaderAgent}.
  */
 public final class EventLogAgent
 {
-    /**
-     * Event reader {@link Agent} which consumes the {@link EventConfiguration#EVENT_RING_BUFFER} to output log events.
-     */
-    public static final String READER_CLASSNAME_PROP_NAME = "aeron.event.log.reader.classname";
-    public static final String READER_CLASSNAME_DEFAULT = "io.aeron.agent.EventLogReaderAgent";
-
     private static final long SLEEP_PERIOD_MS = 1L;
 
     private static AgentRunner readerAgentRunner;
@@ -64,24 +62,41 @@ public final class EventLogAgent
      */
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
     {
-        agent(AgentBuilder.RedefinitionStrategy.DISABLED, instrumentation);
+        startLogging(AgentBuilder.RedefinitionStrategy.DISABLED, instrumentation, ConfigOption.fromSystemProperties());
     }
 
     /**
      * Agent main method for dynamic attach.
      *
-     * @param agentArgs       which are ignored.
+     * @param agentArgs       containing configuration options or command to stop.
      * @param instrumentation for applying to the agent.
      */
     public static void agentmain(final String agentArgs, final Instrumentation instrumentation)
     {
-        agent(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION, instrumentation);
+        if (Strings.isEmpty(agentArgs))
+        {
+            startLogging(
+                AgentBuilder.RedefinitionStrategy.RETRANSFORMATION,
+                instrumentation,
+                ConfigOption.fromSystemProperties());
+        }
+        else if (STOP_COMMAND.equals(agentArgs))
+        {
+            stopLogging();
+        }
+        else
+        {
+            startLogging(
+                AgentBuilder.RedefinitionStrategy.RETRANSFORMATION,
+                instrumentation,
+                ConfigOption.parseAgentArgs(agentArgs));
+        }
     }
 
     /**
      * Remove the transformer and close the agent runner for the event log reader.
      */
-    public static synchronized void removeTransformer()
+    public static synchronized void stopLogging()
     {
         if (logTransformer != null)
         {
@@ -90,20 +105,30 @@ public final class EventLogAgent
             logTransformer = null;
             thread = null;
 
+            EventConfiguration.reset();
+
             CloseHelper.close(readerAgentRunner);
             readerAgentRunner = null;
         }
     }
 
-    private static synchronized void agent(
-        final AgentBuilder.RedefinitionStrategy redefinitionStrategy, final Instrumentation instrumentation)
+    private static synchronized void startLogging(
+        final AgentBuilder.RedefinitionStrategy redefinitionStrategy,
+        final Instrumentation instrumentation,
+        final EnumMap<ConfigOption, String> configOptions)
     {
         if (null != logTransformer)
         {
             throw new IllegalStateException("agent already instrumented");
         }
 
-        EventConfiguration.init();
+        EventConfiguration.init(
+            configOptions.get(ENABLED_DRIVER_EVENT_CODES),
+            configOptions.get(DISABLED_DRIVER_EVENT_CODES),
+            configOptions.get(ENABLED_ARCHIVE_EVENT_CODES),
+            configOptions.get(DISABLED_ARCHIVE_EVENT_CODES),
+            configOptions.get(ENABLED_CLUSTER_EVENT_CODES),
+            configOptions.get(DISABLED_CLUSTER_EVENT_CODES));
 
         if (DRIVER_EVENT_CODES.isEmpty() && ARCHIVE_EVENT_CODES.isEmpty() && CLUSTER_EVENT_CODES.isEmpty())
         {
@@ -113,7 +138,10 @@ public final class EventLogAgent
         EventLogAgent.instrumentation = instrumentation;
 
         readerAgentRunner = new AgentRunner(
-            new SleepingMillisIdleStrategy(SLEEP_PERIOD_MS), Throwable::printStackTrace, null, newReaderAgent());
+            new SleepingMillisIdleStrategy(SLEEP_PERIOD_MS),
+            Throwable::printStackTrace,
+            null,
+            newReaderAgent(configOptions));
 
         AgentBuilder agentBuilder = new AgentBuilder.Default(new ByteBuddy()
             .with(TypeValidation.DISABLED))
@@ -461,14 +489,22 @@ public final class EventLogAgent
                 builder.visit(to(interceptorClass).on(named(interceptorMethod))));
     }
 
-    private static Agent newReaderAgent()
+    private static Agent newReaderAgent(final EnumMap<ConfigOption, String> configOptions)
     {
         try
         {
-            final String className = System.getProperty(READER_CLASSNAME_PROP_NAME, READER_CLASSNAME_DEFAULT);
+            final String className = configOptions.getOrDefault(READER_CLASSNAME, READER_CLASSNAME_DEFAULT);
             final Class<?> aClass = Class.forName(className);
 
-            return (Agent)aClass.getDeclaredConstructor().newInstance();
+            try
+            {
+                final Constructor<?> constructor = aClass.getDeclaredConstructor(String.class);
+                return (Agent)constructor.newInstance(configOptions.get(LOG_FILENAME));
+            }
+            catch (final NoSuchMethodException ex)
+            {
+                return (Agent)aClass.getDeclaredConstructor().newInstance();
+            }
         }
         catch (final Exception ex)
         {

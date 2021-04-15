@@ -21,7 +21,6 @@ import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.Tests;
-import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.Agent;
@@ -33,8 +32,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.io.File;
-import java.nio.file.Paths;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -56,17 +54,10 @@ public class DriverLoggingAgentTest
 
     private static final Set<DriverEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(DriverEventCode.class));
 
-    private File testDir;
-
     @AfterEach
     public void after()
     {
-        AgentTests.afterAgent();
-
-        if (testDir != null && testDir.exists())
-        {
-            IoUtil.delete(testDir, false);
-        }
+        AgentTests.stopLogging();
     }
 
     @Test
@@ -188,18 +179,13 @@ public class DriverLoggingAgentTest
 
     private void before(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
     {
-        System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
-        System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, enabledEvents);
-        AgentTests.beforeAgent();
+        final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
+        configOptions.put(ConfigOption.READER_CLASSNAME, StubEventLogReaderAgent.class.getName());
+        configOptions.put(ConfigOption.ENABLED_DRIVER_EVENT_CODES, enabledEvents);
+        AgentTests.startLogging(configOptions);
 
         WAIT_LIST.clear();
         WAIT_LIST.addAll(expectedEvents);
-
-        testDir = Paths.get(IoUtil.tmpDirName(), "driver-test").toFile();
-        if (testDir.exists())
-        {
-            IoUtil.delete(testDir, false);
-        }
     }
 
     static final class StubEventLogReaderAgent implements Agent, MessageHandler

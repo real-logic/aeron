@@ -23,12 +23,14 @@ import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 
 import static io.aeron.agent.CommonEventDissector.dissectLogStartMessage;
-import static io.aeron.agent.EventConfiguration.*;
+import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
+import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.lang.System.*;
 import static java.nio.channels.FileChannel.open;
 import static java.nio.file.StandardOpenOption.*;
@@ -38,31 +40,18 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Simple reader of {@link EventConfiguration#EVENT_RING_BUFFER} that appends to {@link System#out} by default
- * or to file if {@link #LOG_FILENAME_PROP_NAME} System property is set.
+ * or to file if {@link ConfigOption#LOG_FILENAME} system property is set.
  */
 public final class EventLogReaderAgent implements Agent
 {
-    /**
-     * Event Buffer length system property name. If not set then output will default to {@link System#out}.
-     */
-    public static final String LOG_FILENAME_PROP_NAME = "aeron.event.log.filename";
-
     private final ManyToOneRingBuffer ringBuffer = EventConfiguration.EVENT_RING_BUFFER;
     private final StringBuilder builder = new StringBuilder();
     private final MessageHandler messageHandler = this::onMessage;
-    private ByteBuffer byteBuffer;
-    private FileChannel fileChannel = null;
+    private final ByteBuffer byteBuffer;
+    private final FileChannel fileChannel;
 
-    EventLogReaderAgent()
+    EventLogReaderAgent(final String filename)
     {
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void onStart()
-    {
-        final String filename = getProperty(LOG_FILENAME_PROP_NAME);
         if (null != filename)
         {
             try
@@ -71,12 +60,23 @@ public final class EventLogReaderAgent implements Agent
             }
             catch (final IOException ex)
             {
-                LangUtil.rethrowUnchecked(ex);
+                throw new UncheckedIOException(ex);
             }
 
             byteBuffer = allocateDirectAligned(MAX_EVENT_LENGTH * 2, CACHE_LINE_LENGTH);
         }
+        else
+        {
+            fileChannel = null;
+            byteBuffer = null;
+        }
+    }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void onStart()
+    {
         dissectLogStartMessage(nanoTime(), currentTimeMillis(), systemDefault(), builder);
         builder.append(lineSeparator());
 

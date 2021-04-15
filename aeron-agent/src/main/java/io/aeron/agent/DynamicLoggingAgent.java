@@ -21,11 +21,13 @@ import org.agrona.Strings;
 import org.agrona.SystemUtil;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.EnumMap;
 
 import static io.aeron.agent.ConfigOption.*;
+import static java.lang.System.out;
 
 /**
  * Attach/detach logging agent dynamically to a running process.
@@ -91,13 +93,16 @@ public class DynamicLoggingAgent
                 }
 
                 final String agentArgs = buildAgentArgs(configOptions);
-                ByteBuddyAgent.attach(agentJar, processId, agentArgs);
+                attachAgent(agentJar, processId, agentArgs);
+                out.println("Logging started.");
+                out.println("Reader agent: " + configOptions.get(READER_CLASSNAME));
+                out.println("File: " + configOptions.get(LOG_FILENAME));
                 break;
             }
 
             case STOP_COMMAND:
             {
-                ByteBuddyAgent.attach(agentJar, processId, command);
+                attachAgent(agentJar, processId, command);
                 break;
             }
 
@@ -108,12 +113,49 @@ public class DynamicLoggingAgent
 
     private static void printHelp()
     {
-        System.out.println("Usage: <agent-jar> <java-process-id> <command> [property files...]");
-        System.out.println("  <agent-jar> - fully qualified path to the agent jar");
-        System.out.println("  <java-process-id> - PID of the Java process to attach an agent to");
-        System.out.println("  <command> - either '" + START_COMMAND + "' or '" + STOP_COMMAND + "'");
-        System.out
-            .println("  [property files...] - an optional list of property files to configure logging options");
+        out.println("Usage: <agent-jar> <java-process-id> <command> [property files...]");
+        out.println("  <agent-jar> - fully qualified path to the agent jar");
+        out.println("  <java-process-id> - PID of the Java process to attach an agent to");
+        out.println("  <command> - either '" + START_COMMAND + "' or '" + STOP_COMMAND + "'");
+        out.println("  [property files...] - an optional list of property files to configure logging options");
+    }
+
+    private static void attachAgent(final File agentJar, final String processId, final String agentArgs)
+    {
+        try
+        {
+            ByteBuddyAgent.attach(agentJar, processId, agentArgs);
+        }
+        catch (final Throwable t)
+        {
+            translateError(processId, t);
+            System.exit(-1);
+        }
+    }
+
+    private static void translateError(final String processId, final Throwable t)
+    {
+        Throwable cause = t;
+        while (null != cause.getCause())
+        {
+            cause = cause.getCause();
+        }
+
+        if (cause instanceof IOException)
+        {
+            out.println("Process with PID " + processId + " is not running or not reachable.");
+        }
+        else if ("AgentInitializationException".equals(cause.getClass().getSimpleName()))
+        {
+            out.printf(
+                "Cannot start logging as it is already running.%n" +
+                "To stop logging use a '%s' command.%n%n",
+                STOP_COMMAND);
+        }
+        else
+        {
+            t.printStackTrace(out);
+        }
     }
 
 }

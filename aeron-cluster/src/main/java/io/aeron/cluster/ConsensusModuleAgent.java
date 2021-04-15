@@ -476,36 +476,60 @@ final class ConsensusModuleAgent implements Agent
         return false;
     }
 
-    void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
+    void onCanvassPosition(
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long leadershipTermId,
+        final int followerMemberId)
     {
         if (null != election)
         {
-            election.onCanvassPosition(logLeadershipTermId, logPosition, followerMemberId);
+            election.onCanvassPosition(logLeadershipTermId, logPosition, leadershipTermId, followerMemberId);
         }
         else if (Cluster.Role.LEADER == role)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-            if (null != follower && logLeadershipTermId <= leadershipTermId)
+            if (null != follower && logLeadershipTermId <= this.leadershipTermId)
             {
-                final RecordingLog.Entry currentTermEntry = recordingLog.findTermEntry(leadershipTermId);
-                final RecordingLog.Entry nextFollowerEntry = recordingLog.findTermEntry(
-                    logLeadershipTermId < leadershipTermId ? logLeadershipTermId + 1 : logLeadershipTermId);
-                if (null != currentTermEntry && null != nextFollowerEntry)
+                final RecordingLog.Entry currentTermEntry = recordingLog.getTermEntry(this.leadershipTermId);
+                final long termBaseLogPosition = currentTermEntry.termBaseLogPosition;
+                final long timestamp = ctx.clusterClock().timeNanos();
+                final long nextLogLeadershipTermId;
+                final long nextTermBaseLogPosition;
+                final long nextLogPosition;
+
+                if (logLeadershipTermId < this.leadershipTermId)
                 {
-                    final long appendPosition = logPublisher.position();
-                    consensusPublisher.newLeadershipTerm(
-                        follower.publication(),
-                        logLeadershipTermId,
-                        nextFollowerEntry.termBaseLogPosition,
-                        leadershipTermId,
-                        currentTermEntry.termBaseLogPosition,
-                        appendPosition,
-                        logRecordingId,
-                        nextFollowerEntry.timestamp,
-                        memberId,
-                        logPublisher.sessionId(),
-                        false);
+                    final RecordingLog.Entry nextLogEntry = recordingLog.findTermEntry(logLeadershipTermId + 1);
+                    nextLogLeadershipTermId = null != nextLogEntry ?
+                        nextLogEntry.leadershipTermId : this.leadershipTermId;
+                    nextTermBaseLogPosition = null != nextLogEntry ?
+                        nextLogEntry.termBaseLogPosition : termBaseLogPosition;
+                    nextLogPosition = null != nextLogEntry ? nextLogEntry.logPosition : NULL_POSITION;
                 }
+                else
+                {
+                    nextLogLeadershipTermId = NULL_VALUE;
+                    nextTermBaseLogPosition = NULL_POSITION;
+                    nextLogPosition = NULL_POSITION;
+                }
+
+                final long appendPosition = logPublisher.position();
+
+                consensusPublisher.newLeadershipTerm(
+                    follower.publication(),
+                    logLeadershipTermId,
+                    nextLogLeadershipTermId,
+                    nextTermBaseLogPosition,
+                    nextLogPosition,
+                    this.leadershipTermId,
+                    termBaseLogPosition,
+                    appendPosition,
+                    logRecordingId,
+                    timestamp,
+                    memberId,
+                    logPublisher.sessionId(),
+                    false);
             }
         }
     }
@@ -541,7 +565,9 @@ final class ConsensusModuleAgent implements Agent
 
     void onNewLeadershipTerm(
         final long logLeadershipTermId,
-        final long logTruncatePosition,
+        final long nextLeadershipTermId,
+        final long nextTermBaseLogPosition,
+        final long nextLogPosition,
         final long leadershipTermId,
         final long termBaseLogPosition,
         final long logPosition,
@@ -555,7 +581,9 @@ final class ConsensusModuleAgent implements Agent
         {
             election.onNewLeadershipTerm(
                 logLeadershipTermId,
-                logTruncatePosition,
+                nextLeadershipTermId,
+                nextTermBaseLogPosition,
+                nextLogPosition,
                 leadershipTermId,
                 termBaseLogPosition,
                 logPosition,
@@ -2546,8 +2574,8 @@ final class ConsensusModuleAgent implements Agent
             leaderRecordingId,
             logRecordingId,
             stopPosition,
-            ctx.archiveContext().controlRequestStreamId(),
             leaderArchiveEndpoint,
+            ctx.logReplicationChannel(),
             ctx.leaderHeartbeatTimeoutNs(),
             ctx.leaderHeartbeatIntervalNs(),
             nowNs);
@@ -3008,6 +3036,18 @@ final class ConsensusModuleAgent implements Agent
             }
 
             logSubscriptionId = NULL_VALUE;
+        }
+
+        if (NULL_VALUE != logRecordingId)
+        {
+            try
+            {
+                archive.tryStopRecordingByIdentity(logRecordingId);
+            }
+            catch (final Exception ex)
+            {
+                ctx.countedErrorHandler().onError(new ClusterException(ex, WARN));
+            }
         }
     }
 

@@ -52,11 +52,12 @@ public final class EchoServiceNode
 
     private static final int PORT_BASE = 9000;
     private static final int PORTS_PER_NODE = 100;
-    private static final int ARCHIVE_CONTROL_REQUEST_PORT_OFFSET = 1;
+    private static final int ARCHIVE_CONTROL_PORT_OFFSET = 1;
     private static final int CLIENT_FACING_PORT_OFFSET = 2;
     private static final int MEMBER_FACING_PORT_OFFSET = 3;
     private static final int LOG_PORT_OFFSET = 4;
     private static final int TRANSFER_PORT_OFFSET = 5;
+    private static final int REPLICATION_PORT_OFFSET = 6;
     private static final int TERM_LENGTH = 64 * 1024;
 
     static int calculatePort(final int nodeId, final int offset)
@@ -64,9 +65,9 @@ public final class EchoServiceNode
         return PORT_BASE + (nodeId * PORTS_PER_NODE) + offset;
     }
 
-    private static String udpChannel(final int nodeId, final String hostname)
+    private static String udpChannel(final int nodeId, final String hostname, final int portOffset)
     {
-        final int port = calculatePort(nodeId, ARCHIVE_CONTROL_REQUEST_PORT_OFFSET);
+        final int port = calculatePort(nodeId, portOffset);
         return new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
             .termLength(TERM_LENGTH)
@@ -93,7 +94,7 @@ public final class EchoServiceNode
             sb.append(',').append(internalHostnames[i]).append(':').append(calculatePort(i, LOG_PORT_OFFSET));
             sb.append(',').append(internalHostnames[i]).append(':').append(calculatePort(i, TRANSFER_PORT_OFFSET));
             sb.append(',').append(internalHostnames[i]).append(':')
-                .append(calculatePort(i, ARCHIVE_CONTROL_REQUEST_PORT_OFFSET));
+                .append(calculatePort(i, ARCHIVE_CONTROL_PORT_OFFSET));
             sb.append('|');
         }
 
@@ -132,7 +133,7 @@ public final class EchoServiceNode
         final Archive.Context archiveContext = new Archive.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
-            .controlChannel(udpChannel(nodeId, hostname))
+            .controlChannel(udpChannel(nodeId, hostname, ARCHIVE_CONTROL_PORT_OFFSET))
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
@@ -148,6 +149,7 @@ public final class EchoServiceNode
             .clusterMemberId(nodeId)
             .clusterMembers(clusterMembers(hostnames, internalHostnames))
             .clusterDir(new File(baseDir, "consensus-module"))
+            .logReplicationChannel(udpChannel(nodeId, hostname, REPLICATION_PORT_OFFSET))
             .archiveContext(aeronArchiveContext.clone());
 
         final ClusteredServiceContainer.Context clusteredServiceContext =

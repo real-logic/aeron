@@ -56,12 +56,13 @@ public class BasicAuctionClusteredServiceNode
     // tag::ports[]
     private static final int PORT_BASE = 9000;
     private static final int PORTS_PER_NODE = 100;
-    private static final int ARCHIVE_CONTROL_REQUEST_PORT_OFFSET = 1;
+    private static final int ARCHIVE_CONTROL_PORT_OFFSET = 1;
     static final int CLIENT_FACING_PORT_OFFSET = 2;
     private static final int MEMBER_FACING_PORT_OFFSET = 3;
     private static final int LOG_PORT_OFFSET = 4;
     private static final int TRANSFER_PORT_OFFSET = 5;
     private static final int LOG_CONTROL_PORT_OFFSET = 6;
+    private static final int REPLICATION_PORT_OFFSET = 7;
     private static final int TERM_LENGTH = 64 * 1024;
 
     static int calculatePort(final int nodeId, final int offset)
@@ -93,6 +94,14 @@ public class BasicAuctionClusteredServiceNode
             .build();
     }
 
+    private static String logReplicationChannel(final String hostname)
+    {
+        return new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint(hostname + ":0")
+            .build();
+    }
+
     private static String clusterMembers(final List<String> hostnames)
     {
         final StringBuilder sb = new StringBuilder();
@@ -104,7 +113,7 @@ public class BasicAuctionClusteredServiceNode
             sb.append(',').append(hostnames.get(i)).append(':').append(calculatePort(i, LOG_PORT_OFFSET));
             sb.append(',').append(hostnames.get(i)).append(':').append(calculatePort(i, TRANSFER_PORT_OFFSET));
             sb.append(',').append(hostnames.get(i)).append(':')
-                .append(calculatePort(i, ARCHIVE_CONTROL_REQUEST_PORT_OFFSET));
+                .append(calculatePort(i, ARCHIVE_CONTROL_PORT_OFFSET));
             sb.append('|');
         }
 
@@ -144,7 +153,7 @@ public class BasicAuctionClusteredServiceNode
         final Archive.Context archiveContext = new Archive.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
-            .controlChannel(udpChannel(nodeId, hostname, ARCHIVE_CONTROL_REQUEST_PORT_OFFSET))
+            .controlChannel(udpChannel(nodeId, hostname, ARCHIVE_CONTROL_PORT_OFFSET))
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
@@ -166,7 +175,8 @@ public class BasicAuctionClusteredServiceNode
             .clusterDir(new File(baseDir, "consensus-module"))                                           // <3>
             .ingressChannel("aeron:udp?term-length=64k")                                                 // <4>
             .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
-            .archiveContext(aeronArchiveContext.clone());                                                // <6>
+            .logReplicationChannel(logReplicationChannel(hostname))                                      // <6>
+            .archiveContext(aeronArchiveContext.clone());                                                // <7>
         // end::consensus_module[]
 
         // tag::clustered_service[]

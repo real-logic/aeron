@@ -41,6 +41,7 @@ class LogReplicationTest
     private static final int SRC_ARCHIVE_STREAM_ID = 3;
 
     private static final String ENDPOINT = "localhost:20123";
+    private static final String LOG_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final long PROGRESS_CHECK_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     private static final long PROGRESS_CHECK_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
@@ -77,8 +78,8 @@ class LogReplicationTest
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
-            SRC_ARCHIVE_STREAM_ID,
             ENDPOINT,
+            LOG_REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -89,7 +90,14 @@ class LogReplicationTest
         assertFalse(logReplication.isDone(nowNs));
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
-        assertTrue(logReplication.isDone(nowNs));
+        if (RecordingSignal.STOP == recordingSignal)
+        {
+            assertTrue(logReplication.isDone(nowNs));
+        }
+        else
+        {
+            assertFalse(logReplication.isDone(nowNs));
+        }
     }
 
     @ParameterizedTest
@@ -104,17 +112,17 @@ class LogReplicationTest
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
-            SRC_ARCHIVE_STREAM_ID,
             ENDPOINT,
+            LOG_REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
-        assertTrue(logReplication.isDone(nowNs));
+        assertFalse(logReplication.isDone(nowNs));
 
         logReplication.close();
-        verify(aeronArchive).stopReplication(REPLICATION_ID);
+        verify(aeronArchive).tryStopReplication(REPLICATION_ID);
     }
 
     @Test
@@ -128,8 +136,8 @@ class LogReplicationTest
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
-            SRC_ARCHIVE_STREAM_ID,
             ENDPOINT,
+            LOG_REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -153,8 +161,8 @@ class LogReplicationTest
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
-            SRC_ARCHIVE_STREAM_ID,
             ENDPOINT,
+            LOG_REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -175,8 +183,8 @@ class LogReplicationTest
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
-            SRC_ARCHIVE_STREAM_ID,
             ENDPOINT,
+            LOG_REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -197,8 +205,8 @@ class LogReplicationTest
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
-            SRC_ARCHIVE_STREAM_ID,
             ENDPOINT,
+            LOG_REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             t0);

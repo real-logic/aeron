@@ -50,20 +50,24 @@ class ClusterEventLoggerTest
         final int offset = align(22, ALIGNMENT);
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
         final long logLeadershipTermId = 434;
-        final long logTruncatePosition = 256;
+        final long nextLeadershipTermId = 2561;
+        final long nextTermBaseLogPosition = 2562;
+        final long nextLogPosition = 2563;
         final long leadershipTermId = -500;
         final long logPosition = 43;
         final long timestamp = 2;
         final int leaderMemberId = 0;
         final int logSessionId = 3;
-        final int captureLength = SIZE_OF_LONG * 7 + SIZE_OF_INT * 3;
+        final int captureLength = SIZE_OF_LONG * 9 + SIZE_OF_INT * 3;
         final boolean isStartup = true;
         final long termBaseLogPosition = 982734;
         final long leaderRecordingId = 76434;
 
         logger.logNewLeadershipTerm(
             logLeadershipTermId,
-            logTruncatePosition,
+            nextLeadershipTermId,
+            nextTermBaseLogPosition,
+            nextLogPosition,
             leadershipTermId,
             termBaseLogPosition,
             logPosition,
@@ -77,7 +81,12 @@ class ClusterEventLoggerTest
         int relativeOffset = LOG_HEADER_LENGTH;
         assertEquals(logLeadershipTermId, logBuffer.getLong(encodedMsgOffset(offset + relativeOffset), LITTLE_ENDIAN));
         relativeOffset += SIZE_OF_LONG;
-        assertEquals(logTruncatePosition, logBuffer.getLong(encodedMsgOffset(offset + relativeOffset), LITTLE_ENDIAN));
+        assertEquals(nextLeadershipTermId, logBuffer.getLong(encodedMsgOffset(offset + relativeOffset), LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_LONG;
+        assertEquals(
+            nextTermBaseLogPosition, logBuffer.getLong(encodedMsgOffset(offset + relativeOffset), LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_LONG;
+        assertEquals(nextLogPosition, logBuffer.getLong(encodedMsgOffset(offset + relativeOffset), LITTLE_ENDIAN));
         relativeOffset += SIZE_OF_LONG;
         assertEquals(leadershipTermId, logBuffer.getLong(encodedMsgOffset(offset + relativeOffset), LITTLE_ENDIAN));
         relativeOffset += SIZE_OF_LONG;

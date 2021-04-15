@@ -70,6 +70,7 @@ public class StartFromTruncatedRecordingLogTest
 
     private static final String CLUSTER_MEMBERS = clusterMembersString();
     private static final String LOG_CHANNEL = "aeron:udp?term-length=256k";
+    private static final String LOG_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL = "aeron:udp?term-length=64k|endpoint=localhost:801";
     private static final String LOCAL_ARCHIVE_CONTROL_CHANNEL = "aeron:ipc?term-length=64k";
 
@@ -370,6 +371,7 @@ public class StartFromTruncatedRecordingLogTest
                 .clusterDir(new File(baseDirName, "consensus-module"))
                 .ingressChannel("aeron:udp?term-length=64k")
                 .logChannel(LOG_CHANNEL)
+                .logReplicationChannel(LOG_REPLICATION_CHANNEL)
                 .archiveContext(archiveCtx.clone())
                 .deleteDirOnStart(cleanStart));
 

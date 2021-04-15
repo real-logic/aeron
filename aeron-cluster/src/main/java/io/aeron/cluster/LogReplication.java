@@ -15,13 +15,13 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.archive.client.*;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.exceptions.AeronException;
 import org.agrona.concurrent.status.CountersReader;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 final class LogReplication
@@ -33,22 +33,22 @@ final class LogReplication
 
     private int recordingPositionCounterId = NULL_COUNTER_ID;
     private long recordingId;
-    private long position = AeronArchive.NULL_POSITION;
+    private long position = NULL_POSITION;
 
     private long progressDeadlineNs;
     private long progressCheckDeadlineNs;
     private final AeronArchive archive;
     private RecordingSignal lastRecordingSignal = RecordingSignal.NULL_VAL;
 
-    private boolean isClosed = false;
+    private boolean isStopped = false;
 
     LogReplication(
         final AeronArchive archive,
         final long srcRecordingId,
         final long dstRecordingId,
         final long stopPosition,
-        final int srcArchiveStreamId,
         final String srcArchiveEndpoint,
+        final String logReplicationChannel,
         final long progressCheckTimeoutNs,
         final long progressCheckIntervalNs,
         final long nowNs)
@@ -62,13 +62,20 @@ final class LogReplication
 
         final String srcArchiveChannel = "aeron:udp?endpoint=" + srcArchiveEndpoint;
 
+        final int srcControlStreamId = archive.context().controlRequestStreamId();
         replicationId = archive.replicate(
-            srcRecordingId, dstRecordingId, stopPosition, srcArchiveStreamId, srcArchiveChannel, null, null);
+            srcRecordingId,
+            dstRecordingId,
+            stopPosition,
+            srcControlStreamId,
+            srcArchiveChannel,
+            null,
+            logReplicationChannel);
     }
 
     boolean isDone(final long nowNs)
     {
-        if (position == stopPosition)
+        if (position == stopPosition && isStopped)
         {
             return true;
         }
@@ -98,7 +105,14 @@ final class LogReplication
 
         if (nowNs >= progressDeadlineNs)
         {
-            throw new ClusterException("log replication has not progressed: " + this);
+            if (position < stopPosition)
+            {
+                throw new ClusterException("log replication has not progressed: " + this);
+            }
+            else
+            {
+                throw new ClusterException("log replication failed to stop: " + this);
+            }
         }
 
         return false;
@@ -114,26 +128,18 @@ final class LogReplication
         return recordingId;
     }
 
-    boolean isClosed()
-    {
-        return isClosed;
-    }
-
     void close()
     {
-        if (!isClosed)
+        if (!isStopped)
         {
-            isClosed = true;
-            if (RecordingSignal.STOP != lastRecordingSignal)
+            try
             {
-                try
-                {
-                    archive.stopReplication(replicationId);
-                }
-                catch (final Exception e)
-                {
-                    throw new ClusterException("Failed to stop log replication", e, AeronException.Category.WARN);
-                }
+                archive.tryStopReplication(replicationId);
+                isStopped = true;
+            }
+            catch (final Exception e)
+            {
+                throw new ClusterException("failed to stop log replication", e);
             }
         }
     }
@@ -142,14 +148,17 @@ final class LogReplication
     {
         if (correlationId == replicationId)
         {
-            if (RecordingSignal.EXTEND == signal)
+            switch (signal)
             {
-                final CountersReader counters = archive.context().aeron().countersReader();
-                recordingPositionCounterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
-            }
-            else if (RecordingSignal.DELETE == signal)
-            {
-                throw new ClusterException("recording was deleted during replication: " + this);
+                case EXTEND:
+                    final CountersReader counters = archive.context().aeron().countersReader();
+                    recordingPositionCounterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
+                    break;
+                case DELETE:
+                    throw new ClusterException("recording was deleted during replication: " + this);
+                case STOP:
+                    this.isStopped = true;
+                    break;
             }
 
             this.recordingId = recordingId;
@@ -166,6 +175,7 @@ final class LogReplication
             ", recordingId=" + recordingId +
             ", position=" + position +
             ", stopPosition=" + stopPosition +
+            ", stopped=" + isStopped +
             ", lastRecordingSignal=" + lastRecordingSignal +
             ", progressDeadlineNs=" + progressDeadlineNs +
             ", progressCheckDeadlineNs=" + progressCheckDeadlineNs +

@@ -38,7 +38,9 @@ class ClusterInterceptor
         @Advice.OnMethodEnter
         static void onNewLeadershipTerm(
             final long logLeadershipTermId,
-            final long logTruncatePosition,
+            final long nextLeadershipTermId,
+            final long nextTermBaseLogPosition,
+            final long nextLogPosition,
             final long leadershipTermId,
             final long termBaseLogPosition,
             final long logPosition,
@@ -50,7 +52,9 @@ class ClusterInterceptor
         {
             LOGGER.logNewLeadershipTerm(
                 logLeadershipTermId,
-                logTruncatePosition,
+                nextLeadershipTermId,
+                nextTermBaseLogPosition,
+                nextLogPosition,
                 leadershipTermId,
                 termBaseLogPosition,
                 logPosition,
@@ -85,9 +89,12 @@ class ClusterInterceptor
     {
         @Advice.OnMethodEnter
         static void onCanvassPosition(
-            final long logLeadershipTermId, final long logPosition, final int followerMemberId)
+            final long logLeadershipTermId,
+            final long logPosition,
+            final long leadershipTermId,
+            final int followerMemberId)
         {
-            LOGGER.logCanvassPosition(logLeadershipTermId, logPosition, followerMemberId);
+            LOGGER.logCanvassPosition(logLeadershipTermId, leadershipTermId, logPosition, followerMemberId);
         }
     }
 

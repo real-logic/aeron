@@ -128,7 +128,8 @@ public class ClusterLoggingAgentTest
             .archiveContext(aeronArchiveContext.clone())
             .clusterMemberId(0)
             .clusterMembers("0,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010")
-            .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550");
+            .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550")
+            .logReplicationChannel("aeron:udp?endpoint=localhost:0");
 
         final ClusteredService clusteredService = mock(ClusteredService.class);
         final ClusteredServiceContainer.Context clusteredServiceCtx = new ClusteredServiceContainer.Context()

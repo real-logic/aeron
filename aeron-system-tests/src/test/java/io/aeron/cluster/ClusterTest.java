@@ -1118,7 +1118,6 @@ public class ClusterTest
         }
     }
 
-
     @Test
     @Timeout(40)
     public void shouldRecoverWhenFollowerIsMultipleTermsBehind(final TestInfo testInfo)

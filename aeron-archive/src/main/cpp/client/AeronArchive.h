@@ -623,7 +623,7 @@ public:
             throw ArchiveException("failed to send stop recording request", SOURCEINFO);
         }
 
-        return pollForStopRecordingResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponseAllowingError<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -702,7 +702,7 @@ public:
             throw ArchiveException("failed to send stop recording request", SOURCEINFO);
         }
 
-        return pollForStopRecordingResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponseAllowingError<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1456,6 +1456,29 @@ public:
     }
 
     /**
+     * Try stopping a replication session by id.
+     *
+     * @param replicationId of replication session to be stopped.
+     * @tparam IdleStrategy to use for polling operations.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline bool tryStopReplication(std::int64_t replicationId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->stopReplication<IdleStrategy>(replicationId, m_lastCorrelationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send stop replication request", SOURCEINFO);
+        }
+
+        return pollForResponseAllowingError<IdleStrategy>(m_lastCorrelationId);
+    }
+
+    /**
      * Detach segments from the beginning of a recording up to the provided new start position.
      * <p>
      * The new start position must be first byte position of a segment after the existing start position.
@@ -1735,7 +1758,7 @@ private:
     }
 
     template<typename IdleStrategy>
-    inline bool pollForStopRecordingResponse(std::int64_t correlationId)
+    inline bool pollForResponseAllowingError(std::int64_t correlationId)
     {
         const long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
 

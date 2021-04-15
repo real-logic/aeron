@@ -51,10 +51,12 @@ class Election
     private int logSessionId = CommonContext.NULL_SESSION_ID;
     private long timeOfLastStateChangeNs;
     private long timeOfLastUpdateNs;
+    private final long initialTimeOfLastUpdateNs;
     private long nominationDeadlineNs;
     private long logPosition;
     private long appendPosition;
     private long catchupPosition = NULL_POSITION;
+    private long replicationLeadershipTermId = NULL_VALUE;
     private long replicationStopPosition = NULL_POSITION;
     private long leaderRecordingId = NULL_VALUE;
     private long leadershipTermId;
@@ -71,8 +73,8 @@ class Election
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
     private LogReplication logReplication = null;
-    private long replicationCommitPosition = NULL_POSITION;
-    private long replicationCommitPositionDeadlineNs;
+    private long replicationCommitPosition = 0;
+    private long replicationCommitPositionDeadlineNs = 0;
 
     Election(
         final boolean isNodeStartup,
@@ -98,6 +100,8 @@ class Election
         this.consensusPublisher = consensusPublisher;
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
+        this.initialTimeOfLastUpdateNs = ctx.clusterClock().timeNanos() - TimeUnit.DAYS.toNanos(1);
+        this.timeOfLastUpdateNs = initialTimeOfLastUpdateNs;
 
         Objects.requireNonNull(thisMember);
         ctx.electionStateCounter().setOrdered(INIT.code());
@@ -238,7 +242,11 @@ class Election
         }
     }
 
-    void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
+    void onCanvassPosition(
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long leadershipTermId,
+        final int followerMemberId)
     {
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
         if (null != follower && thisMember.id() != followerMemberId)
@@ -247,50 +255,29 @@ class Election
                 .leadershipTermId(logLeadershipTermId)
                 .logPosition(logPosition);
 
-            if (LEADER_READY == state)
+            if (logLeadershipTermId < this.leadershipTermId)
             {
-                if (logLeadershipTermId < leadershipTermId)
+                switch (state)
                 {
-                    final RecordingLog.Entry logNextTermEntry =
-                        ctx.recordingLog().getTermEntry(logLeadershipTermId + 1);
+                    case LEADER_LOG_REPLICATION:
+                    case LEADER_INIT:
+                    case LEADER_READY:
+                    case LEADER_REPLAY:
+                    {
+                        publishNewLeadershipTermForMember(
+                            follower, logLeadershipTermId, ctx.clusterClock().timeNanos());
 
-                    consensusPublisher.newLeadershipTerm(
-                        follower.publication(),
-                        logLeadershipTermId,
-                        logNextTermEntry.termBaseLogPosition,
-                        leadershipTermId,
-                        appendPosition,
-                        appendPosition,
-                        consensusModuleAgent.logRecordingId(),
-                        logNextTermEntry.timestamp,
-                        thisMember.id(),
-                        logSessionId,
-                        isLeaderStartup);
-                }
-                else if (logLeadershipTermId > this.leadershipTermId)
-                {
-                    throw new ClusterException("new potential election", AeronException.Category.WARN);
+                        break;
+                    }
                 }
             }
-            else if ((LEADER_INIT == state || LEADER_REPLAY == state) && logLeadershipTermId < leadershipTermId)
+            else if (logLeadershipTermId > this.leadershipTermId)
             {
-                final RecordingLog.Entry logNextTermEntry =
-                    ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
-
-                if (null != logNextTermEntry)
+                switch (state)
                 {
-                    consensusPublisher.newLeadershipTerm(
-                        follower.publication(),
-                        logLeadershipTermId,
-                        logNextTermEntry.termBaseLogPosition,
-                        leadershipTermId,
-                        appendPosition,
-                        appendPosition,
-                        consensusModuleAgent.logRecordingId(),
-                        logNextTermEntry.timestamp,
-                        thisMember.id(),
-                        logSessionId,
-                        isLeaderStartup);
+                    case LEADER_LOG_REPLICATION:
+                    case LEADER_READY:
+                        throw new ClusterException("new potential election", AeronException.Category.WARN);
                 }
             }
         }
@@ -350,7 +337,9 @@ class Election
 
     void onNewLeadershipTerm(
         final long logLeadershipTermId,
-        final long logTruncatePosition,
+        final long nextLeadershipTermId,
+        final long nextTermBaseLogPosition,
+        final long nextLogPosition,
         final long leadershipTermId,
         final long termBaseLogPosition,
         final long logPosition,
@@ -366,35 +355,69 @@ class Election
             return;
         }
 
-        if (leadershipTermId > this.leadershipTermId &&
-            logLeadershipTermId == this.logLeadershipTermId &&
-            logTruncatePosition < appendPosition)
+        if (((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state) && leadershipTermId == candidateTermId) ||
+            (CANVASS == state))
         {
-            consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logTruncatePosition);
-            appendPosition = consensusModuleAgent.prepareForNewLeadership(logTruncatePosition);
-            leaderMember = leader;
-            isLeaderStartup = isStartup;
-            this.leadershipTermId = leadershipTermId;
-            this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
-            this.logSessionId = logSessionId;
-            replicationStopPosition = appendPosition < termBaseLogPosition ? termBaseLogPosition : NULL_POSITION;
-            catchupPosition = termBaseLogPosition < logPosition ? logPosition : NULL_POSITION;
-            state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
-        }
-        else if (((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state) &&
-            leadershipTermId == candidateTermId && appendPosition <= logPosition) ||
-            (CANVASS == state &&
-            compareLog(this.logLeadershipTermId, appendPosition, leadershipTermId, logPosition) <= 0))
-        {
-            leaderMember = leader;
-            isLeaderStartup = isStartup;
-            this.leadershipTermId = leadershipTermId;
-            this.candidateTermId = leadershipTermId;
-            this.logSessionId = logSessionId;
-            replicationStopPosition = appendPosition < termBaseLogPosition ? termBaseLogPosition : NULL_POSITION;
-            catchupPosition = termBaseLogPosition < logPosition ? logPosition : NULL_POSITION;
-            this.leaderRecordingId = leaderRecordingId;
-            state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
+            if (this.logLeadershipTermId == logLeadershipTermId)
+            {
+                if (NULL_POSITION != nextTermBaseLogPosition && nextTermBaseLogPosition < appendPosition)
+                {
+                    consensusModuleAgent.truncateLogEntry(logLeadershipTermId, nextTermBaseLogPosition);
+                    appendPosition = consensusModuleAgent.prepareForNewLeadership(nextTermBaseLogPosition);
+                }
+
+                this.leaderMember = leader;
+                this.isLeaderStartup = isStartup;
+                this.leadershipTermId = leadershipTermId;
+                this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
+                this.logSessionId = logSessionId;
+                this.leaderRecordingId = leaderRecordingId;
+                this.catchupPosition = appendPosition < logPosition ? logPosition : NULL_POSITION;
+
+                if (this.appendPosition < termBaseLogPosition)
+                {
+                    if (NULL_VALUE != nextLeadershipTermId)
+                    {
+                        if (appendPosition < nextTermBaseLogPosition)
+                        {
+                            replicationLeadershipTermId = logLeadershipTermId;
+                            replicationStopPosition = nextTermBaseLogPosition;
+                            state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
+                        }
+                        else if (appendPosition == nextTermBaseLogPosition)
+                        {
+                            if (NULL_POSITION != nextLogPosition)
+                            {
+                                replicationLeadershipTermId = nextLeadershipTermId;
+                                replicationStopPosition = nextLogPosition;
+                                state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new ClusterException(
+                            "invalid newLeadershipTerm - this.appendPosition=" + this.appendPosition +
+                            " < termBaseLogPosition = " + termBaseLogPosition +
+                            " and nextLeadershipTermId = " + nextLeadershipTermId +
+                            ", logLeadershipTermId = " + logLeadershipTermId +
+                            ", nextTermBaseLogPosition = " + nextTermBaseLogPosition +
+                            ", nextLogPosition = " + nextLogPosition + ", leadershipTermId = " + leadershipTermId +
+                            ", termBaseLogPosition = " + termBaseLogPosition + ", logPosition = " + logPosition +
+                            ", leaderRecordingId = " + leaderRecordingId + ", timestamp = " + timestamp +
+                            ", leaderMemberId = " + leaderMemberId + ", logSessionId = " + logSessionId +
+                            ", isStartup = " + isStartup);
+                    }
+                }
+                else
+                {
+                    state(FOLLOWER_REPLAY, ctx.clusterClock().timeNanos());
+                }
+            }
+            else
+            {
+                state(CANVASS, ctx.clusterClock().timeNanos());
+            }
         }
     }
 
@@ -424,7 +447,8 @@ class Election
         {
             catchupPosition = Math.max(catchupPosition, logPosition);
         }
-        else if (FOLLOWER_LOG_REPLICATION == state && leaderMemberId == leaderMember.id())
+        else if ((FOLLOWER_LOG_REPLICATION == state) &&
+            leaderMemberId == leaderMember.id())
         {
             replicationCommitPosition = Math.max(replicationCommitPosition, logPosition);
             replicationCommitPositionDeadlineNs = ctx.clusterClock().timeNanos() + ctx.leaderHeartbeatTimeoutNs();
@@ -508,7 +532,7 @@ class Election
     {
         int workCount = 0;
 
-        if (nowNs >= (timeOfLastUpdateNs + ctx.electionStatusIntervalNs()))
+        if (hasIntervalExpired(nowNs, ctx.electionStatusIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
             for (final ClusterMember member : clusterMembers)
@@ -516,7 +540,7 @@ class Election
                 if (member.id() != thisMember.id())
                 {
                     consensusPublisher.canvassPosition(
-                        member.publication(), leadershipTermId, appendPosition, thisMember.id());
+                        member.publication(), logLeadershipTermId, appendPosition, leadershipTermId, thisMember.id());
                 }
             }
 
@@ -682,7 +706,8 @@ class Election
 
     private int leaderReady(final long nowNs)
     {
-        int workCount = publishNewLeadershipTermOnInterval(nowNs);
+        int workCount = consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
+        workCount += publishNewLeadershipTermOnInterval(nowNs);
 
         if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition, leadershipTermId))
         {
@@ -720,7 +745,8 @@ class Election
             }
             else
             {
-                state(FOLLOWER_REPLAY, nowNs);
+                updateRecordingLogForReplication(replicationLeadershipTermId, replicationStopPosition, nowNs);
+                state(CANVASS, nowNs);
             }
         }
         else
@@ -734,8 +760,9 @@ class Election
                 if (replicationCommitPosition >= appendPosition)
                 {
                     appendPosition = logReplication.position();
+                    updateRecordingLogForReplication(replicationLeadershipTermId, replicationStopPosition, nowNs);
                     cleanupReplication();
-                    state(FOLLOWER_REPLAY, nowNs);
+                    state(CANVASS, nowNs);
                     workCount++;
                 }
                 else if (nowNs >= replicationCommitPositionDeadlineNs)
@@ -942,7 +969,7 @@ class Election
     {
         int workCount = 0;
 
-        if (nowNs >= (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
+        if (hasIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
             publishNewLeadershipTerm(ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
@@ -956,28 +983,49 @@ class Election
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.id() != thisMember.id())
-            {
-                consensusPublisher.newLeadershipTerm(
-                    member.publication(),
-                    logLeadershipTermId,
-                    appendPosition,
-                    leadershipTermId,
-                    appendPosition,
-                    appendPosition,
-                    consensusModuleAgent.logRecordingId(),
-                    timestamp,
-                    thisMember.id(),
-                    logSessionId,
-                    isLeaderStartup);
-            }
+            publishNewLeadershipTermForMember(member, logLeadershipTermId, timestamp);
+        }
+    }
+
+    private void publishNewLeadershipTermForMember(
+        final ClusterMember member, final long logLeadershipTermId, final long timestamp)
+    {
+        if (member.id() != thisMember.id())
+        {
+            final RecordingLog.Entry logNextTermEntry =
+                ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
+
+            final long nextLeadershipTermId =
+                null != logNextTermEntry ? logNextTermEntry.leadershipTermId : leadershipTermId;
+            final long nextTermBaseLogPosition =
+                null != logNextTermEntry ? logNextTermEntry.termBaseLogPosition : appendPosition;
+
+            final long nextLogPosition =
+                null != logNextTermEntry ?
+                (NULL_POSITION != logNextTermEntry.logPosition ? logNextTermEntry.logPosition : appendPosition) :
+                NULL_POSITION;
+
+            consensusPublisher.newLeadershipTerm(
+                member.publication(),
+                logLeadershipTermId,
+                nextLeadershipTermId,
+                nextTermBaseLogPosition,
+                nextLogPosition,
+                leadershipTermId,
+                appendPosition,
+                appendPosition,
+                consensusModuleAgent.logRecordingId(),
+                timestamp,
+                thisMember.id(),
+                logSessionId,
+                isLeaderStartup);
         }
     }
 
     private int publishFollowerReplicationPosition(final long nowNs)
     {
         final long position = logReplication.position();
-        if (position > appendPosition && nowNs >= (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
+        if (position > appendPosition && hasIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs()))
         {
             if (consensusPublisher.appendPosition(
                 leaderMember.publication(), leadershipTermId, position, thisMember.id()))
@@ -1060,6 +1108,7 @@ class Election
             state = newState;
             ctx.electionStateCounter().setOrdered(newState.code());
             timeOfLastStateChangeNs = nowNs;
+            timeOfLastUpdateNs = initialTimeOfLastUpdateNs;
         }
     }
 
@@ -1092,6 +1141,8 @@ class Election
             logReplication.close();
             logReplication = null;
         }
+        replicationCommitPosition = 0;
+        replicationCommitPositionDeadlineNs = 0;
     }
 
     private boolean isPassiveMember()
@@ -1121,6 +1172,33 @@ class Election
         }
     }
 
+    private void updateRecordingLogForReplication(final long leadershipTermId, final long logPosition, final long nowNs)
+    {
+        final RecordingLog recordingLog = ctx.recordingLog();
+        final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
+        final long recordingId = consensusModuleAgent.logRecordingId();
+
+        if (NULL_VALUE == recordingId)
+        {
+            throw new AgentTerminationException("log recording id not found");
+        }
+
+        for (long termId = logLeadershipTermId + 1; termId <= leadershipTermId; termId++)
+        {
+            if (recordingLog.isUnknown(termId))
+            {
+                final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
+                final long termBaseLogPosition = null != lastTerm ? lastTerm.logPosition : 0;
+
+                recordingLog.appendTerm(recordingId, termId, termBaseLogPosition, timestamp);
+            }
+
+            recordingLog.commitLogPosition(termId, logPosition);
+            recordingLog.force(ctx.fileSyncLevel());
+            logLeadershipTermId = termId;
+        }
+    }
+
     private void verifyLogImage(final Image image)
     {
         if (image.joinPosition() != logPosition)
@@ -1129,6 +1207,11 @@ class Election
                 "joinPosition=" + image.joinPosition() + " != logPosition=" + logPosition,
                 ClusterException.Category.WARN);
         }
+    }
+
+    private boolean hasIntervalExpired(final long nowNs, final long intervalNs)
+    {
+        return (nowNs - timeOfLastUpdateNs) >= intervalNs;
     }
 
     void stateChange(final ElectionState oldState, final ElectionState newState, final int memberId)

@@ -766,7 +766,7 @@ public final class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send stop recording request");
             }
 
-            return pollForStopRecordingResponse(lastCorrelationId);
+            return pollForResponseAllowingError(lastCorrelationId, ArchiveException.UNKNOWN_SUBSCRIPTION);
         }
         finally
         {
@@ -827,7 +827,7 @@ public final class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send stop recording request");
             }
 
-            return pollForStopRecordingResponse(lastCorrelationId);
+            return pollForResponseAllowingError(lastCorrelationId, ArchiveException.UNKNOWN_SUBSCRIPTION);
         }
         finally
         {
@@ -1710,6 +1710,37 @@ public final class AeronArchive implements AutoCloseable
         }
     }
 
+
+    /**
+     * Attempt to stop a replication session by id returned from {@link #replicate(long, long, int, String, String)}.
+     *
+     * @param replicationId to stop replication for.
+     * @return true if the replication was stopped, false if the replication is not active.
+     * @see #replicate(long, long, int, String, String)
+     */
+    public boolean tryStopReplication(final long replicationId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.stopReplication(replicationId, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send stop replication request");
+            }
+
+            return pollForResponseAllowingError(lastCorrelationId, ArchiveException.UNKNOWN_REPLICATION);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     /**
      * Detach segments from the beginning of a recording up to the provided new start position.
      * <p>
@@ -1966,7 +1997,7 @@ public final class AeronArchive implements AutoCloseable
         }
     }
 
-    private boolean pollForStopRecordingResponse(final long correlationId)
+    private boolean pollForResponseAllowingError(final long correlationId, final int allowedErrorCode)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
@@ -1987,7 +2018,7 @@ public final class AeronArchive implements AutoCloseable
                 final long relevantId = poller.relevantId();
                 if (poller.correlationId() == correlationId)
                 {
-                    if (relevantId == ArchiveException.UNKNOWN_SUBSCRIPTION)
+                    if (relevantId == allowedErrorCode)
                     {
                         return false;
                     }

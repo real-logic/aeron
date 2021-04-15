@@ -281,9 +281,11 @@ final class DynamicJoin
             final long replicationId = localArchive.replicate(
                 leaderSnapshots.get(snapshotCursor).recordingId,
                 RecordingPos.NULL_RECORDING_ID,
+                AeronArchive.NULL_LENGTH,
                 ctx.archiveContext().controlRequestStreamId(),
                 "aeron:udp?term-length=64k|endpoint=" + leaderMember.archiveEndpoint(),
-                null);
+                null,
+                ctx.replicationChannel());
 
             snapshotReplication = new SnapshotReplication(replicationId);
             workCount++;
@@ -311,9 +313,11 @@ final class DynamicJoin
                     final long replicationId = localArchive.replicate(
                         leaderSnapshots.get(snapshotCursor).recordingId,
                         snapshotReplication.recordingId(),
+                        AeronArchive.NULL_LENGTH,
                         ctx.archiveContext().controlRequestStreamId(),
                         "aeron:udp?term-length=64k|endpoint=" + leaderMember.archiveEndpoint(),
-                        null);
+                        null,
+                        ctx.replicationChannel());
 
                     snapshotReplication = new SnapshotReplication(replicationId);
                     workCount++;

@@ -271,7 +271,7 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 
 <1> The method `Image::isEndOfStream` can be used to determine if there is going to be any more input.
 
-<2> Because our snapshot is a stream of messages written to a publication, we use the `Image`'s poll method for
+<2> Because our snapshot is a stream of messages written to a publication, we use the Image's poll method for
 extracting data from the snapshot.
 
 <3> Our total snapshot length (16 bytes) is going to be smaller than any reasonable MTU therefore we can assume that all
@@ -432,9 +432,9 @@ multi-destination cast or multicast channel. In our example we are using multi-d
 configuration, hence we need a separate control endpoint (including a port) used for adding and removing destination to
 the publication.
 
-<6> Specify the replication channel. This channel is the one that the local archive for a node will receive
-replication responses from other archives when the log or snapshot replication step is required. This was added in
-version 1.33.0 and is a required parameter. It is important in a production environment that this value is not set to
+<6> Specify the replication channel. This channel is the one that the local archive for a node will receive replication
+responses from other archives when the log or snapshot replication step is required. This was added in version 1.33.0
+and is a required parameter. It is important in a production environment that this channel's endpoint is not set to
 localhost, but instead a hostname/ip address that is reachable by the other nodes in the cluster.
 
 <7> Clone the Archive Client context that the Consensus Module will use to talk to the Archive.
@@ -485,12 +485,19 @@ should be able to do the following:
 This will spit out a lot of logging but should end with something like:
 
 ----
-CLUSTER: ELECTION_STATE_CHANGE, FOLLOWER_TRANSITION -> FOLLOWER_READY, memberId=2
-CLUSTER: ELECTION_STATE_CHANGE, FOLLOWER_CATCHUP -> FOLLOWER_TRANSITION, memberId=1
-CLUSTER: ELECTION_STATE_CHANGE, FOLLOWER_TRANSITION -> FOLLOWER_READY, memberId=1
-CLUSTER: ELECTION_STATE_CHANGE, FOLLOWER_READY -> CLOSE, memberId=1
-CLUSTER: ELECTION_STATE_CHANGE, FOLLOWER_READY -> CLOSE, memberId=2
-CLUSTER: ELECTION_STATE_CHANGE, LEADER_READY -> CLOSE, memberId=0
+[4452.593894535] CLUSTER: STATE_CHANGE [22/22]: memberId=0 INIT -> ACTIVE
+[4452.594377676] CLUSTER: ELECTION_STATE_CHANGE [23/23]: memberId=0 INIT -> CANVASS
+[4452.599524774] CLUSTER: CANVASS_POSITION [28/28]: logLeadershipTermId=-1 leadershipTermId=-1 logPosition=0 followerMemberId=1
+[4452.60341655] CLUSTER: CANVASS_POSITION [28/28]: logLeadershipTermId=-1 leadershipTermId=-1 logPosition=0 followerMemberId=2
+[4452.603442309] CLUSTER: ELECTION_STATE_CHANGE [27/27]: memberId=0 CANVASS -> NOMINATE
+[4452.612230425] CLUSTER: ELECTION_STATE_CHANGE [36/36]: memberId=0 NOMINATE -> CANDIDATE_BALLOT
+[4452.612255072] CLUSTER: ROLE_CHANGE [29/29]: memberId=0 FOLLOWER -> CANDIDATE
+[4452.6157387] CLUSTER: ELECTION_STATE_CHANGE [50/50]: memberId=0 CANDIDATE_BALLOT -> LEADER_LOG_REPLICATION
+[4452.627815713] CLUSTER: ELECTION_STATE_CHANGE [47/47]: memberId=0 LEADER_LOG_REPLICATION -> LEADER_REPLAY
+[4452.627835581] CLUSTER: ELECTION_STATE_CHANGE [36/36]: memberId=0 LEADER_REPLAY -> LEADER_INIT
+[4452.627844468] CLUSTER: ROLE_CHANGE [27/27]: memberId=0 CANDIDATE -> LEADER
+[4452.653330292] CLUSTER: ELECTION_STATE_CHANGE [35/35]: memberId=0 LEADER_INIT -> LEADER_READY
+[4452.759977752] CLUSTER: ELECTION_STATE_CHANGE [30/30]: memberId=0 LEADER_READY -> CLOSED
 ----
 
 We now have our new service running in a cluster.

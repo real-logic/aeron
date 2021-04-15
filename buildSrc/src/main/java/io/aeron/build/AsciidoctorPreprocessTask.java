@@ -35,6 +35,9 @@ import java.util.Map;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
+/**
+ * Gradle task to prepare AsciiDoc files.
+ */
 public class AsciidoctorPreprocessTask extends DefaultTask
 {
     private final String sampleBaseDir = getProject().getProjectDir().getAbsolutePath();
@@ -48,41 +51,76 @@ public class AsciidoctorPreprocessTask extends DefaultTask
     // Has a slightly silly name to avoid name clashes in the build script.
     private String versionText;
 
+    /**
+     * Base directory containing the samples code.
+     *
+     * @return base samples directory.
+     */
     @Input
     public String getSampleBaseDir()
     {
         return sampleBaseDir;
     }
 
+    /**
+     * Directory containing the samples source code.
+     *
+     * @return sources within the samples directory.
+     */
     @Input
     public String getSampleSourceDir()
     {
         return sampleSourceDir;
     }
 
+    /**
+     * Directory containing the source files.
+     *
+     * @return source directory.
+     */
     @InputDirectory
     public File getSource()
     {
         return source;
     }
 
+    /**
+     * Directory containing the target files.
+     *
+     * @return target directory.
+     */
     @OutputDirectory
     public File getTarget()
     {
         return target;
     }
 
+    /**
+     * Returns the version string.
+     *
+     * @return version string.
+     */
     @Input
     public String getVersionText()
     {
         return versionText;
     }
 
+    /**
+     * Sets the version string.
+     *
+     * @param versionText version string.
+     */
     public void setVersionText(final String versionText)
     {
         this.versionText = versionText;
     }
 
+    /**
+     * Implementation of the task action.
+     *
+     * @throws Exception in case of errors.
+     */
     @TaskAction
     public void preprocess() throws Exception
     {

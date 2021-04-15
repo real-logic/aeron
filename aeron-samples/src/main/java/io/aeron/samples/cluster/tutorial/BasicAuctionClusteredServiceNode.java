@@ -94,6 +94,14 @@ public class BasicAuctionClusteredServiceNode
             .build();
     }
 
+    private static String logReplicationChannel(final String hostname)
+    {
+        return new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint(hostname + ":0")
+            .build();
+    }
+
     private static String clusterMembers(final List<String> hostnames)
     {
         final StringBuilder sb = new StringBuilder();
@@ -146,7 +154,6 @@ public class BasicAuctionClusteredServiceNode
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
             .controlChannel(udpChannel(nodeId, hostname, ARCHIVE_CONTROL_PORT_OFFSET))
-            .replicationChannel(udpChannel(nodeId, hostname, REPLICATION_PORT_OFFSET))
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
@@ -168,7 +175,8 @@ public class BasicAuctionClusteredServiceNode
             .clusterDir(new File(baseDir, "consensus-module"))                                           // <3>
             .ingressChannel("aeron:udp?term-length=64k")                                                 // <4>
             .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
-            .archiveContext(aeronArchiveContext.clone());                                                // <6>
+            .replicationChannel(logReplicationChannel(hostname))                                         // <6>
+            .archiveContext(aeronArchiveContext.clone());                                                // <7>
         // end::consensus_module[]
 
         // tag::clustered_service[]

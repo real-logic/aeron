@@ -309,6 +309,7 @@ public class ClusterTimerTest
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
                 .logChannel("aeron:ipc")
+                .replicationChannel("aeron:udp?endpoint=localhost:0")
                 .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .deleteDirOnStart(initialLaunch));
     }

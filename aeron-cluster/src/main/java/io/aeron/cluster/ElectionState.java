@@ -19,8 +19,8 @@ import io.aeron.cluster.client.ClusterException;
 import org.agrona.concurrent.status.AtomicCounter;
 
 /**
- * Election states for a {@link ConsensusModule} which get represented by a code stored in a {@link io.aeron.Counter}
- * of the type {@link ConsensusModule.Configuration#ELECTION_STATE_TYPE_ID}.
+ * Election states for a {@link ConsensusModule} which get represented by a {@link #code()} stored in a
+ * {@link io.aeron.Counter} of the type {@link ConsensusModule.Configuration#ELECTION_STATE_TYPE_ID}.
  */
 public enum ElectionState
 {
@@ -30,7 +30,7 @@ public enum ElectionState
     INIT(0),
 
     /**
-     * Canvass members to assess if a successful leadership attempt can be mounted.
+     * Canvass members for current state and to assess if a successful leadership attempt can be mounted.
      */
     CANVASS(1),
 
@@ -50,12 +50,12 @@ public enum ElectionState
     FOLLOWER_BALLOT(4),
 
     /**
-     * Wait for followers to replicate any missing log entries.
+     * Wait for followers to replicate any missing log entries to track commit position.
      */
     LEADER_LOG_REPLICATION(5),
 
     /**
-     * Replay local appended log in preparation for new leadership term.
+     * Replay local log in preparation for new leadership term.
      */
     LEADER_REPLAY(6),
 
@@ -65,7 +65,7 @@ public enum ElectionState
     LEADER_INIT(7),
 
     /**
-     * Publish new leadership term and await followers ready.
+     * Publish new leadership term and commit position, while awaiting followers ready.
      */
     LEADER_READY(8),
 
@@ -75,12 +75,12 @@ public enum ElectionState
     FOLLOWER_LOG_REPLICATION(9),
 
     /**
-     * Replay local appended log in preparation for following new leader.
+     * Replay local log in preparation for following new leader.
      */
     FOLLOWER_REPLAY(10),
 
     /**
-     * Initialise catch-up in preparation of receiving a replay from the leader to catch up.
+     * Initialise catch-up in preparation of receiving a replay from the leader to catch up in current term.
      */
     FOLLOWER_CATCHUP_INIT(11),
 
@@ -90,7 +90,7 @@ public enum ElectionState
     FOLLOWER_CATCHUP_AWAIT(12),
 
     /**
-     * Catch-up to leader until live log position is reached.
+     * Catch-up to leader until live log can be added and merged.
      */
     FOLLOWER_CATCHUP(13),
 

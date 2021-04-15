@@ -248,7 +248,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     int64_t free_to_reuse_timeout_ms = 0;
     if (context->counter_free_to_reuse_ns > 0)
     {
-        free_to_reuse_timeout_ms = context->counter_free_to_reuse_ns / (1000 * 1000L);
+        free_to_reuse_timeout_ms = (int64_t)context->counter_free_to_reuse_ns / (1000 * 1000LL);
         free_to_reuse_timeout_ms = free_to_reuse_timeout_ms <= 0 ? 1 : free_to_reuse_timeout_ms;
     }
 
@@ -1577,7 +1577,7 @@ int aeron_driver_conductor_update_and_check_ats_status(
 
     aeron_uri_ats_status_t context_status = context->ats_enabled ?
         AERON_URI_ATS_STATUS_ENABLED : AERON_URI_ATS_STATUS_DISABLED;
-    channel->ats_status = (AERON_URI_ATS_STATUS_DEFAULT == channel->ats_status) ? context_status : channel->ats_status;
+    channel->ats_status = AERON_URI_ATS_STATUS_DEFAULT == channel->ats_status ? context_status : channel->ats_status;
 
     if (NULL != existing_channel)
     {
@@ -1760,7 +1760,6 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         size_t socket_sndbuf = 0 != channel->socket_sndbuf_length ?
             channel->socket_sndbuf_length : conductor->context->socket_sndbuf;
 
-        // TODO: ensure the logic for determining that this is truly MDS is correct...
         if (!channel->is_manual_control_mode)
         {
             if (aeron_receive_destination_create(
@@ -1773,7 +1772,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
                 socket_rcvbuf,
                 socket_rcvbuf) < 0)
             {
-                AERON_APPEND_ERR("correlation_id = %" PRId64, correlation_id);
+                AERON_APPEND_ERR("correlation_id=%" PRId64, correlation_id);
                 return NULL;
             }
         }
@@ -3400,7 +3399,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             false,
             &destination_addr) < 0)
         {
-            AERON_APPEND_ERR("uri: %.*s", (int) uri_length, uri);
+            AERON_APPEND_ERR("uri: %.*s", (int)uri_length, uri);
             goto error_cleanup;
         }
 
@@ -3474,7 +3473,7 @@ int aeron_driver_conductor_on_remove_destination(
             true,
             &destination_addr) < 0)
         {
-            AERON_APPEND_ERR("uri: %.*s", (int) uri_length, command_uri);
+            AERON_APPEND_ERR("uri: %.*s", (int)uri_length, command_uri);
             goto error_cleanup;
         }
 
@@ -3484,7 +3483,7 @@ int aeron_driver_conductor_on_remove_destination(
         aeron_uri_close(&uri_params);
         return 0;
 
-        error_cleanup:
+error_cleanup:
         aeron_uri_close(&uri_params);
         return -1;
     }
@@ -3828,20 +3827,26 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     }
 
     aeron_position_t rcv_hwm_position;
-    aeron_position_t rcv_pos_position;
-
     rcv_hwm_position.counter_id = aeron_counter_receiver_hwm_allocate(
         &conductor->counters_manager, registration_id, command->session_id, command->stream_id, uri_length, uri);
-    rcv_pos_position.counter_id = aeron_counter_receiver_position_allocate(
-        &conductor->counters_manager, registration_id, command->session_id, command->stream_id, uri_length, uri);
-
-    if (rcv_hwm_position.counter_id < 0 || rcv_pos_position.counter_id < 0)
+    if (rcv_hwm_position.counter_id < 0)
     {
         return;
     }
 
-    rcv_hwm_position.value_addr = aeron_counters_manager_addr(&conductor->counters_manager, rcv_hwm_position.counter_id);
-    rcv_pos_position.value_addr = aeron_counters_manager_addr(&conductor->counters_manager, rcv_pos_position.counter_id);
+    aeron_position_t rcv_pos_position;
+    rcv_pos_position.counter_id = aeron_counter_receiver_position_allocate(
+        &conductor->counters_manager, registration_id, command->session_id, command->stream_id, uri_length, uri);
+    if (rcv_pos_position.counter_id < 0)
+    {
+        aeron_counters_manager_free(&conductor->counters_manager, rcv_hwm_position.counter_id);
+        return;
+    }
+
+    rcv_hwm_position.value_addr = aeron_counters_manager_addr(
+        &conductor->counters_manager, rcv_hwm_position.counter_id);
+    rcv_pos_position.value_addr = aeron_counters_manager_addr(
+        &conductor->counters_manager, rcv_pos_position.counter_id);
 
     bool is_reliable = conductor->network_subscriptions.array[0].is_reliable;
     aeron_inferable_boolean_t group_subscription = conductor->network_subscriptions.array[0].group;
@@ -3875,6 +3880,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         treat_as_multicast,
         &conductor->system_counters) < 0)
     {
+        aeron_counters_manager_free(&conductor->counters_manager, rcv_hwm_position.counter_id);
+        aeron_counters_manager_free(&conductor->counters_manager, rcv_pos_position.counter_id);
         return;
     }
 

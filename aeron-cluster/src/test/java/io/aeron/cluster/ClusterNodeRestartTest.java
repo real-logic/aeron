@@ -650,7 +650,8 @@ public class ClusterNodeRestartTest
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
                 .terminationHook(terminationLatch::countDown)
-                .deleteDirOnStart(initialLaunch));
+                .deleteDirOnStart(initialLaunch)
+                .replicationChannel("aeron:udp?endpoint=localhost:0"));
     }
 
     private static void checkResult(final long result)

@@ -38,9 +38,9 @@ class LogReplicationTest
     private static final long SRC_RECORDING_ID = 1;
     private static final long DST_RECORDING_ID = 2;
     private static final long REPLICATION_ID = 4;
-    private static final int SRC_ARCHIVE_STREAM_ID = 3;
 
     private static final String ENDPOINT = "localhost:20123";
+    private static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final long PROGRESS_CHECK_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     private static final long PROGRESS_CHECK_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
@@ -78,6 +78,7 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -111,6 +112,7 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -134,6 +136,7 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -158,6 +161,7 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -179,6 +183,7 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -200,6 +205,7 @@ class LogReplicationTest
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             t0);

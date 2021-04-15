@@ -37,17 +37,85 @@ import static java.util.stream.Collectors.joining;
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_URL;
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_REMOTE_SECTION;
 
+/**
+ * Gradle task to publish the tutorial documentation.
+ */
 public class TutorialPublishTask extends DefaultTask
 {
-    @Input
-    public String apiKey;
+    private String apiKey;
 
+    private File source;
+
+    private String remoteName;
+
+    /**
+     * Returns the Github API key to use for publishing.
+     *
+     * @return Github API key.
+     */
+    @Input
+    public String getApiKey()
+    {
+        return apiKey;
+    }
+
+    /**
+     * Returns the source directory.
+     *
+     * @return source directory.
+     */
     @InputDirectory
-    public File source;
+    public File getSource()
+    {
+        return source;
+    }
 
+    /**
+     * Gets the name of the remote repo.
+     *
+     * @return name of the remote repo.
+     */
     @Input
-    public String remoteName;
+    public String getRemoteName()
+    {
+        return remoteName;
+    }
 
+    /**
+     * Sets Github API key.
+     *
+     * @param apiKey used for publishing.
+     */
+    public void setApiKey(final String apiKey)
+    {
+        this.apiKey = apiKey;
+    }
+
+    /**
+     * Sets the source directory.
+     *
+     * @param source directory.
+     */
+    public void setSource(final File source)
+    {
+        this.source = source;
+    }
+
+    /**
+     * Sets the name of the remote repo.
+     *
+     * @param remoteName of Git repository.
+     */
+    public void setRemoteName(final String remoteName)
+    {
+        this.remoteName = remoteName;
+    }
+
+    /**
+     * Task action implementation.
+     *
+     * @throws Exception in case of errors.
+     */
     @TaskAction
     public void publish() throws Exception
     {
@@ -82,7 +150,7 @@ public class TutorialPublishTask extends DefaultTask
         git.push().setCredentialsProvider(credentialsProvider).call();
     }
 
-    public String getWikiUri() throws IOException, URISyntaxException
+    private String getWikiUri() throws IOException, URISyntaxException
     {
         final File baseGitDir = new File(getProject().getRootDir(), ".git");
         if (!baseGitDir.exists() || !baseGitDir.isDirectory())

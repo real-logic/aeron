@@ -20,9 +20,13 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 
-public class AsciidocUtil
+final class AsciidocUtil
 {
     private static final List<String> EXTENSIONS = asList(".adoc", ".asciidoc");
+
+    private AsciidocUtil()
+    {
+    }
 
     public static File[] filterAsciidocFiles(final File directory)
     {

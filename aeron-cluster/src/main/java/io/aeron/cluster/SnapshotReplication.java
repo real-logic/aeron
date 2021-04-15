@@ -26,7 +26,6 @@ final class SnapshotReplication
     private long recordingId = RecordingPos.NULL_RECORDING_ID;
     private boolean isDone = false;
     private boolean hasSync = false;
-    private String errorMessage;
 
     SnapshotReplication(final long replicationId)
     {
@@ -52,17 +51,14 @@ final class SnapshotReplication
         return recordingId;
     }
 
+    boolean isComplete()
+    {
+        return hasSync;
+    }
+
     boolean isDone()
     {
         return isDone;
-    }
-
-    void checkForError()
-    {
-        if (null != errorMessage)
-        {
-            throw new ClusterException("error occurred while retrieving snapshot: " + errorMessage);
-        }
     }
 
     void onSignal(final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
@@ -71,13 +67,11 @@ final class SnapshotReplication
         {
             if (RecordingSignal.EXTEND == signal)
             {
+                this.recordingId = recordingId;
+
                 if (0 != position)
                 {
-                    errorMessage = "unexpected start position expected=0 actual=" + position;
-                }
-                else
-                {
-                    this.recordingId = recordingId;
+                    throw new ClusterException("unexpected extend position=" + position);
                 }
             }
             else if (RecordingSignal.SYNC == signal)
@@ -86,14 +80,7 @@ final class SnapshotReplication
             }
             else if (RecordingSignal.STOP == signal)
             {
-                if (hasSync)
-                {
-                    isDone = true;
-                }
-                else
-                {
-                    errorMessage = "unexpected stop position " + position;
-                }
+                isDone = true;
             }
         }
     }

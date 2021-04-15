@@ -577,7 +577,7 @@ public final class ClusterBackupAgent implements Agent
             replicationUri.put(ENDPOINT_PARAM_NAME, ctx.catchupEndpoint());
             final long replicationId = backupArchive.replicate(
                 snapshotsToRetrieve.get(snapshotCursor).recordingId,
-                NULL_VALUE,
+                RecordingPos.NULL_RECORDING_ID,
                 NULL_POSITION,
                 clusterArchive.context().controlRequestStreamId(),
                 clusterArchive.context().controlRequestChannel(),
@@ -595,27 +595,43 @@ public final class ClusterBackupAgent implements Agent
 
             if (snapshotReplication.isDone())
             {
-                final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
-
-                snapshotsRetrieved.add(new RecordingLog.Snapshot(
-                    snapshotReplication.recordingId(),
-                    snapshot.leadershipTermId,
-                    snapshot.termBaseLogPosition,
-                    snapshot.logPosition,
-                    snapshot.timestamp,
-                    snapshot.serviceId));
-
-                snapshotReplication = null;
-
-                if (++snapshotCursor >= snapshotsToRetrieve.size())
+                if (snapshotReplication.isComplete())
                 {
-                    state(LIVE_LOG_RECORD, nowMs);
+                    final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
+
+                    snapshotsRetrieved.add(new RecordingLog.Snapshot(
+                        snapshotReplication.recordingId(),
+                        snapshot.leadershipTermId,
+                        snapshot.termBaseLogPosition,
+                        snapshot.logPosition,
+                        snapshot.timestamp,
+                        snapshot.serviceId));
+
+                    snapshotReplication = null;
+
+                    if (++snapshotCursor >= snapshotsToRetrieve.size())
+                    {
+                        state(LIVE_LOG_RECORD, nowMs);
+                        workCount++;
+                    }
+                }
+                else
+                {
+                    final ChannelUri replicationUri = ChannelUri.parse(ctx.catchupChannel());
+                    replicationUri.put(ENDPOINT_PARAM_NAME, ctx.catchupEndpoint());
+                    final long replicationId = backupArchive.replicate(
+                        snapshotsToRetrieve.get(snapshotCursor).recordingId,
+                        snapshotReplication.recordingId(),
+                        NULL_POSITION,
+                        clusterArchive.context().controlRequestStreamId(),
+                        clusterArchive.context().controlRequestChannel(),
+                        null,
+                        replicationUri.toString());
+
+                    snapshotReplication = new SnapshotReplication(replicationId);
+                    timeOfLastProgressMs = nowMs;
                     workCount++;
                 }
-            }
-            else
-            {
-                snapshotReplication.checkForError();
             }
         }
 

@@ -67,6 +67,7 @@ public class ClusterNodeTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .logChannel("aeron:ipc")
+                .replicationChannel("aeron:udp?endpoint=localhost:0")
                 .deleteDirOnStart(true));
     }
 

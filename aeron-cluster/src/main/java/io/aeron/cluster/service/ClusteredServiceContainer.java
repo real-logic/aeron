@@ -1567,5 +1567,48 @@ public final class ClusteredServiceContainer implements AutoCloseable
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
         }
+
+        /**
+         * {@inheritDoc}
+         */
+        public String toString()
+        {
+            return "ClusteredServiceContainer.Context{" +
+                "\n    isConcluded=" + isConcluded +
+                "\n    appVersion=" + appVersion +
+                "\n    clusterId=" + clusterId +
+                "\n    serviceId=" + serviceId +
+                "\n    serviceName='" + serviceName + '\'' +
+                "\n    replayChannel='" + replayChannel + '\'' +
+                "\n    replayStreamId=" + replayStreamId +
+                "\n    controlChannel='" + controlChannel + '\'' +
+                "\n    consensusModuleStreamId=" + consensusModuleStreamId +
+                "\n    serviceStreamId=" + serviceStreamId +
+                "\n    snapshotChannel='" + snapshotChannel + '\'' +
+                "\n    snapshotStreamId=" + snapshotStreamId +
+                "\n    errorBufferLength=" + errorBufferLength +
+                "\n    isRespondingService=" + isRespondingService +
+                "\n    logFragmentLimit=" + logFragmentLimit +
+                "\n    abortLatch=" + abortLatch +
+                "\n    threadFactory=" + threadFactory +
+                "\n    idleStrategySupplier=" + idleStrategySupplier +
+                "\n    epochClock=" + epochClock +
+                "\n    errorLog=" + errorLog +
+                "\n    errorHandler=" + errorHandler +
+                "\n    delegatingErrorHandler=" + delegatingErrorHandler +
+                "\n    errorCounter=" + errorCounter +
+                "\n    countedErrorHandler=" + countedErrorHandler +
+                "\n    archiveContext=" + archiveContext +
+                "\n    clusterDirectoryName='" + clusterDirectoryName + '\'' +
+                "\n    clusterDir=" + clusterDir +
+                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
+                "\n    aeron=" + aeron +
+                "\n    ownsAeronClient=" + ownsAeronClient +
+                "\n    clusteredService=" + clusteredService +
+                "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
+                "\n    terminationHook=" + terminationHook +
+                "\n    markFile=" + markFile +
+                '}';
+        }
     }
 }

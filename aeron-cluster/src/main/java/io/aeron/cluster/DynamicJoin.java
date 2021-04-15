@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -279,10 +280,12 @@ final class DynamicJoin
         {
             final long replicationId = localArchive.replicate(
                 leaderSnapshots.get(snapshotCursor).recordingId,
-                NULL_VALUE,
+                RecordingPos.NULL_RECORDING_ID,
+                AeronArchive.NULL_LENGTH,
                 ctx.archiveContext().controlRequestStreamId(),
                 "aeron:udp?term-length=64k|endpoint=" + leaderMember.archiveEndpoint(),
-                null);
+                null,
+                ctx.replicationChannel());
 
             snapshotReplication = new SnapshotReplication(replicationId);
             workCount++;
@@ -292,20 +295,33 @@ final class DynamicJoin
             workCount += consensusModuleAgent.pollArchiveEvents();
             if (snapshotReplication.isDone())
             {
-                consensusModuleAgent.retrievedSnapshot(
-                    snapshotReplication.recordingId(), leaderSnapshots.get(snapshotCursor));
-
-                snapshotReplication = null;
-
-                if (++snapshotCursor >= leaderSnapshots.size())
+                if (snapshotReplication.isComplete())
                 {
-                    state(State.SNAPSHOT_LOAD);
+                    consensusModuleAgent.retrievedSnapshot(
+                        snapshotReplication.recordingId(), leaderSnapshots.get(snapshotCursor));
+
+                    snapshotReplication = null;
+
+                    if (++snapshotCursor >= leaderSnapshots.size())
+                    {
+                        state(State.SNAPSHOT_LOAD);
+                        workCount++;
+                    }
+                }
+                else
+                {
+                    final long replicationId = localArchive.replicate(
+                        leaderSnapshots.get(snapshotCursor).recordingId,
+                        snapshotReplication.recordingId(),
+                        AeronArchive.NULL_LENGTH,
+                        ctx.archiveContext().controlRequestStreamId(),
+                        "aeron:udp?term-length=64k|endpoint=" + leaderMember.archiveEndpoint(),
+                        null,
+                        ctx.replicationChannel());
+
+                    snapshotReplication = new SnapshotReplication(replicationId);
                     workCount++;
                 }
-            }
-            else
-            {
-                snapshotReplication.checkForError();
             }
         }
 

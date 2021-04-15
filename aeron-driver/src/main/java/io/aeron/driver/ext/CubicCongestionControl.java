@@ -56,11 +56,9 @@ public class CubicCongestionControl implements CongestionControl
      */
     public static final String CC_PARAM_VALUE = "cubic";
 
-    private static final long RTT_MEASUREMENT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final long SECOND_IN_NS = TimeUnit.SECONDS.toNanos(1);
-    private static final long RTT_MAX_TIMEOUT_NS = SECOND_IN_NS;
-    private static final int MAX_OUTSTANDING_RTT_MEASUREMENTS = 1;
     private static final int INITCWND = 10;
+    private static final int RTT_TIMEOUT_MULTIPLE = 4;
 
     private static final double C = 0.4;
     private static final double B = 0.2;
@@ -69,16 +67,17 @@ public class CubicCongestionControl implements CongestionControl
     private final int maxCwnd;
     private final int initialWindowLength;
 
+    private double k;
+    private int w_max;
+    private int windowLength;
+    private int cwnd;
+
     private long lastUpdateTimestampNs;
     private long lastLossTimestampNs;
     private long lastRttTimestampNs = 0;
-    private final long windowUpdateTimeoutNs;
     private long rttNs;
-    private double k;
-    private int cwnd;
-    private int w_max;
-
-    private int outstandingRttMeasurements = 0;
+    private long rttTimeoutNs;
+    private final long windowUpdateTimeoutNs;
 
     private final ErrorHandler errorHandler;
     private final AtomicCounter rttIndicator;
@@ -130,6 +129,7 @@ public class CubicCongestionControl implements CongestionControl
             // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
             rttNs = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
             windowUpdateTimeoutNs = rttNs;
+            rttTimeoutNs = rttNs * RTT_TIMEOUT_MULTIPLE;
 
             rttIndicator = PerImageIndicator.allocate(
                 context.tempBuffer(),
@@ -149,6 +149,7 @@ public class CubicCongestionControl implements CongestionControl
                 streamId,
                 udpChannel.originalUriString());
 
+            windowLength = this.initialWindowLength;
             rttIndicator.setOrdered(0);
             windowIndicator.setOrdered(this.initialWindowLength);
 
@@ -177,9 +178,7 @@ public class CubicCongestionControl implements CongestionControl
     public boolean shouldMeasureRtt(final long nowNs)
     {
         return CubicCongestionControlConfiguration.MEASURE_RTT &&
-            outstandingRttMeasurements < MAX_OUTSTANDING_RTT_MEASUREMENTS &&
-            (((lastRttTimestampNs + RTT_MAX_TIMEOUT_NS) - nowNs < 0) ||
-                ((lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS) - nowNs < 0));
+            ((lastRttTimestampNs + rttTimeoutNs) - nowNs < 0);
     }
 
     /**
@@ -188,7 +187,6 @@ public class CubicCongestionControl implements CongestionControl
     public void onRttMeasurementSent(final long nowNs)
     {
         lastRttTimestampNs = nowNs;
-        outstandingRttMeasurements++;
     }
 
     /**
@@ -196,10 +194,10 @@ public class CubicCongestionControl implements CongestionControl
      */
     public void onRttMeasurement(final long nowNs, final long rttNs, final InetSocketAddress srcAddress)
     {
-        outstandingRttMeasurements--;
         lastRttTimestampNs = nowNs;
         this.rttNs = rttNs;
         rttIndicator.setOrdered(rttNs);
+        rttTimeoutNs = Math.max(rttNs, CubicCongestionControlConfiguration.INITIAL_RTT_NS) * RTT_TIMEOUT_MULTIPLE;
     }
 
     /**
@@ -218,11 +216,14 @@ public class CubicCongestionControl implements CongestionControl
 
         if (lossOccurred)
         {
+            forceStatusMessage = true;
             w_max = cwnd;
             k = StrictMath.cbrt((double)w_max * B / C);
             cwnd = Math.max(1, (int)(cwnd * (1.0 - B)));
+            windowLength = cwnd * mtu;
+            windowIndicator.setOrdered(windowLength);
+
             lastLossTimestampNs = nowNs;
-            forceStatusMessage = true;
         }
         else if (cwnd < maxCwnd && ((lastUpdateTimestampNs + windowUpdateTimeoutNs) - nowNs < 0))
         {
@@ -237,21 +238,24 @@ public class CubicCongestionControl implements CongestionControl
             if (CubicCongestionControlConfiguration.TCP_MODE && cwnd < w_max)
             {
                 // W_tcp(t) = w_max * (1 - B) + 3 * B / (2 - B) * t / RTT
-
                 final double rttInSeconds = (double)rttNs / (double)SECOND_IN_NS;
-                final double wTcp =
-                    (double)w_max * (1.0 - B) + ((3.0 * B / (2.0 - B)) * (durationSinceDecr / rttInSeconds));
+                final double wTcp = (double)w_max * (1.0 - B) +
+                    ((3.0 * B / (2.0 - B)) * (durationSinceDecr / rttInSeconds));
 
                 cwnd = Math.max(cwnd, (int)wTcp);
+            }
+
+            final int windowLength = cwnd * mtu;
+            if (windowLength != this.windowLength)
+            {
+                this.windowLength = windowLength;
+                windowIndicator.setOrdered(windowLength);
             }
 
             lastUpdateTimestampNs = nowNs;
         }
 
-        final int window = cwnd * mtu;
-        windowIndicator.setOrdered(window);
-
-        return packOutcome(window, forceStatusMessage);
+        return packOutcome(windowLength, forceStatusMessage);
     }
 
     /**

@@ -485,6 +485,7 @@ public class AuthenticationTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .authenticatorSupplier(authenticatorSupplier)
                 .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
+                .logReplicationChannel("aeron:udp?endpoint=localhost:0")
                 .deleteDirOnStart(true));
     }
 }

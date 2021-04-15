@@ -433,6 +433,11 @@ public final class ConsensusModule implements AutoCloseable
         public static final int CONSENSUS_STREAM_ID_DEFAULT = 108;
 
         /**
+         * Channel to be used for replicating logs from other archives to the local one
+         */
+        public static final String LOG_REPLICATION_CHANNEL_PROP_NAME = "aeron.cluster.logReplication.channel";
+
+        /**
          * Counter type id for the consensus module state.
          */
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = AeronCounters.CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID;
@@ -953,6 +958,16 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * The system property {@link #CONSENSUS_CHANNEL_PROP_NAME} if set or null.
+         *
+         * @return system property {@link #LOG_REPLICATION_CHANNEL_PROP_NAME} if set or null.
+         */
+        public static String logReplicationChannel()
+        {
+            return System.getProperty(LOG_REPLICATION_CHANNEL_PROP_NAME);
+        }
+
+        /**
          * The value {@link #WHEEL_TICK_RESOLUTION_DEFAULT_NS} or system property
          * {@link #WHEEL_TICK_RESOLUTION_PROP_NAME} if set.
          *
@@ -1040,6 +1055,7 @@ public final class ConsensusModule implements AutoCloseable
         private int snapshotStreamId = Configuration.snapshotStreamId();
         private String consensusChannel = Configuration.consensusChannel();
         private int consensusStreamId = Configuration.consensusStreamId();
+        private String logReplicationChannel = Configuration.logReplicationChannel();
         private int logFragmentLimit = ClusteredServiceContainer.Configuration.logFragmentLimit();
 
         private int serviceCount = Configuration.serviceCount();
@@ -1280,6 +1296,11 @@ public final class ConsensusModule implements AutoCloseable
             if (!archiveContext.controlResponseChannel().startsWith(CommonContext.IPC_CHANNEL))
             {
                 throw new ClusterException("archive control must be IPC");
+            }
+
+            if (null == logReplicationChannel)
+            {
+                throw new ClusterException("logReplicationChannel must be set");
             }
 
             archiveContext
@@ -1998,6 +2019,32 @@ public final class ConsensusModule implements AutoCloseable
         public int consensusStreamId()
         {
             return consensusStreamId;
+        }
+
+        /**
+         * Set the channel parameter for the log replication communication channel. This is channel that the local
+         * will send to src archives to replay their records back to. It should contain an endpoint that other
+         * members in the cluster will be able to reach. Using port 0 for the endpoint is valid for this channel to
+         * simplify port allocation.
+         *
+         * @param channel log replication communication channel to be used by the consensus module.
+         * @return this for a fluent API
+         */
+        public Context logReplicationChannel(final String channel)
+        {
+            logReplicationChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the log replication channel.
+         *
+         * @return channel to receive replication responses from other node's archives when using log replication
+         * to catch up.
+         */
+        public String logReplicationChannel()
+        {
+            return logReplicationChannel;
         }
 
         /**

@@ -69,6 +69,7 @@ public class TestCluster implements AutoCloseable
     //     "aeron:udp?term-length=512k|endpoint=224.20.30.39:24326|interface=localhost";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8020";
+    private static final String LOG_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
     private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
     private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k";
@@ -300,6 +301,7 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(INGRESS_CHANNEL)
             .logChannel(LOG_CHANNEL)
+            .logReplicationChannel(LOG_REPLICATION_CHANNEL)
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
@@ -365,6 +367,7 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(INGRESS_CHANNEL)
             .logChannel(LOG_CHANNEL)
+            .logReplicationChannel(LOG_REPLICATION_CHANNEL)
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
@@ -430,6 +433,7 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(INGRESS_CHANNEL)
             .logChannel(LOG_CHANNEL)
+            .logReplicationChannel(LOG_REPLICATION_CHANNEL)
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
@@ -544,6 +548,7 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .ingressChannel(INGRESS_CHANNEL)
             .logChannel(LOG_CHANNEL)
+            .logReplicationChannel(LOG_REPLICATION_CHANNEL)
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
@@ -1181,7 +1186,8 @@ public class TestCluster implements AutoCloseable
     {
         public final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context();
         public final Archive.Context archiveCtx = new Archive.Context();
-        public final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context();
+        public final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()
+            .logReplicationChannel("aeron:udp?endpoint=localhost:0");
         public final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
     }
 

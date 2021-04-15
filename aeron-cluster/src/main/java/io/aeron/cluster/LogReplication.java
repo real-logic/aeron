@@ -48,6 +48,7 @@ final class LogReplication
         final long dstRecordingId,
         final long stopPosition,
         final String srcArchiveEndpoint,
+        final String logReplicationChannel,
         final long progressCheckTimeoutNs,
         final long progressCheckIntervalNs,
         final long nowNs)
@@ -63,7 +64,7 @@ final class LogReplication
 
         final int srcControlStreamId = archive.context().controlRequestStreamId();
         replicationId = archive.replicate(
-            srcRecordingId, dstRecordingId, stopPosition, srcControlStreamId, srcArchiveChannel, null, null);
+            srcRecordingId, dstRecordingId, stopPosition, srcControlStreamId, srcArchiveChannel, null, logReplicationChannel);
     }
 
     boolean isDone(final long nowNs)

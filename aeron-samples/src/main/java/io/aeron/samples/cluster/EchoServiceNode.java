@@ -134,7 +134,6 @@ public final class EchoServiceNode
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
             .controlChannel(udpChannel(nodeId, hostname, ARCHIVE_CONTROL_PORT_OFFSET))
-            .replicationChannel(udpChannel(nodeId, hostname, REPLICATION_PORT_OFFSET))
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
@@ -150,6 +149,7 @@ public final class EchoServiceNode
             .clusterMemberId(nodeId)
             .clusterMembers(clusterMembers(hostnames, internalHostnames))
             .clusterDir(new File(baseDir, "consensus-module"))
+            .logReplicationChannel(udpChannel(nodeId, hostname, REPLICATION_PORT_OFFSET))
             .archiveContext(aeronArchiveContext.clone());
 
         final ClusteredServiceContainer.Context clusteredServiceContext =

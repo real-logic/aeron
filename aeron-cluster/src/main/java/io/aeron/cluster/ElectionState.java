@@ -19,8 +19,8 @@ import io.aeron.cluster.client.ClusterException;
 import org.agrona.concurrent.status.AtomicCounter;
 
 /**
- * Election states for a {@link ConsensusModule} which get represented by a code stored in a {@link io.aeron.Counter}
- * of the type {@link ConsensusModule.Configuration#ELECTION_STATE_TYPE_ID}.
+ * Election states for a {@link ConsensusModule} which get represented by a {@link #code()} stored in a
+ * {@link io.aeron.Counter} of the type {@link ConsensusModule.Configuration#ELECTION_STATE_TYPE_ID}.
  */
 public enum ElectionState
 {

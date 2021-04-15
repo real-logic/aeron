@@ -995,13 +995,12 @@ class Election
             final RecordingLog.Entry logNextTermEntry =
                 ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
 
-            final long nextLeadershipTermId =
-                null != logNextTermEntry ? logNextTermEntry.leadershipTermId : leadershipTermId;
-            final long nextTermBaseLogPosition =
-                null != logNextTermEntry ? logNextTermEntry.termBaseLogPosition : appendPosition;
+            final long nextLeadershipTermId = null != logNextTermEntry ?
+                logNextTermEntry.leadershipTermId : leadershipTermId;
+            final long nextTermBaseLogPosition = null != logNextTermEntry ?
+                logNextTermEntry.termBaseLogPosition : appendPosition;
 
-            final long nextLogPosition =
-                null != logNextTermEntry ?
+            final long nextLogPosition = null != logNextTermEntry ?
                 (NULL_POSITION != logNextTermEntry.logPosition ? logNextTermEntry.logPosition : appendPosition) :
                 NULL_POSITION;
 

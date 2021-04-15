@@ -651,7 +651,7 @@ public class ClusterNodeRestartTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .terminationHook(terminationLatch::countDown)
                 .deleteDirOnStart(initialLaunch)
-                .logReplicationChannel("aeron:udp?endpoint=localhost:0"));
+                .replicationChannel("aeron:udp?endpoint=localhost:0"));
     }
 
     private static void checkResult(final long result)

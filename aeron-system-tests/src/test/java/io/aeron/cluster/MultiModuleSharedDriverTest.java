@@ -71,7 +71,7 @@ public class MultiModuleSharedDriverTest
                 .serviceStreamId(104)
                 .consensusModuleStreamId(105)
                 .ingressChannel("aeron:udp?endpoint=localhost:9010")
-                .logReplicationChannel("aeron:udp?endpoint=localhost:0");
+                .replicationChannel("aeron:udp?endpoint=localhost:0");
 
             final ClusteredServiceContainer.Context containerCtx0 = new ClusteredServiceContainer.Context()
                 .clusterId(moduleCtx0.clusterId())
@@ -91,7 +91,7 @@ public class MultiModuleSharedDriverTest
                 .serviceStreamId(204)
                 .consensusModuleStreamId(205)
                 .ingressChannel("aeron:udp?endpoint=localhost:9011")
-                .logReplicationChannel("aeron:udp?endpoint=localhost:0");
+                .replicationChannel("aeron:udp?endpoint=localhost:0");
 
             final ClusteredServiceContainer.Context containerCtx1 = new ClusteredServiceContainer.Context()
                 .errorHandler(Tests::onError)
@@ -286,7 +286,7 @@ public class MultiModuleSharedDriverTest
                 .serviceStreamId(104 + nodeOffset)
                 .consensusModuleStreamId(105 + nodeOffset)
                 .ingressChannel("aeron:udp?term-length=64k")
-                .logReplicationChannel("aeron:udp?endpoint=localhost:0");
+                .replicationChannel("aeron:udp?endpoint=localhost:0");
 
             return ConsensusModule.launch(ctx);
         }

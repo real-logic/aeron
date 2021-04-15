@@ -175,7 +175,7 @@ public class BasicAuctionClusteredServiceNode
             .clusterDir(new File(baseDir, "consensus-module"))                                           // <3>
             .ingressChannel("aeron:udp?term-length=64k")                                                 // <4>
             .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
-            .logReplicationChannel(logReplicationChannel(hostname))                                      // <6>
+            .replicationChannel(logReplicationChannel(hostname))                                         // <6>
             .archiveContext(aeronArchiveContext.clone());                                                // <7>
         // end::consensus_module[]
 

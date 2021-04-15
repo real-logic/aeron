@@ -433,9 +433,9 @@ public final class ConsensusModule implements AutoCloseable
         public static final int CONSENSUS_STREAM_ID_DEFAULT = 108;
 
         /**
-         * Channel to be used for replicating logs from other archives to the local one
+         * Channel to be used for replicating logs and snapshots from other archives to the local one.
          */
-        public static final String LOG_REPLICATION_CHANNEL_PROP_NAME = "aeron.cluster.logReplication.channel";
+        public static final String REPLICATION_CHANNEL_PROP_NAME = "aeron.cluster.replication.channel";
 
         /**
          * Counter type id for the consensus module state.
@@ -958,13 +958,13 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The system property {@link #CONSENSUS_CHANNEL_PROP_NAME} if set or null.
+         * The system property for {@link #REPLICATION_CHANNEL_PROP_NAME} if set or null.
          *
-         * @return system property {@link #LOG_REPLICATION_CHANNEL_PROP_NAME} if set or null.
+         * @return system property {@link #REPLICATION_CHANNEL_PROP_NAME} if set or null.
          */
-        public static String logReplicationChannel()
+        public static String replicationChannel()
         {
-            return System.getProperty(LOG_REPLICATION_CHANNEL_PROP_NAME);
+            return System.getProperty(REPLICATION_CHANNEL_PROP_NAME);
         }
 
         /**
@@ -1055,7 +1055,7 @@ public final class ConsensusModule implements AutoCloseable
         private int snapshotStreamId = Configuration.snapshotStreamId();
         private String consensusChannel = Configuration.consensusChannel();
         private int consensusStreamId = Configuration.consensusStreamId();
-        private String logReplicationChannel = Configuration.logReplicationChannel();
+        private String replicationChannel = Configuration.replicationChannel();
         private int logFragmentLimit = ClusteredServiceContainer.Configuration.logFragmentLimit();
 
         private int serviceCount = Configuration.serviceCount();
@@ -1298,9 +1298,9 @@ public final class ConsensusModule implements AutoCloseable
                 throw new ClusterException("archive control must be IPC");
             }
 
-            if (null == logReplicationChannel)
+            if (null == replicationChannel)
             {
-                throw new ClusterException("logReplicationChannel must be set");
+                throw new ClusterException("replicationChannel must be set");
             }
 
             archiveContext
@@ -2022,29 +2022,31 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for the log replication communication channel. This is channel that the local
-         * will send to src archives to replay their records back to. It should contain an endpoint that other
+         * Set the channel parameter for the replication communication channel. This is channel that the local
+         * will send to src archives to replay their recordings back to. It should contain an endpoint that other
          * members in the cluster will be able to reach. Using port 0 for the endpoint is valid for this channel to
          * simplify port allocation.
          *
-         * @param channel log replication communication channel to be used by the consensus module.
+         * @param channel replication communication channel to be used by the consensus module.
          * @return this for a fluent API
+         * @see Configuration#REPLICATION_CHANNEL_PROP_NAME
          */
-        public Context logReplicationChannel(final String channel)
+        public Context replicationChannel(final String channel)
         {
-            logReplicationChannel = channel;
+            replicationChannel = channel;
             return this;
         }
 
         /**
-         * Get the log replication channel.
+         * Get the replication channel for logs and snapshots.
          *
-         * @return channel to receive replication responses from other node's archives when using log replication
-         * to catch up.
+         * @return channel to receive replication responses from other node's archives when using log and snapshot
+         * replication  to catch up.
+         * @see Configuration#REPLICATION_CHANNEL_PROP_NAME
          */
-        public String logReplicationChannel()
+        public String replicationChannel()
         {
-            return logReplicationChannel;
+            return replicationChannel;
         }
 
         /**
@@ -3042,6 +3044,85 @@ public final class ConsensusModule implements AutoCloseable
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public String toString()
+        {
+            return "Context{" +
+                "isConcluded=" + isConcluded +
+                ", ownsAeronClient=" + ownsAeronClient +
+                ", aeronDirectoryName='" + aeronDirectoryName + '\'' +
+                ", aeron=" + aeron +
+                ", deleteDirOnStart=" + deleteDirOnStart +
+                ", clusterDirectoryName='" + clusterDirectoryName + '\'' +
+                ", clusterDir=" + clusterDir +
+                ", recordingLog=" + recordingLog +
+                ", markFile=" + markFile +
+                ", fileSyncLevel=" + fileSyncLevel +
+                ", appVersion=" + appVersion +
+                ", clusterId=" + clusterId +
+                ", clusterMemberId=" + clusterMemberId +
+                ", appointedLeaderId=" + appointedLeaderId +
+                ", clusterMembers='" + clusterMembers + '\'' +
+                ", clusterConsensusEndpoints='" + clusterConsensusEndpoints + '\'' +
+                ", clusterMembersIgnoreSnapshot=" + clusterMembersIgnoreSnapshot +
+                ", ingressChannel='" + ingressChannel + '\'' +
+                ", ingressStreamId=" + ingressStreamId +
+                ", ingressFragmentLimit=" + ingressFragmentLimit +
+                ", logChannel='" + logChannel + '\'' +
+                ", logStreamId=" + logStreamId +
+                ", memberEndpoints='" + memberEndpoints + '\'' +
+                ", replayChannel='" + replayChannel + '\'' +
+                ", replayStreamId=" + replayStreamId +
+                ", controlChannel='" + controlChannel + '\'' +
+                ", consensusModuleStreamId=" + consensusModuleStreamId +
+                ", serviceStreamId=" + serviceStreamId +
+                ", snapshotChannel='" + snapshotChannel + '\'' +
+                ", snapshotStreamId=" + snapshotStreamId +
+                ", consensusChannel='" + consensusChannel + '\'' +
+                ", consensusStreamId=" + consensusStreamId +
+                ", replicationChannel='" + replicationChannel + '\'' +
+                ", logFragmentLimit=" + logFragmentLimit +
+                ", serviceCount=" + serviceCount +
+                ", errorBufferLength=" + errorBufferLength +
+                ", maxConcurrentSessions=" + maxConcurrentSessions +
+                ", ticksPerWheel=" + ticksPerWheel +
+                ", wheelTickResolutionNs=" + wheelTickResolutionNs +
+                ", sessionTimeoutNs=" + sessionTimeoutNs +
+                ", leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs +
+                ", leaderHeartbeatIntervalNs=" + leaderHeartbeatIntervalNs +
+                ", startupCanvassTimeoutNs=" + startupCanvassTimeoutNs +
+                ", electionTimeoutNs=" + electionTimeoutNs +
+                ", electionStatusIntervalNs=" + electionStatusIntervalNs +
+                ", dynamicJoinIntervalNs=" + dynamicJoinIntervalNs +
+                ", terminationTimeoutNs=" + terminationTimeoutNs +
+                ", threadFactory=" + threadFactory +
+                ", idleStrategySupplier=" + idleStrategySupplier +
+                ", clusterClock=" + clusterClock +
+                ", epochClock=" + epochClock +
+                ", random=" + random +
+                ", errorLog=" + errorLog +
+                ", errorHandler=" + errorHandler +
+                ", errorCounter=" + errorCounter +
+                ", countedErrorHandler=" + countedErrorHandler +
+                ", moduleStateCounter=" + moduleStateCounter +
+                ", electionStateCounter=" + electionStateCounter +
+                ", clusterNodeRoleCounter=" + clusterNodeRoleCounter +
+                ", commitPosition=" + commitPosition +
+                ", controlToggle=" + controlToggle +
+                ", snapshotCounter=" + snapshotCounter +
+                ", timedOutClientCounter=" + timedOutClientCounter +
+                ", shutdownSignalBarrier=" + shutdownSignalBarrier +
+                ", terminationHook=" + terminationHook +
+                ", archiveContext=" + archiveContext +
+                ", authenticatorSupplier=" + authenticatorSupplier +
+                ", logPublisher=" + logPublisher +
+                ", egressPublisher=" + egressPublisher +
+                ", isLogMdc=" + isLogMdc +
+                '}';
         }
     }
 

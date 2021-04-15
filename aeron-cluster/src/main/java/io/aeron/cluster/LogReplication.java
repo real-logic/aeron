@@ -48,7 +48,7 @@ final class LogReplication
         final long dstRecordingId,
         final long stopPosition,
         final String srcArchiveEndpoint,
-        final String logReplicationChannel,
+        final String replicationChannel,
         final long progressCheckTimeoutNs,
         final long progressCheckIntervalNs,
         final long nowNs)
@@ -61,8 +61,8 @@ final class LogReplication
         this.progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
 
         final String srcArchiveChannel = "aeron:udp?endpoint=" + srcArchiveEndpoint;
-
         final int srcControlStreamId = archive.context().controlRequestStreamId();
+
         replicationId = archive.replicate(
             srcRecordingId,
             dstRecordingId,
@@ -70,7 +70,7 @@ final class LogReplication
             srcControlStreamId,
             srcArchiveChannel,
             null,
-            logReplicationChannel);
+            replicationChannel);
     }
 
     boolean isDone(final long nowNs)
@@ -154,8 +154,10 @@ final class LogReplication
                     final CountersReader counters = archive.context().aeron().countersReader();
                     recordingPositionCounterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
                     break;
+
                 case DELETE:
                     throw new ClusterException("recording was deleted during replication: " + this);
+
                 case STOP:
                     this.isStopped = true;
                     break;

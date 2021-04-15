@@ -46,18 +46,18 @@ public final class ClusterEventLogger
     /**
      * Log a new leadership term event.
      *
-     * @param logLeadershipTermId term for which log entries are present.
-     * @param nextLeadershipTermId next term relative to the logLeadershipTermId
-     * @param nextTermBaseLogPosition base log position for the next term
-     * @param nextLogPosition     committed log position for next term
-     * @param leadershipTermId    new leadership term id.
-     * @param termBaseLogPosition position the log reached at base of new term.
-     * @param logPosition         position the log reached for the new term.
-     * @param leaderRecordingId   of the log in the leader archive.
-     * @param timestamp           of the the new term.
-     * @param leaderMemberId      member id for the new leader.
-     * @param logSessionId        session id of the log extension.
-     * @param isStartup           is the leader starting up fresh.
+     * @param logLeadershipTermId     term for which log entries are present.
+     * @param nextLeadershipTermId    next term relative to the logLeadershipTermId
+     * @param nextTermBaseLogPosition base log position for the next term.
+     * @param nextLogPosition         committed log position for next term.
+     * @param leadershipTermId        new leadership term id.
+     * @param termBaseLogPosition     position the log reached at base of new term.
+     * @param logPosition             position the log reached for the new term.
+     * @param leaderRecordingId       of the log in the leader archive.
+     * @param timestamp               of the the new term.
+     * @param leaderMemberId          member id for the new leader.
+     * @param logSessionId            session id of the log extension.
+     * @param isStartup               is the leader starting up fresh.
      */
     public void logNewLeadershipTerm(
         final long logLeadershipTermId,
@@ -115,7 +115,7 @@ public final class ClusterEventLogger
      * @param oldState  before the change.
      * @param newState  after the change.
      * @param memberId  on which the change has taken place.
-     * @param <E> type representing the state change.
+     * @param <E>       type representing the state change.
      */
     public <E extends Enum<E>> void logStateChange(
         final ClusterEventCode eventCode, final E oldState, final E newState, final int memberId)

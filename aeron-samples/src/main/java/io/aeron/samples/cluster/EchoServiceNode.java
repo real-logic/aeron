@@ -149,7 +149,7 @@ public final class EchoServiceNode
             .clusterMemberId(nodeId)
             .clusterMembers(clusterMembers(hostnames, internalHostnames))
             .clusterDir(new File(baseDir, "consensus-module"))
-            .logReplicationChannel(udpChannel(nodeId, hostname, REPLICATION_PORT_OFFSET))
+            .replicationChannel(udpChannel(nodeId, hostname, REPLICATION_PORT_OFFSET))
             .archiveContext(aeronArchiveContext.clone());
 
         final ClusteredServiceContainer.Context clusteredServiceContext =

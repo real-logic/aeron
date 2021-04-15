@@ -33,7 +33,9 @@ import java.io.File;
 import java.util.List;
 
 /**
- * Wrapper class to simplify cluster configuration.
+ * Wrapper class to simplify cluster configuration. This is sample code and is intended to show a mechanism for managing
+ * the configuration of the components required for Aeron Cluster. This code may change between versions and API
+ * compatibility is not guaranteed.
  */
 public class ClusterConfig
 {
@@ -44,7 +46,6 @@ public class ClusterConfig
     public static final int MEMBER_FACING_PORT_OFFSET = 3;
     public static final int LOG_PORT_OFFSET = 4;
     public static final int TRANSFER_PORT_OFFSET = 5;
-    public static final int REPLICATION_PORT_OFFSET = 6;
 
     private final MediaDriver.Context mediaDriverContext;
     private final Archive.Context archiveContext;
@@ -108,7 +109,6 @@ public class ClusterConfig
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
             .controlChannel(udpChannel(nodeId, hostname, portBase, ARCHIVE_CONTROL_PORT_OFFSET))
-            .replicationChannel(udpChannel(nodeId, hostname, portBase, REPLICATION_PORT_OFFSET))
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
@@ -124,7 +124,8 @@ public class ClusterConfig
             .clusterMemberId(nodeId)
             .clusterMembers(clusterMembers)
             .clusterDir(new File(baseDir, "consensus-module"))
-            .archiveContext(aeronArchiveContext.clone());
+            .archiveContext(aeronArchiveContext.clone())
+            .replicationChannel("aeron:udp?endpoint=" + hostname + ":0");
 
         final ClusteredServiceContainer.Context clusteredServiceContext = new ClusteredServiceContainer.Context()
             .aeronDirectoryName(aeronDirName)

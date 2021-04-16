@@ -82,7 +82,7 @@ public class ClusterNetworkTopologyTest
                 if (!echoServices.isEmpty())
                 {
                     System.out.println(echoServices);
-                    Tests.sleep(200);
+                    Tests.sleep(200, () -> "Failed to shutdown EchoServiceNode");
                 }
 
                 return echoServices.isEmpty();

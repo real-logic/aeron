@@ -143,7 +143,18 @@ public enum ArchiveEventCode implements EventCode
 
     static ArchiveEventCode get(final int id)
     {
-        return id >= 0 && id < EVENT_CODE_BY_ID.length ? EVENT_CODE_BY_ID[id] : null;
+        if (id < 0 || id >= EVENT_CODE_BY_ID.length)
+        {
+            throw new IllegalArgumentException("no ArchiveEventCode for id: " + id);
+        }
+
+        final ArchiveEventCode code = EVENT_CODE_BY_ID[id];
+        if (null == code)
+        {
+            throw new IllegalArgumentException("no ArchiveEventCode for id: " + id);
+        }
+
+        return code;
     }
 
     static ArchiveEventCode getByTemplateId(final int templateId)

@@ -19,7 +19,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static io.aeron.agent.ClusterEventCode.fromEventCodeId;
+import static io.aeron.agent.ClusterEventCode.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ClusterEventCodeTest
@@ -28,14 +28,21 @@ public class ClusterEventCodeTest
     @EnumSource(ClusterEventCode.class)
     void getCodeById(final ClusterEventCode code)
     {
-        assertSame(code, ClusterEventCode.get(code.id()));
+        assertSame(code, get(code.id()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, -1, 77, Integer.MIN_VALUE, Integer.MAX_VALUE })
+    void getCodeByIdShouldThrowIllegalArgumentExceptionForUnknownId(final int id)
+    {
+        assertThrows(IllegalArgumentException.class, () -> get(id));
     }
 
     @ParameterizedTest
     @EnumSource(ClusterEventCode.class)
     void toEventCodeIdComputesEventId(final ClusterEventCode eventCode)
     {
-        assertEquals(ClusterEventCode.EVENT_CODE_TYPE << 16 | (eventCode.id() & 0xFFFF), eventCode.toEventCodeId());
+        assertEquals(EVENT_CODE_TYPE << 16 | (eventCode.id() & 0xFFFF), eventCode.toEventCodeId());
     }
 
     @ParameterizedTest
@@ -47,8 +54,8 @@ public class ClusterEventCodeTest
 
     @ParameterizedTest
     @ValueSource(ints = { 0, -1, 13, Integer.MIN_VALUE, Integer.MAX_VALUE })
-    void fromEventCodeIdReturnNullForUnknownCode(final int eventCodeId)
+    void fromEventCodeIdShouldThrowIllegalArgumentExceptionForUnknownCodeId(final int eventCodeId)
     {
-        assertNull(fromEventCodeId(eventCodeId));
+        assertThrows(IllegalArgumentException.class, () -> fromEventCodeId(eventCodeId));
     }
 }

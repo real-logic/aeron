@@ -21,7 +21,6 @@ import org.agrona.Strings;
 import org.agrona.SystemUtil;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.EnumMap;
 
@@ -70,14 +69,14 @@ public class DynamicLoggingAgent
 
                 final EnumMap<ConfigOption, String> configOptions = fromSystemProperties();
                 final String agentArgs = buildAgentArgs(configOptions);
-                attachAgent(agentJar, processId, agentArgs);
+                attachAgent(START_COMMAND, agentJar, processId, agentArgs);
                 out.println("Logging started.");
                 break;
             }
 
             case STOP_COMMAND:
             {
-                attachAgent(agentJar, processId, command);
+                attachAgent(STOP_COMMAND, agentJar, processId, command);
                 out.println("Logging stopped.");
                 break;
             }
@@ -97,7 +96,8 @@ public class DynamicLoggingAgent
         out.println("Note: logging options can be specified either via system properties or the property files.");
     }
 
-    private static void attachAgent(final File agentJar, final String processId, final String agentArgs)
+    private static void attachAgent(
+        final String command, final File agentJar, final String processId, final String agentArgs)
     {
         try
         {
@@ -105,34 +105,19 @@ public class DynamicLoggingAgent
         }
         catch (final Throwable t)
         {
-            translateError(processId, t);
+            out.println("Command '" + command + "' failed, cause: " + getCause(t));
             System.exit(-1);
         }
     }
 
-    private static void translateError(final String processId, final Throwable t)
+    private static Throwable getCause(final Throwable t)
     {
         Throwable cause = t;
         while (null != cause.getCause())
         {
             cause = cause.getCause();
         }
-
-        if (cause instanceof IOException)
-        {
-            out.println("Process with PID " + processId + " is not running or not reachable.");
-        }
-        else if ("AgentInitializationException".equals(cause.getClass().getSimpleName()))
-        {
-            out.printf(
-                "Cannot start logging as it is already running.%n" +
-                "To stop logging use the '%s' command.%n%n",
-                STOP_COMMAND);
-        }
-        else
-        {
-            t.printStackTrace(out);
-        }
+        return cause;
     }
 
 }

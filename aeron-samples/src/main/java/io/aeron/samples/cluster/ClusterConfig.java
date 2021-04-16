@@ -15,7 +15,6 @@
  */
 package io.aeron.samples.cluster;
 
-import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
@@ -33,11 +32,11 @@ import java.io.File;
 import java.util.List;
 
 /**
- * Wrapper class to simplify cluster configuration. This is sample code and is intended to show a mechanism for managing
- * the configuration of the components required for Aeron Cluster. This code may change between versions and API
- * compatibility is not guaranteed.
+ * Wrapper class to simplify cluster configuration. This is sample code and is intended to show a mechanism for
+ * managing the configuration of the components required for Aeron Cluster. This code may change between versions
+ * and API compatibility is not guaranteed.
  */
-public class ClusterConfig
+public final class ClusterConfig
 {
     public static final int PORT_BASE = 9000;
     public static final int PORTS_PER_NODE = 100;
@@ -68,16 +67,16 @@ public class ClusterConfig
     }
 
     /**
-     * Create a new ClusterConfig.  This call allows for 2 separate lists of hostnames, so that there can be 'external'
+     * Create a new ClusterConfig. This call allows for 2 separate lists of hostnames, so that there can be 'external'
      * addresses for ingress requests and 'internal' addresses that will handle all of the cluster replication and
      * control traffic.
      *
      * @param nodeId            id for this node.
-     * @param ingressHostnames  list of hostnames that will receive ingress request traffic
-     * @param clusterHostnames  list of hostnames that will receive cluster traffic
-     * @param portBase          base port to derive remaining ports from
-     * @param clusteredService  instance of the clustered service that will run on this node
-     * @return                  configuration that wraps all of the detail aeron service configuration
+     * @param ingressHostnames  list of hostnames that will receive ingress request traffic.
+     * @param clusterHostnames  list of hostnames that will receive cluster traffic.
+     * @param portBase          base port to derive remaining ports from.
+     * @param clusteredService  instance of the clustered service that will run on this node.
+     * @return                  configuration that wraps all of the detail aeron service configuration.
      */
     public static ClusterConfig create(
         final int nodeId,
@@ -138,13 +137,13 @@ public class ClusterConfig
     }
 
     /**
-     * Create a new ClusterConfig.  This only supports a single lists of hostnames.
+     * Create a new ClusterConfig. This only supports a single lists of hostnames.
      *
      * @param nodeId            id for this node.
-     * @param hostnames         list of hostnames that will receive ingress request and cluster traffic
-     * @param portBase          base port to derive remaining ports from
-     * @param clusteredService  instance of the clustered service that will run on this node
-     * @return                  configuration that wraps all of the detail aeron service configuration
+     * @param hostnames         list of hostnames that will receive ingress request and cluster traffic.
+     * @param portBase          base port to derive remaining ports from.
+     * @param clusteredService  instance of the clustered service that will run on this node.
+     * @return                  configuration that wraps all of the detail aeron service configuration.
      */
     public static ClusterConfig create(
         final int nodeId,
@@ -158,7 +157,7 @@ public class ClusterConfig
     /**
      * Set the same error handler for all contexts.
      *
-     * @param errorHandler to receive errors
+     * @param errorHandler to receive errors.
      */
     public void errorHandler(final ErrorHandler errorHandler)
     {
@@ -172,7 +171,7 @@ public class ClusterConfig
     /**
      * Set the aeron directory for all configuration contexts.
      *
-     * @param aeronDir directory to use for aeron
+     * @param aeronDir directory to use for aeron.
      */
     public void aeronDirectoryName(final String aeronDir)
     {
@@ -186,7 +185,7 @@ public class ClusterConfig
     /**
      * Gets the configuration's media driver context.
      *
-     * @return configured MediaDriver.Context
+     * @return configured {@link MediaDriver.Context}.
      * @see MediaDriver.Context
      */
     public MediaDriver.Context mediaDriverContext()
@@ -197,7 +196,7 @@ public class ClusterConfig
     /**
      * Gets the configuration's archive context.
      *
-     * @return configured Archive.Context
+     * @return configured {@link Archive.Context}.
      * @see Archive.Context
      */
     public Archive.Context archiveContext()
@@ -208,7 +207,7 @@ public class ClusterConfig
     /**
      * Gets the configuration's aeron archive context.
      *
-     * @return configured AeronArchive.Context
+     * @return configured {@link Archive.Context}.
      * @see AeronArchive.Context
      */
     public AeronArchive.Context aeronArchiveContext()
@@ -219,7 +218,7 @@ public class ClusterConfig
     /**
      * Gets the configuration's consensus module context.
      *
-     * @return configured ConsensusModule.Context
+     * @return configured {@link ConsensusModule.Context}.
      * @see ConsensusModule.Context
      */
     public ConsensusModule.Context consensusModuleContext()
@@ -230,7 +229,7 @@ public class ClusterConfig
     /**
      * Gets the configuration's clustered service container context.
      *
-     * @return configured ClusteredService.Context
+     * @return configured {@link ClusteredServiceContainer.Context}.
      * @see ClusteredServiceContainer.Context
      */
     public ClusteredServiceContainer.Context clusteredServiceContext()
@@ -244,13 +243,11 @@ public class ClusterConfig
      *
      * @param ingressHostnames of the cluster members.
      * @param clusterHostnames of the cluster members internal address (can be the same as 'hostnames'}).
-     * @param portBase         initial port to derive other port from via appropriate node id and offset
+     * @param portBase         initial port to derive other port from via appropriate node id and offset.
      * @return the String which can be used for {@link io.aeron.cluster.ClusterMember#parse(String)}.
      */
     public static String clusterMembers(
-        final List<String> ingressHostnames,
-        final List<String> clusterHostnames,
-        final int portBase)
+        final List<String> ingressHostnames, final List<String> clusterHostnames, final int portBase)
     {
         if (ingressHostnames.size() != clusterHostnames.size())
         {
@@ -277,24 +274,13 @@ public class ClusterConfig
         return portBase + (nodeId * PORTS_PER_NODE) + offset;
     }
 
-    private static String udpChannel(
-        final int nodeId,
-        final String hostname,
-        final int portBase,
-        final int portOffset)
+    private static String udpChannel(final int nodeId, final String hostname, final int portBase, final int portOffset)
     {
         final int port = calculatePort(nodeId, portBase, portOffset);
-        return new ChannelUriStringBuilder()
-            .media(CommonContext.UDP_MEDIA)
-            .endpoint(hostname + ":" + port)
-            .build();
+        return "aeron:udp?endpoint=" + hostname + ":" + port;
     }
 
-    private static String endpoint(
-        final int nodeId,
-        final String hostname,
-        final int portBase,
-        final int portOffset)
+    private static String endpoint(final int nodeId, final String hostname, final int portBase, final int portOffset)
     {
         return hostname + ":" + calculatePort(nodeId, portBase, portOffset);
     }

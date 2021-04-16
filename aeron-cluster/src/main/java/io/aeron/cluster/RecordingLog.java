@@ -612,13 +612,13 @@ public final class RecordingLog implements AutoCloseable
     public RecordingLog(final File parentDir)
     {
         final File logFile = new File(parentDir, RECORDING_LOG_FILE_NAME);
-        final boolean newFile = !logFile.exists();
+        final boolean isNewFile = !logFile.exists();
 
         try
         {
             fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE);
 
-            if (newFile)
+            if (isNewFile)
             {
                 syncDirectory(parentDir);
             }
@@ -1009,6 +1009,7 @@ public final class RecordingLog implements AutoCloseable
 
         final int size = entriesCache.size();
         long logPosition = NULL_POSITION;
+
         if (size > 0)
         {
             if (cacheIndexByLeadershipTermIdMap.containsKey(leadershipTermId))
@@ -1078,6 +1079,7 @@ public final class RecordingLog implements AutoCloseable
         final int serviceId)
     {
         validateRecordingId(recordingId);
+
         if (!restoreInvalidSnapshot(
             recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
         {
@@ -1123,6 +1125,7 @@ public final class RecordingLog implements AutoCloseable
     public void invalidateEntry(final long leadershipTermId, final int entryIndex)
     {
         Entry invalidEntry = null;
+
         for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
             final Entry entry = entriesCache.get(i);
@@ -1163,6 +1166,7 @@ public final class RecordingLog implements AutoCloseable
     void removeEntry(final long leadershipTermId, final int entryIndex)
     {
         int index = -1;
+
         for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
             final Entry entry = entriesCache.get(i);
@@ -1245,6 +1249,7 @@ public final class RecordingLog implements AutoCloseable
     private void validateTermRecordingId(final long recordingId)
     {
         validateRecordingId(recordingId);
+
         if (recordingId != termRecordingId)
         {
             if (NULL_VALUE == termRecordingId)
@@ -1326,6 +1331,7 @@ public final class RecordingLog implements AutoCloseable
         final ArrayList<Entry> entries = this.entriesCache;
         final int size = entries.size();
         int index = size;
+
         for (int i = size - 1; i >= 0; i--)
         {
             final Entry e = entries.get(i);
@@ -1417,7 +1423,6 @@ public final class RecordingLog implements AutoCloseable
         for (int i = 0, length = byteBuffer.limit(); i < length; i += ENTRY_LENGTH)
         {
             final int entryType = buffer.getInt(i + ENTRY_TYPE_OFFSET);
-
             if (NULL_VALUE != entryType)
             {
                 final int type = entryType & ~ENTRY_TYPE_INVALID_FLAG;
@@ -1499,6 +1504,7 @@ public final class RecordingLog implements AutoCloseable
 
         int logIndex = -1;
         int snapshotIndex = -1;
+
         for (int i = entries.size() - 1; i >= 0; i--)
         {
             final Entry entry = entries.get(i);

@@ -22,7 +22,6 @@ import org.agrona.SystemUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.EnumMap;
 
@@ -60,49 +59,26 @@ public class DynamicLoggingAgent
         }
 
         final String command = args[2];
-        for (int i = 3; i < args.length; i++)
-        {
-            SystemUtil.loadPropertiesFile(PropertyAction.PRESERVE, args[i]);
-        }
-
         switch (command)
         {
             case START_COMMAND:
             {
+                for (int i = 3; i < args.length; i++)
+                {
+                    SystemUtil.loadPropertiesFile(PropertyAction.PRESERVE, args[i]);
+                }
+
                 final EnumMap<ConfigOption, String> configOptions = fromSystemProperties();
-                String logFile = configOptions.get(LOG_FILENAME);
-                if (Strings.isEmpty(logFile))
-                {
-                    final String baseDir;
-                    if (SystemUtil.isLinux() && Files.exists(Paths.get("/dev/shm")))
-                    {
-                        baseDir = "/dev/shm/";
-                    }
-                    else
-                    {
-                        baseDir = SystemUtil.tmpDirName();
-                    }
-
-                    logFile = baseDir + "agent-log-pid-" + processId + ".log";
-                    configOptions.put(LOG_FILENAME, logFile);
-                }
-
-                if (Strings.isEmpty(configOptions.get(READER_CLASSNAME)))
-                {
-                    configOptions.put(READER_CLASSNAME, READER_CLASSNAME_DEFAULT);
-                }
-
                 final String agentArgs = buildAgentArgs(configOptions);
                 attachAgent(agentJar, processId, agentArgs);
                 out.println("Logging started.");
-                out.println("Reader agent: " + configOptions.get(READER_CLASSNAME));
-                out.println("File: " + configOptions.get(LOG_FILENAME));
                 break;
             }
 
             case STOP_COMMAND:
             {
                 attachAgent(agentJar, processId, command);
+                out.println("Logging stopped.");
                 break;
             }
 
@@ -118,6 +94,7 @@ public class DynamicLoggingAgent
         out.println("  <java-process-id> - PID of the Java process to attach an agent to");
         out.println("  <command> - either '" + START_COMMAND + "' or '" + STOP_COMMAND + "'");
         out.println("  [property files...] - an optional list of property files to configure logging options");
+        out.println("Note: logging options can be specified either via system properties of the property files.");
     }
 
     private static void attachAgent(final File agentJar, final String processId, final String agentArgs)

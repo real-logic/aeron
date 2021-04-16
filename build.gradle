@@ -838,9 +838,10 @@ project(':aeron-all') {
     def aeronArchiveProject = project(':aeron-archive')
     def aeronClusterProject = project(':aeron-cluster')
     def aeronSamplesProject = project(':aeron-samples')
+    def aeronAgentProject = project(':aeron-agent')
 
     dependencies {
-        implementation aeronClusterProject
+        implementation aeronAgentProject
         implementation aeronSamplesProject
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
@@ -865,7 +866,8 @@ project(':aeron-all') {
             aeronArchiveProject.sourceSets.generated.allSource,
             aeronClusterProject.sourceSets.main.allSource,
             aeronClusterProject.sourceSets.generated.allSource,
-            aeronSamplesProject.sourceSets.main.allSource)
+            aeronSamplesProject.sourceSets.main.allSource,
+            aeronAgentProject.sourceSets.main.allSource)
     }
 
     javadoc {
@@ -876,6 +878,7 @@ project(':aeron-all') {
         source += aeronClusterProject.sourceSets.main.allJava
         source += aeronClusterProject.sourceSets.generated.allJava
         source += aeronSamplesProject.sourceSets.main.allJava
+        source += aeronAgentProject.sourceSets.main.allJava
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {

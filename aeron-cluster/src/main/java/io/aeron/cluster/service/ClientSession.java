@@ -15,109 +15,63 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.*;
+import io.aeron.DirectBufferVector;
+import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.BufferClaim;
-import org.agrona.*;
-
-import java.util.Arrays;
+import org.agrona.DirectBuffer;
 
 /**
- * Session representing a connected client to the cluster.
+ * Session representing a connected external client to the cluster.
  */
-public final class ClientSession
+public interface ClientSession
 {
     /**
      * Return value to indicate egress to a session is mocked out by the cluster when in follower mode.
      */
-    public static final long MOCKED_OFFER = 1;
-
-    private final long id;
-    private final int responseStreamId;
-    private final String responseChannel;
-    private final byte[] encodedPrincipal;
-
-    private final ClusteredServiceAgent clusteredServiceAgent;
-    private Publication responsePublication;
-    private boolean isClosing;
-
-    ClientSession(
-        final long sessionId,
-        final int responseStreamId,
-        final String responseChannel,
-        final byte[] encodedPrincipal,
-        final ClusteredServiceAgent clusteredServiceAgent)
-    {
-        this.id = sessionId;
-        this.responseStreamId = responseStreamId;
-        this.responseChannel = responseChannel;
-        this.encodedPrincipal = encodedPrincipal;
-        this.clusteredServiceAgent = clusteredServiceAgent;
-    }
+    long MOCKED_OFFER = 1;
 
     /**
      * Cluster session identity uniquely allocated when the session was opened.
      *
      * @return the cluster session identity uniquely allocated when the session was opened.
      */
-    public long id()
-    {
-        return id;
-    }
+    long id();
 
     /**
      * The response channel stream id for responding to the client.
      *
      * @return response channel stream id for responding to the client.
      */
-    public int responseStreamId()
-    {
-        return responseStreamId;
-    }
+    int responseStreamId();
 
     /**
      * The response channel for responding to the client.
      *
      * @return response channel for responding to the client.
      */
-    public String responseChannel()
-    {
-        return responseChannel;
-    }
+    String responseChannel();
 
     /**
      * Cluster session encoded principal from when the session was authenticated.
      *
      * @return The encoded Principal passed. May be 0 length to indicate none present.
      */
-    public byte[] encodedPrincipal()
-    {
-        return encodedPrincipal;
-    }
+    byte[] encodedPrincipal();
 
     /**
-     * Close of this {@link ClientSession} by sending the request to the consensus module.
+     * Close of this {@link ContainerClientSession} by sending the request to the consensus module.
      * <p>
      * This method is idempotent.
      */
-    public void close()
-    {
-        if (null != clusteredServiceAgent.getClientSession(id))
-        {
-            clusteredServiceAgent.closeClientSession(id);
-        }
-    }
+    void close();
 
     /**
      * Indicates that a request to close this session has been made.
      *
      * @return whether a request to close this session has been made.
      */
-    public boolean isClosing()
-    {
-        return isClosing;
-    }
+    boolean isClosing();
 
     /**
      * Non-blocking publish of a partial buffer containing a message to a cluster.
@@ -128,10 +82,7 @@ public final class ClientSession
      * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER},
      * otherwise {@link #MOCKED_OFFER} when a follower.
      */
-    public long offer(final DirectBuffer buffer, final int offset, final int length)
-    {
-        return clusteredServiceAgent.offer(id, responsePublication, buffer, offset, length);
-    }
+    long offer(DirectBuffer buffer, int offset, int length);
 
     /**
      * Non-blocking publish by gathering buffer vectors into a message. The first vector will be replaced by the cluster
@@ -142,10 +93,7 @@ public final class ClientSession
      * @see Publication#offer(DirectBufferVector[]) when in {@link Cluster.Role#LEADER},
      * otherwise {@link #MOCKED_OFFER} when a follower.
      */
-    public long offer(final DirectBufferVector[] vectors)
-    {
-        return clusteredServiceAgent.offer(id, responsePublication, vectors);
-    }
+    long offer(DirectBufferVector[] vectors);
 
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
@@ -182,55 +130,5 @@ public final class ClientSession
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()
      */
-    public long tryClaim(final int length, final BufferClaim bufferClaim)
-    {
-        return clusteredServiceAgent.tryClaim(id, responsePublication, length, bufferClaim);
-    }
-
-    void connect(final Aeron aeron)
-    {
-        if (null == responsePublication)
-        {
-            try
-            {
-                responsePublication = aeron.addPublication(responseChannel, responseStreamId);
-            }
-            catch (final RegistrationException ex)
-            {
-                clusteredServiceAgent.handleError(ex);
-            }
-        }
-    }
-
-    void markClosing()
-    {
-        this.isClosing = true;
-    }
-
-    void resetClosing()
-    {
-        isClosing = false;
-    }
-
-    void disconnect(final ErrorHandler errorHandler)
-    {
-        CloseHelper.close(errorHandler, responsePublication);
-        responsePublication = null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public String toString()
-    {
-        return "ClientSession{" +
-            "id=" + id +
-            ", responseStreamId=" + responseStreamId +
-            ", responseChannel='" + responseChannel + '\'' +
-            ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
-            ", clusteredServiceAgent=" + clusteredServiceAgent +
-            ", responsePublication=" + responsePublication +
-            ", isClosing=" + isClosing +
-            '}';
-    }
+    long tryClaim(int length, BufferClaim bufferClaim);
 }

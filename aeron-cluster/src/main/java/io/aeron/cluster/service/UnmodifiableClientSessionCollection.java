@@ -15,19 +15,17 @@
  */
 package io.aeron.cluster.service;
 
-import org.agrona.collections.Long2ObjectHashMap;
-
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-class UnmodifiableClientSessionCollection implements Collection<ClientSession>
+final class UnmodifiableClientSessionCollection implements Collection<ClientSession>
 {
-    private final Long2ObjectHashMap<ClientSession>.ValueCollection collection;
+    private final Collection<? extends ClientSession> collection;
     private final ClientSessionIterator iteratorWrapper = new ClientSessionIterator();
 
-    UnmodifiableClientSessionCollection(final Long2ObjectHashMap<ClientSession>.ValueCollection collection)
+    UnmodifiableClientSessionCollection(final Collection<? extends ClientSession> collection)
     {
         this.collection = collection;
     }
@@ -112,22 +110,25 @@ class UnmodifiableClientSessionCollection implements Collection<ClientSession>
         throw new UnsupportedOperationException();
     }
 
+    @SuppressWarnings("unchecked")
     public Spliterator<ClientSession> spliterator()
     {
-        return collection.spliterator();
+        return (Spliterator<ClientSession>)collection.spliterator();
     }
 
+    @SuppressWarnings("unchecked")
     public Stream<ClientSession> stream()
     {
-        return collection.stream();
+        return (Stream<ClientSession>)collection.stream();
     }
 
+    @SuppressWarnings("unchecked")
     public Stream<ClientSession> parallelStream()
     {
-        return collection.parallelStream();
+        return (Stream<ClientSession>)collection.parallelStream();
     }
 
-    static class ClientSessionIterator implements Iterator<ClientSession>
+    static final class ClientSessionIterator implements Iterator<ClientSession>
     {
         private Iterator<? extends ClientSession> iterator;
 

@@ -1,0 +1,145 @@
+/*
+ * Copyright 2014-2021 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.aeron.cluster.service;
+
+import io.aeron.*;
+import io.aeron.exceptions.RegistrationException;
+import io.aeron.logbuffer.BufferClaim;
+import org.agrona.*;
+
+import java.util.Arrays;
+
+final class ContainerClientSession implements ClientSession
+{
+    private final long id;
+    private final int responseStreamId;
+    private final String responseChannel;
+    private final byte[] encodedPrincipal;
+
+    private final ClusteredServiceAgent clusteredServiceAgent;
+    private Publication responsePublication;
+    private boolean isClosing;
+
+    ContainerClientSession(
+        final long sessionId,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] encodedPrincipal,
+        final ClusteredServiceAgent clusteredServiceAgent)
+    {
+        this.id = sessionId;
+        this.responseStreamId = responseStreamId;
+        this.responseChannel = responseChannel;
+        this.encodedPrincipal = encodedPrincipal;
+        this.clusteredServiceAgent = clusteredServiceAgent;
+    }
+
+
+    public long id()
+    {
+        return id;
+    }
+
+    public int responseStreamId()
+    {
+        return responseStreamId;
+    }
+
+    public String responseChannel()
+    {
+        return responseChannel;
+    }
+
+    public byte[] encodedPrincipal()
+    {
+        return encodedPrincipal;
+    }
+
+    public void close()
+    {
+        if (null != clusteredServiceAgent.getClientSession(id))
+        {
+            clusteredServiceAgent.closeClientSession(id);
+        }
+    }
+
+    public boolean isClosing()
+    {
+        return isClosing;
+    }
+
+    public long offer(final DirectBuffer buffer, final int offset, final int length)
+    {
+        return clusteredServiceAgent.offer(id, responsePublication, buffer, offset, length);
+    }
+
+    public long offer(final DirectBufferVector[] vectors)
+    {
+        return clusteredServiceAgent.offer(id, responsePublication, vectors);
+    }
+
+    public long tryClaim(final int length, final BufferClaim bufferClaim)
+    {
+        return clusteredServiceAgent.tryClaim(id, responsePublication, length, bufferClaim);
+    }
+
+    void connect(final Aeron aeron)
+    {
+        if (null == responsePublication)
+        {
+            try
+            {
+                responsePublication = aeron.addPublication(responseChannel, responseStreamId);
+            }
+            catch (final RegistrationException ex)
+            {
+                clusteredServiceAgent.handleError(ex);
+            }
+        }
+    }
+
+    void markClosing()
+    {
+        this.isClosing = true;
+    }
+
+    void resetClosing()
+    {
+        isClosing = false;
+    }
+
+    void disconnect(final ErrorHandler errorHandler)
+    {
+        CloseHelper.close(errorHandler, responsePublication);
+        responsePublication = null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ClientSession{" +
+            "id=" + id +
+            ", responseStreamId=" + responseStreamId +
+            ", responseChannel='" + responseChannel + '\'' +
+            ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
+            ", clusteredServiceAgent=" + clusteredServiceAgent +
+            ", responsePublication=" + responsePublication +
+            ", isClosing=" + isClosing +
+            '}';
+    }
+}

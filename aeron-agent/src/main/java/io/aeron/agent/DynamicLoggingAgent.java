@@ -55,7 +55,7 @@ public class DynamicLoggingAgent
         final String processId = args[1];
         if (Strings.isEmpty(processId))
         {
-            throw new IllegalArgumentException("no processId provided!");
+            throw new IllegalArgumentException("no PID provided!");
         }
 
         final String command = args[2];
@@ -94,7 +94,7 @@ public class DynamicLoggingAgent
         out.println("  <java-process-id> - PID of the Java process to attach an agent to");
         out.println("  <command> - either '" + START_COMMAND + "' or '" + STOP_COMMAND + "'");
         out.println("  [property files...] - an optional list of property files to configure logging options");
-        out.println("Note: logging options can be specified either via system properties of the property files.");
+        out.println("Note: logging options can be specified either via system properties or the property files.");
     }
 
     private static void attachAgent(final File agentJar, final String processId, final String agentArgs)
@@ -126,7 +126,7 @@ public class DynamicLoggingAgent
         {
             out.printf(
                 "Cannot start logging as it is already running.%n" +
-                "To stop logging use a '%s' command.%n%n",
+                "To stop logging use the '%s' command.%n%n",
                 STOP_COMMAND);
         }
         else

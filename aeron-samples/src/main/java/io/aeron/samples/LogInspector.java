@@ -129,7 +129,7 @@ public class LogInspector
                 do
                 {
                     dataHeaderFlyweight.wrap(termBuffer, offset, termLength - offset);
-                    out.println(offset + ": " + dataHeaderFlyweight.toString());
+                    out.println(offset + ": " + dataHeaderFlyweight);
 
                     final int frameLength = dataHeaderFlyweight.frameLength();
                     if (frameLength < DataHeaderFlyweight.HEADER_LENGTH)

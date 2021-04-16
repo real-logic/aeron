@@ -81,7 +81,7 @@ public class SegmentInspector
         while (offset < length)
         {
             dataHeaderFlyweight.wrap(buffer, offset, length - offset);
-            out.println(offset + ": " + dataHeaderFlyweight.toString());
+            out.println(offset + ": " + dataHeaderFlyweight);
 
             final int frameLength = dataHeaderFlyweight.frameLength();
             if (frameLength < DataHeaderFlyweight.HEADER_LENGTH)

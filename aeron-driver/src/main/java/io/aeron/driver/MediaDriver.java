@@ -638,7 +638,7 @@ public final class MediaDriver implements AutoCloseable
 
             if (printConfigurationOnStart)
             {
-                System.out.println(this.toString());
+                System.out.println(this);
             }
 
             return this;

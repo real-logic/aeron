@@ -891,7 +891,7 @@ public final class UdpChannel
         boolean isMulticast = false;
         boolean hasMulticastTtl = false;
         boolean hasTagId = false;
-        boolean hasNoDistinguishingCharacteristic = false;;
+        boolean hasNoDistinguishingCharacteristic = false;
         int socketRcvbufLength = 0;
         int socketSndbufLength = 0;
         int receiverWindowLength = 0;

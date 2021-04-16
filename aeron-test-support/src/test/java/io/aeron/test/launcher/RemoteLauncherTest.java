@@ -49,7 +49,7 @@ public class RemoteLauncherTest
 
                     final byte[] expectedBytes = message.getBytes(StandardCharsets.UTF_8);
                     final byte[] actualBytes = Arrays.copyOf(out.toByteArray(), expectedBytes.length);
-                    assertArrayEquals(expectedBytes, actualBytes, out.toString() + " vs " + new String(actualBytes));
+                    assertArrayEquals(expectedBytes, actualBytes, out + " vs " + new String(actualBytes));
                 }
             );
         }

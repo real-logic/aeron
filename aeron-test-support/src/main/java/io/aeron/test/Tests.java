@@ -143,7 +143,7 @@ public class Tests
 
         appendStackTrace(sb).append('\n');
 
-        System.out.println(sb.toString());
+        System.out.println(sb);
         System.out.println(SystemUtil.threadDump());
     }
 

@@ -178,7 +178,7 @@ public class DriverLoggingAgentTest
                 assertEquals(counter.get(), 1);
             }
 
-            final Supplier<String> errorMessage = () -> "Pending events: " + WAIT_LIST.toString();
+            final Supplier<String> errorMessage = () -> "Pending events: " + WAIT_LIST;
             while (!WAIT_LIST.isEmpty())
             {
                 Tests.yieldingWait(errorMessage);

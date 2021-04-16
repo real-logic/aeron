@@ -286,7 +286,7 @@ public class ClusterTool
     {
         try (RecordingLog recordingLog = new RecordingLog(clusterDir))
         {
-            out.println(recordingLog.toString());
+            out.println(recordingLog);
         }
     }
 

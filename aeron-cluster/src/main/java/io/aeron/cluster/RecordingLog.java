@@ -151,7 +151,7 @@ public final class RecordingLog implements AutoCloseable
          *                            marks it invalid.
          * @param entryIndex          of the entry on disk.
          */
-        Entry(
+        public Entry(
             final long recordingId,
             final long leadershipTermId,
             final long termBaseLogPosition,
@@ -309,7 +309,7 @@ public final class RecordingLog implements AutoCloseable
          * @param timestamp           as which the snapshot was taken.
          * @param serviceId           which the snapshot belongs to.
          */
-        Snapshot(
+        public Snapshot(
             final long recordingId,
             final long leadershipTermId,
             final long termBaseLogPosition,
@@ -396,7 +396,22 @@ public final class RecordingLog implements AutoCloseable
          */
         public final int sessionId;
 
-        Log(final long recordingId,
+        /**
+         * Construct a representation of a log entry in the {@link RecordingLog}.
+         *
+         * @param recordingId         for the recording in an archive.
+         * @param leadershipTermId    identity for the leadership term.
+         * @param termBaseLogPosition log position at the base of the leadership term.
+         * @param logPosition         position the log has reached for the term.
+         * @param startPosition       of the recording captured in the archive.
+         * @param stopPosition        of the recording captured in the archive.
+         * @param initialTermId       of the stream captured for the recording.
+         * @param termBufferLength    of the stream captured for the recording.
+         * @param mtuLength           of the stream captured for the recording.
+         * @param sessionId           of the stream captured for the recording.
+         */
+        public Log(
+            final long recordingId,
             final long leadershipTermId,
             final long termBaseLogPosition,
             final long logPosition,
@@ -474,7 +489,16 @@ public final class RecordingLog implements AutoCloseable
          */
         public final Log log;
 
-        RecoveryPlan(
+        /**
+         *
+         * @param lastLeadershipTermId    the last, i.e. most recent, leadership term identity for the log.
+         * @param lastTermBaseLogPosition last, i.e. most recent, leadership term base log position.
+         * @param appendedLogPosition     reached for local appended log.
+         * @param committedLogPosition    reached for the local appended log for which the commit position is known.
+         * @param snapshots               most recent snapshots for the consensus module and services.
+         * @param log                     appended local log details.
+         */
+        public RecoveryPlan(
             final long lastLeadershipTermId,
             final long lastTermBaseLogPosition,
             final long appendedLogPosition,

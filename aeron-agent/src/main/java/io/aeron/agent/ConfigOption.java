@@ -86,7 +86,6 @@ enum ConfigOption
      */
     DISABLED_CLUSTER_EVENT_CODES("aeron.event.cluster.log.disable");
 
-    static final String READER_CLASSNAME_DEFAULT = "io.aeron.agent.EventLogReaderAgent";
     static final String START_COMMAND = "start";
     static final String STOP_COMMAND = "stop";
 

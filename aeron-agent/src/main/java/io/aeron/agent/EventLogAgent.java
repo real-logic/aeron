@@ -42,11 +42,17 @@ import static net.bytebuddy.matcher.ElementMatchers.named;
 /**
  * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by
  * {@link DriverEventCode}. Events are recorded to an in-memory {@link org.agrona.concurrent.ringbuffer.RingBuffer}
- * which is consumed and appended asynchronous to a log as defined by the class {@link ConfigOption#READER_CLASSNAME}
+ * which is consumed and appended asynchronous to a log as defined by the class {@link #READER_CLASSNAME_PROP_NAME}
  * which defaults to {@link EventLogReaderAgent}.
  */
 public final class EventLogAgent
 {
+    /**
+     * Event reader {@link Agent} which consumes the {@link EventConfiguration#EVENT_RING_BUFFER} to output log events.
+     */
+    public static final String READER_CLASSNAME_PROP_NAME = READER_CLASSNAME.propertyName();
+    public static final String READER_CLASSNAME_DEFAULT = "io.aeron.agent.EventLogReaderAgent";
+
     private static final long SLEEP_PERIOD_MS = 1L;
 
     private static AgentRunner readerAgentRunner;
@@ -91,6 +97,15 @@ public final class EventLogAgent
                 instrumentation,
                 ConfigOption.parseAgentArgs(agentArgs));
         }
+    }
+
+    /**
+     * Remove the transformer and close the agent runner for the event log reader.
+     */
+    @Deprecated
+    public static synchronized void removeTransformer()
+    {
+        stopLogging();
     }
 
     /**

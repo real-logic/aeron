@@ -40,10 +40,15 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Simple reader of {@link EventConfiguration#EVENT_RING_BUFFER} that appends to {@link System#out} by default
- * or to file if {@link ConfigOption#LOG_FILENAME} system property is set.
+ * or to file if {@link #LOG_FILENAME_PROP_NAME} System property is set.
  */
 public final class EventLogReaderAgent implements Agent
 {
+    /**
+     * Event Buffer length system property name. If not set then output will default to {@link System#out}.
+     */
+    public static final String LOG_FILENAME_PROP_NAME = ConfigOption.LOG_FILENAME.propertyName();
+
     private final ManyToOneRingBuffer ringBuffer = EventConfiguration.EVENT_RING_BUFFER;
     private final StringBuilder builder = new StringBuilder();
     private final MessageHandler messageHandler = this::onMessage;

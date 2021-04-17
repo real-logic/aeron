@@ -70,8 +70,8 @@ final class AgentTests
     {
         stopLogging();
         TestLoggingAgent.INSTANCE_COUNT.set(0);
-        TestLoggingAgent.onStartCalled = false;
-        TestLoggingAgent.onStopCalled = false;
+        TestLoggingAgent.isOnStartCalled = false;
+        TestLoggingAgent.isOnStopCalled = false;
         TestLoggingAgentWithFileName.LOG_FILE_NAME.set(null);
     }
 
@@ -174,24 +174,24 @@ final class AgentTests
 
         startLogging(configOptions);
         assertEquals(instanceCount + 1, TestLoggingAgent.INSTANCE_COUNT.get());
-        Tests.await(() -> TestLoggingAgent.onStartCalled);
+        Tests.await(() -> TestLoggingAgent.isOnStartCalled);
 
         stopLogging();
-        Tests.await(() -> TestLoggingAgent.onStopCalled);
+        Tests.await(() -> TestLoggingAgent.isOnStopCalled);
     }
 
     private static class TestLoggingAgent implements Agent
     {
         static final AtomicInteger INSTANCE_COUNT = new AtomicInteger();
-        static volatile boolean onStartCalled = false;
-        static volatile boolean onStopCalled = false;
+        static volatile boolean isOnStartCalled = false;
+        static volatile boolean isOnStopCalled = false;
 
         TestLoggingAgent()
         {
             INSTANCE_COUNT.getAndIncrement();
         }
 
-        public int doWork() throws Exception
+        public int doWork()
         {
             return 0;
         }
@@ -203,12 +203,12 @@ final class AgentTests
 
         public void onStart()
         {
-            onStartCalled = true;
+            isOnStartCalled = true;
         }
 
         public void onClose()
         {
-            onStopCalled = true;
+            isOnStopCalled = true;
         }
     }
 
@@ -221,7 +221,7 @@ final class AgentTests
             LOG_FILE_NAME.set(logFileName);
         }
 
-        public int doWork() throws Exception
+        public int doWork()
         {
             return 0;
         }

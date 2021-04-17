@@ -108,6 +108,7 @@ enum ConfigOption
     static EnumMap<ConfigOption, String> fromSystemProperties()
     {
         final EnumMap<ConfigOption, String> values = new EnumMap<>(ConfigOption.class);
+
         for (final ConfigOption option : OPTIONS)
         {
             final String value = System.getProperty(option.propertyName());
@@ -116,6 +117,7 @@ enum ConfigOption
                 values.put(option, value);
             }
         }
+
         return values;
     }
 
@@ -134,10 +136,12 @@ enum ConfigOption
                 .append(entry.getValue())
                 .append(OPTION_SEPARATOR);
         }
+
         if (builder.length() > 0)
         {
-            builder.deleteCharAt(builder.length() - 1);
+            builder.setLength(builder.length() - 1);
         }
+
         return builder.toString();
     }
 

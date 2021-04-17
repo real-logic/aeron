@@ -103,7 +103,7 @@ public final class EventLogAgent
      * Remove the transformer and close the agent runner for the event log reader.
      */
     @Deprecated
-    public static synchronized void removeTransformer()
+    public static void removeTransformer()
     {
         stopLogging();
     }
@@ -338,6 +338,7 @@ public final class EventLogAgent
             "Neighbor",
             DriverInterceptor.NameResolution.NeighborRemoved.class,
             "neighborRemoved");
+
         return tempBuilder;
     }
 
@@ -359,6 +360,7 @@ public final class EventLogAgent
             "AbstractMinMulticastFlowControl",
             DriverInterceptor.FlowControl.ReceiverRemoved.class,
             "receiverRemoved");
+
         return tempBuilder;
     }
 
@@ -482,6 +484,7 @@ public final class EventLogAgent
             "ConsensusModuleAgent",
             ClusterInterceptor.RequestVote.class,
             "onRequestVote");
+
         return tempBuilder;
     }
 

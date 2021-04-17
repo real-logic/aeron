@@ -117,7 +117,7 @@ public class DynamicLoggingAgent
         {
             cause = cause.getCause();
         }
+
         return cause;
     }
-
 }

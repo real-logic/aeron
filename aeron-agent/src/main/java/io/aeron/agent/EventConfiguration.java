@@ -24,7 +24,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static io.aeron.agent.DriverEventCode.*;
-import static java.lang.System.*;
+import static java.lang.System.err;
+import static java.lang.System.lineSeparator;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.getSizeAsInt;
@@ -39,55 +40,6 @@ final class EventConfiguration
      * Event buffer length system property name.
      */
     public static final String BUFFER_LENGTH_PROP_NAME = "aeron.event.buffer.length";
-
-    /**
-     * Driver Event tags system property name. This is either:
-     * <ul>
-     * <li>A comma separated list of {@link DriverEventCode}s to enable</li>
-     * <li>"all" which enables all the codes</li>
-     * <li>"admin" which enables the codes specified by {@link #ADMIN_ONLY_EVENT_CODES} which is the admin commands</li>
-     * </ul>
-     */
-    public static final String ENABLED_EVENT_CODES_PROP_NAME = "aeron.event.log";
-
-    /**
-     * Disabled Driver Event tags system property name. Follows the format specified for
-     * {@link EventConfiguration#ENABLED_EVENT_CODES_PROP_NAME}. This property will disable any codes in the set
-     * specified there. Defined on its own has no effect.
-     */
-    public static final String DISABLED_EVENT_CODES_PROP_NAME = "aeron.event.log.disable";
-
-    /**
-     * Archive Event tags system property name. This is either:
-     * <ul>
-     * <li>A comma separated list of {@link ArchiveEventCode}s to enable</li>
-     * <li>"all" which enables all the codes</li>
-     * </ul>
-     */
-    public static final String ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME = "aeron.event.archive.log";
-
-    /**
-     * Disabled Archive Event tags system property name. Follows the format specified for
-     * {@link EventConfiguration#ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME}. This property will disable any codes in the
-     * set specified there. Defined on its own has no effect.
-     */
-    public static final String DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME = "aeron.event.archive.log.disable";
-
-    /**
-     * Cluster Event tags system property name. This is either:
-     * <ul>
-     * <li>A comma separated list of {@link ClusterEventCode}s to enable</li>
-     * <li>"all" which enables all the codes</li>
-     * </ul>
-     */
-    public static final String ENABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log";
-
-    /**
-     * Disabled Cluster Event tags system property name. Follows the format specified for
-     * {@link EventConfiguration#ENABLED_CLUSTER_EVENT_CODES_PROP_NAME}. This property will disable any codes in the
-     * set specified there. Defined on its own has no effect.
-     */
-    public static final String DISABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log.disable";
 
     /**
      * Event codes for admin events within the driver, i.e. does not include frame capture and name resolution
@@ -115,7 +67,7 @@ final class EventConfiguration
     public static final int EVENT_READER_FRAME_LIMIT = 20;
 
     /**
-     * Ring Buffer to use for logging that will be read by {@link EventLogAgent#READER_CLASSNAME_PROP_NAME}.
+     * Ring Buffer to use for logging that will be read by {@link ConfigOption#READER_CLASSNAME}.
      */
     public static final ManyToOneRingBuffer EVENT_RING_BUFFER;
 
@@ -133,19 +85,25 @@ final class EventConfiguration
     {
     }
 
-    static void init()
+    static void init(
+        final String enabledDriverEvents,
+        final String disabledDriverEvents,
+        final String enabledArchiveEvents,
+        final String disabledArchiveEvents,
+        final String enabledClusterEvents,
+        final String disabledClusterEvents)
     {
         DRIVER_EVENT_CODES.clear();
-        DRIVER_EVENT_CODES.addAll(getDriverEventCodes(getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
-        DRIVER_EVENT_CODES.removeAll(getDriverEventCodes(getProperty(DISABLED_EVENT_CODES_PROP_NAME)));
+        DRIVER_EVENT_CODES.addAll(getDriverEventCodes(enabledDriverEvents));
+        DRIVER_EVENT_CODES.removeAll(getDriverEventCodes(disabledDriverEvents));
 
         ARCHIVE_EVENT_CODES.clear();
-        ARCHIVE_EVENT_CODES.addAll(getArchiveEventCodes(getProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME)));
-        ARCHIVE_EVENT_CODES.removeAll(getArchiveEventCodes(getProperty(DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME)));
+        ARCHIVE_EVENT_CODES.addAll(getArchiveEventCodes(enabledArchiveEvents));
+        ARCHIVE_EVENT_CODES.removeAll(getArchiveEventCodes(disabledArchiveEvents));
 
         CLUSTER_EVENT_CODES.clear();
-        CLUSTER_EVENT_CODES.addAll(getClusterEventCodes(getProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME)));
-        CLUSTER_EVENT_CODES.removeAll(getClusterEventCodes(getProperty(DISABLED_CLUSTER_EVENT_CODES_PROP_NAME)));
+        CLUSTER_EVENT_CODES.addAll(getClusterEventCodes(enabledClusterEvents));
+        CLUSTER_EVENT_CODES.removeAll(getClusterEventCodes(disabledClusterEvents));
     }
 
     /**
@@ -184,7 +142,7 @@ final class EventConfiguration
      * @param enabledEventCodes that can be "all" or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link ClusterEventCode}s that are enabled for the logger.
      */
-    static Set<ClusterEventCode> getClusterEventCodes(final String enabledEventCodes)
+    static EnumSet<ClusterEventCode> getClusterEventCodes(final String enabledEventCodes)
     {
         if (Strings.isEmpty(enabledEventCodes))
         {

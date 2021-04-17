@@ -88,7 +88,18 @@ public enum ClusterEventCode implements EventCode
 
     static ClusterEventCode get(final int id)
     {
-        return id >= 0 && id < EVENT_CODE_BY_ID.length ? EVENT_CODE_BY_ID[id] : null;
+        if (id < 0 || id >= EVENT_CODE_BY_ID.length)
+        {
+            throw new IllegalArgumentException("no ClusterEventCode for id: " + id);
+        }
+
+        final ClusterEventCode code = EVENT_CODE_BY_ID[id];
+        if (null == code)
+        {
+            throw new IllegalArgumentException("no ClusterEventCode for id: " + id);
+        }
+
+        return code;
     }
 
     /**

@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -49,7 +50,7 @@ public class ArchiveLoggingAgentTest
     @AfterEach
     public void after()
     {
-        AgentTests.afterAgent();
+        AgentTests.stopLogging();
 
         if (testDir != null && testDir.exists())
         {
@@ -116,9 +117,10 @@ public class ArchiveLoggingAgentTest
 
     private void before(final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents)
     {
-        System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
-        System.setProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, enabledEvents);
-        AgentTests.beforeAgent();
+        final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
+        configOptions.put(ConfigOption.READER_CLASSNAME, StubEventLogReaderAgent.class.getName());
+        configOptions.put(ConfigOption.ENABLED_ARCHIVE_EVENT_CODES, enabledEvents);
+        AgentTests.startLogging(configOptions);
 
         WAIT_LIST.clear();
         WAIT_LIST.addAll(expectedEvents);

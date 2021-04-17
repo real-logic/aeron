@@ -3,9 +3,9 @@ GTAGS
 GRTAGS
 GPATH
 prop
-out
-classes
-bin
+out/
+classes/
+bin/
 
 # OS X
 .DS_Store
@@ -19,7 +19,8 @@ bin
 *.iml
 *.ipr
 *.iws
-.idea
+.idea/
+.run/
 
 # editors
 *.sublime-project
@@ -28,7 +29,7 @@ bin
 
 # the build
 build-local.properties
-.gradle
+.gradle/
 build*
 cmake-build-debug/
 cmake-build-release/

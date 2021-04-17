@@ -19,8 +19,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static io.aeron.agent.ArchiveEventCode.EVENT_CODE_TYPE;
-import static io.aeron.agent.ArchiveEventCode.fromEventCodeId;
+import static io.aeron.agent.ArchiveEventCode.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ArchiveEventCodeTest
@@ -29,7 +28,29 @@ public class ArchiveEventCodeTest
     @EnumSource(ArchiveEventCode.class)
     void getCodeById(final ArchiveEventCode code)
     {
-        assertSame(code, ArchiveEventCode.get(code.id()));
+        assertSame(code, get(code.id()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, -1, 101, Integer.MIN_VALUE, Integer.MAX_VALUE })
+    void getShouldThrowIllegalArgumentExceptionIfIdIsUnknown(final int id)
+    {
+        assertThrows(IllegalArgumentException.class, () -> get(id));
+    }
+
+    @ParameterizedTest
+    @EnumSource(ArchiveEventCode.class)
+    void getCodeByTemplateId(final ArchiveEventCode code)
+    {
+        final int templateId = code.templateId();
+        if (templateId < 0)
+        {
+            assertNull(getByTemplateId(templateId));
+        }
+        else
+        {
+            assertSame(code, getByTemplateId(templateId));
+        }
     }
 
     @ParameterizedTest
@@ -48,8 +69,8 @@ public class ArchiveEventCodeTest
 
     @ParameterizedTest
     @ValueSource(ints = { 0, -1, 13, Integer.MIN_VALUE, Integer.MAX_VALUE })
-    void fromEventCodeIdReturnNullForUnknownCode(final int eventCodeId)
+    void fromEventCodeIdThrowsIllegalArgumentExceptionIfCodeIsInvalid(final int eventCodeId)
     {
-        assertNull(fromEventCodeId(eventCodeId));
+        assertThrows(IllegalArgumentException.class, () -> fromEventCodeId(eventCodeId));
     }
 }

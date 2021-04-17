@@ -15,7 +15,7 @@
  */
 package io.aeron.agent;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -30,17 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class EventConfigurationTest
 {
-    @AfterEach
-    void after()
-    {
-        System.clearProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME);
-        System.clearProperty(DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME);
-        System.clearProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME);
-        System.clearProperty(DISABLED_CLUSTER_EVENT_CODES_PROP_NAME);
-        System.clearProperty(ENABLED_EVENT_CODES_PROP_NAME);
-        System.clearProperty(DISABLED_EVENT_CODES_PROP_NAME);
-    }
-
     @Test
     public void nullValueMeansNoEventsEnabled()
     {
@@ -115,9 +104,13 @@ public class EventConfigurationTest
     @Test
     void shouldDisableSpecificDriverEvents()
     {
-        System.setProperty(ENABLED_EVENT_CODES_PROP_NAME, "all");
-        System.setProperty(DISABLED_EVENT_CODES_PROP_NAME, "FRAME_IN,FRAME_OUT");
-        EventConfiguration.init();
+        EventConfiguration.init(
+            "all",
+            "FRAME_IN,FRAME_OUT",
+            null,
+            null,
+            null,
+            null);
         assertEquals(DriverEventCode.values().length - 2, DRIVER_EVENT_CODES.size());
         assertFalse(DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_IN));
         assertFalse(DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_OUT));
@@ -126,11 +119,13 @@ public class EventConfigurationTest
     @Test
     void shouldDisableSpecificArchiverEvents()
     {
-        System.setProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, "all");
-        System.setProperty(
-            DISABLED_ARCHIVE_EVENT_CODES_PROP_NAME,
-            ArchiveEventCode.CMD_IN_ATTACH_SEGMENTS.name() + "," + ArchiveEventCode.CMD_IN_CONNECT);
-        EventConfiguration.init();
+        EventConfiguration.init(
+            null,
+            null,
+            "all",
+            ArchiveEventCode.CMD_IN_ATTACH_SEGMENTS.name() + "," + ArchiveEventCode.CMD_IN_CONNECT,
+            null,
+            null);
         assertEquals(ArchiveEventCode.values().length - 2, ARCHIVE_EVENT_CODES.size());
         assertFalse(ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CMD_IN_ATTACH_SEGMENTS));
         assertFalse(ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CMD_IN_CONNECT));
@@ -139,11 +134,13 @@ public class EventConfigurationTest
     @Test
     void shouldDisableSpecificClusterEvents()
     {
-        System.setProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, "all");
-        System.setProperty(
-            DISABLED_CLUSTER_EVENT_CODES_PROP_NAME,
+        EventConfiguration.init(
+            null,
+            null,
+            null,
+            null,
+            "all",
             ClusterEventCode.ROLE_CHANGE.name() + "," + ClusterEventCode.ELECTION_STATE_CHANGE);
-        EventConfiguration.init();
         assertEquals(ClusterEventCode.values().length - 2, CLUSTER_EVENT_CODES.size());
         assertFalse(CLUSTER_EVENT_CODES.contains(ClusterEventCode.ROLE_CHANGE));
         assertFalse(CLUSTER_EVENT_CODES.contains(ClusterEventCode.ELECTION_STATE_CHANGE));

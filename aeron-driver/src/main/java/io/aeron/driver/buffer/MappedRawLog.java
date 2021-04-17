@@ -141,6 +141,12 @@ class MappedRawLog implements RawLog
             {
                 IoUtil.unmap(mappedBuffers[i]);
             }
+
+            logMetaDataBuffer.wrap(0, 0);
+            for (int i = 0; i < termBuffers.length; i++)
+            {
+                termBuffers[i].wrap(0, 0);
+            }
         }
 
         if (null != logFile)

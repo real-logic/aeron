@@ -409,8 +409,9 @@ public class ClusterTest
         try
         {
             final TestNode leader = cluster.awaitLeader();
-            final TestNode followerA = cluster.followers().get(0);
-            TestNode followerB = cluster.followers().get(1);
+            final List<TestNode> followers = cluster.followers();
+            final TestNode followerA = followers.get(0);
+            TestNode followerB = followers.get(1);
 
             awaitElectionClosed(followerB);
             cluster.stopNode(followerB);
@@ -1058,8 +1059,9 @@ public class ClusterTest
         try
         {
             final TestNode leader = cluster.awaitLeader();
-            final TestNode followerOne = cluster.followers().get(0);
-            final TestNode followerTwo = cluster.followers().get(1);
+            final List<TestNode> followers = cluster.followers();
+            final TestNode followerOne = followers.get(0);
+            final TestNode followerTwo = followers.get(1);
 
             final int messageCount = 10;
             cluster.connectClient();
@@ -1092,8 +1094,9 @@ public class ClusterTest
         try
         {
             final TestNode leader = cluster.awaitLeader();
-            final TestNode followerOne = cluster.followers().get(0);
-            final TestNode followerTwo = cluster.followers().get(1);
+            final List<TestNode> followers = cluster.followers();
+            final TestNode followerOne = followers.get(0);
+            final TestNode followerTwo = followers.get(1);
 
             final int messageCount = 10;
             cluster.connectClient();
@@ -1126,7 +1129,6 @@ public class ClusterTest
         try
         {
             final TestNode originalLeader = cluster.awaitLeader();
-            TestNode currentLeader = originalLeader;
 
             final int messageCount = 10;
             cluster.connectClient();
@@ -1134,7 +1136,7 @@ public class ClusterTest
             cluster.awaitResponseMessageCount(messageCount);
 
             cluster.stopNode(originalLeader);
-            currentLeader = cluster.awaitLeader();
+            TestNode currentLeader = cluster.awaitLeader();
             cluster.reconnectClient();
 
             cluster.sendMessages(messageCount);
@@ -1142,7 +1144,7 @@ public class ClusterTest
 
             cluster.stopNode(currentLeader);
             cluster.startStaticNode(currentLeader.index(), false);
-            currentLeader = cluster.awaitLeader();
+            cluster.awaitLeader();
             cluster.reconnectClient();
 
             cluster.sendMessages(messageCount);
@@ -1169,9 +1171,8 @@ public class ClusterTest
         cluster = startThreeNodeStaticCluster(NULL_VALUE);
         try
         {
-            final TestNode leader = cluster.awaitLeader();
+            cluster.awaitLeader();
             final TestNode followerOne = cluster.followers().get(0);
-            final TestNode followerTwo = cluster.followers().get(1);
 
             final int messageCount = 10;
             cluster.connectClient();
@@ -1203,8 +1204,9 @@ public class ClusterTest
         try
         {
             final TestNode leader = cluster.awaitLeader();
-            final TestNode followerOne = cluster.followers().get(0);
-            final TestNode followerTwo = cluster.followers().get(1);
+            final List<TestNode> followers = cluster.followers();
+            final TestNode followerOne = followers.get(0);
+            final TestNode followerTwo = followers.get(1);
 
             final int messageCount = 10;
             cluster.connectClient();

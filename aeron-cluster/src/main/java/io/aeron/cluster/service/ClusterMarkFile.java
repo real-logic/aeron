@@ -44,7 +44,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 public final class ClusterMarkFile implements AutoCloseable
 {
     public static final int MAJOR_VERSION = 0;
-    public static final int MINOR_VERSION = 2;
+    public static final int MINOR_VERSION = 3;
     public static final int PATCH_VERSION = 0;
     public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
 
@@ -440,5 +440,16 @@ public final class ClusterMarkFile implements AutoCloseable
             decoder.consensusModuleStreamId(),
             decoder.aeronDirectory(),
             decoder.controlChannel());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ClusterMarkFile{" +
+            "semanticVersion=" + SemanticVersion.toString(SEMANTIC_VERSION) +
+            ", markFile=" + markFile.markFile() +
+            '}';
     }
 }

@@ -1136,14 +1136,14 @@ public class ClusterTest
             cluster.awaitResponseMessageCount(messageCount);
 
             cluster.stopNode(originalLeader);
-            TestNode currentLeader = cluster.awaitLeader();
+            final TestNode newLeader = cluster.awaitLeader();
             cluster.reconnectClient();
 
             cluster.sendMessages(messageCount);
             cluster.awaitResponseMessageCount(messageCount * 2);
 
-            cluster.stopNode(currentLeader);
-            cluster.startStaticNode(currentLeader.index(), false);
+            cluster.stopNode(newLeader);
+            cluster.startStaticNode(newLeader.index(), false);
             cluster.awaitLeader();
             cluster.reconnectClient();
 

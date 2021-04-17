@@ -15,8 +15,10 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
@@ -164,6 +166,11 @@ final class ConsensusPublisher
         final int logSessionId,
         final boolean isStartup)
     {
+        if (CommonContext.NULL_SESSION_ID == logSessionId)
+        {
+            throw new ClusterException("logSessionId was null, should always have a value");
+        }
+
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;

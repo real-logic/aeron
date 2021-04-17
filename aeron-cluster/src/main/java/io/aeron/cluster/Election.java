@@ -264,8 +264,11 @@ class Election
                     case LEADER_READY:
                     case LEADER_REPLAY:
                     {
-                        publishNewLeadershipTermForMember(
-                            follower, logLeadershipTermId, ctx.clusterClock().timeNanos());
+                        if (CommonContext.NULL_SESSION_ID != logSessionId)
+                        {
+                            publishNewLeadershipTermForMember(
+                                follower, logLeadershipTermId, ctx.clusterClock().timeNanos());
+                        }
 
                         break;
                     }

@@ -31,14 +31,12 @@
 #include "media/aeron_udp_channel.h"
 
 #define AERON_CUBICCONGESTIONCONTROL_INITIALRTT_DEFAULT (100 * 1000LL)
-#define AERON_CUBICCONGESTIONCONTROL_RTT_MEASUREMENT_TIMEOUT_NS (10 * 1000 * 1000LL)
 #define AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS (1 * 1000 * 1000 * 1000LL)
-#define AERON_CUBICCONGESTIONCONTROL_RTT_MAX_TIMEOUT_NS (AERON_CUBICCONGESTIONCONTROL_SECOND_IN_NS)
-#define AERON_CUBICCONGESTIONCONTROL_MAX_OUTSTANDING_RTT_MEASUREMENTS (1)
 
 #define AERON_CUBICCONGESTIONCONTROL_INITCWND (10)
 #define AERON_CUBICCONGESTIONCONTROL_C (0.4)
 #define AERON_CUBICCONGESTIONCONTROL_B (0.2)
+#define AERON_CUBICCONGESTIONCONTROL_RTT_TIMEOUT_MULTIPLE (4)
 
 aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strategy_supplier_load(
     const char *strategy_name)
@@ -218,6 +216,7 @@ typedef struct aeron_cubic_congestion_control_strategy_state_stct
     int32_t outstanding_rtt_measurements;
     uint64_t initial_rtt_ns;
     int64_t rtt_ns;
+    int64_t rtt_timeout_ns;
     int64_t window_update_timeout_ns;
     int64_t last_loss_timestamp_ns;
     int64_t last_update_timestamp_ns;
@@ -234,17 +233,15 @@ bool aeron_cubic_congestion_control_strategy_should_measure_rtt(void *state, int
         (aeron_cubic_congestion_control_strategy_state_t *)state;
 
     return cubic_state->measure_rtt &&
-        cubic_state->outstanding_rtt_measurements < AERON_CUBICCONGESTIONCONTROL_MAX_OUTSTANDING_RTT_MEASUREMENTS &&
-        (((cubic_state->last_rtt_timestamp_ns + AERON_CUBICCONGESTIONCONTROL_RTT_MAX_TIMEOUT_NS) - now_ns < 0) ||
-        ((cubic_state->last_rtt_timestamp_ns + AERON_CUBICCONGESTIONCONTROL_RTT_MEASUREMENT_TIMEOUT_NS) - now_ns < 0));
+        ((cubic_state->last_rtt_timestamp_ns + cubic_state->rtt_timeout_ns) - now_ns < 0);
 }
 
 void aeron_cubic_congestion_control_strategy_on_rttm_sent(void *state, int64_t now_ns)
 {
     aeron_cubic_congestion_control_strategy_state_t *cubic_state =
         (aeron_cubic_congestion_control_strategy_state_t *)state;
+
     cubic_state->last_rtt_timestamp_ns = now_ns;
-    cubic_state->outstanding_rtt_measurements++;
 }
 
 void aeron_cubic_congestion_control_strategy_on_rttm(
@@ -252,10 +249,13 @@ void aeron_cubic_congestion_control_strategy_on_rttm(
 {
     aeron_cubic_congestion_control_strategy_state_t *cubic_state =
         (aeron_cubic_congestion_control_strategy_state_t *)state;
-    cubic_state->outstanding_rtt_measurements--;
+
     cubic_state->last_rtt_timestamp_ns = now_ns;
     cubic_state->rtt_ns = rtt_ns;
     aeron_counter_set_ordered(cubic_state->rtt_indicator, rtt_ns);
+    cubic_state->rtt_timeout_ns =
+        (rtt_ns > (int64_t)cubic_state->initial_rtt_ns ? rtt_ns : (int64_t)cubic_state->initial_rtt_ns) *
+        AERON_CUBICCONGESTIONCONTROL_RTT_TIMEOUT_MULTIPLE;
 }
 
 int32_t aeron_cubic_congestion_control_strategy_on_track_rebuild(
@@ -391,6 +391,7 @@ int aeron_cubic_congestion_control_strategy_supplier(
     // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
     state->rtt_ns = state->initial_rtt_ns;
     state->window_update_timeout_ns = state->rtt_ns;
+    state->rtt_timeout_ns = state->rtt_ns * AERON_CUBICCONGESTIONCONTROL_RTT_TIMEOUT_MULTIPLE;
 
     const int32_t rtt_indicator_counter_id = aeron_stream_counter_allocate(
         counters_manager,

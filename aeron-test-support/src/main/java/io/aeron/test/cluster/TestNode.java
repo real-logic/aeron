@@ -185,35 +185,17 @@ public class TestNode implements AutoCloseable
 
     public Cluster.Role role()
     {
-        final Counter counter = clusteredArchive.consensusModule().context().clusterNodeRoleCounter();
-        if (counter.isClosed())
-        {
-            return Cluster.Role.FOLLOWER;
-        }
-
-        return Cluster.Role.get(counter);
+        return Cluster.Role.get(clusteredArchive.consensusModule().context().clusterNodeRoleCounter());
     }
 
     ElectionState electionState()
     {
-        final Counter counter = clusteredArchive.consensusModule().context().electionStateCounter();
-        if (counter.isClosed())
-        {
-            return ElectionState.CLOSED;
-        }
-
-        return ElectionState.get(counter);
+        return ElectionState.get(clusteredArchive.consensusModule().context().electionStateCounter());
     }
 
     ConsensusModule.State moduleState()
     {
-        final Counter counter = clusteredArchive.consensusModule().context().moduleStateCounter();
-        if (counter.isClosed())
-        {
-            return ConsensusModule.State.CLOSED;
-        }
-
-        return ConsensusModule.State.get(counter);
+        return ConsensusModule.State.get(clusteredArchive.consensusModule().context().moduleStateCounter());
     }
 
     public long commitPosition()

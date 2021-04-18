@@ -263,15 +263,8 @@ class Election
                     case LEADER_INIT:
                     case LEADER_READY:
                     case LEADER_REPLAY:
-                    {
-                        if (CommonContext.NULL_SESSION_ID != logSessionId)
-                        {
-                            publishNewLeadershipTermForMember(
-                                follower, logLeadershipTermId, ctx.clusterClock().timeNanos());
-                        }
-
+                        publishNewLeadershipTerm(follower, logLeadershipTermId, ctx.clusterClock().timeNanos());
                         break;
-                    }
                 }
             }
             else if (logLeadershipTermId > this.leadershipTermId)
@@ -280,7 +273,7 @@ class Election
                 {
                     case LEADER_LOG_REPLICATION:
                     case LEADER_READY:
-                        throw new ClusterException("new potential election", AeronException.Category.WARN);
+                        throw new ClusterException("potential new election in progress", AeronException.Category.WARN);
                 }
             }
         }
@@ -986,14 +979,14 @@ class Election
     {
         for (final ClusterMember member : clusterMembers)
         {
-            publishNewLeadershipTermForMember(member, logLeadershipTermId, timestamp);
+            publishNewLeadershipTerm(member, logLeadershipTermId, timestamp);
         }
     }
 
-    private void publishNewLeadershipTermForMember(
+    private void publishNewLeadershipTerm(
         final ClusterMember member, final long logLeadershipTermId, final long timestamp)
     {
-        if (member.id() != thisMember.id())
+        if (member.id() != thisMember.id() && CommonContext.NULL_SESSION_ID != logSessionId)
         {
             final RecordingLog.Entry logNextTermEntry =
                 ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);

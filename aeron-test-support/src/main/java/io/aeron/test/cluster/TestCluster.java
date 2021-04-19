@@ -846,9 +846,17 @@ public class TestCluster implements AutoCloseable
 
         for (final TestNode node : nodes)
         {
-            if (null != node && !node.isClosed() && node.isFollower())
+            if (null != node && !node.isClosed())
             {
-                followers.add(node);
+                while (ElectionState.CLOSED != node.electionState())
+                {
+                    Tests.yield();
+                }
+
+                if (node.isFollower())
+                {
+                    followers.add(node);
+                }
             }
         }
 

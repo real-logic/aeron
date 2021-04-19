@@ -241,7 +241,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '6.0', '7', '8', '9', '10', '11' ]
+        version: [ '6.0', '7', '8', '9', '10', '11', '12' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}

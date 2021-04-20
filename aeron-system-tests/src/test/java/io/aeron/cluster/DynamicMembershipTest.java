@@ -29,6 +29,7 @@ import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.test.cluster.TestCluster.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SlowTest
 public class DynamicMembershipTest
@@ -210,9 +211,11 @@ public class DynamicMembershipTest
 
             cluster.takeSnapshot(leader);
             cluster.awaitSnapshotCount(1);
+            assertTrue(cluster.client().sendKeepAlive());
 
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
+            assertTrue(cluster.client().sendKeepAlive());
             awaitElectionClosed(dynamicMember);
             assertEquals(FOLLOWER, dynamicMember.role());
 

@@ -34,4 +34,11 @@ call "%DIR%\java-common"
 
 set "AGENT_JAR=%DIR%\..\..\aeron-agent\build\libs\aeron-agent-%VERSION%.jar"
 
-call "%DIR%\run-java" io.aeron.agent.DynamicLoggingAgent %AGENT_JAR% %*
+"%JAVA_HOME%\bin\java" ^
+  -cp "%AGENT_JAR%" ^
+  !JAVA_OPTIONS! ^
+  !ADD_OPENS! ^
+  %JVM_OPTS% ^
+  io.aeron.agent.DynamicLoggingAgent ^
+  %AGENT_JAR% ^
+  %*

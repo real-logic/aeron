@@ -180,7 +180,6 @@ jobs:
 
   cpp-gcc-sanitize-build:
     name: C++ Sanitise Build GCC ${{ matrix.version }}
-    if: false # skip job for now.
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false

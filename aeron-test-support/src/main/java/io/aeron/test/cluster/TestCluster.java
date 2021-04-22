@@ -24,6 +24,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -45,6 +46,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -842,7 +844,13 @@ public class TestCluster implements AutoCloseable
 
     public List<TestNode> followers()
     {
+        return followers(0);
+    }
+
+    public ArrayList<TestNode> followers(final int expectedMinimumFollowers)
+    {
         final ArrayList<TestNode> followers = new ArrayList<>();
+        final EnumMap<Cluster.Role, ArrayList<TestNode>> nonFollowers = new EnumMap<>(Cluster.Role.class);
 
         for (final TestNode node : nodes)
         {
@@ -853,11 +861,23 @@ public class TestCluster implements AutoCloseable
                     Tests.yield();
                 }
 
-                if (node.isFollower())
+                final Cluster.Role role = node.role();
+                if (role == Cluster.Role.FOLLOWER)
                 {
                     followers.add(node);
                 }
+                else
+                {
+                    nonFollowers.computeIfAbsent(role, r -> new ArrayList<>()).add(node);
+                }
             }
+        }
+
+        if (followers.size() < expectedMinimumFollowers)
+        {
+            throw new RuntimeException(
+                "expectedMinimumFollowers=" + expectedMinimumFollowers + " < followers.size()=" + followers.size() +
+                " nonFollowers = " + nonFollowers);
         }
 
         return followers;

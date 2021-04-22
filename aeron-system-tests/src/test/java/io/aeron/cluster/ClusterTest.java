@@ -894,7 +894,7 @@ public class ClusterTest
         try
         {
             final TestNode leader = cluster.awaitLeader();
-            final List<TestNode> followers = cluster.followers();
+            final List<TestNode> followers = cluster.followers(2);
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
 

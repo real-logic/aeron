@@ -1091,6 +1091,7 @@ class Election
                     consensusModuleAgent.role(Cluster.Role.CANDIDATE);
                     break;
 
+                case FOLLOWER_REPLAY:
                 case FOLLOWER_LOG_REPLICATION:
                     consensusModuleAgent.role(Cluster.Role.FOLLOWER);
                     break;

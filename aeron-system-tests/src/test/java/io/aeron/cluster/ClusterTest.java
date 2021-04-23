@@ -1389,59 +1389,6 @@ public class ClusterTest
 
     @Test
     @Timeout(50)
-    void shouldRecoverWhenLastSnapshotIsInvalidAfterElection(final TestInfo testInfo)
-    {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
-        try
-        {
-            final TestNode leader0 = cluster.awaitLeader();
-
-            final int numMessages = 3;
-            cluster.connectClient();
-            cluster.sendMessages(numMessages);
-            cluster.awaitResponseMessageCount(numMessages);
-            cluster.awaitServicesMessageCount(numMessages);
-
-            cluster.takeSnapshot(leader0);
-            cluster.awaitSnapshotCount(1);
-
-            cluster.stopNode(leader0);
-            final TestNode leader1 = cluster.awaitLeader(leader0.index());
-            cluster.awaitNewLeadershipEvent(1);
-            assertTrue(cluster.client().sendKeepAlive());
-            cluster.startStaticNode(leader0.index(), false);
-
-            cluster.sendMessages(numMessages);
-            cluster.awaitResponseMessageCount(numMessages * 2);
-            cluster.awaitServicesMessageCount(numMessages * 2);
-
-            cluster.takeSnapshot(leader1);
-            for (int i = 0; i < 3; i++)
-            {
-                cluster.awaitSnapshotCount(cluster.node(i), leader0.index() == i ? 1 : 2);
-            }
-
-            cluster.sendMessages(numMessages);
-            cluster.awaitResponseMessageCount(numMessages * 3);
-            cluster.awaitServicesMessageCount(numMessages * 3);
-
-            cluster.terminationsExpected(true);
-            cluster.stopAllNodes();
-
-            cluster.invalidateLatestSnapshots();
-
-            cluster.restartAllNodes(false);
-            cluster.awaitLeader();
-            cluster.awaitServicesMessageCount(numMessages * 3);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
-    }
-
-    @Test
-    @Timeout(50)
     void shouldRecoverWhenLastTwosSnapshotsAreInvalidAfterElection(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);

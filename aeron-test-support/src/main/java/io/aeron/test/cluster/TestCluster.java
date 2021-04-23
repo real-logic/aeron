@@ -847,7 +847,7 @@ public class TestCluster implements AutoCloseable
         return followers(0);
     }
 
-    public ArrayList<TestNode> followers(final int expectedMinimumFollowers)
+    public ArrayList<TestNode> followers(final int expectedMinimumFollowerCount)
     {
         final ArrayList<TestNode> followers = new ArrayList<>();
         final EnumMap<Cluster.Role, ArrayList<TestNode>> nonFollowers = new EnumMap<>(Cluster.Role.class);
@@ -868,16 +868,17 @@ public class TestCluster implements AutoCloseable
                 }
                 else
                 {
-                    nonFollowers.computeIfAbsent(role, r -> new ArrayList<>()).add(node);
+                    nonFollowers.computeIfAbsent(role, (r) -> new ArrayList<>()).add(node);
                 }
             }
         }
 
-        if (followers.size() < expectedMinimumFollowers)
+        if (followers.size() < expectedMinimumFollowerCount)
         {
             throw new RuntimeException(
-                "expectedMinimumFollowers=" + expectedMinimumFollowers + " < followers.size()=" + followers.size() +
-                " nonFollowers = " + nonFollowers);
+                "expectedMinimumFollowerCount=" + expectedMinimumFollowerCount +
+                " < followers.size=" + followers.size() +
+                " nonFollowers=" + nonFollowers);
         }
 
         return followers;

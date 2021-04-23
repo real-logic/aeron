@@ -4,7 +4,7 @@ on:
   repository_dispatch:
     types: run-slow-tests
   schedule:
-    - cron: '0 0,12 * * *'
+    - cron: '0,30 * * * *'
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"

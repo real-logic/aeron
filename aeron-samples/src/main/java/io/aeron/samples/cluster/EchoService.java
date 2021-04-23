@@ -52,7 +52,6 @@ class EchoService implements ClusteredService
         final int length,
         final Header header)
     {
-        System.out.println("Echoing: " + length + " bytes");
         idleStrategy.reset();
         while (session.offer(buffer, offset, length) < 0)
         {

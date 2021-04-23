@@ -231,7 +231,6 @@ public class ClusterNetworkTopologyTest
             (clusterSessionId, timestamp, buffer, offset, length1, header) ->
             {
                 final String stringAscii = buffer.getStringAscii(offset);
-                System.out.println("Response: " + stringAscii);
                 egressResponse.set(stringAscii);
             };
 
@@ -362,9 +361,6 @@ public class ClusterNetworkTopologyTest
             if (initialTextPosition < resultTextPosition)
             {
                 textOutputDup.clear().position(initialTextPosition).limit(resultTextPosition);
-                System.out.print(name);
-                System.out.print(": ");
-                System.out.print(textOutputDup);
             }
         }
 

@@ -216,7 +216,6 @@ public class StartFromTruncatedRecordingLogTest
         awaitSnapshotCount(1);
         awaitNeutralControlToggle(leaderMemberId);
 
-        terminateCount.set(0);
         shutdown(leaderMemberId);
         awaitSnapshotCount(2);
         Tests.awaitValue(terminateCount, MEMBER_COUNT);
@@ -392,7 +391,10 @@ public class StartFromTruncatedRecordingLogTest
             containers[i] = null;
             clusteredMediaDrivers[i].close();
             clusteredMediaDrivers[i] = null;
+            snapshotCounters[i].set(0);
         }
+
+        terminateCount.set(0);
     }
 
     private void connectClient()

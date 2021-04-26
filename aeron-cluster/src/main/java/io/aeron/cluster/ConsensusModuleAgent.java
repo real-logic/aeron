@@ -2374,14 +2374,16 @@ final class ConsensusModuleAgent implements Agent
     {
         final CountersReader counters = aeron.countersReader();
         final int counterId = awaitRecordingCounter(counters, logSessionId);
-        final long registrationId = counters.getCounterRegistrationId(counterId);
 
+        long registrationId;
+        while (0 == (registrationId = counters.getCounterRegistrationId(counterId)))
+        {
+            idle();
+        }
+
+        logRecordingId = RecordingPos.getRecordingId(counters, counterId);
         appendPosition = new ReadableCounter(counters, registrationId, counterId);
         logRecordedPosition = NULL_POSITION;
-        if (NULL_VALUE == logRecordingId)
-        {
-            logRecordingId = RecordingPos.getRecordingId(counters, counterId);
-        }
     }
 
     private void loadSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
@@ -2809,11 +2811,6 @@ final class ConsensusModuleAgent implements Agent
         {
             idle();
             counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
-        }
-
-        while (0 == counters.getCounterRegistrationId(counterId))
-        {
-            idle();
         }
 
         return counterId;

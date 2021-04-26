@@ -3186,7 +3186,10 @@ public final class AeronArchive implements AutoCloseable
         {
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
-                throw new TimeoutException("Archive connect timeout: step=" + step);
+                throw new TimeoutException("Archive connect timeout: step=" + step +
+                    (step < 2 ?
+                    " publication.uri=" + archiveProxy.publication().channel() :
+                    " subscription.uri=" + controlResponsePoller.subscription().channel()));
             }
 
             if (Thread.currentThread().isInterrupted())

@@ -1026,11 +1026,12 @@ public class ElectionTest
             ctx,
             consensusModuleAgent);
 
-        reset(electionStateCounter);
+        final InOrder inOrder = inOrder(electionStateCounter);
+        inOrder.verify(electionStateCounter).setOrdered(ElectionState.INIT.code());
+        inOrder.verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
         long t1 = 0;
         election.doWork(++t1);
-        verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
         election.onRequestVote(leadershipTermId, leaderLogPosition, leadershipTermId, leaderId);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_BALLOT.code());
@@ -1059,7 +1060,7 @@ public class ElectionTest
         when(logReplication.isDone(anyLong())).thenThrow(new ClusterException());
         election.doWork(++t1);
 
-        verify(electionStateCounter).setOrdered(ElectionState.INIT.code());
+        inOrder.verify(electionStateCounter).setOrdered(ElectionState.INIT.code());
     }
 
     @Test
@@ -1221,10 +1222,9 @@ public class ElectionTest
             ctx,
             consensusModuleAgent);
 
-        reset(electionStateCounter);
-
-        election.doWork(clock.increment(1));
-        verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
+        final InOrder inOrder = inOrder(electionStateCounter);
+        inOrder.verify(electionStateCounter).setOrdered(ElectionState.INIT.code());
+        inOrder.verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
         election.onCanvassPosition(leadershipTermId, leaderLogPosition, leadershipTermId, leaderId);
         election.onCanvassPosition(leadershipTermId, followerLogPosition, leadershipTermId, followerId);

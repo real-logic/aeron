@@ -143,6 +143,7 @@ final class ConsensusModuleAgent implements Agent
     private String liveLogDestination;
     private String catchupLogDestination;
     private String ingressEndpoints;
+    private boolean isElectionRequired;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -1915,6 +1916,11 @@ final class ConsensusModuleAgent implements Agent
         {
             unexpectedTermination();
         }
+        else if (isElectionRequired)
+        {
+            enterElection();
+            isElectionRequired = false;
+        }
 
         if (nowNs >= markFileUpdateDeadlineNs)
         {
@@ -2986,7 +2992,7 @@ final class ConsensusModuleAgent implements Agent
                 else if (NULL_POSITION == terminationPosition)
                 {
                     ctx.countedErrorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
-                    enterElection();
+                    isElectionRequired = true;
                 }
             }
         }

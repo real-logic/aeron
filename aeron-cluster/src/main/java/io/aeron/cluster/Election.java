@@ -100,11 +100,14 @@ class Election
         this.consensusPublisher = consensusPublisher;
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
-        this.initialTimeOfLastUpdateNs = ctx.clusterClock().timeNanos() - TimeUnit.DAYS.toNanos(1);
+
+        final long nowNs = ctx.clusterClock().timeNanos();
+        this.initialTimeOfLastUpdateNs = nowNs - TimeUnit.DAYS.toNanos(1);
         this.timeOfLastUpdateNs = initialTimeOfLastUpdateNs;
 
         Objects.requireNonNull(thisMember);
         ctx.electionStateCounter().setOrdered(INIT.code());
+        init(nowNs);
     }
 
     ClusterMember leader()

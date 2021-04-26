@@ -2811,6 +2811,11 @@ final class ConsensusModuleAgent implements Agent
             counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
         }
 
+        while (0 == counters.getCounterRegistrationId(counterId))
+        {
+            idle();
+        }
+
         return counterId;
     }
 

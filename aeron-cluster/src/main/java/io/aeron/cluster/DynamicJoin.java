@@ -287,7 +287,7 @@ final class DynamicJoin
                 null,
                 ctx.replicationChannel());
 
-            snapshotReplication = new SnapshotReplication(replicationId);
+            snapshotReplication = new SnapshotReplication(replicationId, true);
             workCount++;
         }
         else
@@ -319,7 +319,7 @@ final class DynamicJoin
                         null,
                         ctx.replicationChannel());
 
-                    snapshotReplication = new SnapshotReplication(replicationId);
+                    snapshotReplication = new SnapshotReplication(replicationId, false);
                     workCount++;
                 }
             }

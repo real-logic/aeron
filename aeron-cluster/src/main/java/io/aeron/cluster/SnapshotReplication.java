@@ -26,10 +26,12 @@ final class SnapshotReplication
     private long recordingId = RecordingPos.NULL_RECORDING_ID;
     private boolean isDone = false;
     private boolean hasSync = false;
+    private final boolean isNew;
 
-    SnapshotReplication(final long replicationId)
+    SnapshotReplication(final long replicationId, final boolean isNew)
     {
         this.replicationId = replicationId;
+        this.isNew = isNew;
     }
 
     void close(final AeronArchive archive)
@@ -69,9 +71,9 @@ final class SnapshotReplication
             {
                 this.recordingId = recordingId;
 
-                if (0 != position)
+                if (isNew && 0 != position)
                 {
-                    throw new ClusterException("unexpected extend position=" + position);
+                    throw new ClusterException("expected new extend signal at 0: position=" + position);
                 }
             }
             else if (RecordingSignal.SYNC == signal)

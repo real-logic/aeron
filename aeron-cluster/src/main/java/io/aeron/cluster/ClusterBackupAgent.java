@@ -584,7 +584,7 @@ public final class ClusterBackupAgent implements Agent
                 null,
                 replicationUri.toString());
 
-            snapshotReplication = new SnapshotReplication(replicationId);
+            snapshotReplication = new SnapshotReplication(replicationId, true);
             timeOfLastProgressMs = nowMs;
             workCount++;
         }
@@ -628,7 +628,7 @@ public final class ClusterBackupAgent implements Agent
                         null,
                         replicationUri.toString());
 
-                    snapshotReplication = new SnapshotReplication(replicationId);
+                    snapshotReplication = new SnapshotReplication(replicationId, false);
                     timeOfLastProgressMs = nowMs;
                     workCount++;
                 }

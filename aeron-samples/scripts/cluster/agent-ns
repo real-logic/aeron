@@ -27,6 +27,7 @@ function startNode() {
 
     sudo ip netns exec ${namespace} su - ${USER} -c "cd ${PWD} && \
     ${JAVA_HOME}/bin/java \
+        -Xmx16m \
         -cp ../../../aeron-all/build/libs/aeron-all-${VERSION}.jar:../../../aeron-test-support/build/libs/aeron-test-support-${VERSION}.jar \
         -javaagent:../../../aeron-agent/build/libs/aeron-agent-${VERSION}.jar \
         -XX:+UseBiasedLocking \

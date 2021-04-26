@@ -429,6 +429,7 @@ public class ClusterNetworkTopologyTest
             command.add("java.base/sun.nio.ch=ALL-UNNAMED");
         }
 
+        command.add("-Xmx32m");
         command.add("-cp");
         command.add(FileResolveUtil.resolveAeronAllJar().getAbsolutePath());
         command.add("-javaagent:" + FileResolveUtil.resolveAeronAgentJar().getAbsolutePath());

@@ -32,12 +32,14 @@ import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -87,7 +89,7 @@ public class ClusterNetworkTopologyTest
 
                 return echoServices.isEmpty();
             },
-            SECONDS.toNanos(5));
+            SECONDS.toNanos(10));
 
         final File scriptDir = FileResolveUtil.resolveClusterScriptDir();
         IoUtil.delete(new File(scriptDir, "node0"), true);
@@ -114,16 +116,11 @@ public class ClusterNetworkTopologyTest
     private static Stream<Arguments> provideTopologyConfigurations()
     {
         return Stream.of(
-            Arguments.of(
-                HOSTNAMES, null, "aeron:udp", null),
-            Arguments.of(
-                HOSTNAMES, null, "aeron:udp?endpoint=239.20.90.11:9152|interface=10.42.0.0/24", null),
-            Arguments.of(
-                HOSTNAMES, null, "aeron:udp", "aeron:udp?endpoint=239.20.90.13:9152|interface=10.42.0.0/24"),
-            Arguments.of(
-                HOSTNAMES, null, "aeron:udp", "aeron:udp?endpoint=239.20.90.13:9152|interface=10.42.1.0/24"),
-            Arguments.of(
-                HOSTNAMES, INTERNAL_HOSTNAMES, "aeron:udp", null));
+            Arguments.of(HOSTNAMES, null, "aeron:udp", null),
+            Arguments.of(HOSTNAMES, null, "aeron:udp?endpoint=239.20.90.11:9152|interface=10.42.0.0/24", null),
+            Arguments.of(HOSTNAMES, null, "aeron:udp", "aeron:udp?endpoint=239.20.90.13:9152|interface=10.42.0.0/24"),
+            Arguments.of(HOSTNAMES, null, "aeron:udp", "aeron:udp?endpoint=239.20.90.13:9152|interface=10.42.1.0/24"),
+            Arguments.of(HOSTNAMES, INTERNAL_HOSTNAMES, "aeron:udp", null));
     }
 
     private static Stream<Arguments> singleTopologyConfigurations()
@@ -134,6 +131,7 @@ public class ClusterNetworkTopologyTest
 
     @ParameterizedTest
     @MethodSource("provideTopologyConfigurations")
+    @Timeout(60)
     void shouldGetEchoFromCluster(
         final List<String> hostnames,
         final List<String> internalHostnames,
@@ -161,6 +159,7 @@ public class ClusterNetworkTopologyTest
 
     @ParameterizedTest
     @MethodSource("singleTopologyConfigurations")
+    @Timeout(60)
     void shouldLogReplicate(
         final List<String> hostnames,
         final List<String> internalHostnames,
@@ -208,9 +207,10 @@ public class ClusterNetworkTopologyTest
     {
         final String[] command0 = deriveCommand(nodeId, hostnames, internalHostnames, ingressChannel, logChannel);
         final SocketChannel execute0 = remote0.execute(false, command0);
-        final Node node0 = new Node("Node " + nodeId);
-        execute0.register(selector, SelectionKey.OP_READ, node0);
-        while (node0.checkOutput("Started Cluster Node"))
+        final Node node = new Node();
+
+        execute0.register(selector, SelectionKey.OP_READ, node);
+        while (node.checkOutput("Started Cluster Node"))
         {
             pollSelector(selector);
         }
@@ -223,7 +223,7 @@ public class ClusterNetworkTopologyTest
         final double messageCount)
     {
         final String message = "Hello World!";
-        final MutableDirectBuffer messageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128));
+        final MutableDirectBuffer messageBuffer = new UnsafeBuffer(ByteBuffer.allocate(128));
         final int length = messageBuffer.putStringAscii(0, message);
         final MutableReference<String> egressResponse = new MutableReference<>();
 
@@ -271,9 +271,7 @@ public class ClusterNetworkTopologyTest
         }
     }
 
-    private AeronCluster pollUntilConnected(
-        final AeronCluster.AsyncConnect asyncConnect,
-        final Selector selector)
+    private AeronCluster pollUntilConnected(final AeronCluster.AsyncConnect asyncConnect, final Selector selector)
     {
         AeronCluster aeronCluster;
         while (null == (aeronCluster = asyncConnect.poll()))
@@ -281,13 +279,14 @@ public class ClusterNetworkTopologyTest
             pollSelector(selector);
             Tests.sleep(1);
         }
+
         return aeronCluster;
     }
 
     @Test
     void shouldMatchPatternSplitAcrossReads()
     {
-        final Node n = new Node("Node");
+        final Node n = new Node();
         final String s = "Some text first: \u1F600";
         final byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
 
@@ -303,7 +302,7 @@ public class ClusterNetworkTopologyTest
     @Test
     void shouldMatchPatternSplitAcrossBufferBoundary()
     {
-        final Node n = new Node("Node");
+        final Node n = new Node();
         final String s = "Some text first: \u1F600";
         final byte[] toMatch = s.getBytes(StandardCharsets.UTF_8);
         final byte[] bytes = new byte[4096];
@@ -326,56 +325,32 @@ public class ClusterNetworkTopologyTest
         assertTrue(n.checkOutput(s));
     }
 
-    private static final class Node
+    static final class Node
     {
-        private final String name;
         private final CharBuffer textOutput = CharBuffer.allocate(8192);
         private final ByteBuffer binaryOutput = ByteBuffer.allocateDirect(textOutput.capacity() / 2);
         private final CharBuffer textOutputDup = textOutput.duplicate();
         private final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
 
-        Node(final String name)
-        {
-            this.name = name;
-        }
-
         public void readChannel(final ReadableByteChannel channel) throws IOException
         {
             final int read = channel.read(binaryOutput);
-            if (read <= 0)
+            if (read > 0)
             {
-                return;
+                int initialTextPosition = textOutput.position();
+                applyResponseData(binaryOutput);
+                final int resultTextPosition = textOutput.position();
+
+                if (resultTextPosition < initialTextPosition)
+                {
+                    initialTextPosition -= textOutput.capacity() / 2;
+                }
+
+                if (initialTextPosition < resultTextPosition)
+                {
+                    textOutputDup.clear().position(initialTextPosition).limit(resultTextPosition);
+                }
             }
-
-            int initialTextPosition = textOutput.position();
-            applyResponseData(binaryOutput);
-            final int resultTextPosition = textOutput.position();
-
-            if (resultTextPosition < initialTextPosition)
-            {
-                initialTextPosition -= textOutput.capacity() / 2;
-            }
-
-            assert initialTextPosition <= resultTextPosition;
-
-            if (initialTextPosition < resultTextPosition)
-            {
-                textOutputDup.clear().position(initialTextPosition).limit(resultTextPosition);
-            }
-        }
-
-        private void applyResponseData(final ByteBuffer data)
-        {
-            data.flip();
-            final CoderResult result = decoder.decode(data, textOutput, false);
-            if (CoderResult.OVERFLOW == result)
-            {
-                textOutput.limit(textOutput.capacity());
-                textOutput.position(textOutput.capacity() / 2);
-                textOutput.compact();
-                decoder.decode(data, textOutput, false);
-            }
-            data.compact();
         }
 
         public boolean checkOutput(final String regexToMatch)
@@ -385,6 +360,22 @@ public class ClusterNetworkTopologyTest
             duplicate.flip();
 
             return pattern.matcher(duplicate).find();
+        }
+
+        private void applyResponseData(final ByteBuffer data)
+        {
+            data.flip();
+
+            final CoderResult result = decoder.decode(data, textOutput, false);
+            if (CoderResult.OVERFLOW == result)
+            {
+                textOutput.limit(textOutput.capacity());
+                textOutput.position(textOutput.capacity() / 2);
+                textOutput.compact();
+                decoder.decode(data, textOutput, false);
+            }
+
+            data.compact();
         }
     }
 
@@ -409,7 +400,7 @@ public class ClusterNetworkTopologyTest
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 

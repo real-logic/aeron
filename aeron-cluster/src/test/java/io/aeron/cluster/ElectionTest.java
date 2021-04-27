@@ -21,6 +21,7 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ public class ElectionTest
     private final ConsensusModuleAgent consensusModuleAgent = mock(ConsensusModuleAgent.class);
     private final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
     private final TestClusterClock clock = new TestClusterClock(NANOSECONDS);
+    private final MutableLong markFileCandidateTermId = new MutableLong(-1);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .aeron(aeron)
@@ -70,8 +72,23 @@ public class ElectionTest
         when(aeron.addSubscription(anyString(), anyInt())).thenReturn(subscription);
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
         when(consensusModuleAgent.addLogPublication()).thenReturn(LOG_SESSION_ID);
-        when(clusterMarkFile.candidateTermId()).thenReturn((long)NULL_VALUE);
         when(subscription.imageBySessionId(anyInt())).thenReturn(logImage);
+
+        when(clusterMarkFile.candidateTermId()).thenAnswer((invocation) -> markFileCandidateTermId.get());
+        when(clusterMarkFile.proposeMaxCandidateTermId(anyLong(), anyInt())).thenAnswer(
+            (invocation) ->
+            {
+                final long candidateTermId = invocation.getArgument(0);
+                final long existingCandidateTermId = markFileCandidateTermId.get();
+
+                if (candidateTermId > existingCandidateTermId)
+                {
+                    markFileCandidateTermId.set(candidateTermId);
+                    return candidateTermId;
+                }
+
+                return existingCandidateTermId;
+            });
     }
 
     @Test

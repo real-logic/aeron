@@ -297,15 +297,15 @@ class Election
         }
         else if (compareLog(this.logLeadershipTermId, appendPosition, logLeadershipTermId, logPosition) > 0)
         {
-            this.candidateTermId = candidateTermId;
-            ctx.clusterMarkFile().proposeMaxCandidateTermId(candidateTermId, ctx.fileSyncLevel());
+            this.candidateTermId = ctx.clusterMarkFile().proposeMaxCandidateTermId(
+                candidateTermId, ctx.fileSyncLevel());
             placeVote(candidateTermId, candidateId, false);
             state(INIT, ctx.clusterClock().timeNanos());
         }
         else
         {
-            this.candidateTermId = candidateTermId;
-            ctx.clusterMarkFile().proposeMaxCandidateTermId(candidateTermId, ctx.fileSyncLevel());
+            this.candidateTermId = ctx.clusterMarkFile().proposeMaxCandidateTermId(
+                candidateTermId, ctx.fileSyncLevel());
             placeVote(candidateTermId, candidateId, true);
             state(FOLLOWER_BALLOT, ctx.clusterClock().timeNanos());
         }
@@ -356,7 +356,7 @@ class Election
         }
 
         if (((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state) && leadershipTermId == candidateTermId) ||
-            (CANVASS == state))
+            CANVASS == state)
         {
             if (this.logLeadershipTermId == logLeadershipTermId)
             {
@@ -571,9 +571,9 @@ class Election
     {
         if (nowNs >= nominationDeadlineNs)
         {
-            candidateTermId = candidateTermId + 1;
+            candidateTermId = ctx.clusterMarkFile().proposeMaxCandidateTermId(
+                candidateTermId + 1, ctx.fileSyncLevel());
             ClusterMember.becomeCandidate(clusterMembers, candidateTermId, thisMember.id());
-            ctx.clusterMarkFile().proposeMaxCandidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(CANDIDATE_BALLOT, nowNs);
             return 1;
         }
@@ -1219,6 +1219,7 @@ class Election
         /*
         System.out.println("Election: memberId=" + memberId + " " + oldState + " -> " + newState +
             " leaderId=" + (null != leaderMember ? leaderMember.id() : -1) +
+            " candidateTermId=" + candidateTermId +
             " leadershipTermId=" + leadershipTermId +
             " logPosition=" + logPosition +
             " logLeadershipTermId=" + logLeadershipTermId +

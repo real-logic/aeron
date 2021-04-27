@@ -1217,6 +1217,7 @@ class Election
     {
         /*
         System.out.println("Election: memberId=" + memberId + " " + oldState + " -> " + newState +
+            " leaderId=" + (null != leaderMember ? leaderMember.id() : -1) +
             " leadershipTermId=" + leadershipTermId +
             " logPosition=" + logPosition +
             " logLeadershipTermId=" + logLeadershipTermId +

@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.MutableLong;
@@ -746,7 +747,6 @@ public class ElectionTest
 
         verify(consensusPublisher).appendPosition(
             liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id());
-        verify(consensusModuleAgent).logRecordingId(localRecordingId);
         verify(electionStateCounter, times(2)).setOrdered(ElectionState.CANVASS.code());
 
         followerElection.onCommitPosition(term2Id, term2BaseLogPosition, leaderId);
@@ -826,14 +826,12 @@ public class ElectionTest
         verify(consensusModuleAgent, atLeastOnce()).pollArchiveEvents();
         verify(consensusPublisher).appendPosition(
             liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id());
-        verify(consensusModuleAgent).logRecordingId(localRecordingId);
         verify(electionStateCounter, never()).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
         reset(countedErrorHandler);
 
-//        t1 += ctx.leaderHeartbeatTimeoutNs();
         clock.increment(ctx.leaderHeartbeatTimeoutNs());
         election.doWork(clock.nanoTime());
-        verify(countedErrorHandler).onError(any(ClusterException.class));
+        verify(countedErrorHandler).onError(any(TimeoutException.class));
     }
 
     @Test
@@ -843,7 +841,6 @@ public class ElectionTest
         final long term10Id = 10;
         final long term1BaseLogPosition = 60;
         final long term10BaseLogPosition = 120;
-        final long localRecordingId = 2390485;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember thisMember = clusterMembers[1];
         final ClusterMember liveLeader = clusterMembers[0];
@@ -1201,7 +1198,6 @@ public class ElectionTest
 
         verify(consensusPublisher).appendPosition(
             liveLeader.publication(), leadershipTermId, termBaseLogPosition, thisMember.id());
-        verify(consensusModuleAgent).logRecordingId(localRecordingId);
 
         election.onCommitPosition(leadershipTermId, leaderLogPosition, leaderId);
         election.doWork(++t1);

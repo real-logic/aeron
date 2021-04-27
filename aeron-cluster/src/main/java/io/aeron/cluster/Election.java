@@ -230,6 +230,7 @@ class Election
         if (null != logReplication)
         {
             logReplication.onSignal(correlationId, recordingId, position, signal);
+            consensusModuleAgent.logRecordingId(logReplication.recordingId());
         }
     }
 
@@ -500,7 +501,7 @@ class Election
         }
         else
         {
-            cleanupReplication();
+            cleanupLogReplication();
             resetCatchup();
 
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
@@ -752,21 +753,20 @@ class Election
         {
             workCount += consensusModuleAgent.pollArchiveEvents();
             workCount += publishFollowerReplicationPosition(nowNs);
-            consensusModuleAgent.logRecordingId(logReplication.recordingId());
 
             if (logReplication.isDone(nowNs))
             {
                 if (replicationCommitPosition >= appendPosition)
                 {
                     appendPosition = logReplication.position();
+                    cleanupLogReplication();
                     updateRecordingLogForReplication(replicationLeadershipTermId, replicationStopPosition, nowNs);
-                    cleanupReplication();
                     state(CANVASS, nowNs);
                     workCount++;
                 }
                 else if (nowNs >= replicationCommitPositionDeadlineNs)
                 {
-                    throw new ClusterException("timeout awaiting commit position");
+                    throw new TimeoutException("timeout awaiting commit position", AeronException.Category.WARN);
                 }
             }
         }
@@ -1133,7 +1133,7 @@ class Election
         }
     }
 
-    private void cleanupReplication()
+    private void cleanupLogReplication()
     {
         if (null != logReplication)
         {

@@ -19,6 +19,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.AeronException;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -107,7 +108,7 @@ final class LogReplication
         {
             if (position < stopPosition)
             {
-                throw new ClusterException("log replication has not progressed: " + this);
+                throw new ClusterException("log replication has not progressed: " + this, AeronException.Category.WARN);
             }
             else
             {
@@ -134,12 +135,12 @@ final class LogReplication
         {
             try
             {
-                archive.tryStopReplication(replicationId);
                 isStopped = true;
+                archive.tryStopReplication(replicationId);
             }
-            catch (final Exception e)
+            catch (final Exception ex)
             {
-                throw new ClusterException("failed to stop log replication", e);
+                throw new ClusterException("failed to stop log replication", ex, AeronException.Category.WARN);
             }
         }
     }
@@ -159,7 +160,7 @@ final class LogReplication
                     throw new ClusterException("recording was deleted during replication: " + this);
 
                 case STOP:
-                    this.isStopped = true;
+                    isStopped = true;
                     break;
             }
 

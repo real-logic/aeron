@@ -641,11 +641,6 @@ class Election
     {
         int workCount = 0;
 
-        if (CommonContext.NULL_SESSION_ID == logSessionId)
-        {
-            logSessionId = consensusModuleAgent.addLogPublication();
-        }
-
         workCount += consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
         workCount += publishNewLeadershipTermOnInterval(nowNs);
 
@@ -1094,13 +1089,17 @@ class Election
                     consensusModuleAgent.role(Cluster.Role.CANDIDATE);
                     break;
 
-                case FOLLOWER_REPLAY:
-                case FOLLOWER_LOG_REPLICATION:
-                    consensusModuleAgent.role(Cluster.Role.FOLLOWER);
+                case LEADER_LOG_REPLICATION:
+                    logSessionId = consensusModuleAgent.addLogPublication();
                     break;
 
                 case LEADER_INIT:
                     consensusModuleAgent.role(Cluster.Role.LEADER);
+                    break;
+
+                case FOLLOWER_LOG_REPLICATION:
+                case FOLLOWER_REPLAY:
+                    consensusModuleAgent.role(Cluster.Role.FOLLOWER);
                     break;
             }
 

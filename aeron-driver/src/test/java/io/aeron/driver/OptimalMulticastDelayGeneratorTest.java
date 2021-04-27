@@ -15,7 +15,7 @@
  */
 package io.aeron.driver;
 
-import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
@@ -27,13 +27,15 @@ public class OptimalMulticastDelayGeneratorTest
     private static final long MAX_BACKOFF = TimeUnit.MILLISECONDS.toNanos(60);
     private static final long GROUP_SIZE = 10;
 
-    private final OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(
-        MAX_BACKOFF, GROUP_SIZE);
-
-    @RepeatedTest(100_000)
+    @Test
     public void shouldNotExceedTmaxBackoff()
     {
-        final double delay = generator.generateNewOptimalDelay();
-        assertThat(delay, lessThanOrEqualTo((double)MAX_BACKOFF));
+        final OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(MAX_BACKOFF, GROUP_SIZE);
+
+        for (int i = 0; i < 100_000; i++)
+        {
+            final double delay = generator.generateNewOptimalDelay();
+            assertThat(delay, lessThanOrEqualTo((double)MAX_BACKOFF));
+        }
     }
 }

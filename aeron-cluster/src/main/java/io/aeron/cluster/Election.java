@@ -227,6 +227,11 @@ class Election
     void onRecordingSignal(
         final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
     {
+        if (INIT == state)
+        {
+            return;
+        }
+
         if (null != logReplication)
         {
             logReplication.onSignal(correlationId, recordingId, position, signal);
@@ -237,6 +242,11 @@ class Election
     void onMembershipChange(
         final ClusterMember[] clusterMembers, final ChangeType changeType, final int memberId, final long logPosition)
     {
+        if (INIT == state)
+        {
+            return;
+        }
+
         ClusterMember.copyVotes(this.clusterMembers, clusterMembers);
         this.clusterMembers = clusterMembers;
 
@@ -253,6 +263,11 @@ class Election
         final long leadershipTermId,
         final int followerMemberId)
     {
+        if (INIT == state)
+        {
+            return;
+        }
+
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
         if (null != follower && thisMember.id() != followerMemberId)
         {
@@ -287,6 +302,11 @@ class Election
     void onRequestVote(
         final long logLeadershipTermId, final long logPosition, final long candidateTermId, final int candidateId)
     {
+        if (INIT == state)
+        {
+            return;
+        }
+
         if (isPassiveMember() || candidateId == thisMember.id())
         {
             return;
@@ -320,6 +340,11 @@ class Election
         final int followerMemberId,
         final boolean vote)
     {
+        if (INIT == state)
+        {
+            return;
+        }
+
         if (CANDIDATE_BALLOT == state &&
             candidateTermId == this.candidateTermId &&
             candidateMemberId == thisMember.id())
@@ -350,6 +375,11 @@ class Election
         final int logSessionId,
         final boolean isStartup)
     {
+        if (INIT == state)
+        {
+            return;
+        }
+
         final ClusterMember leader = clusterMemberByIdMap.get(leaderMemberId);
         if (null == leader || (leaderMemberId == thisMember.id() && leadershipTermId == this.leadershipTermId))
         {
@@ -424,6 +454,11 @@ class Election
 
     void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
+        if (INIT == state)
+        {
+            return;
+        }
+
         if (leadershipTermId <= this.leadershipTermId)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
@@ -441,6 +476,11 @@ class Election
 
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
+        if (INIT == state)
+        {
+            return;
+        }
+
         if (leadershipTermId == this.leadershipTermId &&
             NULL_POSITION != catchupPosition &&
             FOLLOWER_CATCHUP == state &&
@@ -466,6 +506,11 @@ class Election
         final long timestamp,
         final long termBaseLogPosition)
     {
+        if (INIT == state)
+        {
+            return;
+        }
+
         if (FOLLOWER_CATCHUP == state || FOLLOWER_REPLAY == state)
         {
             for (long termId = Math.max(logLeadershipTermId, 0); termId <= leadershipTermId; termId++)

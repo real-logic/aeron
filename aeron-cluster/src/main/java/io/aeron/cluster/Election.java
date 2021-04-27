@@ -61,7 +61,7 @@ class Election
     private long leaderRecordingId = NULL_VALUE;
     private long leadershipTermId;
     private long logLeadershipTermId;
-    private long candidateTermId = NULL_VALUE;
+    private long candidateTermId;
     private ClusterMember leaderMember = null;
     private ElectionState state = INIT;
     private Subscription logSubscription = null;
@@ -94,6 +94,7 @@ class Election
         this.appendPosition = appendPosition;
         this.logLeadershipTermId = leadershipTermId;
         this.leadershipTermId = leadershipTermId;
+        this.candidateTermId = leadershipTermId;
         this.clusterMembers = clusterMembers;
         this.clusterMemberByIdMap = clusterMemberByIdMap;
         this.thisMember = thisMember;
@@ -290,7 +291,7 @@ class Election
             return;
         }
 
-        if (candidateTermId <= leadershipTermId || candidateTermId <= this.candidateTermId)
+        if (candidateTermId <= this.candidateTermId)
         {
             placeVote(candidateTermId, candidateId, false);
         }
@@ -298,15 +299,15 @@ class Election
         {
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().proposeMaxCandidateTermId(candidateTermId, ctx.fileSyncLevel());
-            state(INIT, ctx.clusterClock().timeNanos());
             placeVote(candidateTermId, candidateId, false);
+            state(INIT, ctx.clusterClock().timeNanos());
         }
         else
         {
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().proposeMaxCandidateTermId(candidateTermId, ctx.fileSyncLevel());
-            state(FOLLOWER_BALLOT, ctx.clusterClock().timeNanos());
             placeVote(candidateTermId, candidateId, true);
+            state(FOLLOWER_BALLOT, ctx.clusterClock().timeNanos());
         }
     }
 
@@ -396,7 +397,7 @@ class Election
                     else
                     {
                         throw new ClusterException(
-                            "invalid newLeadershipTerm - this.appendPosition=" + this.appendPosition +
+                            "invalid newLeadershipTerm - this.appendPosition=" + appendPosition +
                             " < termBaseLogPosition = " + termBaseLogPosition +
                             " and nextLeadershipTermId = " + nextLeadershipTermId +
                             ", logLeadershipTermId = " + logLeadershipTermId +
@@ -570,7 +571,7 @@ class Election
     {
         if (nowNs >= nominationDeadlineNs)
         {
-            candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
+            candidateTermId = candidateTermId + 1;
             ClusterMember.becomeCandidate(clusterMembers, candidateTermId, thisMember.id());
             ctx.clusterMarkFile().proposeMaxCandidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(CANDIDATE_BALLOT, nowNs);

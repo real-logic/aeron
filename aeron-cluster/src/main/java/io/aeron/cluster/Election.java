@@ -302,7 +302,7 @@ class Election
             placeVote(candidateTermId, candidateId, false);
             state(INIT, ctx.clusterClock().timeNanos());
         }
-        else
+        else if (CANVASS == state || NOMINATE == state)
         {
             this.candidateTermId = ctx.clusterMarkFile().proposeMaxCandidateTermId(
                 candidateTermId, ctx.fileSyncLevel());
@@ -447,8 +447,7 @@ class Election
         {
             catchupPosition = Math.max(catchupPosition, logPosition);
         }
-        else if ((FOLLOWER_LOG_REPLICATION == state) &&
-            leaderMemberId == leaderMember.id())
+        else if (FOLLOWER_LOG_REPLICATION == state && leaderMemberId == leaderMember.id())
         {
             replicationCommitPosition = Math.max(replicationCommitPosition, logPosition);
             replicationCommitPositionDeadlineNs = ctx.clusterClock().timeNanos() + ctx.leaderHeartbeatTimeoutNs();
@@ -544,7 +543,7 @@ class Election
                 }
             }
 
-            workCount += 1;
+            workCount++;
         }
 
         if (isPassiveMember() || (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id()))
@@ -561,7 +560,7 @@ class Election
             final long delayNs = (long)(ctx.random().nextDouble() * (ctx.electionTimeoutNs() >> 1));
             nominationDeadlineNs = nowNs + delayNs;
             state(NOMINATE, nowNs);
-            workCount += 1;
+            workCount++;
         }
 
         return workCount;
@@ -591,7 +590,7 @@ class Election
             leaderMember = thisMember;
             leadershipTermId = candidateTermId;
             state(LEADER_LOG_REPLICATION, nowNs);
-            workCount += 1;
+            workCount++;
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.electionTimeoutNs()))
         {
@@ -606,7 +605,7 @@ class Election
                 state(CANVASS, nowNs);
             }
 
-            workCount += 1;
+            workCount++;
         }
         else
         {
@@ -614,7 +613,7 @@ class Election
             {
                 if (!member.isBallotSent())
                 {
-                    workCount += 1;
+                    workCount++;
                     member.isBallotSent(consensusPublisher.requestVote(
                         member.publication(), logLeadershipTermId, appendPosition, candidateTermId, thisMember.id()));
                 }
@@ -631,7 +630,7 @@ class Election
         if (nowNs >= (timeOfLastStateChangeNs + ctx.electionTimeoutNs()))
         {
             state(CANVASS, nowNs);
-            workCount += 1;
+            workCount++;
         }
 
         return workCount;
@@ -781,7 +780,7 @@ class Election
 
         if (null == logReplay)
         {
-            workCount += 1;
+            workCount++;
             if (logPosition < appendPosition)
             {
                 logReplay = consensusModuleAgent.newLogReplay(logPosition, appendPosition);

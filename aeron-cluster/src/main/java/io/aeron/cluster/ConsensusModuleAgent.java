@@ -3046,7 +3046,7 @@ final class ConsensusModuleAgent implements Agent
             logSubscriptionId = NULL_VALUE;
         }
 
-        if (NULL_VALUE != logRecordingId)
+        if (NULL_VALUE != logRecordingId && archive.archiveProxy().publication().isConnected())
         {
             try
             {

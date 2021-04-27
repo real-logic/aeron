@@ -82,8 +82,8 @@ TEST_F(NameResolverCacheTest, shouldTimeoutEntries)
     {
         now_ms = i * 1000;
 
-        char name[13];
-        snprintf(name, 12, "hostname%d", i);
+        char name[32];
+        snprintf(name, sizeof(name) - 1, "hostname%d", i);
 
         for (size_t j = 0; j < sizeof(cache_addr.address); j++)
         {

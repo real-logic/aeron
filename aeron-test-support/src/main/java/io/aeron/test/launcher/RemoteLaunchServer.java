@@ -18,6 +18,9 @@ package io.aeron.test.launcher;
 import org.agrona.CloseHelper;
 
 import java.io.*;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
@@ -32,6 +35,23 @@ public class RemoteLaunchServer
 {
     private final ServerSocketChannel serverChannel;
     private final Collection<Connection> connections = new ConcurrentLinkedDeque<>();
+    private static final MethodHandle PID_HANDLE;
+
+    static
+    {
+        MethodHandle methodHandle;
+        final MethodHandles.Lookup lookup = MethodHandles.lookup();
+        try
+        {
+            methodHandle = lookup.findVirtual(Process.class, "pid", MethodType.methodType(Long.TYPE));
+        }
+        catch (final Exception ex)
+        {
+            methodHandle = null;
+        }
+
+        PID_HANDLE = methodHandle;
+    }
 
     public static void main(final String[] args) throws IOException
     {
@@ -260,6 +280,23 @@ public class RemoteLaunchServer
             }
         }
 
+        private long pid()
+        {
+            if (null != process && null != PID_HANDLE)
+            {
+                try
+                {
+                    return (long)PID_HANDLE.invoke(process);
+                }
+                catch (final Throwable throwable)
+                {
+                    return 0;
+                }
+            }
+
+            return 0;
+        }
+
         private State startProcess(final String[] command) throws IOException
         {
             try
@@ -267,13 +304,12 @@ public class RemoteLaunchServer
                 final Process p = new ProcessBuilder(command)
                     .redirectErrorStream(true)
                     .start();
-
-                final long startTimeMs = System.currentTimeMillis();
-                System.out.println("[" + p.pid() + "] Started: " + String.join(" ", command));
-
                 process = p;
 
-                responseReader = new ProcessResponseReader(connectionChannel, p.pid());
+                final long startTimeMs = System.currentTimeMillis();
+                System.out.println("[" + pid() + "] Started: " + String.join(" ", command));
+
+                responseReader = new ProcessResponseReader(connectionChannel, pid());
                 final Thread responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
                 responseThread.start();
                 final Thread processMonitorThread = new Thread(() ->
@@ -283,12 +319,12 @@ public class RemoteLaunchServer
                         final int exitCode = process.waitFor();
                         final long endTimeMs = System.currentTimeMillis();
                         System.out.println(
-                            "[" + process.pid() + "] Exited with code: " + exitCode +
+                            "[" + pid() + "] Exited with code: " + exitCode +
                             " after: " + (endTimeMs - startTimeMs) + "ms");
                     }
                     catch (final InterruptedException e)
                     {
-                        System.out.println("[" + process.pid() + "] Unexpected exception waiting on exit code");
+                        System.out.println("[" + pid() + "] Unexpected exception waiting on exit code");
                         e.printStackTrace(System.out);
                     }
                 });

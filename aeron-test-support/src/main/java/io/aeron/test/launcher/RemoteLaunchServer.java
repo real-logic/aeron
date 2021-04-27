@@ -57,7 +57,7 @@ public class RemoteLaunchServer
             (t, e) ->
             {
                 System.err.println("Uncaught exception on: " + t);
-                e.printStackTrace(System.err);
+                e.printStackTrace(System.out);
             });
 
         try
@@ -88,7 +88,7 @@ public class RemoteLaunchServer
         }
         catch (final IOException e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         }
 
         connections.forEach(Connection::stop);
@@ -150,7 +150,7 @@ public class RemoteLaunchServer
                             }
                             catch (final IOException e)
                             {
-                                e.printStackTrace();
+                                e.printStackTrace(System.out);
                             }
                             return;
                         }
@@ -166,7 +166,7 @@ public class RemoteLaunchServer
                             }
                             catch (final IOException e)
                             {
-                                e.printStackTrace();
+                                e.printStackTrace(System.out);
                             }
                             process.destroy();
                             return;
@@ -248,8 +248,8 @@ public class RemoteLaunchServer
             }
             catch (final IOException | ClassNotFoundException ex)
             {
-                System.err.println("Error occurred");
-                ex.printStackTrace();
+                System.out.println("Error occurred");
+                ex.printStackTrace(System.out);
 
                 if (currentState.compareAndSet(State.RUNNING, State.CLOSING) && null != process)
                 {
@@ -268,11 +268,31 @@ public class RemoteLaunchServer
                     .redirectErrorStream(true)
                     .start();
 
+                final long startTimeMs = System.currentTimeMillis();
+                System.out.println("[" + p.pid() + "] Started: " + String.join(" ", command));
+
                 process = p;
 
-                responseReader = new ProcessResponseReader(connectionChannel);
+                responseReader = new ProcessResponseReader(connectionChannel, p.pid());
                 final Thread responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
                 responseThread.start();
+                final Thread processMonitorThread = new Thread(() ->
+                {
+                    try
+                    {
+                        final int exitCode = process.waitFor();
+                        final long endTimeMs = System.currentTimeMillis();
+                        System.out.println(
+                            "[" + process.pid() + "] Exited with code: " + exitCode +
+                            " after: " + (endTimeMs - startTimeMs) + "ms");
+                    }
+                    catch (final InterruptedException e)
+                    {
+                        System.out.println("[" + process.pid() + "] Unexpected exception waiting on exit code");
+                        e.printStackTrace(System.out);
+                    }
+                });
+                processMonitorThread.start();
 
                 return State.RUNNING;
             }
@@ -296,11 +316,13 @@ public class RemoteLaunchServer
     private static final class ProcessResponseReader
     {
         private final SocketChannel connectionChannel;
+        private final long pid;
         private volatile boolean isClosed = false;
 
-        private ProcessResponseReader(final SocketChannel connectionChannel)
+        private ProcessResponseReader(final SocketChannel connectionChannel, final long pid)
         {
             this.connectionChannel = connectionChannel;
+            this.pid = pid;
         }
 
         private void runResponses(final InputStream processOutput)
@@ -331,7 +353,7 @@ public class RemoteLaunchServer
                 }
                 else
                 {
-                    System.out.println("Process closed");
+                    System.out.println("[" + pid + "] Process closed");
                 }
             }
         }

@@ -42,7 +42,7 @@ protected:
 TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
 {
     aeron_name_resolver_cache_init(&m_cache, 0);
-    aeron_name_resolver_cache_addr_t cache_addr = { 0 };
+    aeron_name_resolver_cache_addr_t cache_addr = {};
 
     for (int i = 0; i < 1000; i++)
     {
@@ -74,7 +74,7 @@ TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
 TEST_F(NameResolverCacheTest, shouldTimeoutEntries)
 {
     aeron_name_resolver_cache_init(&m_cache, 2000);
-    aeron_name_resolver_cache_addr_t cache_addr = { 0 };
+    aeron_name_resolver_cache_addr_t cache_addr = {};
     cache_addr.res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
 
     int64_t now_ms = 0;

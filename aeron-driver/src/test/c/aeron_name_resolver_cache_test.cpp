@@ -30,26 +30,26 @@ public:
     NameResolverCacheTest() = default;
 
 protected:
-    virtual void TearDown()
+    void TearDown() override
     {
         aeron_name_resolver_cache_close(&m_cache);
     }
 
-    aeron_name_resolver_cache_t m_cache{};
+    aeron_name_resolver_cache_t m_cache = {};
     int64_t m_counter = 0;
 };
 
 TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
 {
     aeron_name_resolver_cache_init(&m_cache, 0);
-    aeron_name_resolver_cache_addr_t cache_addr;
+    aeron_name_resolver_cache_addr_t cache_addr = { 0 };
 
     for (int i = 0; i < 1000; i++)
     {
-        char name[14];
-        aeron_name_resolver_cache_entry_t *cache_entry;
+        aeron_name_resolver_cache_entry_t *cache_entry = nullptr;
+        char name[32] = { 0 };
 
-        snprintf(name, 13, "hostname%d", i);
+        snprintf(name, sizeof(name) - 1, "hostname%d", i);
         cache_addr.res_type = (i & 1) == 1 ? AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD : AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
         size_t address_length = (i & 1) == 1 ? 16 : 4;
 
@@ -74,7 +74,7 @@ TEST_F(NameResolverCacheTest, shouldAddAndLookupEntry)
 TEST_F(NameResolverCacheTest, shouldTimeoutEntries)
 {
     aeron_name_resolver_cache_init(&m_cache, 2000);
-    aeron_name_resolver_cache_addr_t cache_addr;
+    aeron_name_resolver_cache_addr_t cache_addr = { 0 };
     cache_addr.res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
 
     int64_t now_ms = 0;
@@ -82,7 +82,7 @@ TEST_F(NameResolverCacheTest, shouldTimeoutEntries)
     {
         now_ms = i * 1000;
 
-        char name[32];
+        char name[32] = { 0 };
         snprintf(name, sizeof(name) - 1, "hostname%d", i);
 
         for (size_t j = 0; j < sizeof(cache_addr.address); j++)

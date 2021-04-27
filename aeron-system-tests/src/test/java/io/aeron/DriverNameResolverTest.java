@@ -129,6 +129,7 @@ public class DriverNameResolverTest
         awaitCounterValue("C", cNeighborsCounterId, 2);
     }
 
+    @SlowTest
     @Test
     @Timeout(15)
     public void shouldSeeNeighborsViaGossipAsLateJoiningDriver()

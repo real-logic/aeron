@@ -24,6 +24,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.SlowTest;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import io.aeron.test.Tests;
@@ -247,6 +248,7 @@ public class MinFlowControlSystemTest
             any(DirectBuffer.class), anyInt(), eq(MESSAGE_LENGTH), any(Header.class));
     }
 
+    @SlowTest
     @Test
     @Timeout(20)
     void shouldPreventConnectionUntilGroupMinSizeIsMet()

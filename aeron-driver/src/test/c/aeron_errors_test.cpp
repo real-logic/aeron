@@ -141,10 +141,9 @@ protected:
         }
 
         ErrorCallbackValidation errorCallbackValidation
-            {
-                std::vector<std::string>{ text }
-            };
-
+        {
+            std::vector<std::string>{ text }
+        };
 
         std::int64_t deadlineMs = aeron_epoch_clock() + timeoutMs;
         do

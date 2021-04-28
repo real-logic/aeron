@@ -185,7 +185,7 @@ public final class ClusterConfig
     /**
      * Gets the configuration's media driver context.
      *
-     * @return configured {@link MediaDriver.Context}.
+     * @return configured {@link io.aeron.driver.MediaDriver.Context}.
      * @see io.aeron.driver.MediaDriver.Context
      */
     public MediaDriver.Context mediaDriverContext()
@@ -196,7 +196,7 @@ public final class ClusterConfig
     /**
      * Gets the configuration's archive context.
      *
-     * @return configured {@link Archive.Context}.
+     * @return configured {@link io.aeron.archive.Archive.Context}.
      * @see io.aeron.archive.Archive.Context
      */
     public Archive.Context archiveContext()
@@ -207,7 +207,7 @@ public final class ClusterConfig
     /**
      * Gets the configuration's aeron archive context.
      *
-     * @return configured {@link Archive.Context}.
+     * @return configured {@link io.aeron.archive.Archive.Context}.
      * @see io.aeron.archive.client.AeronArchive.Context
      */
     public AeronArchive.Context aeronArchiveContext()
@@ -218,7 +218,7 @@ public final class ClusterConfig
     /**
      * Gets the configuration's consensus module context.
      *
-     * @return configured {@link ConsensusModule.Context}.
+     * @return configured {@link io.aeron.cluster.ConsensusModule.Context}.
      * @see io.aeron.cluster.ConsensusModule.Context
      */
     public ConsensusModule.Context consensusModuleContext()
@@ -229,7 +229,7 @@ public final class ClusterConfig
     /**
      * Gets the configuration's clustered service container context.
      *
-     * @return configured {@link ClusteredServiceContainer.Context}.
+     * @return configured {@link io.aeron.cluster.service.ClusteredServiceContainer.Context}.
      * @see io.aeron.cluster.service.ClusteredServiceContainer.Context
      */
     public ClusteredServiceContainer.Context clusteredServiceContext()

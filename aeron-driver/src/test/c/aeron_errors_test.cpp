@@ -131,14 +131,10 @@ protected:
     
     void verifyDistinctErrorLogContains(const char *text, std::int64_t timeoutMs = 0)
     {
-        aeron_cnc_t *aeronCnc;
-        int result = aeron_cnc_init(&aeronCnc, aeron_context_get_dir(m_context), 100);
-        EXPECT_EQ(0, result);
-        if (result < 0)
-        {
-            aeron_cnc_close(aeronCnc);
-            return;
-        }
+        aeron_cnc_t *aeronCnc = NULL;
+        const char *aeron_dir = aeron_context_get_dir(m_context);
+        int result = aeron_cnc_init(&aeronCnc, aeron_dir, 1000);
+        ASSERT_EQ(0, result) << "CnC file not available: " << aeron_dir;
 
         ErrorCallbackValidation errorCallbackValidation
         {

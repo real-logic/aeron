@@ -92,7 +92,6 @@ int aeron_receive_channel_endpoint_create(
         return -1;
     }
 
-    _endpoint->conductor_fields.udp_channel = channel;
     _endpoint->conductor_fields.socket_rcvbuf = socket_rcvbuf;
     _endpoint->conductor_fields.socket_sndbuf = socket_sndbuf;
     _endpoint->conductor_fields.managed_resource.clientd = _endpoint;
@@ -129,6 +128,8 @@ int aeron_receive_channel_endpoint_create(
         }
     }
 
+    // Only take ownership on successful construction.
+    _endpoint->conductor_fields.udp_channel = channel;
     *endpoint = _endpoint;
     return 0;
 }

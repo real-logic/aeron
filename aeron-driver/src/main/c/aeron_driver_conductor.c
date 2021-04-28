@@ -1723,7 +1723,6 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
     if (aeron_driver_conductor_update_and_check_ats_status(
         conductor->context, channel, NULL == endpoint ? NULL : endpoint->conductor_fields.udp_channel) < 0)
     {
-        aeron_udp_channel_delete(channel);
         return NULL;
     }
 
@@ -3123,22 +3122,24 @@ int aeron_driver_conductor_on_add_network_subscription(
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_driver_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
-        AERON_APPEND_ERR("%s", "");
         aeron_udp_channel_delete(udp_channel);
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
-    if (aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id) == NULL)
+    if (NULL == aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id))
     {
         aeron_udp_channel_delete(udp_channel);
+        AERON_SET_ERR(EINVAL, "%s", "Failed to add client");
         return -1;
     }
 
-    // From here on the udp_channel is owned by the endpoint.
     aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_get_or_add_receive_channel_endpoint(
         conductor, udp_channel, correlation_id);
     if (NULL == endpoint)
     {
+        aeron_udp_channel_delete(udp_channel);
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -3147,7 +3148,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     {
         aeron_udp_channel_delete(udp_channel);
     }
-    udp_channel = NULL;
+    udp_channel = NULL; // From here on the udp_channel is owned by the endpoint if a new one is constructed.
 
     if (aeron_subscription_params_validate_initial_window_for_rcvbuf(
         &params,
@@ -3570,6 +3571,8 @@ int aeron_driver_conductor_on_add_receive_destination(
     {
         goto error_cleanup;
     }
+
+    udp_channel = NULL; // Ownership passed to the the receive_destination;
 
     aeron_driver_receiver_proxy_on_add_destination(conductor->context->receiver_proxy, endpoint, destination);
     aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);

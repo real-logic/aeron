@@ -37,12 +37,10 @@ int aeron_receive_destination_create(
         return -1;
     }
 
-    _destination->conductor_fields.udp_channel = channel;
     _destination->transport.fd = -1;
     _destination->data_paths = &context->receiver_proxy->receiver->data_paths;
     _destination->transport.data_paths = _destination->data_paths;
     _destination->local_sockaddr_indicator.counter_id = AERON_NULL_COUNTER_ID;
-
 
     if (context->udp_channel_transport_bindings->init_func(
         &_destination->transport,
@@ -106,6 +104,8 @@ int aeron_receive_destination_create(
     aeron_counter_set_ordered(
         _destination->local_sockaddr_indicator.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE);
 
+    // Only take ownership of the channel if the receive destination is successfully created.
+    _destination->conductor_fields.udp_channel = channel;
     *destination = _destination;
 
     return 0;

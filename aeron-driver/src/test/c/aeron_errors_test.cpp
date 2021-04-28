@@ -27,6 +27,8 @@ extern "C"
 #include "concurrent/aeron_thread.h"
 #include "aeron_system_counters.h"
 #include "command/aeron_control_protocol.h"
+#include "aeron_csv_table_name_resolver.h"
+#include <util/aeron_error.h>
 }
 
 #define PUB_URI "aeron:udp?endpoint=localhost:24325"
@@ -88,7 +90,36 @@ private:
     bool m_validated = false;
 };
 
-const char *CSV_NAME_CONFIG_WITH_UNRESOLVABLE_ADDRESS = "server0,endpoint,foo.example.com:24326,localhost:24326|";
+static const char *CSV_NAME_CONFIG_WITH_UNRESOLVABLE_ADDRESS = "server0,endpoint,foo.example.com:24326,localhost:24326|";
+static const char *EXPECTED_RESOLVER_ERROR = "Unable to resolve host";
+
+static int resolveLocalhostOnly(
+    aeron_name_resolver_t *resolver,
+    const char *name,
+    const char *uri_param_name,
+    bool is_re_resolution,
+    struct sockaddr_storage *address)
+{
+    if (0 == strcmp("localhost", name))
+    {
+        return aeron_default_name_resolver_resolve(resolver, name, uri_param_name, is_re_resolution, address);
+    }
+    else
+    {
+        AERON_SET_ERR(-AERON_ERROR_CODE_UNKNOWN_HOST, "%s", EXPECTED_RESOLVER_ERROR);
+        return -1;
+    }
+}
+
+static int testResolverSupplier(
+    aeron_name_resolver_t *resolver,
+    const char *args,
+    aeron_driver_context_t *context)
+{
+    int i = aeron_csv_table_name_resolver_supplier(resolver, args, context);
+    resolver->resolve_func = resolveLocalhostOnly;
+    return i;
+}
 
 class CErrorsTest : public CSystemTestBase, public testing::Test
 {
@@ -96,8 +127,11 @@ public:
     CErrorsTest() : CSystemTestBase(
         std::vector<std::pair<std::string, std::string>>{
             { "AERON_COUNTERS_BUFFER_LENGTH", "32768" },
-            { "AERON_NAME_RESOLVER_SUPPLIER", "csv_table" },
             { "AERON_NAME_RESOLVER_INIT_ARGS", CSV_NAME_CONFIG_WITH_UNRESOLVABLE_ADDRESS }
+        },
+        [](aeron_driver_context_t *ctx)
+        {
+            aeron_driver_context_set_name_resolver_supplier(ctx, testResolverSupplier);
         })
     {
     }
@@ -449,8 +483,7 @@ TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
     }
 
     ASSERT_EQ(1, result);
-    const char *expectedDriverMessage = "Unable to resolve host";
 
     waitForErrorCounterIncrease();
-    verifyDistinctErrorLogContains(expectedDriverMessage, 10000);
+    verifyDistinctErrorLogContains(EXPECTED_RESOLVER_ERROR, 10000);
 }

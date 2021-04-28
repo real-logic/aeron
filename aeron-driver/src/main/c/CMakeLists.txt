@@ -294,6 +294,7 @@ SET(HEADERS
     media/aeron_udp_transport_poller.h
     uri/aeron_driver_uri.h
     aeron_congestion_control.h
+    aeron_csv_table_name_resolver.h
     aeron_data_packet_dispatcher.h
     aeron_driver.h
     aeron_driver_common.h

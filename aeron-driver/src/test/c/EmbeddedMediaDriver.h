@@ -30,6 +30,7 @@
 #include <thread>
 #include <atomic>
 #include <stdexcept>
+#include <functional>
 
 extern "C"
 {
@@ -44,7 +45,10 @@ const char *TERMINATION_KEY = "Exit please";
 class EmbeddedMediaDriver
 {
 public:
-    EmbeddedMediaDriver() = default;
+    EmbeddedMediaDriver(std::function<void(aeron_driver_context_t *)> setContextFunc = [](aeron_driver_context_t *) {})
+        : m_setContextFunc(setContextFunc)
+    {
+    }
 
     ~EmbeddedMediaDriver()
     {
@@ -122,6 +126,8 @@ protected:
         aeron_driver_context_set_driver_termination_validator(m_context, validateTermination, nullptr);
         aeron_driver_context_set_driver_termination_hook(m_context, terminationHook, this);
 
+        m_setContextFunc(m_context);
+
         if (aeron_driver_init(&m_driver, m_context) < 0)
         {
             fprintf(stderr, "ERROR: driver init (%d) %s\n", aeron_errcode(), aeron_errmsg());
@@ -142,6 +148,7 @@ private:
     std::thread m_thread;
     aeron_driver_context_t *m_context = nullptr;
     aeron_driver_t *m_driver = nullptr;
+    std::function<void(aeron_driver_context_t *)> m_setContextFunc;
 
     static bool validateTermination(void *state, uint8_t *buffer, int32_t length)
     {

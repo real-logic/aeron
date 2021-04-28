@@ -25,7 +25,7 @@
 #include "util/aeron_error.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_arrayutil.h"
-#include "aeron_name_resolver.h"
+#include "aeron_csv_table_name_resolver.h"
 
 #define AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE (1024)
 #define AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS (4)

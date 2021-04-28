@@ -774,6 +774,7 @@ public class ClusterTest
             }
 
             cluster.awaitNewLeadershipEvent(1);
+            cluster.followers(2);
         }
         catch (final Throwable ex)
         {

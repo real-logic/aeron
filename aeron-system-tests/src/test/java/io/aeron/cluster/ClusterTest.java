@@ -782,6 +782,41 @@ public class ClusterTest
     }
 
     @Test
+    @Timeout(30)
+    public void shouldRecoverFollowerWhenRecordingStops(final TestInfo testInfo)
+    {
+        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        try
+        {
+            cluster.awaitLeader();
+
+            final TestNode follower = cluster.followers().get(0);
+            final AeronArchive.Context archiveCtx = new AeronArchive.Context()
+                .controlRequestChannel(follower.archive().context().localControlChannel())
+                .controlResponseChannel(follower.archive().context().localControlChannel())
+                .controlRequestStreamId(follower.archive().context().localControlStreamId())
+                .aeronDirectoryName(follower.mediaDriver().aeronDirectoryName());
+
+            try (AeronArchive archive = AeronArchive.connect(archiveCtx))
+            {
+                final int firstRecordingIdIsTheClusterLog = 0;
+                assertTrue(archive.tryStopRecordingByIdentity(firstRecordingIdIsTheClusterLog));
+            }
+
+            final int messageCount = 10;
+            cluster.connectClient();
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount);
+
+            cluster.awaitServiceMessageCount(follower, messageCount);
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
+    @Test
     @Timeout(20)
     public void shouldCloseClientOnTimeout(final TestInfo testInfo)
     {

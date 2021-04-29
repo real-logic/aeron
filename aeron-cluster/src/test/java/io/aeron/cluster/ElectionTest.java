@@ -286,6 +286,7 @@ public class ElectionTest
         election.doWork(++nowNs);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_AWAIT.code());
 
+        when(consensusModuleAgent.tryJoinLogAsFollower(any(), anyBoolean())).thenReturn(true);
         election.doWork(++nowNs);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_READY.code());
 
@@ -424,6 +425,7 @@ public class ElectionTest
         final long leaderRecordingId = 367234;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
+        when(consensusModuleAgent.tryJoinLogAsFollower(any(), anyBoolean())).thenReturn(true);
 
         final Election election = newElection(
             isNodeStart, leadershipTermId, logPosition, clusterMembers, followerMember);
@@ -455,7 +457,7 @@ public class ElectionTest
 
         election.doWork(clock.increment(1));
 
-        verify(consensusModuleAgent).joinLogAsFollower(logImage, isLeaderStart);
+        verify(consensusModuleAgent).tryJoinLogAsFollower(logImage, isLeaderStart);
     }
 
     @Test

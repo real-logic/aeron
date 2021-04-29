@@ -954,12 +954,18 @@ class Election
         if (null != image)
         {
             verifyLogImage(image);
-            consensusModuleAgent.joinLogAsFollower(image, isLeaderStartup);
-            appendPosition = image.joinPosition();
-            logPosition = image.joinPosition();
-            updateRecordingLog(nowNs);
-            state(FOLLOWER_READY, nowNs);
-            workCount++;
+            if (consensusModuleAgent.tryJoinLogAsFollower(image, isLeaderStartup))
+            {
+                appendPosition = image.joinPosition();
+                logPosition = image.joinPosition();
+                updateRecordingLog(nowNs);
+                state(FOLLOWER_READY, nowNs);
+                workCount++;
+            }
+            else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
+            {
+                throw new TimeoutException("failed to join live log", AeronException.Category.WARN);
+            }
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
         {

@@ -1434,6 +1434,39 @@ final class ConsensusModuleAgent implements Agent
             Cluster.Role.FOLLOWER);
     }
 
+    boolean tryJoinLogAsFollower(final Image image, final boolean isLeaderStartup)
+    {
+        final Subscription logSubscription = image.subscription();
+        final int streamId = logSubscription.streamId();
+        final String channel = logSubscription.channel();
+
+        if (NULL_VALUE == logSubscriptionId)
+        {
+            startLogRecording(channel, streamId, SourceLocation.REMOTE);
+        }
+
+        if (!tryCreateAppendPosition(image.sessionId()))
+        {
+            return false;
+        }
+
+        appendDynamicJoinTermAndSnapshots();
+
+        logAdapter.image(image);
+        lastAppendPosition = image.joinPosition();
+
+        awaitServicesReady(
+            channel,
+            streamId,
+            image.sessionId(),
+            image.joinPosition(),
+            Long.MAX_VALUE,
+            isLeaderStartup,
+            Cluster.Role.FOLLOWER);
+
+        return true;
+    }
+
     void awaitServicesReady(
         final String logChannel,
         final int streamId,
@@ -2390,6 +2423,28 @@ final class ConsensusModuleAgent implements Agent
         logRecordingId = RecordingPos.getRecordingId(counters, counterId);
         appendPosition = new ReadableCounter(counters, registrationId, counterId);
         logRecordedPosition = NULL_POSITION;
+    }
+
+    private boolean tryCreateAppendPosition(final int logSessionId)
+    {
+        final CountersReader counters = aeron.countersReader();
+        final int counterId = RecordingPos.findCounterIdBySession(counters, logSessionId);
+        if (CountersReader.NULL_COUNTER_ID == counterId)
+        {
+            return false;
+        }
+
+        final long registrationId = counters.getCounterRegistrationId(counterId);
+        if (0 == registrationId)
+        {
+            return false;
+        }
+
+        logRecordingId = RecordingPos.getRecordingId(counters, counterId);
+        appendPosition = new ReadableCounter(counters, registrationId, counterId);
+        logRecordedPosition = NULL_POSITION;
+
+        return true;
     }
 
     private void loadSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)

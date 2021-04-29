@@ -28,7 +28,7 @@ extern "C"
 #include "aeron_system_counters.h"
 #include "command/aeron_control_protocol.h"
 #include "aeron_csv_table_name_resolver.h"
-#include <util/aeron_error.h>
+#include "util/aeron_error.h"
 }
 
 #define PUB_URI "aeron:udp?endpoint=localhost:24325"
@@ -102,7 +102,9 @@ static int resolveLocalhostOnly(
 {
     if (0 == strcmp("localhost", name))
     {
-        return aeron_default_name_resolver_resolve(resolver, name, uri_param_name, is_re_resolution, address);
+        auto *address_in = reinterpret_cast<sockaddr_in *>(address);
+        inet_pton(AF_INET, "127.0.0.1", &address_in->sin_addr);
+        return 0;
     }
     else
     {

@@ -394,6 +394,7 @@ public class ClusterNetworkTopologyTest
             {
                 final Node node = (Node)selectionKey.attachment();
                 final ReadableByteChannel toReadFrom = (ReadableByteChannel)selectionKey.channel();
+
                 node.readChannel(toReadFrom);
             }
             selectionKeys.clear();

@@ -104,10 +104,14 @@ public final class ClusterConfig
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier());
 
+        final AeronArchive.Context replicationArchiveContext = new AeronArchive.Context()
+            .controlResponseChannel("aeron:udp?endpoint=" + hostname + ":0");
+
         final Archive.Context archiveContext = new Archive.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
             .controlChannel(udpChannel(nodeId, hostname, portBase, ARCHIVE_CONTROL_PORT_OFFSET))
+            .archiveClientContext(replicationArchiveContext)
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);

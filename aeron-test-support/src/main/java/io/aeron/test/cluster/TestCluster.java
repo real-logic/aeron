@@ -611,14 +611,14 @@ public class TestCluster implements AutoCloseable
         return msgBuffer;
     }
 
-    public void reconnectClient()
+    public AeronCluster reconnectClient()
     {
         if (null == client)
         {
             throw new IllegalStateException("Aeron client not previously connected");
         }
 
-        connectClient();
+        return connectClient();
     }
 
     public AeronCluster connectClient()
@@ -825,7 +825,7 @@ public class TestCluster implements AutoCloseable
     public TestNode awaitLeader(final int skipIndex)
     {
         final Supplier<String> message = () -> Arrays.stream(nodes)
-            .map((node) -> null != node ? node.index() + " " + node.isLeader() + " " + node.electionState() : "null")
+            .map((node) -> null != node ? node.index() + " " + node.role() + " " + node.electionState() : "null")
             .collect(Collectors.joining(", "));
 
         TestNode leaderNode;

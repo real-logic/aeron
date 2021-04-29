@@ -323,7 +323,7 @@ class Election
             placeVote(candidateTermId, candidateId, false);
             state(INIT, ctx.clusterClock().timeNanos());
         }
-        else if (CANVASS == state || NOMINATE == state)
+        else if (CANVASS == state || NOMINATE == state || CANDIDATE_BALLOT == state || FOLLOWER_BALLOT == state)
         {
             this.candidateTermId = ctx.clusterMarkFile().proposeMaxCandidateTermId(
                 candidateTermId, ctx.fileSyncLevel());

@@ -107,7 +107,7 @@ public class MultiClusteredServicesTest
 
         final AeronCluster client = AeronCluster.connect(new AeronCluster.Context()
             .aeronDirectoryName(aeronDirName)
-            .ingressChannel("aeron:udp")
+            .ingressChannel(CommonContext.UDP_CHANNEL)
             .ingressEndpoints(TestCluster.ingressEndpoints(0, 3)));
 
         try

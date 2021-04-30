@@ -1374,7 +1374,7 @@ final class ConsensusModuleAgent implements Agent
         final long leadershipTermId, final long logPosition, final int logSessionId, final boolean isStartup)
     {
         final boolean isIpc = ctx.logChannel().startsWith(IPC_CHANNEL);
-        final String channel = (isIpc ? "aeron:ipc" : "aeron:udp") +
+        final String channel = (isIpc ? IPC_CHANNEL : UDP_CHANNEL) +
             "?tags=" + logPublicationChannelTag + "|session-id=" + logSessionId + "|alias=log";
 
         leadershipTermId(leadershipTermId);

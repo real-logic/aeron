@@ -143,9 +143,14 @@ public class CommonContext implements Cloneable
     public static final String UDP_MEDIA = "udp";
 
     /**
-     * URI used for IPC {@link Publication}s and {@link Subscription}s
+     * URI base used for IPC channels for {@link Publication}s and {@link Subscription}s
      */
     public static final String IPC_CHANNEL = "aeron:ipc";
+
+    /**
+     * URI base used for UDP channels for {@link Publication}s and {@link Subscription}s
+     */
+    public static final String UDP_CHANNEL = "aeron:udp";
 
     /**
      * URI used for Spy {@link Subscription}s whereby an outgoing unicast or multicast publication can be spied on

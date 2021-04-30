@@ -848,6 +848,16 @@ public final class Archive implements AutoCloseable
                 throw new ConfigurationException("invalid fileIoMaxLength=" + fileIoMaxLength);
             }
 
+            if (!controlChannel.startsWith(CommonContext.UDP_CHANNEL))
+            {
+                throw new ConfigurationException("remote control channel must be UDP media: uri=" + controlChannel);
+            }
+
+            if (!localControlChannel.startsWith(CommonContext.IPC_CHANNEL))
+            {
+                throw new ConfigurationException("local control channel must be IPC media: uri=" + localControlChannel);
+            }
+
             if (null == archiveDir)
             {
                 archiveDir = new File(archiveDirectoryName);
@@ -860,8 +870,7 @@ public final class Archive implements AutoCloseable
 
             if (!archiveDir.exists() && !archiveDir.mkdirs())
             {
-                throw new ArchiveException(
-                    "failed to create archive dir: " + archiveDir.getAbsolutePath());
+                throw new ArchiveException("failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
             archiveDirChannel = channelForDirectorySync(archiveDir, catalogFileSyncLevel);

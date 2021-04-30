@@ -24,7 +24,6 @@
 
 extern "C"
 {
-#include "concurrent/aeron_thread.h"
 #include "aeron_system_counters.h"
 #include "command/aeron_control_protocol.h"
 #include "aeron_csv_table_name_resolver.h"
@@ -159,7 +158,7 @@ protected:
         int64_t currentErrorCount;
         do
         {
-            proc_yield();
+            std::this_thread::yield();
             AERON_GET_VOLATILE(currentErrorCount, *m_errorCounter);
         }
         while (currentErrorCount <= m_initialErrorCount);
@@ -229,7 +228,7 @@ TEST_F(CErrorsTest, shouldValidatePollType)
 
     while (1 != aeron_async_add_publication_poll(&pub, pub_async))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     aeron_publication_close(pub, NULL, NULL);
@@ -246,7 +245,7 @@ TEST_F(CErrorsTest, publicationErrorIncludesClientAndDriverErrorAndReportsInDist
     int result;
     while (0 == (result = aeron_async_add_publication_poll(&pub, pub_async)))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     ASSERT_EQ(-1, result);
@@ -274,7 +273,7 @@ TEST_F(CErrorsTest, exclusivePublicationErrorIncludesClientAndDriverErrorAndRepo
     int result;
     while (0 == (result = aeron_async_add_exclusive_publication_poll(&pub, pub_async)))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     ASSERT_EQ(-1, result);
@@ -303,7 +302,7 @@ TEST_F(CErrorsTest, subscriptionErrorIncludesClientAndDriverErrorAndReportsInDis
     int result;
     while (0 == (result = aeron_async_add_subscription_poll(&sub, sub_async)))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     ASSERT_EQ(-1, result) << aeron_errmsg();
@@ -335,7 +334,7 @@ TEST_F(CErrorsTest, counterErrorIncludesClientAndDriverErrorAndReportsInDistinct
             aeron_async_add_counter(&counter_async, aeron, 2002, (const uint8_t *)&key, sizeof(key), "label", 5));
         while (0 == (result = aeron_async_add_counter_poll(&counter, counter_async)))
         {
-            proc_yield();
+            std::this_thread::yield();
         }
 
         if (result < 0)
@@ -373,7 +372,7 @@ TEST_F(CErrorsTest, destinationErrorIncludesClientAndDriverErrorAndReportsInDist
     int result;
     while (0 == (result = aeron_async_add_exclusive_publication_poll(&pub, pub_async)))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     ASSERT_EQ(1, result) << aeron_errmsg();
@@ -383,7 +382,7 @@ TEST_F(CErrorsTest, destinationErrorIncludesClientAndDriverErrorAndReportsInDist
 
     while (0 == (result = aeron_exclusive_publication_async_destination_poll(dest_async)))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     ASSERT_EQ(-1, result);
@@ -413,7 +412,7 @@ TEST_F(CErrorsTest, shouldFailToResovleNameOnPublication)
     int result;
     while (0 == (result = aeron_async_add_publication_poll(&pub, pub_async)))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     ASSERT_EQ(-1, result);
@@ -442,7 +441,7 @@ TEST_F(CErrorsTest, shouldFailToResovleNameOnDestination)
     int result;
     while (0 == (result = aeron_async_add_exclusive_publication_poll(&pub, pub_async)))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     ASSERT_EQ(1, result) << aeron_errmsg();
@@ -452,7 +451,7 @@ TEST_F(CErrorsTest, shouldFailToResovleNameOnDestination)
 
     while (0 == (result = aeron_exclusive_publication_async_destination_poll(dest_async)))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     ASSERT_EQ(-1, result);
@@ -481,7 +480,7 @@ TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
     int result;
     while (0 == (result = aeron_async_add_publication_poll(&pub, pub_async)))
     {
-        proc_yield();
+        std::this_thread::yield();
     }
 
     ASSERT_EQ(1, result);

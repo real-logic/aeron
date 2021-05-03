@@ -1020,15 +1020,26 @@ public final class RecordingLog implements AutoCloseable
     {
         validateTermRecordingId(recordingId);
 
-        if (cacheIndexByLeadershipTermIdMap.containsKey(leadershipTermId))
-        {
-            throw new ClusterException("duplicate TERM entry for leadershipTermId=" + leadershipTermId);
-        }
+        long logPosition = NULL_POSITION;
 
-        final long previousLeadershipTermId = leadershipTermId - 1;
-        if (cacheIndexByLeadershipTermIdMap.containsKey(previousLeadershipTermId))
+        if (!entriesCache.isEmpty())
         {
-            commitLogPosition(previousLeadershipTermId, termBaseLogPosition);
+            if (cacheIndexByLeadershipTermIdMap.containsKey(leadershipTermId))
+            {
+                throw new ClusterException("duplicate TERM entry for leadershipTermId=" + leadershipTermId);
+            }
+
+            final long previousLeadershipTermId = leadershipTermId - 1;
+            if (cacheIndexByLeadershipTermIdMap.containsKey(previousLeadershipTermId))
+            {
+                commitLogPosition(previousLeadershipTermId, termBaseLogPosition);
+            }
+
+            final Entry nextTermEntry = findTermEntry(leadershipTermId + 1);
+            if (null != nextTermEntry)
+            {
+                logPosition = nextTermEntry.termBaseLogPosition;
+            }
         }
 
         final int index = append(
@@ -1036,7 +1047,7 @@ public final class RecordingLog implements AutoCloseable
             recordingId,
             leadershipTermId,
             termBaseLogPosition,
-            NULL_POSITION,
+            logPosition,
             timestamp,
             NULL_VALUE);
 

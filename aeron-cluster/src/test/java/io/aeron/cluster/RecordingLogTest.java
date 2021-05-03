@@ -482,7 +482,7 @@ public class RecordingLogTest
     {
         final List<RecordingLog.Entry> sortedEntries = asList(
             new RecordingLog.Entry(0, 0, 0, 700, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 0),
-            new RecordingLog.Entry(0, 1, 700, NULL_POSITION, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 3),
+            new RecordingLog.Entry(0, 1, 700, 2048, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 3),
             new RecordingLog.Entry(0, 2, 2048, 5000, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 1),
             new RecordingLog.Entry(0, 3, 5000, NULL_POSITION, 100, NULL_VALUE, ENTRY_TYPE_TERM, true, 2));
 

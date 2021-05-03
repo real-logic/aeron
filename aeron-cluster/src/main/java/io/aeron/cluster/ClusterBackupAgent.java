@@ -418,9 +418,7 @@ public final class ClusterBackupAgent implements Agent
 
             final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
 
-            if (null == lastTerm ||
-                lastLeadershipTermId != lastTerm.leadershipTermId ||
-                lastTermBaseLogPosition != lastTerm.termBaseLogPosition)
+            if (null == lastTerm || lastLeadershipTermId != lastTerm.leadershipTermId)
             {
                 leaderLastTermEntry = new RecordingLog.Entry(
                     logRecordingId,

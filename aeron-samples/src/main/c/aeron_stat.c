@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 
     int opt;
 
-    while ((opt = getopt(argc, argv, "p:u:t:h")) != -1)
+    while ((opt = getopt(argc, argv, "d:u:t:h")) != -1)
     {
         switch (opt)
         {

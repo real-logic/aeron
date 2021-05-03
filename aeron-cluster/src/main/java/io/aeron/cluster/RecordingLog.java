@@ -597,9 +597,9 @@ public final class RecordingLog implements AutoCloseable
     static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
     private static final Comparator<Entry> ENTRY_COMPARATOR =
-        comparingLong((Entry o) -> o.leadershipTermId)
-        .thenComparingInt((o) -> o.type)
-        .thenComparingLong((o) -> o.logPosition)
+        comparingLong((Entry e) -> e.leadershipTermId)
+        .thenComparingInt((e) -> e.type)
+        .thenComparingLong((e) -> e.logPosition)
         .thenComparing(Entry::serviceId, reverseOrder());
 
     private long termRecordingId = NULL_VALUE;
@@ -1115,6 +1115,7 @@ public final class RecordingLog implements AutoCloseable
      *
      * @param leadershipTermId to match for validation.
      * @param entryIndex       reached in the leadership term.
+     * @see #invalidateLatestSnapshot()
      */
     public void invalidateEntry(final long leadershipTermId, final int entryIndex)
     {

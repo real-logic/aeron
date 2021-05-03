@@ -1756,10 +1756,6 @@ final class ConsensusModuleAgent implements Agent
     Counter loadSnapshotsForDynamicJoin()
     {
         recoveryPlan = RecordingLog.createRecoveryPlan(dynamicJoinSnapshots);
-        if (null != recoveryPlan.log)
-        {
-            logRecordingId = recoveryPlan.log.recordingId;
-        }
 
         final Counter recoveryStateCounter = addRecoveryStateCounter(recoveryPlan);
         if (!recoveryPlan.snapshots.isEmpty())

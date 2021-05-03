@@ -319,6 +319,20 @@ public final class ClusterBackupAgent implements Agent
         recordingSubscription = null;
     }
 
+    private void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)
+    {
+        if (counterId == liveLogRecCounterId)
+        {
+            if (null != eventsListener)
+            {
+                eventsListener.onPossibleFailure(new ClusterException(
+                    "log recording counter unexpectedly unavailable", Category.WARN));
+            }
+
+            state(RESET_BACKUP, epochClock.time());
+        }
+    }
+
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -347,20 +361,6 @@ public final class ClusterBackupAgent implements Agent
                 backupResponseDecoder.commitPositionCounterId(),
                 backupResponseDecoder.leaderMemberId(),
                 backupResponseDecoder);
-        }
-    }
-
-    private void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)
-    {
-        if (counterId == liveLogRecCounterId)
-        {
-            if (null != eventsListener)
-            {
-                eventsListener.onPossibleFailure(new ClusterException(
-                    "log recording counter unexpectedly unavailable", Category.WARN));
-            }
-
-            state(RESET_BACKUP, epochClock.time());
         }
     }
 

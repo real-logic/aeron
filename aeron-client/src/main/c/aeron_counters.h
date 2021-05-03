@@ -60,6 +60,9 @@
 #define AERON_COUNTER_SND_LOCAL_SOCKADDR_NAME "snd-local-sockaddr"
 #define AERON_COUNTER_LOCAL_SOCKADDR_TYPE_ID (14)
 
+// AERON_EF_VI reserved range 50-74
+// AERON_DPDK reserved range 75-99
+
 // Archive counters
 
 #define AERON_COUNTER_ARCHIVE_RECORDING_POSITION_TYPE_ID (100);

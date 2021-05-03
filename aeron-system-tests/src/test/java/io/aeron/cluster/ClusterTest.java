@@ -34,6 +34,7 @@ import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static io.aeron.test.cluster.ClusterTests.*;
 import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
+import static io.aeron.test.cluster.TestCluster.startSingleNodeStaticCluster;
 import static io.aeron.test.cluster.TestCluster.startThreeNodeStaticCluster;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -1313,11 +1314,48 @@ public class ClusterTest
             cluster.terminationsExpected(true);
             cluster.stopAllNodes();
 
-            cluster.invalidateLatestSnapshots();
+            cluster.invalidateLatestSnapshot();
 
             cluster.restartAllNodes(false);
             cluster.awaitLeader();
             cluster.awaitServicesMessageCount(numMessages * 3);
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void shouldRecoverWhenLastSnapshotForShutdownIsMarkedInvalid(final TestInfo testInfo)
+    {
+        cluster = startSingleNodeStaticCluster();
+        try
+        {
+            TestNode leader = cluster.awaitLeader();
+
+            final int numMessages = 3;
+            cluster.connectClient();
+            cluster.sendMessages(numMessages);
+            cluster.awaitServicesMessageCount(numMessages);
+
+            cluster.stopNode(leader);
+            cluster.startStaticNode(leader.index(), false);
+            leader = cluster.awaitLeader();
+
+            cluster.terminationsExpected(true);
+            cluster.shutdownCluster(leader);
+            cluster.awaitNodeTerminations();
+            assertTrue(leader.service().wasSnapshotTaken());
+            cluster.stopNode(leader);
+
+            cluster.invalidateLatestSnapshot();
+
+            cluster.restartAllNodes(false);
+            leader = cluster.awaitLeader();
+            cluster.awaitServicesMessageCount(numMessages);
+            assertTrue(leader.service().wasSnapshotTaken());
         }
         catch (final Throwable ex)
         {
@@ -1411,7 +1449,7 @@ public class ClusterTest
             cluster.terminationsExpected(true);
             cluster.stopAllNodes();
 
-            cluster.invalidateLatestSnapshots();
+            cluster.invalidateLatestSnapshot();
 
             cluster.restartAllNodes(false);
             cluster.awaitLeader();
@@ -1474,8 +1512,8 @@ public class ClusterTest
             cluster.terminationsExpected(true);
             cluster.stopAllNodes();
 
-            cluster.invalidateLatestSnapshots();
-            cluster.invalidateLatestSnapshots();
+            cluster.invalidateLatestSnapshot();
+            cluster.invalidateLatestSnapshot();
 
             cluster.restartAllNodes(false);
             cluster.awaitLeader();

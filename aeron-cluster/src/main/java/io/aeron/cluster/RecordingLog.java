@@ -944,10 +944,9 @@ public final class RecordingLog implements AutoCloseable
             committedLogPosition = snapshot.logPosition;
         }
 
-        if (logRef.get() != null)
+        final Log log = logRef.get();
+        if (null != log)
         {
-            final Log log = logRef.get();
-
             lastLeadershipTermId = log.leadershipTermId;
             lastTermBaseLogPosition = log.termBaseLogPosition;
             appendedLogPosition = log.stopPosition;
@@ -960,7 +959,7 @@ public final class RecordingLog implements AutoCloseable
             appendedLogPosition,
             committedLogPosition,
             snapshots,
-            logRef.get());
+            log);
     }
 
     /**

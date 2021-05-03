@@ -1180,7 +1180,7 @@ public class TestCluster implements AutoCloseable
         return "localhost:2" + clusterId + "22" + maxMemberCount;
     }
 
-    public void invalidateLatestSnapshots()
+    public void invalidateLatestSnapshot()
     {
         for (final TestNode node : nodes)
         {

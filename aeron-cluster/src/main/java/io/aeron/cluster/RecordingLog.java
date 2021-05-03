@@ -41,6 +41,7 @@ import static io.aeron.driver.Configuration.FILE_PAGE_SIZE_DEFAULT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
 import static java.util.Comparator.comparingLong;
+import static java.util.Comparator.reverseOrder;
 import static org.agrona.BitUtil.*;
 
 /**
@@ -199,6 +200,11 @@ public final class RecordingLog implements AutoCloseable
                 type,
                 isValid,
                 entryIndex);
+        }
+
+        long serviceId()
+        {
+            return serviceId;
         }
 
         /**
@@ -593,7 +599,8 @@ public final class RecordingLog implements AutoCloseable
     private static final Comparator<Entry> ENTRY_COMPARATOR =
         comparingLong((Entry o) -> o.leadershipTermId)
         .thenComparingInt((o) -> o.type)
-        .thenComparingLong((o) -> o.logPosition);
+        .thenComparingLong((o) -> o.logPosition)
+        .thenComparing(Entry::serviceId, reverseOrder());
 
     private long termRecordingId = NULL_VALUE;
     private int nextEntryIndex;
@@ -854,6 +861,12 @@ public final class RecordingLog implements AutoCloseable
             final Entry entry = entriesCache.get(i);
             if (isValidSnapshot(entry) && ConsensusModule.Configuration.SERVICE_ID == entry.serviceId)
             {
+                if (!cacheIndexByLeadershipTermIdMap.containsKey(entry.leadershipTermId))
+                {
+                    throw new ClusterException(
+                        "no matching term for snapshot: leadershipTermId=" + entry.leadershipTermId);
+                }
+
                 index = i;
                 break;
             }
@@ -1007,45 +1020,15 @@ public final class RecordingLog implements AutoCloseable
     {
         validateTermRecordingId(recordingId);
 
-        final int size = entriesCache.size();
-        long logPosition = NULL_POSITION;
-
-        if (size > 0)
+        if (cacheIndexByLeadershipTermIdMap.containsKey(leadershipTermId))
         {
-            if (cacheIndexByLeadershipTermIdMap.containsKey(leadershipTermId))
-            {
-                throw new ClusterException("duplicate TERM entry for leadershipTermId=" + leadershipTermId);
-            }
+            throw new ClusterException("duplicate TERM entry for leadershipTermId=" + leadershipTermId);
+        }
 
-            for (int i = size - 1; i >= 0; i--)
-            {
-                final Entry entry = entriesCache.get(i);
-                if (leadershipTermId == entry.leadershipTermId)
-                {
-                    if (ENTRY_TYPE_SNAPSHOT == entry.type)
-                    {
-                        throw new ClusterException("TERM cannot be added for leadershipTermId=" + leadershipTermId +
-                            ", because a snapshot already exists");
-                    }
-                    break;
-                }
-                else if (entry.leadershipTermId < leadershipTermId)
-                {
-                    break;
-                }
-            }
-
-            final long previousLeadershipTermId = leadershipTermId - 1;
-            if (NULL_VALUE != cacheIndexByLeadershipTermIdMap.get(previousLeadershipTermId))
-            {
-                commitLogPosition(previousLeadershipTermId, termBaseLogPosition);
-            }
-
-            final Entry nextTermEntry = findTermEntry(leadershipTermId + 1);
-            if (null != nextTermEntry)
-            {
-                logPosition = nextTermEntry.termBaseLogPosition;
-            }
+        final long previousLeadershipTermId = leadershipTermId - 1;
+        if (cacheIndexByLeadershipTermIdMap.containsKey(previousLeadershipTermId))
+        {
+            commitLogPosition(previousLeadershipTermId, termBaseLogPosition);
         }
 
         final int index = append(
@@ -1053,7 +1036,7 @@ public final class RecordingLog implements AutoCloseable
             recordingId,
             leadershipTermId,
             termBaseLogPosition,
-            logPosition,
+            NULL_POSITION,
             timestamp,
             NULL_VALUE);
 
@@ -1117,7 +1100,8 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Invalidate an entry in the log so it is no longer valid.
+     * Invalidate an entry in the log so it is no longer valid. Be careful that the recording log is not left in an
+     * invalid state for recovery.
      *
      * @param leadershipTermId to match for validation.
      * @param entryIndex       reached in the leadership term.

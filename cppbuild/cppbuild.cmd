@@ -9,50 +9,35 @@ set "EXTRA_CMAKE_ARGS="
 set "AERON_SKIP_RMDIR="
 
 for %%o in (%*) do (
-
     if "%%o"=="--help" (
         echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--link-samples-client-shared] [--build-archive-api] [--skip-rmdir] [--slow-system-tests] [--no-system-tests] [--debug-build] [--help]
         exit /b
-    )
-
-    if "%%o"=="--c-warnings-as-errors" (
+    ) else if "%%o"=="--c-warnings-as-errors" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DC_WARNINGS_AS_ERRORS=ON"
-    )
-
-    if "%%o"=="--cxx-warnings-as-errors" (
+    ) else if "%%o"=="--cxx-warnings-as-errors" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCXX_WARNINGS_AS_ERRORS=ON"
-    )
-
-    if "%%o"=="--build-aeron-driver" (
+    ) else if "%%o"=="--build-aeron-driver" (
         echo "Enabling building of Aeron driver is the default"
-    )
-
-    if "%%o"=="--link-samples-client-shared" (
+    ) else if "%%o"=="--link-samples-client-shared" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DLINK_SAMPLES_CLIENT_SHARED=ON"
-    )
-
-    if "%%o"=="--build-archive-api" (
+    ) else if "%%o"=="--build-archive-api" (
         echo "Enabling building of Aeron Archive API is the default"
-    )
-
-    if "%%o"=="--skip-rmdir" (
+    ) else if "%%o"=="--skip-rmdir" (
         set "AERON_SKIP_RMDIR=yes"
-    )
-
-    if "%%o"=="--slow-system-tests" (
+    ) else if "%%o"=="--slow-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON"
         echo "Enabling slow system tests"
-    )
-
-    if "%%o"=="--no-system-tests" (
+    ) else if "%%o"=="--no-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SYSTEM_TESTS=OFF"
         echo "Disabling system tests"
-    )
-
-    if "%%o"=="--debug-build" (
+    ) else if "%%o"=="--debug-build" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCMAKE_BUILD_TYPE=Debug"
         set "BUILD_DIR=%DIR%\Debug"
         set "BUILD_CONFIG=Debug"
+    ) else (
+        echo "Unknown option %%o"
+        echo "Use --help for help"
+        exit /b 1
     )
 )
 

@@ -622,7 +622,7 @@ int aeron_receive_channel_endpoint_add_destination(
     aeron_receive_channel_endpoint_t *endpoint, aeron_receive_destination_t *destination)
 {
     int capacity_result = 0;
-    AERON_ARRAY_ENSURE_CAPACITY(capacity_result, endpoint->destinations, aeron_receive_channel_endpoint_t);
+    AERON_ARRAY_ENSURE_CAPACITY(capacity_result, endpoint->destinations, aeron_receive_channel_endpoint_t)
 
     if (capacity_result < 0)
     {

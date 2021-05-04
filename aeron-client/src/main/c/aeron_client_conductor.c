@@ -89,7 +89,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     if (NULL != context->on_available_counter)
     {
         int result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(result, conductor->available_counter_handlers, aeron_on_available_counter_pair_t);
+        AERON_ARRAY_ENSURE_CAPACITY(result, conductor->available_counter_handlers, aeron_on_available_counter_pair_t)
         if (result < 0)
         {
             AERON_APPEND_ERR("%s", "Unable to ensure capacity for available_counter_handlers");
@@ -111,7 +111,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     {
         int result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(
-            result, conductor->unavailable_counter_handlers, aeron_on_unavailable_counter_pair_t);
+            result, conductor->unavailable_counter_handlers, aeron_on_unavailable_counter_pair_t)
         if (result < 0)
         {
             AERON_APPEND_ERR("%s", "Unable to ensure capacity for unavailable_counter_handlers");
@@ -132,7 +132,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     if (NULL != context->on_close_client)
     {
         int result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(result, conductor->close_handlers, aeron_on_close_client_pair_t);
+        AERON_ARRAY_ENSURE_CAPACITY(result, conductor->close_handlers, aeron_on_close_client_pair_t)
         if (result < 0)
         {
             AERON_APPEND_ERR("%s", "Unable to ensure capacity for close_handlers");
@@ -699,7 +699,7 @@ int aeron_client_conductor_linger_image(aeron_client_conductor_t *conductor, aer
 {
     int ensure_capacity_result = 0;
 
-    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->lingering_resources, aeron_client_managed_resource_t);
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->lingering_resources, aeron_client_managed_resource_t)
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -811,7 +811,7 @@ void aeron_client_conductor_on_cmd_add_publication(void *clientd, void *item)
     aeron_mpsc_rb_commit(&conductor->to_driver_buffer, offset);
 
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t)
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -882,7 +882,7 @@ void aeron_client_conductor_on_cmd_add_exclusive_publication(void *clientd, void
     aeron_mpsc_rb_commit(&conductor->to_driver_buffer, offset);
 
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t)
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -953,7 +953,7 @@ void aeron_client_conductor_on_cmd_add_subscription(void *clientd, void *item)
     aeron_mpsc_rb_commit(&conductor->to_driver_buffer, offset);
 
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t)
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -1035,7 +1035,7 @@ void aeron_client_conductor_on_cmd_add_counter(void *clientd, void *item)
     aeron_mpsc_rb_commit(&conductor->to_driver_buffer, offset);
 
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t)
     if (ensure_capacity_result < 0)
     {
         char err_buffer[AERON_MAX_PATH];
@@ -1169,7 +1169,7 @@ void aeron_client_conductor_on_cmd_remove_rcv_destination(void *clientd, void *i
 #define AERON_ON_HANDLER_ADD(p, c, m, t) \
 { \
     int ensure_capacity_result = 0; \
-    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, c->m, t); \
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, c->m, t) \
     if (ensure_capacity_result < 0) \
     { \
         char err_buffer[AERON_MAX_PATH]; \

@@ -200,7 +200,7 @@ int aeron_udp_destination_tracker_add_destination(
 {
     int result = 0;
 
-    AERON_ARRAY_ENSURE_CAPACITY(result, tracker->destinations, aeron_udp_destination_entry_t);
+    AERON_ARRAY_ENSURE_CAPACITY(result, tracker->destinations, aeron_udp_destination_entry_t)
     if (result >= 0)
     {
         aeron_udp_destination_entry_t *entry = &tracker->destinations.array[tracker->destinations.length++];

@@ -717,7 +717,7 @@ int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int6
 int aeron_publication_image_add_destination(aeron_publication_image_t *image, aeron_receive_destination_t *destination)
 {
     int capacity_result = 0;
-    AERON_ARRAY_ENSURE_CAPACITY(capacity_result, image->connections, aeron_publication_image_connection_t);
+    AERON_ARRAY_ENSURE_CAPACITY(capacity_result, image->connections, aeron_publication_image_connection_t)
 
     if (capacity_result < 0)
     {

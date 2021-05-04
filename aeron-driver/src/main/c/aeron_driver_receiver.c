@@ -468,7 +468,7 @@ void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
 
     int ensure_capacity_result = 0;
-    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, receiver->images, aeron_driver_receiver_image_entry_t);
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, receiver->images, aeron_driver_receiver_image_entry_t)
 
     if (ensure_capacity_result < 0 || aeron_receive_channel_endpoint_on_add_publication_image(endpoint, cmd->image) < 0)
     {
@@ -551,7 +551,7 @@ int aeron_driver_receiver_add_pending_setup(
 {
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, receiver->pending_setups, aeron_driver_receiver_pending_setup_entry_t);
+        ensure_capacity_result, receiver->pending_setups, aeron_driver_receiver_pending_setup_entry_t)
 
     if (ensure_capacity_result < 0)
     {

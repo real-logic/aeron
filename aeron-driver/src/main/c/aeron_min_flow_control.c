@@ -153,7 +153,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
     {
         int ensure_capacity_result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(
-            ensure_capacity_result, strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t);
+            ensure_capacity_result, strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t)
 
         if (ensure_capacity_result >= 0)
         {

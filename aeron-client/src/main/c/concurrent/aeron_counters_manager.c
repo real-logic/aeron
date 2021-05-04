@@ -196,6 +196,7 @@ int32_t aeron_counters_manager_next_counter_id(aeron_counters_manager_t *manager
                 AERON_PUT_ORDERED(value->registration_id, AERON_COUNTER_REGISTRATION_ID_DEFAULT);
                 value->owner_id = AERON_COUNTER_OWNER_ID_DEFAULT;
                 AERON_PUT_ORDERED(value->counter_value, INT64_C(0));
+
                 return counter_id;
             }
         }
@@ -212,8 +213,18 @@ int32_t aeron_counters_manager_next_counter_id(aeron_counters_manager_t *manager
 
 int aeron_counters_manager_free(aeron_counters_manager_t *manager, int32_t counter_id)
 {
+    if (counter_id < 0 || counter_id > manager->max_counter_id)
+    {
+        return -1;
+    }
+
     aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)
         (manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
+
+    if (AERON_COUNTER_RECORD_ALLOCATED != metadata->state)
+    {
+        return -1;
+    }
 
     AERON_PUT_ORDERED(metadata->state, AERON_COUNTER_RECORD_RECLAIMED);
     memset(metadata->key, 0, sizeof(metadata->key));

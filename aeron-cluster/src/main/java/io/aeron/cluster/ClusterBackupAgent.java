@@ -153,7 +153,10 @@ public final class ClusterBackupAgent implements Agent
         backupArchive = AeronArchive.connect(ctx.archiveContext().clone());
         recordingSignalPoller = new RecordingSignalPoller(
             backupArchive.controlSessionId(), backupArchive.controlResponsePoller().subscription());
-        nextQueryDeadlineMsCounter.setOrdered(epochClock.time() - 1);
+
+        final long nowMs = epochClock.time();
+        nextQueryDeadlineMsCounter.setOrdered(nowMs - 1);
+        timeOfLastProgressMs = nowMs;
     }
 
     /**

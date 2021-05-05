@@ -204,11 +204,11 @@ public class TaggedFlowControlSystemTest
                 }
                 else
                 {
-                    Tests.yieldingWait(state::toString);
+                    Tests.yieldingIdle(state::toString);
                 }
             }
 
-            Tests.yieldingWait(state::toString);
+            Tests.yieldingIdle(state::toString);
 
             // A keeps up
             pollWithTimeout(subscriptionA, fragmentHandlerA, 10, state::toString);
@@ -269,7 +269,7 @@ public class TaggedFlowControlSystemTest
                 }
                 else
                 {
-                    Tests.yieldingWait("position: %d, state: %s", position, state);
+                    Tests.yieldingIdle("position: %d, state: %s", position, state);
                 }
             }
 
@@ -302,7 +302,7 @@ public class TaggedFlowControlSystemTest
         final int numFragments = subscription.poll(fragmentHandler, fragmentLimit);
         if (0 == numFragments)
         {
-            Tests.yieldingWait(message);
+            Tests.yieldingIdle(message);
         }
 
         return numFragments;

@@ -1192,7 +1192,7 @@ public class ClusterTest
 
             while (lateJoiningNode.service().messageCount() < messageCount * 3)
             {
-                Tests.yieldingWait("Waiting for late joining follower to catch up");
+                Tests.yieldingIdle("Waiting for late joining follower to catch up");
             }
         }
         catch (final Throwable ex)

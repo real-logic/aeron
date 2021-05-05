@@ -288,7 +288,7 @@ public class ReplayMergeTest
                     {
                         return false;
                     }
-                    Tests.yieldingWait(msgOne);
+                    Tests.yieldingIdle(msgOne);
                 }
             }
 
@@ -301,7 +301,7 @@ public class ReplayMergeTest
                     {
                         return false;
                     }
-                    Tests.yieldingWait(msgTwo);
+                    Tests.yieldingIdle(msgTwo);
                 }
             }
 
@@ -334,7 +334,7 @@ public class ReplayMergeTest
 
         do
         {
-            Tests.yieldingWait(msg);
+            Tests.yieldingIdle(msg);
 
             if (!RecordingPos.isActive(counters, counterId, recordingId))
             {

@@ -592,7 +592,7 @@ public class MultiDestinationSubscriptionTest
 
             while ((position.value = publicationB.offer(buffer, 0, buffer.capacity())) < 0L)
             {
-                Tests.yieldingWait(offerFailure);
+                Tests.yieldingIdle(offerFailure);
             }
 
             assertEquals(0, subscription.poll(fragmentHandler, 10));

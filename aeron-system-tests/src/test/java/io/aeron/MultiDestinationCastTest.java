@@ -369,7 +369,7 @@ public class MultiDestinationCastTest
             }
             else
             {
-                Tests.yieldingWait(positionSupplier);
+                Tests.yieldingIdle(positionSupplier);
             }
 
             subscriptionA.poll(fragmentHandlerA, FRAGMENT_LIMIT);
@@ -388,7 +388,7 @@ public class MultiDestinationCastTest
                 {
                     if (subscriptionA.poll(fragmentHandlerA, FRAGMENT_LIMIT) <= 0)
                     {
-                        Tests.yieldingWait(messageSupplierA);
+                        Tests.yieldingIdle(messageSupplierA);
                     }
                 }
 
@@ -402,13 +402,13 @@ public class MultiDestinationCastTest
             if (fragmentHandlerA.notDone(numMessagesToSend) &&
                 subscriptionA.poll(fragmentHandlerA, FRAGMENT_LIMIT) <= 0)
             {
-                Tests.yieldingWait(messageSupplierA);
+                Tests.yieldingIdle(messageSupplierA);
             }
 
             if (fragmentHandlerB.notDone(numMessageForSub2) &&
                 subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT) <= 0)
             {
-                Tests.yieldingWait(messageSupplierB);
+                Tests.yieldingIdle(messageSupplierB);
             }
         }
     }

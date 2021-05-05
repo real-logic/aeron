@@ -179,7 +179,7 @@ public class SessionSpecificPublicationTest
 
         while (publication1.offer(msg) < 0)
         {
-            Tests.yieldingWait("Failed to offer message");
+            Tests.yieldingIdle("Failed to offer message");
         }
 
         publication1.close();
@@ -195,13 +195,13 @@ public class SessionSpecificPublicationTest
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
         while (subscription.poll(fragmentHandler, 10) <= 0)
         {
-            Tests.yieldingWait("Failed to drain message");
+            Tests.yieldingIdle("Failed to drain message");
         }
         subscription.close();
 
         while (CountersReader.RECORD_ALLOCATED == aeron.countersReader().getCounterState(positionLimitId))
         {
-            Tests.yieldingWait("Publication never cleaned up");
+            Tests.yieldingIdle("Publication never cleaned up");
         }
 
         aeron.addPublication(channel, STREAM_ID);

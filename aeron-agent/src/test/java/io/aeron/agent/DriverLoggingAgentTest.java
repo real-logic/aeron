@@ -172,7 +172,7 @@ public class DriverLoggingAgentTest
             final Supplier<String> errorMessage = () -> "Pending events: " + WAIT_LIST;
             while (!WAIT_LIST.isEmpty())
             {
-                Tests.yieldingWait(errorMessage);
+                Tests.yieldingIdle(errorMessage);
             }
         }
     }

@@ -375,7 +375,7 @@ public class DriverNameResolverTest
 
         while (countersReader.getCounterValue(counterId) != expectedValue)
         {
-            Tests.wait(SLEEP_50_MS, messageSupplier);
+            Tests.idle(SLEEP_50_MS, messageSupplier);
             if (aeron.isClosed())
             {
                 fail(messageSupplier.get());

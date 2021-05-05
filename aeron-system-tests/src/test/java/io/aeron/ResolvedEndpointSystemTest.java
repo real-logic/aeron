@@ -85,7 +85,7 @@ public class ResolvedEndpointSystemTest
             String resolvedUri;
             while (null == (resolvedUri = sub.tryResolveChannelEndpointPort()))
             {
-                Tests.yieldingWait("No bind address/port for sub");
+                Tests.yieldingIdle("No bind address/port for sub");
             }
 
             assertThat(resolvedUri, startsWith("aeron:udp?endpoint=localhost:"));
@@ -94,12 +94,12 @@ public class ResolvedEndpointSystemTest
             {
                 while (pub.offer(buffer, 0, buffer.capacity()) < 0)
                 {
-                    Tests.yieldingWait("Failed to publish to pub");
+                    Tests.yieldingIdle("Failed to publish to pub");
                 }
 
                 while (sub.poll(fragmentHandler, 1) < 0)
                 {
-                    Tests.yieldingWait("Failed to receive from sub");
+                    Tests.yieldingIdle("Failed to receive from sub");
                 }
             }
         }
@@ -120,13 +120,13 @@ public class ResolvedEndpointSystemTest
             List<String> bindAddressAndPort1;
             while ((bindAddressAndPort1 = sub1.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for sub1");
+                Tests.yieldingIdle("No bind address/port for sub1");
             }
 
             List<String> bindAddressAndPort2;
             while ((bindAddressAndPort2 = sub2.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for sub2");
+                Tests.yieldingIdle("No bind address/port for sub2");
             }
 
             assertNotEquals(bindAddressAndPort1, bindAddressAndPort2);
@@ -134,7 +134,7 @@ public class ResolvedEndpointSystemTest
             List<String> bindAddressAndPort3;
             while ((bindAddressAndPort3 = sub3.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for sub3");
+                Tests.yieldingIdle("No bind address/port for sub3");
             }
 
             assertEquals(bindAddressAndPort3, bindAddressAndPort1);
@@ -145,12 +145,12 @@ public class ResolvedEndpointSystemTest
             {
                 while (pub.offer(buffer, 0, buffer.capacity()) < 0)
                 {
-                    Tests.yieldingWait("Failed to publish to pub");
+                    Tests.yieldingIdle("Failed to publish to pub");
                 }
 
                 while (sub1.poll(fragmentHandler, 1) < 0)
                 {
-                    Tests.yieldingWait("Failed to receive from sub1");
+                    Tests.yieldingIdle("Failed to receive from sub1");
                 }
             }
         }
@@ -171,13 +171,13 @@ public class ResolvedEndpointSystemTest
             List<String> bindAddressAndPort1;
             while ((bindAddressAndPort1 = sub1.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for sub1");
+                Tests.yieldingIdle("No bind address/port for sub1");
             }
 
             List<String> bindAddressAndPort2;
             while ((bindAddressAndPort2 = sub2.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for sub2");
+                Tests.yieldingIdle("No bind address/port for sub2");
             }
 
             assertEquals(bindAddressAndPort2, bindAddressAndPort1);
@@ -188,12 +188,12 @@ public class ResolvedEndpointSystemTest
             {
                 while (pub.offer(buffer, 0, buffer.capacity()) < 0)
                 {
-                    Tests.yieldingWait("Failed to publish to pub");
+                    Tests.yieldingIdle("Failed to publish to pub");
                 }
 
                 while (sub1.poll(fragmentHandler, 1) < 0)
                 {
-                    Tests.yieldingWait("Failed to receive from sub1");
+                    Tests.yieldingIdle("Failed to receive from sub1");
                 }
             }
         }
@@ -214,7 +214,7 @@ public class ResolvedEndpointSystemTest
             List<String> bindAddressAndPorts;
             while (2 > (bindAddressAndPorts = mdsSub.localSocketAddresses()).size())
             {
-                Tests.yieldingWait("Unable to get bind address/ports for mds subscription");
+                Tests.yieldingIdle("Unable to get bind address/ports for mds subscription");
             }
 
             final String pub1Uri = "aeron:udp?endpoint=" + bindAddressAndPorts.get(0);
@@ -225,18 +225,18 @@ public class ResolvedEndpointSystemTest
             {
                 while (pub1.offer(buffer, 0, buffer.capacity()) < 0)
                 {
-                    Tests.yieldingWait("Failed to publish to pub1");
+                    Tests.yieldingIdle("Failed to publish to pub1");
                 }
 
                 while (pub2.offer(buffer, 0, buffer.capacity()) < 0)
                 {
-                    Tests.yieldingWait("Failed to publish to pub2");
+                    Tests.yieldingIdle("Failed to publish to pub2");
                 }
 
                 long totalReceived = 0;
                 while ((totalReceived += mdsSub.poll(fragmentHandler, 10)) < 2)
                 {
-                    Tests.yieldingWait("Failed to receive from both publications");
+                    Tests.yieldingIdle("Failed to receive from both publications");
                 }
             }
         }
@@ -253,7 +253,7 @@ public class ResolvedEndpointSystemTest
             List<String> bindAddressAndPort1;
             while ((bindAddressAndPort1 = pub.localSocketAddresses()).isEmpty())
             {
-                Tests.yieldingWait("No bind address/port for pub");
+                Tests.yieldingIdle("No bind address/port for pub");
             }
 
             final String mdcSubUri = new ChannelUriStringBuilder()
@@ -266,12 +266,12 @@ public class ResolvedEndpointSystemTest
             {
                 while (pub.offer(buffer, 0, buffer.capacity()) < 0)
                 {
-                    Tests.yieldingWait("Failed to publish to pub");
+                    Tests.yieldingIdle("Failed to publish to pub");
                 }
 
                 while (sub.poll(fragmentHandler, 1) < 0)
                 {
-                    Tests.yieldingWait("Failed to receive from sub");
+                    Tests.yieldingIdle("Failed to receive from sub");
                 }
             }
         }

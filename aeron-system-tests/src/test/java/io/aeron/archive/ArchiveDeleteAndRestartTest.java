@@ -126,7 +126,7 @@ public class ArchiveDeleteAndRestartTest
         {
             while (recordedPublication1.offer(buffer, 0, 1024) < 0)
             {
-                Tests.yieldingWait("Failed to offer data");
+                Tests.yieldingIdle("Failed to offer data");
             }
         }
 
@@ -135,12 +135,12 @@ public class ArchiveDeleteAndRestartTest
 
         while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector) < 1)
         {
-            Tests.yieldingWait("Didn't find recording");
+            Tests.yieldingIdle("Didn't find recording");
         }
 
         while (position1 != aeronArchive.getRecordingPosition(collector.descriptors.get(0).recordingId))
         {
-            Tests.yieldingWait("Failed to record data");
+            Tests.yieldingIdle("Failed to record data");
         }
 
         recordedPublication1.close();
@@ -148,7 +148,7 @@ public class ArchiveDeleteAndRestartTest
 
         while (position1 != aeronArchive.getStopPosition(collector.descriptors.get(0).recordingId))
         {
-            Tests.yieldingWait("Failed to stop recording");
+            Tests.yieldingIdle("Failed to stop recording");
         }
 
         aeronArchive.close();
@@ -165,13 +165,13 @@ public class ArchiveDeleteAndRestartTest
         {
             while (recordedPublication2.offer(buffer, 0, 1024) < 0)
             {
-                Tests.yieldingWait("Failed to offer data");
+                Tests.yieldingIdle("Failed to offer data");
             }
         }
 
         while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector) < 1)
         {
-            Tests.yieldingWait("Didn't find recording");
+            Tests.yieldingIdle("Didn't find recording");
         }
 
         collector.descriptors.clear();

@@ -127,17 +127,17 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Tests.yieldingWait("No connect to first subscription");
+            Tests.yieldingIdle("No connect to first subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Tests.yieldingWait("No message offer to first subscription");
+            Tests.yieldingIdle("No message offer to first subscription");
         }
 
         while (subscription.poll(handler, 1) <= 0)
         {
-            Tests.yieldingWait("No message received on first subscription");
+            Tests.yieldingIdle("No message received on first subscription");
         }
 
         subscription.close();
@@ -152,17 +152,17 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Tests.yieldingWait("No connection to second subscription");
+            Tests.yieldingIdle("No connection to second subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Tests.yieldingWait("No message offer to second subscription");
+            Tests.yieldingIdle("No message offer to second subscription");
         }
 
         while (subscription.poll(handler, 1) <= 0)
         {
-            Tests.yieldingWait("No message received on second subscription");
+            Tests.yieldingIdle("No message received on second subscription");
         }
 
         Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
@@ -189,17 +189,17 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Tests.yieldingWait("No connect to first subscription");
+            Tests.yieldingIdle("No connect to first subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Tests.yieldingWait("No message offer to first subscription");
+            Tests.yieldingIdle("No message offer to first subscription");
         }
 
         while (subscription.poll(handler, 1) <= 0)
         {
-            Tests.yieldingWait("No message received on first subscription");
+            Tests.yieldingIdle("No message received on first subscription");
         }
 
         subscription.close();
@@ -214,17 +214,17 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Tests.yieldingWait("No connection to second subscription");
+            Tests.yieldingIdle("No connection to second subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Tests.yieldingWait("No message offer to second subscription");
+            Tests.yieldingIdle("No message offer to second subscription");
         }
 
         while (subscription.poll(handler, 1) <= 0)
         {
-            Tests.yieldingWait("No message received on second subscription");
+            Tests.yieldingIdle("No message received on second subscription");
         }
 
         Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
@@ -249,17 +249,17 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Tests.yieldingWait("No connect to first subscription");
+            Tests.yieldingIdle("No connect to first subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Tests.yieldingWait("No message offer to first subscription");
+            Tests.yieldingIdle("No message offer to first subscription");
         }
 
         while (subscription.poll(handler, 1) <= 0)
         {
-            Tests.yieldingWait("No message received on first subscription");
+            Tests.yieldingIdle("No message received on first subscription");
         }
 
         publication.close();
@@ -274,17 +274,17 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Tests.yieldingWait("No connection to second subscription");
+            Tests.yieldingIdle("No connection to second subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Tests.yieldingWait("No message offer to second subscription");
+            Tests.yieldingIdle("No message offer to second subscription");
         }
 
         while (subscription.poll(handler, 1) <= 0)
         {
-            Tests.yieldingWait("No message received on second subscription");
+            Tests.yieldingIdle("No message received on second subscription");
         }
 
         Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
@@ -311,17 +311,17 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Tests.yieldingWait("No connect to first subscription");
+            Tests.yieldingIdle("No connect to first subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Tests.yieldingWait("No message offer to first subscription");
+            Tests.yieldingIdle("No message offer to first subscription");
         }
 
         while (subscription.poll(handler, 1) <= 0)
         {
-            Tests.yieldingWait("No message received on first subscription");
+            Tests.yieldingIdle("No message received on first subscription");
         }
 
         publication.close();
@@ -336,17 +336,17 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Tests.yieldingWait("No connection to second subscription");
+            Tests.yieldingIdle("No connection to second subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Tests.yieldingWait("No message offer to second subscription");
+            Tests.yieldingIdle("No message offer to second subscription");
         }
 
         while (subscription.poll(handler, 1) <= 0)
         {
-            Tests.yieldingWait("No message received on second subscription");
+            Tests.yieldingIdle("No message received on second subscription");
         }
 
         Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
@@ -371,17 +371,17 @@ public class NameReResolutionTest
 
         while (!subscription.isConnected())
         {
-            Tests.yieldingWait("No connect to first subscription");
+            Tests.yieldingIdle("No connect to first subscription");
         }
 
         while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            Tests.yieldingWait("No message offer to first subscription");
+            Tests.yieldingIdle("No message offer to first subscription");
         }
 
         while (subscription.poll(handler, 1) <= 0)
         {
-            Tests.yieldingWait("No message received on first subscription");
+            Tests.yieldingIdle("No message received on first subscription");
         }
 
         subscription.close();

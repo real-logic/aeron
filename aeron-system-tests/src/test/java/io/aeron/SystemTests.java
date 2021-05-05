@@ -108,7 +108,7 @@ class SystemTests
                 errorConsumer.reset();
                 ErrorLogReader.read(errorLogBuffer, errorConsumer);
 
-                Tests.wait(retryIdle, errorConsumer::toString);
+                Tests.idle(retryIdle, errorConsumer::toString);
             }
         }
         finally

@@ -56,13 +56,28 @@ int functionC()
     return 0;
 }
 
+static std::string::size_type assert_substring(
+    const std::string value, const std::string token, const std::string::size_type index)
+{
+    auto new_index = value.find(token, index);
+    EXPECT_NE(new_index, std::string::npos);
+    return new_index;
+}
 
 TEST_F(ErrorTest, shouldStackErrors)
 {
     functionC();
 
-    printf("%s\n", aeron_errmsg());
-    fflush(stdout);
+    std::string err_msg = std::string(aeron_errmsg());
+
+    auto index = assert_substring(err_msg, "(-22) unknown error code", 0);
+    index = assert_substring(err_msg, "[functionA, aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "] this is the root error: 10", index);
+    index = assert_substring(err_msg, "[functionB, aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "] this is another error: 20", index);
+    index = assert_substring(err_msg, "[functionC, aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "] this got borked: 30", index);
+    EXPECT_LT(index, err_msg.length());
 }
 
 TEST_F(ErrorTest, shouldHandleErrorsOverflow)
@@ -74,14 +89,25 @@ TEST_F(ErrorTest, shouldHandleErrorsOverflow)
         AERON_APPEND_ERR("this is a nested error: %d", i);
     }
 
-    printf("%s\n", aeron_errmsg());
-    fflush(stdout);
+    std::string err_msg = std::string(aeron_errmsg());
+
+    auto index = assert_substring(err_msg, "(22) Invalid argument", 0);
+    index = assert_substring(err_msg, "[TestBody, aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "] this is the root error", index);
+    index = assert_substring(err_msg, "[TestBody, aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "] this is a nested error: 127", index);
+    index = assert_substring(err_msg, "[TestBody, aeron_error_...", index);
+    EXPECT_LT(index, err_msg.length());
 }
 
 TEST_F(ErrorTest, shouldReportZeroAsErrorForBackwardCompatibility)
 {
     AERON_SET_ERR(0, "%s", "this is the root error");
 
-    printf("%s\n", aeron_errmsg());
-    fflush(stdout);
+    std::string err_msg = std::string(aeron_errmsg());
+
+    auto index = assert_substring(err_msg, "(0) generic error, see message", 0);
+    index = assert_substring(err_msg, "[TestBody, aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "] this is the root error", index);
+    EXPECT_LT(index, err_msg.length());
 }

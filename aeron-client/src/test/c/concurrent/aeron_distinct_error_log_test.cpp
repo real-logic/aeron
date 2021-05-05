@@ -64,11 +64,10 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(buffer_t m_buffer, 16){};
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16) = {};
     aeron_distinct_error_log_t m_log = {};
     bool m_close_log = true;
     static std::atomic<int64_t> m_atomic_clock_value;
-
     static int64_t clock_value;
 };
 

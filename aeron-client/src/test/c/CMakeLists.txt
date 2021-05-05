@@ -43,7 +43,7 @@ aeron_c_client_test(broadcast_receiver_test concurrent/aeron_broadcast_receiver_
 aeron_c_client_test(broadcast_transmitter_test concurrent/aeron_broadcast_transmitter_test.cpp)
 
 aeron_c_client_test(distinct_error_log_test concurrent/aeron_distinct_error_log_test.cpp)
-set_tests_properties(distinct_error_log_test PROPERTIES TIMEOUT 15)
+set_tests_properties(distinct_error_log_test PROPERTIES TIMEOUT 30)
 set_tests_properties(distinct_error_log_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_c_client_test(spsc_concurrent_array_queue_test concurrent/aeron_spsc_concurrent_array_queue_test.cpp)

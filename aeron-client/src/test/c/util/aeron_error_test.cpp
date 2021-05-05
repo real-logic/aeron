@@ -101,6 +101,8 @@ TEST_F(ErrorTest, shouldHandleErrorsOverflow)
     std::string err_msg = std::string(aeron_errmsg());
 
     auto index = assert_substring(err_msg, "(22) Invalid argument", 0);
+    index = assert_substring(err_msg, "this is the root error", index);
+    index = assert_substring(err_msg, "this is a nested error:", index);
     index = assert_substring(err_msg, "...", index);
 
     EXPECT_LT(index, err_msg.length());

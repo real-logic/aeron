@@ -791,11 +791,6 @@ public final class Image
         finalPosition = subscriberPosition.getVolatile();
         isEos = finalPosition >= endOfStreamPosition(logBuffers.metaDataBuffer());
         isClosed = true;
-
-        for (final UnsafeBuffer buffer : termBuffers)
-        {
-            buffer.wrap(0, 0);
-        }
     }
 
     /**

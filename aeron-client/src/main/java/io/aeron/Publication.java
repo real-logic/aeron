@@ -615,10 +615,6 @@ public abstract class Publication implements AutoCloseable
     void internalClose()
     {
         isClosed = true;
-        for (final UnsafeBuffer buffer : termBuffers)
-        {
-            buffer.wrap(0, 0);
-        }
     }
 
     LogBuffers logBuffers()

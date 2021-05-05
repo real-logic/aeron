@@ -94,12 +94,7 @@ protected:
         aeron_system_counters_init(&resolver_fields->system_counters, &resolver_fields->counters);
 
         aeron_distinct_error_log_init(
-            &resolver_fields->error_log,
-            resolver_fields->error_log_buffer,
-            ERROR_LOG_LENGTH,
-            aeron_epoch_clock,
-            [](void *clientd, uint8_t *resource){},
-            nullptr);
+            &resolver_fields->error_log, resolver_fields->error_log_buffer, ERROR_LOG_LENGTH, aeron_epoch_clock);
 
         resolver_fields->context->counters_manager = &resolver_fields->counters;
         resolver_fields->context->system_counters = &resolver_fields->system_counters;

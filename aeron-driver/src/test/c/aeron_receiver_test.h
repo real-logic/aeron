@@ -42,10 +42,6 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 typedef std::array<std::uint8_t, CAPACITY> buffer_t;
 typedef std::array<std::uint8_t, 4 * CAPACITY> buffer_4x_t;
 
-void stub_linger(void *clientd, uint8_t *resource)
-{
-}
-
 void verify_conductor_cmd_function(void *clientd, void *item)
 {
     auto *cmd = (aeron_command_base_t *)item;
@@ -57,7 +53,6 @@ class ReceiverTestBase : public testing::Test
 {
 public:
     ReceiverTestBase() :
-        m_conductor_fail_counter(0),
         m_error_log_buffer(),
         m_counter_value_buffer(),
         m_counter_meta_buffer()
@@ -99,7 +94,7 @@ protected:
         aeron_system_counters_init(&m_system_counters, &m_counters_manager);
 
         aeron_distinct_error_log_init(
-            &m_error_log, m_error_log_buffer.data(), m_error_log_buffer.size(), aeron_epoch_clock, stub_linger, nullptr);
+            &m_error_log, m_error_log_buffer.data(), m_error_log_buffer.size(), aeron_epoch_clock);
         aeron_driver_receiver_init(&m_receiver, m_context, &m_system_counters, &m_error_log);
 
         m_receiver_proxy.receiver = &m_receiver;
@@ -263,17 +258,17 @@ protected:
     }
 
     aeron_clock_cache_t m_cached_clock = {};
-    aeron_udp_channel_transport_bindings_t m_transport_bindings;
+    aeron_udp_channel_transport_bindings_t m_transport_bindings = {};
     aeron_driver_context_t *m_context = nullptr;
-    aeron_counters_manager_t m_counters_manager;
-    aeron_system_counters_t m_system_counters;
-    aeron_name_resolver_t m_resolver;
-    aeron_driver_conductor_proxy_t m_conductor_proxy;
-    aeron_driver_receiver_proxy_t m_receiver_proxy;
-    aeron_mpsc_concurrent_array_queue_t m_conductor_command_queue;
-    int64_t m_conductor_fail_counter;
-    aeron_driver_receiver_t m_receiver;
-    aeron_distinct_error_log_t m_error_log;
+    aeron_counters_manager_t m_counters_manager = {};
+    aeron_system_counters_t m_system_counters = {};
+    aeron_name_resolver_t m_resolver = {};
+    aeron_driver_conductor_proxy_t m_conductor_proxy = {};
+    aeron_driver_receiver_proxy_t m_receiver_proxy = {};
+    aeron_mpsc_concurrent_array_queue_t m_conductor_command_queue = {};
+    int64_t m_conductor_fail_counter = 0;
+    aeron_driver_receiver_t m_receiver = {};
+    aeron_distinct_error_log_t m_error_log = {};
     AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16) = {};
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16) = {};
     AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16) = {};

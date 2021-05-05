@@ -28,21 +28,15 @@
 #include "aeron_distinct_error_log.h"
 
 int aeron_distinct_error_log_init(
-    aeron_distinct_error_log_t *log,
-    uint8_t *buffer,
-    size_t buffer_size,
-    aeron_clock_func_t clock,
-    aeron_resource_linger_func_t linger,
-    void *clientd)
+    aeron_distinct_error_log_t *log, uint8_t *buffer, size_t buffer_size, aeron_clock_func_t clock)
 {
-    if (NULL == log || NULL == clock || NULL == linger)
+    if (NULL == log || NULL == clock)
     {
         AERON_SET_ERR(
             EINVAL,
-            "Parameters can not be null, log: %s, clock: %s, linger: %s",
+            "Parameters can not be null, log: %s, clock: %s",
             NULL == log ? "NULL" : "OK",
-            NULL == clock ? "NULL" : "OK",
-            NULL == linger ? "NULL" : "OK");
+            NULL == clock ? "NULL" : "OK");
         return -1;
     }
 
@@ -55,8 +49,6 @@ int aeron_distinct_error_log_init(
     log->buffer = buffer;
     log->buffer_capacity = buffer_size;
     log->clock = clock;
-    log->linger_resource = linger;
-    log->linger_resource_clientd = clientd;
     log->next_offset = 0;
     log->observation_list->num_observations = 0;
     log->observation_list->observations = NULL;
@@ -119,10 +111,7 @@ static int aeron_distinct_error_log_observation_list_alloc(
 }
 
 static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
-    aeron_distinct_error_log_t *log,
-    int64_t timestamp,
-    int error_code,
-    const char *description)
+    aeron_distinct_error_log_t *log, int64_t timestamp, int error_code, const char *description)
 {
     aeron_distinct_error_log_observation_list_t *list = log->observation_list;
     size_t num_observations = (size_t)list->num_observations;
@@ -162,13 +151,9 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     }
 
     log->observation_list = new_list;
+    aeron_free(list);
 
     AERON_PUT_ORDERED(entry->length, (int32_t)length);
-
-    if (NULL != log->linger_resource)
-    {
-        log->linger_resource(log->linger_resource_clientd, (uint8_t *)list);
-    }
 
     return &new_array[0];
 }

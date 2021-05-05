@@ -39,8 +39,6 @@ aeron_error_log_entry_t;
 #define AERON_ERROR_LOG_HEADER_LENGTH (sizeof(aeron_error_log_entry_t))
 #define AERON_ERROR_LOG_RECORD_ALIGNMENT (sizeof(int64_t))
 
-typedef void (*aeron_resource_linger_func_t)(void *clientd, uint8_t *resource);
-
 typedef struct aeron_distinct_observation_stct
 {
     const char *description;
@@ -64,19 +62,12 @@ typedef struct aeron_distinct_error_log_stct
     size_t buffer_capacity;
     size_t next_offset;
     aeron_clock_func_t clock;
-    aeron_resource_linger_func_t linger_resource;
-    void *linger_resource_clientd;
     aeron_mutex_t mutex;
 }
 aeron_distinct_error_log_t;
 
 int aeron_distinct_error_log_init(
-    aeron_distinct_error_log_t *log,
-    uint8_t *buffer,
-    size_t buffer_size,
-    aeron_clock_func_t clock,
-    aeron_resource_linger_func_t linger,
-    void *clientd);
+    aeron_distinct_error_log_t *log, uint8_t *buffer, size_t buffer_size, aeron_clock_func_t clock);
 
 void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log);
 

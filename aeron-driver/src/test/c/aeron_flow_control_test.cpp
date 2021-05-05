@@ -35,11 +35,6 @@ static int64_t now()
     return 123123;
 }
 
-static void linger(void *clientd, uint8_t *resource)
-{
-    free(resource);
-}
-
 class FlowControlTest : public testing::Test
 {
 public:
@@ -131,7 +126,7 @@ protected:
     {
         m_channel = nullptr;
         m_strategy = nullptr;
-        aeron_distinct_error_log_init(&error_log, buffer.data(), buffer.size(), now, linger, nullptr);
+        aeron_distinct_error_log_init(&error_log, buffer.data(), buffer.size(), now);
         aeron_driver_context_init(&context);
         context->error_log = &error_log;
         context->multicast_flow_control_supplier_func = aeron_min_flow_control_strategy_supplier;

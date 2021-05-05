@@ -47,12 +47,6 @@ const char * const AERON_DRIVER_CONDUCTOR_INVALID_DESTINATION_KEYS[] =
     NULL
 };
 
-static void aeron_error_log_resource_linger(void *clientd, uint8_t *resource)
-{
-    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
-    aeron_driver_conductor_proxy_on_linger_buffer(conductor->context->conductor_proxy, resource);
-}
-
 static inline bool aeron_subscription_link_matches(
     const aeron_subscription_link_t *link,
     const aeron_receive_channel_endpoint_t *endpoint,
@@ -270,12 +264,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     }
 
     if (aeron_distinct_error_log_init(
-        &conductor->error_log,
-        context->error_buffer,
-        context->error_buffer_length,
-        context->epoch_clock,
-        aeron_error_log_resource_linger,
-        conductor) < 0)
+        &conductor->error_log, context->error_buffer, context->error_buffer_length, context->epoch_clock) < 0)
     {
         return -1;
     }
@@ -3796,7 +3785,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     }
 
     int ensure_capacity_result = 0;
-    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->publication_images, aeron_publication_image_entry_t);
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->publication_images, aeron_publication_image_entry_t)
     if (ensure_capacity_result < 0)
     {
         return;

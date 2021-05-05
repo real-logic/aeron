@@ -37,6 +37,7 @@ public:
     {
         m_buffer.fill(0);
         clock_value = 7;
+        m_atomic_clock_value = 1;
     }
 
     ~DistinctErrorLogTest() override
@@ -62,15 +63,22 @@ public:
         return clock_value;
     }
 
+    static int64_t atomic_clock()
+    {
+        return m_atomic_clock_value.fetch_add(1);
+    }
+
 protected:
     AERON_DECL_ALIGNED(buffer_t m_buffer, 16){};
     aeron_distinct_error_log_t m_log = {};
     bool m_close_log = true;
+    static std::atomic<int64_t> m_atomic_clock_value;
 
     static int64_t clock_value;
 };
 
 int64_t DistinctErrorLogTest::clock_value;
+std::atomic<int64_t> DistinctErrorLogTest::m_atomic_clock_value;
 
 TEST_F(DistinctErrorLogTest, shouldFailToRecordWhenInsufficientSpace)
 {
@@ -354,12 +362,20 @@ TEST_F(DistinctErrorLogTest, concurrentAppendDistinctMessages)
     for (int i = 0; i < ITERATIONS; i++)
     {
         m_buffer.fill(0);
-        ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource, nullptr), 0);
+        ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), atomic_clock, linger_resource, nullptr), 0);
         test_append_distinct_message(&m_log, &m_buffer);
 
         aeron_distinct_error_log_close(&m_log);
     }
 }
+
+typedef struct test_same_message_stct
+{
+    int32_t observation_count;
+    int64_t first_observation_timestamp;
+    int64_t last_observation_timestamp;
+}
+test_same_message_t;
 
 static void same_message_log_reader(
     int32_t observation_count,
@@ -370,8 +386,23 @@ static void same_message_log_reader(
     void *clientd)
 {
     ASSERT_GE(observation_count, 0);
-    auto count = (size_t *)clientd;
-    (*count) = observation_count;
+    auto msg = (test_same_message_t *)clientd;
+    msg->observation_count = observation_count;
+
+    if (0 != msg->first_observation_timestamp)
+    {
+        ASSERT_EQ(first_observation_timestamp, msg->first_observation_timestamp);
+    }
+    else
+    {
+        msg->first_observation_timestamp = first_observation_timestamp;
+    }
+
+    if (0 != msg->last_observation_timestamp)
+    {
+        ASSERT_GE(last_observation_timestamp, msg->last_observation_timestamp);
+    }
+    msg->last_observation_timestamp = last_observation_timestamp;
 }
 
 static void test_update_same_message(aeron_distinct_error_log_t *error_log, buffer_t *log_buffer)
@@ -404,10 +435,14 @@ static void test_update_same_message(aeron_distinct_error_log_t *error_log, buff
         thr.join();
     }
 
-    size_t count = 0;
+    test_same_message_t count = {};
+    count.first_observation_timestamp = 0;
+    count.last_observation_timestamp = 0;
+    count.observation_count = 0;
+
     size_t entries = aeron_error_log_read(log_buffer->data(), log_buffer->size(), same_message_log_reader, &count, 0);
     ASSERT_EQ(entries, (size_t)1) << "message appended multiple times";
-    ASSERT_EQ(count,  (size_t)(APPENDS_PER_THREAD * NUM_THREADS)) << "missing observations";
+    ASSERT_EQ(count.observation_count,  (APPENDS_PER_THREAD * NUM_THREADS)) << "missing observations";
 }
 
 TEST_F(DistinctErrorLogTest, concurrentAppendSameMessage)
@@ -416,7 +451,7 @@ TEST_F(DistinctErrorLogTest, concurrentAppendSameMessage)
     for (int i = 0; i < ITERATIONS; i++)
     {
         m_buffer.fill(0);
-        ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource, nullptr), 0);
+        ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), atomic_clock, linger_resource, nullptr), 0);
         test_update_same_message(&m_log, &m_buffer);
 
         aeron_distinct_error_log_close(&m_log);
@@ -489,7 +524,7 @@ TEST_F(DistinctErrorLogTest, concurrentAppendUniqueMessages)
     for (int i = 0; i < ITERATIONS; i++)
     {
         m_buffer.fill(0);
-        ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource, nullptr), 0);
+        ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), atomic_clock, linger_resource, nullptr), 0);
 
         test_append_unique_messages(&m_log, &m_buffer);
 

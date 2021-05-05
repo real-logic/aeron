@@ -187,17 +187,11 @@ int aeron_receive_channel_endpoint_close(aeron_receive_channel_endpoint_t *endpo
 
 int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr)
 {
-    if (AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE != endpoint->conductor_fields.status)
-    {
-        return 0;
-    }
-
     int min_bytes_sent = msghdr->msg_iov->iov_len;
 
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
         aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
-
         const int sendmsg_result = destination->data_paths->sendmsg_func(
             destination->data_paths, &destination->transport, msghdr);
 

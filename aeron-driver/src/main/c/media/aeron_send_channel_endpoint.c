@@ -222,11 +222,6 @@ int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct 
 {
     int result = 0;
 
-    if (AERON_SEND_CHANNEL_ENDPOINT_STATUS_ACTIVE != endpoint->conductor_fields.status)
-    {
-        return 0;
-    }
-
     if (NULL == endpoint->destination_tracker)
     {
         for (size_t i = 0; i < vlen; i++)
@@ -249,11 +244,6 @@ int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct 
 int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr)
 {
     int result;
-
-    if (AERON_SEND_CHANNEL_ENDPOINT_STATUS_ACTIVE != endpoint->conductor_fields.status)
-    {
-        return 0;
-    }
 
     if (NULL == endpoint->destination_tracker)
     {

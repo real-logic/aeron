@@ -288,7 +288,7 @@ TEST_F(DistinctErrorLogTest, shouldReadOneObservationSinceTimestamp)
 
 #define APPENDS_PER_THREAD (1000)
 #define NUM_THREADS (2)
-#define ITERATIONS (500)
+#define ITERATIONS (200)
 
 static void distinct_message_log_reader(
     int32_t observation_count,

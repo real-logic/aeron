@@ -64,7 +64,7 @@ public:
 
 protected:
     AERON_DECL_ALIGNED(buffer_t m_buffer, 16){};
-    aeron_distinct_error_log_t m_log{};
+    aeron_distinct_error_log_t m_log = {};
     bool m_close_log = true;
 
     static int64_t clock_value;
@@ -85,7 +85,7 @@ TEST_F(DistinctErrorLogTest, shouldRecordFirstObservation)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource, nullptr), 0);
 
-    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log.buffer);
+    auto *entry = (aeron_error_log_entry_t *)(m_log.buffer);
 
     EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description"), 0);
 
@@ -100,7 +100,7 @@ TEST_F(DistinctErrorLogTest, shouldSummariseObservations)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource, nullptr), 0);
 
-    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log.buffer);
+    auto *entry = (aeron_error_log_entry_t *)(m_log.buffer);
 
     EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description"), 0);
     clock_value++;
@@ -117,7 +117,7 @@ TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource, nullptr), 0);
 
-    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log.buffer);
+    auto *entry = (aeron_error_log_entry_t *)(m_log.buffer);
 
     EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1"), 0);
     clock_value++;
@@ -338,13 +338,13 @@ static void test_append_distinct_message(aeron_distinct_error_log_t *error_log, 
     std::vector<int> counts;
     counts.resize(NUM_THREADS, 0);
 
-    size_t entries =
-        aeron_error_log_read(log_buffer->data(), log_buffer->size(), distinct_message_log_reader, &counts, 0);
+    size_t entries = aeron_error_log_read(
+        log_buffer->data(), log_buffer->size(), distinct_message_log_reader, &counts, 0);
     ASSERT_EQ(entries, (size_t)NUM_THREADS) << "invalid number of messages";
 
     for (int count : counts)
     {
-        EXPECT_EQ(count, APPENDS_PER_THREAD) << "invalid number of obesrvation";
+        EXPECT_EQ(count, APPENDS_PER_THREAD) << "invalid number of observations";
     }
 }
 
@@ -405,8 +405,7 @@ static void test_update_same_message(aeron_distinct_error_log_t *error_log, buff
     }
 
     size_t count = 0;
-    size_t entries =
-        aeron_error_log_read(log_buffer->data(), log_buffer->size(), same_message_log_reader, &count, 0);
+    size_t entries = aeron_error_log_read(log_buffer->data(), log_buffer->size(), same_message_log_reader, &count, 0);
     ASSERT_EQ(entries, (size_t)1) << "message appended multiple times";
     ASSERT_EQ(count,  (size_t)(APPENDS_PER_THREAD * NUM_THREADS)) << "missing observations";
 }
@@ -474,8 +473,8 @@ static void test_append_unique_messages(aeron_distinct_error_log_t *error_log, b
     std::vector<int> counts;
     counts.resize(total_number_of_entries, 0);
 
-    size_t entries =
-        aeron_error_log_read(log_buffer->data(), log_buffer->size(), unique_message_log_reader, &counts, 0);
+    size_t entries = aeron_error_log_read(
+        log_buffer->data(), log_buffer->size(), unique_message_log_reader, &counts, 0);
     ASSERT_EQ(entries, total_number_of_entries);
 
     for (int count : counts)

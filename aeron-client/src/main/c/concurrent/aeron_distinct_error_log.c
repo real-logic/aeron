@@ -104,14 +104,14 @@ static int aeron_distinct_error_log_observation_list_alloc(
 {
     *list = NULL;
     size_t alloc_length =
-            sizeof(aeron_distinct_error_log_observation_list_t) +
-            ((size_t)num_observations * sizeof(aeron_distinct_observation_t));
+        sizeof(aeron_distinct_error_log_observation_list_t) +
+        ((size_t)num_observations * sizeof(aeron_distinct_observation_t));
 
     int result = aeron_alloc((void **)list, alloc_length);
     if (result >= 0)
     {
         (*list)->observations =
-                (aeron_distinct_observation_t *)((uint8_t *)*list + sizeof(aeron_distinct_error_log_observation_list_t));
+            (aeron_distinct_observation_t *)((uint8_t *)*list + sizeof(aeron_distinct_error_log_observation_list_t));
         (*list)->num_observations = num_observations;
     }
 
@@ -181,10 +181,9 @@ int aeron_distinct_error_log_record(aeron_distinct_error_log_t *log, int error_c
         return -1;
     }
 
-    int64_t timestamp = log->clock();
-
     aeron_mutex_lock(&log->mutex);
 
+    int64_t timestamp = log->clock();
     aeron_distinct_error_log_observation_list_t *list = log->observation_list;
     size_t num_observations = (size_t)list->num_observations;
     aeron_distinct_observation_t *observation = aeron_distinct_error_log_find_observation(
@@ -245,7 +244,6 @@ size_t aeron_error_log_read(
         int32_t length;
 
         AERON_GET_VOLATILE(length, entry->length);
-
         if (0 == length)
         {
             break;
@@ -281,5 +279,6 @@ size_t aeron_distinct_error_log_num_observations(aeron_distinct_error_log_t *log
     size_t result = (size_t)list->num_observations;
 
     aeron_mutex_unlock(&log->mutex);
+
     return result;
 }

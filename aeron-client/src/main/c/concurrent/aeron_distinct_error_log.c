@@ -67,7 +67,9 @@ int aeron_distinct_error_log_init(
 
 void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
 {
-    aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
+    aeron_mutex_lock(&log->mutex);
+
+    aeron_distinct_error_log_observation_list_t *list = log->observation_list;
     aeron_distinct_observation_t *observations = list->observations;
     size_t num_observations = (size_t)list->num_observations;
 
@@ -77,6 +79,8 @@ void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
     }
 
     aeron_free((void *)log->observation_list);
+
+    aeron_mutex_unlock(&log->mutex);
     aeron_mutex_destroy(&log->mutex);
 }
 
@@ -95,67 +99,78 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_find_observation(
     return NULL;
 }
 
+static int aeron_distinct_error_log_observation_list_alloc(
+    aeron_distinct_error_log_observation_list_t **list, uint64_t num_observations)
+{
+    *list = NULL;
+    size_t alloc_length =
+            sizeof(aeron_distinct_error_log_observation_list_t) +
+            ((size_t)num_observations * sizeof(aeron_distinct_observation_t));
+
+    int result = aeron_alloc((void **)list, alloc_length);
+    if (result >= 0)
+    {
+        (*list)->observations =
+                (aeron_distinct_observation_t *)((uint8_t *)*list + sizeof(aeron_distinct_error_log_observation_list_t));
+        (*list)->num_observations = num_observations;
+    }
+
+    return result;
+}
+
 static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     aeron_distinct_error_log_t *log,
-    size_t existing_num_observations,
     int64_t timestamp,
     int error_code,
     const char *description)
 {
-    aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
+    aeron_distinct_error_log_observation_list_t *list = log->observation_list;
     size_t num_observations = (size_t)list->num_observations;
     aeron_distinct_observation_t *observations = list->observations;
-    aeron_distinct_observation_t *observation = aeron_distinct_error_log_find_observation(
-        observations, existing_num_observations, error_code, description);
 
-    if (NULL == observation)
+    size_t description_length = strlen(description);
+    size_t length = AERON_ERROR_LOG_HEADER_LENGTH + description_length;
+    aeron_distinct_error_log_observation_list_t *new_list = NULL;
+    char *new_description = NULL;
+    size_t offset = log->next_offset;
+    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(log->buffer + offset);
+
+    if ((offset + length) > log->buffer_capacity ||
+        aeron_distinct_error_log_observation_list_alloc(&new_list, num_observations + 1) ||
+        aeron_alloc((void **)&new_description, description_length + 1) < 0)
     {
-        size_t description_length = strlen(description);
-        size_t length = AERON_ERROR_LOG_HEADER_LENGTH + description_length;
-        aeron_distinct_error_log_observation_list_t *new_list = NULL;
-        char *new_description = NULL;
-        size_t offset = log->next_offset;
-        aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(log->buffer + offset);
-
-        if ((offset + length) > log->buffer_capacity ||
-            aeron_distinct_error_log_observation_list_alloc(&new_list, num_observations + 1) ||
-            aeron_alloc((void **)&new_description, description_length + 1) < 0)
-        {
-            return NULL;
-        }
-
-        memcpy(log->buffer + offset + AERON_ERROR_LOG_HEADER_LENGTH, description, description_length);
-        entry->first_observation_timestamp = timestamp;
-        entry->observation_count = 0;
-
-        log->next_offset = AERON_ALIGN(offset + length, AERON_ERROR_LOG_RECORD_ALIGNMENT);
-
-        aeron_distinct_observation_t *new_array = new_list->observations;
-
-        new_array[0].error_code = error_code;
-        new_array[0].description = new_description;
-        strncpy(new_description, description, description_length + 1);
-        new_array[0].description_length = description_length;
-        new_array[0].offset = offset;
-
-        if (num_observations != 0)
-        {
-            memcpy(&new_array[1], observations, sizeof(aeron_distinct_observation_t) * num_observations);
-        }
-
-        aeron_distinct_error_log_observation_list_store(log, new_list);
-
-        AERON_PUT_ORDERED(entry->length, (int32_t)length);
-
-        observation = &new_array[0];
-
-        if (NULL != log->linger_resource)
-        {
-            log->linger_resource(log->linger_resource_clientd, (uint8_t *)list);
-        }
+        return NULL;
     }
 
-    return observation;
+    memcpy(log->buffer + offset + AERON_ERROR_LOG_HEADER_LENGTH, description, description_length);
+    entry->first_observation_timestamp = timestamp;
+    entry->observation_count = 0;
+
+    log->next_offset = AERON_ALIGN(offset + length, AERON_ERROR_LOG_RECORD_ALIGNMENT);
+
+    aeron_distinct_observation_t *new_array = new_list->observations;
+
+    new_array[0].error_code = error_code;
+    new_array[0].description = new_description;
+    strncpy(new_description, description, description_length + 1);
+    new_array[0].description_length = description_length;
+    new_array[0].offset = offset;
+
+    if (num_observations != 0)
+    {
+        memcpy(&new_array[1], observations, sizeof(aeron_distinct_observation_t) * num_observations);
+    }
+
+    log->observation_list = new_list;
+
+    AERON_PUT_ORDERED(entry->length, (int32_t)length);
+
+    if (NULL != log->linger_resource)
+    {
+        log->linger_resource(log->linger_resource_clientd, (uint8_t *)list);
+    }
+
+    return &new_array[0];
 }
 
 int aeron_distinct_error_log_record(aeron_distinct_error_log_t *log, int error_code, const char *description)
@@ -167,22 +182,22 @@ int aeron_distinct_error_log_record(aeron_distinct_error_log_t *log, int error_c
     }
 
     int64_t timestamp = log->clock();
-    aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
+
+    aeron_mutex_lock(&log->mutex);
+
+    aeron_distinct_error_log_observation_list_t *list = log->observation_list;
     size_t num_observations = (size_t)list->num_observations;
     aeron_distinct_observation_t *observation = aeron_distinct_error_log_find_observation(
         list->observations, num_observations, error_code, description);
 
     if (NULL == observation)
     {
-        aeron_mutex_lock(&log->mutex);
-
-        observation = aeron_distinct_error_log_new_observation(
-            log, num_observations, timestamp, error_code, description);
-
-        aeron_mutex_unlock(&log->mutex);
+        observation = aeron_distinct_error_log_new_observation(log, timestamp, error_code, description);
 
         if (NULL == observation)
         {
+            aeron_mutex_unlock(&log->mutex);
+
             char buffer[AERON_ERROR_MAX_TOTAL_LENGTH];
 
             aeron_format_date(buffer, sizeof(buffer), timestamp);
@@ -192,7 +207,10 @@ int aeron_distinct_error_log_record(aeron_distinct_error_log_t *log, int error_c
         }
     }
 
-    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(log->buffer + observation->offset);
+    size_t entry_offset = observation->offset;
+    aeron_mutex_unlock(&log->mutex);
+
+    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(log->buffer + entry_offset);
 
     int32_t dest;
     AERON_GET_AND_ADD_INT32(dest, entry->observation_count, 1);
@@ -257,15 +275,11 @@ size_t aeron_error_log_read(
 
 size_t aeron_distinct_error_log_num_observations(aeron_distinct_error_log_t *log)
 {
-    aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
-    return (size_t)list->num_observations;
+    aeron_mutex_lock(&log->mutex);
+
+    aeron_distinct_error_log_observation_list_t *list = log->observation_list;
+    size_t result = (size_t)list->num_observations;
+
+    aeron_mutex_unlock(&log->mutex);
+    return result;
 }
-
-extern int aeron_distinct_error_log_observation_list_alloc(
-    aeron_distinct_error_log_observation_list_t **list, uint64_t num_observations);
-
-extern aeron_distinct_error_log_observation_list_t *aeron_distinct_error_log_observation_list_load(
-    aeron_distinct_error_log_t *log);
-
-extern void aeron_distinct_error_log_observation_list_store(
-    aeron_distinct_error_log_t *log, aeron_distinct_error_log_observation_list_t *list);

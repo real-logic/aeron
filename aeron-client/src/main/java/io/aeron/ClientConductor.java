@@ -167,6 +167,9 @@ final class ClientConductor implements Agent
 
                 driverProxy.clientClose();
                 ctx.close();
+
+                ctx.countersMetaDataBuffer().wrap(0, 0);
+                ctx.countersValuesBuffer().wrap(0, 0);
             }
         }
         finally

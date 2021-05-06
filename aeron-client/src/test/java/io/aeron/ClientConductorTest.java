@@ -79,14 +79,15 @@ public class ClientConductorTest
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
 
-    private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
-    private final UnsafeBuffer subscriptionReadyBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
-    private final UnsafeBuffer operationSuccessBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
-    private final UnsafeBuffer errorMessageBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
-    private final UnsafeBuffer clientTimeoutBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
+    private final UnsafeBuffer subscriptionReadyBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
+    private final UnsafeBuffer operationSuccessBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
+    private final UnsafeBuffer errorMessageBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
+    private final UnsafeBuffer clientTimeoutBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
 
     private final CopyBroadcastReceiver mockToClientReceiver = mock(CopyBroadcastReceiver.class);
-    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(allocateDirect(COUNTER_BUFFER_LENGTH));
+    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(new byte[COUNTER_BUFFER_LENGTH]);
+    private final UnsafeBuffer counterMetaDataBuffer = new UnsafeBuffer(new byte[COUNTER_BUFFER_LENGTH]);
 
     private long timeMs = 0;
     private final EpochClock epochClock = () -> timeMs += 10;
@@ -125,6 +126,7 @@ public class ClientConductorTest
             .driverTimeoutMs(AWAIT_TIMEOUT)
             .interServiceTimeoutNs(TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS));
 
+        ctx.countersMetaDataBuffer(counterMetaDataBuffer);
         ctx.countersValuesBuffer(counterValuesBuffer);
 
         when(mockClientLock.tryLock()).thenReturn(TRUE);

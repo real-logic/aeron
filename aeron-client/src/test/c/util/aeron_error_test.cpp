@@ -122,7 +122,6 @@ TEST_F(ErrorTest, shouldReportZeroAsErrorForBackwardCompatibility)
     EXPECT_LT(index, err_msg.length());
 }
 
-/*
 #define CALLS_PER_THREAD (1000)
 #define NUM_THREADS (2)
 #define ITERATIONS (10)
@@ -144,26 +143,20 @@ static void test_concurrent_access()
                         std::this_thread::yield();
                     }
 
-                    const auto sleep_time = std::chrono::microseconds(thread_id);
                     const auto start("] [" + std::to_string(thread_id) + "] start");
-                    const auto before("] [" + std::to_string(thread_id) + "] before sleep:");
-                    const auto after("] [" + std::to_string(thread_id) + "] after sleep:");
+                    const auto end("] [" + std::to_string(thread_id) + "] end:");
                     for (int m = 0; m < CALLS_PER_THREAD; m++)
                     {
                         AERON_SET_ERR(0, "[%d] %s", thread_id, "start");
-                        AERON_APPEND_ERR("[%d] before sleep: %d", thread_id, m);
-                        std::this_thread::sleep_for(sleep_time);
-                        AERON_APPEND_ERR("[%d] after sleep: %d", thread_id, m);
+                        AERON_APPEND_ERR("[%d] end: %d", thread_id, m);
 
                         std::string err_msg = std::string(aeron_errmsg());
 
                         auto index = assert_substring(err_msg, "(0) generic error, see message", 0);
-                        index = assert_substring(err_msg, "[operator(), aeron_error_test.cpp:", index);
+                        index = assert_substring(err_msg, "[operator", index);
                         index = assert_substring(err_msg, start, index);
-                        index = assert_substring(err_msg, "[operator(), aeron_error_test.cpp:", index);
-                        index = assert_substring(err_msg, before, index);
-                        index = assert_substring(err_msg, "[operator(), aeron_error_test.cpp:", index);
-                        index = assert_substring(err_msg, after, index);
+                        index = assert_substring(err_msg, "[operator", index);
+                        index = assert_substring(err_msg, end, index);
                         EXPECT_LT(index, err_msg.length());
 
                         aeron_err_clear();
@@ -184,4 +177,3 @@ TEST_F(ErrorTest, shouldAllowConcurrentAccess)
         test_concurrent_access();
     }
 }
-*/

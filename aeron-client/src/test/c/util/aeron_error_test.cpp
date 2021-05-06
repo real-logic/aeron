@@ -122,6 +122,7 @@ TEST_F(ErrorTest, shouldReportZeroAsErrorForBackwardCompatibility)
     EXPECT_LT(index, err_msg.length());
 }
 
+/*
 #define CALLS_PER_THREAD (1000)
 #define NUM_THREADS (2)
 #define ITERATIONS (10)
@@ -176,7 +177,6 @@ static void test_concurrent_access()
     }
 }
 
-/*
 TEST_F(ErrorTest, shouldAllowConcurrentAccess)
 {
     for (int i = 0; i < ITERATIONS; i++)

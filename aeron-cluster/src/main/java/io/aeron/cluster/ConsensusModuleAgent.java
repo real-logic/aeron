@@ -1774,12 +1774,9 @@ final class ConsensusModuleAgent implements Agent
         {
             captureServiceClientIds();
             ++serviceAckId;
-
+            timeOfLastLogUpdateNs = nowNs;
             CloseHelper.close(ctx.countedErrorHandler(), recoveryStateCounter);
             state(ConsensusModule.State.ACTIVE);
-
-            timeOfLastLogUpdateNs = nowNs;
-            leadershipTermId(recoveryPlan.lastLeadershipTermId);
 
             return true;
         }

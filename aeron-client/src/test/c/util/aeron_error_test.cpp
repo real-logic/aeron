@@ -76,14 +76,11 @@ TEST_F(ErrorTest, shouldStackErrors)
     std::string err_msg = std::string(aeron_errmsg());
 
     auto index = assert_substring(err_msg, "(-22) unknown error code", 0);
-    index = assert_substring(err_msg, "[functionA,", index);
-    index = assert_substring(err_msg, "aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "[functionA, aeron_error_test.cpp:", index);
     index = assert_substring(err_msg, "] this is the root error: 10", index);
-    index = assert_substring(err_msg, "[functionB,", index);
-    index = assert_substring(err_msg, "aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "[functionB, aeron_error_test.cpp:", index);
     index = assert_substring(err_msg, "] this is another error: 20", index);
-    index = assert_substring(err_msg, "[functionC", index);
-    index = assert_substring(err_msg, "aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "[functionC, aeron_error_test.cpp:", index);
     index = assert_substring(err_msg, "] this got borked: 30", index);
 
     EXPECT_LT(index, err_msg.length());
@@ -101,9 +98,11 @@ TEST_F(ErrorTest, shouldHandleErrorsOverflow)
     std::string err_msg = std::string(aeron_errmsg());
 
     auto index = assert_substring(err_msg, "(22) Invalid argument", 0);
-    index = assert_substring(err_msg, "this is the root error", index);
-    index = assert_substring(err_msg, "this is a nested error:", index);
-    index = assert_substring(err_msg, "...", index);
+    index = assert_substring(err_msg, "[TestBody, aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "] this is the root error", index);
+    index = assert_substring(err_msg, "[TestBody, aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "] this is a nested error: ", index);
+    index = assert_substring(err_msg, "[TestBody, aeron_error_...", index);
 
     EXPECT_LT(index, err_msg.length());
 }
@@ -115,8 +114,7 @@ TEST_F(ErrorTest, shouldReportZeroAsErrorForBackwardCompatibility)
     std::string err_msg = std::string(aeron_errmsg());
 
     auto index = assert_substring(err_msg, "(0) generic error, see message", 0);
-    index = assert_substring(err_msg, "[TestBody,", index);
-    index = assert_substring(err_msg, "aeron_error_test.cpp:", index);
+    index = assert_substring(err_msg, "[TestBody, aeron_error_test.cpp:", index);
     index = assert_substring(err_msg, "] this is the root error", index);
 
     EXPECT_LT(index, err_msg.length());

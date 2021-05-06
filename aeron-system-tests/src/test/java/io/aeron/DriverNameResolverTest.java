@@ -310,7 +310,8 @@ public class DriverNameResolverTest
 
     private int awaitNeighborsCounterId(final String name)
     {
-        final AtomicBuffer metaDataBuffer = clients.get(name).countersReader().metaDataBuffer();
+        final Aeron aeron = clients.get(name);
+        final AtomicBuffer metaDataBuffer = aeron.countersReader().metaDataBuffer();
 
         while (true)
         {
@@ -334,12 +335,17 @@ public class DriverNameResolverTest
             }
 
             Tests.sleep(1);
+            if (aeron.isClosed())
+            {
+                fail("unexpected Aeron client close");
+            }
         }
     }
 
     private int awaitCacheEntriesCounterId(final String name)
     {
-        final AtomicBuffer metaDataBuffer = clients.get(name).countersReader().metaDataBuffer();
+        final Aeron aeron = clients.get(name);
+        final AtomicBuffer metaDataBuffer = aeron.countersReader().metaDataBuffer();
 
         while (true)
         {
@@ -363,6 +369,10 @@ public class DriverNameResolverTest
             }
 
             Tests.sleep(1);
+            if (aeron.isClosed())
+            {
+                fail("unexpected Aeron client close");
+            }
         }
     }
 

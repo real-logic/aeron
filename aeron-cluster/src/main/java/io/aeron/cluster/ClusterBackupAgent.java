@@ -540,6 +540,7 @@ public final class ClusterBackupAgent implements Agent
             CloseHelper.close(ctx.countedErrorHandler(), clusterArchive);
             clusterArchiveAsyncConnect = null;
             clusterArchive = null;
+            CloseHelper.close(ctx.countedErrorHandler(), consensusPublication);
 
             final ChannelUri uri = ChannelUri.parse(ctx.consensusChannel());
             uri.put(ENDPOINT_PARAM_NAME, clusterConsensusEndpoints[cursor]);

@@ -311,6 +311,15 @@ void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *command)
         }
     }
 
+    for (size_t i = 0, len = receiver->images.length; i < len; i++)
+    {
+        aeron_publication_image_t *image = receiver->images.array[i].image;
+        if (endpoint == image->endpoint)
+        {
+            aeron_publication_image_disconnect_endpoint(image);
+        }
+    }
+
     aeron_driver_conductor_proxy_on_receive_endpoint_removed(receiver->context->conductor_proxy, endpoint);
 }
 

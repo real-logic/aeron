@@ -15,6 +15,8 @@
  */
 
 #include <array>
+#include <atomic>
+#include <thread>
 #include <cstdint>
 
 #include <gtest/gtest.h>
@@ -118,4 +120,66 @@ TEST_F(ErrorTest, shouldReportZeroAsErrorForBackwardCompatibility)
     index = assert_substring(err_msg, "] this is the root error", index);
 
     EXPECT_LT(index, err_msg.length());
+}
+
+#define CALLS_PER_THREAD (1000)
+#define NUM_THREADS (2)
+#define ITERATIONS (10)
+
+static void test_concurrent_access()
+{
+    std::atomic<int> countDown(NUM_THREADS);
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < NUM_THREADS; i++)
+    {
+        threads.push_back(
+            std::thread(
+                [&]()
+                {
+                    const int thread_id = countDown.fetch_sub(1);
+                    while (countDown > 0)
+                    {
+                        std::this_thread::yield();
+                    }
+
+                    const auto sleep_time = std::chrono::microseconds(thread_id);
+                    const auto start("] [" + std::to_string(thread_id) + "] start");
+                    const auto before("] [" + std::to_string(thread_id) + "] before sleep:");
+                    const auto after("] [" + std::to_string(thread_id) + "] after sleep:");
+                    for (int m = 0; m < CALLS_PER_THREAD; m++)
+                    {
+                        AERON_SET_ERR(0, "[%d] %s", thread_id, "start");
+                        AERON_APPEND_ERR("[%d] before sleep: %d", thread_id, m);
+                        std::this_thread::sleep_for(sleep_time);
+                        AERON_APPEND_ERR("[%d] after sleep: %d", thread_id, m);
+
+                        std::string err_msg = std::string(aeron_errmsg());
+
+                        auto index = assert_substring(err_msg, "(0) generic error, see message", 0);
+                        index = assert_substring(err_msg, "[operator(), aeron_error_test.cpp:", index);
+                        index = assert_substring(err_msg, start, index);
+                        index = assert_substring(err_msg, "[operator(), aeron_error_test.cpp:", index);
+                        index = assert_substring(err_msg, before, index);
+                        index = assert_substring(err_msg, "[operator(), aeron_error_test.cpp:", index);
+                        index = assert_substring(err_msg, after, index);
+                        EXPECT_LT(index, err_msg.length());
+
+                        aeron_err_clear();
+                    }
+                }));
+    }
+
+    for (std::thread &thr: threads)
+    {
+        thr.join();
+    }
+}
+
+TEST_F(ErrorTest, shouldAllowConcurrentAccess)
+{
+    for (int i = 0; i < ITERATIONS; i++)
+    {
+        test_concurrent_access();
+    }
 }

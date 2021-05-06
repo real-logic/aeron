@@ -40,6 +40,9 @@ import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 public final class Receiver implements Agent
 {
     private static final PublicationImage[] EMPTY_IMAGES = new PublicationImage[0];
+
+    private final long reResolutionCheckIntervalNs;
+    private long reResolutionDeadlineNs;
     private final DataTransportPoller dataTransportPoller;
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
@@ -49,8 +52,6 @@ public final class Receiver implements Agent
     private PublicationImage[] publicationImages = EMPTY_IMAGES;
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
     private final DriverConductorProxy conductorProxy;
-    private final long reResolutionCheckIntervalNs;
-    private long reResolutionDeadlineNs;
 
     Receiver(final MediaDriver.Context ctx)
     {

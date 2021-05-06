@@ -98,9 +98,9 @@ public final class ClusterBackupAgent implements Agent
     private RecordingLog recordingLog;
     private RecordingLog.Entry leaderLogEntry;
     private RecordingLog.Entry leaderLastTermEntry;
-    private Subscription recordingSubscription = null;
-    private String replayChannel = null;
-    private String recordingChannel = null;
+    private Subscription recordingSubscription;
+    private String replayChannel;
+    private String recordingChannel;
 
     private long slowTickDeadlineMs = 0;
     private long markFileUpdateDeadlineMs = 0;
@@ -180,13 +180,23 @@ public final class ClusterBackupAgent implements Agent
 
             if (!ctx.ownsAeronClient())
             {
-                CloseHelper.closeAll(consensusSubscription, consensusPublication, recordingSubscription);
+                CloseHelper.closeAll(
+                    (ErrorHandler)ctx.countedErrorHandler(),
+                    consensusSubscription,
+                    consensusPublication,
+                    recordingSubscription);
             }
 
             state(CLOSED, epochClock.time());
         }
 
-        CloseHelper.closeAll(backupArchive, clusterArchiveAsyncConnect, clusterArchive, recordingLog);
+        CloseHelper.closeAll(
+            (ErrorHandler)ctx.countedErrorHandler(),
+            backupArchive,
+            clusterArchiveAsyncConnect,
+            clusterArchive,
+            recordingLog);
+
         markFile.updateActivityTimestamp(NULL_VALUE);
         ctx.close();
     }
@@ -526,9 +536,9 @@ public final class ClusterBackupAgent implements Agent
                 cursor = 0;
             }
 
-            CloseHelper.close(clusterArchiveAsyncConnect);
+            CloseHelper.close(ctx.countedErrorHandler(), clusterArchiveAsyncConnect);
+            CloseHelper.close(ctx.countedErrorHandler(), clusterArchive);
             clusterArchiveAsyncConnect = null;
-            CloseHelper.close(clusterArchive);
             clusterArchive = null;
 
             final ChannelUri uri = ChannelUri.parse(ctx.consensusChannel());

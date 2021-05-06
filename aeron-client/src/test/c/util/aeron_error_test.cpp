@@ -176,6 +176,7 @@ static void test_concurrent_access()
     }
 }
 
+/*
 TEST_F(ErrorTest, shouldAllowConcurrentAccess)
 {
     for (int i = 0; i < ITERATIONS; i++)
@@ -183,3 +184,4 @@ TEST_F(ErrorTest, shouldAllowConcurrentAccess)
         test_concurrent_access();
     }
 }
+*/

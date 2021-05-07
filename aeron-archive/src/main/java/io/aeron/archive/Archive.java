@@ -2245,7 +2245,7 @@ public final class Archive implements AutoCloseable
         {
             if (null == dataBuffer)
             {
-                dataBuffer = allocateBuffer();
+                dataBuffer = new UnsafeBuffer(allocateDirectAligned(fileIoMaxLength, CACHE_LINE_LENGTH));
             }
 
             return dataBuffer;
@@ -2266,7 +2266,7 @@ public final class Archive implements AutoCloseable
 
             if (null == replayBuffer)
             {
-                replayBuffer = allocateBuffer();
+                replayBuffer = new UnsafeBuffer(allocateDirectAligned(fileIoMaxLength, CACHE_LINE_LENGTH));
             }
 
             return replayBuffer;
@@ -2292,15 +2292,10 @@ public final class Archive implements AutoCloseable
 
             if (null == recordChecksumBuffer)
             {
-                recordChecksumBuffer = allocateBuffer();
+                recordChecksumBuffer = new UnsafeBuffer(allocateDirectAligned(fileIoMaxLength, CACHE_LINE_LENGTH));
             }
 
             return recordChecksumBuffer;
-        }
-
-        private UnsafeBuffer allocateBuffer()
-        {
-            return new UnsafeBuffer(allocateDirectAligned(fileIoMaxLength, CACHE_LINE_LENGTH));
         }
 
         /**

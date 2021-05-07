@@ -17,12 +17,14 @@
 #include <functional>
 
 #include <gtest/gtest.h>
+#include <aeron_driver_context.h>
 
 #include "aeron_test_base.h"
 
 extern "C"
 {
 #include "concurrent/aeron_atomic.h"
+#include "agent/aeron_driver_agent.h"
 }
 
 #define PUB_URI "aeron:udp?endpoint=localhost:24325"
@@ -49,6 +51,44 @@ TEST_P(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
 
     aeron_close(aeron);
     aeron_context_close(context);
+}
+
+TEST_P(CSystemTest, shouldReallocateBindingsClientd)
+{
+    aeron_driver_context_t *context;
+    aeron_driver_t *driver;
+    const char *name0 = "name0";
+    int val0 = 10;
+    const char *name1 = "name1";
+    int val1 = 11;
+
+    aeron_env_set("AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", "loss");
+
+    ASSERT_EQ(aeron_driver_context_init(&context), 0);
+
+    aeron_driver_context_set_dir_delete_on_start(context, true);
+
+    ASSERT_EQ(2U, context->num_bindings_clientd_entries);
+
+    context->bindings_clientd_entries[0].name = name0;
+    context->bindings_clientd_entries[0].clientd = &val0;
+    context->bindings_clientd_entries[1].name = name1;
+    context->bindings_clientd_entries[1].clientd = &val1;
+
+    aeron_driver_agent_logging_events_init("FRAME_IN", "");
+    aeron_driver_agent_init_logging_events_interceptors(context);
+
+    ASSERT_EQ(0, aeron_driver_init(&driver, context)) << aeron_errmsg();
+
+    ASSERT_EQ(3U, context->num_bindings_clientd_entries);
+
+    ASSERT_STREQ(name0, context->bindings_clientd_entries[0].name);
+    ASSERT_EQ((void *)&val0, context->bindings_clientd_entries[0].clientd);
+    ASSERT_STREQ(name1, context->bindings_clientd_entries[1].name);
+    ASSERT_EQ((void *)&val1, context->bindings_clientd_entries[1].clientd);
+
+    aeron_driver_close(driver);
+    aeron_driver_context_close(context);
 }
 
 TEST_P(CSystemTest, shouldAddAndClosePublication)

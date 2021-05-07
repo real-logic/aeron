@@ -1030,6 +1030,12 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
+    if (aeron_driver_context_bindings_clientd_create_entries(_context) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Failed to allocate bindings_clientd entries");
+        return -1;
+    }
+
     *context = _context;
     return 0;
 }
@@ -1063,19 +1069,39 @@ int aeron_driver_context_bindings_clientd_create_entries(aeron_driver_context_t 
         interceptor_bindings = interceptor_bindings->meta_info.next_interceptor_bindings;
     }
 
-    if (aeron_alloc((void **)&_entries, sizeof(aeron_driver_context_bindings_clientd_entry_t) * num_entries) < 0)
+    if (0 == context->num_bindings_clientd_entries)
     {
-        AERON_APPEND_ERR("%s", "could not allocate context_bindings_clientd_entries");
-        return -1;
+        if (aeron_alloc((void **)&_entries, sizeof(aeron_driver_context_bindings_clientd_entry_t) * num_entries) < 0)
+        {
+            AERON_APPEND_ERR("%s", "could not allocate context_bindings_clientd_entries");
+            return -1;
+        }
+
+        for (size_t i = 0; i < num_entries; i++)
+        {
+            _entries[i].name = NULL;
+            _entries[i].clientd = NULL;
+        }
+
+        context->bindings_clientd_entries = _entries;
+    }
+    else if (num_entries > context->num_bindings_clientd_entries)
+    {
+        if (aeron_reallocf(
+            (void **)&context->bindings_clientd_entries,
+            sizeof(aeron_driver_context_bindings_clientd_entry_t) * num_entries) < 0)
+        {
+            AERON_APPEND_ERR("%s", "could not reallocate context_bindings_clientd_entries");
+            return -1;
+        }
+
+        for (size_t i = context->num_bindings_clientd_entries; i < num_entries; i++)
+        {
+            context->bindings_clientd_entries[i].name = NULL;
+            context->bindings_clientd_entries[i].clientd = NULL;
+        }
     }
 
-    for (size_t i = 0; i < num_entries; i++)
-    {
-        _entries->name = NULL;
-        _entries->clientd = NULL;
-    }
-
-    context->bindings_clientd_entries = _entries;
     context->num_bindings_clientd_entries = num_entries;
 
     return 0;

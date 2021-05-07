@@ -2518,3 +2518,31 @@ int64_t aeron_driver_context_get_conductor_cycle_threshold_ns(aeron_driver_conte
     return NULL != context ?
         context->conductor_cycle_threshold_ns : AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_NS_DEFAULT;
 }
+
+int aeron_driver_context_bindings_clientd_find_first_free_index(aeron_driver_context_t *context)
+{
+    for (size_t i = 0; i < context->num_bindings_clientd_entries; i++)
+    {
+        if (NULL == context->bindings_clientd_entries[i].clientd)
+        {
+            return (int)i;
+        }
+    }
+
+    return -1;
+}
+
+int aeron_driver_context_bindings_clientd_find(aeron_driver_context_t *context, const char *name)
+{
+    for (size_t i = 0; i < context->num_bindings_clientd_entries; i++)
+    {
+        aeron_driver_context_bindings_clientd_entry_t *entry = &context->bindings_clientd_entries[i];
+
+        if (NULL != entry->name && 0 == strncmp(entry->name, name, strlen(name)))
+        {
+            return (int)i;
+        }
+    }
+
+    return -1;
+}

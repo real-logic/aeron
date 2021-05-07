@@ -18,8 +18,8 @@ package io.aeron.samples;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.exceptions.AeronException;
+import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
 import org.agrona.SemanticVersion;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -56,7 +56,7 @@ public final class CncFileReader implements AutoCloseable
         }
         catch (final AeronException e)
         {
-            IoUtil.unmap(cncByteBuffer);
+            BufferUtil.free(cncByteBuffer);
             throw e;
         }
 
@@ -145,7 +145,7 @@ public final class CncFileReader implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            IoUtil.unmap(cncByteBuffer);
+            BufferUtil.free(cncByteBuffer);
         }
     }
 }

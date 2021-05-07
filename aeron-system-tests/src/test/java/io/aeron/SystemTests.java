@@ -18,7 +18,7 @@ package io.aeron;
 import io.aeron.driver.reports.LossReportReader;
 import io.aeron.driver.reports.LossReportUtil;
 import io.aeron.test.Tests;
-import org.agrona.IoUtil;
+import org.agrona.BufferUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.ErrorConsumer;
 import org.agrona.concurrent.errors.ErrorLogReader;
@@ -69,7 +69,7 @@ class SystemTests
         }
         finally
         {
-            IoUtil.unmap(mappedByteBuffer);
+            BufferUtil.free(mappedByteBuffer);
         }
     }
 
@@ -113,7 +113,7 @@ class SystemTests
         }
         finally
         {
-            IoUtil.unmap(cncByteBuffer);
+            BufferUtil.free(cncByteBuffer);
         }
     }
 

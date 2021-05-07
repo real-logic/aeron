@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.SemanticVersion;
 import org.agrona.collections.MutableInteger;
@@ -263,7 +264,7 @@ class ArchiveMigration_2_3Test
             }
             finally
             {
-                IoUtil.unmap(mappedByteBuffer);
+                BufferUtil.free(mappedByteBuffer);
             }
         }
     }

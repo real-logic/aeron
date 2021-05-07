@@ -16,7 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.archive.client.ArchiveException;
-import org.agrona.IoUtil;
+import org.agrona.BufferUtil;
 import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
 import org.agrona.concurrent.EpochClock;
@@ -109,7 +109,7 @@ final class ArchiveMigrationUtils
             }
             finally
             {
-                IoUtil.unmap(mappedByteBuffer);
+                BufferUtil.free(mappedByteBuffer);
             }
         }
         catch (final IOException ex)
@@ -157,7 +157,7 @@ final class ArchiveMigrationUtils
             }
             finally
             {
-                IoUtil.unmap(mappedByteBuffer);
+                BufferUtil.free(mappedByteBuffer);
             }
         }
         catch (final IOException ex)

@@ -19,7 +19,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
-import org.agrona.IoUtil;
+import org.agrona.BufferUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -202,7 +202,7 @@ class RecordingReader implements AutoCloseable
     {
         final MappedByteBuffer mappedSegmentBuffer = this.mappedSegmentBuffer;
         this.mappedSegmentBuffer = null;
-        IoUtil.unmap(mappedSegmentBuffer);
+        BufferUtil.free(mappedSegmentBuffer);
     }
 
     private void openRecordingSegment()

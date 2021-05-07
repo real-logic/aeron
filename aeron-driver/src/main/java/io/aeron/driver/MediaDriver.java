@@ -363,7 +363,7 @@ public final class MediaDriver implements AutoCloseable
                 }
                 finally
                 {
-                    IoUtil.unmap(cncByteBuffer);
+                    BufferUtil.free(cncByteBuffer);
                 }
             }
 
@@ -563,10 +563,10 @@ public final class MediaDriver implements AutoCloseable
                     CloseHelper.quietClose((AutoCloseable)errorHandler);
                 }
 
-                IoUtil.unmap(lossReportBuffer);
+                BufferUtil.free(lossReportBuffer);
                 this.lossReportBuffer = null;
 
-                IoUtil.unmap(cncByteBuffer);
+                BufferUtil.free(cncByteBuffer);
                 this.cncByteBuffer = null;
 
                 if (dirDeleteOnShutdown)

@@ -1079,7 +1079,7 @@ final class Catalog implements AutoCloseable
     private void unmapAndCloseChannel()
     {
         final MappedByteBuffer buffer = this.catalogByteBuffer;
-        IoUtil.unmap(buffer);
+        BufferUtil.free(buffer);
         this.catalogByteBuffer = null;
         CloseHelper.close(catalogChannel);
     }

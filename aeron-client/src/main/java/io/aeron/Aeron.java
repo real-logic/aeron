@@ -1404,7 +1404,7 @@ public class Aeron implements AutoCloseable
          */
         public void close()
         {
-            IoUtil.unmap(cncByteBuffer);
+            BufferUtil.free(cncByteBuffer);
             this.cncByteBuffer = null;
             super.close();
         }
@@ -1439,7 +1439,7 @@ public class Aeron implements AutoCloseable
 
                 if (!CncFileDescriptor.isCncFileLengthSufficient(cncMetaDataBuffer, cncByteBuffer.capacity()))
                 {
-                    IoUtil.unmap(cncByteBuffer);
+                    BufferUtil.free(cncByteBuffer);
                     cncByteBuffer = null;
                     cncMetaDataBuffer = null;
 
@@ -1468,7 +1468,7 @@ public class Aeron implements AutoCloseable
                         throw new DriverTimeoutException("no driver heartbeat detected");
                     }
 
-                    IoUtil.unmap(cncByteBuffer);
+                    BufferUtil.free(cncByteBuffer);
                     cncByteBuffer = null;
                     cncMetaDataBuffer = null;
 

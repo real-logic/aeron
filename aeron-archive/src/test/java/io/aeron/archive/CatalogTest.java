@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.CatalogHeaderEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
@@ -923,7 +924,7 @@ class CatalogTest
             }
             finally
             {
-                IoUtil.unmap(mappedByteBuffer);
+                BufferUtil.free(mappedByteBuffer);
             }
         }
     }

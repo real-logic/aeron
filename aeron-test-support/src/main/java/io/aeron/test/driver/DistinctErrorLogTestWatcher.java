@@ -16,7 +16,7 @@
 package io.aeron.test.driver;
 
 import io.aeron.CommonContext;
-import org.agrona.IoUtil;
+import org.agrona.BufferUtil;
 import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.errors.ErrorLogReader;
@@ -94,7 +94,7 @@ public final class DistinctErrorLogTestWatcher implements TestWatcher
         }
         finally
         {
-            IoUtil.unmap(cncByteBuffer);
+            BufferUtil.free(cncByteBuffer);
         }
     }
 }

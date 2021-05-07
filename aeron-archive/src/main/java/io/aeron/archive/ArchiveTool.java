@@ -761,7 +761,7 @@ public class ArchiveTool
                 }
                 finally
                 {
-                    IoUtil.unmap(mappedByteBuffer);
+                    BufferUtil.free(mappedByteBuffer);
                 }
             }
 

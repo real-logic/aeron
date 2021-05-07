@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.DriverTimeoutException;
+import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
@@ -664,7 +665,7 @@ public class CommonContext implements Cloneable
             }
             finally
             {
-                IoUtil.unmap(cncByteBuffer);
+                BufferUtil.free(cncByteBuffer);
             }
         }
 
@@ -687,7 +688,7 @@ public class CommonContext implements Cloneable
         }
         finally
         {
-            IoUtil.unmap(cncByteBuffer);
+            BufferUtil.free(cncByteBuffer);
         }
     }
 
@@ -772,7 +773,7 @@ public class CommonContext implements Cloneable
             }
             finally
             {
-                IoUtil.unmap(cncByteBuffer);
+                BufferUtil.free(cncByteBuffer);
             }
         }
 
@@ -794,7 +795,7 @@ public class CommonContext implements Cloneable
         }
         finally
         {
-            IoUtil.unmap(cncByteBuffer);
+            BufferUtil.free(cncByteBuffer);
         }
     }
 

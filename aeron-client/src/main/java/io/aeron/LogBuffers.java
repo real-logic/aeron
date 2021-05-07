@@ -16,8 +16,8 @@
 package io.aeron;
 
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -228,7 +228,7 @@ public final class LogBuffers implements AutoCloseable
         {
             final MappedByteBuffer mappedByteBuffer = mappedByteBuffers[i];
             mappedByteBuffers[i] = null;
-            IoUtil.unmap(mappedByteBuffer);
+            BufferUtil.free(mappedByteBuffer);
         }
 
         logMetaDataBuffer.wrap(0, 0);

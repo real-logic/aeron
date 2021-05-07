@@ -15,10 +15,7 @@
  */
 package io.aeron.archive;
 
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
-import org.agrona.SemanticVersion;
+import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -79,7 +76,7 @@ class ArchiveMigration_2_3 implements ArchiveMigrationStep
                 }
                 finally
                 {
-                    IoUtil.unmap(mappedByteBuffer);
+                    BufferUtil.free(mappedByteBuffer);
                 }
                 channel.truncate(offset); // trim file to actual length used
             }

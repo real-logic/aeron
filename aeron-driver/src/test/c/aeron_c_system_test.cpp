@@ -17,7 +17,6 @@
 #include <functional>
 
 #include <gtest/gtest.h>
-#include <aeron_driver_context.h>
 
 #include "aeron_test_base.h"
 
@@ -25,6 +24,7 @@ extern "C"
 {
 #include "concurrent/aeron_atomic.h"
 #include "agent/aeron_driver_agent.h"
+#include "aeron_driver_context.h"
 }
 
 #define PUB_URI "aeron:udp?endpoint=localhost:24325"
@@ -57,16 +57,20 @@ TEST_P(CSystemTest, shouldReallocateBindingsClientd)
 {
     aeron_driver_context_t *context;
     aeron_driver_t *driver;
+    char aeron_dir[AERON_MAX_PATH];
     const char *name0 = "name0";
     int val0 = 10;
     const char *name1 = "name1";
     int val1 = 11;
 
+    aeron_temp_filename(aeron_dir, AERON_MAX_PATH - 1);
+
     aeron_env_set("AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", "loss");
 
     ASSERT_EQ(aeron_driver_context_init(&context), 0);
 
-    aeron_driver_context_set_dir_delete_on_start(context, true);
+    aeron_driver_context_set_dir(context, aeron_dir);
+    aeron_driver_context_set_dir_delete_on_shutdown(context, true);
 
     ASSERT_EQ(2U, context->num_bindings_clientd_entries);
 

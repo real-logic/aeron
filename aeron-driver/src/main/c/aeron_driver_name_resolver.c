@@ -221,7 +221,7 @@ int aeron_driver_name_resolver_init(
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_CONDUCTOR) < 0)
     {
         AERON_APPEND_ERR(
-            "resolver, name: %s, interface_name: %s, bootstrap_neighbor: %s",
+            "resolver, name=%s interface_name=%s bootstrap_neighbor=%s",
             name,
             interface_name,
             bootstrap_neighbor);
@@ -418,7 +418,7 @@ static int aeron_driver_name_resolver_add_neighbor(
         if (ensure_capacity_result < 0)
         {
             AERON_APPEND_ERR(
-                "Failed to allocate rows for neighbors table (%" PRIu64 ",%" PRIu64 ")",
+                "Failed to allocate rows for neighbors table (%" PRIu64 ", %" PRIu64 ")",
                 (uint64_t)resolver->neighbors.length,
                 (uint64_t)resolver->neighbors.capacity);
 
@@ -883,7 +883,7 @@ static int aeron_driver_name_resolver_timeout_neighbors(aeron_driver_name_resolv
 
     if (0 != num_removed)
     {
-        aeron_counter_set_ordered(resolver->neighbor_counter.value_addr, resolver->neighbors.length);
+        aeron_counter_set_ordered(resolver->neighbor_counter.value_addr, (int64_t)resolver->neighbors.length);
     }
 
     return num_removed;

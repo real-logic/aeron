@@ -1386,13 +1386,13 @@ public final class DriverConductor implements Agent
                 {
                     if (params.isReliable != subscription.isReliable())
                     {
-                        throw new IllegalStateException(
+                        throw new InvalidChannelException(
                             "option conflicts with existing subscriptions: reliable=" + params.isReliable);
                     }
 
                     if (params.isRejoin != subscription.isRejoin())
                     {
-                        throw new IllegalStateException(
+                        throw new InvalidChannelException(
                             "option conflicts with existing subscriptions: rejoin=" + params.isRejoin);
                     }
                 }
@@ -1739,7 +1739,7 @@ public final class DriverConductor implements Agent
     {
         if (activeSessionSet.contains(new SessionKey(sessionId, streamId, channel)))
         {
-            throw new IllegalStateException("existing publication has clashing sessionId=" + sessionId +
+            throw new InvalidChannelException("existing publication has clashing sessionId=" + sessionId +
                 " for streamId=" + streamId + " channel=" + channel);
         }
     }

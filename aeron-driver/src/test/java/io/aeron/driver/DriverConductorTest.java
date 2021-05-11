@@ -1515,7 +1515,7 @@ public class DriverConductorTest
         final long correlationId = driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
         driverConductor.doWork();
 
-        verify(mockClientProxy).onError(eq(correlationId), eq(GENERIC_ERROR), anyString());
+        verify(mockClientProxy).onError(eq(correlationId), eq(INVALID_CHANNEL), anyString());
         verify(mockErrorCounter).increment();
         verify(mockErrorHandler).onError(any(Throwable.class));
     }

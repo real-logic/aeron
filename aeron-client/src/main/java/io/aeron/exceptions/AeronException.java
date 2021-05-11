@@ -53,7 +53,6 @@ public class AeronException extends RuntimeException
      */
     public AeronException()
     {
-        super(Category.ERROR.name());
         this.category = Category.ERROR;
     }
 
@@ -64,7 +63,6 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final Category category)
     {
-        super(category.name());
         this.category = category;
     }
 
@@ -86,7 +84,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final Throwable cause)
     {
-        super(Category.ERROR.name(), cause);
+        super(cause);
         this.category = Category.ERROR;
     }
 
@@ -122,7 +120,7 @@ public class AeronException extends RuntimeException
      */
     public AeronException(final Throwable cause, final Category category)
     {
-        super(category.name(), cause);
+        super(cause);
         this.category = category;
     }
 

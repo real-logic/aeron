@@ -98,17 +98,12 @@ public class RegistrationException extends AeronException
 
             if (i < length)
             {
-                if (msg.startsWith(Category.FATAL.name()) && 6 == i)
+                if (6 == i && (msg.startsWith("ERROR - ") || msg.startsWith("FATAL - ")))
                 {
                     return msg.substring(i + 2);
                 }
 
-                if (msg.startsWith(Category.ERROR.name()) && 6 == i)
-                {
-                    return msg.substring(i + 2);
-                }
-
-                if (msg.startsWith(Category.WARN.name()) && 5 == i)
+                if (5 == i && msg.startsWith("WARN - "))
                 {
                     return msg.substring(i + 2);
                 }

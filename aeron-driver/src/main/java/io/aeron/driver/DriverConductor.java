@@ -1387,13 +1387,13 @@ public final class DriverConductor implements Agent
                     if (params.isReliable != subscription.isReliable())
                     {
                         throw new InvalidChannelException(
-                            "option conflicts with existing subscriptions: reliable=" + params.isReliable);
+                            "option conflicts with existing subscription: reliable=" + params.isReliable);
                     }
 
                     if (params.isRejoin != subscription.isRejoin())
                     {
                         throw new InvalidChannelException(
-                            "option conflicts with existing subscriptions: rejoin=" + params.isRejoin);
+                            "option conflicts with existing subscription: rejoin=" + params.isRejoin);
                     }
                 }
             }
@@ -1896,8 +1896,7 @@ public final class DriverConductor implements Agent
             final String existingValue = 0 == endpointLength ? "OS default" : Integer.toString(endpointLength);
 
             throw new InvalidChannelException(
-                "'" + paramName + "=" + channelLength +
-                "' is invalid, endpoint already uses " + existingValue);
+                paramName + "=" + channelLength + " is invalid, endpoint already uses " + existingValue);
         }
     }
 

@@ -132,14 +132,14 @@ static bool aeron_driver_conductor_has_clashing_subscription(
             if (params->is_reliable != link->is_reliable)
             {
                 const char *value = params->is_reliable ? "true" : "false";
-                AERON_SET_ERR(EINVAL, "option conflicts with existing subscriptions: reliable=%s", value);
+                AERON_SET_ERR(EINVAL, "option conflicts with existing subscription: reliable=%s", value);
                 return true;
             }
 
             if (params->is_rejoin != link->is_rejoin)
             {
                 const char *value = params->is_rejoin ? "true" : "false";
-                AERON_SET_ERR(EINVAL, "option conflicts with existing subscriptions: rejoin=%s", value);
+                AERON_SET_ERR(EINVAL, "option conflicts with existing subscription: rejoin=%s", value);
                 return true;
             }
         }
@@ -1189,7 +1189,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     {
         AERON_SET_ERR(
             EINVAL,
-            "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
+            "Specified session-id is already in exclusive use for channel=%.*s stream-id=%" PRId32,
             (int)uri_length, uri, stream_id);
 
         return NULL;
@@ -1355,7 +1355,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     {
         AERON_SET_ERR(
             EINVAL,
-            "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
+            "Specified session-id is already in exclusive use for channel=%.*s stream-id=%" PRId32,
             (int)uri_length, uri, stream_id);
 
         return NULL;
@@ -2915,7 +2915,7 @@ int aeron_driver_conductor_on_remove_publication(aeron_driver_conductor_t *condu
 
     AERON_SET_ERR(
         -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
-        "unknown publication client_id=%" PRId64 ", registration_id=%" PRId64,
+        "unknown publication client_id=%" PRId64 " registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
 
@@ -3303,7 +3303,7 @@ int aeron_driver_conductor_on_remove_subscription(
 
     AERON_SET_ERR(
         -AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION,
-        "unknown subscription client_id=%" PRId64 ", registration_id=%" PRId64,
+        "unknown subscription client_id=%" PRId64 " registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
 
@@ -3717,7 +3717,7 @@ int aeron_driver_conductor_on_remove_counter(aeron_driver_conductor_t *conductor
 
     AERON_SET_ERR(
         -AERON_ERROR_CODE_UNKNOWN_COUNTER,
-        "unknown counter client_id=%" PRId64 ", registration_id=%" PRId64,
+        "unknown counter client_id=%" PRId64 " registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
 

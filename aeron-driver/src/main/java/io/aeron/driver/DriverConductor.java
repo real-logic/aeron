@@ -1889,9 +1889,7 @@ public final class DriverConductor implements Agent
     }
 
     private static void validateChannelBufferLength(
-        final String paramName,
-        final int channelLength,
-        final int endpointLength)
+        final String paramName, final int channelLength, final int endpointLength)
     {
         if (0 != channelLength && channelLength != endpointLength)
         {

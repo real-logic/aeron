@@ -600,7 +600,7 @@ public final class ChannelUriStringBuilder
             if (value > Integer.MAX_VALUE)
             {
                 throw new IllegalStateException(
-                    "Term length more than max length of " + TERM_MAX_LENGTH + ": length=" + termLength);
+                    "term length more than max length of " + TERM_MAX_LENGTH + ": value=" + value);
             }
 
             return termLength((int)value);
@@ -1469,9 +1469,22 @@ public final class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder socketSndbufLength(final ChannelUri channelUri)
     {
-        final String socketSndbufLengthString = channelUri.get(SOCKET_SNDBUF_PARAM_NAME);
-        this.socketSndbufLength = null == socketSndbufLengthString ? null : Integer.valueOf(socketSndbufLengthString);
-        return this;
+        final String valueStr = channelUri.get(SOCKET_SNDBUF_PARAM_NAME);
+        if (null == valueStr)
+        {
+            this.socketSndbufLength = null;
+            return this;
+        }
+        else
+        {
+            final long value = parseSize(SOCKET_SNDBUF_PARAM_NAME, valueStr);
+            if (value > Integer.MAX_VALUE)
+            {
+                throw new IllegalStateException("value exceeds maximum permitted: value=" + value);
+            }
+
+            return socketSndbufLength((int)value);
+        }
     }
 
     /**
@@ -1484,7 +1497,6 @@ public final class ChannelUriStringBuilder
     {
         return socketSndbufLength;
     }
-
 
     /**
      * Set the underlying OS receive buffer length.
@@ -1509,9 +1521,22 @@ public final class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder socketRcvbufLength(final ChannelUri channelUri)
     {
-        final String socketRcvbufLengthString = channelUri.get(SOCKET_RCVBUF_PARAM_NAME);
-        this.socketRcvbufLength = null == socketRcvbufLengthString ? null : Integer.valueOf(socketRcvbufLengthString);
-        return this;
+        final String valueStr = channelUri.get(SOCKET_RCVBUF_PARAM_NAME);
+        if (null == valueStr)
+        {
+            this.socketRcvbufLength = null;
+            return this;
+        }
+        else
+        {
+            final long value = parseSize(SOCKET_RCVBUF_PARAM_NAME, valueStr);
+            if (value > Integer.MAX_VALUE)
+            {
+                throw new IllegalStateException("value exceeds maximum permitted: value=" + value);
+            }
+
+            return socketRcvbufLength((int)value);
+        }
     }
 
     /**
@@ -1548,10 +1573,22 @@ public final class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder receiverWindowLength(final ChannelUri channelUri)
     {
-        final String receiverWindowLengthString = channelUri.get(RECEIVER_WINDOW_LENGTH_PARAM_NAME);
-        this.receiverWindowLength = null == receiverWindowLengthString ?
-            null : Integer.valueOf(receiverWindowLengthString);
-        return this;
+        final String valueStr = channelUri.get(RECEIVER_WINDOW_LENGTH_PARAM_NAME);
+        if (null == valueStr)
+        {
+            this.receiverWindowLength = null;
+            return this;
+        }
+        else
+        {
+            final long value = parseSize(RECEIVER_WINDOW_LENGTH_PARAM_NAME, valueStr);
+            if (value > Integer.MAX_VALUE)
+            {
+                throw new IllegalStateException("value exceeds maximum permitted: value=" + value);
+            }
+
+            return receiverWindowLength((int)value);
+        }
     }
 
     /**

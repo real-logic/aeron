@@ -378,7 +378,7 @@ TEST_F(DataPacketDispatcherTest, shouldNotIgnoreDataAndSetupAfterImageRemovedAnd
         sizeof(*setup_header),
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
 
-    ASSERT_EQ(1, m_test_bindings_state->sm_count);
+    EXPECT_EQ(1, m_test_bindings_state->sm_count);
     ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,

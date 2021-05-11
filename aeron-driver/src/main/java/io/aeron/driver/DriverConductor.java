@@ -681,7 +681,7 @@ public final class DriverConductor implements Agent
     void onAddSendDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
         final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
-        validateDestinationUri(channelUri);
+        validateDestinationUri(channelUri, destinationChannel);
 
         SendChannelEndpoint sendChannelEndpoint = null;
 
@@ -952,7 +952,7 @@ public final class DriverConductor implements Agent
     void onAddRcvDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver, true);
-        validateDestinationUri(udpChannel.channelUri());
+        validateDestinationUri(udpChannel.channelUri(), destinationChannel);
 
         SubscriptionLink subscriptionLink = null;
 
@@ -1900,18 +1900,19 @@ public final class DriverConductor implements Agent
         }
     }
 
-    private static void validateDestinationUri(final ChannelUri uri)
+    private static void validateDestinationUri(final ChannelUri uri, final String destinationUri)
     {
         if (SPY_QUALIFIER.equals(uri.prefix()))
         {
-            throw new InvalidChannelException("Aeron spies are invalid as send destinations: " + uri);
+            throw new InvalidChannelException("Aeron spies are invalid as send destinations: " + destinationUri);
         }
 
         for (final String invalidKey : INVALID_DESTINATION_KEYS)
         {
             if (uri.containsKey(invalidKey))
             {
-                throw new InvalidChannelException("Destinations must not contain the key: " + invalidKey);
+                throw new InvalidChannelException(
+                    "Destinations must not contain the key: " + invalidKey + " uri=" + destinationUri);
             }
         }
     }

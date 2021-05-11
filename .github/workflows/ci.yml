@@ -14,6 +14,7 @@ on:
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
   CMAKE_VERSION: "3.6.1"
+  APT_RETRIES: "5"
 
 jobs:
   java-build:
@@ -68,7 +69,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -129,7 +129,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -175,6 +174,7 @@ jobs:
          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
+         echo 'Acquire::Retries "${APT_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
          sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ bionic main universe"
          sudo apt-get update
          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
@@ -188,7 +188,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -226,7 +225,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -273,6 +271,7 @@ jobs:
       - name: Install compiler
         run: |
           curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo 'Acquire::Retries "${APT_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev libidn11
@@ -286,7 +285,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -333,6 +331,7 @@ jobs:
       - name: Install compiler
         run: |
           curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo 'Acquire::Retries "${APT_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev libidn11
@@ -346,7 +345,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -400,7 +398,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -455,7 +452,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'

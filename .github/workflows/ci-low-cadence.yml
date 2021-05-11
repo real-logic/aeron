@@ -8,6 +8,7 @@ on:
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  APT_RETRIES: "5"
 
 jobs:
   java-slow-test-build:
@@ -64,7 +65,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -110,8 +110,8 @@ jobs:
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
+          echo 'Acquire::Retries "${APT_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
           sudo apt-get update
-
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --no-system-tests
@@ -120,7 +120,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -169,7 +168,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
@@ -215,8 +213,8 @@ jobs:
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
+          echo 'Acquire::Retries "${APT_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
           sudo apt-get update
-
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
       - name: Build
         run: cppbuild/cppbuild --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
@@ -225,7 +223,6 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-
           ./gradlew copyTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'

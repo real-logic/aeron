@@ -8,7 +8,7 @@ on:
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-  APT_RETRIES: "5"
+  INSTALL_COMPILER_RETRIES: "5"
 
 jobs:
   java-slow-test-build:
@@ -110,7 +110,7 @@ jobs:
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
-          echo 'Acquire::Retries "${APT_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
+          echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
           sudo apt-get update
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
       - name: Build
@@ -213,7 +213,7 @@ jobs:
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
-          echo 'Acquire::Retries "${APT_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
+          echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
           sudo apt-get update
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
       - name: Build

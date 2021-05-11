@@ -294,8 +294,6 @@ typedef struct aeron_driver_conductor_stct
 }
 aeron_driver_conductor_t;
 
-#define AERON_FORMAT_BUFFER(buffer, format, ...) snprintf(buffer, sizeof(buffer) - 1, format, __VA_ARGS__)
-
 void aeron_client_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_client_t *client, int64_t now_ns, int64_t now_ms);
 

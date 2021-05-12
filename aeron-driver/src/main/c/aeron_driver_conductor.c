@@ -213,7 +213,7 @@ static inline int aeron_driver_conductor_validate_channel_buffer_length(
 
         AERON_SET_ERR(
             EINVAL,
-            "%s=%" PRIu64 " does not match existing value of %" PRIu64 "%s",
+            "%s=%" PRIu64 " does not match existing value of %" PRIu64 " %s",
             param_name,
             (uint64_t)new_length,
             (uint64_t)existing_length,

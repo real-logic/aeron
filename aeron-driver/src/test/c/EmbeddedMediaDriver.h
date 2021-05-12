@@ -74,13 +74,19 @@ public:
     void stop()
     {
         m_running = false;
-        m_thread.join();
+        if (m_thread.joinable())
+        {
+            m_thread.join();
+        }
     }
 
     void joinAndClose()
     {
         m_running = false;
-        m_thread.join();
+        if (m_thread.joinable())
+        {
+            m_thread.join();
+        }
 
         aeron_driver_close(m_driver);
         aeron_driver_context_close(m_context);

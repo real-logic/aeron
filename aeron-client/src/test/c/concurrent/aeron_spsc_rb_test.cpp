@@ -551,9 +551,12 @@ TEST(SpscRbConcurrentTest, shouldProvideCorrelationIds)
             }));
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 
     ASSERT_EQ(aeron_spsc_rb_next_correlation_id(&rb), NUM_IDS_PER_THREAD * 2);
@@ -621,9 +624,12 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
         msgCount += readCount;
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 }
 
@@ -684,9 +690,12 @@ TEST(SpscRbConcurrentTest, shouldExchangeVectorMessages)
         msgCount += readCount;
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 }
 
@@ -742,8 +751,11 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessagesViaTryClaim)
         msgCount += readCount;
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 }

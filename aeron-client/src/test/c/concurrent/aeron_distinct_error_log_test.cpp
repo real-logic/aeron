@@ -332,9 +332,12 @@ static void test_append_distinct_message(aeron_distinct_error_log_t *error_log, 
             }));
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 
     std::vector<int> counts;
@@ -424,9 +427,12 @@ static void test_update_same_message(aeron_distinct_error_log_t *error_log, buff
             }));
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 
     test_same_message_t count = {};
@@ -493,9 +499,12 @@ static void test_append_unique_messages(aeron_distinct_error_log_t *error_log, b
             }));
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 
     const size_t total_number_of_entries = APPENDS_PER_THREAD * NUM_THREADS;

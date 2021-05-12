@@ -576,9 +576,12 @@ TEST(MpscRbConcurrentTest, shouldProvideCorrelationIds)
             }));
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 
     ASSERT_EQ(aeron_mpsc_rb_next_correlation_id(&rb), NUM_IDS_PER_THREAD * 2);
@@ -667,9 +670,12 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
         msgCount += readCount;
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 }
 
@@ -738,8 +744,11 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessagesViaTryClaim)
         msgCount += readCount;
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 }

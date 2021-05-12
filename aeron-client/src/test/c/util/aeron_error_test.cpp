@@ -164,9 +164,12 @@ static void test_concurrent_access()
                 }));
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 }
 

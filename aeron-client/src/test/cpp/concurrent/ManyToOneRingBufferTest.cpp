@@ -520,9 +520,12 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldProvideCorrelationIds)
             }));
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 
     ASSERT_EQ(ringBuffer.nextCorrelationId(), NUM_IDS_PER_THREAD * NUM_PUBLISHERS);
@@ -609,9 +612,12 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
             msgCount += readCount;
         }
 
-        for (std::thread &thr: threads)
+        for (std::thread &t: threads)
         {
-            thr.join();
+            if (t.joinable())
+            {
+                t.join();
+            }
         }
     }
     catch (const util::OutOfBoundsException &e)

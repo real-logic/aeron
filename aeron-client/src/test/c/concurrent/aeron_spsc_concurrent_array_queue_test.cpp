@@ -210,9 +210,12 @@ TEST(SpscQueueConcurrentTest, shouldExchangeMessages)
         msgCount += drainCount;
     }
 
-    for (std::thread &thr: threads)
+    for (std::thread &t: threads)
     {
-        thr.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 
     aeron_spsc_concurrent_array_queue_close(&q);

@@ -39,7 +39,7 @@ TEST(atomicBufferTests, checkBounds)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
-    std::string testString ("hello world!");
+    std::string testString("hello world!");
 
     ASSERT_NO_THROW({
         ab.putInt32(0, -1);
@@ -74,9 +74,11 @@ TEST(atomicBufferTests, checkBounds)
     }, OutOfBoundsException);
 
     ASSERT_THROW({
-        ab.putString(convertSizeToIndex(testBuffer.size() - testString.length() - sizeof(std::int32_t) + 1), testString);
+        ab.putString(
+            convertSizeToIndex(testBuffer.size() - testString.length() - sizeof(std::int32_t) + 1), testString);
     }, OutOfBoundsException);
 }
+
 #endif
 
 TEST(atomicBufferTests, stringStore)
@@ -144,15 +146,16 @@ TEST(atomicBufferTests, concurrentTest)
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
 
+    const int threadCount = 4;
+    const std::size_t repetitions = 10000000;
     std::vector<std::thread> threads;
-    const std::size_t incCount = 10000000;
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < threadCount; i++)
     {
         threads.push_back(std::thread(
             [&]()
             {
-                for (std::size_t n = 0; n < incCount; n++)
+                for (std::size_t n = 0; n < repetitions; n++)
                 {
                     ab.getAndAddInt64(0, 1);
                     ab.getAndAddInt32(256, 1);
@@ -160,13 +163,16 @@ TEST(atomicBufferTests, concurrentTest)
             }));
     }
 
-    for (std::thread& t: threads)
+    for (std::thread &t: threads)
     {
-        t.join();
+        if (t.joinable())
+        {
+            t.join();
+        }
     }
 
-    ASSERT_EQ(static_cast<std::size_t>(ab.getInt64(0)), incCount * threads.size());
-    ASSERT_EQ(static_cast<std::size_t>(ab.getInt32(256)), incCount * threads.size());
+    ASSERT_EQ(static_cast<std::size_t>(ab.getInt64(0)), repetitions * threads.size());
+    ASSERT_EQ(static_cast<std::size_t>(ab.getInt32(256)), repetitions * threads.size());
 }
 
 #pragma pack(push)
@@ -194,7 +200,7 @@ TEST(atomicBufferTests, checkStructOverlay)
     }, OutOfBoundsException);
 #endif
 
-    testStruct ts { 1, 2, 3 };
+    testStruct ts{ 1, 2, 3 };
     ASSERT_NO_THROW({
         ab.overlayStruct<testStruct>(0) = ts;
         ASSERT_EQ(ab.getInt32(0), ts.f1);

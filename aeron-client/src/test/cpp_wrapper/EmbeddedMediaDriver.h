@@ -66,7 +66,10 @@ public:
     void stop()
     {
         m_running = false;
-        m_thread.join();
+        if (m_thread.joinable())
+        {
+            m_thread.join();
+        }
     }
 
     void start()

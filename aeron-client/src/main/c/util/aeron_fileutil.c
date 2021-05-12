@@ -146,18 +146,18 @@ int64_t aeron_file_length(const char *path)
         return -1;
     }
 
-    LARGE_INTEGER file_size;
+    ULARGE_INTEGER file_size;
     file_size.LowPart = fad.nFileSizeLow;
     file_size.HighPart = fad.nFileSizeHigh;
 
-    return file_size.QuadPart;
+    return (int64_t)file_size.QuadPart;
 }
 
 uint64_t aeron_usable_fs_space(const char *path)
 {
     ULARGE_INTEGER lpAvailableToCaller, lpTotalNumberOfBytes, lpTotalNumberOfFreeBytes;
 
-    if (!GetDiskFreeSpaceExA(path, &lpAvailableToCaller, &lpTotalNumberOfBytes, &lpTotalNumberOfFreeBytes))
+    if (!GetDiskFreeSpaceEx(path, &lpAvailableToCaller, &lpTotalNumberOfBytes, &lpTotalNumberOfFreeBytes))
     {
         return 0;
     }

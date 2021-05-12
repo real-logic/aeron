@@ -399,7 +399,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
         return -1;
     }
 
-    char filename[AERON_MAX_PATH];
+    char filename[AERON_MAX_PATH] = { 0 };
     if (aeron_cnc_resolve_filename(directory, filename, sizeof(filename)) < 0)
     {
         AERON_APPEND_ERR("%s", "Failed to get cnc filename");
@@ -461,7 +461,8 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
             }
 
             aeron_mpsc_rb_t rb;
-            if (aeron_mpsc_rb_init(&rb, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) < 0)
+            if (aeron_mpsc_rb_init(
+                &rb, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) < 0)
             {
                 AERON_APPEND_ERR("%s", "Failed to setup ring buffer for termination");
                 result = -1;

@@ -39,10 +39,10 @@ TEST_F(TerminateTest, shouldShutdownDriver)
     EmbeddedMediaDriver driver;
     driver.start();
 
-    char path[AERON_MAX_PATH];
+    char path[AERON_MAX_PATH] = { 0 };
     aeron_cnc_resolve_filename(driver.directory(), path, sizeof(path));
 
-    ASSERT_EQ(1, aeron_context_request_driver_termination(
+    EXPECT_EQ(1, aeron_context_request_driver_termination(
         driver.directory(), (uint8_t *)TERMINATION_KEY, strlen(TERMINATION_KEY))) << aeron_errmsg();
 
     driver.joinAndClose();

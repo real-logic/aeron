@@ -205,18 +205,18 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
 }
 
 static inline int aeron_driver_conductor_validate_channel_buffer_length(
-    const char *param_name, size_t channel_length, size_t endpoint_length)
+    const char *param_name, size_t new_length, size_t existing_length)
 {
-    if (0 != channel_length && channel_length != endpoint_length)
+    if (0 != new_length && new_length != existing_length)
     {
-        const char *suffix = 0 == endpoint_length ? " (OS default)" : "";
+        const char *suffix = 0 == existing_length ? " (OS default)" : "";
 
         AERON_SET_ERR(
             EINVAL,
-            "'%s'=%" PRIu64 " is invalid, endpoint already uses %" PRIu64 "%s",
+            "%s=%" PRIu64 " does not match existing value of %" PRIu64 "%s",
             param_name,
-            (uint64_t)channel_length,
-            (uint64_t)endpoint_length,
+            (uint64_t)new_length,
+            (uint64_t)existing_length,
             suffix);
 
         return -1;
@@ -465,7 +465,7 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
                 aeron_counter_set_ordered(client->heartbeat_timestamp.value_addr, now_ms);
 
                 client->client_liveness_timeout_ms = conductor->context->client_liveness_timeout_ns < 1000000 ?
-                    1 : conductor->context->client_liveness_timeout_ns / 1000000;
+                    1 : (int64_t)(conductor->context->client_liveness_timeout_ns / 1000000);
                 client->publication_links.array = NULL;
                 client->publication_links.length = 0;
                 client->publication_links.capacity = 0;
@@ -1114,19 +1114,19 @@ void aeron_driver_conductor_on_check_managed_resources(
     aeron_driver_conductor_t *conductor, int64_t now_ns, int64_t now_ms)
 {
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
-        conductor, conductor->clients, aeron_client_t, now_ns, now_ms);
+        conductor, conductor->clients, aeron_client_t, now_ns, now_ms)
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
-        conductor, conductor->ipc_publications, aeron_ipc_publication_entry_t, now_ns, now_ms);
+        conductor, conductor->ipc_publications, aeron_ipc_publication_entry_t, now_ns, now_ms)
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
-        conductor, conductor->network_publications, aeron_network_publication_entry_t, now_ns, now_ms);
+        conductor, conductor->network_publications, aeron_network_publication_entry_t, now_ns, now_ms)
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
-        conductor, conductor->send_channel_endpoints, aeron_send_channel_endpoint_entry_t, now_ns, now_ms);
+        conductor, conductor->send_channel_endpoints, aeron_send_channel_endpoint_entry_t, now_ns, now_ms)
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
-        conductor, conductor->receive_channel_endpoints, aeron_receive_channel_endpoint_entry_t, now_ns, now_ms);
+        conductor, conductor->receive_channel_endpoints, aeron_receive_channel_endpoint_entry_t, now_ns, now_ms)
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
-        conductor, conductor->publication_images, aeron_publication_image_entry_t, now_ns, now_ms);
+        conductor, conductor->publication_images, aeron_publication_image_entry_t, now_ns, now_ms)
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
-        conductor, conductor->lingering_resources, aeron_linger_resource_entry_t, now_ns, now_ms);
+        conductor, conductor->lingering_resources, aeron_linger_resource_entry_t, now_ns, now_ms)
 }
 
 aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(

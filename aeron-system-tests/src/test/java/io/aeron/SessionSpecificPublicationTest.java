@@ -41,7 +41,7 @@ import static io.aeron.CommonContext.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
-public class SessionSpecificPublicationTest
+class SessionSpecificPublicationTest
 {
     private static final String ENDPOINT = "localhost:24325";
     private static final int SESSION_ID_1 = 1077;
@@ -52,7 +52,7 @@ public class SessionSpecificPublicationTest
     private static final int TERM_LENGTH_1 = 64 * 1024;
     private static final int TERM_LENGTH_2 = 128 * 1024;
 
-    private static Stream<ChannelUriStringBuilder> data()
+    static Stream<ChannelUriStringBuilder> data()
     {
         return Stream.of(
             new ChannelUriStringBuilder().media(UDP_MEDIA).endpoint(ENDPOINT),
@@ -60,7 +60,7 @@ public class SessionSpecificPublicationTest
     }
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
@@ -74,7 +74,7 @@ public class SessionSpecificPublicationTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, mediaDriver);
         mediaDriver.context().deleteDirectory();
@@ -82,7 +82,7 @@ public class SessionSpecificPublicationTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication(
+    void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication(
         final ChannelUriStringBuilder channelBuilder)
     {
         try (Subscription ignored = aeron.addSubscription(channelBuilder.build(), STREAM_ID);
@@ -91,7 +91,6 @@ public class SessionSpecificPublicationTest
             Tests.awaitConnected(publication);
 
             final int existingSessionId = publication.sessionId();
-
             final String invalidChannel = channelBuilder.sessionId(existingSessionId).build();
 
             assertThrows(RegistrationException.class, () ->
@@ -106,7 +105,7 @@ public class SessionSpecificPublicationTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void shouldNotCreatePublicationsSharingSessionIdWithDifferentMtu(
+    void shouldNotCreatePublicationsSharingSessionIdWithDifferentMtu(
         final ChannelUriStringBuilder channelBuilder)
     {
         channelBuilder.sessionId(SESSION_ID_1);
@@ -123,7 +122,7 @@ public class SessionSpecificPublicationTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void shouldNotCreatePublicationsSharingSessionIdWithDifferentTermLength(
+    void shouldNotCreatePublicationsSharingSessionIdWithDifferentTermLength(
         final ChannelUriStringBuilder channelBuilder)
     {
         channelBuilder.sessionId(SESSION_ID_1);
@@ -143,7 +142,7 @@ public class SessionSpecificPublicationTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void shouldNotCreateNonExclusivePublicationsWithDifferentSessionIdsForTheSameEndpoint(
+    void shouldNotCreateNonExclusivePublicationsWithDifferentSessionIdsForTheSameEndpoint(
         final ChannelUriStringBuilder channelBuilder)
     {
         channelBuilder.endpoint(ENDPOINT);

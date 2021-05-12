@@ -91,22 +91,16 @@ public class RegistrationException extends AeronException
 
     private static String stripCategoryName(final String msg)
     {
-        if (null != msg)
+        if (null != msg && msg.length() > 7)
         {
-            final int i = msg.indexOf('-');
-            final int length = msg.length();
-
-            if (i < length)
+            if (msg.startsWith("ERROR - ") || msg.startsWith("FATAL - "))
             {
-                if (6 == i && (msg.startsWith("ERROR - ") || msg.startsWith("FATAL - ")))
-                {
-                    return msg.substring(i + 2);
-                }
+                return msg.substring(8);
+            }
 
-                if (5 == i && msg.startsWith("WARN - "))
-                {
-                    return msg.substring(i + 2);
-                }
+            if (msg.startsWith("WARN - "))
+            {
+                return msg.substring(7);
             }
         }
 

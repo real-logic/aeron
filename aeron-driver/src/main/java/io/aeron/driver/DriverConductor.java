@@ -432,8 +432,7 @@ public final class DriverConductor implements Agent
         final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, false);
         validateMtuForMaxMessage(params);
 
-        final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel, correlationId);
-        validateMtuForSndbuf(params, channelEndpoint.socketSndbufLength(), ctx);
+        final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(params, udpChannel, correlationId);
 
         NetworkPublication publication = null;
         if (!isExclusive)
@@ -743,8 +742,8 @@ public final class DriverConductor implements Agent
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
 
         checkForClashingSubscription(params, udpChannel, streamId);
-        final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(udpChannel, registrationId);
-        validateInitialWindowForRcvBuf(params, channelEndpoint.socketRcvbufLength(), ctx);
+        final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(
+            params, udpChannel, registrationId);
 
         if (params.hasSessionId)
         {
@@ -1301,7 +1300,8 @@ public final class DriverConductor implements Agent
         return rawLog;
     }
 
-    private SendChannelEndpoint getOrCreateSendChannelEndpoint(final UdpChannel udpChannel, final long registrationId)
+    private SendChannelEndpoint getOrCreateSendChannelEndpoint(
+        final PublicationParams params, final UdpChannel udpChannel, final long registrationId)
     {
         SendChannelEndpoint channelEndpoint = findExistingSendChannelEndpoint(udpChannel);
         if (null == channelEndpoint)
@@ -1319,6 +1319,8 @@ public final class DriverConductor implements Agent
                     tempBuffer, countersManager, registrationId, channelEndpoint.statusIndicatorCounterId());
 
                 channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
+
+                validateMtuForSndbuf(params, channelEndpoint.socketSndbufLength(), ctx);
                 sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
                 senderProxy.registerSendChannelEndpoint(channelEndpoint);
             }
@@ -1330,6 +1332,7 @@ public final class DriverConductor implements Agent
         }
         else
         {
+            validateMtuForSndbuf(params, channelEndpoint.socketSndbufLength(), ctx);
             validateChannelBufferLength(
                 SOCKET_RCVBUF_PARAM_NAME, udpChannel.socketRcvbufLength(), channelEndpoint.socketRcvbufLength());
             validateChannelBufferLength(
@@ -1496,7 +1499,7 @@ public final class DriverConductor implements Agent
     }
 
     private ReceiveChannelEndpoint getOrCreateReceiveChannelEndpoint(
-        final UdpChannel udpChannel, final long registrationId)
+        final SubscriptionParams params, final UdpChannel udpChannel, final long registrationId)
     {
         ReceiveChannelEndpoint channelEndpoint = findExistingReceiveChannelEndpoint(udpChannel);
         if (null == channelEndpoint)
@@ -1521,6 +1524,8 @@ public final class DriverConductor implements Agent
                     channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
                 }
 
+                validateInitialWindowForRcvBuf(params, channelEndpoint.socketRcvbufLength(), ctx);
+
                 receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
                 receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
             }
@@ -1532,6 +1537,7 @@ public final class DriverConductor implements Agent
         }
         else
         {
+            validateInitialWindowForRcvBuf(params, channelEndpoint.socketRcvbufLength(), ctx);
             validateChannelBufferLength(
                 SOCKET_RCVBUF_PARAM_NAME, udpChannel.socketRcvbufLength(), channelEndpoint.socketRcvbufLength());
             validateChannelBufferLength(

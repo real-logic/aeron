@@ -1888,15 +1888,14 @@ public final class DriverConductor implements Agent
         return workCount;
     }
 
-    private static void validateChannelBufferLength(
-        final String paramName, final int channelLength, final int endpointLength)
+    private static void validateChannelBufferLength(final String name, final int newLength, final int existingLength)
     {
-        if (0 != channelLength && channelLength != endpointLength)
+        if (0 != newLength && newLength != existingLength)
         {
-            final String existingValue = 0 == endpointLength ? "OS default" : Integer.toString(endpointLength);
+            final String existingValue = 0 == existingLength ? "OS default" : Integer.toString(existingLength);
 
             throw new InvalidChannelException(
-                paramName + "=" + channelLength + " is invalid, endpoint already uses " + existingValue);
+                name + "=" + newLength + " does not match existing value of " + existingValue);
         }
     }
 
@@ -1912,7 +1911,7 @@ public final class DriverConductor implements Agent
             if (uri.containsKey(invalidKey))
             {
                 throw new InvalidChannelException(
-                    "Destinations must not contain the key: " + invalidKey + " uri=" + destinationUri);
+                    "destinations must not contain the key: " + invalidKey + " uri=" + destinationUri);
             }
         }
     }

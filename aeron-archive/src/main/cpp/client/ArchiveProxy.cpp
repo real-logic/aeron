@@ -589,6 +589,38 @@ util::index_t ArchiveProxy::taggedReplicate(
     return messageAndHeaderLength(request);
 }
 
+util::index_t ArchiveProxy::taggedReplicate(
+    AtomicBuffer &buffer,
+    std::int64_t srcRecordingId,
+    std::int64_t dstRecordingId,
+    std::int64_t stopPosition,
+    std::int64_t channelTagId,
+    std::int64_t subscriptionTagId,
+    std::int32_t srcControlStreamId,
+    const std::string &srcControlChannel,
+    const std::string &liveDestination,
+    const std::string &replicationChannel,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    ReplicateRequest2 request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .srcRecordingId(srcRecordingId)
+        .dstRecordingId(dstRecordingId)
+        .stopPosition(stopPosition)
+        .channelTagId(channelTagId)
+        .subscriptionTagId(subscriptionTagId)
+        .srcControlStreamId(srcControlStreamId)
+        .putSrcControlChannel(srcControlChannel)
+        .putLiveDestination(liveDestination)
+        .putReplicationChannel(replicationChannel);
+
+    return messageAndHeaderLength(request);
+}
+
 util::index_t ArchiveProxy::stopReplication(
     AtomicBuffer &buffer,
     std::int64_t replicationId,

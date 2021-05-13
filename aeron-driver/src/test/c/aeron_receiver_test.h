@@ -234,6 +234,7 @@ protected:
     {
         auto *data_header = (aeron_data_header_t *)buffer.data();
         data_header->frame_header.type = AERON_HDR_TYPE_DATA;
+        data_header->frame_header.flags = 0;
         data_header->stream_id = stream_id;
         data_header->session_id = session_id;
         data_header->term_id = term_id;

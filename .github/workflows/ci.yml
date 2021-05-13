@@ -235,7 +235,7 @@ jobs:
 
   cpp-clang-build:
     name: C++ Clang ${{ matrix.version }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -295,7 +295,7 @@ jobs:
 
   cpp-clang-debug-build:
     name: C++ Clang ${{ matrix.version }} debug build
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -332,7 +332,7 @@ jobs:
         run: |
           curl --retry ${INSTALL_COMPILER_RETRIES} -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
-          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
+          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.version }} main"
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev libidn11
           curl --retry ${INSTALL_COMPILER_RETRIES} -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz

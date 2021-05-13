@@ -205,7 +205,7 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
 }
 
 static inline int aeron_driver_conductor_validate_channel_buffer_length(
-    const char *param_name, size_t new_length, size_t existing_length)
+    const char *param_name, size_t new_length, size_t existing_length, aeron_udp_channel_t *channel)
 {
     if (0 != new_length && new_length != existing_length)
     {
@@ -213,11 +213,13 @@ static inline int aeron_driver_conductor_validate_channel_buffer_length(
 
         AERON_SET_ERR(
             EINVAL,
-            "%s=%" PRIu64 " does not match existing value of %" PRIu64 "%s",
+            "%s=%" PRIu64 " does not match existing value of %" PRIu64 "%s uri=%.*s",
             param_name,
             (uint64_t)new_length,
             (uint64_t)existing_length,
-            suffix);
+            suffix,
+            (int)channel->uri_length,
+            channel->original_uri);
 
         return -1;
     }
@@ -1660,14 +1662,20 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     else
     {
         if (aeron_driver_conductor_validate_channel_buffer_length(
-            AERON_URI_SOCKET_RCVBUF_KEY, channel->socket_rcvbuf_length, endpoint->conductor_fields.socket_rcvbuf) < 0)
+            AERON_URI_SOCKET_RCVBUF_KEY,
+            channel->socket_rcvbuf_length,
+            endpoint->conductor_fields.socket_rcvbuf,
+            channel) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             return NULL;
         }
 
         if (aeron_driver_conductor_validate_channel_buffer_length(
-            AERON_URI_SOCKET_SNDBUF_KEY, channel->socket_sndbuf_length, endpoint->conductor_fields.socket_sndbuf) < 0)
+            AERON_URI_SOCKET_SNDBUF_KEY,
+            channel->socket_sndbuf_length,
+            endpoint->conductor_fields.socket_sndbuf,
+            channel) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             return NULL;
@@ -1815,7 +1823,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
             if (aeron_driver_conductor_validate_channel_buffer_length(
                 AERON_URI_SOCKET_SNDBUF_KEY,
                 channel->socket_sndbuf_length,
-                endpoint->conductor_fields.socket_sndbuf) < 0)
+                endpoint->conductor_fields.socket_sndbuf,
+                channel) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
                 return NULL;
@@ -1824,7 +1833,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
             if (aeron_driver_conductor_validate_channel_buffer_length(
                 AERON_URI_SOCKET_RCVBUF_KEY,
                 channel->socket_rcvbuf_length,
-                endpoint->conductor_fields.socket_rcvbuf) < 0)
+                endpoint->conductor_fields.socket_rcvbuf,
+                channel) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
                 return NULL;

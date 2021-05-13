@@ -131,8 +131,6 @@ jobs:
   c-driver-slow-system-test-msvc-build:
     name: C++ Slow System Tests MSVC
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
     env:
       CC: cl
       CXX: cl

@@ -1682,6 +1682,70 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
+     * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
+     * If the destination recording id is {@link io.aeron.Aeron#NULL_VALUE} then a new destination recording is created,
+     * otherwise the provided destination recording id will be extended. The details of the source recording
+     * descriptor will be replicated. The subscription used in the archive will be tagged with the provided tags.
+     * <p>
+     * For a source recording that is still active the replay can merge with the live stream and then follow it
+     * directly and no longer require the replay from the source. This would require a multicast live destination.
+     * <p>
+     * Errors will be reported asynchronously and can be checked for with {@link AeronArchive#pollForErrorResponse()}
+     * or {@link AeronArchive#checkForErrorResponse()}. Follow progress with {@link RecordingSignalAdapter}.
+     *
+     * @param srcRecordingId     recording id which must exist in the source archive.
+     * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
+     * @param channelTagId       used to tag the replication subscription.
+     * @param subscriptionTagId  used to tag the replication subscription.
+     * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
+     * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
+     * @param liveDestination    destination for the live stream if merge is required. Empty or null for no merge.
+     * @param replicationChannel channel over which the replication will occur. Empty or null for default channel.
+     * @return return the replication session id which can be passed later to {@link #stopReplication(long)}.
+     */
+    public long taggedReplicate(
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final long channelTagId,
+        final long subscriptionTagId,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String liveDestination,
+        final String replicationChannel)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.taggedReplicate(
+                srcRecordingId,
+                dstRecordingId,
+                channelTagId,
+                subscriptionTagId,
+                srcControlStreamId,
+                srcControlChannel,
+                liveDestination,
+                replicationChannel,
+                lastCorrelationId,
+                controlSessionId))
+            {
+                throw new ArchiveException("failed to send tagged replicate request");
+            }
+
+            return pollForResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Stop a replication session by id returned from {@link #replicate(long, long, int, String, String)}.
      *
      * @param replicationId to stop replication for.

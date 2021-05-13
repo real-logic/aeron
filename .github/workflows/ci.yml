@@ -234,7 +234,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-clang-ubuntu-1804-build:
-    name: C++ Clang Ubuntu 18.04 ${{ matrix.version }}
+    name: C++ Clang ${{ matrix.version }} (Ubuntu 18.04)
     runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
@@ -294,7 +294,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
   cpp-clang-ubuntu-2004-build:
-    name: C++ Clang Ubuntu 20.04 ${{ matrix.version }}
+    name: C++ Clang ${{ matrix.version }} (Ubuntu 20.04)
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false

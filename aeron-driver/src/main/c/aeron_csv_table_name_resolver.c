@@ -77,9 +77,12 @@ int aeron_csv_table_name_resolver_close(aeron_name_resolver_t *resolver)
 {
     aeron_csv_table_name_resolver_t *resolver_state = (aeron_csv_table_name_resolver_t *)resolver->state;
 
-    aeron_free(resolver_state->saved_config_csv);
-    aeron_free(resolver_state->array);
-    aeron_free(resolver->state);
+    if (NULL != resolver_state)
+    {
+        aeron_free(resolver_state->saved_config_csv);
+        aeron_free(resolver_state->array);
+        aeron_free(resolver_state);
+    }
     return 0;
 }
 
@@ -96,33 +99,33 @@ int aeron_csv_table_name_resolver_supplier(
 
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
     char *columns[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
+    char *config_csv = NULL;
+    aeron_csv_table_name_resolver_t *lookup_table = NULL;
 
     if (NULL == args)
     {
         AERON_SET_ERR(EINVAL, "No CSV configuration, please specify: %s", AERON_NAME_RESOLVER_INIT_ARGS_ENV_VAR);
-        return -1;
+        goto error;
     }
-    
-    char *config_csv = strdup(args);
+
+    config_csv = strdup(args);
     if (NULL == config_csv)
     {
         AERON_SET_ERR(errno, "%s", "Duplicating config string");
-        return -1;
+        goto error;
     }
 
-    aeron_csv_table_name_resolver_t *lookup_table;
     if (aeron_alloc((void **)&lookup_table, sizeof(aeron_csv_table_name_resolver_t)) < 0)
     {
         AERON_APPEND_ERR("%s", "Allocating lookup table");
-        aeron_free(config_csv);
-        return -1;
+        goto error;
     }
 
     int num_rows = aeron_tokenise(config_csv, '|', AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE, rows);
     if (num_rows < 0)
     {
         AERON_SET_ERR(num_rows, "%s", "Failed to parse rows for lookup table");
-        return -1;
+        goto error;
     }
 
     lookup_table->saved_config_csv = config_csv;
@@ -137,9 +140,7 @@ int aeron_csv_table_name_resolver_supplier(
                 "Failed to allocate rows for lookup table (%" PRIu64 ",%" PRIu64 ")",
                 (uint64_t)lookup_table->length,
                 (uint64_t)lookup_table->capacity);
-            aeron_free(lookup_table->array);
-            aeron_free(lookup_table);
-            return -1;
+            goto error;
         }
 
         int num_columns = aeron_tokenise(rows[i], ',', AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS, columns);
@@ -156,4 +157,13 @@ int aeron_csv_table_name_resolver_supplier(
     resolver->state = lookup_table;
 
     return 0;
+
+error:
+    if (NULL != lookup_table)
+    {
+        aeron_free(lookup_table->array);
+        aeron_free(lookup_table);
+    }
+    aeron_free(config_csv);
+    return -1;
 }

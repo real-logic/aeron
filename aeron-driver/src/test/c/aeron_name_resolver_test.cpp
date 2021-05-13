@@ -100,7 +100,7 @@ protected:
         resolver_fields->context->system_counters = &resolver_fields->system_counters;
         resolver_fields->context->error_log = &resolver_fields->error_log;
 
-        ASSERT_EQ(0, supplier_func(&resolver_fields->resolver, args, resolver_fields->context));
+        ASSERT_EQ(0, supplier_func(&resolver_fields->resolver, args, resolver_fields->context)) << aeron_errmsg();
     }
 
     typedef struct counters_clientd_stct

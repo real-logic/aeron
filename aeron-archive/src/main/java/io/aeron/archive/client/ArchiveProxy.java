@@ -1101,6 +1101,8 @@ public final class ArchiveProxy
      *
      * @param srcRecordingId     recording id which must exist in the source archive.
      * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
+     * @param stopPosition       position to stop the replication. {@link AeronArchive#NULL_POSITION} to stop at end
+     *                           of current recording.
      * @param channelTagId       used to tag the replication subscription.
      * @param subscriptionTagId  used to tag the replication subscription.
      * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
@@ -1114,6 +1116,7 @@ public final class ArchiveProxy
     public boolean taggedReplicate(
         final long srcRecordingId,
         final long dstRecordingId,
+        final long stopPosition,
         final long channelTagId,
         final long subscriptionTagId,
         final int srcControlStreamId,
@@ -1134,7 +1137,7 @@ public final class ArchiveProxy
             .correlationId(correlationId)
             .srcRecordingId(srcRecordingId)
             .dstRecordingId(dstRecordingId)
-            .stopPosition(AeronArchive.NULL_POSITION)
+            .stopPosition(stopPosition)
             .channelTagId(channelTagId)
             .subscriptionTagId(subscriptionTagId)
             .srcControlStreamId(srcControlStreamId)

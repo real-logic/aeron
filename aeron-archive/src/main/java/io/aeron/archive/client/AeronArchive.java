@@ -1696,6 +1696,8 @@ public final class AeronArchive implements AutoCloseable
      *
      * @param srcRecordingId     recording id which must exist in the source archive.
      * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
+     * @param stopPosition       position to stop the replication. {@link AeronArchive#NULL_POSITION} to stop at end
+     *                           of current recording.
      * @param channelTagId       used to tag the replication subscription.
      * @param subscriptionTagId  used to tag the replication subscription.
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
@@ -1707,6 +1709,7 @@ public final class AeronArchive implements AutoCloseable
     public long taggedReplicate(
         final long srcRecordingId,
         final long dstRecordingId,
+        final long stopPosition,
         final long channelTagId,
         final long subscriptionTagId,
         final int srcControlStreamId,
@@ -1725,6 +1728,7 @@ public final class AeronArchive implements AutoCloseable
             if (!archiveProxy.taggedReplicate(
                 srcRecordingId,
                 dstRecordingId,
+                stopPosition,
                 channelTagId,
                 subscriptionTagId,
                 srcControlStreamId,

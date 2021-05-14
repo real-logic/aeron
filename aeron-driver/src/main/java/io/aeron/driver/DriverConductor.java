@@ -1334,9 +1334,15 @@ public final class DriverConductor implements Agent
         {
             validateMtuForSndbuf(params, channelEndpoint.socketSndbufLength(), ctx);
             validateChannelBufferLength(
-                SOCKET_RCVBUF_PARAM_NAME, udpChannel.socketRcvbufLength(), channelEndpoint.socketRcvbufLength());
+                SOCKET_RCVBUF_PARAM_NAME,
+                udpChannel.socketRcvbufLength(),
+                channelEndpoint.socketRcvbufLength(),
+                udpChannel.originalUriString());
             validateChannelBufferLength(
-                SOCKET_SNDBUF_PARAM_NAME, udpChannel.socketSndbufLength(), channelEndpoint.socketSndbufLength());
+                SOCKET_SNDBUF_PARAM_NAME,
+                udpChannel.socketSndbufLength(),
+                channelEndpoint.socketSndbufLength(),
+                udpChannel.originalUriString());
         }
 
         return channelEndpoint;
@@ -1524,7 +1530,7 @@ public final class DriverConductor implements Agent
                     channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
                 }
 
-                validateInitialWindowForRcvBuf(params, channelEndpoint.socketRcvbufLength(), ctx);
+                validateInitialWindowForRcvBuf(params, udpChannel, channelEndpoint.socketRcvbufLength(), ctx);
 
                 receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
                 receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
@@ -1537,11 +1543,17 @@ public final class DriverConductor implements Agent
         }
         else
         {
-            validateInitialWindowForRcvBuf(params, channelEndpoint.socketRcvbufLength(), ctx);
+            validateInitialWindowForRcvBuf(params, udpChannel, channelEndpoint.socketRcvbufLength(), ctx);
             validateChannelBufferLength(
-                SOCKET_RCVBUF_PARAM_NAME, udpChannel.socketRcvbufLength(), channelEndpoint.socketRcvbufLength());
+                SOCKET_RCVBUF_PARAM_NAME,
+                udpChannel.socketRcvbufLength(),
+                channelEndpoint.socketRcvbufLength(),
+                udpChannel.originalUriString());
             validateChannelBufferLength(
-                SOCKET_SNDBUF_PARAM_NAME, udpChannel.socketSndbufLength(), channelEndpoint.socketSndbufLength());
+                SOCKET_SNDBUF_PARAM_NAME,
+                udpChannel.socketSndbufLength(),
+                channelEndpoint.socketSndbufLength(),
+                udpChannel.originalUriString());
         }
 
         return channelEndpoint;
@@ -1894,14 +1906,15 @@ public final class DriverConductor implements Agent
         return workCount;
     }
 
-    private static void validateChannelBufferLength(final String name, final int newLength, final int existingLength)
+    private static void validateChannelBufferLength(
+        final String paramName, final int newLength, final int existingLength, final String channel)
     {
         if (0 != newLength && newLength != existingLength)
         {
             final String existingValue = 0 == existingLength ? "OS default" : Integer.toString(existingLength);
 
             throw new InvalidChannelException(
-                name + "=" + newLength + " does not match existing value of " + existingValue);
+                paramName + "=" + newLength + " does not match existing value of " + existingValue + " uri=" + channel);
         }
     }
 

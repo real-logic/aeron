@@ -117,20 +117,24 @@ final class SubscriptionParams
         return params;
     }
 
-    public static void validateInitialWindowForRcvBuf(
-        final SubscriptionParams params, final int channelSocketRcvbufLength, final MediaDriver.Context ctx)
+    static void validateInitialWindowForRcvBuf(
+        final SubscriptionParams params,
+        final UdpChannel udpChannel,
+        final int channelSocketRcvbufLength,
+        final MediaDriver.Context ctx)
     {
         if (0 != channelSocketRcvbufLength && params.initialWindowLength > channelSocketRcvbufLength)
         {
             throw new IllegalStateException(
                 "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
-                " so-rcvbuf=" + channelSocketRcvbufLength);
+                " so-rcvbuf=" + channelSocketRcvbufLength + " uri=" + udpChannel.originalUriString());
         }
         else if (0 == channelSocketRcvbufLength && params.initialWindowLength > ctx.osDefaultSocketRcvbufLength())
         {
             throw new IllegalStateException(
                 "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
-                " so-rcvbuf=" + ctx.osDefaultSocketRcvbufLength() + " (OS default)");
+                " so-rcvbuf=" + ctx.osDefaultSocketRcvbufLength() + " (OS default)" +
+                " uri=" + udpChannel.originalUriString());
         }
     }
 

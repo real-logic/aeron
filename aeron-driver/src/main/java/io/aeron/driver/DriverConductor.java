@@ -224,15 +224,15 @@ public final class DriverConductor implements Agent
         final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        final UdpChannel udpChannel = channelEndpoint.udpChannel();
+        final UdpChannel subscriptionChannel = channelEndpoint.subscriptionUdpChannel();
+        final UdpChannel destChannel = channelEndpoint.udpChannel();
 
         Configuration.validateMtuLength(senderMtuLength);
         Configuration.validateInitialWindowLength(
-            udpChannel.receiverWindowLengthOrDefault(ctx.initialWindowLength()), senderMtuLength);
+            subscriptionChannel.receiverWindowLengthOrDefault(ctx.initialWindowLength()), senderMtuLength);
 
         final long joinPosition = computePosition(
             activeTermId, initialTermOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
-
         final ArrayList<SubscriberPosition> subscriberPositions = createSubscriberPositions(
             sessionId, streamId, channelEndpoint, joinPosition);
 
@@ -257,7 +257,7 @@ public final class DriverConductor implements Agent
 
                 congestionControl = ctx.congestionControlSupplier().newInstance(
                     registrationId,
-                    udpChannel,
+                    subscriptionChannel,
                     streamId,
                     sessionId,
                     termBufferLength,
@@ -269,13 +269,13 @@ public final class DriverConductor implements Agent
                     countersManager);
 
                 hwmPos = ReceiverHwm .allocate(
-                    tempBuffer, countersManager, registrationId, sessionId, streamId, udpChannel.originalUriString());
+                    tempBuffer, countersManager, registrationId, sessionId, streamId, destChannel.originalUriString());
                 receiverPos = ReceiverPos.allocate(
-                    tempBuffer, countersManager, registrationId, sessionId, streamId, udpChannel.originalUriString());
+                    tempBuffer, countersManager, registrationId, sessionId, streamId, destChannel.originalUriString());
 
                 final InferableBoolean groupSubscription = subscriberPositions.get(0).subscription().group();
                 final boolean treatAsMulticast = groupSubscription == INFER ?
-                    udpChannel.isMulticast() : groupSubscription == FORCE_TRUE;
+                    destChannel.isMulticast() : groupSubscription == FORCE_TRUE;
 
                 final PublicationImage image = new PublicationImage(
                     registrationId,

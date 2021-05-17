@@ -340,7 +340,13 @@ int aeron_udp_channel_parse(
     }
     else if (NULL != _channel->uri.params.udp.control)
     {
-        _channel->interface_index = 0;
+        if (aeron_find_unicast_interface(
+            explicit_control_addr.ss_family, _channel->uri.params.udp.bind_interface, &interface_addr, &interface_index) < 0)
+        {
+            goto error_cleanup;
+        }
+
+        _channel->interface_index = interface_index;
         _channel->multicast_ttl = 0;
         memcpy(&_channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
         memcpy(&_channel->remote_control, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));

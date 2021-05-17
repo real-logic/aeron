@@ -3962,7 +3962,7 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_driver_conductor_log_error(conductor);
-        return;
+        goto cleanup;
     }
 
     if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
@@ -3971,6 +3971,7 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
             conductor->context->sender_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
     }
 
+cleanup:
     aeron_driver_sender_proxy_on_delete_cmd(conductor->context->sender_proxy, item);
 }
 
@@ -3986,7 +3987,7 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_driver_conductor_log_error(conductor);
-        return;
+        goto cleanup;
     }
 
     if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
@@ -3995,6 +3996,7 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
             conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, cmd->destination, &resolved_addr);
     }
 
+cleanup:
     aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, item);
 }
 

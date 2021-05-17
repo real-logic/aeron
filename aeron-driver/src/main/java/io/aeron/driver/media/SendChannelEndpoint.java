@@ -287,9 +287,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             if (statusMessageTimeout(nowNs) && ((timeOfLastResolutionNs + DESTINATION_TIMEOUT) - nowNs) < 0)
             {
+                timeOfLastResolutionNs = nowNs;
                 final String endpoint = udpChannel.channelUri().get(CommonContext.ENDPOINT_PARAM_NAME);
                 conductorProxy.reResolveEndpoint(endpoint, this, udpChannel.remoteData());
-                timeOfLastResolutionNs = nowNs;
             }
         }
     }

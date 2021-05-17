@@ -186,10 +186,9 @@ class ManualSndMultiDestination extends MultiSndDestination
         {
             if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs < 0)
             {
-                final String endpoint = destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
-
-                conductorProxy.reResolveEndpoint(endpoint, channelEndpoint, destination.address);
                 destination.timeOfLastActivityNs = nowNs;
+                final String endpoint = destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+                conductorProxy.reResolveEndpoint(endpoint, channelEndpoint, destination.address);
             }
         }
     }

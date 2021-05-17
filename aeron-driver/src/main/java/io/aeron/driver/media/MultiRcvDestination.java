@@ -114,12 +114,12 @@ final class MultiRcvDestination
                 if (udpChannel.hasExplicitControl() &&
                     (transport.timeOfLastActivityNs() + DESTINATION_ADDRESS_TIMEOUT) < nowNs)
                 {
+                    transport.timeOfLastActivityNs(nowNs);
                     conductorProxy.reResolveControl(
                         udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME),
                         udpChannel,
                         channelEndpoint,
                         transport.currentControlAddress());
-                    transport.timeOfLastActivityNs(nowNs);
                 }
             }
         }

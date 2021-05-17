@@ -464,13 +464,12 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         for (final DriverNameResolverCache.Iterator iter = cache.resetIterator(); iter.hasNext(); )
         {
             byteBuffer.clear();
-
-            int currentOffset = HeaderFlyweight.MIN_HEADER_LENGTH;
-
             headerFlyweight
                 .headerType(HeaderFlyweight.HDR_TYPE_RES)
                 .flags((short)0)
                 .version(HeaderFlyweight.CURRENT_VERSION);
+
+            int currentOffset = HeaderFlyweight.MIN_HEADER_LENGTH;
 
             while (iter.hasNext())
             {

@@ -110,10 +110,11 @@ public final class DriverConductor implements Agent
     private final DataHeaderFlyweight defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
     private NameResolver nameResolver;
     private DriverNameResolver driverNameResolver;
+    private final AtomicCounter errorCounter;
     private final AtomicCounter maxCycleTime;
     private final AtomicCounter cycleTimeThresholdExceededCount;
 
-    DriverConductor(final Context ctx)
+    DriverConductor(final MediaDriver.Context ctx)
     {
         this.ctx = ctx;
         timerIntervalNs = ctx.timerIntervalNs();
@@ -129,11 +130,12 @@ public final class DriverConductor implements Agent
         toDriverCommands = ctx.toDriverCommands();
         clientProxy = ctx.clientProxy();
         tempBuffer = ctx.tempBuffer();
+        errorCounter = ctx.systemCounters().get(ERRORS);
 
         countersManager = ctx.countersManager();
 
         clientCommandAdapter = new ClientCommandAdapter(
-            ctx.systemCounters().get(ERRORS),
+            errorCounter,
             ctx.errorHandler(),
             toDriverCommands,
             clientProxy,
@@ -333,10 +335,10 @@ public final class DriverConductor implements Agent
     void onReResolveEndpoint(
         final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
-        final InetSocketAddress newAddress;
         try
         {
-            newAddress = UdpChannel.resolve(endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
+            final InetSocketAddress newAddress = UdpChannel.resolve(
+                endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
 
             if (!address.equals(newAddress))
             {
@@ -345,7 +347,8 @@ public final class DriverConductor implements Agent
         }
         catch (final UnknownHostException ex)
         {
-            LangUtil.rethrowUnchecked(ex);
+            ctx.errorHandler().onError(ex);
+            errorCounter.increment();
         }
     }
 
@@ -355,10 +358,10 @@ public final class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress address)
     {
-        final InetSocketAddress newAddress;
         try
         {
-            newAddress = UdpChannel.resolve(control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
+            final InetSocketAddress newAddress = UdpChannel.resolve(
+                control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
 
             if (!address.equals(newAddress))
             {
@@ -367,7 +370,8 @@ public final class DriverConductor implements Agent
         }
         catch (final UnknownHostException ex)
         {
-            LangUtil.rethrowUnchecked(ex);
+            ctx.errorHandler().onError(ex);
+            errorCounter.increment();
         }
     }
 

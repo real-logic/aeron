@@ -124,8 +124,8 @@ public final class Sender extends SenderRhsPadding implements Agent
 
         if (reResolutionCheckIntervalNs > 0 && (reResolutionDeadlineNs - nowNs) < 0)
         {
-            controlTransportPoller.checkForReResolutions(nowNs, conductorProxy);
             reResolutionDeadlineNs = nowNs + reResolutionCheckIntervalNs;
+            controlTransportPoller.checkForReResolutions(nowNs, conductorProxy);
         }
 
         return workCount + bytesSent + bytesReceived;

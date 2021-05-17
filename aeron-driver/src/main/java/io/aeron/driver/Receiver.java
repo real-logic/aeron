@@ -127,8 +127,8 @@ public final class Receiver implements Agent
 
         if (reResolutionCheckIntervalNs > 0 && (reResolutionDeadlineNs - nowNs) < 0)
         {
-            dataTransportPoller.checkForReResolutions(nowNs, conductorProxy);
             reResolutionDeadlineNs = nowNs + reResolutionCheckIntervalNs;
+            dataTransportPoller.checkForReResolutions(nowNs, conductorProxy);
         }
 
         return workCount + bytesReceived;
@@ -299,9 +299,9 @@ public final class Receiver implements Agent
                 }
                 else if (pending.shouldElicitSetupMessage())
                 {
+                    pending.timeOfStatusMessageNs(nowNs);
                     pending.channelEndpoint().sendSetupElicitingStatusMessage(
                         pending.transportIndex(), pending.controlAddress(), pending.sessionId(), pending.streamId());
-                    pending.timeOfStatusMessageNs(nowNs);
                 }
             }
         }

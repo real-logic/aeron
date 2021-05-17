@@ -881,12 +881,12 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         }
         else if (udpChannel.hasExplicitControl() && (timeOfLastActivityNs + DESTINATION_ADDRESS_TIMEOUT) - nowNs < 0)
         {
+            timeOfLastActivityNs = nowNs;
             conductorProxy.reResolveControl(
                 udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME),
                 udpChannel,
                 this,
                 currentControlAddress);
-            timeOfLastActivityNs = nowNs;
         }
     }
 

@@ -764,21 +764,14 @@ public final class UdpChannel
         final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
         {
-            try
-            {
-                address = SocketAddressParser.parse(
-                    endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
+            address = SocketAddressParser.parse(
+                endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
 
-                if (address.isUnresolved())
-                {
-                    throw new UnknownHostException(
-                        "unresolved - " + CommonContext.ENDPOINT_PARAM_NAME + "=" + endpointValue +
-                        ", name-resolver=" + nameResolver.getClass().getName());
-                }
-            }
-            catch (final UnknownHostException ex)
+            if (address.isUnresolved())
             {
-                LangUtil.rethrowUnchecked(ex);
+                LangUtil.rethrowUnchecked(new UnknownHostException(
+                    "unresolved - " + CommonContext.ENDPOINT_PARAM_NAME + "=" + endpointValue +
+                    ", name-resolver=" + nameResolver.getClass().getName()));
             }
         }
 
@@ -791,21 +784,14 @@ public final class UdpChannel
         final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
         {
-            try
-            {
-                address = SocketAddressParser.parse(
-                    controlValue, CommonContext.MDC_CONTROL_PARAM_NAME, false, nameResolver);
+            address = SocketAddressParser.parse(
+                controlValue, CommonContext.MDC_CONTROL_PARAM_NAME, false, nameResolver);
 
-                if (address.isUnresolved())
-                {
-                    throw new UnknownHostException(
-                        "unresolved - " + CommonContext.MDC_CONTROL_PARAM_NAME + "=" + controlValue +
-                        ", name-resolver=" + nameResolver.getClass().getName());
-                }
-            }
-            catch (final UnknownHostException ex)
+            if (address.isUnresolved())
             {
-                LangUtil.rethrowUnchecked(ex);
+                LangUtil.rethrowUnchecked(new UnknownHostException(
+                    "unresolved - " + CommonContext.MDC_CONTROL_PARAM_NAME + "=" + controlValue +
+                    ", name-resolver=" + nameResolver.getClass().getName()));
             }
         }
 

@@ -34,8 +34,8 @@ with Java **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%
 
 Commercial support, training, and development on Aeron is available from
 [sales@real-logic.co.uk](mailto:sales@real-logic.co.uk?subject=Aeron). Premium features such as Solarflare ef_vi
-transport bindings for a further 40-60% reduction in latency, and security with ATS (Aeron Transport Security) for
-encrypted communications is available to customers on commercial support.
+transport bindings for a further 20-60% reduction in latency depending on usage and configuration, and security with
+ATS (Aeron Transport Security) for encrypted communications is available to customers on commercial support.
 
 ### How do I use Aeron?
 

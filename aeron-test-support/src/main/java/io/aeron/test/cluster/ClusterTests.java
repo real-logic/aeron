@@ -28,6 +28,7 @@ import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -135,7 +136,7 @@ public class ClusterTests
         final Throwable error = ERROR.getAndSet(null);
         final Throwable warning = WARNING.getAndSet(null);
 
-        if (null != error)
+        if (null != error && !(error instanceof UnknownHostException))
         {
             if (null != warning)
             {

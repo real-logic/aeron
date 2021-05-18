@@ -290,6 +290,11 @@ public class TestNode implements AutoCloseable
         }
     }
 
+    public String hostname()
+    {
+        return TestCluster.hostname(index());
+    }
+
     public static class TestService extends StubClusteredService
     {
         static final int SNAPSHOT_FRAGMENT_COUNT = 500;

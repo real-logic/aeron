@@ -251,6 +251,38 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
+    @Disabled("Fixing this behaviour requires further development...")
+    public void shouldHandleLeaderFailOverWhenNameIsNotResolvable(final TestInfo testInfo)
+    {
+        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        try
+        {
+            final TestNode originalLeader = cluster.awaitLeader();
+            cluster.connectClient();
+
+            final int expectedCount = 10;
+
+            cluster.sendMessages(expectedCount);
+            cluster.awaitResponseMessageCount(expectedCount);
+            cluster.awaitServicesMessageCount(expectedCount);
+
+            cluster.disableNameResolution(originalLeader.hostname());
+            originalLeader.close();
+
+            cluster.awaitLeader();
+
+            cluster.sendMessages(expectedCount);
+            cluster.awaitResponseMessageCount(2 * expectedCount);
+            cluster.awaitServicesMessageCount(2 * expectedCount);
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
+    @Test
+    @Timeout(40)
     public void shouldEchoMessagesThenContinueOnNewLeader(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);

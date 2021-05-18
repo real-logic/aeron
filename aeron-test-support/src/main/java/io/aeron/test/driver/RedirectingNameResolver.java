@@ -15,9 +15,13 @@
  */
 package io.aeron.test.driver;
 
+import io.aeron.Aeron;
 import io.aeron.driver.DefaultNameResolver;
+import io.aeron.driver.MediaDriver;
 import io.aeron.driver.NameResolver;
 import org.agrona.collections.Object2ObjectHashMap;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.net.InetAddress;
 import java.util.Collections;
@@ -25,6 +29,7 @@ import java.util.Map;
 
 public class RedirectingNameResolver implements NameResolver
 {
+    public static final int NAME_ENTRY_TYPE_ID = 2001;
     private final Map<String, Map<String, NameEntry>> paramNameToNameMap = new Object2ObjectHashMap<>();
 
     public RedirectingNameResolver(final String csvConfiguration)
@@ -44,13 +49,37 @@ public class RedirectingNameResolver implements NameResolver
         }
     }
 
+    public void init(final MediaDriver.Context context)
+    {
+        final CountersManager countersManager = context.countersManager();
+
+        for (Map<String, NameEntry> endpointToNameEntry : paramNameToNameMap.values())
+        {
+            for (NameEntry nameEntry : endpointToNameEntry.values())
+            {
+                final AtomicCounter atomicCounter = countersManager.newCounter(
+                    nameEntry.toString(),
+                    NAME_ENTRY_TYPE_ID,
+                    mutableDirectBuffer -> mutableDirectBuffer.putStringAscii(0, nameEntry.name));
+                nameEntry.counter(atomicCounter);
+            }
+        }
+    }
+
     public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
     {
         final NameEntry nameEntry = paramNameToNameMap.getOrDefault(uriParamName, Collections.emptyMap()).get(name);
         final String hostname;
         if (null != nameEntry)
         {
-            hostname = isReResolution ? nameEntry.reResolutionHost : nameEntry.initialResolutionHost;
+            if (nameEntry.isValid())
+            {
+                hostname = isReResolution ? nameEntry.reResolutionHost : nameEntry.initialResolutionHost;
+            }
+            else
+            {
+                return null;
+            }
         }
         else
         {
@@ -66,6 +95,7 @@ public class RedirectingNameResolver implements NameResolver
         final String name;
         final String initialResolutionHost;
         final String reResolutionHost;
+        AtomicCounter counter;
 
         NameEntry(
             final String paramName,
@@ -77,6 +107,26 @@ public class RedirectingNameResolver implements NameResolver
             this.name = name;
             this.initialResolutionHost = initialResolutionHost;
             this.reResolutionHost = reResolutionHost;
+        }
+
+        public void counter(final AtomicCounter counter)
+        {
+            this.counter = counter;
+        }
+
+        public boolean isValid()
+        {
+            return Aeron.NULL_VALUE != counter.get();
+        }
+
+        public String toString()
+        {
+            return "NameEntry{" +
+                "paramName='" + paramName + '\'' +
+                ", name='" + name + '\'' +
+                ", initialResolutionHost='" + initialResolutionHost + '\'' +
+                ", reResolutionHost='" + reResolutionHost + '\'' +
+                '}';
         }
     }
 }

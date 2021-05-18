@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "aeron_int64_counter_map.h"
+#include "collections/aeron_int64_counter_map.h"
 
 extern size_t aeron_int64_counter_map_hash_key(int64_t key, size_t mask);
 

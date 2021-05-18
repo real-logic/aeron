@@ -370,8 +370,8 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         {
             if (nowMs > bootstrapNeighborResolveDeadlineMs)
             {
-                bootstrapNeighborAddress = UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
                 bootstrapNeighborResolveDeadlineMs = nowMs + TIMEOUT_MS;
+                bootstrapNeighborAddress = UdpNameResolutionTransport.getInetSocketAddress(bootstrapNeighbor);
             }
 
             sendResolutionFrameTo(byteBuffer, bootstrapNeighborAddress);

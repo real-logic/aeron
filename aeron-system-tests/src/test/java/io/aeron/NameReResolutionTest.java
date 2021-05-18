@@ -21,7 +21,8 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.test.*;
+import io.aeron.test.SlowTest;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.DistinctErrorLogTestWatcher;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -43,7 +44,6 @@ import java.io.IOException;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.MDC_CONTROL_PARAM_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
-import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.mockito.Mockito.*;
 
@@ -395,9 +395,8 @@ public class NameReResolutionTest
         Tests.awaitCounterDelta(
             client.countersReader(), SystemCounterDescriptor.ERRORS.id(), initialErrorCount, 1);
 
-        final Matcher<String> exceptionMessageMatcher = allOf(
-            containsString("endpoint=" + ENDPOINT_WITH_ERROR_NAME),
-            containsString("name-and-port=" + BAD_ADDRESS));
+        final Matcher<String> exceptionMessageMatcher =
+            containsString("endpoint=" + ENDPOINT_WITH_ERROR_NAME);
 
         SystemTests.waitForErrorToOccur(
             client.context().aeronDirectoryName(),

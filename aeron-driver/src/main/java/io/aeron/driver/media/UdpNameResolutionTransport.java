@@ -172,15 +172,25 @@ public final class UdpNameResolutionTransport extends UdpChannelTransport
      */
     public static InetSocketAddress getInetSocketAddress(final String hostAndPort)
     {
+        InetSocketAddress address = null;
+
         try
         {
-            return SocketAddressParser.parse(
+            address = SocketAddressParser.parse(
                 hostAndPort, CommonContext.ENDPOINT_PARAM_NAME, false, DefaultNameResolver.INSTANCE);
+
+            if (address.isUnresolved())
+            {
+                throw new UnknownHostException(
+                    "unresolved - " + CommonContext.ENDPOINT_PARAM_NAME + "=" + hostAndPort +
+                    ", name-resolver=" + DefaultNameResolver.INSTANCE.getClass().getName());
+            }
         }
         catch (final UnknownHostException ex)
         {
             LangUtil.rethrowUnchecked(ex);
-            return null;
         }
+
+        return address;
     }
 }

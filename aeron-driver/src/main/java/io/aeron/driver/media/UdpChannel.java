@@ -730,11 +730,9 @@ public final class UdpChannel
      * @param isReResolution for the resolution
      * @param nameResolver   to be used for hostname.
      * @return address for endpoint
-     * @throws UnknownHostException if the endpoint can not be resolved.
      */
     public static InetSocketAddress resolve(
         final String endpoint, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
-        throws UnknownHostException
     {
         return SocketAddressParser.parse(endpoint, uriParamName, isReResolution, nameResolver);
     }
@@ -770,6 +768,13 @@ public final class UdpChannel
             {
                 address = SocketAddressParser.parse(
                     endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
+
+                if (address.isUnresolved())
+                {
+                    throw new UnknownHostException(
+                        "unresolved - " + CommonContext.ENDPOINT_PARAM_NAME + "=" + endpointValue +
+                        ", name-resolver=" + nameResolver.getClass().getName());
+                }
             }
             catch (final UnknownHostException ex)
             {
@@ -790,6 +795,13 @@ public final class UdpChannel
             {
                 address = SocketAddressParser.parse(
                     controlValue, CommonContext.MDC_CONTROL_PARAM_NAME, false, nameResolver);
+
+                if (address.isUnresolved())
+                {
+                    throw new UnknownHostException(
+                        "unresolved - " + CommonContext.MDC_CONTROL_PARAM_NAME + "=" + controlValue +
+                        ", name-resolver=" + nameResolver.getClass().getName());
+                }
             }
             catch (final UnknownHostException ex)
             {

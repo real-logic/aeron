@@ -339,12 +339,18 @@ public final class DriverConductor implements Agent
             final InetSocketAddress newAddress = UdpChannel.resolve(
                 endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
 
-            if (!address.equals(newAddress))
+            if (newAddress.isUnresolved())
+            {
+                ctx.errorHandler().onError(new UnknownHostException(
+                    "endpoint could not be re-resolved: endpoint=" + endpoint));
+                errorCounter.increment();
+            }
+            else if (!address.equals(newAddress))
             {
                 senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
             }
         }
-        catch (final UnknownHostException ex)
+        catch (final Throwable ex)
         {
             ctx.errorHandler().onError(ex);
             errorCounter.increment();
@@ -362,12 +368,18 @@ public final class DriverConductor implements Agent
             final InetSocketAddress newAddress = UdpChannel.resolve(
                 control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
 
-            if (!address.equals(newAddress))
+            if (newAddress.isUnresolved())
+            {
+                ctx.errorHandler().onError(new UnknownHostException(
+                    "control could not be re-resolved: control=" + control));
+                errorCounter.increment();
+            }
+            else if (!address.equals(newAddress))
             {
                 receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
             }
         }
-        catch (final UnknownHostException ex)
+        catch (final Throwable ex)
         {
             ctx.errorHandler().onError(ex);
             errorCounter.increment();

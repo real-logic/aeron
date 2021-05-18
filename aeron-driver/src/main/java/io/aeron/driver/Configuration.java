@@ -720,7 +720,7 @@ public final class Configuration
      */
     public static boolean printConfigurationOnStart()
     {
-        return "true".equalsIgnoreCase(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME, "false"));
+        return "true".equals(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME));
     }
 
     /**
@@ -731,7 +731,7 @@ public final class Configuration
      */
     public static boolean useWindowsHighResTimer()
     {
-        return "true".equalsIgnoreCase(getProperty(USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME, "false"));
+        return "true".equals(getProperty(USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME));
     }
 
     /**
@@ -742,7 +742,7 @@ public final class Configuration
      */
     public static boolean warnIfDirExists()
     {
-        return "true".equalsIgnoreCase(getProperty(DIR_WARN_IF_EXISTS_PROP_NAME, "false"));
+        return "true".equals(getProperty(DIR_WARN_IF_EXISTS_PROP_NAME));
     }
 
     /**
@@ -754,7 +754,7 @@ public final class Configuration
      */
     public static boolean dirDeleteOnStart()
     {
-        return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_START_PROP_NAME, "false"));
+        return "true".equals(getProperty(DIR_DELETE_ON_START_PROP_NAME));
     }
 
     /**
@@ -765,7 +765,7 @@ public final class Configuration
      */
     public static boolean dirDeleteOnShutdown()
     {
-        return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_SHUTDOWN_PROP_NAME, "false"));
+        return "true".equals(getProperty(DIR_DELETE_ON_SHUTDOWN_PROP_NAME));
     }
 
     /**
@@ -776,7 +776,7 @@ public final class Configuration
      */
     public static boolean termBufferSparseFile()
     {
-        return "true".equalsIgnoreCase(getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME, "false"));
+        return "true".equals(getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME));
     }
 
     /**
@@ -787,7 +787,7 @@ public final class Configuration
      */
     public static boolean tetherSubscriptions()
     {
-        return "true".equalsIgnoreCase(getProperty(TETHER_SUBSCRIPTIONS_PROP_NAME, "true"));
+        return "true".equals(getProperty(TETHER_SUBSCRIPTIONS_PROP_NAME, "true"));
     }
 
     /**
@@ -798,7 +798,7 @@ public final class Configuration
      */
     public static boolean reliableStream()
     {
-        return "true".equalsIgnoreCase(getProperty(RELIABLE_STREAM_PROP_NAME, "true"));
+        return "true".equals(getProperty(RELIABLE_STREAM_PROP_NAME, "true"));
     }
 
     /**
@@ -809,7 +809,7 @@ public final class Configuration
      */
     public static boolean performStorageChecks()
     {
-        return "true".equalsIgnoreCase(getProperty(PERFORM_STORAGE_CHECKS_PROP_NAME, "true"));
+        return "true".equals(getProperty(PERFORM_STORAGE_CHECKS_PROP_NAME, "true"));
     }
 
     /**
@@ -821,7 +821,7 @@ public final class Configuration
      */
     public static boolean spiesSimulateConnection()
     {
-        return "true".equalsIgnoreCase(getProperty(SPIES_SIMULATE_CONNECTION_PROP_NAME, "false"));
+        return "true".equals(getProperty(SPIES_SIMULATE_CONNECTION_PROP_NAME, "false"));
     }
 
     /**

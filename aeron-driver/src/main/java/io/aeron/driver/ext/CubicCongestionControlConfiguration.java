@@ -15,6 +15,8 @@
  */
 package io.aeron.driver.ext;
 
+import org.agrona.SystemUtil;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -51,17 +53,18 @@ public class CubicCongestionControlConfiguration
      * Should RTT be measured. Default is false.
      * @see #MEASURE_RTT_PROP_NAME
      */
-    public static final boolean MEASURE_RTT = Boolean.getBoolean(MEASURE_RTT_PROP_NAME);
+    public static final boolean MEASURE_RTT = "true".equals(System.getProperty(MEASURE_RTT_PROP_NAME));
 
     /**
      * Setting to be used for the initial RTT time when not measuring.
      * @see #INITIAL_RTT_NS_PROP_NAME
      */
-    public static final long INITIAL_RTT_NS = Long.getLong(INITIAL_RTT_NS_PROP_NAME, INITIAL_RTT_NS_DEFAULT);
+    public static final long INITIAL_RTT_NS = SystemUtil.getDurationInNanos(
+        INITIAL_RTT_NS_PROP_NAME, INITIAL_RTT_NS_DEFAULT);
 
     /**
      * Should TCP behaviour mode be on or off. Default is false (off).
      * @see #TCP_MODE_PROP_NAME
      */
-    public static final boolean TCP_MODE = Boolean.getBoolean(TCP_MODE_PROP_NAME);
+    public static final boolean TCP_MODE = "true".equals(System.getProperty(TCP_MODE_PROP_NAME));
 }

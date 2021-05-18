@@ -16,6 +16,7 @@
 package io.aeron.samples;
 
 import io.aeron.driver.Configuration;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 
 /**
@@ -74,14 +75,14 @@ public class SampleConfiguration
         PING_STREAM_ID = Integer.getInteger(PING_STREAM_ID_PROP, 1002);
         PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 1003);
         FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
-        MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 32);
-        RANDOM_MESSAGE_LENGTH = Boolean.getBoolean(RANDOM_MESSAGE_LENGTH_PROP);
+        MESSAGE_LENGTH = SystemUtil.getSizeAsInt(MESSAGE_LENGTH_PROP, 32);
+        RANDOM_MESSAGE_LENGTH = "true".equals(System.getProperty(RANDOM_MESSAGE_LENGTH_PROP));
         NUMBER_OF_MESSAGES = Long.getLong(NUMBER_OF_MESSAGES_PROP, 10_000_000);
         WARMUP_NUMBER_OF_MESSAGES = Long.getLong(WARMUP_NUMBER_OF_MESSAGES_PROP, 10_000);
         WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger(WARMUP_NUMBER_OF_ITERATIONS_PROP, 10);
-        EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean(EMBEDDED_MEDIA_DRIVER_PROP);
-        INFO_FLAG = Boolean.getBoolean(INFO_FLAG_PROP);
-        EXCLUSIVE_PUBLICATIONS = Boolean.getBoolean(EXCLUSIVE_PUBLICATIONS_PROP);
+        EMBEDDED_MEDIA_DRIVER = "true".equals(System.getProperty(EMBEDDED_MEDIA_DRIVER_PROP));
+        INFO_FLAG = "true".equals(System.getProperty(INFO_FLAG_PROP));
+        EXCLUSIVE_PUBLICATIONS = "true".equals(System.getProperty(EXCLUSIVE_PUBLICATIONS_PROP));
     }
 
     /**

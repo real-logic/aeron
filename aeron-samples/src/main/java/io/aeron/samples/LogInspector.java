@@ -46,14 +46,15 @@ public class LogInspector
      * Should the default header be skipped for output.
      */
     public static final String AERON_LOG_SKIP_DEFAULT_HEADER_PROP_NAME = "aeron.log.inspector.skipDefaultHeader";
-    public static final boolean AERON_LOG_SKIP_DEFAULT_HEADER = Boolean.getBoolean(
-        AERON_LOG_SKIP_DEFAULT_HEADER_PROP_NAME);
+    public static final boolean AERON_LOG_SKIP_DEFAULT_HEADER =
+        "true".equals(System.getProperty(AERON_LOG_SKIP_DEFAULT_HEADER_PROP_NAME));
 
     /**
      * Should zeros be skipped in the output to reduce noise.
      */
     public static final String AERON_LOG_SCAN_OVER_ZEROES_PROP_NAME = "aeron.log.inspector.scanOverZeroes";
-    public static final boolean AERON_LOG_SCAN_OVER_ZEROES = Boolean.getBoolean(AERON_LOG_SCAN_OVER_ZEROES_PROP_NAME);
+    public static final boolean AERON_LOG_SCAN_OVER_ZEROES =
+        "true".equals(System.getProperty(AERON_LOG_SCAN_OVER_ZEROES_PROP_NAME));
 
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 

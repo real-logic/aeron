@@ -614,7 +614,7 @@ public final class Archive implements AutoCloseable
         @Deprecated
         public static long maxCatalogEntries()
         {
-            return Long.getLong(MAX_CATALOG_ENTRIES_PROP_NAME, MAX_CATALOG_ENTRIES_DEFAULT);
+            return SystemUtil.getSizeAsLong(MAX_CATALOG_ENTRIES_PROP_NAME, MAX_CATALOG_ENTRIES_DEFAULT);
         }
 
         /**
@@ -624,7 +624,7 @@ public final class Archive implements AutoCloseable
          */
         public static long catalogCapacity()
         {
-            return Long.getLong(CATALOG_CAPACITY_PROP_NAME, CATALOG_CAPACITY_DEFAULT);
+            return SystemUtil.getSizeAsLong(CATALOG_CAPACITY_PROP_NAME, CATALOG_CAPACITY_DEFAULT);
         }
 
         /**

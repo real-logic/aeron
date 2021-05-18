@@ -160,7 +160,7 @@ public class ResolvedEndpointSystemTest
     @Timeout(5)
     void shouldSubscribeToSystemAssignedPortsUsingIPv6()
     {
-        assumeFalse(Boolean.getBoolean("java.net.preferIPv4Stack"));
+        assumeFalse("true".equals(System.getProperty("java.net.preferIPv4Stack")));
 
         final String systemAssignedPortUri = "aeron:udp?endpoint=[::1]:0|tags=1001";
         final String tagged2 = "aeron:udp?tags=1001";

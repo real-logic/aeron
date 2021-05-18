@@ -227,7 +227,6 @@ public final class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint)
     {
         final UdpChannel subscriptionChannel = channelEndpoint.subscriptionUdpChannel();
-        final UdpChannel destChannel = channelEndpoint.udpChannel();
 
         Configuration.validateMtuLength(senderMtuLength);
         Configuration.validateInitialWindowLength(
@@ -240,14 +239,14 @@ public final class DriverConductor implements Agent
 
         if (subscriberPositions.size() > 0)
         {
-            final long registrationId = toDriverCommands.nextCorrelationId();
             RawLog rawLog = null;
             CongestionControl congestionControl = null;
             UnsafeBufferPosition hwmPos = null;
-            UnsafeBufferPosition receiverPos = null;
+            UnsafeBufferPosition rcvPos = null;
 
             try
             {
+                final long registrationId = toDriverCommands.nextCorrelationId();
                 rawLog = newPublicationImageLog(
                     sessionId,
                     streamId,
@@ -270,11 +269,11 @@ public final class DriverConductor implements Agent
                     ctx,
                     countersManager);
 
-                hwmPos = ReceiverHwm .allocate(
-                    tempBuffer, countersManager, registrationId, sessionId, streamId, destChannel.originalUriString());
-                receiverPos = ReceiverPos.allocate(
-                    tempBuffer, countersManager, registrationId, sessionId, streamId, destChannel.originalUriString());
+                final String uri = subscriptionChannel.originalUriString();
+                hwmPos = ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
+                rcvPos = ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
 
+                final UdpChannel destChannel = channelEndpoint.udpChannel();
                 final InferableBoolean groupSubscription = subscriberPositions.get(0).subscription().group();
                 final boolean treatAsMulticast = groupSubscription == INFER ?
                     destChannel.isMulticast() : groupSubscription == FORCE_TRUE;
@@ -294,7 +293,7 @@ public final class DriverConductor implements Agent
                     treatAsMulticast ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
                     subscriberPositions,
                     hwmPos,
-                    receiverPos,
+                    rcvPos,
                     sourceAddress,
                     congestionControl);
 
@@ -320,7 +319,7 @@ public final class DriverConductor implements Agent
             catch (final Throwable ex)
             {
                 subscriberPositions.forEach((subscriberPosition) -> subscriberPosition.position().close());
-                CloseHelper.quietCloseAll(rawLog, congestionControl, hwmPos, receiverPos);
+                CloseHelper.quietCloseAll(rawLog, congestionControl, hwmPos, rcvPos);
                 throw ex;
             }
         }

@@ -21,8 +21,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.DistinctErrorLogTestWatcher;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -50,27 +49,31 @@ import static org.mockito.Mockito.*;
 public class NameReResolutionTest
 {
     private static final String ENDPOINT_NAME = "ReResTestEndpoint";
+    private static final int ENDPOINT_PORT = 24326;
+    private static final int CONTROL_PORT = 24327;
     private static final String ENDPOINT_WITH_ERROR_NAME = "ReResWithErrEndpoint";
-    private static final String PUBLICATION_MANUAL_MDC_URI = "aeron:udp?control=localhost:24327|control-mode=manual";
-    private static final String PUBLICATION_URI = "aeron:udp?endpoint=" + ENDPOINT_NAME;
-    private static final String PUBLICATION_WITH_ERROR_URI = "aeron:udp?endpoint=" + ENDPOINT_WITH_ERROR_NAME;
-    private static final String FIRST_SUBSCRIPTION_URI = "aeron:udp?endpoint=localhost:24325";
-    private static final String SECOND_SUBSCRIPTION_URI = "aeron:udp?endpoint=localhost:24326";
-    private static final String BAD_ADDRESS = "bad.invalid:24326";
+    private static final String PUBLICATION_MANUAL_MDC_URI =
+        "aeron:udp?control=localhost:" + CONTROL_PORT +"|control-mode=manual";
+    private static final String PUBLICATION_URI = "aeron:udp?endpoint=" + ENDPOINT_NAME + ":" + ENDPOINT_PORT;
+    private static final String PUBLICATION_WITH_ERROR_URI =
+        "aeron:udp?endpoint=" + ENDPOINT_WITH_ERROR_NAME + ":" + ENDPOINT_PORT;
+    private static final String FIRST_SUBSCRIPTION_URI = "aeron:udp?endpoint=127.0.0.1:" + ENDPOINT_PORT;
+    private static final String SECOND_SUBSCRIPTION_URI = "aeron:udp?endpoint=127.0.0.2:" + ENDPOINT_PORT;
+    private static final String BAD_ADDRESS = "bad.invalid";
 
     private static final String CONTROL_NAME = "ReResTestControl";
     private static final String FIRST_PUBLICATION_DYNAMIC_MDC_URI =
-        "aeron:udp?control=localhost:24327|control-mode=dynamic|linger=0";
+        "aeron:udp?control=127.0.0.1:" + CONTROL_PORT + "|control-mode=dynamic|linger=0";
     private static final String SECOND_PUBLICATION_DYNAMIC_MDC_URI =
-        "aeron:udp?control=localhost:24328|control-mode=dynamic";
+        "aeron:udp?control=127.0.0.2:" + CONTROL_PORT + "|control-mode=dynamic";
     private static final String SUBSCRIPTION_DYNAMIC_MDC_URI =
-        "aeron:udp?control=" + CONTROL_NAME + "|control-mode=dynamic";
+        "aeron:udp?control=" + CONTROL_NAME + ":" + CONTROL_PORT + "|control-mode=dynamic";
     private static final String SUBSCRIPTION_MDS_URI = "aeron:udp?control-mode=manual";
 
     private static final String STUB_LOOKUP_CONFIGURATION =
-        ENDPOINT_NAME + "," + ENDPOINT_PARAM_NAME + "," + "localhost:24326,localhost:24325|" +
-        CONTROL_NAME + "," + MDC_CONTROL_PARAM_NAME + "," + "localhost:24328,localhost:24327|" +
-        ENDPOINT_WITH_ERROR_NAME + "," + ENDPOINT_PARAM_NAME + "," + BAD_ADDRESS + ",localhost:24325|";
+        String.format("%s,%s,%s,%s|", ENDPOINT_PARAM_NAME, ENDPOINT_NAME, "127.0.0.1", "127.0.0.2") +
+        String.format("%s,%s,%s,%s|", MDC_CONTROL_PARAM_NAME, CONTROL_NAME, "127.0.0.1", "127.0.0.2") +
+        String.format("%s,%s,%s,%s|", ENDPOINT_PARAM_NAME, ENDPOINT_WITH_ERROR_NAME, "localhost", BAD_ADDRESS);
 
     private static final int STREAM_ID = 1001;
 

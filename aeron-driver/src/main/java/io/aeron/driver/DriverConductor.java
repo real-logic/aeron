@@ -166,6 +166,8 @@ public final class DriverConductor implements Agent
             .appendToLabel(": driverName=").appendToLabel(ctx.resolverName())
             .appendToLabel(" hostname=").appendToLabel(DriverNameResolver.getCanonicalName("<unresolved>"));
 
+        nameResolver.init(ctx);
+
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
         cachedEpochClock.update(epochClock.time());

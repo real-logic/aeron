@@ -49,6 +49,16 @@ public interface NameResolver
     }
 
     /**
+     * Do post construction initialisation of the name resolver.  Happen during the conductor start lifecycle.  Can be
+     * used for actions like adding counters.
+     *
+     * @param context for the media driver that the name resolver is running in.
+     */
+    default void init(MediaDriver.Context context)
+    {
+    }
+
+    /**
      * Perform periodic work for the resolver.
      *
      * @param nowMs current epoch clock time in milliseconds

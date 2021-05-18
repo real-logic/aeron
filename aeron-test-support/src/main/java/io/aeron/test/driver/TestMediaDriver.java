@@ -69,7 +69,7 @@ public interface TestMediaDriver extends AutoCloseable
         }
         else
         {
-            context.nameResolver(new StubCsvNameResolver(csvLookupTable));
+            context.nameResolver(new RedirectingNameResolver(csvLookupTable));
         }
     }
 

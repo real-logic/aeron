@@ -58,18 +58,17 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
 
     /**
      * Construct a new transport for a receive destination.
-     *  @param udpChannel                  for the destination.
+     *
+     * @param udpChannel                  for the destination.
      * @param context                     for configuration.
      * @param localSocketAddressIndicator to indicate status of the transport.
-     * @param socketRcvbufLength set SO_RCVBUF for socket, 0 for OS default.
-     * @param socketSndbufLength set SO_SNDBUF for socket, 0 for OS default.
+     * @param receiveChannelEndpoint      to which this destination belongs.
      */
     public ReceiveDestinationTransport(
         final UdpChannel udpChannel,
         final MediaDriver.Context context,
         final AtomicCounter localSocketAddressIndicator,
-        final int socketRcvbufLength,
-        final int socketSndbufLength)
+        final ReceiveChannelEndpoint receiveChannelEndpoint)
     {
         super(
             udpChannel,
@@ -77,8 +76,8 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
             udpChannel.remoteData(),
             null,
             context,
-            socketRcvbufLength,
-            socketSndbufLength);
+            receiveChannelEndpoint.socketRcvbufLength(),
+            receiveChannelEndpoint.socketSndbufLength());
 
         this.timeOfLastActivityNs = context.receiverCachedNanoClock().nanoTime();
         this.currentControlAddress = udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;

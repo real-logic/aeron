@@ -434,9 +434,9 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Return the UdpChannel for the Subscription channel
+     * Return the {@link UdpChannel} for the Subscription channel.
      *
-     * @return UdpChannel for the Subscription channel
+     * @return {@link UdpChannel} for the Subscription channel.
      */
     public UdpChannel subscriptionUdpChannel()
     {

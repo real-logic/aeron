@@ -3227,7 +3227,7 @@ public final class MediaDriver implements AutoCloseable
             }
             catch (final IOException ex)
             {
-                throw new AeronException("probe socket: " + ex.toString(), ex);
+                throw new AeronException("probe socket: " + ex, ex);
             }
         }
 

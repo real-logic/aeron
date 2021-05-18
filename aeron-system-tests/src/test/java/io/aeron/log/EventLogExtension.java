@@ -28,7 +28,7 @@ public class EventLogExtension implements BeforeEachCallback, AfterEachCallback
     /**
      * {@inheritDoc}
      */
-    public void beforeEach(final ExtensionContext context) throws Exception
+    public void beforeEach(final ExtensionContext context)
     {
         Tests.startLogCollecting();
     }
@@ -36,7 +36,7 @@ public class EventLogExtension implements BeforeEachCallback, AfterEachCallback
     /**
      * {@inheritDoc}
      */
-    public void afterEach(final ExtensionContext context) throws Exception
+    public void afterEach(final ExtensionContext context)
     {
         Tests.resetLogCollecting();
     }

@@ -17,7 +17,7 @@
 #ifndef AERON_AERON_MAP_H
 #define AERON_AERON_MAP_H
 
-#define AERON_MAP_DEFAULT_LOAD_FACTOR (0.55f)
+#define AERON_MAP_DEFAULT_LOAD_FACTOR (0.65f)
 
 #include <stdint.h>
 

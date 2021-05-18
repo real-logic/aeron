@@ -456,10 +456,10 @@ int aeron_driver_conductor_on_remove_subscription(aeron_driver_conductor_t *cond
 
 int aeron_driver_conductor_on_client_keepalive(aeron_driver_conductor_t *conductor, int64_t client_id);
 
-int aeron_driver_conductor_on_add_destination(
+int aeron_driver_conductor_on_add_send_destination(
     aeron_driver_conductor_t *conductor, aeron_destination_command_t *command);
 
-int aeron_driver_conductor_on_remove_destination(
+int aeron_driver_conductor_on_remove_send_destination(
     aeron_driver_conductor_t *conductor, aeron_destination_command_t *command);
 
 int aeron_driver_conductor_on_add_receive_destination(

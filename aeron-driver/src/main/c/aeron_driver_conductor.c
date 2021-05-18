@@ -2262,7 +2262,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
             correlation_id = command->correlated.correlation_id;
 
-            result = aeron_driver_conductor_on_add_destination(conductor, command);
+            result = aeron_driver_conductor_on_add_send_destination(conductor, command);
             break;
         }
 
@@ -2278,7 +2278,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
             correlation_id = command->correlated.correlation_id;
 
-            result = aeron_driver_conductor_on_remove_destination(conductor, command);
+            result = aeron_driver_conductor_on_remove_send_destination(conductor, command);
             break;
         }
 
@@ -3333,7 +3333,8 @@ int aeron_driver_conductor_on_client_keepalive(aeron_driver_conductor_t *conduct
     return 0;
 }
 
-int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conductor, aeron_destination_command_t *command)
+int aeron_driver_conductor_on_add_send_destination(
+    aeron_driver_conductor_t *conductor, aeron_destination_command_t *command)
 {
     aeron_send_channel_endpoint_t *endpoint = NULL;
 
@@ -3424,7 +3425,7 @@ error_cleanup:
     return -1;
 }
 
-int aeron_driver_conductor_on_remove_destination(
+int aeron_driver_conductor_on_remove_send_destination(
     aeron_driver_conductor_t *conductor, aeron_destination_command_t *command)
 {
     aeron_send_channel_endpoint_t *endpoint = NULL;

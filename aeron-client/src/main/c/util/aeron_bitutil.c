@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "aeron_bitutil.h"
+#include "util/aeron_bitutil.h"
 
 extern uint8_t *aeron_cache_line_align_buffer(uint8_t *buffer);
 extern int aeron_number_of_trailing_zeroes(int32_t value);

@@ -24,9 +24,9 @@
 #include <errno.h>
 #include <inttypes.h>
 
-#include "aeron_dlopen.h"
-#include "aeron_error.h"
-#include "aeron_strutil.h"
+#include "util/aeron_dlopen.h"
+#include "util/aeron_error.h"
+#include "util/aeron_strutil.h"
 #include "aeron_alloc.h"
 
 #if defined(AERON_COMPILER_GCC)

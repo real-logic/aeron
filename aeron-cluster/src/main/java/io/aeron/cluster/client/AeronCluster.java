@@ -1705,19 +1705,17 @@ public final class AeronCluster implements AutoCloseable
             {
                 ingressPublication = leader.publication;
                 leader.publication = null;
-                CloseHelper.closeAll(memberByIdMap.values());
-                memberByIdMap = parseIngressEndpoints(egressPoller.detail());
             }
-            else
-            {
-                CloseHelper.closeAll(memberByIdMap.values());
-                memberByIdMap = parseIngressEndpoints(egressPoller.detail());
 
+            CloseHelper.closeAll(memberByIdMap.values());
+            memberByIdMap = parseIngressEndpoints(egressPoller.detail());
+
+            if (ingressPublication == null)
+            {
                 final MemberIngress member = memberByIdMap.get(leaderMemberId);
                 final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
                 channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
-                member.publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
-                ingressPublication = member.publication;
+                ingressPublication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
             }
 
             step(1);

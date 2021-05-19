@@ -564,7 +564,7 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
     }
 
     /**
-     * Find the resolved endpoint for the channel. This may be null of MDS is used and no destination is yet added.
+     * Find the resolved endpoint for the channel. This may be null if MDS is used and no destination is yet added.
      * The result will similar to taking the first element returned from {@link #localSocketAddresses()}. If more than
      * one destination is added then the first found is returned.
      * <p>

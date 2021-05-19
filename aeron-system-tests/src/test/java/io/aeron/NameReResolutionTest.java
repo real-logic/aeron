@@ -44,7 +44,9 @@ import java.io.IOException;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 import static io.aeron.test.driver.RedirectingNameResolver.USE_RE_RESOLUTION_HOST;
+import static io.aeron.test.driver.RedirectingNameResolver.updateNameResolutionStatus;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class NameReResolutionTest
@@ -100,9 +102,8 @@ public class NameReResolutionTest
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
-            .threadingMode(ThreadingMode.SHARED);
-
-        TestMediaDriver.enableCsvNameLookupConfiguration(context, STUB_LOOKUP_CONFIGURATION);
+            .threadingMode(ThreadingMode.SHARED)
+            .nameResolver(new RedirectingNameResolver(STUB_LOOKUP_CONFIGURATION));
 
         driver = TestMediaDriver.launch(context, testWatcher);
 
@@ -153,7 +154,7 @@ public class NameReResolutionTest
         }
 
         subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
-        RedirectingNameResolver.updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_RE_RESOLUTION_HOST);
+        assertTrue(updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_RE_RESOLUTION_HOST));
 
         while (!subscription.isConnected())
         {
@@ -216,7 +217,7 @@ public class NameReResolutionTest
         }
 
         subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
-        RedirectingNameResolver.updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_RE_RESOLUTION_HOST);
+        assertTrue(updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_RE_RESOLUTION_HOST));
 
         while (!subscription.isConnected())
         {
@@ -277,7 +278,7 @@ public class NameReResolutionTest
         }
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
-        RedirectingNameResolver.updateNameResolutionStatus(countersReader, CONTROL_NAME, USE_RE_RESOLUTION_HOST);
+        assertTrue(updateNameResolutionStatus(countersReader, CONTROL_NAME, USE_RE_RESOLUTION_HOST));
 
         while (!subscription.isConnected())
         {
@@ -340,7 +341,7 @@ public class NameReResolutionTest
         }
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
-        RedirectingNameResolver.updateNameResolutionStatus(countersReader, CONTROL_NAME, USE_RE_RESOLUTION_HOST);
+        assertTrue(updateNameResolutionStatus(countersReader, CONTROL_NAME, USE_RE_RESOLUTION_HOST));
 
         while (!subscription.isConnected())
         {
@@ -393,8 +394,7 @@ public class NameReResolutionTest
         }
 
         subscription.close();
-        RedirectingNameResolver.updateNameResolutionStatus(
-            countersReader, ENDPOINT_WITH_ERROR_NAME, USE_RE_RESOLUTION_HOST);
+        assertTrue(updateNameResolutionStatus(countersReader, ENDPOINT_WITH_ERROR_NAME, USE_RE_RESOLUTION_HOST));
 
         // wait for disconnect to ensure we stay in lock step
         while (publication.isConnected())

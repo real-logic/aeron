@@ -15,7 +15,6 @@
  */
 package io.aeron.test.driver;
 
-import io.aeron.Aeron;
 import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.NameResolver;
@@ -35,8 +34,8 @@ public class RedirectingNameResolver implements NameResolver
     public static final int DISABLE_RESOLUTION = -1;
     public static final int USE_INITIAL_RESOLUTION_HOST = 0;
     public static final int USE_RE_RESOLUTION_HOST = 1;
+    public static final int NAME_ENTRY_COUNTER_TYPE_ID = 2001;
 
-    public static final int NAME_ENTRY_TYPE_ID = 2001;
     private final Map<String, NameEntry> nameToEntryMap = new Object2ObjectHashMap<>();
     private final String csvConfiguration;
 
@@ -65,7 +64,7 @@ public class RedirectingNameResolver implements NameResolver
         {
             final AtomicCounter atomicCounter = countersManager.newCounter(
                 nameEntry.toString(),
-                NAME_ENTRY_TYPE_ID,
+                NAME_ENTRY_COUNTER_TYPE_ID,
                 mutableDirectBuffer -> mutableDirectBuffer.putStringAscii(0, nameEntry.name));
             nameEntry.counter(atomicCounter);
         }
@@ -83,28 +82,31 @@ public class RedirectingNameResolver implements NameResolver
         return csvConfiguration;
     }
 
-    public static void updateNameResolutionStatus(
+    public static boolean updateNameResolutionStatus(
         final CountersReader counters,
         final String hostname,
         final int operationValue)
     {
-        MutableInteger nameCounterId = new MutableInteger(NULL_VALUE);
+        final MutableInteger nameCounterId = new MutableInteger(NULL_VALUE);
         counters.forEach((counterId, typeId, keyBuffer, label) ->
         {
-            if (typeId == NAME_ENTRY_TYPE_ID &&
-                hostname.equals(keyBuffer.getStringAscii(0)))
+            if (typeId == NAME_ENTRY_COUNTER_TYPE_ID && hostname.equals(keyBuffer.getStringAscii(0)))
             {
                 nameCounterId.set(counterId);
             }
         });
 
-        if (NULL_VALUE != nameCounterId.get())
+        final boolean counterFound = NULL_VALUE != nameCounterId.get();
+        if (counterFound)
         {
             final AtomicCounter nameCounter = new AtomicCounter(
                 counters.valuesBuffer(),
                 nameCounterId.get());
-            nameCounter.compareAndSet(0, operationValue);
+
+            nameCounter.set(operationValue);
         }
+
+        return counterFound;
     }
 
     private static final class NameEntry
@@ -129,19 +131,6 @@ public class RedirectingNameResolver implements NameResolver
             this.counter = counter;
         }
 
-        public boolean isValid()
-        {
-            return Aeron.NULL_VALUE != counter.get();
-        }
-
-        public String toString()
-        {
-            return "NameEntry{" +
-                "name='" + name + '\'' +
-                ", initialResolutionHost='" + initialResolutionHost + '\'' +
-                ", reResolutionHost='" + reResolutionHost + "'}";
-        }
-
         public String redirectHost(final String name)
         {
             long operation = counter.get();
@@ -161,6 +150,14 @@ public class RedirectingNameResolver implements NameResolver
             {
                 return name;
             }
+        }
+
+        public String toString()
+        {
+            return "NameEntry{" +
+                "name='" + name + '\'' +
+                ", initialResolutionHost='" + initialResolutionHost + '\'' +
+                ", reResolutionHost='" + reResolutionHost + "'}";
         }
     }
 }

@@ -49,7 +49,7 @@ public interface NameResolver
     }
 
     /**
-     * Do post construction initialisation of the name resolver.  Happen during the conductor start lifecycle.  Can be
+     * Do post construction initialisation of the name resolver.  Happens during the conductor start lifecycle.  Can be
      * used for actions like adding counters.
      *
      * @param context for the media driver that the name resolver is running in.

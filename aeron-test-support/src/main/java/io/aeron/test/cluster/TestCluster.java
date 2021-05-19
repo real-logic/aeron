@@ -481,9 +481,8 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(false);
-
-        TestMediaDriver.enableCsvNameLookupConfiguration(context.mediaDriverContext, NAME_NODE_MAPPINGS);
+            .dirDeleteOnShutdown(false)
+            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
@@ -1306,9 +1305,8 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(false);
-
-        TestMediaDriver.enableCsvNameLookupConfiguration(nodeCtx.mediaDriverCtx, NAME_NODE_MAPPINGS);
+            .dirDeleteOnShutdown(false)
+            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
 
         nodeCtx.archiveCtx
             .catalogCapacity(CATALOG_CAPACITY)

@@ -32,6 +32,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
 import io.aeron.test.driver.DriverOutputConsumer;
+import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -505,7 +506,7 @@ public class TestNode implements AutoCloseable
 
         Context(final TestService service)
         {
-            TestMediaDriver.enableCsvNameLookupConfiguration(mediaDriverContext, TestCluster.NAME_NODE_MAPPINGS);
+            mediaDriverContext.nameResolver(new RedirectingNameResolver(TestCluster.NAME_NODE_MAPPINGS));
             this.service = service;
         }
     }

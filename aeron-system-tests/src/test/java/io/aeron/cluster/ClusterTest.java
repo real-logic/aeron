@@ -22,10 +22,12 @@ import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import io.aeron.test.driver.MediaDriverTestWatcher;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 

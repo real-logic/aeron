@@ -33,6 +33,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.RedirectingNameResolver;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
@@ -287,8 +288,7 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .errorHandler(errorHandler(index))
             .dirDeleteOnShutdown(false)
-            .dirDeleteOnStart(true)
-            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+            .dirDeleteOnStart(true);
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
@@ -355,8 +355,7 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(false)
-            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+            .dirDeleteOnShutdown(false);
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
@@ -422,8 +421,7 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .errorHandler(errorHandler(index))
             .dirDeleteOnShutdown(false)
-            .dirDeleteOnStart(true)
-            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+            .dirDeleteOnStart(true);
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
@@ -483,8 +481,9 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(false)
-            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+            .dirDeleteOnShutdown(false);
+
+        TestMediaDriver.enableCsvNameLookupConfiguration(context.mediaDriverContext, NAME_NODE_MAPPINGS);
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
@@ -541,8 +540,7 @@ public class TestCluster implements AutoCloseable
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
             .errorHandler(errorHandler(backupNodeIndex))
-            .dirDeleteOnStart(true)
-            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+            .dirDeleteOnStart(true);
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
@@ -648,13 +646,14 @@ public class TestCluster implements AutoCloseable
         {
             dataCollector.add(Paths.get(aeronDirName));
 
-            clientMediaDriver = MediaDriver.launch(
-                new MediaDriver.Context()
-                    .threadingMode(ThreadingMode.SHARED)
-                    .dirDeleteOnStart(true)
-                    .dirDeleteOnShutdown(false)
-                    .aeronDirectoryName(aeronDirName)
-                    .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS)));
+            final MediaDriver.Context ctx = new MediaDriver.Context()
+                .threadingMode(ThreadingMode.SHARED)
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(false)
+                .aeronDirectoryName(aeronDirName)
+                .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+
+            clientMediaDriver = MediaDriver.launch(ctx);
         }
 
         clientCtx
@@ -1307,8 +1306,9 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(false)
-            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+            .dirDeleteOnShutdown(false);
+
+        TestMediaDriver.enableCsvNameLookupConfiguration(nodeCtx.mediaDriverCtx, NAME_NODE_MAPPINGS);
 
         nodeCtx.archiveCtx
             .catalogCapacity(CATALOG_CAPACITY)

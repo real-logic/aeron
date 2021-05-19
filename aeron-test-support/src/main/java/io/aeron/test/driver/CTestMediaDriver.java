@@ -181,6 +181,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             File stdoutFile = NULL_FILE;
             File stderrFile = NULL_FILE;
 
+            final ProcessBuilder pb = new ProcessBuilder(aeronBinary.getAbsolutePath());
             if (null != driverOutputConsumer)
             {
                 stdoutFile = File.createTempFile("CTestMediaDriver-", ".out");
@@ -190,7 +191,6 @@ public final class CTestMediaDriver implements TestMediaDriver
                 driverOutputConsumer.environmentVariables(context.aeronDirectoryName(), environment);
             }
 
-            final ProcessBuilder pb = new ProcessBuilder(aeronBinary.getAbsolutePath());
             pb.environment().putAll(environment);
             pb.redirectOutput(stdoutFile).redirectError(stderrFile);
             final Process process = pb.start();

@@ -31,6 +31,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
+import io.aeron.test.driver.DriverOutputConsumer;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -40,6 +41,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -501,6 +505,7 @@ public class TestNode implements AutoCloseable
 
         Context(final TestService service)
         {
+            TestMediaDriver.enableCsvNameLookupConfiguration(mediaDriverContext, TestCluster.NAME_NODE_MAPPINGS);
             this.service = service;
         }
     }

@@ -22,6 +22,7 @@
 #include "util/aeron_platform.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_error.h"
+#include "collections/aeron_hashing.h"
 #include "collections/aeron_map.h"
 #include "aeron_alloc.h"
 
@@ -38,7 +39,7 @@ aeron_int64_to_ptr_hash_map_t;
 
 inline size_t aeron_int64_to_ptr_hash_map_hash_key(int64_t key, size_t mask)
 {
-    return (size_t)(((uint64_t)key * 31u) & mask);
+    return aeron_hash((uint64_t)key, mask);
 }
 
 inline int aeron_int64_to_ptr_hash_map_init(

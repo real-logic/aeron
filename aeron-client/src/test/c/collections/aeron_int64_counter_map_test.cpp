@@ -112,6 +112,7 @@ TEST_F(Int64CounterMapTest, shouldGrowWhenThresholdExceeded)
     for (int64_t i = 0; i < 16; i++)
     {
         EXPECT_EQ(aeron_int64_counter_map_put(&m_map, i, value, nullptr), 0);
+        EXPECT_EQ(aeron_int64_counter_map_get(&m_map, i), value);
     }
 
     EXPECT_EQ(m_map.resize_threshold, 16u);

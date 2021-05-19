@@ -22,6 +22,7 @@
 
 #include "util/aeron_platform.h"
 #include "util/aeron_bitutil.h"
+#include "collections/aeron_hashing.h"
 #include "collections/aeron_map.h"
 #include "aeron_alloc.h"
 
@@ -38,9 +39,7 @@ aeron_int64_counter_map_t;
 
 inline size_t aeron_int64_counter_map_hash_key(int64_t key, size_t mask)
 {
-    uint64_t hash = ((uint64_t)key << UINT64_C(1)) - ((uint64_t)key << UINT64_C(8));
-
-    return (size_t)(hash & mask);
+    return aeron_even_hash((uint64_t)key, mask);
 }
 
 inline int aeron_int64_counter_map_init(
@@ -78,7 +77,6 @@ inline void aeron_int64_counter_map_delete(aeron_int64_counter_map_t *map)
 inline int aeron_int64_counter_map_rehash(aeron_int64_counter_map_t *map, size_t new_entries_length)
 {
     size_t mask = new_entries_length - 1;
-    map->resize_threshold = (size_t)((new_entries_length / 2) * map->load_factor);
 
     int64_t *tmp_entries;
 
@@ -114,6 +112,7 @@ inline int aeron_int64_counter_map_rehash(aeron_int64_counter_map_t *map, size_t
 
     map->entries = tmp_entries;
     map->entries_length = new_entries_length;
+    map->resize_threshold = (size_t)((new_entries_length / 2) * map->load_factor);
 
     return 0;
 }

@@ -24,6 +24,7 @@
 #include "util/aeron_bitutil.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_error.h"
+#include "collections/aeron_hashing.h"
 #include "collections/aeron_map.h"
 #include "aeron_alloc.h"
 
@@ -46,9 +47,9 @@ typedef struct aeron_str_to_ptr_hash_map_stct
 }
 aeron_str_to_ptr_hash_map_t;
 
-inline size_t aeron_str_to_ptr_hash_map_hash_key(uint64_t key, size_t mask)
+inline size_t aeron_str_to_ptr_hash_map_hash_key(uint64_t key_hash_code, size_t mask)
 {
-    return (size_t)((key * 31) & mask);
+    return aeron_hash(key_hash_code, mask);
 }
 
 inline bool aeron_str_to_ptr_hash_map_compare(

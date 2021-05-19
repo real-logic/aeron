@@ -179,8 +179,6 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
     const char *dirname = context->aeron_dir;
     aeron_log_func_t log_func = aeron_log_func_none;
 
-    printf("Dir name: %s\n", dirname);
-
     if (aeron_is_directory(dirname))
     {
         if (context->warn_if_dirs_exist)
@@ -192,15 +190,12 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
 
         if (context->dirs_delete_on_start)
         {
-            printf("Deleting directory: %s\n", dirname);
             if (0 != aeron_delete_directory(context->aeron_dir))
             {
                 snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to delete: %s", context->aeron_dir);
                 log_func(buffer);
                 return -1;
             }
-            sleep(5);
-            printf("Resuming\n");
         }
         else
         {

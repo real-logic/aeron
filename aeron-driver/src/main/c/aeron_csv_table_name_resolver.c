@@ -25,7 +25,6 @@
 #include "util/aeron_error.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_arrayutil.h"
-#include "util/aeron_netutil.h"
 #include "aeron_csv_table_name_resolver.h"
 
 #define AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE (1024)
@@ -72,26 +71,7 @@ int aeron_csv_table_name_resolver_resolve(
         }
     }
 
-    int resolve = aeron_default_name_resolver_resolve(NULL, hostname, uri_param_name, is_re_resolution, address);
-
-    char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
-    if (0 <= resolve)
-    {
-        aeron_format_source_identity(addr_str, AERON_NETUTIL_FORMATTED_MAX_LENGTH, address);
-    }
-
-    int64_t now_ns = aeron_nano_clock();
-    printf(
-        "[%f] Resolving: %s=%s to %s (%s) = %d '%s'\n",
-        (double)now_ns / 1000000000,
-        uri_param_name,
-        name,
-        hostname,
-        is_re_resolution ? "true" : "false",
-        resolve,
-        addr_str);
-
-    return resolve;
+    return aeron_default_name_resolver_resolve(NULL, hostname, uri_param_name, is_re_resolution, address);
 }
 
 int aeron_csv_table_name_resolver_close(aeron_name_resolver_t *resolver)
@@ -170,26 +150,16 @@ int aeron_csv_table_name_resolver_supplier(
             lookup_table->array[lookup_table->length].initial_resolution_host = columns[1];
             lookup_table->array[lookup_table->length].name = columns[2];
 
-            uint32_t name_length = (uint32_t)strlen(lookup_table->array[lookup_table->length].name);
-
             uint8_t key_buffer[512] = { 0 };
-            size_t key_buffer_maxlen = sizeof(key_buffer) - 1;
-            size_t name_maxlen = key_buffer_maxlen - sizeof(name_length);
-            char value_buffer[512] = { 0 };
-            size_t value_buffer_maxlen = sizeof(value_buffer) - 1;
+            uint32_t name_str_length = (uint32_t)strlen(lookup_table->array[lookup_table->length].name);
+            uint32_t name_length = name_str_length < sizeof(key_buffer) - sizeof(name_str_length) ?
+                name_str_length : sizeof(key_buffer) - sizeof(name_str_length);
 
             memcpy(key_buffer, &name_length, sizeof(name_length));
-            int key_buffer_result = snprintf(
-                (char *)&key_buffer[sizeof(name_length)],
-                name_maxlen,
-                "%s",
-                lookup_table->array[lookup_table->length].name);
+            memcpy(&key_buffer[sizeof(name_length)], lookup_table->array[lookup_table->length].name, name_length);
 
-            if (key_buffer_result < 0)
-            {
-                AERON_SET_ERR(EINVAL, "%s", "Failed to create csv resolver counter key");
-                goto error;
-            }
+            char value_buffer[512] = { 0 };
+            size_t value_buffer_maxlen = sizeof(value_buffer) - 1;
 
             int value_buffer_result = snprintf(
                 value_buffer,
@@ -205,8 +175,7 @@ int aeron_csv_table_name_resolver_supplier(
                 goto error;
             }
 
-            size_t key_length = (size_t)key_buffer_result < key_buffer_maxlen ?
-                (size_t)key_buffer_result : key_buffer_maxlen;
+            size_t key_length = sizeof(name_length) + name_length;
             size_t value_length = (size_t)value_buffer_result < value_buffer_maxlen ?
                 (size_t)value_buffer_result : value_buffer_maxlen;
 

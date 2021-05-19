@@ -25,18 +25,18 @@
 #include "util/aeron_error.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_arrayutil.h"
+#include "command/aeron_control_protocol.h"
 #include "aeron_csv_table_name_resolver.h"
 
 #define AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE (1024)
 #define AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS (3)
-#define AERON_CSV_TABLE_NAME_RESOLVER_ENTRY_COUNTER_TYPE_ID (2001)
 
 typedef struct aeron_csv_table_name_resolver_row_stct
 {
     const char *name;
     const char *initial_resolution_host;
     const char *re_resolution_host;
-    int32_t counter_id;
+    aeron_atomic_counter_t operation_toggle;
 }
 aeron_csv_table_name_resolver_row_t;
 
@@ -65,8 +65,23 @@ int aeron_csv_table_name_resolver_resolve(
         {
             if (strncmp(name, table->array[i].name, strlen(table->array[i].name) + 1) == 0)
             {
-                hostname = is_re_resolution ?
-                    table->array[i].re_resolution_host : table->array[i].initial_resolution_host;
+                int64_t operation;
+                AERON_GET_VOLATILE(operation, *table->array[i].operation_toggle.value_addr);
+
+                if (AERON_NAME_RESOLVER_CSV_DISABLE_RESOLUTION_OP == operation)
+                {
+                    AERON_SET_ERR(
+                        -AERON_ERROR_CODE_UNKNOWN_HOST, "Unable to resolve host=(%s): (forced)", hostname);
+                    return -1;
+                }
+                else if (AERON_NAME_RESOLVER_CSV_USE_INITIAL_RESOLUTION_HOST_OP == operation)
+                {
+                    hostname = table->array[i].initial_resolution_host;
+                }
+                else if (AERON_NAME_RESOLVER_CSV_USE_RE_RESOLUTION_HOST_OP == operation)
+                {
+                    hostname = table->array[i].re_resolution_host;
+                }
             }
         }
     }
@@ -146,17 +161,18 @@ int aeron_csv_table_name_resolver_supplier(
         if (AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS == num_columns)
         {
             // Fields are in reverse order.
-            lookup_table->array[lookup_table->length].re_resolution_host = columns[0];
-            lookup_table->array[lookup_table->length].initial_resolution_host = columns[1];
-            lookup_table->array[lookup_table->length].name = columns[2];
+            aeron_csv_table_name_resolver_row_t *row = &lookup_table->array[lookup_table->length];
+            row->re_resolution_host = columns[0];
+            row->initial_resolution_host = columns[1];
+            row->name = columns[2];
 
             uint8_t key_buffer[512] = { 0 };
-            uint32_t name_str_length = (uint32_t)strlen(lookup_table->array[lookup_table->length].name);
+            uint32_t name_str_length = (uint32_t)strlen(row->name);
             uint32_t name_length = name_str_length < sizeof(key_buffer) - sizeof(name_str_length) ?
                 name_str_length : sizeof(key_buffer) - sizeof(name_str_length);
 
             memcpy(key_buffer, &name_length, sizeof(name_length));
-            memcpy(&key_buffer[sizeof(name_length)], lookup_table->array[lookup_table->length].name, name_length);
+            memcpy(&key_buffer[sizeof(name_length)], row->name, name_length);
 
             char value_buffer[512] = { 0 };
             size_t value_buffer_maxlen = sizeof(value_buffer) - 1;
@@ -165,9 +181,9 @@ int aeron_csv_table_name_resolver_supplier(
                 value_buffer,
                 value_buffer_maxlen,
                 "NameEntry{name='%s', initialResolutionHost='%s', reResolutionHost='%s'}",
-                lookup_table->array[lookup_table->length].name,
-                lookup_table->array[lookup_table->length].initial_resolution_host,
-                lookup_table->array[lookup_table->length].re_resolution_host);
+                row->name,
+                row->initial_resolution_host,
+                row->re_resolution_host);
             
             if (value_buffer_result < 0)
             {
@@ -179,19 +195,22 @@ int aeron_csv_table_name_resolver_supplier(
             size_t value_length = (size_t)value_buffer_result < value_buffer_maxlen ?
                 (size_t)value_buffer_result : value_buffer_maxlen;
 
-            lookup_table->array[lookup_table->length].counter_id = aeron_counters_manager_allocate(
+            row->operation_toggle.counter_id = aeron_counters_manager_allocate(
                 context->counters_manager, 
-                AERON_CSV_TABLE_NAME_RESOLVER_ENTRY_COUNTER_TYPE_ID,
+                AERON_NAME_RESOLVER_CSV_ENTRY_COUNTER_TYPE_ID,
                 key_buffer,
                 key_length,
                 value_buffer,
                 value_length);
 
-            if (lookup_table->array[lookup_table->length].counter_id < 0)
+            if (row->operation_toggle.counter_id < 0)
             {
                 AERON_APPEND_ERR("%s", "Failed to allocate csv resolver counter");
                 goto error;
             }
+
+            row->operation_toggle.value_addr = aeron_counters_manager_addr(
+                context->counters_manager, row->operation_toggle.counter_id);
 
             lookup_table->length++;
         }

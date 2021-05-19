@@ -74,7 +74,7 @@ public class RedirectingNameResolver implements NameResolver
     {
         final NameEntry nameEntry = nameToEntryMap.get(name);
         final String hostname = null != nameEntry ? nameEntry.redirectHost(name) : name;
-        return DefaultNameResolver.INSTANCE.resolve(hostname, uriParamName, isReResolution);
+        return hostname != null ? DefaultNameResolver.INSTANCE.resolve(hostname, uriParamName, isReResolution) : null;
     }
 
     public String csvConfiguration()

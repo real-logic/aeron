@@ -57,7 +57,7 @@ inline uint64_t aeron_array_hash(const uint8_t *arr, size_t length)
 
 inline size_t aeron_array_to_ptr_hash_map_hash_key(uint64_t key_hash_code, size_t mask)
 {
-    return (size_t)(aeron_hash_64(key_hash_code) & mask);
+    return aeron_hash(key_hash_code, mask);
 }
 
 inline bool aeron_array_to_ptr_hash_map_compare(

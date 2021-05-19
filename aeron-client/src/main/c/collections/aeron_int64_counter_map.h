@@ -39,7 +39,7 @@ aeron_int64_counter_map_t;
 
 inline size_t aeron_int64_counter_map_hash_key(int64_t key, size_t mask)
 {
-    return (size_t)(aeron_even_hash_64((uint64_t)key) & mask);
+    return aeron_even_hash((uint64_t)key, mask);
 }
 
 inline int aeron_int64_counter_map_init(

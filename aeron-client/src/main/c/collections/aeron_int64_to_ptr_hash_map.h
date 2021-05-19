@@ -39,7 +39,7 @@ aeron_int64_to_ptr_hash_map_t;
 
 inline size_t aeron_int64_to_ptr_hash_map_hash_key(int64_t key, size_t mask)
 {
-    return (size_t)(aeron_hash_64((uint64_t)key) & mask);
+    return aeron_hash((uint64_t)key, mask);
 }
 
 inline int aeron_int64_to_ptr_hash_map_init(

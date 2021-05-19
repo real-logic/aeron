@@ -76,7 +76,7 @@ abstract class MultiSndDestination
         int bytesSent = 0;
         try
         {
-            if (datagramChannel.isOpen())
+            if (!destination.isUnresolved() && datagramChannel.isOpen())
             {
                 buffer.position(position);
                 channelEndpoint.sendHook(buffer, destination);

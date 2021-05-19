@@ -714,7 +714,10 @@ public final class UdpChannel
         try
         {
             validateConfiguration(uri);
-            return getEndpointAddress(uri, nameResolver);
+
+            final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
+            return SocketAddressParser.parse(
+                endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
         }
         catch (final Exception ex)
         {

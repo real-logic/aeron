@@ -1617,8 +1617,7 @@ public final class AeronCluster implements AutoCloseable
             correlationId = ctx.aeron().nextCorrelationId();
             final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
 
-            final SessionConnectRequestEncoder encoder = new SessionConnectRequestEncoder();
-            encoder
+            final SessionConnectRequestEncoder encoder = new SessionConnectRequestEncoder()
                 .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
                 .correlationId(correlationId)
                 .responseStreamId(ctx.egressStreamId())

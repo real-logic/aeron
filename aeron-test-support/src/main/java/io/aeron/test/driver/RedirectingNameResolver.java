@@ -139,9 +139,7 @@ public class RedirectingNameResolver implements NameResolver
             return "NameEntry{" +
                 "name='" + name + '\'' +
                 ", initialResolutionHost='" + initialResolutionHost + '\'' +
-                ", reResolutionHost='" + reResolutionHost + '\'' +
-                ", counter=" + counter +
-                '}';
+                ", reResolutionHost='" + reResolutionHost + "'}";
         }
 
         public String redirectHost(final String name)

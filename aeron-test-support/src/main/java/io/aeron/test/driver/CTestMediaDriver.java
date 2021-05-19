@@ -105,6 +105,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
     }
 
+    @SuppressWarnings("methodlength")
     public static CTestMediaDriver launch(
         final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)
     {

@@ -22,12 +22,10 @@ import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
@@ -35,9 +33,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static io.aeron.test.cluster.ClusterTests.*;
-import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
-import static io.aeron.test.cluster.TestCluster.startSingleNodeStaticCluster;
-import static io.aeron.test.cluster.TestCluster.startThreeNodeStaticCluster;
+import static io.aeron.test.cluster.TestCluster.*;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -253,7 +249,7 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    @Disabled("Fixing this behaviour requires further development...")
+    @Disabled("Requires handling of initial resolution failures on addDestination")
     public void shouldHandleLeaderFailOverWhenNameIsNotResolvable(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);

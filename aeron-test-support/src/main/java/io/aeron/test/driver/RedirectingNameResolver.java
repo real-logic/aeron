@@ -35,6 +35,7 @@ public class RedirectingNameResolver implements NameResolver
     public static final int USE_INITIAL_RESOLUTION_HOST = 0;
     public static final int USE_RE_RESOLUTION_HOST = 1;
     public static final int NAME_ENTRY_COUNTER_TYPE_ID = 2001;
+    public static final int EXPECTED_COLUMN_COUNT = 3;
 
     private final Map<String, NameEntry> nameToEntryMap = new Object2ObjectHashMap<>();
     private final String csvConfiguration;
@@ -46,9 +47,9 @@ public class RedirectingNameResolver implements NameResolver
         for (final String line : lines)
         {
             final String[] params = line.split(",");
-            if (3 != params.length)
+            if (EXPECTED_COLUMN_COUNT != params.length)
             {
-                throw new IllegalArgumentException("Expect 3 elements per row");
+                throw new IllegalArgumentException("Expected 3 elements per row");
             }
 
             final NameEntry nameEntry = new NameEntry(params[0], params[1], params[2]);
@@ -60,7 +61,7 @@ public class RedirectingNameResolver implements NameResolver
     {
         final CountersManager countersManager = context.countersManager();
 
-        for (NameEntry nameEntry : nameToEntryMap.values())
+        for (final NameEntry nameEntry : nameToEntryMap.values())
         {
             final AtomicCounter atomicCounter = countersManager.newCounter(
                 nameEntry.toString(),
@@ -109,12 +110,12 @@ public class RedirectingNameResolver implements NameResolver
         return counterFound;
     }
 
-    private static final class NameEntry
+    static final class NameEntry
     {
-        final String name;
-        final String initialResolutionHost;
-        final String reResolutionHost;
-        AtomicCounter counter;
+        private final String name;
+        private final String initialResolutionHost;
+        private final String reResolutionHost;
+        private AtomicCounter counter;
 
         NameEntry(
             final String name,
@@ -126,14 +127,14 @@ public class RedirectingNameResolver implements NameResolver
             this.reResolutionHost = reResolutionHost;
         }
 
-        public void counter(final AtomicCounter counter)
+        void counter(final AtomicCounter counter)
         {
             this.counter = counter;
         }
 
-        public String redirectHost(final String name)
+        String redirectHost(final String name)
         {
-            long operation = counter.get();
+            final long operation = counter.get();
             if (DISABLE_RESOLUTION == operation)
             {
                 return null;

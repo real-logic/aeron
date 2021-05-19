@@ -33,7 +33,6 @@ import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.RedirectingNameResolver;
-import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;

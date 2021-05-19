@@ -151,7 +151,6 @@ allprojects {
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'checkstyle'
-    apply plugin: 'eclipse'
 
     dependencies {
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"

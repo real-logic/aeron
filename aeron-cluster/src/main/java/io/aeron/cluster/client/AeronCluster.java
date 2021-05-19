@@ -1684,8 +1684,7 @@ public final class AeronCluster implements AutoCloseable
         {
             correlationId = ctx.aeron().nextCorrelationId();
 
-            final ChallengeResponseEncoder encoder = new ChallengeResponseEncoder();
-            encoder
+            final ChallengeResponseEncoder encoder = new ChallengeResponseEncoder()
                 .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
                 .correlationId(correlationId)
                 .clusterSessionId(clusterSessionId)

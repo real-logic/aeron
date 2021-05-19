@@ -83,6 +83,7 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
 
     public void testSuccessful(final ExtensionContext context)
     {
+        dumpMediaDriverDiagnostics();
         if (TestMediaDriver.shouldRunCMediaDriver())
         {
             deleteFiles();

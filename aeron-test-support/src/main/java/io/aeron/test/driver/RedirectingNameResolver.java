@@ -19,18 +19,25 @@ import io.aeron.Aeron;
 import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.NameResolver;
+import org.agrona.collections.MutableInteger;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.net.InetAddress;
-import java.util.Collections;
 import java.util.Map;
+
+import static io.aeron.Aeron.NULL_VALUE;
 
 public class RedirectingNameResolver implements NameResolver
 {
+    public static final int DISABLE_RESOLUTION = -1;
+    public static final int USE_INITIAL_RESOLUTION_HOST = 0;
+    public static final int USE_RE_RESOLUTION_HOST = 1;
+
     public static final int NAME_ENTRY_TYPE_ID = 2001;
-    private final Map<String, Map<String, NameEntry>> paramNameToNameMap = new Object2ObjectHashMap<>();
+    private final Map<String, NameEntry> nameToEntryMap = new Object2ObjectHashMap<>();
 
     public RedirectingNameResolver(final String csvConfiguration)
     {
@@ -38,14 +45,37 @@ public class RedirectingNameResolver implements NameResolver
         for (final String line : lines)
         {
             final String[] params = line.split(",");
-            if (4 != params.length)
+            if (3 != params.length)
             {
                 throw new IllegalArgumentException("Expect 4 elements per row");
             }
 
-            final NameEntry nameEntry = new NameEntry(params[0], params[1], params[2], params[3]);
-            paramNameToNameMap.computeIfAbsent(
-                nameEntry.paramName, ignore -> new Object2ObjectHashMap<>()).put(nameEntry.name, nameEntry);
+            final NameEntry nameEntry = new NameEntry(params[0], params[1], params[2]);
+            nameToEntryMap.put(nameEntry.name, nameEntry);
+        }
+    }
+
+    public static void updateNameResolutionStatus(
+        final CountersReader counters,
+        final String hostname,
+        final int operationValue)
+    {
+        MutableInteger nameCounterId = new MutableInteger(NULL_VALUE);
+        counters.forEach((counterId, typeId, keyBuffer, label) ->
+        {
+            if (typeId == NAME_ENTRY_TYPE_ID &&
+                hostname.equals(keyBuffer.getStringAscii(0)))
+            {
+                nameCounterId.set(counterId);
+            }
+        });
+
+        if (NULL_VALUE != nameCounterId.get())
+        {
+            final AtomicCounter nameCounter = new AtomicCounter(
+                counters.valuesBuffer(),
+                nameCounterId.get());
+            nameCounter.compareAndSet(0, operationValue);
         }
     }
 
@@ -53,57 +83,35 @@ public class RedirectingNameResolver implements NameResolver
     {
         final CountersManager countersManager = context.countersManager();
 
-        for (Map<String, NameEntry> endpointToNameEntry : paramNameToNameMap.values())
+        for (NameEntry nameEntry : nameToEntryMap.values())
         {
-            for (NameEntry nameEntry : endpointToNameEntry.values())
-            {
-                final AtomicCounter atomicCounter = countersManager.newCounter(
-                    nameEntry.toString(),
-                    NAME_ENTRY_TYPE_ID,
-                    mutableDirectBuffer -> mutableDirectBuffer.putStringAscii(0, nameEntry.name));
-                nameEntry.counter(atomicCounter);
-            }
+            final AtomicCounter atomicCounter = countersManager.newCounter(
+                nameEntry.toString(),
+                NAME_ENTRY_TYPE_ID,
+                mutableDirectBuffer -> mutableDirectBuffer.putStringAscii(0, nameEntry.name));
+            nameEntry.counter(atomicCounter);
         }
     }
 
     public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
     {
-        final NameEntry nameEntry = paramNameToNameMap.getOrDefault(uriParamName, Collections.emptyMap()).get(name);
-        final String hostname;
-        if (null != nameEntry)
-        {
-            if (nameEntry.isValid())
-            {
-                hostname = isReResolution ? nameEntry.reResolutionHost : nameEntry.initialResolutionHost;
-            }
-            else
-            {
-                return null;
-            }
-        }
-        else
-        {
-            hostname = name;
-        }
-
+        final NameEntry nameEntry = nameToEntryMap.get(name);
+        final String hostname = null != nameEntry ? nameEntry.redirectHost(name) : name;
         return DefaultNameResolver.INSTANCE.resolve(hostname, uriParamName, isReResolution);
     }
 
     private static final class NameEntry
     {
-        final String paramName;
         final String name;
         final String initialResolutionHost;
         final String reResolutionHost;
         AtomicCounter counter;
 
         NameEntry(
-            final String paramName,
             final String name,
             final String initialResolutionHost,
             final String reResolutionHost)
         {
-            this.paramName = paramName;
             this.name = name;
             this.initialResolutionHost = initialResolutionHost;
             this.reResolutionHost = reResolutionHost;
@@ -122,11 +130,32 @@ public class RedirectingNameResolver implements NameResolver
         public String toString()
         {
             return "NameEntry{" +
-                "paramName='" + paramName + '\'' +
-                ", name='" + name + '\'' +
+                "name='" + name + '\'' +
                 ", initialResolutionHost='" + initialResolutionHost + '\'' +
                 ", reResolutionHost='" + reResolutionHost + '\'' +
+                ", counter=" + counter +
                 '}';
+        }
+
+        public String redirectHost(final String name)
+        {
+            long operation = counter.get();
+            if (DISABLE_RESOLUTION == operation)
+            {
+                return null;
+            }
+            else if (USE_INITIAL_RESOLUTION_HOST == operation)
+            {
+                return initialResolutionHost;
+            }
+            else if (USE_RE_RESOLUTION_HOST == operation)
+            {
+                return reResolutionHost;
+            }
+            else
+            {
+                return name;
+            }
         }
     }
 }

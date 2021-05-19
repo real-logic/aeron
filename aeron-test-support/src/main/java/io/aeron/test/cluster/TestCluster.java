@@ -27,7 +27,6 @@ import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.NameResolver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
@@ -41,7 +40,6 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.TestInfo;
 
@@ -57,8 +55,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
-import static io.aeron.CommonContext.MDC_CONTROL_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
 import static io.aeron.test.cluster.ClusterTests.errorHandler;
@@ -82,10 +78,10 @@ public class TestCluster implements AutoCloseable
     private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k";
     private static final long STARTUP_CANVASS_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
-    private static final String NAME_NODE_MAPPINGS =
-        "endpoint,node0,localhost,localhost|" +
-        "endpoint,node1,localhost,localhost|" +
-        "endpoint,node2,localhost,localhost|";
+    public static final String NAME_NODE_MAPPINGS =
+        "node0,localhost,localhost|" +
+        "node1,localhost,localhost|" +
+        "node2,localhost,localhost|";
 
     private final DataCollector dataCollector = new DataCollector();
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -1229,12 +1225,12 @@ public class TestCluster implements AutoCloseable
 
     public void disableNameResolution(final String hostname)
     {
-        toggleNameResolution(hostname, NULL_VALUE);
+        toggleNameResolution(hostname, RedirectingNameResolver.DISABLE_RESOLUTION);
     }
 
     public void enableNameResolution(final String hostname)
     {
-        toggleNameResolution(hostname, 0);
+        toggleNameResolution(hostname, RedirectingNameResolver.USE_INITIAL_RESOLUTION_HOST);
     }
 
     private void toggleNameResolution(final String hostname, final int disableValue)
@@ -1243,23 +1239,8 @@ public class TestCluster implements AutoCloseable
         {
             if (null != node)
             {
-                MutableInteger nameCounterId = new MutableInteger(NULL_VALUE);
-                node.mediaDriver().counters().forEach((counterId, typeId, keyBuffer, label) ->
-                {
-                    if (typeId == RedirectingNameResolver.NAME_ENTRY_TYPE_ID &&
-                        hostname.equals(keyBuffer.getStringAscii(0)))
-                    {
-                        nameCounterId.set(counterId);
-                    }
-                });
-
-                if (NULL_VALUE != nameCounterId.get())
-                {
-                    final AtomicCounter nameCounter = new AtomicCounter(
-                        node.mediaDriver().counters().valuesBuffer(),
-                        nameCounterId.get());
-                    nameCounter.compareAndSet(0, disableValue);
-                }
+                final CountersReader counters = node.mediaDriver().counters();
+                RedirectingNameResolver.updateNameResolutionStatus(counters, hostname, disableValue);
             }
         }
     }

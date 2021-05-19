@@ -170,6 +170,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         environment.put("AERON_SOCKET_SO_RCVBUF", String.valueOf(context.socketRcvbufLength()));
         environment.put("AERON_SOCKET_SO_SNDBUF", String.valueOf(context.socketSndbufLength()));
         environment.put("AERON_RCV_INITIAL_WINDOW_LENGTH", String.valueOf(context.initialWindowLength()));
+        environment.put("AERON_PUBLICATION_UNBLOCK_TIMEOUT", String.valueOf(context.publicationUnblockTimeoutNs()));
 
         setFlowControlStrategy(environment, context);
         setLogging(environment);

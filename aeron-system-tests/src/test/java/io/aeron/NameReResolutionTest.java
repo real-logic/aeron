@@ -21,9 +21,11 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.test.*;
+import io.aeron.test.SlowTest;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.DistinctErrorLogTestWatcher;
 import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -40,9 +42,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 
-import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
-import static io.aeron.CommonContext.MDC_CONTROL_PARAM_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
+import static io.aeron.test.driver.RedirectingNameResolver.USE_RE_RESOLUTION_HOST;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.mockito.Mockito.*;
 
@@ -53,7 +54,7 @@ public class NameReResolutionTest
     private static final int CONTROL_PORT = 24327;
     private static final String ENDPOINT_WITH_ERROR_NAME = "ReResWithErrEndpoint";
     private static final String PUBLICATION_MANUAL_MDC_URI =
-        "aeron:udp?control=localhost:" + CONTROL_PORT +"|control-mode=manual";
+        "aeron:udp?control=localhost:" + CONTROL_PORT + "|control-mode=manual";
     private static final String PUBLICATION_URI = "aeron:udp?endpoint=" + ENDPOINT_NAME + ":" + ENDPOINT_PORT;
     private static final String PUBLICATION_WITH_ERROR_URI =
         "aeron:udp?endpoint=" + ENDPOINT_WITH_ERROR_NAME + ":" + ENDPOINT_PORT;
@@ -71,9 +72,9 @@ public class NameReResolutionTest
     private static final String SUBSCRIPTION_MDS_URI = "aeron:udp?control-mode=manual";
 
     private static final String STUB_LOOKUP_CONFIGURATION =
-        String.format("%s,%s,%s,%s|", ENDPOINT_PARAM_NAME, ENDPOINT_NAME, "127.0.0.1", "127.0.0.2") +
-        String.format("%s,%s,%s,%s|", MDC_CONTROL_PARAM_NAME, CONTROL_NAME, "127.0.0.1", "127.0.0.2") +
-        String.format("%s,%s,%s,%s|", ENDPOINT_PARAM_NAME, ENDPOINT_WITH_ERROR_NAME, "localhost", BAD_ADDRESS);
+        String.format("%s,%s,%s|", ENDPOINT_NAME, "127.0.0.1", "127.0.0.2") +
+        String.format("%s,%s,%s|", CONTROL_NAME, "127.0.0.1", "127.0.0.2") +
+        String.format("%s,%s,%s|", ENDPOINT_WITH_ERROR_NAME, "localhost", BAD_ADDRESS);
 
     private static final int STREAM_ID = 1001;
 
@@ -105,7 +106,7 @@ public class NameReResolutionTest
 
         driver = TestMediaDriver.launch(context, testWatcher);
 
-        client = Aeron.connect();
+        client = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()));
         countersReader = client.countersReader();
     }
 
@@ -152,6 +153,7 @@ public class NameReResolutionTest
         }
 
         subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
+        RedirectingNameResolver.updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_RE_RESOLUTION_HOST);
 
         while (!subscription.isConnected())
         {
@@ -214,6 +216,7 @@ public class NameReResolutionTest
         }
 
         subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
+        RedirectingNameResolver.updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_RE_RESOLUTION_HOST);
 
         while (!subscription.isConnected())
         {
@@ -274,6 +277,7 @@ public class NameReResolutionTest
         }
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
+        RedirectingNameResolver.updateNameResolutionStatus(countersReader, CONTROL_NAME, USE_RE_RESOLUTION_HOST);
 
         while (!subscription.isConnected())
         {
@@ -336,6 +340,7 @@ public class NameReResolutionTest
         }
 
         publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
+        RedirectingNameResolver.updateNameResolutionStatus(countersReader, CONTROL_NAME, USE_RE_RESOLUTION_HOST);
 
         while (!subscription.isConnected())
         {
@@ -388,6 +393,8 @@ public class NameReResolutionTest
         }
 
         subscription.close();
+        RedirectingNameResolver.updateNameResolutionStatus(
+            countersReader, ENDPOINT_WITH_ERROR_NAME, USE_RE_RESOLUTION_HOST);
 
         // wait for disconnect to ensure we stay in lock step
         while (publication.isConnected())

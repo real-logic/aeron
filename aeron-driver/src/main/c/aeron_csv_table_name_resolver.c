@@ -30,12 +30,14 @@
 
 #define AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE (1024)
 #define AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS (3)
+#define AERON_CSV_TABLE_NAME_RESOLVER_ENTRY_COUNTER_TYPE_ID (2001)
 
 typedef struct aeron_csv_table_name_resolver_row_stct
 {
     const char *name;
     const char *initial_resolution_host;
     const char *re_resolution_host;
+    int32_t counter_id;
 }
 aeron_csv_table_name_resolver_row_t;
 
@@ -118,7 +120,6 @@ int aeron_csv_table_name_resolver_supplier(
 
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
     char *columns[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
-    char *config_csv = NULL;
     aeron_csv_table_name_resolver_t *lookup_table = NULL;
 
     if (NULL == args)
@@ -127,27 +128,26 @@ int aeron_csv_table_name_resolver_supplier(
         goto error;
     }
 
-    config_csv = strdup(args);
-    if (NULL == config_csv)
-    {
-        AERON_SET_ERR(errno, "%s", "Duplicating config string");
-        goto error;
-    }
-
     if (aeron_alloc((void **)&lookup_table, sizeof(aeron_csv_table_name_resolver_t)) < 0)
     {
         AERON_APPEND_ERR("%s", "Allocating lookup table");
         goto error;
     }
+    resolver->state = lookup_table;
 
-    int num_rows = aeron_tokenise(config_csv, '|', AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE, rows);
+    lookup_table->saved_config_csv = strdup(args);
+    if (NULL == lookup_table->saved_config_csv)
+    {
+        AERON_SET_ERR(errno, "%s", "Duplicating config string");
+        goto error;
+    }
+
+    int num_rows = aeron_tokenise(lookup_table->saved_config_csv, '|', AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE, rows);
     if (num_rows < 0)
     {
         AERON_SET_ERR(num_rows, "%s", "Failed to parse rows for lookup table");
         goto error;
     }
-
-    lookup_table->saved_config_csv = config_csv;
 
     for (int i = num_rows; -1 < --i;)
     {
@@ -170,6 +170,60 @@ int aeron_csv_table_name_resolver_supplier(
             lookup_table->array[lookup_table->length].initial_resolution_host = columns[1];
             lookup_table->array[lookup_table->length].name = columns[2];
 
+            uint32_t name_length = (uint32_t)strlen(lookup_table->array[lookup_table->length].name);
+
+            uint8_t key_buffer[512] = { 0 };
+            size_t key_buffer_maxlen = sizeof(key_buffer) - 1;
+            size_t name_maxlen = key_buffer_maxlen - sizeof(name_length);
+            char value_buffer[512] = { 0 };
+            size_t value_buffer_maxlen = sizeof(value_buffer) - 1;
+
+            memcpy(key_buffer, &name_length, sizeof(name_length));
+            int key_buffer_result = snprintf(
+                (char *)&key_buffer[sizeof(name_length)],
+                name_maxlen,
+                "%s",
+                lookup_table->array[lookup_table->length].name);
+
+            if (key_buffer_result < 0)
+            {
+                AERON_SET_ERR(EINVAL, "%s", "Failed to create csv resolver counter key");
+                goto error;
+            }
+
+            int value_buffer_result = snprintf(
+                value_buffer,
+                value_buffer_maxlen,
+                "NameEntry{name='%s', initialResolutionHost='%s', reResolutionHost='%s'}",
+                lookup_table->array[lookup_table->length].name,
+                lookup_table->array[lookup_table->length].initial_resolution_host,
+                lookup_table->array[lookup_table->length].re_resolution_host);
+            
+            if (value_buffer_result < 0)
+            {
+                AERON_SET_ERR(EINVAL, "%s", "Failed to create csv resolver counter label");
+                goto error;
+            }
+
+            size_t key_length = (size_t)key_buffer_result < key_buffer_maxlen ?
+                (size_t)key_buffer_result : key_buffer_maxlen;
+            size_t value_length = (size_t)value_buffer_result < value_buffer_maxlen ?
+                (size_t)value_buffer_result : value_buffer_maxlen;
+
+            lookup_table->array[lookup_table->length].counter_id = aeron_counters_manager_allocate(
+                context->counters_manager, 
+                AERON_CSV_TABLE_NAME_RESOLVER_ENTRY_COUNTER_TYPE_ID,
+                key_buffer,
+                key_length,
+                value_buffer,
+                value_length);
+
+            if (lookup_table->array[lookup_table->length].counter_id < 0)
+            {
+                AERON_APPEND_ERR("%s", "Failed to allocate csv resolver counter");
+                goto error;
+            }
+
             lookup_table->length++;
         }
     }
@@ -179,11 +233,6 @@ int aeron_csv_table_name_resolver_supplier(
     return 0;
 
 error:
-    if (NULL != lookup_table)
-    {
-        aeron_free(lookup_table->array);
-        aeron_free(lookup_table);
-    }
-    aeron_free(config_csv);
+    aeron_csv_table_name_resolver_close(resolver);
     return -1;
 }

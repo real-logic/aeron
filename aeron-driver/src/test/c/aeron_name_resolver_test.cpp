@@ -28,7 +28,7 @@ extern "C"
 #include "agent/aeron_driver_agent.h"
 }
 
-#define METADATA_LENGTH (16 * 1024)
+#define METADATA_LENGTH (32 * 1024)
 #define VALUES_LENGTH (METADATA_LENGTH / 4)
 #define ERROR_LOG_LENGTH (8192)
 

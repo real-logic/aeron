@@ -344,7 +344,7 @@ TEST_F(UdpChannelTest, shouldUseUniqueIdInCanonicalFormIfWildcardsInUseIPv4)
     EXPECT_EQ(0u, std::string(m_channel->canonical_form).rfind("UDP-127.0.0.1:0-127.0.0.1:9999-"));
 }
 
-TEST_F(UdpChannelTest, shouldResolveWithNameLookup)
+TEST_F(UdpChannelTest, DISABLED_shouldResolveWithNameLookup)
 {
     const char *config_param =
         "NAME_0," AERON_UDP_CHANNEL_ENDPOINT_KEY ",localhost:9001,localhost:9001|"
@@ -430,7 +430,7 @@ TEST_F(UdpChannelTest, shouldParseReceiverWindow)
     ASSERT_EQ(8192u, m_channel->receiver_window_length);
 }
 
-TEST_P(UdpChannelNamesParameterisedTest, shouldBeValid)
+TEST_P(UdpChannelNamesParameterisedTest, DISABLED_shouldBeValid)
 {
     const char *endpoint_name = std::get<0>(GetParam());
     const char *endpoint_address = std::get<1>(GetParam());

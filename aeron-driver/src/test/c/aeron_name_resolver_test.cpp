@@ -199,44 +199,54 @@ private:
     }
 };
 
-
 #define NAME_0 "server0"
-#define HOST_0A "localhost:20001"
-#define HOST_0B "localhost:20002"
+#define HOST_0A "127.0.0.1"
+#define HOST_0B "127.0.0.2"
 
 #define NAME_1 "server1"
-#define HOST_1A "localhost:20101"
-#define HOST_1B "localhost:20102"
+#define HOST_1A "127.0.0.3"
+#define HOST_1B "127.0.0.4"
 
 TEST_F(NameResolverTest, shouldUseStaticLookupTable)
 {
+    in_addr host_0a = {};
+    inet_pton(AF_INET, HOST_0A, &host_0a);
+    in_addr host_0b = {};
+    inet_pton(AF_INET, HOST_0B, &host_0b);
+    in_addr host_1a = {};
+    inet_pton(AF_INET, HOST_1A, &host_1a);
+    in_addr host_1b = {};
+    inet_pton(AF_INET, HOST_1B, &host_1b);
+
     const char *config_param =
-        NAME_0 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_0A "," HOST_0B "|"
-        NAME_1 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_2" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_3" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_4" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_5" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_6" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_7" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_8" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_9" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|";
+        NAME_0 "," HOST_0A "," HOST_0B "|"
+        NAME_1 "," HOST_1A "," HOST_1B "|"
+        "NAME_2" "," HOST_1A "," HOST_1B "|"
+        "NAME_3" "," HOST_1A "," HOST_1B "|"
+        "NAME_4" "," HOST_1A "," HOST_1B "|"
+        "NAME_5" "," HOST_1A "," HOST_1B "|"
+        "NAME_6" "," HOST_1A "," HOST_1B "|"
+        "NAME_7" "," HOST_1A "," HOST_1B "|"
+        "NAME_8" "," HOST_1A "," HOST_1B "|"
+        "NAME_9" "," HOST_1A "," HOST_1B "|";
 
     initResolver(&m_a, AERON_NAME_RESOLVER_CSV_TABLE, config_param, 0);
 
-    const char *resolved_name = nullptr;
+    struct sockaddr_in address = {};
+    address.sin_family = AF_INET;
+    sockaddr_storage *addr_ptr = (struct sockaddr_storage *)&address;
 
-    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_name));
-    ASSERT_STREQ(HOST_0A, resolved_name);
+    ASSERT_EQ(0, m_a.resolver.resolve_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, addr_ptr));
+    ASSERT_EQ(host_0a.s_addr, address.sin_addr.s_addr);
 
-    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));
-    ASSERT_STREQ(HOST_0B, resolved_name);
+    ASSERT_EQ(0, m_a.resolver.resolve_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, addr_ptr));
+    ASSERT_EQ(host_0b.s_addr, address.sin_addr.s_addr);
 
-    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_name));
-    ASSERT_STREQ(HOST_1A, resolved_name);
+    ASSERT_EQ(0, m_a.resolver.resolve_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, addr_ptr));
+    ASSERT_EQ(host_1a.s_addr, address.sin_addr.s_addr);
 
-    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));
-    ASSERT_STREQ(HOST_1B, resolved_name);
+    ASSERT_EQ(0, m_a.resolver.resolve_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, addr_ptr));
+    ASSERT_EQ(host_1b.s_addr, address.sin_addr.s_addr);
 }
 
 TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)

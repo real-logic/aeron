@@ -25,14 +25,17 @@
 #include "util/aeron_error.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_arrayutil.h"
+#include "util/aeron_netutil.h"
 #include "aeron_csv_table_name_resolver.h"
 
 #define AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE (1024)
-#define AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS (4)
+#define AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS (3)
 
 typedef struct aeron_csv_table_name_resolver_row_stct
 {
-    const char *row[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];
+    const char *name;
+    const char *initial_resolution_host;
+    const char *re_resolution_host;
 }
 aeron_csv_table_name_resolver_row_t;
 
@@ -45,32 +48,48 @@ typedef struct aeron_csv_table_name_resolver_stct
 }
 aeron_csv_table_name_resolver_t;
 
-int aeron_csv_table_name_resolver_lookup(
+int aeron_csv_table_name_resolver_resolve(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
     bool is_re_resolution,
-    const char **resolved_name)
+    struct sockaddr_storage *address)
 {
-    if (NULL == resolver->state)
+    const char *hostname = name;
+    if (NULL != resolver->state)
     {
-        return -1;
-    }
+        aeron_csv_table_name_resolver_t *table = (aeron_csv_table_name_resolver_t *)resolver->state;
 
-    aeron_csv_table_name_resolver_t *table = (aeron_csv_table_name_resolver_t *)resolver->state;
-
-    for (size_t i = 0; i < table->length; i++)
-    {
-        if (strncmp(name, table->array[i].row[0], strlen(table->array[i].row[0]) + 1) == 0 &&
-            strncmp(uri_param_name, table->array[i].row[1], strlen(table->array[i].row[1]) + 1) == 0)
+        for (size_t i = 0; i < table->length; i++)
         {
-            int address_idx = is_re_resolution ? 2 : 3;
-            *resolved_name = table->array[i].row[address_idx];
-            return 1;
+            if (strncmp(name, table->array[i].name, strlen(table->array[i].name) + 1) == 0)
+            {
+                hostname = is_re_resolution ?
+                    table->array[i].re_resolution_host : table->array[i].initial_resolution_host;
+            }
         }
     }
 
-    return aeron_default_name_resolver_lookup(resolver, name, uri_param_name, is_re_resolution, resolved_name);
+    int resolve = aeron_default_name_resolver_resolve(NULL, hostname, uri_param_name, is_re_resolution, address);
+
+    char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
+    if (0 <= resolve)
+    {
+        aeron_format_source_identity(addr_str, AERON_NETUTIL_FORMATTED_MAX_LENGTH, address);
+    }
+
+    int64_t now_ns = aeron_nano_clock();
+    printf(
+        "[%f] Resolving: %s=%s to %s (%s) = %d '%s'\n",
+        (double)now_ns / 1000000000,
+        uri_param_name,
+        name,
+        hostname,
+        is_re_resolution ? "true" : "false",
+        resolve,
+        addr_str);
+
+    return resolve;
 }
 
 int aeron_csv_table_name_resolver_close(aeron_name_resolver_t *resolver)
@@ -91,10 +110,10 @@ int aeron_csv_table_name_resolver_supplier(
     const char *args,
     aeron_driver_context_t *context)
 {
-    resolver->lookup_func = aeron_csv_table_name_resolver_lookup;
+    resolver->lookup_func = aeron_default_name_resolver_lookup;
     resolver->close_func = aeron_csv_table_name_resolver_close;
 
-    resolver->resolve_func = aeron_default_name_resolver_resolve;
+    resolver->resolve_func = aeron_csv_table_name_resolver_resolve;
     resolver->do_work_func = aeron_default_name_resolver_do_work;
 
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
@@ -146,10 +165,11 @@ int aeron_csv_table_name_resolver_supplier(
         int num_columns = aeron_tokenise(rows[i], ',', AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS, columns);
         if (AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS == num_columns)
         {
-            for (int k = num_columns, l = 0; -1 < --k; l++)
-            {
-                lookup_table->array[lookup_table->length].row[l] = columns[k];
-            }
+            // Fields are in reverse order.
+            lookup_table->array[lookup_table->length].re_resolution_host = columns[0];
+            lookup_table->array[lookup_table->length].initial_resolution_host = columns[1];
+            lookup_table->array[lookup_table->length].name = columns[2];
+
             lookup_table->length++;
         }
     }

@@ -43,9 +43,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.IOException;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
-import static io.aeron.test.driver.RedirectingNameResolver.USE_RE_RESOLUTION_HOST;
-import static io.aeron.test.driver.RedirectingNameResolver.updateNameResolutionStatus;
+import static io.aeron.test.driver.RedirectingNameResolver.*;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -237,6 +237,52 @@ public class NameReResolutionTest
         Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
 
         verify(handler, times(2)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(BitUtil.SIZE_OF_INT),
+            any(Header.class));
+    }
+
+    @SlowTest
+    @Test
+    @Timeout(20)
+    public void shouldHandleMdcManualEndpointInitiallyUnresolved()
+    {
+        final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
+
+        buffer.putInt(0, 1);
+
+        while (!updateNameResolutionStatus(countersReader, ENDPOINT_NAME, DISABLE_RESOLUTION))
+        {
+            Tests.yieldingIdle("Waiting for naming counter");
+        }
+
+        subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);
+        publication = client.addPublication(PUBLICATION_MANUAL_MDC_URI, STREAM_ID);
+        publication.addDestination(PUBLICATION_URI);
+
+        assertEquals(Publication.NOT_CONNECTED, publication.offer(buffer, 0, BitUtil.SIZE_OF_INT));
+
+        updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_INITIAL_RESOLUTION_HOST);
+
+        while (!subscription.isConnected())
+        {
+            Tests.yieldingIdle("No connection to second subscription");
+        }
+
+        while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Tests.yieldingIdle("No message offer to second subscription");
+        }
+
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingIdle("No message received on second subscription");
+        }
+
+        Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
+
+        verify(handler, times(1)).onFragment(
             any(DirectBuffer.class),
             anyInt(),
             eq(BitUtil.SIZE_OF_INT),

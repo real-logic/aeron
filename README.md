@@ -47,6 +47,7 @@ ATS (Aeron Transport Security) for encrypted communications is available to cust
 1. [Channel Specific Configuration](https://github.com/real-logic/aeron/wiki/Channel-Configuration)
 1. [Aeron Archive (Durable/Persistent Stream Storage)](https://github.com/real-logic/aeron/wiki/Aeron-Archive)
 1. [Aeron Cluster (Fault Tolerant Services)](https://github.com/real-logic/aeron/tree/master/aeron-cluster)
+1. [Aeron Cookbook](https://aeroncookbook.com/) by Shaun Laurens.
 
 ### How does Aeron work?
 

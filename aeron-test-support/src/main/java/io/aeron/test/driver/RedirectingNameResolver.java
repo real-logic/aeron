@@ -38,21 +38,49 @@ public class RedirectingNameResolver implements NameResolver
 
     public static final int NAME_ENTRY_TYPE_ID = 2001;
     private final Map<String, NameEntry> nameToEntryMap = new Object2ObjectHashMap<>();
+    private final String csvConfiguration;
 
     public RedirectingNameResolver(final String csvConfiguration)
     {
+        this.csvConfiguration = csvConfiguration;
         final String[] lines = csvConfiguration.split("\\|");
         for (final String line : lines)
         {
             final String[] params = line.split(",");
             if (3 != params.length)
             {
-                throw new IllegalArgumentException("Expect 4 elements per row");
+                throw new IllegalArgumentException("Expect 3 elements per row");
             }
 
             final NameEntry nameEntry = new NameEntry(params[0], params[1], params[2]);
             nameToEntryMap.put(nameEntry.name, nameEntry);
         }
+    }
+
+    public void init(final MediaDriver.Context context)
+    {
+        final CountersManager countersManager = context.countersManager();
+
+        for (NameEntry nameEntry : nameToEntryMap.values())
+        {
+            final AtomicCounter atomicCounter = countersManager.newCounter(
+                nameEntry.toString(),
+                NAME_ENTRY_TYPE_ID,
+                mutableDirectBuffer -> mutableDirectBuffer.putStringAscii(0, nameEntry.name));
+            nameEntry.counter(atomicCounter);
+        }
+    }
+
+    public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
+    {
+        final NameEntry nameEntry = nameToEntryMap.get(name);
+        final String hostname = null != nameEntry ? nameEntry.redirectHost(name) : name;
+        return DefaultNameResolver.INSTANCE.resolve(hostname, uriParamName, isReResolution);
+    }
+
+    public String csvConfiguration()
+    {
+        return csvConfiguration;
     }
 
     public static void updateNameResolutionStatus(
@@ -77,27 +105,6 @@ public class RedirectingNameResolver implements NameResolver
                 nameCounterId.get());
             nameCounter.compareAndSet(0, operationValue);
         }
-    }
-
-    public void init(final MediaDriver.Context context)
-    {
-        final CountersManager countersManager = context.countersManager();
-
-        for (NameEntry nameEntry : nameToEntryMap.values())
-        {
-            final AtomicCounter atomicCounter = countersManager.newCounter(
-                nameEntry.toString(),
-                NAME_ENTRY_TYPE_ID,
-                mutableDirectBuffer -> mutableDirectBuffer.putStringAscii(0, nameEntry.name));
-            nameEntry.counter(atomicCounter);
-        }
-    }
-
-    public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
-    {
-        final NameEntry nameEntry = nameToEntryMap.get(name);
-        final String hostname = null != nameEntry ? nameEntry.redirectHost(name) : name;
-        return DefaultNameResolver.INSTANCE.resolve(hostname, uriParamName, isReResolution);
     }
 
     private static final class NameEntry

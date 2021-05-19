@@ -171,6 +171,13 @@ public final class CTestMediaDriver implements TestMediaDriver
         environment.put("AERON_SOCKET_SO_SNDBUF", String.valueOf(context.socketSndbufLength()));
         environment.put("AERON_RCV_INITIAL_WINDOW_LENGTH", String.valueOf(context.initialWindowLength()));
         environment.put("AERON_PUBLICATION_UNBLOCK_TIMEOUT", String.valueOf(context.publicationUnblockTimeoutNs()));
+        final NameResolver nameResolver = context.nameResolver();
+        if (nameResolver instanceof RedirectingNameResolver)
+        {
+            final String csvConfiguration = ((RedirectingNameResolver)nameResolver).csvConfiguration();
+            environment.put("AERON_NAME_RESOLVER_SUPPLIER", "csv_table");
+            environment.put("AERON_NAME_RESOLVER_INIT_ARGS", csvConfiguration);
+        }
 
         setFlowControlStrategy(environment, context);
         setLogging(environment);
@@ -298,13 +305,5 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
         C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, lossTransportEnv);
-    }
-
-    public static void enableCsvNameLookupConfiguration(final MediaDriver.Context context, final String csvLookupTable)
-    {
-        final Object2ObjectHashMap<String, String> csvTableEnv = new Object2ObjectHashMap<>();
-        csvTableEnv.put("AERON_NAME_RESOLVER_SUPPLIER", "csv_table");
-        csvTableEnv.put("AERON_NAME_RESOLVER_INIT_ARGS", csvLookupTable);
-        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, csvTableEnv);
     }
 }

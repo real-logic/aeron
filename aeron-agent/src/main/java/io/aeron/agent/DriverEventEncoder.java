@@ -79,7 +79,7 @@ final class DriverEventEncoder
         final String value)
     {
         final int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
-        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength - relativeOffset, value);
+        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength, value);
     }
 
     static void encode(

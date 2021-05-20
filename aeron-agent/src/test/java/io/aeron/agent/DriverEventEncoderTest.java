@@ -255,14 +255,4 @@ class DriverEventEncoderTest
         assertEquals(channel.substring(0, captureLength - SIZE_OF_LONG - SIZE_OF_INT * 4 - 3) + "...",
             buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 3 + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
-
-    @Test
-    void shouldSafelyEncodeString()
-    {
-        final String message = "this is a string";
-        final int length = LOG_HEADER_LENGTH + SIZE_OF_INT + message.length();
-        final int captureLength = length - 1;
-        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(new byte[captureLength]);
-        encode(unsafeBuffer, 0, captureLength, length, message);
-    }
 }

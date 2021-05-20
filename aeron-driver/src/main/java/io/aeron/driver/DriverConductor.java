@@ -27,6 +27,7 @@ import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -42,7 +43,6 @@ import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -59,7 +59,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
 
 /**
- * Driver Conductor that takes commands from publishers and subscribers and orchestrates the media driver.
+ * Driver Conductor that takes commands from publishers and subscribers, and orchestrates the media driver.
  */
 public final class DriverConductor implements Agent
 {
@@ -343,8 +343,7 @@ public final class DriverConductor implements Agent
 
             if (newAddress.isUnresolved())
             {
-                ctx.errorHandler().onError(new UnknownHostException(
-                    "endpoint could not be re-resolved: endpoint=" + endpoint));
+                ctx.errorHandler().onError(new AeronEvent("could not be re-resolved: endpoint=" + endpoint));
                 errorCounter.increment();
             }
             else if (!address.equals(newAddress))
@@ -372,8 +371,7 @@ public final class DriverConductor implements Agent
 
             if (newAddress.isUnresolved())
             {
-                ctx.errorHandler().onError(new UnknownHostException(
-                    "control could not be re-resolved: control=" + control));
+                ctx.errorHandler().onError(new AeronEvent("could not be re-resolved: control=" + control));
                 errorCounter.increment();
             }
             else if (!address.equals(newAddress))

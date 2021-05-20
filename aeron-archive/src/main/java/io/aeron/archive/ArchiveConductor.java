@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveEvent;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingSignal;
@@ -1711,7 +1712,7 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image joinPosition=" + image.joinPosition() + " != stopPosition=" + recordingSummary.stopPosition;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
-            throw new ArchiveException(msg);
+            throw new ArchiveEvent(msg);
         }
 
         if (image.initialTermId() != recordingSummary.initialTermId)
@@ -1719,7 +1720,7 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image initialTermId=" + image.initialTermId() + " != initialTermId=" + recordingSummary.initialTermId;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
-            throw new ArchiveException(msg);
+            throw new ArchiveEvent(msg);
         }
 
         if (image.termBufferLength() != recordingSummary.termBufferLength)
@@ -1728,7 +1729,7 @@ abstract class ArchiveConductor
                 " image termBufferLength=" + image.termBufferLength() +
                 " != termBufferLength=" + recordingSummary.termBufferLength;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
-            throw new ArchiveException(msg);
+            throw new ArchiveEvent(msg);
         }
 
         if (image.mtuLength() != recordingSummary.mtuLength)
@@ -1736,7 +1737,7 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image mtuLength=" + image.mtuLength() + " != mtuLength=" + recordingSummary.mtuLength;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
-            throw new ArchiveException(msg);
+            throw new ArchiveEvent(msg);
         }
     }
 

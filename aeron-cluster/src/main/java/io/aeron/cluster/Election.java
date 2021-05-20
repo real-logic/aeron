@@ -20,6 +20,7 @@ import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
@@ -293,7 +294,7 @@ class Election
                 {
                     case LEADER_LOG_REPLICATION:
                     case LEADER_READY:
-                        throw new ClusterException("potential new election in progress", AeronException.Category.WARN);
+                        throw new ClusterEvent("potential new election in progress");
                 }
             }
         }
@@ -495,7 +496,7 @@ class Election
         }
         else if (leadershipTermId > this.leadershipTermId && LEADER_READY == state)
         {
-            throw new ClusterException("new leader detected", AeronException.Category.WARN);
+            throw new ClusterEvent("new leader detected due to commit position");
         }
     }
 

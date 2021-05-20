@@ -21,7 +21,6 @@ import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.NameResolver;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import org.agrona.BitUtil;
-import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 
 import java.net.*;
@@ -762,6 +761,7 @@ public final class UdpChannel
     }
 
     private static InetSocketAddress getEndpointAddress(final ChannelUri uri, final NameResolver nameResolver)
+        throws UnknownHostException
     {
         InetSocketAddress address = null;
         final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
@@ -772,9 +772,9 @@ public final class UdpChannel
 
             if (address.isUnresolved())
             {
-                LangUtil.rethrowUnchecked(new UnknownHostException(
+                throw new UnknownHostException(
                     "unresolved - " + CommonContext.ENDPOINT_PARAM_NAME + "=" + endpointValue +
-                    ", name-resolver=" + nameResolver.getClass().getName()));
+                    ", name-resolver=" + nameResolver.getClass().getName());
             }
         }
 
@@ -782,6 +782,7 @@ public final class UdpChannel
     }
 
     private static InetSocketAddress getExplicitControlAddress(final ChannelUri uri, final NameResolver nameResolver)
+        throws UnknownHostException
     {
         InetSocketAddress address = null;
         final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
@@ -792,9 +793,9 @@ public final class UdpChannel
 
             if (address.isUnresolved())
             {
-                LangUtil.rethrowUnchecked(new UnknownHostException(
+                throw new UnknownHostException(
                     "unresolved - " + CommonContext.MDC_CONTROL_PARAM_NAME + "=" + controlValue +
-                    ", name-resolver=" + nameResolver.getClass().getName()));
+                    ", name-resolver=" + nameResolver.getClass().getName());
             }
         }
 

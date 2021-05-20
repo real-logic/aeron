@@ -22,6 +22,7 @@ import io.aeron.archive.client.RecordingSignalPoller;
 import io.aeron.archive.codecs.*;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.*;
@@ -544,7 +545,7 @@ final class ConsensusModuleAgent implements Agent
         }
         else if (candidateTermId > leadershipTermId && null == dynamicJoin)
         {
-            ctx.countedErrorHandler().onError(new ClusterException("unexpected vote request", WARN));
+            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected vote request"));
             enterElection();
         }
     }
@@ -603,7 +604,7 @@ final class ConsensusModuleAgent implements Agent
         }
         else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
         {
-            ctx.countedErrorHandler().onError(new ClusterException("unexpected new leadership term", WARN));
+            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected new leadership term event"));
             enterElection();
         }
     }
@@ -642,7 +643,7 @@ final class ConsensusModuleAgent implements Agent
         }
         else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
         {
-            ctx.countedErrorHandler().onError(new ClusterException("unexpected commit position", WARN));
+            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected commit position from new leader"));
             enterElection();
         }
     }
@@ -1529,7 +1530,7 @@ final class ConsensusModuleAgent implements Agent
             }
             else if (logAdapter.isImageClosed() && position < stopPosition)
             {
-                throw new ClusterException("unexpected image close when replaying log: position=" + position);
+                throw new ClusterEvent("unexpected image close when replaying log: position=" + position);
             }
 
             workCount += fragments;
@@ -1678,7 +1679,8 @@ final class ConsensusModuleAgent implements Agent
             workCount += fragments;
             if (fragments == 0 && logAdapter.image().isClosed())
             {
-                throw new ClusterException("unexpected close replaying log: position=" + logAdapter.image().position());
+                throw new ClusterEvent(
+                    "unexpected image close during catchup: position=" + logAdapter.image().position());
             }
         }
 
@@ -1696,7 +1698,7 @@ final class ConsensusModuleAgent implements Agent
 
         if (nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatTimeoutNs) && ConsensusModule.State.ACTIVE == state)
         {
-            throw new ClusterException("no catchup progress", WARN);
+            throw new ClusterEvent("no catchup progress");
         }
 
         workCount += consensusModuleAdapter.poll();
@@ -1807,8 +1809,8 @@ final class ConsensusModuleAgent implements Agent
                             member.catchupReplaySessionId(NULL_VALUE);
                             member.catchupReplayCorrelationId(NULL_VALUE);
 
-                            ctx.countedErrorHandler().onError(new ClusterException(
-                                "catchup replay failed - " + poller.errorMessage(), WARN));
+                            ctx.countedErrorHandler().onError(new ClusterEvent(
+                                "catchup replay failed - " + poller.errorMessage()));
                             return workCount;
                         }
                     }
@@ -1851,7 +1853,7 @@ final class ConsensusModuleAgent implements Agent
             }
             else if (0 == workCount && !poller.subscription().isConnected())
             {
-                ctx.countedErrorHandler().onError(new ClusterException("local archive is not connected", WARN));
+                ctx.countedErrorHandler().onError(new ClusterEvent("local archive is not connected"));
                 unexpectedTermination();
             }
         }
@@ -1972,7 +1974,7 @@ final class ConsensusModuleAgent implements Agent
 
                     if (!ClusterMember.hasActiveQuorum(activeMembers, nowNs, leaderHeartbeatTimeoutNs))
                     {
-                        ctx.countedErrorHandler().onError(new ClusterException("inactive follower quorum", WARN));
+                        ctx.countedErrorHandler().onError(new ClusterEvent("inactive follower quorum"));
                         enterElection();
                         workCount += 1;
                     }
@@ -1990,7 +1992,7 @@ final class ConsensusModuleAgent implements Agent
             {
                 if (nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatTimeoutNs) && NULL_POSITION == terminationPosition)
                 {
-                    ctx.countedErrorHandler().onError(new ClusterException("leader heartbeat timeout", WARN));
+                    ctx.countedErrorHandler().onError(new ClusterEvent("leader heartbeat timeout"));
                     enterElection();
                     workCount += 1;
                 }
@@ -2031,7 +2033,7 @@ final class ConsensusModuleAgent implements Agent
                     final int count = logAdapter.poll(min(notifiedCommitPosition, limit));
                     if (0 == count && logAdapter.isImageClosed())
                     {
-                        ctx.countedErrorHandler().onError(new ClusterException("log disconnected from leader", WARN));
+                        ctx.countedErrorHandler().onError(new ClusterEvent("log disconnected from leader"));
                         enterElection();
                         return 1;
                     }
@@ -3020,8 +3022,7 @@ final class ConsensusModuleAgent implements Agent
             {
                 if (registrationId == clientId)
                 {
-                    ctx.countedErrorHandler().onError(new ClusterException(
-                        "Aeron client in service closed unexpectedly", WARN));
+                    ctx.countedErrorHandler().onError(new ClusterEvent("Aeron client in service closed unexpectedly"));
                     state(ConsensusModule.State.CLOSED);
                     return;
                 }
@@ -3035,11 +3036,11 @@ final class ConsensusModuleAgent implements Agent
                 if (null != election)
                 {
                     election.handleError(
-                        clusterClock.timeNanos(), new ClusterException("log recording ended unexpectedly", WARN));
+                        clusterClock.timeNanos(), new ClusterEvent("log recording ended unexpectedly"));
                 }
                 else if (NULL_POSITION == terminationPosition)
                 {
-                    ctx.countedErrorHandler().onError(new ClusterException("log recording ended unexpectedly", WARN));
+                    ctx.countedErrorHandler().onError(new ClusterEvent("log recording ended unexpectedly"));
                     isElectionRequired = true;
                 }
             }

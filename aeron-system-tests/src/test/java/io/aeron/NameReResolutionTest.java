@@ -21,6 +21,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.NetworkTestingUtil;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.DistinctErrorLogTestWatcher;
@@ -34,10 +35,7 @@ import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
@@ -98,6 +96,9 @@ public class NameReResolutionTest
     @BeforeEach
     public void before()
     {
+        assumeBindAddressAvailable("127.0.0.1");
+        assumeBindAddressAvailable("127.0.0.2");
+
         final MediaDriver.Context context = new MediaDriver.Context()
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .dirDeleteOnStart(true)
@@ -114,8 +115,11 @@ public class NameReResolutionTest
     @AfterEach
     public void after()
     {
-        logWatcher.captureErrors(client.context().aeronDirectoryName());
-        CloseHelper.closeAll(client, driver);
+        if (null != client)
+        {
+            logWatcher.captureErrors(client.context().aeronDirectoryName());
+            CloseHelper.closeAll(client, driver);
+        }
     }
 
     @SlowTest
@@ -460,5 +464,11 @@ public class NameReResolutionTest
             client.context().aeronDirectoryName(),
             exceptionMessageMatcher,
             new SleepingMillisIdleStrategy(100));
+    }
+
+    private static void assumeBindAddressAvailable(final String address)
+    {
+        final String message = NetworkTestingUtil.isBindAddressAvailable(address);
+        Assumptions.assumeTrue(null == message, message);
     }
 }

@@ -33,9 +33,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static io.aeron.test.cluster.ClusterTests.*;
-import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
-import static io.aeron.test.cluster.TestCluster.startSingleNodeStaticCluster;
-import static io.aeron.test.cluster.TestCluster.startThreeNodeStaticCluster;
+import static io.aeron.test.cluster.TestCluster.*;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -242,6 +240,38 @@ public class ClusterTest
             cluster.sendMessages(expectedCount);
             cluster.awaitResponseMessageCount(expectedCount);
             cluster.awaitServicesMessageCount(expectedCount);
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
+    @Test
+    @Timeout(40)
+    @Disabled("Requires handling of initial resolution failures on addDestination")
+    public void shouldHandleLeaderFailOverWhenNameIsNotResolvable(final TestInfo testInfo)
+    {
+        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        try
+        {
+            final TestNode originalLeader = cluster.awaitLeader();
+            cluster.connectClient();
+
+            final int expectedCount = 10;
+
+            cluster.sendMessages(expectedCount);
+            cluster.awaitResponseMessageCount(expectedCount);
+            cluster.awaitServicesMessageCount(expectedCount);
+
+            cluster.disableNameResolution(originalLeader.hostname());
+            originalLeader.close();
+
+            cluster.awaitLeader();
+
+            cluster.sendMessages(expectedCount);
+            cluster.awaitResponseMessageCount(2 * expectedCount);
+            cluster.awaitServicesMessageCount(2 * expectedCount);
         }
         catch (final Throwable ex)
         {

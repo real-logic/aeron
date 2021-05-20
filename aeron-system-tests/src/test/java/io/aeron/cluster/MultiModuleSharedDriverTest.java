@@ -29,6 +29,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.StubClusteredService;
 import io.aeron.test.cluster.TestCluster;
+import io.aeron.test.driver.RedirectingNameResolver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MultiModuleSharedDriverTest
 {
+    @SuppressWarnings("methodlength")
     @Test
     @Timeout(20)
     public void shouldSupportTwoSingleNodeClusters()
@@ -50,6 +52,7 @@ public class MultiModuleSharedDriverTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
             .errorHandler(Tests::onError)
+            .nameResolver(new RedirectingNameResolver(TestCluster.NAME_NODE_MAPPINGS))
             .dirDeleteOnStart(true);
 
         final Archive.Context archiveCtx = new Archive.Context()
@@ -237,6 +240,7 @@ public class MultiModuleSharedDriverTest
                 .aeronDirectoryName(CommonContext.getAeronDirectoryName() + "-" + nodeId)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
+                .nameResolver(new RedirectingNameResolver(TestCluster.NAME_NODE_MAPPINGS))
                 .dirDeleteOnStart(true);
 
             final Archive.Context archiveCtx = new Archive.Context()

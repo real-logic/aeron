@@ -89,7 +89,6 @@ private:
     bool m_validated = false;
 };
 
-static const char *CSV_NAME_CONFIG_WITH_UNRESOLVABLE_ADDRESS = "server0,endpoint,foo.example.com:24326,localhost:24326|";
 static const char *EXPECTED_RESOLVER_ERROR = "Unable to resolve host";
 
 static int resolveLocalhostOnly(
@@ -99,7 +98,7 @@ static int resolveLocalhostOnly(
     bool is_re_resolution,
     struct sockaddr_storage *address)
 {
-    if (0 == strcmp("localhost", name))
+    if (!is_re_resolution && 0 == strcmp("localhost", name))
     {
         auto *address_in = reinterpret_cast<sockaddr_in *>(address);
         inet_pton(AF_INET, "127.0.0.1", &address_in->sin_addr);
@@ -117,7 +116,7 @@ static int testResolverSupplier(
     const char *args,
     aeron_driver_context_t *context)
 {
-    int i = aeron_csv_table_name_resolver_supplier(resolver, args, context);
+    int i = aeron_default_name_resolver_supplier(resolver, args, context);
     resolver->resolve_func = resolveLocalhostOnly;
     return i;
 }
@@ -128,7 +127,6 @@ public:
     CErrorsTest() : CSystemTestBase(
         std::vector<std::pair<std::string, std::string>>{
             { "AERON_COUNTERS_BUFFER_LENGTH", "32768" },
-            { "AERON_NAME_RESOLVER_INIT_ARGS", CSV_NAME_CONFIG_WITH_UNRESOLVABLE_ADDRESS }
         },
         [](aeron_driver_context_t *ctx)
         {
@@ -475,7 +473,7 @@ TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
     aeron_async_add_publication_t *pub_async;
     aeron_publication_t *pub;
 
-    ASSERT_EQ(0, aeron_async_add_publication(&pub_async, aeron, "aeron:udp?endpoint=server0", 1001));
+    ASSERT_EQ(0, aeron_async_add_publication(&pub_async, aeron, "aeron:udp?endpoint=localhost:21345", 1001));
 
     int result;
     while (0 == (result = aeron_async_add_publication_poll(&pub, pub_async)))

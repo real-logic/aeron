@@ -31,6 +31,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
+import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -290,6 +291,11 @@ public class TestNode implements AutoCloseable
         }
     }
 
+    public String hostname()
+    {
+        return TestCluster.hostname(index());
+    }
+
     public static class TestService extends StubClusteredService
     {
         static final int SNAPSHOT_FRAGMENT_COUNT = 500;
@@ -496,6 +502,7 @@ public class TestNode implements AutoCloseable
 
         Context(final TestService service)
         {
+            mediaDriverContext.nameResolver(new RedirectingNameResolver(TestCluster.NAME_NODE_MAPPINGS));
             this.service = service;
         }
     }

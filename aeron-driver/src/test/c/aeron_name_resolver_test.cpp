@@ -26,9 +26,10 @@ extern "C"
 #include "aeron_driver_name_resolver.h"
 #include "aeron_system_counters.h"
 #include "agent/aeron_driver_agent.h"
+#include "aeron_csv_table_name_resolver.h"
 }
 
-#define METADATA_LENGTH (16 * 1024)
+#define METADATA_LENGTH (32 * 1024)
 #define VALUES_LENGTH (METADATA_LENGTH / 4)
 #define ERROR_LOG_LENGTH (8192)
 
@@ -48,6 +49,7 @@ protected:
         aeron_driver_context_t *context;
         aeron_name_resolver_t resolver;
         aeron_counters_manager_t counters;
+        aeron_counters_reader_t counters_reader;
         aeron_system_counters_t system_counters;
         aeron_distinct_error_log_t error_log;
         uint8_t counters_buffer[METADATA_LENGTH + VALUES_LENGTH];
@@ -93,6 +95,13 @@ protected:
             &m_cached_clock, 1000);
         aeron_system_counters_init(&resolver_fields->system_counters, &resolver_fields->counters);
 
+        aeron_counters_reader_init(
+            &resolver_fields->counters_reader,
+            resolver_fields->counters.metadata,
+            resolver_fields->counters.metadata_length,
+            resolver_fields->counters.values,
+            resolver_fields->counters.values_length);
+
         aeron_distinct_error_log_init(
             &resolver_fields->error_log, resolver_fields->error_log_buffer, ERROR_LOG_LENGTH, aeron_epoch_clock);
 
@@ -110,6 +119,55 @@ protected:
         int64_t value;
     }
     counters_clientd_t;
+
+    typedef struct find_name_counter_clientd_stct
+    {
+        const char *name;
+        int32_t counter_id;
+    }
+    find_name_counter_clientd_t;
+
+    static void findNameCounterCallback(
+        int32_t id,
+        int32_t type_id,
+        const uint8_t *key,
+        size_t key_length,
+        const uint8_t *label,
+        size_t label_length,
+        void *clientd)
+    {
+        find_name_counter_clientd_t *find_name_clientd = (find_name_counter_clientd_t *)clientd;
+        size_t query_name_length = strlen(find_name_clientd->name);
+
+        if (AERON_NAME_RESOLVER_CSV_ENTRY_COUNTER_TYPE_ID == type_id)
+        {
+            uint32_t key_name_length;
+            memcpy(&key_name_length, key, sizeof(key_name_length));
+            if (query_name_length == key_name_length &&
+                0 == memcmp(find_name_clientd->name, &key[sizeof(key_name_length)], key_name_length))
+            {
+                find_name_clientd->counter_id = id;
+            }
+        }
+    }
+
+    int64_t *nameCounterAddrByHostname(resolver_fields_t *resolverFields, const char *name)
+    {
+        find_name_counter_clientd_t clientd = { name, -1 };
+
+        aeron_counters_reader_foreach_metadata(
+            resolverFields->counters_reader.metadata,
+            resolverFields->counters_reader.metadata_length,
+            findNameCounterCallback,
+            (void *)&clientd);
+
+        if (-1 < clientd.counter_id)
+        {
+            return aeron_counters_reader_addr(&resolverFields->counters_reader, clientd.counter_id);
+        }
+
+        return nullptr;
+    }
 
     static void foreachFilterByTypeId(
         int32_t id,
@@ -199,44 +257,61 @@ private:
     }
 };
 
-
 #define NAME_0 "server0"
-#define HOST_0A "localhost:20001"
-#define HOST_0B "localhost:20002"
+#define HOST_0A "127.0.0.1"
+#define HOST_0B "127.0.0.2"
 
 #define NAME_1 "server1"
-#define HOST_1A "localhost:20101"
-#define HOST_1B "localhost:20102"
+#define HOST_1A "127.0.0.3"
+#define HOST_1B "127.0.0.4"
 
 TEST_F(NameResolverTest, shouldUseStaticLookupTable)
 {
+    in_addr host_0a = {};
+    inet_pton(AF_INET, HOST_0A, &host_0a);
+    in_addr host_0b = {};
+    inet_pton(AF_INET, HOST_0B, &host_0b);
+    in_addr host_1a = {};
+    inet_pton(AF_INET, HOST_1A, &host_1a);
+    in_addr host_1b = {};
+    inet_pton(AF_INET, HOST_1B, &host_1b);
+
     const char *config_param =
-        NAME_0 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_0A "," HOST_0B "|"
-        NAME_1 "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_2" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_3" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_4" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_5" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_6" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_7" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_8" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|"
-        "NAME_9" "," AERON_UDP_CHANNEL_ENDPOINT_KEY "," HOST_1A "," HOST_1B "|";
+        NAME_0 "," HOST_0A "," HOST_0B "|"
+        NAME_1 "," HOST_1A "," HOST_1B "|"
+        "NAME_2" "," HOST_1A "," HOST_1B "|"
+        "NAME_3" "," HOST_1A "," HOST_1B "|"
+        "NAME_4" "," HOST_1A "," HOST_1B "|"
+        "NAME_5" "," HOST_1A "," HOST_1B "|"
+        "NAME_6" "," HOST_1A "," HOST_1B "|"
+        "NAME_7" "," HOST_1A "," HOST_1B "|"
+        "NAME_8" "," HOST_1A "," HOST_1B "|"
+        "NAME_9" "," HOST_1A "," HOST_1B "|";
 
     initResolver(&m_a, AERON_NAME_RESOLVER_CSV_TABLE, config_param, 0);
 
-    const char *resolved_name = nullptr;
+    int64_t *name0ToggleAddr = nameCounterAddrByHostname(&m_a, NAME_0);
+    int64_t *name1ToggleAddr = nameCounterAddrByHostname(&m_a, NAME_1);
 
-    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_name));
-    ASSERT_STREQ(HOST_0A, resolved_name);
+    struct sockaddr_in address = {};
+    address.sin_family = AF_INET;
+    sockaddr_storage *addr_ptr = (struct sockaddr_storage *)&address;
 
-    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));
-    ASSERT_STREQ(HOST_0B, resolved_name);
+    ASSERT_EQ(0, m_a.resolver.resolve_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, addr_ptr));
+    ASSERT_EQ(host_0a.s_addr, address.sin_addr.s_addr);
 
-    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_name));
-    ASSERT_STREQ(HOST_1A, resolved_name);
+    aeron_counter_set_ordered(name0ToggleAddr, AERON_NAME_RESOLVER_CSV_USE_RE_RESOLUTION_HOST_OP);
 
-    ASSERT_EQ(1, m_a.resolver.lookup_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &resolved_name));
-    ASSERT_STREQ(HOST_1B, resolved_name);
+    ASSERT_EQ(0, m_a.resolver.resolve_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, addr_ptr));
+    ASSERT_EQ(host_0b.s_addr, address.sin_addr.s_addr);
+
+    ASSERT_EQ(0, m_a.resolver.resolve_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, addr_ptr));
+    ASSERT_EQ(host_1a.s_addr, address.sin_addr.s_addr);
+
+    aeron_counter_set_ordered(name1ToggleAddr, AERON_NAME_RESOLVER_CSV_USE_RE_RESOLUTION_HOST_OP);
+
+    ASSERT_EQ(0, m_a.resolver.resolve_func(&m_a.resolver, NAME_1, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, addr_ptr));
+    ASSERT_EQ(host_1b.s_addr, address.sin_addr.s_addr);
 }
 
 TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)

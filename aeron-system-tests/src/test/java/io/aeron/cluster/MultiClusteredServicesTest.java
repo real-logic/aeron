@@ -25,6 +25,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import io.aeron.test.driver.RedirectingNameResolver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -103,7 +104,8 @@ public class MultiClusteredServicesTest
         final MediaDriver clientMediaDriver = MediaDriver.launch(new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
             .dirDeleteOnStart(true)
-            .aeronDirectoryName(aeronDirName));
+            .aeronDirectoryName(aeronDirName)
+            .nameResolver(new RedirectingNameResolver(TestCluster.NAME_NODE_MAPPINGS)));
 
         final AeronCluster client = AeronCluster.connect(new AeronCluster.Context()
             .aeronDirectoryName(aeronDirName)

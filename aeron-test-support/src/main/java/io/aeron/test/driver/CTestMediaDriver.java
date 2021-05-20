@@ -105,6 +105,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
     }
 
+    @SuppressWarnings("methodlength")
     public static CTestMediaDriver launch(
         final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)
     {
@@ -170,6 +171,14 @@ public final class CTestMediaDriver implements TestMediaDriver
         environment.put("AERON_SOCKET_SO_RCVBUF", String.valueOf(context.socketRcvbufLength()));
         environment.put("AERON_SOCKET_SO_SNDBUF", String.valueOf(context.socketSndbufLength()));
         environment.put("AERON_RCV_INITIAL_WINDOW_LENGTH", String.valueOf(context.initialWindowLength()));
+        environment.put("AERON_PUBLICATION_UNBLOCK_TIMEOUT", String.valueOf(context.publicationUnblockTimeoutNs()));
+        final NameResolver nameResolver = context.nameResolver();
+        if (nameResolver instanceof RedirectingNameResolver)
+        {
+            final String csvConfiguration = ((RedirectingNameResolver)nameResolver).csvConfiguration();
+            environment.put("AERON_NAME_RESOLVER_SUPPLIER", "csv_table");
+            environment.put("AERON_NAME_RESOLVER_INIT_ARGS", csvConfiguration);
+        }
 
         setFlowControlStrategy(environment, context);
         setLogging(environment);
@@ -180,6 +189,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             File stdoutFile = NULL_FILE;
             File stderrFile = NULL_FILE;
 
+            final ProcessBuilder pb = new ProcessBuilder(aeronBinary.getAbsolutePath());
             if (null != driverOutputConsumer)
             {
                 stdoutFile = File.createTempFile("CTestMediaDriver-", ".out");
@@ -189,7 +199,6 @@ public final class CTestMediaDriver implements TestMediaDriver
                 driverOutputConsumer.environmentVariables(context.aeronDirectoryName(), environment);
             }
 
-            final ProcessBuilder pb = new ProcessBuilder(aeronBinary.getAbsolutePath());
             pb.environment().putAll(environment);
             pb.redirectOutput(stdoutFile).redirectError(stderrFile);
             final Process process = pb.start();
@@ -297,13 +306,5 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
         C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, lossTransportEnv);
-    }
-
-    public static void enableCsvNameLookupConfiguration(final MediaDriver.Context context, final String csvLookupTable)
-    {
-        final Object2ObjectHashMap<String, String> csvTableEnv = new Object2ObjectHashMap<>();
-        csvTableEnv.put("AERON_NAME_RESOLVER_SUPPLIER", "csv_table");
-        csvTableEnv.put("AERON_NAME_RESOLVER_INIT_ARGS", csvLookupTable);
-        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, csvTableEnv);
     }
 }

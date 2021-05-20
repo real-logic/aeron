@@ -16,6 +16,11 @@
 
 #include "aeron_name_resolver.h"
 
+#define AERON_NAME_RESOLVER_CSV_ENTRY_COUNTER_TYPE_ID (2001)
+#define AERON_NAME_RESOLVER_CSV_DISABLE_RESOLUTION_OP INT64_C(-1)
+#define AERON_NAME_RESOLVER_CSV_USE_INITIAL_RESOLUTION_HOST_OP INT64_C(0)
+#define AERON_NAME_RESOLVER_CSV_USE_RE_RESOLUTION_HOST_OP INT64_C(1)
+
 int aeron_csv_table_name_resolver_supplier(
     aeron_name_resolver_t *resolver,
     const char *args,

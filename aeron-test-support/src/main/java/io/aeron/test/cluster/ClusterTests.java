@@ -22,12 +22,12 @@ import io.aeron.exceptions.AeronException;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
-import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -88,9 +88,6 @@ public class ClusterTests
                 System.err.println("\n*** Error in member " + memberId + " ***\n\n");
                 ex.printStackTrace();
                 printWarning();
-
-                System.err.println();
-                System.err.println(SystemUtil.threadDump());
             };
     }
 
@@ -135,7 +132,7 @@ public class ClusterTests
         final Throwable error = ERROR.getAndSet(null);
         final Throwable warning = WARNING.getAndSet(null);
 
-        if (null != error)
+        if (null != error && !(error instanceof UnknownHostException))
         {
             if (null != warning)
             {

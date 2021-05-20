@@ -248,6 +248,8 @@ public class NameReResolutionTest
     @Timeout(20)
     public void shouldHandleMdcManualEndpointInitiallyUnresolved()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("Need to implement handling of unresolved destination in C driver");
+
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
         buffer.putInt(0, 1);

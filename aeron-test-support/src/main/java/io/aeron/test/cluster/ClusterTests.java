@@ -22,7 +22,6 @@ import io.aeron.exceptions.AeronException;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
-import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
@@ -89,9 +88,6 @@ public class ClusterTests
                 System.err.println("\n*** Error in member " + memberId + " ***\n\n");
                 ex.printStackTrace();
                 printWarning();
-
-                System.err.println();
-                System.err.println(SystemUtil.threadDump());
             };
     }
 

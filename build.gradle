@@ -440,9 +440,6 @@ project(':aeron-archive') {
         }
     }
 
-    compileJava.dependsOn 'compileGeneratedJava'
-    compileGeneratedJava.dependsOn 'generateCodecs'
-
     task generateCodecs(type: JavaExec) {
         def codecsFile = 'src/main/resources/archive/aeron-archive-codecs.xml'
         def markCodecsFile = 'src/main/resources/archive/aeron-archive-mark-codecs.xml'
@@ -474,6 +471,9 @@ project(':aeron-archive') {
         args = ['src/main/resources/archive/aeron-archive-codecs.xml']
     }
 
+    compileJava.dependsOn compileGeneratedJava
+    compileGeneratedJava.dependsOn generateCodecs
+
     jar {
         from sourceSets.generated.output
 
@@ -493,7 +493,7 @@ project(':aeron-archive') {
         """
     }
 
-    task sourcesJar(type: Jar) {
+    task sourcesJar(type: Jar, dependsOn: generateCodecs) {
         archiveClassifier.set('sources')
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
@@ -504,6 +504,8 @@ project(':aeron-archive') {
         source += project(':aeron-client').sourceSets.main.allJava
         source += project(':aeron-driver').sourceSets.main.allJava
     }
+
+    javadoc.dependsOn generateCodecs
 
     java {
         withSourcesJar()
@@ -559,9 +561,6 @@ project(':aeron-cluster') {
         }
     }
 
-    compileJava.dependsOn 'compileGeneratedJava'
-    compileGeneratedJava.dependsOn 'generateCodecs'
-
     task generateCodecs(type: JavaExec) {
         def codecsFile = 'src/main/resources/cluster/aeron-cluster-codecs.xml'
         def markCodecsFile = 'src/main/resources/cluster/aeron-cluster-mark-codecs.xml'
@@ -579,6 +578,9 @@ project(':aeron-cluster') {
             'sbe.validation.stop.on.error': 'true')
         args = [codecsFile, markCodecsFile]
     }
+
+    compileJava.dependsOn compileGeneratedJava
+    compileGeneratedJava.dependsOn generateCodecs
 
     jar {
         from sourceSets.generated.output
@@ -599,7 +601,7 @@ project(':aeron-cluster') {
         """
     }
 
-    task sourcesJar(type: Jar) {
+    task sourcesJar(type: Jar, dependsOn: generateCodecs) {
         archiveClassifier.set('sources')
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
@@ -612,6 +614,8 @@ project(':aeron-cluster') {
         source += project(':aeron-archive').sourceSets.main.allJava
         source += project(':aeron-archive').sourceSets.generated.allJava
     }
+
+    javadoc.dependsOn generateCodecs
 
     java {
         withSourcesJar()
@@ -676,7 +680,7 @@ project(':aeron-agent') {
 
     jar.finalizedBy shadowJar
 
-    task sourcesJar(type: Jar) {
+    task sourcesJar(type: Jar, dependsOn: [':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs']) {
         archiveClassifier.set('sources')
         from files(
             aeronClientProject.sourceSets.main.allSource,
@@ -695,6 +699,8 @@ project(':aeron-agent') {
         source += aeronClusterProject.sourceSets.main.allJava
         source += aeronClusterProject.sourceSets.generated.allJava
     }
+
+    javadoc.dependsOn ':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs'
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
         archiveClassifier.set('javadoc')
@@ -848,7 +854,7 @@ project(':aeron-all') {
 
     jar.finalizedBy shadowJar
 
-    task sourcesJar(type: Jar) {
+    task sourcesJar(type: Jar, dependsOn: [':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs']) {
         archiveClassifier.set('sources')
         from files(
             aeronClientProject.sourceSets.main.allSource,
@@ -869,6 +875,8 @@ project(':aeron-all') {
         source += aeronClusterProject.sourceSets.generated.allJava
         source += aeronSamplesProject.sourceSets.main.allJava
     }
+
+    javadoc.dependsOn ':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs'
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
         archiveClassifier.set('javadoc')

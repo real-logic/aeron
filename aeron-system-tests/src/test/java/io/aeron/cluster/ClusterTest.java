@@ -249,7 +249,6 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
-    @Disabled("Requires handling of initial resolution failures on addDestination")
     public void shouldHandleLeaderFailOverWhenNameIsNotResolvable(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);

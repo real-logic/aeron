@@ -357,8 +357,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
             if (poller.isDispatchComplete() && poller.remainingRecordCount() > 0)
             {
-                error("unknown src recording id " + srcRecordingId, ArchiveException.UNKNOWN_RECORDING);
                 state(State.DONE);
+                error("unknown src recording id " + srcRecordingId, ArchiveException.UNKNOWN_RECORDING);
             }
 
             if (0 == fragments && epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
@@ -459,6 +459,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             final String resolvedEndpoint = recordingSubscription.resolvedEndpoint();
             if (null == resolvedEndpoint)
             {
+                if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+                {
+                    throw new TimeoutException(
+                        "failed to resolve subscription endpoint: channel=" + recordingSubscription.channel());
+                }
+
                 return workCount;
             }
 

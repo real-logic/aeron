@@ -17,10 +17,7 @@ package io.aeron.cluster.client;
 
 import io.aeron.*;
 import io.aeron.cluster.codecs.*;
-import io.aeron.exceptions.AeronException;
-import io.aeron.exceptions.ConcurrentConcludeException;
-import io.aeron.exceptions.ConfigurationException;
-import io.aeron.exceptions.TimeoutException;
+import io.aeron.exceptions.*;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -1468,6 +1465,7 @@ public final class AeronCluster implements AutoCloseable
         private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
         private Int2ObjectHashMap<MemberIngress> memberByIdMap;
         private Publication ingressPublication;
+        private RegistrationException registrationException;
 
         AsyncConnect(final Context ctx, final Subscription egressSubscription, final long deadlineNs)
         {
@@ -1558,9 +1556,16 @@ public final class AeronCluster implements AutoCloseable
         {
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
-                throw new TimeoutException(
+                final TimeoutException ex = new TimeoutException(
                     "connect timeout, step=" + step + " egress.isConnected=" + egressSubscription.isConnected() +
                     " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort());
+
+                if (null != registrationException)
+                {
+                    ex.addSuppressed(registrationException);
+                }
+
+                throw ex;
             }
 
             if (Thread.currentThread().isInterrupted())
@@ -1577,11 +1582,27 @@ public final class AeronCluster implements AutoCloseable
             }
             else
             {
+                int publicationCount = 0;
                 final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
+
                 for (final MemberIngress member : memberByIdMap.values())
                 {
                     channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
-                    member.publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
+
+                    try
+                    {
+                        member.publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
+                        ++publicationCount;
+                    }
+                    catch (final RegistrationException ex)
+                    {
+                        registrationException = ex;
+                    }
+                }
+
+                if (0 == publicationCount && null != registrationException)
+                {
+                    throw registrationException;
                 }
             }
 
@@ -1597,7 +1618,7 @@ public final class AeronCluster implements AutoCloseable
                 {
                     for (final MemberIngress member : memberByIdMap.values())
                     {
-                        if (member.publication.isConnected())
+                        if (null != member.publication && member.publication.isConnected())
                         {
                             ingressPublication = member.publication;
                             prepareConnectRequest(responseChannel);
@@ -1626,7 +1647,6 @@ public final class AeronCluster implements AutoCloseable
                 .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
             messageLength = MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength();
-
             step(2);
         }
 

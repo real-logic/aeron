@@ -20,6 +20,7 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
@@ -101,6 +102,34 @@ final class CommonEventEncoder
         return relativeOffset;
     }
 
+    static int encodeInetAddress(
+        final UnsafeBuffer encodingBuffer, final int offset, final InetAddress address)
+    {
+        int relativeOffset = 0;
+
+        if (null != address)
+        {
+            /*
+             * Stream of values:
+             * - IP address length (int) (4 or 16)
+             * - IP address (4 or 16 bytes)
+             */
+            final byte[] addressBytes = address.getAddress();
+            encodingBuffer.putInt(offset + relativeOffset, addressBytes.length, LITTLE_ENDIAN);
+            relativeOffset += SIZE_OF_INT;
+
+            encodingBuffer.putBytes(offset + relativeOffset, addressBytes);
+            relativeOffset += addressBytes.length;
+        }
+        else
+        {
+            encodingBuffer.putInt(offset, 0);
+            relativeOffset += SIZE_OF_INT;
+        }
+
+        return relativeOffset;
+    }
+
     static int encodeTrailingString(
         final UnsafeBuffer encodingBuffer, final int offset, final int remainingCapacity, final String value)
     {
@@ -146,7 +175,17 @@ final class CommonEventEncoder
 
     static int socketAddressLength(final InetSocketAddress address)
     {
-        return 2 * SIZE_OF_INT + address.getAddress().getAddress().length;
+        return SIZE_OF_INT + inetAddressLength(address.getAddress());
+    }
+
+    static int inetAddressLength(final InetAddress address)
+    {
+        return SIZE_OF_INT + (null != address ? address.getAddress().length : 0);
+    }
+
+    static int trailingStringLength(final String s, final int maxLength)
+    {
+        return SIZE_OF_INT + min(s.length(), maxLength);
     }
 
     static <E extends Enum<E>> int stateTransitionStringLength(final E from, final E to)

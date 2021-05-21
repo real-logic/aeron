@@ -24,17 +24,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventDissector.*;
+import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_LENGTH;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.*;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DriverEventDissectorTest
@@ -595,6 +600,20 @@ class DriverEventDissectorTest
     }
 
     @Test
+    void dissectIpv6Address()
+    {
+        final int offset = 24;
+        internalEncodeLogHeader(buffer, offset, 17, 27, () -> 2_500_000_000L);
+        encodeSocketAddress(
+            buffer, LOG_HEADER_LENGTH + offset, new InetSocketAddress("2001:0db8:85a3:0000:0000:8a2e:0370:7334", 4848));
+
+        DriverEventDissector.dissectAddress(NAME_RESOLUTION_NEIGHBOR_ADDED, buffer, offset, builder);
+
+        assertEquals("[2.5] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOR_ADDED.name() +
+            " [17/27]: [2001:db8:85a3:0:0:8a2e:370:7334]:4848", builder.toString());
+    }
+
+    @Test
     void dissectFlowControlReceiver()
     {
         final int offset = 24;
@@ -610,6 +629,53 @@ class DriverEventDissectorTest
         assertEquals("[2.5] " + CONTEXT + ": " + FLOW_CONTROL_RECEIVER_ADDED.name() +
             " [42/48]: receiverCount=5 receiverId=-45754449919191 sessionId=11 streamId=4 channel=ABC",
             builder.toString());
+    }
+
+    @Test
+    void dissectResolve() throws UnknownHostException
+    {
+        final String resolver = "testResolver";
+        final String hostname = "localhost";
+        final InetAddress address = InetAddress.getByName("127.0.0.1");
+
+        final int length = trailingStringLength(resolver, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(hostname, MAX_HOST_NAME_LENGTH) +
+            inetAddressLength(address);
+
+        DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, hostname, address);
+        final StringBuilder builder = new StringBuilder();
+        DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
+
+        assertThat(builder.toString(), endsWith(
+            "DRIVER: NAME_RESOLUTION_RESOLVE [37/37]: resolver=testResolver hostname=localhost address=127.0.0.1"));
+    }
+
+    @Test
+    void dissectResolveWithReallyLongNames() throws UnknownHostException
+    {
+        final String longString = "testResolver.this.is.a.really.long.string.to.force.truncation.0000000000000000000" +
+            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+            "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
+
+        final String expected = "DRIVER: NAME_RESOLUTION_RESOLVE [522/522]: resolver=testResolver." +
+            "this.is.a.really.long.string.to.force.truncation.000000000000000000000000000000000000000000000000000000" +
+            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+            "0000000000000000000000000000000... hostname=testResolver.this.is.a.really.long.string.to.force.truncati" +
+            "on.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000... address=127" +
+            ".0.0.1";
+
+        final InetAddress address = InetAddress.getByName("127.0.0.1");
+
+        final int length = trailingStringLength(longString, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(longString, MAX_HOST_NAME_LENGTH) +
+            inetAddressLength(address);
+
+        DriverEventEncoder.encodeResolve(buffer, 0, length, length, longString, longString, address);
+        final StringBuilder builder = new StringBuilder();
+        DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
+
+        assertThat(builder.toString(), endsWith(expected));
     }
 
     private DirectBuffer newBuffer(final byte[] bytes)

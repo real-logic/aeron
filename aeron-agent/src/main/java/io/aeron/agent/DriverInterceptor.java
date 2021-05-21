@@ -15,8 +15,10 @@
  */
 package io.aeron.agent;
 
+import io.aeron.driver.NameResolver;
 import net.bytebuddy.asm.Advice;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import static io.aeron.agent.DriverEventCode.*;
@@ -51,6 +53,21 @@ class DriverInterceptor
             static void neighborRemoved(final long nowMs, final InetSocketAddress address)
             {
                 LOGGER.logAddress(NAME_RESOLUTION_NEIGHBOR_REMOVED, address);
+            }
+        }
+
+        static class Resolve
+        {
+            @Advice.OnMethodExit
+            static void resolve(
+                final String name,
+                final String uriParamName,
+                final boolean isReResolution,
+                @Advice.Return final InetAddress address,
+                @Advice.This final NameResolver nameResolver)
+            {
+                LOGGER.logResolve(
+                    DriverEventCode.NAME_RESOLUTION_RESOLVE, nameResolver.getClass().getSimpleName(), name, address);
             }
         }
     }

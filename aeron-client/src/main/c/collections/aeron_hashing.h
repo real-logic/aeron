@@ -35,7 +35,7 @@ inline size_t aeron_hash(uint64_t value, size_t mask)
 {
     uint64_t hash = aeron_hash_code(value);
 
-    if (mask < UINT32_MAX)
+    if (mask <= UINT32_MAX)
     {
         hash = (uint32_t)hash ^ (uint32_t)(hash >> 32u);
     }

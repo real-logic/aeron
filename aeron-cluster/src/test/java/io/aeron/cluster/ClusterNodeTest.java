@@ -96,6 +96,8 @@ public class ClusterNodeTest
         aeronCluster = connectToCluster(null);
 
         assertTrue(aeronCluster.sendKeepAlive());
+
+        ClusterTests.failOnClusterError();
     }
 
     @Test
@@ -363,6 +365,6 @@ public class ClusterNodeTest
             new AeronCluster.Context()
                 .egressListener(egressListener)
                 .ingressChannel("aeron:udp")
-                .ingressEndpoints("0=localhost:9010,1=localhost:9011,2=localhost:9012"));
+                .ingressEndpoints("0=localhost:9010"));
     }
 }

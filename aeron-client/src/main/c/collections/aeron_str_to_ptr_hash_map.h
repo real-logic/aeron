@@ -51,7 +51,7 @@ inline size_t aeron_str_to_ptr_hash_map_hash_key(uint64_t key_hash_code, size_t 
 {
     uint64_t hash = key_hash_code;
 
-    if (mask < UINT32_MAX)
+    if (mask <= UINT32_MAX)
     {
         hash = (uint32_t)hash ^ (uint32_t)(hash >> 32u);
     }

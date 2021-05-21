@@ -87,7 +87,7 @@ class CommonEventDissectorTest
         final int decodedLength = CommonEventDissector.dissectSocketAddress(buffer, offset, builder);
 
         assertEquals(24, decodedLength);
-        assertEquals("9c7c:12:7880:2c2c:ab0:5016:7a05:59d:7777", builder.toString());
+        assertEquals("[9c7c:12:7880:2c2c:ab0:5016:7a05:59d]:7777", builder.toString());
     }
 
     @Test

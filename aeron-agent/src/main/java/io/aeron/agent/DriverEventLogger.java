@@ -20,6 +20,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -43,6 +44,11 @@ public final class DriverEventLogger
      * Logger for writing into the {@link EventConfiguration#EVENT_RING_BUFFER}.
      */
     public static final DriverEventLogger LOGGER = new DriverEventLogger(EVENT_RING_BUFFER);
+
+    /**
+     * Maximum length of a host name.
+     */
+    public static final int MAX_HOST_NAME_LENGTH = 253;
 
     private final ManyToOneRingBuffer ringBuffer;
 
@@ -321,6 +327,41 @@ public final class DriverEventLogger
             try
             {
                 encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, address);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log a resolution for a resolver and the associated result.
+     *
+     * @param code          representing the event type
+     * @param resolverName  simple class name of the resolver
+     * @param name          host name being resolved
+     * @param address       address that was resolved to, can be null
+     */
+    public void logResolve(
+        final DriverEventCode code,
+        final String resolverName,
+        final String name,
+        final InetAddress address)
+    {
+        final int length = trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(name, MAX_HOST_NAME_LENGTH) +
+            inetAddressLength(address);
+
+        final int encodedLength = encodedLength(length);
+
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(code), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeResolve((UnsafeBuffer)ringBuffer.buffer(), index, length, length, resolverName, name, address);
             }
             finally
             {

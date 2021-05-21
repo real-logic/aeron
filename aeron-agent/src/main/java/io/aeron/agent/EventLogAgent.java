@@ -339,6 +339,14 @@ public final class EventLogAgent
             DriverInterceptor.NameResolution.NeighborRemoved.class,
             "neighborRemoved");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            DRIVER_EVENT_CODES,
+            DriverEventCode.NAME_RESOLUTION_RESOLVE,
+            "NameResolver",
+            DriverInterceptor.NameResolution.Resolve.class,
+            "resolve");
+
         return tempBuilder;
     }
 

@@ -84,9 +84,19 @@ final class CommonEventDissector
     static int dissectSocketAddress(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = 0;
-
         final int port = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
+
+        relativeOffset += dissectInetAddress(buffer, offset + relativeOffset, builder);
+
+        builder.append(':').append(port);
+
+        return relativeOffset;
+    }
+
+    static int dissectInetAddress(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int relativeOffset = 0;
 
         final int addressLength = buffer.getInt(offset + relativeOffset);
         relativeOffset += SIZE_OF_INT;
@@ -101,14 +111,13 @@ final class CommonEventDissector
                 .append('.')
                 .append(buffer.getByte(i + 2) & 0xFF)
                 .append('.')
-                .append(buffer.getByte(i + 3) & 0xFF)
-                .append(':')
-                .append(port);
+                .append(buffer.getByte(i + 3) & 0xFF);
         }
         else if (16 == addressLength)
         {
             final int i = offset + relativeOffset;
             builder
+                .append('[')
                 .append(toHexString(((buffer.getByte(i) << 8) & 0xFF00) | buffer.getByte(i + 1) & 0xFF))
                 .append(':')
                 .append(toHexString(((buffer.getByte(i + 2) << 8) & 0xFF00) | buffer.getByte(i + 3) & 0xFF))
@@ -124,12 +133,11 @@ final class CommonEventDissector
                 .append(toHexString(((buffer.getByte(i + 12) << 8) & 0xFF00) | buffer.getByte(i + 13) & 0xFF))
                 .append(':')
                 .append(toHexString(((buffer.getByte(i + 14) << 8) & 0xFF00) | buffer.getByte(i + 15) & 0xFF))
-                .append(':')
-                .append(port);
+                .append(']');
         }
         else
         {
-            builder.append("unknown-address:").append(port);
+            builder.append("unknown-address");
         }
 
         relativeOffset += addressLength;

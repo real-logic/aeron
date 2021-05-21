@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-inline uint32_t aeron_hash_code(uint64_t value)
+inline uint64_t aeron_hash_code(uint64_t value)
 {
     uint64_t x = value;
 
@@ -28,20 +28,28 @@ inline uint32_t aeron_hash_code(uint64_t value)
     x = (x ^ (x >> 27u)) * UINT64_C(0x94d049bb133111eb);
     x = x ^ (x >> 31u);
 
-    return (uint32_t)x ^ (uint32_t)(x >> 32u);
+    return x;
 }
 
 inline size_t aeron_hash(uint64_t value, size_t mask)
 {
-    uint32_t hash = aeron_hash_code(value);
+    uint64_t hash = aeron_hash_code(value);
+
+    if (mask < UINT32_MAX)
+    {
+        hash = (uint32_t)hash ^ (uint32_t)(hash >> 32u);
+    }
+
     return (size_t)(hash & mask);
 }
 
 inline size_t aeron_even_hash(uint64_t value, size_t mask)
 {
-    uint32_t hash = aeron_hash_code(value);
-    hash = (hash << 1u) - (hash << 8u);
-    return (size_t)(hash & mask);
+    uint64_t hash = aeron_hash_code(value);
+    uint32_t folded_hash = (uint32_t)hash ^ (uint32_t)(hash >> 32u);
+    uint32_t even_hash = (folded_hash << 1u) - (folded_hash << 8u);
+
+    return (size_t)(even_hash & mask);
 }
 
 #endif //AERON_HASHING_H

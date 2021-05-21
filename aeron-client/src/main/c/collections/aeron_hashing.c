@@ -16,7 +16,7 @@
 
 #include "collections/aeron_hashing.h"
 
-extern uint32_t aeron_hash_code(uint64_t value);
+extern uint64_t aeron_hash_code(uint64_t value);
 
 extern size_t aeron_hash(uint64_t value, size_t mask);
 

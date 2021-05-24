@@ -86,7 +86,15 @@ int aeron_csv_table_name_resolver_resolve(
         }
     }
 
-    return aeron_default_name_resolver_resolve(NULL, hostname, uri_param_name, is_re_resolution, address);
+    int result = aeron_default_name_resolver_resolve(resolver, hostname, uri_param_name, is_re_resolution, address);
+
+    if (NULL != resolver->on_resolve_func)
+    {
+        struct sockaddr_storage *resolved_address = 0 <= result ? address : NULL;
+        resolver->on_resolve_func(resolver, name, resolved_address);
+    }
+
+    return result;
 }
 
 int aeron_csv_table_name_resolver_close(aeron_name_resolver_t *resolver)
@@ -109,9 +117,10 @@ int aeron_csv_table_name_resolver_supplier(
 {
     resolver->lookup_func = aeron_default_name_resolver_lookup;
     resolver->close_func = aeron_csv_table_name_resolver_close;
-
     resolver->resolve_func = aeron_csv_table_name_resolver_resolve;
     resolver->do_work_func = aeron_default_name_resolver_do_work;
+    resolver->on_resolve_func = context->on_name_resolve_func;
+    resolver->name = "csv";
 
     char *rows[AERON_NAME_RESOLVER_CSV_TABLE_MAX_SIZE];
     char *columns[AERON_NAME_RESOLVER_CSV_TABLE_COLUMNS];

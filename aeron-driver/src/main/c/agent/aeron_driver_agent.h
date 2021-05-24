@@ -72,6 +72,7 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED = 47,
     AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_ADDED = 48,
     AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_REMOVED = 49,
+    AERON_DRIVER_EVENT_NAME_RESOLUTION_RESOLVE = 50,
 
     // C-specific events. Note: event IDs are dynamic to avoid gaps in the sparse arrays.
     AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR,
@@ -162,6 +163,15 @@ typedef struct aeron_driver_agent_flow_control_receiver_change_log_header_stct
     int32_t receiver_count;
 }
 aeron_driver_agent_flow_control_receiver_change_log_header_t;
+
+typedef struct aeron_driver_agent_name_resolver_resolve_log_header_stct
+{
+    int64_t time_ns;
+    int32_t resolver_name_length;
+    int32_t hostname_length;
+    int32_t address_length;
+}
+aeron_driver_agent_name_resolver_resolve_log_header_t;
 
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
 

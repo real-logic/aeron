@@ -955,18 +955,18 @@ void aeron_driver_agent_name_resolver_on_resolve(
         {
             if (AF_INET == address->ss_family)
             {
-                struct sockaddr_in *addressIn = (struct sockaddr_in *)address;
+                struct sockaddr_in *address_in = (struct sockaddr_in *)address;
                 memcpy(
                     bodyPtr + resolverNameLength + hostnameLength,
-                    &addressIn->sin_addr,
+                    &address_in->sin_addr,
                     addressLength);
             }
             else if (AF_INET6 == address->ss_family)
             {
-                struct sockaddr_in6 *addressIn6 = (struct sockaddr_in6 *)address;
+                struct sockaddr_in6 *address_in6 = (struct sockaddr_in6 *)address;
                 memcpy(
                     bodyPtr + resolverNameLength + hostnameLength,
-                    &addressIn6->sin6_addr,
+                    &address_in6->sin6_addr,
                     addressLength);
             }
         }

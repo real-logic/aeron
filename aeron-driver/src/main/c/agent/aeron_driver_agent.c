@@ -1939,6 +1939,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 addr_prefix,
                 address_str,
                 addr_suffix);
+            break;
         }
 
         case AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR:

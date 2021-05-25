@@ -91,7 +91,7 @@ int aeron_name_resolver_cache_add_or_update(
 
         if (aeron_alloc((void **)&entry->name, name_length + 1) < 0) // NULL terminate, just to be safe.
         {
-            AERON_APPEND_ERR("%s", "Failed allocate name for resolver cache");
+            AERON_APPEND_ERR("%s", "Failed to allocate name for resolver cache");
             return -1;
         }
 

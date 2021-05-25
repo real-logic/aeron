@@ -397,12 +397,22 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
     const char *driver_name = NULL == context->resolver_name ? "" : context->resolver_name;
-    int label_length = snprintf(label, sizeof(label), ": driverName=%s hostname=%s", driver_name, local_hostname);
 
+    int label_length = snprintf(label, sizeof(label), ": driverName=%s hostname=%s", driver_name, local_hostname);
     if (label_length > 0)
     {
         aeron_counters_manager_append_to_label(
             &conductor->counters_manager, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES, (size_t)label_length, label);
+    }
+
+    label_length = snprintf(label, sizeof(label), ": threshold=%" PRIu64 "ns", context->conductor_cycle_threshold_ns);
+    if (label_length > 0)
+    {
+        aeron_counters_manager_append_to_label(
+            &conductor->counters_manager,
+            AERON_SYSTEM_COUNTER_CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED,
+            (size_t)label_length,
+            label);
     }
 
     conductor->context = context;
@@ -1562,7 +1572,7 @@ int aeron_driver_conductor_update_and_check_ats_status(
 {
     if (!context->ats_enabled && AERON_URI_ATS_STATUS_ENABLED == channel->ats_status)
     {
-        AERON_SET_ERR(EINVAL, "%s", "ATS is not enabled and thus ats=true not allowed.");
+        AERON_SET_ERR(EINVAL, "%s", "ATS is not enabled and thus ats=true not allowed");
         return -1;
     }
 

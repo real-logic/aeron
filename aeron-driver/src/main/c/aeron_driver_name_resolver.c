@@ -977,22 +977,34 @@ int aeron_driver_name_resolver_resolve(
         AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD : AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
 
     aeron_name_resolver_cache_entry_t *cache_entry;
+    int result = -1;
+
     if (aeron_name_resolver_cache_lookup_by_name(
         &driver_resolver->cache, name, strlen(name), res_type, &cache_entry) < 0)
     {
         if (0 == strncmp(name, driver_resolver->name, driver_resolver->name_length + 1))
         {
             memcpy(sock_addr, &driver_resolver->local_socket_addr, sizeof(struct sockaddr_storage));
-            return 0;
+            result = 0;
         }
         else
         {
-            return driver_resolver->bootstrap_resolver.resolve_func(
+            result = driver_resolver->bootstrap_resolver.resolve_func(
                 &driver_resolver->bootstrap_resolver, name, uri_param_name, is_re_resolution, sock_addr);
         }
     }
+    else
+    {
+        result = aeron_driver_name_resolver_to_sockaddr(&cache_entry->cache_addr, sock_addr);
+    }
 
-    return aeron_driver_name_resolver_to_sockaddr(&cache_entry->cache_addr, sock_addr);
+    if (NULL != resolver->on_resolve_func)
+    {
+        struct sockaddr_storage *resolved_address = 0 <= result ? sock_addr : NULL;
+        resolver->on_resolve_func(resolver, name, resolved_address);
+    }
+
+    return result;
 }
 
 int aeron_driver_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms)
@@ -1047,7 +1059,9 @@ int aeron_driver_name_resolver_supplier(
     resolver->resolve_func = aeron_driver_name_resolver_resolve;
     resolver->do_work_func = aeron_driver_name_resolver_do_work;
     resolver->close_func = aeron_driver_name_resolver_close;
+    resolver->on_resolve_func = context->on_name_resolve_func;
     resolver->state = name_resolver;
+    resolver->name = "driver";
 
     return 0;
 }

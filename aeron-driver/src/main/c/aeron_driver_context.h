@@ -28,7 +28,6 @@
 #include "aeron_flow_control.h"
 #include "aeron_congestion_control.h"
 #include "aeron_agent.h"
-#include "aeron_name_resolver.h"
 #include "aeron_system_counters.h"
 #include "aeron_cnc_file_descriptor.h"
 
@@ -71,6 +70,11 @@ typedef void (*aeron_driver_flow_control_strategy_on_receiver_change_func_t)(
     size_t channel_length,
     const char *channel,
     size_t receiver_count);
+
+typedef void (*aeron_driver_name_resolver_on_resolve_t)(
+    aeron_name_resolver_t *name_resolver,
+    const char *hostname,
+    struct sockaddr_storage *address);
 
 typedef struct aeron_driver_context_stct
 {
@@ -245,6 +249,7 @@ typedef struct aeron_driver_context_stct
     const char *resolver_bootstrap_neighbor;
     aeron_name_resolver_supplier_func_t name_resolver_supplier_func;
     const char *name_resolver_init_args;
+    aeron_driver_name_resolver_on_resolve_t on_name_resolve_func;
 
     aeron_dl_loaded_libs_state_t *dynamic_libs;
     aeron_driver_context_bindings_clientd_entry_t *bindings_clientd_entries;

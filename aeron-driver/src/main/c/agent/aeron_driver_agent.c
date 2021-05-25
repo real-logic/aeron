@@ -125,9 +125,16 @@ static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NU
         { "NAME_RESOLUTION_NEIGHBOR_REMOVED",     AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "FLOW_CONTROL_RECEIVER_ADDED",          AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "FLOW_CONTROL_RECEIVER_REMOVED",        AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "NAME_RESOLUTION_RESOLVE",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "ADD_DYNAMIC_DISSECTOR",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
     };
+
+typedef struct aeron_driver_agent_name_resolver_state_stct
+{
+    aeron_name_resolver_resolve_func_t delegate_resolve_func;
+}
+aeron_driver_agent_name_resolver_state_t;
 
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb()
 {
@@ -886,6 +893,88 @@ void aeron_driver_agent_flow_control_on_receiver_removed(
         receiver_count);
 }
 
+int32_t aeron_driver_agent_socket_address_length(struct sockaddr_storage *address)
+{
+    if (NULL == address)
+    {
+        return 0;
+    }
+    else if (AF_INET == address->ss_family)
+    {
+        return sizeof(((struct sockaddr_in*)(address))->sin_addr);
+    }
+    else if (AF_INET6 == address->ss_family)
+    {
+        return sizeof(((struct sockaddr_in6*)(address))->sin6_addr);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+void aeron_driver_agent_name_resolver_on_resolve(
+    aeron_name_resolver_t *name_resolver,
+    const char *hostname,
+    struct sockaddr_storage *address)
+{
+    const size_t resolverNameFullLength = strlen(name_resolver->name);
+    const size_t resolverNameLength = resolverNameFullLength < AERON_MAX_HOSTNAME_LEN ?
+        resolverNameFullLength : AERON_MAX_HOSTNAME_LEN;
+
+    const size_t hostnameFullLength = strlen(hostname);
+    const size_t hostnameLength = hostnameFullLength < AERON_MAX_HOSTNAME_LEN ?
+        hostnameFullLength : AERON_MAX_HOSTNAME_LEN;
+
+    const size_t addressLength = aeron_driver_agent_socket_address_length(address);
+
+    int32_t offset = aeron_mpsc_rb_try_claim(
+        &logging_mpsc_rb,
+        AERON_DRIVER_EVENT_NAME_RESOLUTION_RESOLVE,
+        sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t) +
+            resolverNameLength +
+            hostnameLength +
+            addressLength);
+
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_name_resolver_resolve_log_header_t *hdr =
+            (aeron_driver_agent_name_resolver_resolve_log_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        hdr->resolver_name_length = (int32_t)resolverNameLength;
+        hdr->hostname_length = (int32_t)hostnameLength;
+        hdr->address_length = (int32_t)addressLength;
+
+        uint8_t *bodyPtr = ptr + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t);
+        memcpy(bodyPtr, name_resolver->name, (size_t)resolverNameLength);
+        memcpy(bodyPtr + resolverNameLength, hostname, (size_t)hostnameLength);
+
+        if (NULL != address)
+        {
+            if (AF_INET == address->ss_family)
+            {
+                struct sockaddr_in *address_in = (struct sockaddr_in *)address;
+                memcpy(
+                    bodyPtr + resolverNameLength + hostnameLength,
+                    &address_in->sin_addr,
+                    addressLength);
+            }
+            else if (AF_INET6 == address->ss_family)
+            {
+                struct sockaddr_in6 *address_in6 = (struct sockaddr_in6 *)address;
+                memcpy(
+                    bodyPtr + resolverNameLength + hostnameLength,
+                    &address_in6->sin6_addr,
+                    addressLength);
+            }
+        }
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
+}
+
 int aeron_driver_agent_interceptor_init(
     void **interceptor_state, aeron_driver_context_t *context, aeron_udp_channel_transport_affinity_t affinity)
 {
@@ -1040,6 +1129,11 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_REMOVED))
     {
         context->flow_control_on_receiver_removed_func = aeron_driver_agent_flow_control_on_receiver_removed;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_RESOLVE))
+    {
+        context->on_name_resolve_func = aeron_driver_agent_name_resolver_on_resolve;
     }
 
     return 0;
@@ -1799,6 +1893,52 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 hdr->stream_id,
                 hdr->channel_length,
                 channel);
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_NAME_RESOLUTION_RESOLVE:
+        {
+            aeron_driver_agent_name_resolver_resolve_log_header_t *hdr =
+                (aeron_driver_agent_name_resolver_resolve_log_header_t *)message;
+            char *address_str = "(null)";
+            char address_buf[INET6_ADDRSTRLEN] = { 0 };
+            uint8_t *resolver_name_ptr =
+                (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t);
+            uint8_t *hostname_ptr =
+                (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t) +
+                hdr->resolver_name_length;
+            uint8_t *address_ptr =
+                (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t) +
+                hdr->resolver_name_length +
+                hdr->hostname_length;
+
+            const char *addr_prefix = "";
+            const char *addr_suffix = "";
+            if (sizeof(((struct sockaddr_in *)0)->sin_addr) == hdr->address_length)
+            {
+                inet_ntop(AF_INET, address_ptr, address_buf, sizeof(address_buf));
+                address_str = address_buf;
+            }
+            else if (sizeof(((struct sockaddr_in6 *)0)->sin6_addr) == hdr->address_length)
+            {
+                addr_prefix = "[";
+                addr_suffix = "]";
+
+                inet_ntop(AF_INET, address_ptr, address_buf, sizeof(address_buf));
+                address_str = address_buf;
+            }
+
+            fprintf(
+                logfp,
+                "%s: resolver=%.*s hostname=%.*s address=%s%s%s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                (int)hdr->resolver_name_length,
+                resolver_name_ptr,
+                (int)hdr->hostname_length,
+                hostname_ptr,
+                addr_prefix,
+                address_str,
+                addr_suffix);
             break;
         }
 

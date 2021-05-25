@@ -38,7 +38,13 @@ static void aeron_name_resolver_load_function_info(
 
 int aeron_name_resolver_init(aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context)
 {
-    return context->name_resolver_supplier_func(resolver, args, context);
+    if (context->name_resolver_supplier_func(resolver, args, context) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return 0;
 }
 
 int aeron_default_name_resolver_supplier(
@@ -48,7 +54,9 @@ int aeron_default_name_resolver_supplier(
     resolver->resolve_func = aeron_default_name_resolver_resolve;
     resolver->do_work_func = aeron_default_name_resolver_do_work;
     resolver->close_func = aeron_default_name_resolver_close;
+    resolver->on_resolve_func = NULL != context ? context->on_name_resolve_func : NULL;
     resolver->state = NULL;
+    resolver->name = "default";
 
     return 0;
 }
@@ -60,7 +68,15 @@ int aeron_default_name_resolver_resolve(
     bool is_re_resolution,
     struct sockaddr_storage *address)
 {
-    return aeron_ip_addr_resolver(name, address, AF_INET, IPPROTO_UDP);
+    int result = aeron_ip_addr_resolver(name, address, AF_INET, IPPROTO_UDP);
+
+    if (NULL != resolver->on_resolve_func)
+    {
+        struct sockaddr_storage *resolved_address = 0 <= result ? address : NULL;
+        resolver->on_resolve_func(resolver, name, resolved_address);
+    }
+
+    return result;
 }
 
 int aeron_default_name_resolver_lookup(

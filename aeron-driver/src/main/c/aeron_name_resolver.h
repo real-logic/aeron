@@ -52,10 +52,12 @@ typedef int (*aeron_name_resolver_close_func_t)(aeron_name_resolver_t *resolver)
 
 typedef struct aeron_name_resolver_stct
 {
+    const char *name;
     aeron_name_resolver_lookup_func_t lookup_func;
     aeron_name_resolver_resolve_func_t resolve_func;
     aeron_name_resolver_do_work_func_t do_work_func;
     aeron_name_resolver_close_func_t close_func;
+    aeron_driver_name_resolver_on_resolve_t on_resolve_func;
     void *state;
 }
 aeron_name_resolver_t;

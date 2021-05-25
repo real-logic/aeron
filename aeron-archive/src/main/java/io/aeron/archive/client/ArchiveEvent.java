@@ -16,6 +16,7 @@
 package io.aeron.archive.client;
 
 import io.aeron.exceptions.AeronEvent;
+import io.aeron.exceptions.AeronException;
 
 /**
  * A means to capture an Archive event of significance that does not require a stack trace so it can be lighter weight
@@ -24,22 +25,22 @@ import io.aeron.exceptions.AeronEvent;
 public class ArchiveEvent extends AeronEvent
 {
     /**
-     * Archive event with provided message and {@link Category#WARN}.
+     * Archive event with provided message and {@link io.aeron.exceptions.AeronException.Category#WARN}.
      *
      * @param message to detail the event.
      */
     public ArchiveEvent(final String message)
     {
-        super(message, Category.WARN);
+        super(message, AeronException.Category.WARN);
     }
 
     /**
-     * Archive event with provided message and {@link Category}.
+     * Archive event with provided message and {@link io.aeron.exceptions.AeronException.Category}.
      *
      * @param message  to detail the event.
      * @param category of the event.
      */
-    public ArchiveEvent(final String message, final Category category)
+    public ArchiveEvent(final String message, final AeronException.Category category)
     {
         super(message, category);
     }

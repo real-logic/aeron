@@ -28,7 +28,7 @@ public class AeronEvent extends AeronException
      */
     public AeronEvent(final String message)
     {
-        super(message, Category.WARN);
+        super(message, AeronException.Category.WARN);
     }
 
     /**
@@ -37,7 +37,7 @@ public class AeronEvent extends AeronException
      * @param message  to detail the event.
      * @param category of the event.
      */
-    public AeronEvent(final String message, final Category category)
+    public AeronEvent(final String message, final AeronException.Category category)
     {
         super(message, category);
     }

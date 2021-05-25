@@ -44,9 +44,12 @@ public class AeronEvent extends AeronException
 
     /**
      * Override the base implementation so no stack trace is associated.
+     * <p>
+     * <b>Note:</b> This method is not synchronized as it does not call the super class.
      *
      * @return a reference to this {@link AeronEvent} instance.
      */
+    @SuppressWarnings("lgtm[java/non-sync-override]")
     public Throwable fillInStackTrace()
     {
         return this;

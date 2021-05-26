@@ -18,7 +18,6 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveEvent;
-import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
@@ -1604,9 +1603,10 @@ abstract class ArchiveConductor
         {
             if (recordingSessionByIdMap.containsKey(recordingId))
             {
-                final String msg = "cannot extend active recording " + recordingId;
+                final String msg = "cannot extend active recording " + recordingId +
+                    " streamId=" + image.subscription().streamId() + " channel=" + originalChannel;
                 controlSession.attemptErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
-                throw new ArchiveException(msg);
+                throw new ArchiveEvent(msg);
             }
 
             catalog.recordingSummary(recordingId, recordingSummary);

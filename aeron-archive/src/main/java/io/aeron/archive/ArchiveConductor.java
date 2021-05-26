@@ -497,7 +497,7 @@ abstract class ArchiveConductor
                 }
             }
 
-            if (0 == subscriptionRefCountMap.decrementAndGet(subscriptionId))
+            if (subscriptionRefCountMap.decrementAndGet(subscriptionId) <= 0)
             {
                 CloseHelper.close(errorHandler, subscription);
             }
@@ -1039,7 +1039,7 @@ abstract class ArchiveConductor
                 errorHandler.onError(ex);
             }
 
-            if (0 == subscriptionRefCountMap.decrementAndGet(subscriptionId) || session.isAutoStop())
+            if (subscriptionRefCountMap.decrementAndGet(subscriptionId) <= 0 || session.isAutoStop())
             {
                 closeAndRemoveRecordingSubscription(subscription);
             }

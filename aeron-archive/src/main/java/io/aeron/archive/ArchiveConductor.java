@@ -1088,6 +1088,13 @@ abstract class ArchiveConductor
         if (hasRecording)
         {
             catalog.recordingSummary(dstRecordingId, recordingSummary);
+
+            if (NULL_VALUE == recordingSummary.stopPosition || recordingSessionByIdMap.containsKey(dstRecordingId))
+            {
+                final String msg = "cannot replicate to active recording " + dstRecordingId;
+                controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
+                return;
+            }
         }
 
         final AeronArchive.Context remoteArchiveContext = ctx.archiveClientContext().clone()

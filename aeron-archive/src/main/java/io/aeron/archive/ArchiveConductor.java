@@ -1089,7 +1089,7 @@ abstract class ArchiveConductor
         {
             catalog.recordingSummary(dstRecordingId, recordingSummary);
 
-            if (NULL_VALUE == recordingSummary.stopPosition || recordingSessionByIdMap.containsKey(dstRecordingId))
+            if (NULL_POSITION == recordingSummary.stopPosition || recordingSessionByIdMap.containsKey(dstRecordingId))
             {
                 final String msg = "cannot replicate to active recording " + dstRecordingId;
                 controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);

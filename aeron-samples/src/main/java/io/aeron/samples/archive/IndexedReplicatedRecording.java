@@ -208,8 +208,8 @@ public class IndexedReplicatedRecording implements AutoCloseable
 
             sequencer.sendBurst();
 
-            final long channelTagId = 333;
-            final long subscriptionTagId = 777;
+            final long channelTagId = test.dstAeron.nextCorrelationId();
+            final long subscriptionTagId = test.dstAeron.nextCorrelationId();
             final String taggedChannel =
                 "aeron:udp?control-mode=manual|rejoin=false|tags=" + channelTagId + "," + subscriptionTagId;
 

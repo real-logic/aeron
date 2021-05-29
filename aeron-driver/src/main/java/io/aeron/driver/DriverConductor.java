@@ -346,7 +346,7 @@ public final class DriverConductor implements Agent
 
             if (newAddress.isUnresolved())
             {
-                ctx.errorHandler().onError(new AeronEvent("could not be re-resolved: endpoint=" + endpoint));
+                ctx.errorHandler().onError(new AeronEvent("could not re-resolve: endpoint=" + endpoint));
                 errorCounter.increment();
             }
             else if (!address.equals(newAddress))
@@ -374,7 +374,7 @@ public final class DriverConductor implements Agent
 
             if (newAddress.isUnresolved())
             {
-                ctx.errorHandler().onError(new AeronEvent("could not be re-resolved: control=" + control));
+                ctx.errorHandler().onError(new AeronEvent("could not re-resolve: control=" + control));
                 errorCounter.increment();
             }
             else if (!address.equals(newAddress))

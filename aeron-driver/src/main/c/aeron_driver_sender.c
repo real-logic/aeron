@@ -174,10 +174,9 @@ int aeron_driver_sender_do_work(void *clientd)
 
         if (sender->context->re_resolution_check_interval_ns > 0 && (sender->re_resolution_deadline_ns - now_ns) < 0)
         {
+            sender->re_resolution_deadline_ns = now_ns + sender->context->re_resolution_check_interval_ns;
             aeron_udp_transport_poller_check_send_endpoint_re_resolutions(
                 &sender->poller, now_ns, sender->context->conductor_proxy);
-
-            sender->re_resolution_deadline_ns = now_ns + sender->context->re_resolution_check_interval_ns;
         }
 
         work_count += (poll_result < 0 ? 0 : poll_result);

@@ -353,7 +353,7 @@ final class ConsensusModuleAgent implements Agent
     {
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
-        session.connect(aeron);
+        session.connect(ctx.countedErrorHandler(), aeron);
 
         final long now = clusterClock.time();
         session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
@@ -817,7 +817,7 @@ final class ConsensusModuleAgent implements Agent
             {
                 final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
                 session.markAsBackupSession();
-                session.connect(aeron);
+                session.connect(ctx.countedErrorHandler(), aeron);
 
                 final long now = clusterClock.time();
                 session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
@@ -1905,7 +1905,7 @@ final class ConsensusModuleAgent implements Agent
             {
                 if (session.state() == OPEN)
                 {
-                    session.connect(aeron);
+                    session.connect(ctx.countedErrorHandler(), aeron);
                 }
             }
 

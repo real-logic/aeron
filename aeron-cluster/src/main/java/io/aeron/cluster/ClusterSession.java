@@ -19,7 +19,8 @@ import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
-import io.aeron.driver.exceptions.InvalidChannelException;
+import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.*;
 import org.agrona.collections.ArrayUtil;
@@ -125,7 +126,7 @@ final class ClusterSession
         return closeReason;
     }
 
-    void connect(final Aeron aeron)
+    void connect(final ErrorHandler errorHandler, final Aeron aeron)
     {
         if (null != responsePublication)
         {
@@ -136,8 +137,10 @@ final class ClusterSession
         {
             responsePublication = aeron.addPublication(responseChannel, responseStreamId);
         }
-        catch (final InvalidChannelException ignore)
+        catch (final RegistrationException ex)
         {
+            errorHandler.onError(new ClusterException(
+                "fail to connect session response publication", ex, AeronException.Category.WARN));
         }
     }
 

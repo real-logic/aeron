@@ -48,6 +48,7 @@ import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterMember.quorumPosition;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
+import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.exceptions.AeronException.Category.WARN;
@@ -353,33 +354,35 @@ final class ConsensusModuleAgent implements Agent
     {
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
-        session.connect(ctx.countedErrorHandler(), aeron);
 
-        final long now = clusterClock.time();
-        session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
+        if (session.connect(ctx.countedErrorHandler(), aeron))
+        {
+            final long now = clusterClock.time();
+            session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
 
-        if (Cluster.Role.LEADER != role)
-        {
-            redirectSessions.add(session);
-        }
-        else
-        {
-            if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
+            if (Cluster.Role.LEADER != role)
             {
-                final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
-                    ", cluster is " + SemanticVersion.toString(AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION);
-                session.reject(EventCode.ERROR, detail);
-                rejectedSessions.add(session);
-            }
-            else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
-            {
-                session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
-                rejectedSessions.add(session);
+                redirectSessions.add(session);
             }
             else
             {
-                authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
-                pendingSessions.add(session);
+                if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
+                {
+                    final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                        ", cluster is " + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
+                    session.reject(EventCode.ERROR, detail);
+                    rejectedSessions.add(session);
+                }
+                else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
+                {
+                    session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
+                    rejectedSessions.add(session);
+                }
+                else
+                {
+                    authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
+                    pendingSessions.add(session);
+                }
             }
         }
     }
@@ -816,28 +819,30 @@ final class ConsensusModuleAgent implements Agent
             else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
                 final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
-                session.markAsBackupSession();
-                session.connect(ctx.countedErrorHandler(), aeron);
+                if (session.connect(ctx.countedErrorHandler(), aeron))
+                {
+                    session.markAsBackupSession();
 
-                final long now = clusterClock.time();
-                session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
+                    final long now = clusterClock.time();
+                    session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
 
-                if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
-                {
-                    final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
-                        ", cluster=" + SemanticVersion.toString(AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION);
-                    session.reject(EventCode.ERROR, detail);
-                    rejectedSessions.add(session);
-                }
-                else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
-                {
-                    session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
-                    rejectedSessions.add(session);
-                }
-                else
-                {
-                    authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
-                    pendingSessions.add(session);
+                    if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
+                    {
+                        final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                            ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
+                        session.reject(EventCode.ERROR, detail);
+                        rejectedSessions.add(session);
+                    }
+                    else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
+                    {
+                        session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
+                        rejectedSessions.add(session);
+                    }
+                    else
+                    {
+                        authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
+                        pendingSessions.add(session);
+                    }
                 }
             }
         }
@@ -2384,7 +2389,7 @@ final class ConsensusModuleAgent implements Agent
     {
         if (egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.OK, ""))
         {
-            session.hasOpenEventPending(false);
+            session.clearOpenEventPending();
             return 1;
         }
 

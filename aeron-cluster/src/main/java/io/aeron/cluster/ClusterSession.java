@@ -126,7 +126,7 @@ final class ClusterSession
         return closeReason;
     }
 
-    void connect(final ErrorHandler errorHandler, final Aeron aeron)
+    boolean connect(final ErrorHandler errorHandler, final Aeron aeron)
     {
         if (null != responsePublication)
         {
@@ -140,8 +140,11 @@ final class ClusterSession
         catch (final RegistrationException ex)
         {
             errorHandler.onError(new ClusterException(
-                "fail to connect session response publication", ex, AeronException.Category.WARN));
+                "failed to connect session response publication: " + ex.getMessage(), AeronException.Category.WARN));
+            return false;
         }
+
+        return true;
     }
 
     void disconnect(final ErrorHandler errorHandler)
@@ -280,9 +283,9 @@ final class ClusterSession
         return hasOpenEventPending;
     }
 
-    void hasOpenEventPending(final boolean flag)
+    void clearOpenEventPending()
     {
-        hasOpenEventPending = flag;
+        hasOpenEventPending = false;
     }
 
     boolean isBackupSession()
@@ -305,10 +308,8 @@ final class ClusterSession
         if (null != encodedPrincipal && encodedPrincipal.length > MAX_ENCODED_PRINCIPAL_LENGTH)
         {
             throw new ClusterException(
-                "encoded principal max length " +
-                MAX_ENCODED_PRINCIPAL_LENGTH +
-                " exceeded: length=" +
-                encodedPrincipal.length);
+                "encoded principal max length " + MAX_ENCODED_PRINCIPAL_LENGTH +
+                " exceeded: length=" + encodedPrincipal.length);
         }
     }
 

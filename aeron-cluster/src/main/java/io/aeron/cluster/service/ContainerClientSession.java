@@ -16,6 +16,8 @@
 package io.aeron.cluster.service;
 
 import io.aeron.*;
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.*;
@@ -98,16 +100,17 @@ final class ContainerClientSession implements ClientSession
 
     void connect(final Aeron aeron)
     {
-        if (null == responsePublication)
+        try
         {
-            try
+            if (null == responsePublication)
             {
                 responsePublication = aeron.addPublication(responseChannel, responseStreamId);
             }
-            catch (final RegistrationException ex)
-            {
-                clusteredServiceAgent.handleError(ex);
-            }
+        }
+        catch (final RegistrationException ex)
+        {
+            clusteredServiceAgent.handleError(new ClusterException(
+                "failed to connect session response publication: " + ex.getMessage(), AeronException.Category.WARN));
         }
     }
 

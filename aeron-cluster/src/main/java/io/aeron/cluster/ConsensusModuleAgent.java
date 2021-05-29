@@ -198,8 +198,6 @@ final class ConsensusModuleAgent implements Agent
         consensusAdapter = new ConsensusAdapter(
             aeron.addSubscription(consensusUri.toString(), ctx.consensusStreamId()), this);
 
-        ClusterMember.addConsensusPublications(activeMembers, thisMember, consensusUri, ctx.consensusStreamId(), aeron);
-
         ingressAdapter = new IngressAdapter(ctx.ingressFragmentLimit(), this);
         logAdapter = new LogAdapter(this, ctx.logFragmentLimit());
 
@@ -284,6 +282,9 @@ final class ConsensusModuleAgent implements Agent
                 captureServiceClientIds();
                 ++serviceAckId;
             }
+
+            ClusterMember.addConsensusPublications(
+                activeMembers, thisMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
 
             election = new Election(
                 true,
@@ -701,7 +702,7 @@ final class ConsensusModuleAgent implements Agent
                     clusterMemberByIdMap.put(newMember.id(), newMember);
 
                     ClusterMember.addConsensusPublication(
-                        newMember, ChannelUri.parse(ctx.consensusChannel()), ctx.consensusStreamId(), aeron);
+                        newMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
                     logPublisher.addDestination(ctx.isLogMdc(), newMember.logEndpoint());
                 }
             }
@@ -757,9 +758,8 @@ final class ConsensusModuleAgent implements Agent
             {
                 if (null == member.publication())
                 {
-                    final ChannelUri consensusUri = ChannelUri.parse(ctx.consensusChannel());
-                    final int streamId = ctx.consensusStreamId();
-                    ClusterMember.addConsensusPublication(member, consensusUri, streamId, aeron);
+                    ClusterMember.addConsensusPublication(
+                        member, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
                     logPublisher.addDestination(ctx.isLogMdc(), member.logEndpoint());
                 }
 
@@ -1220,7 +1220,7 @@ final class ConsensusModuleAgent implements Agent
                     ClusterMember.addConsensusPublications(
                         newMembers,
                         thisMember,
-                        ChannelUri.parse(ctx.consensusChannel()),
+                        ctx.consensusChannel(),
                         ctx.consensusStreamId(),
                         aeron);
                 }
@@ -1311,11 +1311,8 @@ final class ConsensusModuleAgent implements Agent
                 rankedPositions = new long[ClusterMember.quorumThreshold(activeMembers.length)];
                 thisMember = clusterMemberByIdMap.get(memberId);
 
-                final ChannelUri consensusUri = ChannelUri.parse(ctx.consensusChannel());
-                consensusUri.put(ENDPOINT_PARAM_NAME, thisMember.consensusEndpoint());
-
                 ClusterMember.addConsensusPublications(
-                    activeMembers, thisMember, consensusUri, ctx.consensusStreamId(), aeron);
+                    activeMembers, thisMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
             }
         }
     }
@@ -1619,7 +1616,7 @@ final class ConsensusModuleAgent implements Agent
             leaderMember = dynamicJoin.leader();
 
             ClusterMember.addConsensusPublications(
-                activeMembers, thisMember, ChannelUri.parse(ctx.consensusChannel()), ctx.consensusStreamId(), aeron);
+                activeMembers, thisMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
         }
 
         if (NULL_VALUE == memberId)
@@ -2913,7 +2910,7 @@ final class ConsensusModuleAgent implements Agent
             if (null == eventMember.publication())
             {
                 ClusterMember.addConsensusPublication(
-                    eventMember, ChannelUri.parse(ctx.consensusChannel()), ctx.consensusStreamId(), aeron);
+                    eventMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
             }
 
             activeMembers = ClusterMember.addMember(activeMembers, eventMember);

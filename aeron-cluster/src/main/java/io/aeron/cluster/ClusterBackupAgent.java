@@ -43,6 +43,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.TAGS_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.*;
+import static io.aeron.archive.codecs.SourceLocation.REMOTE;
 import static io.aeron.cluster.ClusterBackup.State.*;
 import static io.aeron.exceptions.AeronException.Category;
 import static io.aeron.exceptions.AeronException.Category.WARN;
@@ -966,19 +967,11 @@ public final class ClusterBackupAgent implements Agent
 
     private long startLogRecording()
     {
-        final long recordingSubscriptionId;
-
         final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
-        if (null == logEntry)
-        {
-            recordingSubscriptionId = backupArchive.startRecording(
-                recordingChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
-        }
-        else
-        {
-            recordingSubscriptionId = backupArchive.extendRecording(
-                logEntry.recordingId, recordingChannel, ctx.logStreamId(), SourceLocation.REMOTE, true);
-        }
+        final int streamId = ctx.logStreamId();
+        final long recordingSubscriptionId  = null == logEntry ?
+            backupArchive.startRecording(recordingChannel, streamId, REMOTE, true) :
+            backupArchive.extendRecording(logEntry.recordingId, recordingChannel, streamId, REMOTE, true);
 
         recordingChannel = null;
         CloseHelper.close(ctx.countedErrorHandler(), recordingSubscription);

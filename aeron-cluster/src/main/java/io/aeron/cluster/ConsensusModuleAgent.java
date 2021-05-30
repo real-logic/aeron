@@ -1868,14 +1868,10 @@ final class ConsensusModuleAgent implements Agent
         try
         {
             final long logRecordingId = recordingLog.findLastTermRecordingId();
-            if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
-            {
-                logSubscriptionId = archive.startRecording(channel, streamId, sourceLocation, true);
-            }
-            else
-            {
-                logSubscriptionId = archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
-            }
+
+            logSubscriptionId = RecordingPos.NULL_RECORDING_ID == logRecordingId ?
+                archive.startRecording(channel, streamId, sourceLocation, true) :
+                archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
         }
         catch (final ArchiveException ex)
         {

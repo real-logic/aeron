@@ -969,12 +969,12 @@ public final class ClusterBackupAgent implements Agent
     {
         final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
         final int streamId = ctx.logStreamId();
-        final long recordingSubscriptionId  = null == logEntry ?
+        final long recordingSubscriptionId = null == logEntry ?
             backupArchive.startRecording(recordingChannel, streamId, REMOTE, true) :
             backupArchive.extendRecording(logEntry.recordingId, recordingChannel, streamId, REMOTE, true);
 
-        recordingChannel = null;
         CloseHelper.close(ctx.countedErrorHandler(), recordingSubscription);
+        recordingChannel = null;
         recordingSubscription = null;
 
         return recordingSubscriptionId;

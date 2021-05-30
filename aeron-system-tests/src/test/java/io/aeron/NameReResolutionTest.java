@@ -247,7 +247,7 @@ public class NameReResolutionTest
             any(Header.class));
     }
 
-    //    @SlowTest
+    @SlowTest
     @Test
     @Timeout(20)
     public void shouldHandleMdcManualEndpointInitiallyUnresolved()

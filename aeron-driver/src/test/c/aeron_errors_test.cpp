@@ -427,45 +427,6 @@ TEST_F(CErrorsTest, shouldFailToResovleNameOnPublication)
     verifyDistinctErrorLogContains(expectedDriverMessage);
 }
 
-TEST_F(CErrorsTest, shouldFailToResovleNameOnDestination)
-{
-    aeron_t *aeron = connect();
-    aeron_async_add_exclusive_publication_t *pub_async;
-    aeron_async_destination_t *dest_async;
-    aeron_exclusive_publication_t *pub;
-
-    ASSERT_EQ(0, aeron_async_add_exclusive_publication(&pub_async, aeron, "aeron:udp?control-mode=manual", 1001));
-
-    int result;
-    while (0 == (result = aeron_async_add_exclusive_publication_poll(&pub, pub_async)))
-    {
-        std::this_thread::yield();
-    }
-
-    ASSERT_EQ(1, result) << aeron_errmsg();
-
-    ASSERT_EQ(0, aeron_exclusive_publication_async_add_destination(
-        &dest_async, aeron, pub, "aeron:udp?endpoint=foo.example.com:21345"));
-
-    while (0 == (result = aeron_exclusive_publication_async_destination_poll(dest_async)))
-    {
-        std::this_thread::yield();
-    }
-
-    ASSERT_EQ(-1, result);
-    std::string errorMessage = std::string(aeron_errmsg());
-    const char *expectedDriverMessage = "Unable to resolve host";
-
-    ASSERT_THAT(-AERON_ERROR_CODE_UNKNOWN_HOST, aeron_errcode());
-    ASSERT_THAT(
-        errorMessage, testing::HasSubstr("async_add_destination registration"));
-    ASSERT_THAT(
-        errorMessage, testing::HasSubstr(expectedDriverMessage));
-
-    waitForErrorCounterIncrease();
-    verifyDistinctErrorLogContains(expectedDriverMessage);
-}
-
 TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
 {
     aeron_t *aeron = connect();

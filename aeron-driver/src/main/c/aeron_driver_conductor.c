@@ -3410,8 +3410,8 @@ int aeron_driver_conductor_on_add_send_destination(
             false,
             &destination_addr) < 0)
         {
-            AERON_APPEND_ERR("uri: %.*s", (int)uri_length, uri);
-            goto error_cleanup;
+            memset(&destination_addr, 0, sizeof(destination_addr));
+            destination_addr.ss_family = AF_UNSPEC;
         }
 
         aeron_driver_sender_proxy_on_add_destination(

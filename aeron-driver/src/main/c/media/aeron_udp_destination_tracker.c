@@ -92,7 +92,7 @@ int aeron_udp_destination_tracker_sendmmsg(
             last_index--;
             tracker->destinations.length--;
         }
-        else
+        else if (entry->addr.ss_family != AF_UNSPEC)
         {
             for (size_t j = 0; j < vlen; j++)
             {
@@ -132,7 +132,7 @@ int aeron_udp_destination_tracker_sendmsg(
             last_index--;
             tracker->destinations.length--;
         }
-        else
+        else if (entry->addr.ss_family != AF_UNSPEC)
         {
             msghdr->msg_name = &entry->addr;
             msghdr->msg_namelen = AERON_ADDR_LEN(&entry->addr);

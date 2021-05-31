@@ -53,7 +53,7 @@ public class MultiDestinationCastTest
     private static final String SUB2_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325|group=true";
     private static final String SUB3_MDC_DYNAMIC_URI = CommonContext.SPY_PREFIX + PUB_MDC_DYNAMIC_URI;
 
-    private static final String PUB_MDC_MANUAL_URI = "aeron:udp?control-mode=manual|tags=3,4";
+    private static final String PUB_MDC_MANUAL_URI = "aeron:udp?control-mode=manual";
     private static final String SUB1_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:24326|group=true";
     private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:24327|group=true";
     private static final String SUB3_MDC_MANUAL_URI = CommonContext.SPY_PREFIX + PUB_MDC_MANUAL_URI;
@@ -140,11 +140,16 @@ public class MultiDestinationCastTest
     {
         launch(Tests::onError);
 
+        final String taggedMdcUri = new ChannelUriStringBuilder(PUB_MDC_MANUAL_URI).tags(
+            clientA.nextCorrelationId(),
+            clientA.nextCorrelationId()).build();
+        final String spySubscriptionUri = new ChannelUriStringBuilder(taggedMdcUri).prefix("aeron-spy").build();
+
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
-        subscriptionC = clientA.addSubscription(SUB3_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionC = clientA.addSubscription(spySubscriptionUri, STREAM_ID);
 
-        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+        publication = clientA.addPublication(taggedMdcUri, STREAM_ID);
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         final long correlationId = publication.asyncAddDestination(SUB2_MDC_MANUAL_URI);
 

@@ -17,6 +17,8 @@ package io.aeron;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -126,5 +128,31 @@ public class ChannelUriStringBuilderTest
         assertEquals(
             "aeron:udp?endpoint=address:9999|rcv-wnd=8192",
             builder.build());
+    }
+
+    @Test
+    void shouldBuildChannelBuilderUsingExistingStringWithAllTheFields()
+    {
+        final String uri = "aeron-spy:aeron:udp?endpoint=127.0.0.1:0|interface=127.0.0.1|control=127.0.0.2:0|" +
+            "control-mode=manual|tags=2,4|alias=foo|cc=cubic|fc=min|reliable=false|ttl=16|mtu=8992|" +
+            "term-length=1048576|init-term-id=5|term-offset=64|term-id=4353|session-id=2314234|gtag=3|linger=0|" +
+            "sparse=true|eos=true|tether=false|group=false|ssc=true|so-sndbuf=8388608|so-rcvbuf=2097152|" +
+            "rcv-wnd=1048576";
+
+        final ChannelUri fromString = ChannelUri.parse(uri);
+        final ChannelUri fromBuilder = ChannelUri.parse(new ChannelUriStringBuilder(uri).build());
+
+        assertEquals(Collections.emptyMap(), fromString.diff(fromBuilder));
+    }
+
+    @Test
+    void shouldBuildChannelBuilderUsingExistingStringWithTaggedSessionIdAndIpc()
+    {
+        final String uri = "aeron:ipc?session-id=tag:123456";
+
+        final ChannelUri fromString = ChannelUri.parse(uri);
+        final ChannelUri fromBuilder = ChannelUri.parse(new ChannelUriStringBuilder(uri).build());
+
+        assertEquals(Collections.emptyMap(), fromString.diff(fromBuilder));
     }
 }

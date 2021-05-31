@@ -109,9 +109,20 @@ public class ResolvedEndpointSystemTest
     @Timeout(5)
     void shouldSubscribeToSystemAssignedPorts()
     {
-        final String systemAssignedPortUri1 = "aeron:udp?endpoint=127.0.0.1:0|tags=1002";
-        final String systemAssignedPortUri2 = "aeron:udp?endpoint=127.0.0.1:0|tags=1003";
-        final String tagged1 = "aeron:udp?tags=1002";
+        final long tag1 = client.nextCorrelationId();
+        final long tag2 = client.nextCorrelationId();
+
+        final String systemAssignedPortUri1 = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("127.0.0.1:0")
+            .tags(tag1, null)
+            .build();
+        final String systemAssignedPortUri2 = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("127.0.0.1:0")
+            .tags(tag2, null)
+            .build();
+        final String tagged1 = new ChannelUriStringBuilder().media("udp").tags(tag1, null).build();
 
         try (Subscription sub1 = client.addSubscription(systemAssignedPortUri1, STREAM_ID);
             Subscription sub2 = client.addSubscription(systemAssignedPortUri2, STREAM_ID);
@@ -161,12 +172,18 @@ public class ResolvedEndpointSystemTest
     void shouldSubscribeToSystemAssignedPortsUsingIPv6()
     {
         assumeFalse("true".equals(System.getProperty("java.net.preferIPv4Stack")));
+        final long channelTag = client.nextCorrelationId();
 
-        final String systemAssignedPortUri = "aeron:udp?endpoint=[::1]:0|tags=1001";
-        final String tagged2 = "aeron:udp?tags=1001";
+        final String systemAssignedPortUri = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("[::1]:0")
+            .tags(channelTag, null)
+            .build();
+        final String taggedUri = new ChannelUriStringBuilder().media("udp").tags(channelTag, null).build();
+
 
         try (Subscription sub1 = client.addSubscription(systemAssignedPortUri, STREAM_ID);
-            Subscription sub2 = client.addSubscription(tagged2, STREAM_ID + 1))
+            Subscription sub2 = client.addSubscription(taggedUri, STREAM_ID + 1))
         {
             List<String> bindAddressAndPort1;
             while ((bindAddressAndPort1 = sub1.localSocketAddresses()).isEmpty())

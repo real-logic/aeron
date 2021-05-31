@@ -122,19 +122,39 @@ public class SpySubscriptionTest
     @Timeout(10)
     public void shouldConnectToRecreatedChannelByTag()
     {
-        final String channelOne = "aeron:udp?tags=1|endpoint=localhost:24325";
+        final long tag1 = aeron.nextCorrelationId();
+        final String channelOne = new ChannelUriStringBuilder()
+            .media("udp")
+            .tags(tag1, null)
+            .endpoint("localhost:24325")
+            .build();
+        final ChannelUriStringBuilder spyChannelOneBuilder = new ChannelUriStringBuilder()
+            .prefix("aeron-spy")
+            .media("udp")
+            .tags(tag1, null);
+
         try (Publication publication = aeron.addExclusivePublication(channelOne, STREAM_ID);
             Subscription spy = aeron.addSubscription(
-                SPY_PREFIX + "aeron:udp?tags=1|session-id=" + publication.sessionId(), STREAM_ID))
+                spyChannelOneBuilder.sessionId(publication.sessionId()).build(), STREAM_ID))
         {
             Tests.await(spy::isConnected);
             assertNotNull(spy.imageBySessionId(publication.sessionId()));
         }
 
-        final String channelTwo = "aeron:udp?tags=2|endpoint=localhost:24325";
+        final long tag2 = aeron.nextCorrelationId();
+        final String channelTwo = new ChannelUriStringBuilder()
+            .media("udp")
+            .tags(tag2, null)
+            .endpoint("localhost:24325")
+            .build();
+        final ChannelUriStringBuilder spyChannelTwoBuilder = new ChannelUriStringBuilder()
+            .prefix("aeron-spy")
+            .media("udp")
+            .tags(tag2, null);
+
         try (Publication publication = aeron.addExclusivePublication(channelTwo, STREAM_ID);
             Subscription spy = aeron.addSubscription(
-                SPY_PREFIX + "aeron:udp?tags=2|session-id=" + publication.sessionId(), STREAM_ID))
+                spyChannelTwoBuilder.sessionId(publication.sessionId()).build(), STREAM_ID))
         {
             Tests.await(spy::isConnected);
             assertNotNull(spy.imageBySessionId(publication.sessionId()));

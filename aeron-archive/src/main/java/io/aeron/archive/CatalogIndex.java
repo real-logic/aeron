@@ -54,9 +54,8 @@ final class CatalogIndex
         {
             if (recordingId <= index[nextPosition - 2])
             {
-                throw new IllegalArgumentException(String.format(
-                    "recordingId %d is less than or equal to the last recordingId %d",
-                    recordingId, index[nextPosition - 2]));
+                throw new IllegalArgumentException("recordingId " + recordingId +
+                    " is less than or equal to the last recordingId " + index[nextPosition - 2]);
             }
             if (nextPosition == index.length)
             {
@@ -211,14 +210,15 @@ final class CatalogIndex
         final int length = index.length;
         final int entries = length >> 1;
         final int newLength = (entries + (entries >> 1)) << 1;
+
         return copyOf(index, newLength);
     }
 
-    private static void ensurePositive(final long value, final String msg)
+    private static void ensurePositive(final long value, final String name)
     {
         if (value < 0L)
         {
-            throw new IllegalArgumentException(String.format("%s cannot be negative, got %d", msg, value));
+            throw new IllegalArgumentException(name + " cannot be negative: value=" + value);
         }
     }
 }

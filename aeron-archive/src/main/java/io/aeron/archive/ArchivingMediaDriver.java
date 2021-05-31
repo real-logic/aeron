@@ -85,10 +85,10 @@ public class ArchivingMediaDriver implements AutoCloseable
             driver = MediaDriver.launch(driverCtx);
 
             final int errorCounterId = SystemCounterDescriptor.ERRORS.id();
-            final AtomicCounter errorCounter = null == archiveCtx.errorCounter() ?
-                new AtomicCounter(driverCtx.countersValuesBuffer(), errorCounterId) : archiveCtx.errorCounter();
-            final ErrorHandler errorHandler = null == archiveCtx.errorHandler() ?
-                driverCtx.errorHandler() : archiveCtx.errorHandler();
+            final AtomicCounter errorCounter = null != archiveCtx.errorCounter() ?
+                archiveCtx.errorCounter() : new AtomicCounter(driverCtx.countersValuesBuffer(), errorCounterId);
+            final ErrorHandler errorHandler = null != archiveCtx.errorHandler() ?
+                archiveCtx.errorHandler() : driverCtx.errorHandler();
 
             archive = Archive.launch(archiveCtx
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())

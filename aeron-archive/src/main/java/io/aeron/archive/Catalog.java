@@ -121,7 +121,6 @@ final class Catalog implements AutoCloseable
     private final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder();
     private final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
 
-
     private final boolean forceWrites;
     private final boolean forceMetadata;
     private boolean isClosed;
@@ -284,8 +283,7 @@ final class Catalog implements AutoCloseable
                 if (SemanticVersion.major(version) != ArchiveMarkFile.MAJOR_VERSION)
                 {
                     throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
-                        ", archive is " +
-                        SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
+                        ", archive is " + SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
                 }
             }
             else
@@ -763,9 +761,9 @@ final class Catalog implements AutoCloseable
             }
             else
             {
-                throw new ArchiveException(String.format(
-                    "recording is too big: total recording length is %d bytes, available space is %d bytes",
-                    frameLength, maxCatalogCapacity - recordingOffset));
+                throw new ArchiveException(
+                    "recording is too big: total recording length is " + frameLength + " bytes," +
+                    " available space is " + (maxCatalogCapacity - recordingOffset) + " bytes");
             }
         }
 

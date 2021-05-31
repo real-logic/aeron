@@ -165,8 +165,9 @@ public class FileStoreLogFactory implements LogFactory
 
             if (usableSpace <= lowStorageWarningThreshold)
             {
-                final String msg = String.format("space is running low in threshold=%,d usable=%,d %s",
-                    lowStorageWarningThreshold, usableSpace, fileStore);
+                final String msg =
+                    "space is running low in threshold= " + lowStorageWarningThreshold +
+                    " usable=" + usableSpace + " in " + fileStore;
 
                 errorHandler.onError(new AeronException(msg, AeronException.Category.WARN));
             }

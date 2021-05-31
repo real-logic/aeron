@@ -634,20 +634,17 @@ class DriverEventDissectorTest
     @Test
     void dissectResolve() throws UnknownHostException
     {
-        final String resolver = "testResolver";
         final String hostname = "localhost";
         final InetAddress address = InetAddress.getByName("127.0.0.1");
 
-        final int length = trailingStringLength(resolver, MAX_HOST_NAME_LENGTH) +
-            trailingStringLength(hostname, MAX_HOST_NAME_LENGTH) +
-            inetAddressLength(address);
+        final int length = trailingStringLength(hostname, MAX_HOST_NAME_LENGTH) + inetAddressLength(address);
 
-        DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, hostname, address);
+        DriverEventEncoder.encodeResolve(buffer, 0, length, length, hostname, address);
         final StringBuilder builder = new StringBuilder();
         DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
 
         assertThat(builder.toString(), endsWith(
-            "DRIVER: NAME_RESOLUTION_RESOLVE [37/37]: resolver=testResolver hostname=localhost address=127.0.0.1"));
+            "DRIVER: NAME_RESOLUTION_RESOLVE [21/21]: hostname=localhost address=127.0.0.1"));
     }
 
     @Test
@@ -657,21 +654,16 @@ class DriverEventDissectorTest
             "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
             "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-        final String expected = "DRIVER: NAME_RESOLUTION_RESOLVE [522/522]: resolver=testResolver." +
-            "this.is.a.really.long.string.to.force.truncation.000000000000000000000000000000000000000000000000000000" +
-            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-            "0000000000000000000000000000000... hostname=testResolver.this.is.a.really.long.string.to.force.truncati" +
-            "on.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000... address=127" +
-            ".0.0.1";
+        final String expected = "DRIVER: NAME_RESOLUTION_RESOLVE [265/265]: hostname=testResolver.this.is.a.really.lo" +
+            "ng.string.to.force.truncation.00000000000000000000000000000000000000000000000000000000000000000000000000" +
+            "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+            "0000000000... address=127.0.0.1";
 
         final InetAddress address = InetAddress.getByName("127.0.0.1");
 
-        final int length = trailingStringLength(longString, MAX_HOST_NAME_LENGTH) +
-            trailingStringLength(longString, MAX_HOST_NAME_LENGTH) +
-            inetAddressLength(address);
+        final int length = trailingStringLength(longString, MAX_HOST_NAME_LENGTH) + inetAddressLength(address);
 
-        DriverEventEncoder.encodeResolve(buffer, 0, length, length, longString, longString, address);
+        DriverEventEncoder.encodeResolve(buffer, 0, length, length, longString, address);
         final StringBuilder builder = new StringBuilder();
         DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
 

@@ -15,7 +15,6 @@
  */
 package io.aeron.agent;
 
-import io.aeron.driver.NameResolver;
 import net.bytebuddy.asm.Advice;
 
 import java.net.InetAddress;
@@ -63,11 +62,9 @@ class DriverInterceptor
                 final String name,
                 final String uriParamName,
                 final boolean isReResolution,
-                @Advice.Return final InetAddress address,
-                @Advice.This final NameResolver nameResolver)
+                @Advice.Return final InetAddress address)
             {
-                LOGGER.logResolve(
-                    DriverEventCode.NAME_RESOLUTION_RESOLVE, nameResolver.getClass().getSimpleName(), name, address);
+                LOGGER.logResolve(DriverEventCode.NAME_RESOLUTION_RESOLVE, name, address);
             }
         }
     }

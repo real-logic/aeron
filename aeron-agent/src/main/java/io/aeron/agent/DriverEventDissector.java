@@ -331,11 +331,7 @@ final class DriverEventDissector
         int absoluteOffset = offset;
         absoluteOffset += dissectLogHeader(CONTEXT, code, buffer, absoluteOffset, builder);
 
-        builder.append(": resolver=");
-        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
-        absoluteOffset += SIZE_OF_INT; // String length
-
-        builder.append(" hostname=");
+        builder.append(": hostname=");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
         absoluteOffset += SIZE_OF_INT; // String length
 

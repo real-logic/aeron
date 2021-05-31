@@ -338,21 +338,13 @@ public final class DriverEventLogger
     /**
      * Log a resolution for a resolver and the associated result.
      *
-     * @param code          representing the event type
-     * @param resolverName  simple class name of the resolver
-     * @param name          host name being resolved
-     * @param address       address that was resolved to, can be null
+     * @param code    representing the event type
+     * @param name    host name being resolved
+     * @param address address that was resolved to, can be null
      */
-    public void logResolve(
-        final DriverEventCode code,
-        final String resolverName,
-        final String name,
-        final InetAddress address)
+    public void logResolve(final DriverEventCode code, final String name, final InetAddress address)
     {
-        final int length = trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
-            trailingStringLength(name, MAX_HOST_NAME_LENGTH) +
-            inetAddressLength(address);
-
+        final int length = trailingStringLength(name, MAX_HOST_NAME_LENGTH) + inetAddressLength(address);
         final int encodedLength = encodedLength(length);
 
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
@@ -361,7 +353,7 @@ public final class DriverEventLogger
         {
             try
             {
-                encodeResolve((UnsafeBuffer)ringBuffer.buffer(), index, length, length, resolverName, name, address);
+                encodeResolve((UnsafeBuffer)ringBuffer.buffer(), index, length, length, name, address);
             }
             finally
             {

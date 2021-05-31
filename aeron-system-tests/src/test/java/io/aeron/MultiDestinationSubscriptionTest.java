@@ -301,11 +301,18 @@ public class MultiDestinationSubscriptionTest
     {
         launch(Tests::onError);
 
-        subscription = clientA.addSubscription(SUB_URI + "|tags=1001", STREAM_ID);
+        final long tagA = clientA.nextCorrelationId();
+        final long tagIgnored = clientA.nextCorrelationId();
+
+        final String taggedSubUri = new ChannelUriStringBuilder(SUB_URI).tags(tagA, null).build();
+        final String taggedSubUriIgnored = new ChannelUriStringBuilder(SUB_URI).tags(tagIgnored, null).build();
+        final String referringSubUri = new ChannelUriStringBuilder().media("udp").tags(tagA, null).build();
+
+        subscription = clientA.addSubscription(taggedSubUri, STREAM_ID);
         subscription.addDestination(PUB_UNICAST_URI);
 
-        try (Subscription ignore = clientA.addSubscription(SUB_URI + "|tags=1002", STREAM_ID);
-            Subscription subscriptionA1 = clientA.addSubscription("aeron:udp?tags=1001", STREAM_ID))
+        try (Subscription ignore = clientA.addSubscription(taggedSubUriIgnored, STREAM_ID);
+            Subscription subscriptionA1 = clientA.addSubscription(referringSubUri, STREAM_ID))
         {
             publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
 
@@ -330,12 +337,20 @@ public class MultiDestinationSubscriptionTest
 
         launch(Tests::onError);
 
-        subscription = clientA.addSubscription(SUB_URI + "|tags=1001", STREAM_ID);
+        final long tagA = clientA.nextCorrelationId();
+        final long tagB = clientA.nextCorrelationId();
+
+        final String uriA = new ChannelUriStringBuilder(SUB_URI).tags(tagA, null).build();
+        final String referringUriA = new ChannelUriStringBuilder().media("udp").tags(tagA, null).build();
+        final String uriB = new ChannelUriStringBuilder(SUB_URI).tags(tagB, null).build();
+        final String referringUriB = new ChannelUriStringBuilder().media("udp").tags(tagB, null).build();
+
+        subscription = clientA.addSubscription(uriA, STREAM_ID);
         subscription.addDestination(PUB_UNICAST_URI);
 
-        try (Subscription subscriptionB = clientA.addSubscription(SUB_URI + "|tags=1002", STREAM_ID);
-            Subscription subscriptionA1 = clientA.addSubscription("aeron:udp?tags=1001", STREAM_ID);
-            Subscription subscriptionB1 = clientA.addSubscription("aeron:udp?tags=1002", STREAM_ID))
+        try (Subscription subscriptionB = clientA.addSubscription(uriB, STREAM_ID);
+            Subscription subscriptionA1 = clientA.addSubscription(referringUriA, STREAM_ID);
+            Subscription subscriptionB1 = clientA.addSubscription(referringUriB, STREAM_ID))
         {
             subscriptionB.addDestination(unicastUri2);
 
@@ -379,18 +394,22 @@ public class MultiDestinationSubscriptionTest
     public void shouldSendToSingleDestinationMultipleSubscriptionsWithUnicast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
-        final String tags = "1,2";
 
         launch(Tests::onError);
 
+        final long channelTag = clientA.nextCorrelationId();
+        final long subTag = clientA.nextCorrelationId();
+
         final String subscriptionChannel = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
-            .tags(tags)
+            .tags(channelTag, subTag)
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .build();
 
+        final String copyChannel = new ChannelUriStringBuilder().media("udp").tags(channelTag, subTag).build();
+
         subscription = clientA.addSubscription(subscriptionChannel, STREAM_ID);
-        final Subscription copySubscription = clientA.addSubscription(subscriptionChannel, STREAM_ID);
+        final Subscription copySubscription = clientA.addSubscription(copyChannel, STREAM_ID);
         subscription.addDestination(PUB_UNICAST_URI);
 
         publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
@@ -475,13 +494,14 @@ public class MultiDestinationSubscriptionTest
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final int numMessagesToSendForA = numMessagesToSend / 2;
         final int numMessagesToSendForB = numMessagesToSend / 2;
-        final String tags = "1,2";
-        final int pubTag = 2;
 
         launch(Tests::onError);
 
+        final long channelTag = clientA.nextCorrelationId();
+        final long pubTag = clientA.nextCorrelationId();
+
         final String publicationChannelA = new ChannelUriStringBuilder()
-            .tags(tags)
+            .tags(channelTag, pubTag)
             .media(CommonContext.UDP_MEDIA)
             .endpoint(UNICAST_ENDPOINT_A)
             .build();
@@ -511,8 +531,7 @@ public class MultiDestinationSubscriptionTest
 
         final String publicationChannelB = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
-            .isSessionIdTagged(true)
-            .sessionId(pubTag)
+            .taggedSessionId(pubTag)
             .initialTermId(initialTermId)
             .termId(termId)
             .termOffset(termOffset)

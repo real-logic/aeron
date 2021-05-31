@@ -1444,7 +1444,7 @@ abstract class ArchiveConductor
 
     private static ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
     {
-        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+        return new ChannelUriStringBuilder()
             .media(channelUri.media())
             .endpoint(channelUri)
             .networkInterface(channelUri)
@@ -1460,28 +1460,8 @@ abstract class ArchiveConductor
             .socketRcvbufLength(channelUri)
             .socketSndbufLength(channelUri)
             .receiverWindowLength(channelUri)
+            .sessionId(channelUri)
             .alias(channelUri);
-
-        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
-        if (null != sessionIdStr)
-        {
-            if (ChannelUri.isTagged(sessionIdStr))
-            {
-                final long tag = ChannelUri.getTag(sessionIdStr);
-                if (tag < Integer.MIN_VALUE || tag > Integer.MAX_VALUE)
-                {
-                    throw new IllegalArgumentException("invalid session id tag value: " + tag);
-                }
-
-                builder.isSessionIdTagged(true).sessionId((int)tag);
-            }
-            else
-            {
-                builder.sessionId(Integer.valueOf(sessionIdStr));
-            }
-        }
-
-        return builder;
     }
 
     private static String makeKey(final int streamId, final ChannelUri channelUri)

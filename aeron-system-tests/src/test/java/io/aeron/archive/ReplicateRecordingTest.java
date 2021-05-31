@@ -554,8 +554,8 @@ public class ReplicateRecordingTest
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
         final long srcRecordingId;
-        final long channelTagId = 333;
-        final long subscriptionTagId = 777;
+        final long channelTagId = dstAeron.nextCorrelationId();
+        final long subscriptionTagId = dstAeron.nextCorrelationId();
         final String taggedChannel =
             "aeron:udp?control-mode=manual|rejoin=false|tags=" + channelTagId + "," + subscriptionTagId;
 

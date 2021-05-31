@@ -676,6 +676,8 @@ project(':aeron-agent') {
             "Can-Retransform-Classes": "true",
             'Automatic-Module-Name': 'io.aeron.agent'
         )
+
+        relocate 'net.bytebuddy', 'io.aeron.shadow.net.bytebuddy'
     }
 
     jar.finalizedBy shadowJar

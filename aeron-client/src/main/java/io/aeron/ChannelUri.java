@@ -264,9 +264,6 @@ public final class ChannelUri
 
         final ChannelUri that = (ChannelUri)o;
 
-        final HashSet<String> missedkeys = new HashSet<>(params.keySet());
-        final boolean b = missedkeys.removeAll(that.params.keySet());
-
         return Objects.equals(prefix, that.prefix) &&
             Objects.equals(media, that.media) &&
             Objects.equals(params, that.params) &&
@@ -605,14 +602,15 @@ public final class ChannelUri
 
         if (!Objects.equals(params, that.params))
         {
-            params.forEach((key, value) ->
-            {
-                final String thatValue = that.params.get(key);
-                if (!Objects.equals(value, thatValue))
+            params.forEach(
+                (key, value) ->
                 {
-                    differingValues.put(key, value + " != " + thatValue);
-                }
-            });
+                    final String thatValue = that.params.get(key);
+                    if (!Objects.equals(value, thatValue))
+                    {
+                        differingValues.put(key, value + " != " + thatValue);
+                    }
+                });
         }
 
         if (!Arrays.equals(tags, that.tags))

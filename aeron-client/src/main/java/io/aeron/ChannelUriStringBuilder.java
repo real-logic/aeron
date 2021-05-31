@@ -80,7 +80,7 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Constructs the ChannelUriStringBuilder with the initial values derived from the supplied URI.  Will parse the
+     * Constructs the ChannelUriStringBuilder with the initial values derived from the supplied URI. Will parse the
      * incoming URI during this process, so could through an exception at this point of the URI is badly formed.
      *
      * @param initialUri initial values for the builder.
@@ -1175,14 +1175,14 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Set the tags to the specified channel and publication/subscription tag {@link ChannelUri}.  The
-     * publication/subscription may be null.  If channel tag is null, then the pubSubTag must be null.
+     * Set the tags to the specified channel and publication/subscription tag {@link ChannelUri}. The
+     * publication/subscription may be null. If channel tag is null, then the pubSubTag must be null.
      *
      * @param channelTag optional value for the channel tag.
-     * @param pubSubTag option value for the publication/subscription tag.
+     * @param pubSubTag  option value for the publication/subscription tag.
      * @return this for a fluent API.
-     * @see CommonContext#TAGS_PARAM_NAME
      * @throws IllegalArgumentException if channelTag is null and pubSubTag is not.
+     * @see CommonContext#TAGS_PARAM_NAME
      */
     public ChannelUriStringBuilder tags(final Long channelTag, final Long pubSubTag)
     {
@@ -1715,6 +1715,7 @@ public final class ChannelUriStringBuilder
 
     /**
      * Get the receiver window length to be used as the initial receiver window for congestion control.
+     *
      * @return receiver window length
      * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
      */

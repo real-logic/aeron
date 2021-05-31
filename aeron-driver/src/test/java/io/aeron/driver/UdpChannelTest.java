@@ -32,11 +32,11 @@ import java.io.IOException;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static java.net.InetAddress.getByName;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -369,8 +369,10 @@ public class UdpChannelTest
         assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-127.0.0.1:40455-224.0.1.1:40456"));
 
         final UdpChannel udpChannelSubnetLocalPort =
-            UdpChannel.parse("aeron:udp?interface=127.0.0.0:40455/24|endpoint=224.0.1.1:40456");
-        assertThat(udpChannelSubnetLocalPort.canonicalForm(), is("UDP-127.0.0.1:40455-224.0.1.1:40456"));
+            UdpChannel.parse("aeron:udp?interface=127.0.0.0:40455/29|endpoint=224.0.1.1:40456");
+        assertThat(
+            udpChannelSubnetLocalPort.canonicalForm(),
+            matchesPattern("UDP-127\\.0\\.0\\.[1-7]:40455-224\\.0\\.1\\.1:40456"));
     }
 
     @Test
@@ -379,19 +381,21 @@ public class UdpChannelTest
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?interface=localhost|endpoint=224.0.1.1:40456");
         final UdpChannel udpChannelLocal = UdpChannel.parse("aeron:udp?interface=127.0.0.1|endpoint=224.0.1.1:40456");
         final UdpChannel udpChannelAllSystems = UdpChannel.parse(
-            "aeron:udp?interface=localhost|endpoint=224.0.0.1:40456");
+            "aeron:udp?interface=localhost|endpoint=224.0.1.1:40456");
         final UdpChannel udpChannelDefault = UdpChannel.parse("aeron:udp?endpoint=224.0.1.1:40456");
 
         final UdpChannel udpChannelSubnet = UdpChannel.parse(
-            "aeron:udp?interface=localhost/24|endpoint=224.0.1.1:40456");
+            "aeron:udp?interface=localhost/29|endpoint=224.0.1.1:40456");
         final UdpChannel udpChannelSubnetLocal = UdpChannel.parse(
-            "aeron:udp?interface=127.0.0.0/24|endpoint=224.0.1.1:40456");
+            "aeron:udp?interface=127.0.0.0/29|endpoint=224.0.1.1:40456");
 
         assertThat(udpChannel.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
-        assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-127.0.0.1:0-224.0.0.1:40456"));
-        assertThat(udpChannelSubnet.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
-        assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
+
+        final Pattern canonicalFormPattern = Pattern.compile("UDP-127\\.0\\.0\\.[1-7]:0-224\\.0\\.1\\.1:40456");
+        assertThat(udpChannelAllSystems.canonicalForm(), matchesPattern(canonicalFormPattern));
+        assertThat(udpChannelSubnet.canonicalForm(), matchesPattern(canonicalFormPattern));
+        assertThat(udpChannelSubnetLocal.canonicalForm(), matchesPattern(canonicalFormPattern));
 
         assertThat(udpChannelDefault.localInterface(), supportsMulticastOrIsLoopback());
     }
@@ -415,8 +419,10 @@ public class UdpChannelTest
         assertThat(udpChannel.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
         assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-127.0.0.1:0-224.0.0.1:40456"));
-        assertThat(udpChannelSubnet.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
-        assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-127.0.0.1:0-224.0.1.1:40456"));
+
+        final Pattern canonicalFormPattern = Pattern.compile("UDP-127\\.0\\.0\\.[1-7]:0-224\\.0\\.1\\.1:40456");
+        assertThat(udpChannelSubnet.canonicalForm(), matchesPattern(canonicalFormPattern));
+        assertThat(udpChannelSubnetLocal.canonicalForm(), matchesPattern(canonicalFormPattern));
         assertThat(udpChannelDefault.localInterface(), supportsMulticastOrIsLoopback());
     }
 

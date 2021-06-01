@@ -342,19 +342,6 @@ public class ClusterTool
         return true;
     }
 
-    private static boolean isRecordingLogSorted(final List<RecordingLog.Entry> entries)
-    {
-        for (int i = entries.size() - 1; i >= 0; i--)
-        {
-            if (entries.get(i).entryIndex != i)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     /**
      * Print out the errors in the error logs for the cluster components.
      *
@@ -1096,6 +1083,19 @@ public class ClusterTool
 
         CncFileDescriptor.checkVersion(cncVersion);
         CommonContext.printErrorLog(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), out);
+    }
+
+    private static boolean isRecordingLogSorted(final List<RecordingLog.Entry> entries)
+    {
+        for (int i = entries.size() - 1; i >= 0; i--)
+        {
+            if (entries.get(i).entryIndex != i)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static void exitWithErrorOnFailure(final boolean success)

@@ -316,28 +316,35 @@ final class ConsensusModuleAgent implements Agent
     {
         int workCount = 0;
 
-        final long now = clusterClock.time();
-        final long nowNs = clusterTimeUnit.toNanos(now);
+        try
+        {
+            final long now = clusterClock.time();
+            final long nowNs = clusterTimeUnit.toNanos(now);
 
-        if (nowNs >= slowTickDeadlineNs)
-        {
-            slowTickDeadlineNs = nowNs + SLOW_TICK_INTERVAL_NS;
-            workCount += slowTickWork(clusterTimeUnit.toMillis(now), nowNs);
-        }
+            if (nowNs >= slowTickDeadlineNs)
+            {
+                slowTickDeadlineNs = nowNs + SLOW_TICK_INTERVAL_NS;
+                workCount += slowTickWork(clusterTimeUnit.toMillis(now), nowNs);
+            }
 
-        workCount += consensusAdapter.poll();
+            workCount += consensusAdapter.poll();
 
-        if (null != dynamicJoin)
-        {
-            workCount += dynamicJoin.doWork(nowNs);
+            if (null != dynamicJoin)
+            {
+                workCount += dynamicJoin.doWork(nowNs);
+            }
+            else if (null != election)
+            {
+                workCount += election.doWork(nowNs);
+            }
+            else
+            {
+                workCount += consensusWork(now, nowNs);
+            }
         }
-        else if (null != election)
+        catch (final AgentTerminationException ex)
         {
-            workCount += election.doWork(nowNs);
-        }
-        else
-        {
-            workCount += consensusWork(now, nowNs);
+            runTerminationHook(ex);
         }
 
         return workCount;
@@ -3067,7 +3074,7 @@ final class ConsensusModuleAgent implements Agent
     {
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
-        terminateAgent();
+        throw new ClusterTerminationException();
     }
 
     private void unexpectedTermination()
@@ -3076,20 +3083,6 @@ final class ConsensusModuleAgent implements Agent
         serviceProxy.terminationPosition(0, ctx.countedErrorHandler());
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
-        terminateAgent();
-    }
-
-    private void terminateAgent()
-    {
-        try
-        {
-            ctx.terminationHook().run();
-        }
-        catch (final Throwable ex)
-        {
-            ctx.countedErrorHandler().onError(ex);
-        }
-
         throw new ClusterTerminationException();
     }
 
@@ -3193,6 +3186,20 @@ final class ConsensusModuleAgent implements Agent
             ClusterMember.addConsensusPublication(
                 follower, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
         }
+    }
+
+    private void runTerminationHook(final AgentTerminationException ex)
+    {
+        try
+        {
+            ctx.terminationHook().run();
+        }
+        catch (final Throwable t)
+        {
+            ctx.countedErrorHandler().onError(t);
+        }
+
+        throw ex;
     }
 
     public String toString()

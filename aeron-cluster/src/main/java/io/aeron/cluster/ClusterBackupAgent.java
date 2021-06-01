@@ -210,14 +210,14 @@ public final class ClusterBackupAgent implements Agent
         final long nowMs = epochClock.time();
         int workCount = 0;
 
-        if (nowMs > slowTickDeadlineMs)
-        {
-            workCount += slowTick(nowMs);
-            slowTickDeadlineMs = nowMs + SLOW_TICK_INTERVAL_MS;
-        }
-
         try
         {
+            if (nowMs > slowTickDeadlineMs)
+            {
+                slowTickDeadlineMs = nowMs + SLOW_TICK_INTERVAL_MS;
+                workCount += slowTick(nowMs);
+            }
+
             workCount += consensusSubscription.poll(fragmentAssembler, ConsensusAdapter.FRAGMENT_LIMIT);
 
             switch (state)
@@ -263,7 +263,7 @@ public final class ClusterBackupAgent implements Agent
         }
         catch (final AgentTerminationException ex)
         {
-            throw ex;
+            runTerminationHook(ex);
         }
         catch (final Exception ex)
         {
@@ -492,8 +492,8 @@ public final class ClusterBackupAgent implements Agent
 
         if (nowMs >= markFileUpdateDeadlineMs)
         {
-            markFile.updateActivityTimestamp(nowMs);
             markFileUpdateDeadlineMs = nowMs + MARK_FILE_UPDATE_INTERVAL_MS;
+            markFile.updateActivityTimestamp(nowMs);
         }
 
         workCount += pollBackupArchiveEvents();
@@ -983,5 +983,19 @@ public final class ClusterBackupAgent implements Agent
     private boolean hasProgressStalled(final long nowMs)
     {
         return (NULL_COUNTER_ID == liveLogRecCounterId) && (nowMs > (timeOfLastProgressMs + backupProgressTimeoutMs));
+    }
+
+    private void runTerminationHook(final AgentTerminationException ex)
+    {
+        try
+        {
+            ctx.terminationHook().run();
+        }
+        catch (final Throwable t)
+        {
+            ctx.countedErrorHandler().onError(t);
+        }
+
+        throw ex;
     }
 }

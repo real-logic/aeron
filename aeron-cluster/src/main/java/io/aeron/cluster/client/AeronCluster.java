@@ -1557,7 +1557,8 @@ public final class AeronCluster implements AutoCloseable
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
                 final TimeoutException ex = new TimeoutException(
-                    "connect timeout, step=" + step + " egress.isConnected=" + egressSubscription.isConnected() +
+                    "cluster connect timeout: step=" + step +
+                    " egress.isConnected=" + egressSubscription.isConnected() +
                     " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort());
 
                 if (null != registrationException)

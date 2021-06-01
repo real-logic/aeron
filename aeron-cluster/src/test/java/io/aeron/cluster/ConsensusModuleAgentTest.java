@@ -272,11 +272,10 @@ public class ConsensusModuleAgentTest
     public void shouldThrowClusterTerminationExceptionUponShutdown()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
-
         final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
         final MutableLong stateValue = new MutableLong();
         final Counter mockState = mock(Counter.class);
-        final Runnable terminationHook = mock(Runnable.class);
+
         when(mockState.get()).thenAnswer((invocation) -> stateValue.value);
         doAnswer(
             (invocation) ->
@@ -286,21 +285,15 @@ public class ConsensusModuleAgentTest
             })
             .when(mockState).set(anyLong());
 
-        final OutOfMemoryError hookException = new OutOfMemoryError("Hook exception!");
-        doThrow(hookException).when(terminationHook).run();
-
         ctx.countedErrorHandler(countedErrorHandler)
             .moduleStateCounter(mockState)
             .epochClock(clock)
-            .clusterClock(clock)
-            .terminationHook(terminationHook);
+            .clusterClock(clock);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         agent.state(ConsensusModule.State.QUITTING);
 
         assertThrows(ClusterTerminationException.class,
             () -> agent.onServiceAck(1024, 100, 0, 55, 0));
-
-        verify(countedErrorHandler).onError(hookException);
     }
 }

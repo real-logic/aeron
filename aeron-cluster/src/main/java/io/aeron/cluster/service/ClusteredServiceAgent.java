@@ -156,21 +156,28 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         int workCount = 0;
 
-        if (checkForClockTick())
+        try
         {
-            pollServiceAdapter();
-            workCount += 1;
-        }
-
-        if (null != logAdapter.image())
-        {
-            final int polled = logAdapter.poll(commitPosition.get());
-            workCount += polled;
-
-            if (0 == polled && logAdapter.isDone())
+            if (checkForClockTick())
             {
-                closeLog();
+                pollServiceAdapter();
+                workCount += 1;
             }
+
+            if (null != logAdapter.image())
+            {
+                final int polled = logAdapter.poll(commitPosition.get());
+                workCount += polled;
+
+                if (0 == polled && logAdapter.isDone())
+                {
+                    closeLog();
+                }
+            }
+        }
+        catch (final AgentTerminationException ex)
+        {
+            runTerminationHook(ex);
         }
 
         return workCount;
@@ -452,7 +459,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             ctx.errorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " log=" + SemanticVersion.toString(appVersion)));
-            terminateAgent();
+            throw new AgentTerminationException();
         }
         else
         {
@@ -968,20 +975,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         terminationPosition = NULL_VALUE;
-        terminateAgent();
-    }
-
-    private void terminateAgent()
-    {
-        try
-        {
-            ctx.terminationHook().run();
-        }
-        catch (final Throwable ex)
-        {
-            ctx.countedErrorHandler().onError(ex);
-        }
-
         throw new ClusterTerminationException();
     }
 
@@ -1010,5 +1003,19 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private void runTerminationHook(final AgentTerminationException ex)
+    {
+        try
+        {
+            ctx.terminationHook().run();
+        }
+        catch (final Throwable t)
+        {
+            ctx.countedErrorHandler().onError(t);
+        }
+
+        throw ex;
     }
 }

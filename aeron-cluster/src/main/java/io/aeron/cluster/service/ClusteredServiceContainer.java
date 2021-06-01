@@ -703,6 +703,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 ownsAeronClient = true;
             }
 
+            if (!(aeron.context().subscriberErrorHandler() instanceof RethrowingErrorHandler))
+            {
+                throw new ClusterException("Aeron client must use a RethrowingErrorHandler");
+            }
+
             if (null == errorCounter)
             {
                 final String label = "Cluster Container Errors - clusterId=" + clusterId + " serviceId=" + serviceId;

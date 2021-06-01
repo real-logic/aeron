@@ -189,7 +189,12 @@ public class TestCluster implements AutoCloseable
 
     public static void awaitElectionClosed(final TestNode follower)
     {
-        while (follower.electionState() != ElectionState.CLOSED)
+        awaitElectionState(follower, ElectionState.CLOSED);
+    }
+
+    public static void awaitElectionState(final TestNode node, final ElectionState electionState)
+    {
+        while (node.electionState() != electionState)
         {
             await(10);
         }

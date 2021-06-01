@@ -19,7 +19,6 @@ import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.exceptions.AeronException;
-import io.aeron.test.Tests;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;

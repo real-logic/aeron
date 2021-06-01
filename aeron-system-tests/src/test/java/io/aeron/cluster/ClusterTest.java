@@ -279,7 +279,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @Timeout(20)
     public void shouldHandleClusterStartWhenANameIsNotResolvable(final TestInfo testInfo)
     {
         final int initiallyUnresolvableNodeId = 1;
@@ -297,9 +297,37 @@ public class ClusterTest
             cluster.awaitServicesMessageCount(expectedCount);
 
             cluster.restoreNameResolution(initiallyUnresolvableNodeId);
-            assertNotNull(cluster.startStaticNode(initiallyUnresolvableNodeId, false));
+            assertNotNull(cluster.startStaticNode(initiallyUnresolvableNodeId, true));
 
             cluster.awaitServiceMessageCount(cluster.node(initiallyUnresolvableNodeId), expectedCount);
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    public void shouldHandleClusterStartWhereMostNamesBecomeResolvableDuringElection(final TestInfo testInfo)
+    {
+        cluster = aCluster().withStaticNodes(3).withInvalidNameResolution(0).withInvalidNameResolution(2).start();
+        try
+        {
+            awaitElectionState(cluster.node(1), ElectionState.CANVASS);
+
+            cluster.restoreNameResolution(0);
+            cluster.restoreNameResolution(2);
+            assertNotNull(cluster.startStaticNode(0, true));
+            assertNotNull(cluster.startStaticNode(2, true));
+
+            cluster.awaitLeader();
+            cluster.connectClient();
+
+            final int expectedCount = 10;
+            cluster.sendMessages(expectedCount);
+            cluster.awaitResponseMessageCount(expectedCount);
+            cluster.awaitServicesMessageCount(expectedCount);
         }
         catch (final Throwable ex)
         {

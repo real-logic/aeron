@@ -493,6 +493,8 @@ final class ConsensusModuleAgent implements Agent
         final long leadershipTermId,
         final int followerMemberId)
     {
+        checkFollowerAndAddConsensusPublication(followerMemberId);
+
         if (null != election)
         {
             election.onCanvassPosition(logLeadershipTermId, logPosition, leadershipTermId, followerMemberId);
@@ -502,12 +504,6 @@ final class ConsensusModuleAgent implements Agent
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && logLeadershipTermId <= this.leadershipTermId)
             {
-                if (null == follower.publication())
-                {
-                    ClusterMember.addConsensusPublication(
-                        follower, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
-                }
-
                 final RecordingLog.Entry currentTermEntry = recordingLog.getTermEntry(this.leadershipTermId);
                 final long termBaseLogPosition = currentTermEntry.termBaseLogPosition;
                 final long timestamp = ctx.clusterClock().timeNanos();
@@ -3186,6 +3182,16 @@ final class ConsensusModuleAgent implements Agent
         {
             ingressAdapter.connect(aeron.addSubscription(
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
+        }
+    }
+
+    private void checkFollowerAndAddConsensusPublication(final int followerMemberId)
+    {
+        final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
+        if (null != follower && null == follower.publication())
+        {
+            ClusterMember.addConsensusPublication(
+                follower, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
         }
     }
 

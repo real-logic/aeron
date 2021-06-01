@@ -61,26 +61,34 @@ public class TestNode implements AutoCloseable
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
-        mediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
+        try
+        {
+            mediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
 
-        clusteredArchive = ClusteredArchive.launch(
-            mediaDriver.aeronDirectoryName(),
-            context.archiveContext,
-            context.consensusModuleContext.terminationHook(ClusterTests.terminationHook(
-                context.isTerminationExpected, context.hasMemberTerminated)));
+            clusteredArchive = ClusteredArchive.launch(
+                mediaDriver.aeronDirectoryName(),
+                context.archiveContext,
+                context.consensusModuleContext.terminationHook(ClusterTests.terminationHook(
+                    context.isTerminationExpected, context.hasMemberTerminated)));
 
-        container = ClusteredServiceContainer.launch(
-            context.serviceContainerContext
-                .terminationHook(ClusterTests.terminationHook(
-                    context.isTerminationExpected, context.hasServiceTerminated)));
+            container = ClusteredServiceContainer.launch(
+                context.serviceContainerContext
+                    .terminationHook(ClusterTests.terminationHook(
+                        context.isTerminationExpected, context.hasServiceTerminated)));
 
-        service = context.service;
-        this.context = context;
+            service = context.service;
+            this.context = context;
 
-        dataCollector.add(container.context().clusterDir().toPath());
-        dataCollector.add(clusteredArchive.consensusModule().context().clusterDir().toPath());
-        dataCollector.add(clusteredArchive.archive().context().archiveDir().toPath());
-        dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
+            dataCollector.add(container.context().clusterDir().toPath());
+            dataCollector.add(clusteredArchive.consensusModule().context().clusterDir().toPath());
+            dataCollector.add(clusteredArchive.archive().context().archiveDir().toPath());
+            dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
+        }
+        catch (final RuntimeException ex)
+        {
+            closeAndDelete();
+            throw ex;
+        }
     }
 
     public TestMediaDriver mediaDriver()
@@ -113,7 +121,7 @@ public class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.closeAll(clusteredArchive.consensusModule(), container, clusteredArchive, mediaDriver);
+            CloseHelper.closeAll(container, clusteredArchive, mediaDriver);
         }
     }
 

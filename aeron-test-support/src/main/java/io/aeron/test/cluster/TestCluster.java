@@ -47,7 +47,10 @@ import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -170,21 +173,6 @@ public class TestCluster implements AutoCloseable
         this.dynamicMemberCount = dynamicMemberCount;
         this.appointedLeaderId = appointedLeaderId;
         this.invalidInitialResolutions = invalidInitialResolutions;
-    }
-
-    public static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId)
-    {
-        return aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderId).start();
-    }
-
-    public static TestCluster startSingleNodeStaticCluster()
-    {
-        return aCluster().withStaticNodes(1).start();
-    }
-
-    public static TestCluster startCluster(final int staticMemberCount, final int dynamicMemberCount)
-    {
-        return aCluster().withStaticNodes(staticMemberCount).withDynamicNodes(dynamicMemberCount).start();
     }
 
     public static void awaitElectionClosed(final TestNode follower)

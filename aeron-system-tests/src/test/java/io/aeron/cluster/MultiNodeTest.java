@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MultiNodeTest
@@ -35,7 +35,7 @@ public class MultiNodeTest
     {
         final int appointedLeaderIndex = 1;
 
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderIndex).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -52,7 +52,7 @@ public class MultiNodeTest
     {
         final int appointedLeaderIndex = 1;
 
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderIndex).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -79,7 +79,7 @@ public class MultiNodeTest
     {
         final int appointedLeaderIndex = 1;
 
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderIndex).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -117,7 +117,7 @@ public class MultiNodeTest
             .ingressChannel("aeron:udp?term-length=64k")
             .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:" + responsePort);
 
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final int numMessages = 10;
             cluster.connectClient(clientCtx);

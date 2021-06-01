@@ -20,7 +20,7 @@ import io.aeron.test.cluster.TestCluster;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.test.cluster.TestCluster.aCluster;
 
 public class ServiceIpcIngressTest
 {
@@ -28,7 +28,7 @@ public class ServiceIpcIngressTest
     @Timeout(20)
     public void shouldEchoIpcMessages()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             cluster.awaitLeader();
             cluster.connectClient();

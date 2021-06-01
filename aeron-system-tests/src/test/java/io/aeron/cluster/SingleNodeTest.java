@@ -21,6 +21,7 @@ import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SingleNodeTest
@@ -29,7 +30,7 @@ public class SingleNodeTest
     @Timeout(20)
     public void shouldStartCluster()
     {
-        try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
+        try (TestCluster cluster = aCluster().withStaticNodes(1).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -42,7 +43,7 @@ public class SingleNodeTest
     @Timeout(20)
     public void shouldSendMessagesToCluster()
     {
-        try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
+        try (TestCluster cluster = aCluster().withStaticNodes(1).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -60,7 +61,7 @@ public class SingleNodeTest
     @Timeout(20)
     public void shouldReplayLog()
     {
-        try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
+        try (TestCluster cluster = aCluster().withStaticNodes(1).start())
         {
             final TestNode leader = cluster.awaitLeader();
 

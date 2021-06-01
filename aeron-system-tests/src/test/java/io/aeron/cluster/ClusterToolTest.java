@@ -28,7 +28,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.test.cluster.TestCluster.aCluster;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -41,7 +41,7 @@ class ClusterToolTest
     @Timeout(30)
     void shouldHandleSnapshotOnLeaderOnly()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
             final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
@@ -75,7 +75,7 @@ class ClusterToolTest
     @Timeout(30)
     void shouldNotSnapshotWhenSuspendedOnly()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
             final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
@@ -105,7 +105,7 @@ class ClusterToolTest
     @Timeout(30)
     void shouldSuspendAndResume()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
             final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();

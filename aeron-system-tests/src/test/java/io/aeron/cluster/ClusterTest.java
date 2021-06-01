@@ -24,12 +24,14 @@ import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
-import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static io.aeron.test.cluster.ClusterTests.*;
@@ -54,7 +56,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldStopFollowerAndRestartFollower(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             cluster.awaitLeader();
@@ -78,7 +80,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldNotifyClientOfNewLeader(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -99,7 +101,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldStopLeaderAndFollowersThenRestartAllWithSnapshot(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -124,7 +126,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldShutdownClusterAndRestartWithSnapshots(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -157,7 +159,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldAbortClusterAndRestart(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -192,7 +194,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldAbortClusterOnTerminationTimeout(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -229,7 +231,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldEchoMessages(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             cluster.awaitLeader();
@@ -251,7 +253,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldHandleLeaderFailOverWhenNameIsNotResolvable(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode originalLeader = cluster.awaitLeader();
@@ -339,7 +341,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldEchoMessagesThenContinueOnNewLeader(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode originalLeader = cluster.awaitLeader();
@@ -378,7 +380,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldStopLeaderAndRestartAsFollower(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode originalLeader = cluster.awaitLeader();
@@ -401,7 +403,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldStopLeaderAndRestartAsFollowerWithSendingAfter(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode originalLeader = cluster.awaitLeader();
@@ -429,7 +431,7 @@ public class ClusterTest
     @Timeout(60)
     public void shouldStopLeaderAndRestartAsFollowerWithSendingAfterThenStopLeader(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode originalLeader = cluster.awaitLeader();
@@ -462,7 +464,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldAcceptMessagesAfterSingleNodeCleanRestart(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             cluster.awaitLeader();
@@ -492,7 +494,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldReplaySnapshotTakenWhileDown(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -530,7 +532,7 @@ public class ClusterTest
     @Timeout(50)
     public void shouldTolerateMultipleLeaderFailures(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode firstLeader = cluster.awaitLeader();
@@ -562,7 +564,7 @@ public class ClusterTest
     @Timeout(90)
     public void shouldRecoverAfterTwoLeadersNodesFailAndComeBackUpAtSameTime(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode firstLeader = cluster.awaitLeader();
@@ -601,7 +603,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldAcceptMessagesAfterTwoNodeCleanRestart(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             cluster.awaitLeader();
@@ -641,7 +643,7 @@ public class ClusterTest
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosExceedsPreviousAppendedPos(
         final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -701,7 +703,7 @@ public class ClusterTest
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosIsLessThanPreviousAppendedPos(
         final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -749,7 +751,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldCallOnRoleChangeOnBecomingLeader(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leaderOne = cluster.awaitLeader();
@@ -782,7 +784,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -816,7 +818,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldTerminateLeaderWhenServiceStops(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -842,7 +844,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldEnterElectionWhenRecordingStopsOnLeader(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -873,7 +875,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldRecoverFollowerWhenRecordingStops(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             cluster.awaitLeader();
@@ -908,7 +910,7 @@ public class ClusterTest
     @Timeout(20)
     public void shouldCloseClientOnTimeout(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -939,7 +941,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldRecoverWhileMessagesContinue(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final MutableInteger messageCounter = new MutableInteger();
@@ -985,7 +987,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldCatchupFromEmptyLog(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             cluster.awaitLeader();
@@ -1013,7 +1015,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -1064,7 +1066,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldCatchUpTwoFreshNodesAfterRestart(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -1105,7 +1107,7 @@ public class ClusterTest
     @Timeout(30)
     public void shouldReplayMultipleSnapshotsWithEmptyFollowerLog(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -1178,7 +1180,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldRecoverQuicklyAfterKillingFollowersThenRestartingOne(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -1213,7 +1215,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldRecoverWhenLeaderHasAppendedMoreThanFollower(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -1248,7 +1250,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldRecoverWhenFollowerIsMultipleTermsBehind(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode originalLeader = cluster.awaitLeader();
@@ -1291,7 +1293,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldRecoverWhenFollowerArrivesPartWayThroughTerm(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             cluster.awaitLeader();
@@ -1323,7 +1325,7 @@ public class ClusterTest
     @Timeout(40)
     public void shouldRecoverWhenFollowerArrivePartWayThroughTermAfterMissingElection(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader = cluster.awaitLeader();
@@ -1368,7 +1370,7 @@ public class ClusterTest
     @Timeout(40)
     void shouldRecoverWhenLastSnapshotIsMarkedInvalid(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader0 = cluster.awaitLeader();
@@ -1416,7 +1418,7 @@ public class ClusterTest
     @Timeout(30)
     void shouldRecoverWhenLastSnapshotForShutdownIsMarkedInvalid(final TestInfo testInfo)
     {
-        cluster = startSingleNodeStaticCluster();
+        cluster = aCluster().withStaticNodes(1).start();
         try
         {
             TestNode leader = cluster.awaitLeader();
@@ -1453,7 +1455,7 @@ public class ClusterTest
     @Timeout(60)
     void shouldHandleMultipleElections(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader0 = cluster.awaitLeader();
@@ -1496,7 +1498,7 @@ public class ClusterTest
     @Timeout(50)
     void shouldRecoverWhenLastSnapshotIsInvalidBetweenTwoElections(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader0 = cluster.awaitLeader();
@@ -1551,7 +1553,7 @@ public class ClusterTest
     @Timeout(50)
     void shouldRecoverWhenLastTwosSnapshotsAreInvalidAfterElection(final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             final TestNode leader0 = cluster.awaitLeader();
@@ -1630,7 +1632,7 @@ public class ClusterTest
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message, final TestInfo testInfo)
     {
-        cluster = startThreeNodeStaticCluster(NULL_VALUE);
+        cluster = aCluster().withStaticNodes(3).start();
         try
         {
             cluster.awaitLeader();

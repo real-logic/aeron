@@ -500,9 +500,9 @@ public class TestNode implements AutoCloseable
         final AtomicBoolean hasServiceTerminated = new AtomicBoolean();
         final TestService service;
 
-        Context(final TestService service)
+        Context(final TestService service, final String nodeMappings)
         {
-            mediaDriverContext.nameResolver(new RedirectingNameResolver(TestCluster.NAME_NODE_MAPPINGS));
+            mediaDriverContext.nameResolver(new RedirectingNameResolver(nodeMappings));
             this.service = service;
         }
     }

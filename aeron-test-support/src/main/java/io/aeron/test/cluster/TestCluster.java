@@ -28,12 +28,14 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.RedirectingNameResolver;
 import org.agrona.*;
+import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
@@ -45,10 +47,7 @@ import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -78,7 +77,7 @@ public class TestCluster implements AutoCloseable
     private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k";
     private static final long STARTUP_CANVASS_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
-    public static final String NAME_NODE_MAPPINGS =
+    public static final String DEFAULT_NODE_MAPPINGS =
         "node0,localhost,localhost|" +
         "node1,localhost,localhost|" +
         "node2,localhost,localhost|";
@@ -142,13 +141,18 @@ public class TestCluster implements AutoCloseable
     private final int dynamicMemberCount;
     private final int appointedLeaderId;
     private final int backupNodeIndex;
+    private final IntHashSet invalidInitialResolutions;
     private boolean shouldErrorOnClientClose = true;
 
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
     private TestBackupNode backupNode;
 
-    TestCluster(final int staticMemberCount, final int dynamicMemberCount, final int appointedLeaderId)
+    TestCluster(
+        final int staticMemberCount,
+        final int dynamicMemberCount,
+        final int appointedLeaderId,
+        final IntHashSet invalidInitialResolutions)
     {
         final int memberCount = staticMemberCount + dynamicMemberCount;
         if ((memberCount + 1) >= 10)
@@ -165,6 +169,22 @@ public class TestCluster implements AutoCloseable
         this.staticMemberCount = staticMemberCount;
         this.dynamicMemberCount = dynamicMemberCount;
         this.appointedLeaderId = appointedLeaderId;
+        this.invalidInitialResolutions = invalidInitialResolutions;
+    }
+
+    public static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId)
+    {
+        return aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderId).start();
+    }
+
+    public static TestCluster startSingleNodeStaticCluster()
+    {
+        return aCluster().withStaticNodes(1).start();
+    }
+
+    public static TestCluster startCluster(final int staticMemberCount, final int dynamicMemberCount)
+    {
+        return aCluster().withStaticNodes(staticMemberCount).withDynamicNodes(dynamicMemberCount).start();
     }
 
     public static void awaitElectionClosed(final TestNode follower)
@@ -233,36 +253,6 @@ public class TestCluster implements AutoCloseable
         return node::closeAndDelete;
     }
 
-    public static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId)
-    {
-        final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
-        for (int i = 0; i < 3; i++)
-        {
-            testCluster.startStaticNode(i, true);
-        }
-
-        return testCluster;
-    }
-
-    public static TestCluster startSingleNodeStaticCluster()
-    {
-        final TestCluster testCluster = new TestCluster(1, 0, 0);
-        testCluster.startStaticNode(0, true);
-
-        return testCluster;
-    }
-
-    public static TestCluster startCluster(final int staticMemberCount, final int dynamicMemberCount)
-    {
-        final TestCluster testCluster = new TestCluster(staticMemberCount, dynamicMemberCount, NULL_VALUE);
-        for (int i = 0; i < staticMemberCount; i++)
-        {
-            testCluster.startStaticNode(i, true);
-        }
-
-        return testCluster;
-    }
-
     public TestNode startStaticNode(final int index, final boolean cleanStart)
     {
         return startStaticNode(index, cleanStart, TestNode.TestService::new);
@@ -273,7 +263,7 @@ public class TestCluster implements AutoCloseable
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index));
+        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index), nodeNameMappings());
 
         context.aeronArchiveContext
             .lock(NoOpLock.INSTANCE)
@@ -325,7 +315,14 @@ public class TestCluster implements AutoCloseable
             .clusteredService(context.service)
             .errorHandler(errorHandler(index));
 
-        nodes[index] = new TestNode(context, dataCollector);
+        try
+        {
+            nodes[index] = new TestNode(context, dataCollector);
+        }
+        catch (final RegistrationException ex)
+        {
+            nodes[index] = null;
+        }
 
         return nodes[index];
     }
@@ -340,7 +337,7 @@ public class TestCluster implements AutoCloseable
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index));
+        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index), nodeNameMappings());
 
         context.aeronArchiveContext
             .lock(NoOpLock.INSTANCE)
@@ -406,7 +403,7 @@ public class TestCluster implements AutoCloseable
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index));
+        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index), nodeNameMappings());
 
         context.aeronArchiveContext
             .lock(NoOpLock.INSTANCE)
@@ -481,7 +478,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false)
-            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+            .nameResolver(new RedirectingNameResolver(nodeNameMappings()));
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
@@ -521,7 +518,9 @@ public class TestCluster implements AutoCloseable
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + backupNodeIndex;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + backupNodeIndex + "-driver";
-        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(backupNodeIndex));
+        final TestNode.Context context = new TestNode.Context(
+            serviceSupplier.get().index(backupNodeIndex),
+            nodeNameMappings());
 
         if (null == backupNode || !backupNode.isClosed())
         {
@@ -649,7 +648,7 @@ public class TestCluster implements AutoCloseable
                 .dirDeleteOnStart(true)
                 .dirDeleteOnShutdown(false)
                 .aeronDirectoryName(aeronDirName)
-                .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+                .nameResolver(new RedirectingNameResolver(nodeNameMappings()));
 
             clientMediaDriver = MediaDriver.launch(ctx);
         }
@@ -1230,6 +1229,12 @@ public class TestCluster implements AutoCloseable
         toggleNameResolution(hostname, RedirectingNameResolver.USE_INITIAL_RESOLUTION_HOST);
     }
 
+    public void restoreNameResolution(final int nodeId)
+    {
+        invalidInitialResolutions.remove(nodeId);
+        toggleNameResolution(hostname(nodeId), RedirectingNameResolver.USE_RE_RESOLUTION_HOST);
+    }
+
     private void toggleNameResolution(final String hostname, final int disableValue)
     {
         for (final TestNode node : nodes)
@@ -1240,6 +1245,20 @@ public class TestCluster implements AutoCloseable
                 RedirectingNameResolver.updateNameResolutionStatus(counters, hostname, disableValue);
             }
         }
+    }
+
+    private String nodeNameMappings()
+    {
+        return nodeNameMappings(invalidInitialResolutions);
+    }
+
+    private static String nodeNameMappings(final IntHashSet invalidInitialResolutions)
+    {
+        return String.format(
+            "node0,%s,localhost|node1,%s,localhost|node2,%s,localhost|",
+            invalidInitialResolutions.contains(0) ? "bad.invalid" : "localhost",
+            invalidInitialResolutions.contains(1) ? "bad.invalid" : "localhost",
+            invalidInitialResolutions.contains(2) ? "bad.invalid" : "localhost");
     }
 
     public static class ServiceContext
@@ -1305,7 +1324,7 @@ public class TestCluster implements AutoCloseable
             .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false)
-            .nameResolver(new RedirectingNameResolver(NAME_NODE_MAPPINGS));
+            .nameResolver(new RedirectingNameResolver(DEFAULT_NODE_MAPPINGS));
 
         nodeCtx.archiveCtx
             .catalogCapacity(CATALOG_CAPACITY)
@@ -1338,5 +1357,63 @@ public class TestCluster implements AutoCloseable
             .deleteDirOnStart(cleanStart);
 
         return nodeCtx;
+    }
+
+    public static Builder aCluster()
+    {
+        return new Builder();
+    }
+
+    public static class Builder
+    {
+        private int nodeCount = 3;
+        private int dynamicNodeCount = 0;
+        private int appointedLeaderId = NULL_VALUE;
+        private final IntHashSet invalidInitialResolutions = new IntHashSet();
+
+        public Builder withStaticNodes(final int nodeCount)
+        {
+            this.nodeCount = nodeCount;
+            return this;
+        }
+
+        public Builder withDynamicNodes(final int nodeCount)
+        {
+            this.dynamicNodeCount = nodeCount;
+            return this;
+        }
+
+        public Builder withAppointedLeader(final int appointedLeaderId)
+        {
+            this.appointedLeaderId = appointedLeaderId;
+            return this;
+        }
+
+        public Builder withInvalidNameResolution(final int nodeId)
+        {
+            if (2 < nodeId)
+            {
+                throw new IllegalArgumentException("Only nodes 0 to 2 have name mappings that can be invalidated");
+            }
+
+            invalidInitialResolutions.add(nodeId);
+            return this;
+        }
+
+        public TestCluster start()
+        {
+            final TestCluster testCluster = new TestCluster(
+                nodeCount,
+                dynamicNodeCount,
+                appointedLeaderId,
+                invalidInitialResolutions);
+
+            for (int i = 0; i < testCluster.staticMemberCount; i++)
+            {
+                testCluster.startStaticNode(i, true);
+            }
+
+            return testCluster;
+        }
     }
 }

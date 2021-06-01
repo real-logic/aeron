@@ -280,6 +280,35 @@ public class ClusterTest
 
     @Test
     @Timeout(40)
+    public void shouldHandleClusterStartWhenANameIsNotResolvable(final TestInfo testInfo)
+    {
+        final int initiallyUnresolvableNodeId = 1;
+
+        cluster = aCluster().withStaticNodes(3).withInvalidNameResolution(initiallyUnresolvableNodeId).start();
+        try
+        {
+            cluster.awaitLeader();
+            cluster.connectClient();
+
+            final int expectedCount = 10;
+
+            cluster.sendMessages(expectedCount);
+            cluster.awaitResponseMessageCount(expectedCount);
+            cluster.awaitServicesMessageCount(expectedCount);
+
+            cluster.restoreNameResolution(initiallyUnresolvableNodeId);
+            assertNotNull(cluster.startStaticNode(initiallyUnresolvableNodeId, false));
+
+            cluster.awaitServiceMessageCount(cluster.node(initiallyUnresolvableNodeId), expectedCount);
+        }
+        catch (final Throwable ex)
+        {
+            cluster.dumpData(testInfo, ex);
+        }
+    }
+
+    @Test
+    @Timeout(40)
     public void shouldEchoMessagesThenContinueOnNewLeader(final TestInfo testInfo)
     {
         cluster = startThreeNodeStaticCluster(NULL_VALUE);

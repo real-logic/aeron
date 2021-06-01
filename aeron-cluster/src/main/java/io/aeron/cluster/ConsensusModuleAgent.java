@@ -284,7 +284,12 @@ final class ConsensusModuleAgent implements Agent
             }
 
             ClusterMember.addConsensusPublications(
-                activeMembers, thisMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
+                activeMembers,
+                thisMember,
+                ctx.consensusChannel(),
+                ctx.consensusStreamId(),
+                aeron,
+                ctx.countedErrorHandler());
 
             election = new Election(
                 true,
@@ -497,6 +502,12 @@ final class ConsensusModuleAgent implements Agent
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && logLeadershipTermId <= this.leadershipTermId)
             {
+                if (null == follower.publication())
+                {
+                    ClusterMember.addConsensusPublication(
+                        follower, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
+                }
+
                 final RecordingLog.Entry currentTermEntry = recordingLog.getTermEntry(this.leadershipTermId);
                 final long termBaseLogPosition = currentTermEntry.termBaseLogPosition;
                 final long timestamp = ctx.clusterClock().timeNanos();
@@ -702,7 +713,7 @@ final class ConsensusModuleAgent implements Agent
                     clusterMemberByIdMap.put(newMember.id(), newMember);
 
                     ClusterMember.addConsensusPublication(
-                        newMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
+                        newMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
                     logPublisher.addDestination(ctx.isLogMdc(), newMember.logEndpoint());
                 }
             }
@@ -759,7 +770,7 @@ final class ConsensusModuleAgent implements Agent
                 if (null == member.publication())
                 {
                     ClusterMember.addConsensusPublication(
-                        member, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
+                        member, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
                     logPublisher.addDestination(ctx.isLogMdc(), member.logEndpoint());
                 }
 
@@ -1222,7 +1233,8 @@ final class ConsensusModuleAgent implements Agent
                         thisMember,
                         ctx.consensusChannel(),
                         ctx.consensusStreamId(),
-                        aeron);
+                        aeron,
+                        ctx.countedErrorHandler());
                 }
                 else
                 {
@@ -1312,7 +1324,12 @@ final class ConsensusModuleAgent implements Agent
                 thisMember = clusterMemberByIdMap.get(memberId);
 
                 ClusterMember.addConsensusPublications(
-                    activeMembers, thisMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
+                    activeMembers,
+                    thisMember,
+                    ctx.consensusChannel(),
+                    ctx.consensusStreamId(),
+                    aeron,
+                    ctx.countedErrorHandler());
             }
         }
     }
@@ -1616,7 +1633,12 @@ final class ConsensusModuleAgent implements Agent
             leaderMember = dynamicJoin.leader();
 
             ClusterMember.addConsensusPublications(
-                activeMembers, thisMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
+                activeMembers,
+                thisMember,
+                ctx.consensusChannel(),
+                ctx.consensusStreamId(),
+                aeron,
+                ctx.countedErrorHandler());
         }
 
         if (NULL_VALUE == memberId)
@@ -2906,7 +2928,7 @@ final class ConsensusModuleAgent implements Agent
             if (null == eventMember.publication())
             {
                 ClusterMember.addConsensusPublication(
-                    eventMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron);
+                    eventMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
             }
 
             activeMembers = ClusterMember.addMember(activeMembers, eventMember);

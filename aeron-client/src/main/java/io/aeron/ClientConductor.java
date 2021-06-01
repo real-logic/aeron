@@ -1235,8 +1235,8 @@ final class ClientConductor implements Agent
                 forceCloseResources();
 
                 throw new DriverTimeoutException(
-                    "MediaDriver keepalive age exceeded (ms): timeout= " +
-                     driverTimeoutMs + ", age=" + (nowMs - lastKeepAliveMs));
+                    "MediaDriver keepalive age (ms) exceeded: age=" +
+                    (nowMs - lastKeepAliveMs) + " > timeout=" + driverTimeoutMs);
             }
 
             if (null == heartbeatTimestamp)

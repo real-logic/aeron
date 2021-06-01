@@ -69,7 +69,7 @@ public final class ClusterMember
      * @param logEndpoint       address and port endpoint to which the log is replicated.
      * @param catchupEndpoint   address and port endpoint to which a stream is replayed to catchup to the leader.
      * @param archiveEndpoint   address and port endpoint to which the archive control channel can be reached.
-     * @param endpoints   comma separated list of endpoints.
+     * @param endpoints         comma separated list of endpoints.
      */
     public ClusterMember(
         final int id,
@@ -683,12 +683,13 @@ public final class ClusterMember
 
     /**
      * Add the publications for sending consensus messages to the other members of the cluster.
-     *  @param members  of the cluster.
-     * @param exclude  this member when adding publications.
-     * @param channel  for the publications.
-     * @param streamId for the publications.
-     * @param aeron    to add the publications to.
-     * @param errorHandler
+     *
+     * @param members     of the cluster.
+     * @param exclude      this member when adding publications.
+     * @param channel      for the publications.
+     * @param streamId     for the publications.
+     * @param aeron        to add the publications to.
+     * @param errorHandler to log registration exceptions to.
      */
     public static void addConsensusPublications(
         final ClusterMember[] members,
@@ -712,11 +713,12 @@ public final class ClusterMember
 
     /**
      * Add an exclusive {@link Publication} for communicating to a member on the consensus channel.
-     *  @param member   to which the publication is addressed.
-     * @param channel  for the target member.
-     * @param streamId for the target member.
-     * @param aeron    from which the publication will be created.
-     * @param errorHandler
+     *
+     * @param member       to which the publication is addressed.
+     * @param channel      for the target member.
+     * @param streamId     for the target member.
+     * @param aeron        from which the publication will be created.
+     * @param errorHandler to log registration exceptions to.
      */
     public static void addConsensusPublication(
         final ClusterMember member,
@@ -1315,7 +1317,7 @@ public final class ClusterMember
         catch (final RegistrationException ex)
         {
             errorHandler.onError(new ClusterException(
-                "Failed to register consensus publication for member: " + member.id + " - " + ex.getMessage(),
+                "failed to add consensus publication for member: " + member.id + " - " + ex.getMessage(),
                 AeronException.Category.WARN));
         }
     }

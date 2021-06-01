@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,7 +47,7 @@ public class ClusterBackupTest
     @Timeout(30)
     public void shouldBackupClusterNoSnapshotsAndEmptyLog()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             cluster.awaitLeader();
             cluster.startClusterBackupNode(true);
@@ -68,7 +68,7 @@ public class ClusterBackupTest
     @Timeout(30)
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLog()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -98,7 +98,7 @@ public class ClusterBackupTest
     @Timeout(30)
     public void shouldBackupClusterNoSnapshotsAndThenSendMessages()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
             cluster.startClusterBackupNode(true);
@@ -128,7 +128,7 @@ public class ClusterBackupTest
     @Timeout(30)
     public void shouldBackupClusterWithSnapshot()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -161,7 +161,7 @@ public class ClusterBackupTest
     @Timeout(30)
     public void shouldBackupClusterAfterCleanShutdown()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -198,7 +198,7 @@ public class ClusterBackupTest
     @Timeout(30)
     public void shouldBackupClusterWithSnapshotAndNonEmptyLog()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -238,7 +238,7 @@ public class ClusterBackupTest
     @Timeout(30)
     public void shouldBackupClusterWithSnapshotThenSend()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -278,7 +278,7 @@ public class ClusterBackupTest
     @Timeout(30)
     public void shouldBeAbleToGetTimeOfNextBackupQuery()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             cluster.awaitLeader();
             final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
@@ -294,7 +294,7 @@ public class ClusterBackupTest
     @Timeout(30)
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leader = cluster.awaitLeader();
 
@@ -332,7 +332,7 @@ public class ClusterBackupTest
     @Timeout(40)
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leaderOne = cluster.awaitLeader();
 
@@ -364,7 +364,7 @@ public class ClusterBackupTest
     @Timeout(60)
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
         {
             final TestNode leaderOne = cluster.awaitLeader();
 

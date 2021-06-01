@@ -105,7 +105,7 @@ public class MultiClusteredServicesTest
             .threadingMode(ThreadingMode.SHARED)
             .dirDeleteOnStart(true)
             .aeronDirectoryName(aeronDirName)
-            .nameResolver(new RedirectingNameResolver(TestCluster.NAME_NODE_MAPPINGS)));
+            .nameResolver(new RedirectingNameResolver(TestCluster.DEFAULT_NODE_MAPPINGS)));
 
         final AeronCluster client = AeronCluster.connect(new AeronCluster.Context()
             .aeronDirectoryName(aeronDirName)

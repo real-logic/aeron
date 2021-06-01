@@ -27,6 +27,8 @@ import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -70,10 +72,9 @@ public class ClusterTests
         return
             (ex) ->
             {
-                if (ex instanceof AeronException && ((AeronException)ex).category() == AeronException.Category.WARN)
+                if (ex instanceof AeronException && ((AeronException)ex).category() == AeronException.Category.WARN ||
+                    shouldDownScaleToWarning(ex))
                 {
-                    //System.err.println("\n *** Warning in member " + memberId + " \n");
-                    //ex.printStackTrace();
                     addWarning(ex);
                     return;
                 }
@@ -85,10 +86,19 @@ public class ClusterTests
 
                 addError(ex);
 
-                System.err.println("\n*** Error in member " + memberId + " ***\n\n");
-                ex.printStackTrace();
+                printMessageAndStackTrace("\n*** Error in member " + memberId + " ***\n\n", ex);
+
                 printWarning();
             };
+    }
+
+    private static void printMessageAndStackTrace(final String message, final Throwable ex)
+    {
+        final StringWriter out = new StringWriter();
+        final PrintWriter writer = new PrintWriter(out);
+        writer.println(message);
+        ex.printStackTrace(writer);
+        System.err.println(out);
     }
 
     public static void addError(final Throwable ex)
@@ -122,17 +132,23 @@ public class ClusterTests
         final Throwable warning = WARNING.get();
         if (null != warning)
         {
-            System.err.println("\n*** Warning captured ***");
+            printMessageAndStackTrace("\n*** Warning captured ***", warning);
             warning.printStackTrace();
         }
     }
 
     public static void failOnClusterError()
     {
-        final Throwable error = ERROR.getAndSet(null);
-        final Throwable warning = WARNING.getAndSet(null);
+        Throwable error = ERROR.getAndSet(null);
+        Throwable warning = WARNING.getAndSet(null);
 
-        if (null != error && !(error instanceof UnknownHostException))
+        if (null != error && shouldDownScaleToWarning(error))
+        {
+            warning = error;
+            error = null;
+        }
+
+        if (null != error)
         {
             if (null != warning)
             {
@@ -148,6 +164,23 @@ public class ClusterTests
             System.err.println("\n*** Warning captured with interrupt ***");
             warning.printStackTrace();
         }
+    }
+
+    private static boolean shouldDownScaleToWarning(final Throwable error)
+    {
+        Throwable maybeWarning = error;
+        do
+        {
+            if (null == error || maybeWarning instanceof UnknownHostException)
+            {
+                return true;
+            }
+
+            maybeWarning = error.getCause();
+        }
+        while (null != maybeWarning);
+
+        return false;
     }
 
     public static Thread startPublisherThread(

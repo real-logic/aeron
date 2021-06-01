@@ -21,6 +21,7 @@ import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,7 +33,7 @@ public class AppointedLeaderTest
     @Timeout(20)
     public void shouldConnectAndSendKeepAlive()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start())
         {
             final TestNode leader = cluster.awaitLeader();
             assertEquals(LEADER_ID, leader.index());
@@ -47,7 +48,7 @@ public class AppointedLeaderTest
     @Timeout(20)
     public void shouldEchoMessagesViaService()
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
+        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start())
         {
             final TestNode leader = cluster.awaitLeader();
             assertEquals(LEADER_ID, leader.index());

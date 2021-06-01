@@ -52,7 +52,7 @@ public class MultiModuleSharedDriverTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
             .errorHandler(Tests::onError)
-            .nameResolver(new RedirectingNameResolver(TestCluster.NAME_NODE_MAPPINGS))
+            .nameResolver(new RedirectingNameResolver(TestCluster.DEFAULT_NODE_MAPPINGS))
             .dirDeleteOnStart(true);
 
         final Archive.Context archiveCtx = new Archive.Context()
@@ -240,7 +240,7 @@ public class MultiModuleSharedDriverTest
                 .aeronDirectoryName(CommonContext.getAeronDirectoryName() + "-" + nodeId)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Tests::onError)
-                .nameResolver(new RedirectingNameResolver(TestCluster.NAME_NODE_MAPPINGS))
+                .nameResolver(new RedirectingNameResolver(TestCluster.DEFAULT_NODE_MAPPINGS))
                 .dirDeleteOnStart(true);
 
             final Archive.Context archiveCtx = new Archive.Context()

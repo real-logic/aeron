@@ -388,9 +388,9 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
             conductor->is_terminating = true;
             aeron_client_conductor_force_close_resources(conductor);
             snprintf(buffer, sizeof(buffer) - 1,
-                "MediaDriver keepalive age exceeded (ms): timeout=%" PRId64 ", age=%" PRId64,
-                (int64_t)conductor->driver_timeout_ms,
-                (int64_t)(now_ms - last_keepalive_ms));
+                "MediaDriver keepalive (ms): age=%" PRId64 " > timeout=%" PRId64,
+                (int64_t)(now_ms - last_keepalive_ms),
+                (int64_t)conductor->driver_timeout_ms);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_DRIVER_TIMEOUT, buffer);
             return -1;
         }

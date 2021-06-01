@@ -450,8 +450,10 @@ private:
             {
                 m_driverActive = false;
 
+                int64_t age = m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs;
                 DriverTimeoutException exception(
-                    "driver has been inactive for over " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
+                    "MediaDriver keepalive (ms): age=" + std::to_string(age) +
+                    " > timeout=" + std::to_string(m_driverTimeoutMs), SOURCEINFO);
                 m_errorHandler(exception);
             }
 

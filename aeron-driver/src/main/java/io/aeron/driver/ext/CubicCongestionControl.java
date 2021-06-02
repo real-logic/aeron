@@ -254,6 +254,12 @@ public class CubicCongestionControl implements CongestionControl
 
             lastUpdateTimestampNs = nowNs;
         }
+        else if (1 == cwnd && newConsumptionPosition > lastSmPosition)
+        {
+            // force out an SM (and update of nextSmPosition) whenever the consumption position moves when
+            // window is at minimum.
+            forceStatusMessage = true;
+        }
 
         return packOutcome(windowLength, forceStatusMessage);
     }

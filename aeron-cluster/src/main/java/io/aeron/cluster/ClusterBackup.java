@@ -461,6 +461,7 @@ public final class ClusterBackup implements AutoCloseable
         private Counter nextQueryDeadlineMsCounter;
 
         private AeronArchive.Context archiveContext;
+        private AeronArchive.Context clusterArchiveContext;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
         private ClusterBackupEventsListener eventsListener;
@@ -616,6 +617,26 @@ public final class ClusterBackup implements AutoCloseable
             archiveContext
                 .aeron(aeron)
                 .errorHandler(errorHandler)
+                .ownsAeronClient(false)
+                .lock(NoOpLock.INSTANCE);
+
+            if (!archiveContext.controlRequestChannel().startsWith(CommonContext.IPC_CHANNEL))
+            {
+                throw new ClusterException("local archive control must be IPC");
+            }
+
+            if (!archiveContext.controlResponseChannel().startsWith(CommonContext.IPC_CHANNEL))
+            {
+                throw new ClusterException("local archive control must be IPC");
+            }
+
+            if (null == clusterArchiveContext)
+            {
+                clusterArchiveContext = new AeronArchive.Context();
+            }
+
+            clusterArchiveContext
+                .aeron(aeron)
                 .ownsAeronClient(false)
                 .lock(NoOpLock.INSTANCE);
 
@@ -800,10 +821,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating with the
-         * local Archive.
+         * Set the {@link io.aeron.archive.client.AeronArchive.Context} used for communicating with the local Archive.
          *
-         * @param archiveContext that should be used for communicating with the local Archive.
+         * @param archiveContext used for communicating with the local Archive.
          * @return this for a fluent API.
          */
         public Context archiveContext(final AeronArchive.Context archiveContext)
@@ -813,15 +833,39 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Get the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating with
-         * the local Archive.
+         * Get the {@link io.aeron.archive.client.AeronArchive.Context} used for communicating with the local Archive.
          *
-         * @return the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating
-         * with the local Archive.
+         * @return the {@link io.aeron.archive.client.AeronArchive.Context} used for communicating with the local
+         * Archive.
          */
         public AeronArchive.Context archiveContext()
         {
             return archiveContext;
+        }
+
+        /**
+         * Set the {@link io.aeron.archive.client.AeronArchive.Context} used for communicating with the remote Archive
+         * in the cluster being backed up.
+         *
+         * @param archiveContext used for communicating with the remote Archive in the cluster being backed up.
+         * @return this for a fluent API.
+         */
+        public Context clusterArchiveContext(final AeronArchive.Context archiveContext)
+        {
+            this.clusterArchiveContext = archiveContext;
+            return this;
+        }
+
+        /**
+         * Get the {@link io.aeron.archive.client.AeronArchive.Context} used for communicating with the remote Archive
+         * in the cluster being backed up.
+         *
+         * @return the {@link io.aeron.archive.client.AeronArchive.Context} used for communicating the remote Archive
+         * in the cluster being backed up.
+         */
+        public AeronArchive.Context clusterArchiveContext()
+        {
+            return clusterArchiveContext;
         }
 
         /**

@@ -494,7 +494,6 @@ public class TestCluster implements AutoCloseable
             .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
             .catchupEndpoint(hostname(index) + ":0")
             .clusterDir(new File(baseDirName, "cluster-backup"))
-            .archiveContext(context.aeronArchiveContext.clone())
             .deleteDirOnStart(cleanStart);
 
         backupNode = new TestBackupNode(context);

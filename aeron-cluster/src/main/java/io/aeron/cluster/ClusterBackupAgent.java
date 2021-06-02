@@ -463,17 +463,13 @@ public final class ClusterBackupAgent implements Agent
             {
                 CloseHelper.close(clusterArchiveAsyncConnect);
 
-                final ChannelUri leaderArchiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
+                final AeronArchive.Context clusterArchiveContext = ctx.clusterArchiveContext().clone();
+                final ChannelUri leaderArchiveUri = ChannelUri.parse(clusterArchiveContext.controlRequestChannel());
+
                 leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
+                clusterArchiveContext.controlRequestChannel(leaderArchiveUri.toString());
 
-                final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
-                    .aeron(ctx.aeron())
-                    .controlRequestChannel(leaderArchiveUri.toString())
-                    .controlRequestStreamId(ctx.archiveContext().controlRequestStreamId())
-                    .controlResponseChannel(ctx.archiveContext().controlResponseChannel())
-                    .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
-
-                clusterArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
+                clusterArchiveAsyncConnect = AeronArchive.asyncConnect(clusterArchiveContext);
             }
 
             final long nowMs = epochClock.time();
@@ -500,7 +496,12 @@ public final class ClusterBackupAgent implements Agent
 
         if (NULL_VALUE == correlationId && null != clusterArchive)
         {
-            clusterArchive.checkForErrorResponse();
+            final String errorResponse = clusterArchive.pollForErrorResponse();
+            if (null != errorResponse)
+            {
+                ctx.countedErrorHandler().onError(new ClusterException("cluster archive - " + errorResponse, WARN));
+                state(RESET_BACKUP, nowMs);
+            }
         }
 
         return workCount;

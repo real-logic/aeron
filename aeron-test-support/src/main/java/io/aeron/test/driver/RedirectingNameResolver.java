@@ -26,6 +26,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.net.InetAddress;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.aeron.Aeron.NULL_VALUE;
 
@@ -36,6 +37,7 @@ public class RedirectingNameResolver implements NameResolver
     public static final int USE_RE_RESOLUTION_HOST = 1;
     public static final int NAME_ENTRY_COUNTER_TYPE_ID = 2001;
     public static final int EXPECTED_COLUMN_COUNT = 3;
+    private static final String INVALID_HOSTNAME_SENTINAL = "forced-resolve-failure.invalid";
 
     private final Map<String, NameEntry> nameToEntryMap = new Object2ObjectHashMap<>();
     private final String csvConfiguration;
@@ -75,7 +77,16 @@ public class RedirectingNameResolver implements NameResolver
     {
         final NameEntry nameEntry = nameToEntryMap.get(name);
         final String hostname = null != nameEntry ? nameEntry.redirectHost(name) : name;
-        return hostname != null ? DefaultNameResolver.INSTANCE.resolve(hostname, uriParamName, isReResolution) : null;
+
+        InetAddress resolvedAddress = null;
+        if (!Objects.equals(INVALID_HOSTNAME_SENTINAL, hostname))
+        {
+            resolvedAddress = DefaultNameResolver.INSTANCE.resolve(hostname, uriParamName, isReResolution);
+        }
+
+        DefaultNameResolver.INSTANCE.resolveHook(this.getClass().getSimpleName(), hostname, resolvedAddress);
+
+        return resolvedAddress;
     }
 
     public String csvConfiguration()
@@ -137,7 +148,7 @@ public class RedirectingNameResolver implements NameResolver
             final long operation = counter.get();
             if (DISABLE_RESOLUTION == operation)
             {
-                return null;
+                return INVALID_HOSTNAME_SENTINAL;
             }
             else if (USE_INITIAL_RESOLUTION_HOST == operation)
             {

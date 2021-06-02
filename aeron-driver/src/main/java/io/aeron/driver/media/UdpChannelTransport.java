@@ -395,7 +395,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Receive packet hook that can be usef for logging.
+     * Receive packet hook that can be useful for logging.
      *
      * @param buffer  containing the packet.
      * @param length  length of the packet in bytes.

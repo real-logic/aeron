@@ -183,6 +183,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
             entry = cache.lookup(name, RES_TYPE_NAME_TO_IP4_MD);
         }
 
+        InetAddress resolvedAddress = null;
         try
         {
             if (null == entry)
@@ -195,12 +196,15 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
                 return delegateResolver.resolve(name, uriParamName, isReResolution);
             }
 
-            return InetAddress.getByAddress(entry.address);
+            resolvedAddress = InetAddress.getByAddress(entry.address);
         }
         catch (final UnknownHostException ignore)
         {
-            return null;
         }
+
+        DefaultNameResolver.INSTANCE.resolveHook(this.getClass().getSimpleName(), name, resolvedAddress);
+
+        return resolvedAddress;
     }
 
     /**

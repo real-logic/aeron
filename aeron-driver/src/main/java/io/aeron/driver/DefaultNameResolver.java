@@ -33,13 +33,28 @@ public class DefaultNameResolver implements NameResolver
      */
     public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
     {
+        InetAddress resolvedAddress = null;
         try
         {
-            return InetAddress.getByName(name);
+            resolvedAddress = InetAddress.getByName(name);
         }
-        catch (final UnknownHostException ex)
+        catch (final UnknownHostException ignore)
         {
-            return null;
         }
+
+        resolveHook(this.getClass().getSimpleName(), name, resolvedAddress);
+
+        return resolvedAddress;
+    }
+
+    /**
+     * Name resolution hook, useful for logging.
+     *
+     * @param resolverName      used to handle the resolution.
+     * @param hostname          that was resolved.
+     * @param resolvedAddress   the resulting address or null if it can't be resolved.
+     */
+    public void resolveHook(final String resolverName, final String hostname, final InetAddress resolvedAddress)
+    {
     }
 }

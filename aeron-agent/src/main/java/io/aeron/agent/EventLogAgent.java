@@ -343,9 +343,9 @@ public final class EventLogAgent
             tempBuilder,
             DRIVER_EVENT_CODES,
             DriverEventCode.NAME_RESOLUTION_RESOLVE,
-            "NameResolver",
+            "DefaultNameResolver",
             DriverInterceptor.NameResolution.Resolve.class,
-            "resolve");
+            "resolveHook");
 
         return tempBuilder;
     }

@@ -57,8 +57,9 @@ class DriverInterceptor
 
         static class Resolve
         {
-            @Advice.OnMethodExit
-            static void resolve(
+            @Advice.OnMethodEnter
+            static void resolveHook(
+                final String resolverName,
                 final String name,
                 final String uriParamName,
                 final boolean isReResolution,

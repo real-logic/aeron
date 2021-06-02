@@ -61,11 +61,9 @@ class DriverInterceptor
             static void resolveHook(
                 final String resolverName,
                 final String name,
-                final String uriParamName,
-                final boolean isReResolution,
-                @Advice.Return final InetAddress address)
+                final InetAddress address)
             {
-                LOGGER.logResolve(DriverEventCode.NAME_RESOLUTION_RESOLVE, name, address);
+                LOGGER.logResolve(DriverEventCode.NAME_RESOLUTION_RESOLVE, resolverName, name, address);
             }
         }
     }

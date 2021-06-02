@@ -250,10 +250,13 @@ final class DriverEventEncoder
         final int offset,
         final int length,
         final int captureLength,
+        final String resolverName,
         final String hostName,
         final InetAddress inetAddress)
     {
         int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        relativeOffset += encodeTrailingString(
+            encodingBuffer, offset + relativeOffset, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, resolverName);
         relativeOffset += encodeTrailingString(
             encodingBuffer, offset + relativeOffset, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, hostName);
         encodeInetAddress(encodingBuffer, offset + relativeOffset, inetAddress);

@@ -73,7 +73,7 @@ public class TestCluster implements AutoCloseable
     // private static final String LOG_CHANNEL =
     //     "aeron:udp?term-length=512k|endpoint=224.20.30.39:24326|interface=localhost";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8010";
-    private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8020";
+    private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
     private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";

@@ -21,7 +21,6 @@ import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.exceptions.AeronException;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.LangUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;

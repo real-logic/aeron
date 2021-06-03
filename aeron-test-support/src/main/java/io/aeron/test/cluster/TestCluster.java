@@ -52,6 +52,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -781,9 +782,13 @@ public class TestCluster implements AutoCloseable
 
     public void awaitActiveSessionCount(final TestNode node, final int count)
     {
+        final Supplier<String> message =
+            () -> "node " + node + " fail to reach active session count, expected=" + count + ", current=" +
+            node.service().activeSessionCount();
+
         while (node.service().activeSessionCount() != count)
         {
-            await(1);
+            await(1, message);
         }
     }
 

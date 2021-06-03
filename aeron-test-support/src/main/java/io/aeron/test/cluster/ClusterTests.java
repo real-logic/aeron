@@ -156,7 +156,7 @@ public class ClusterTests
                 warning.printStackTrace();
             }
 
-            LangUtil.rethrowUnchecked(error);
+            throw new RuntimeException("Cluster node received error", error);
         }
 
         if (Thread.currentThread().isInterrupted() && null != warning)

@@ -162,12 +162,12 @@ public final class DriverConductor implements Agent
             nameResolver = driverNameResolver;
         }
 
-        ctx.systemCounters().get(RESOLUTION_CHANGES)
-            .appendToLabel(": driverName=").appendToLabel(ctx.resolverName())
-            .appendToLabel(" hostname=").appendToLabel(DriverNameResolver.getCanonicalName("<unresolved>"));
+        ctx.systemCounters().get(RESOLUTION_CHANGES).appendToLabel(
+            ": driverName=" + ctx.resolverName() +
+            " hostname=" + DriverNameResolver.getCanonicalName("<unresolved>"));
 
-        ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED)
-            .appendToLabel(": threshold=" + ctx.conductorCycleThresholdNs() + "ns");
+        ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED).appendToLabel(
+            ": threshold=" + ctx.conductorCycleThresholdNs() + "ns");
 
         nameResolver.init(ctx);
 

@@ -122,9 +122,10 @@ public final class PublicationImage
 
     private long lastSmChangeNumber = Aeron.NULL_VALUE;
     private long lastSmPosition;
-    private long lastSmWindowLimit;
+    private long lastOverrunStart;
     private long timeOfLastSmNs;
     private final long smTimeoutNs;
+    private final long maxReceiverWindowLength;
 
     private volatile long beginLossChange = Aeron.NULL_VALUE;
     private volatile long endLossChange = Aeron.NULL_VALUE;
@@ -238,8 +239,9 @@ public final class PublicationImage
         nextSmPosition = position;
         nextSmReceiverWindowLength = congestionControl.initialWindowLength();
         lastSmPosition = position;
-        lastSmWindowLimit = position + nextSmReceiverWindowLength;
+        lastOverrunStart = position + nextSmReceiverWindowLength;
         cleanPosition = position;
+        maxReceiverWindowLength = Math.min(termLength >> 1, ctx.initialWindowLength());
 
         hwmPosition.setOrdered(position);
         rebuildPosition.setOrdered(position);
@@ -635,7 +637,7 @@ public final class PublicationImage
                 statusMessagesSent.incrementOrdered();
 
                 lastSmPosition = smPosition;
-                lastSmWindowLimit = smPosition + receiverWindowLength;
+                lastOverrunStart = smPosition + maxReceiverWindowLength;
                 lastSmChangeNumber = changeNumber;
                 timeOfLastSmNs = nowNs;
 
@@ -821,7 +823,7 @@ public final class PublicationImage
 
     private boolean isFlowControlOverRun(final long proposedPosition)
     {
-        final boolean isFlowControlOverRun = proposedPosition > lastSmWindowLimit;
+        final boolean isFlowControlOverRun = proposedPosition > lastOverrunStart;
 
         if (isFlowControlOverRun)
         {

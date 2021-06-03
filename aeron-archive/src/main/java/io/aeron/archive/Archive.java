@@ -2330,8 +2330,9 @@ public final class Archive implements AutoCloseable
          */
         public String toString()
         {
-            return "Archive.Context{" +
-                "\n    isConcluded=" + isConcluded +
+            return "Archive.Context" +
+                "\n{" +
+                "\n    isConcluded=" + (1 == isConcluded) +
                 "\n    deleteArchiveOnStart=" + deleteArchiveOnStart +
                 "\n    ownsAeronClient=" + ownsAeronClient +
                 "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +

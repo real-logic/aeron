@@ -3525,7 +3525,9 @@ public final class MediaDriver implements AutoCloseable
         @SuppressWarnings("MethodLength")
         public String toString()
         {
-            return "MediaDriver.Context{" +
+            return "MediaDriver.Context" +
+                "\n{" +
+                "\n    isConcluded=" + isConcluded() +
                 "\n    isClosed=" + isClosed +
                 "\n    cncVersion=" + SemanticVersion.toString(CNC_VERSION) +
                 "\n    aeronDirectoryName=" + aeronDirectoryName() +

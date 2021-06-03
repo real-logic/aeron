@@ -1578,8 +1578,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public String toString()
         {
-            return "ClusteredServiceContainer.Context{" +
-                "\n    isConcluded=" + isConcluded +
+            return "ClusteredServiceContainer.Context" +
+                "\n{" +
+                "\n    isConcluded=" + (1 == isConcluded) +
                 "\n    appVersion=" + appVersion +
                 "\n    clusterId=" + clusterId +
                 "\n    serviceId=" + serviceId +

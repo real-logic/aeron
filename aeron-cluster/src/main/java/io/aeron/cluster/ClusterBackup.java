@@ -1556,6 +1556,54 @@ public final class ClusterBackup implements AutoCloseable
             CloseHelper.close(countedErrorHandler, markFile);
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        public String toString()
+        {
+            return "ClusterBackup.Context" +
+                "\n{" +
+                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    ownsAeronClient=" + ownsAeronClient +
+                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
+                "\n    aeron=" + aeron +
+                "\n    clusterId=" + clusterId +
+                "\n    consensusChannel='" + consensusChannel + '\'' +
+                "\n    consensusStreamId=" + consensusStreamId +
+                "\n    consensusModuleSnapshotStreamId=" + consensusModuleSnapshotStreamId +
+                "\n    serviceSnapshotStreamId=" + serviceSnapshotStreamId +
+                "\n    logStreamId=" + logStreamId +
+                "\n    catchupEndpoint='" + catchupEndpoint + '\'' +
+                "\n    catchupChannel='" + catchupChannel + '\'' +
+                "\n    clusterBackupIntervalNs=" + clusterBackupIntervalNs +
+                "\n    clusterBackupResponseTimeoutNs=" + clusterBackupResponseTimeoutNs +
+                "\n    clusterBackupProgressTimeoutNs=" + clusterBackupProgressTimeoutNs +
+                "\n    clusterBackupCoolDownIntervalNs=" + clusterBackupCoolDownIntervalNs +
+                "\n    errorBufferLength=" + errorBufferLength +
+                "\n    deleteDirOnStart=" + deleteDirOnStart +
+                "\n    useAgentInvoker=" + useAgentInvoker +
+                "\n    clusterDirectoryName='" + clusterDirectoryName + '\'' +
+                "\n    clusterDir=" + clusterDir +
+                "\n    markFile=" + markFile +
+                "\n    clusterConsensusEndpoints='" + clusterConsensusEndpoints + '\'' +
+                "\n    threadFactory=" + threadFactory +
+                "\n    epochClock=" + epochClock +
+                "\n    idleStrategySupplier=" + idleStrategySupplier +
+                "\n    errorLog=" + errorLog +
+                "\n    errorHandler=" + errorHandler +
+                "\n    errorCounter=" + errorCounter +
+                "\n    countedErrorHandler=" + countedErrorHandler +
+                "\n    stateCounter=" + stateCounter +
+                "\n    liveLogPositionCounter=" + liveLogPositionCounter +
+                "\n    nextQueryDeadlineMsCounter=" + nextQueryDeadlineMsCounter +
+                "\n    archiveContext=" + archiveContext +
+                "\n    clusterArchiveContext=" + clusterArchiveContext +
+                "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
+                "\n    terminationHook=" + terminationHook +
+                "\n    eventsListener=" + eventsListener +
+                '}';
+        }
+
         private void concludeMarkFile()
         {
             ClusterMarkFile.checkHeaderLength(

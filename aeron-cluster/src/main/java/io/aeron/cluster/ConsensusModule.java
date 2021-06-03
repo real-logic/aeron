@@ -3051,8 +3051,9 @@ public final class ConsensusModule implements AutoCloseable
          */
         public String toString()
         {
-            return "ConsensusModule.Context{" +
-                "\n    isConcluded=" + isConcluded +
+            return "ConsensusModule.Context" +
+                "\n{" +
+                "\n    isConcluded=" + (1 == isConcluded) +
                 "\n    ownsAeronClient=" + ownsAeronClient +
                 "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
                 "\n    aeron=" + aeron +

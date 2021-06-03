@@ -421,6 +421,16 @@ public class CommonContext implements Cloneable
     }
 
     /**
+     * Has the context had the {@link #conclude()} method called.
+     *
+     * @return true of the {@link #conclude()} method has been called.
+     */
+    public boolean isConcluded()
+    {
+        return 1 == isConcluded;
+    }
+
+    /**
      * Conclude the {@link #aeronDirectory()} so it does not need to keep being recreated.
      *
      * @return this for a fluent API.

@@ -586,7 +586,7 @@ public final class PublicationImage
 
                 hwmPosition.proposeMaxOrdered(proposedPosition);
             }
-            else if (packetPosition >= (lastSmPosition - nextSmReceiverWindowLength))
+            else if (packetPosition >= (lastSmPosition - maxReceiverWindowLength))
             {
                 trackConnection(transportIndex, srcAddress, cachedNanoClock.nanoTime());
             }

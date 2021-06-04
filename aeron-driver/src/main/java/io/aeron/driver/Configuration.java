@@ -1114,6 +1114,18 @@ public final class Configuration
     }
 
     /**
+     * Length to be used for the receiver window taking into account initial window length and term buffer length.
+     *
+     * @param termBufferLength    for the publication image.
+     * @param initialWindowLength set for the channel.
+     * @return the length to be used for the receiver window.
+     */
+    public static int receiverWindowLength(final int termBufferLength, final int initialWindowLength)
+    {
+        return Math.min(initialWindowLength, termBufferLength >> 1);
+    }
+
+    /**
      * Length (in bytes) of the log buffers for UDP publication terms.
      *
      * @return length (in bytes) of the log buffers for UDP publication terms.

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.ext;
 
+import io.aeron.driver.Configuration;
 import io.aeron.driver.CongestionControl;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
@@ -118,7 +119,7 @@ public class CubicCongestionControl implements CongestionControl
 
             final int initialWindowLength = 0 != udpChannel.receiverWindowLength() ?
                 udpChannel.receiverWindowLength() : context.initialWindowLength();
-            final int maxWindow = Math.min(termLength >> 1, initialWindowLength);
+            final int maxWindow = Configuration.receiverWindowLength(termLength, initialWindowLength);
 
             maxCwnd = maxWindow / mtu;
             cwnd = Math.min(INITCWND, maxCwnd);

@@ -140,9 +140,8 @@ int aeron_static_window_congestion_control_strategy_supplier(
     aeron_static_window_congestion_control_strategy_state_t *state = _strategy->state;
     const int32_t initial_window_length = (int32_t)aeron_udp_channel_receiver_window(
         channel, context->initial_window_length);
-    const int32_t max_window_for_term = term_length / 2;
 
-    state->window_length = max_window_for_term < initial_window_length ? max_window_for_term : initial_window_length;
+    state->window_length = (int32_t)aeron_receiver_window_length(initial_window_length, term_length);
 
     *strategy = _strategy;
 
@@ -375,9 +374,7 @@ int aeron_cubic_congestion_control_strategy_supplier(
     state->mtu = sender_mtu_length;
     const int32_t initial_window_length = (int32_t)aeron_udp_channel_receiver_window(
         channel, context->initial_window_length);
-    const int32_t max_window_for_term = term_length / 2;
-    const int32_t max_window = max_window_for_term < initial_window_length ?
-        max_window_for_term : initial_window_length;
+    const int32_t max_window = (int32_t)aeron_receiver_window_length(initial_window_length, term_length);
 
     state->max_cwnd = max_window / sender_mtu_length;
     state->cwnd = state->max_cwnd > AERON_CUBICCONGESTIONCONTROL_INITCWND ?

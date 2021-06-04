@@ -88,7 +88,7 @@ int32_t aeron_config_parse_int32(const char *name, const char *str, int32_t def,
         }
 
         result = value > max ? max : (int32_t)value;
-        result = value < min ? min : (int32_t)result;
+        result = value < min ? min : result;
     }
 
     return result;
@@ -99,9 +99,9 @@ uint32_t aeron_config_parse_uint32(const char *name, const char *str, int32_t de
     return (uint32_t)aeron_config_parse_int32(
         name,
         str,
-        (uint32_t)(def < 0 ? 0 : def),
-        (uint32_t)(min < 0 ? 0 : min),
-        (uint32_t)(max < 0 ? 0 : max));
+        (def < 0 ? 0 : def),
+        (min < 0 ? 0 : min),
+        (max < 0 ? 0 : max));
 }
 
 int64_t aeron_config_parse_int64(const char *name, const char *str, int64_t def, int64_t min, int64_t max)
@@ -120,8 +120,8 @@ int64_t aeron_config_parse_int64(const char *name, const char *str, int64_t def,
             value = def;
         }
 
-        result = value > max ? max : (int64_t)value;
-        result = value < min ? min : (int64_t)result;
+        result = value > max ? max : value;
+        result = value < min ? min : result;
     }
 
     return result;
@@ -1352,6 +1352,8 @@ size_t aeron_cnc_length(aeron_driver_context_t *context)
 extern void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, int32_t cnc_version);
 
 extern size_t aeron_producer_window_length(size_t producer_window_length, size_t term_length);
+
+extern size_t aeron_receiver_window_length(size_t initial_receiver_window_length, size_t term_length);
 
 #define AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(r, a) \
 do \

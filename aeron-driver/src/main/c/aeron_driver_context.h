@@ -302,4 +302,11 @@ inline size_t aeron_producer_window_length(size_t producer_window_length, size_t
     return window_length;
 }
 
+inline size_t aeron_receiver_window_length(size_t initial_receiver_window_length, size_t term_length)
+{
+    size_t term_window_length = term_length / 2;
+
+    return term_window_length < initial_receiver_window_length ? term_window_length : initial_receiver_window_length;
+}
+
 #endif //AERON_DRIVER_CONTEXT_H

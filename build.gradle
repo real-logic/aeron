@@ -48,8 +48,8 @@ def sbeVersion = '1.22.0'
 def checkstyleVersion = '8.39'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.7.2'
-def mockitoVersion = '3.10.0'
-def byteBuddyVersion = '1.11.0'
+def mockitoVersion = '3.11.0'
+def byteBuddyVersion = '1.11.1'
 def hdrHistogramVersion = '2.1.12'
 
 ext {

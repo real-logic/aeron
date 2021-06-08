@@ -63,7 +63,6 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
 import static io.aeron.test.cluster.ClusterTests.errorHandler;
-import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -74,7 +73,7 @@ public class TestCluster implements AutoCloseable
     public static final Predicate<String> CLUSTER_TERMINATION_FILTER =
         s -> s.contains(ClusterTerminationException.class.getName());
     public static final Predicate<String> TEST_CLUSTER_DEFAULT_LOG_FILTER =
-        not(WARNING_FILTER).and(not(CLUSTER_TERMINATION_FILTER));
+        WARNING_FILTER.negate().and(CLUSTER_TERMINATION_FILTER.negate());
 
     private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
     private static final long CATALOG_CAPACITY = 128 * 1024;

@@ -39,7 +39,6 @@ import static io.aeron.test.cluster.ClusterTests.*;
 import static io.aeron.test.cluster.TestCluster.*;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.function.Predicate.not;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -227,7 +226,7 @@ public class ClusterTest
     {
         cluster = aCluster().withStaticNodes(3).start();
         clusterTestWatcher.cluster(cluster);
-        errorLogFilter = errorLogFilter.and(not(UNKNOWN_HOST_FILTER));
+        errorLogFilter = errorLogFilter.and(UNKNOWN_HOST_FILTER.negate());
 
         final TestNode originalLeader = cluster.awaitLeader();
         cluster.connectClient();
@@ -256,7 +255,7 @@ public class ClusterTest
 
         cluster = aCluster().withStaticNodes(3).withInvalidNameResolution(initiallyUnresolvableNodeId).start();
         clusterTestWatcher.cluster(cluster);
-        errorLogFilter = not(UNKNOWN_HOST_FILTER);
+        errorLogFilter = errorLogFilter.and(UNKNOWN_HOST_FILTER.negate());
 
         cluster.awaitLeader();
         cluster.connectClient();
@@ -279,7 +278,7 @@ public class ClusterTest
     {
         cluster = aCluster().withStaticNodes(3).withInvalidNameResolution(0).withInvalidNameResolution(2).start();
         clusterTestWatcher.cluster(cluster);
-        errorLogFilter = errorLogFilter.and(not(UNKNOWN_HOST_FILTER));
+        errorLogFilter = errorLogFilter.and(UNKNOWN_HOST_FILTER.negate());
 
         awaitElectionState(cluster.node(1), ElectionState.CANVASS);
 

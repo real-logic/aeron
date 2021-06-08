@@ -174,33 +174,46 @@ public class ClusterBackupTest
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         clusterTestWatcher.cluster(cluster);
 
+        System.out.println("cluster.awaitLeader()");
         final TestNode leader = cluster.awaitLeader();
 
         final int messageCount = 10;
+        System.out.println("cluster.awaitLeader()");
         cluster.connectClient();
+        System.out.println("cluster.sendMessages(messageCount)");
         cluster.sendMessages(messageCount);
+        System.out.println("cluster.awaitResponseMessageCount(messageCount)");
         cluster.awaitResponseMessageCount(messageCount);
+        System.out.println("cluster.awaitServicesMessageCount(messageCount)");
         cluster.awaitServicesMessageCount(messageCount);
 
         cluster.node(0).isTerminationExpected(true);
         cluster.node(1).isTerminationExpected(true);
         cluster.node(2).isTerminationExpected(true);
 
+        System.out.println("cluster.shutdownCluster(leader)");
         cluster.shutdownCluster(leader);
+        System.out.println("cluster.awaitNodeTerminations()");
         cluster.awaitNodeTerminations();
 
         assertTrue(cluster.node(0).service().wasSnapshotTaken());
         assertTrue(cluster.node(1).service().wasSnapshotTaken());
         assertTrue(cluster.node(2).service().wasSnapshotTaken());
 
+        System.out.println("cluster.stopAllNodes()");
         cluster.stopAllNodes();
+        System.out.println("cluster.restartAllNodes(false)");
         cluster.restartAllNodes(false);
+        System.out.println("cluster.awaitLeader() #2");
         final TestNode newLeader = cluster.awaitLeader();
         final long logPosition = newLeader.service().cluster().logPosition();
 
+        System.out.println("cluster.startClusterBackupNode(true)");
         cluster.startClusterBackupNode(true);
 
+        System.out.println("cluster.awaitBackupState(ClusterBackup.State.BACKING_UP)");
         cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+        System.out.println("cluster.awaitBackupLiveLogPosition(logPosition)");
         cluster.awaitBackupLiveLogPosition(logPosition);
     }
 

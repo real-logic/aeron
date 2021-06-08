@@ -513,7 +513,6 @@ final class ConsensusModuleAgent implements Agent
             {
                 final RecordingLog.Entry currentTermEntry = recordingLog.getTermEntry(this.leadershipTermId);
                 final long termBaseLogPosition = currentTermEntry.termBaseLogPosition;
-                final long timestamp = ctx.clusterClock().timeNanos();
                 final long nextLogLeadershipTermId;
                 final long nextTermBaseLogPosition;
                 final long nextLogPosition;
@@ -534,8 +533,6 @@ final class ConsensusModuleAgent implements Agent
                     nextLogPosition = NULL_POSITION;
                 }
 
-                final long appendPosition = logPublisher.position();
-
                 consensusPublisher.newLeadershipTerm(
                     follower.publication(),
                     logLeadershipTermId,
@@ -544,9 +541,9 @@ final class ConsensusModuleAgent implements Agent
                     nextLogPosition,
                     this.leadershipTermId,
                     termBaseLogPosition,
-                    appendPosition,
+                    logPublisher.position(),
                     logRecordingId,
-                    timestamp,
+                    clusterClock.time(),
                     memberId,
                     logPublisher.sessionId(),
                     false);

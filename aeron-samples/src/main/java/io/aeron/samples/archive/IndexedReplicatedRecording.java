@@ -50,6 +50,10 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * <p>
  * The index allows for the lookup of message start position in a recording based on message index plus a basic
  * time series for when a message was published.
+ * <p>
+ * The secondary (destination) archive launches after the primary (source) archive and replicates from the sources
+ * the history of the stream it missed then when it catches up to live it will merge with the live stream and stop
+ * the replay replication from the source.
  */
 public class IndexedReplicatedRecording implements AutoCloseable
 {
@@ -366,7 +370,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
             buffer.putLong(MESSAGE_INDEX_OFFSET, nextMessageIndex, ByteOrder.LITTLE_ENDIAN);
             buffer.putLong(TIMESTAMP_OFFSET, System.currentTimeMillis(), ByteOrder.LITTLE_ENDIAN);
 
-            while (publication.offer(buffer, 0, variableLength + HEADER_LENGTH) < 0)
+            while (publication.offer(buffer, 0, HEADER_LENGTH + variableLength) < 0)
             {
                 Thread.yield();
                 if (Thread.interrupted())

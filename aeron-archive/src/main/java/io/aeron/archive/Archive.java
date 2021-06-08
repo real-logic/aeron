@@ -892,7 +892,7 @@ public final class Archive implements AutoCloseable
             {
                 epochClock = SystemEpochClock.INSTANCE;
             }
-            
+
             if (null == nanoClock)
             {
                 nanoClock = SystemNanoClock.INSTANCE;
@@ -1620,7 +1620,7 @@ public final class Archive implements AutoCloseable
         {
             return epochClock;
         }
-        
+
         /**
          * Set the {@link NanoClock} to be used for tracking wall clock time.
          *

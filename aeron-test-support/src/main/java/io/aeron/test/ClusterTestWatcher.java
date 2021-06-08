@@ -86,19 +86,26 @@ public class ClusterTestWatcher implements TestWatcher
     }
 
     private void printErrors(
-        final List<Path> cncPaths,
+        final List<Path> paths,
         final String fileDescription,
         final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer)
     {
-        for (final Path cncPath : cncPaths)
+        for (final Path path : paths)
         {
-            final File cncFile = cncPath.toFile();
-            final MappedByteBuffer cncByteBuffer = SamplesUtil.mapExistingFileReadOnly(cncFile);
-            final AtomicBuffer buffer = toErrorBuffer.apply(cncByteBuffer);
+            final File cncFile = path.toFile();
+            final MappedByteBuffer mmap = SamplesUtil.mapExistingFileReadOnly(cncFile);
+            try
+            {
+                final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
 
-            System.out.printf("%n%n%s file %s%n", fileDescription, cncFile);
-            final int distinctErrorCount = ErrorLogReader.read(buffer, ClusterTestWatcher::printObservationCallback);
-            System.out.format("%d distinct errors observed.%n", distinctErrorCount);
+                System.out.printf("%n%n%s file %s%n", fileDescription, cncFile);
+                final int distinctErrorCount = ErrorLogReader.read(buffer, ClusterTestWatcher::printObservationCallback);
+                System.out.format("%d distinct errors observed.%n", distinctErrorCount);
+            }
+            finally
+            {
+                IoUtil.unmap(mmap);
+            }
         }
     }
 

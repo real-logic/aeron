@@ -168,7 +168,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(60)
     public void shouldBackupClusterAfterCleanShutdown()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();

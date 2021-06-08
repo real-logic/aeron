@@ -52,14 +52,22 @@ public class ClusterBackupTest
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         clusterTestWatcher.cluster(cluster);
 
+        System.out.println("cluster.awaitLeader() #1");
         cluster.awaitLeader();
+        System.out.println("cluster.startClusterBackupNode(true) #1");
         cluster.startClusterBackupNode(true);
 
+        System.out.println("cluster.awaitBackupState(ClusterBackup.State.BACKING_UP)");
         cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+        System.out.println(
+            "cluster.awaitBackupLiveLogPosition(cluster.findLeader().service().cluster().logPosition())");
         cluster.awaitBackupLiveLogPosition(cluster.findLeader().service().cluster().logPosition());
+        System.out.println("cluster.stopAllNodes()");
         cluster.stopAllNodes();
 
+        System.out.println("cluster.startStaticNodeFromBackup() #2");
         final TestNode node = cluster.startStaticNodeFromBackup();
+        System.out.println("cluster.awaitLeader() #2");
         cluster.awaitLeader();
 
         assertEquals(0, node.service().messageCount());

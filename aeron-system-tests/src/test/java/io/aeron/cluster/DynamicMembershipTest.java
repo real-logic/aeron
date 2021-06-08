@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.SlowTest;
 import io.aeron.test.cluster.TestCluster;
@@ -28,7 +27,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.test.cluster.TestCluster.*;
-import static java.util.function.Predicate.not;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -43,9 +41,7 @@ public class DynamicMembershipTest
     void tearDown()
     {
         assertEquals(
-            0,
-            clusterTestWatcher.errorCount(not(s -> s.startsWith(ClusterTerminationException.class.getName()))),
-            "Errors observed in cluster test");
+            0, clusterTestWatcher.errorCount(TEST_CLUSTER_DEFAULT_LOG_FILTER), "Errors observed in cluster test");
     }
 
     @Test

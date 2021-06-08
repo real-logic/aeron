@@ -794,6 +794,7 @@ public final class Archive implements AutoCloseable
         private Supplier<IdleStrategy> replayerIdleStrategySupplier;
         private Supplier<IdleStrategy> recorderIdleStrategySupplier;
         private EpochClock epochClock;
+        private NanoClock nanoClock;
         private AuthenticatorSupplier authenticatorSupplier;
         private Counter controlSessionsCounter;
 
@@ -891,6 +892,11 @@ public final class Archive implements AutoCloseable
             {
                 epochClock = SystemEpochClock.INSTANCE;
             }
+            
+            if (null == nanoClock)
+            {
+                nanoClock = SystemNanoClock.INSTANCE;
+            }
 
             if (null != aeron)
             {
@@ -922,6 +928,7 @@ public final class Archive implements AutoCloseable
                         .aeronDirectoryName(aeronDirectoryName)
                         .errorHandler(errorHandler)
                         .epochClock(epochClock)
+                        .nanoClock(nanoClock)
                         .driverAgentInvoker(mediaDriverAgentInvoker)
                         .useConductorAgentInvoker(true)
                         .subscriberErrorHandler(RethrowingErrorHandler.INSTANCE)
@@ -1612,6 +1619,28 @@ public final class Archive implements AutoCloseable
         public EpochClock epochClock()
         {
             return epochClock;
+        }
+        
+        /**
+         * Set the {@link NanoClock} to be used for tracking wall clock time.
+         *
+         * @param clock {@link NanoClock} to be used for tracking wall clock time.
+         * @return this for a fluent API.
+         */
+        public Context nanoClock(final NanoClock clock)
+        {
+            this.nanoClock = clock;
+            return this;
+        }
+
+        /**
+         * Get the {@link NanoClock} to used for tracking wall clock time.
+         *
+         * @return the {@link NanoClock} to used for tracking wall clock time.
+         */
+        public NanoClock nanoClock()
+        {
+            return nanoClock;
         }
 
         /**

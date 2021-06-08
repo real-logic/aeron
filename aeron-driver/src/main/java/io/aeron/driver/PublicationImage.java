@@ -241,7 +241,10 @@ public final class PublicationImage
         lastSmPosition = position;
         lastOverrunStart = position + nextSmReceiverWindowLength;
         cleanPosition = position;
-        maxReceiverWindowLength = Configuration.receiverWindowLength(termLength, ctx.initialWindowLength());
+
+        maxReceiverWindowLength = Configuration.receiverWindowLength(
+            termLength,
+            channelEndpoint.subscriptionUdpChannel().receiverWindowLengthOrDefault(ctx.initialWindowLength()));
 
         hwmPosition.setOrdered(position);
         rebuildPosition.setOrdered(position);

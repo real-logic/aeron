@@ -18,12 +18,10 @@ package io.aeron.cluster;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.SlowTest;
-import io.aeron.test.TimeoutTestWatcher;
 import io.aeron.test.cluster.TestBackupNode;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -38,16 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ClusterBackupTest
 {
     @RegisterExtension
-    final TimeoutTestWatcher timeoutTestWatcher = new TimeoutTestWatcher();
-
-    @RegisterExtension
     final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-
-    @BeforeEach
-    void setUp()
-    {
-        timeoutTestWatcher.monitorTestThread(Thread.currentThread());
-    }
 
     @AfterEach
     void tearDown()

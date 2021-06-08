@@ -99,7 +99,8 @@ public class ClusterTestWatcher implements TestWatcher
                 final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
 
                 System.out.printf("%n%n%s file %s%n", fileDescription, cncFile);
-                final int distinctErrorCount = ErrorLogReader.read(buffer, ClusterTestWatcher::printObservationCallback);
+                final int distinctErrorCount = ErrorLogReader.read(
+                    buffer, ClusterTestWatcher::printObservationCallback);
                 System.out.format("%d distinct errors observed.%n", distinctErrorCount);
             }
             finally

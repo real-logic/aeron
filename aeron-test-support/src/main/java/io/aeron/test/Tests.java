@@ -22,14 +22,16 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.LangUtil;
-import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
-import javax.management.*;
+import javax.management.Attribute;
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicLong;
@@ -172,9 +174,6 @@ public class Tests
         }
 
         appendStackTrace(sb).append('\n');
-
-        System.out.println(sb);
-        System.out.println(SystemUtil.threadDump());
     }
 
     /**

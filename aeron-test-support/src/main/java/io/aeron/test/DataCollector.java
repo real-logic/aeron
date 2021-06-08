@@ -15,6 +15,8 @@
  */
 package io.aeron.test;
 
+import io.aeron.CncFileDescriptor;
+import io.aeron.test.cluster.TestNode;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.junit.jupiter.api.TestInfo;
@@ -91,6 +93,24 @@ public final class DataCollector
     }
 
     /**
+     * Copy data from all of the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
+     * <ul>
+     *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
+     *     <li>{@code $testClass} is the fully qualified class name of the test class.</li>
+     *     <li>{@code $testMethod} is the test method name.</li>
+     * </ul>
+     *
+     * @param testClass name of the test class from JUnit.
+     * @param testMethod name of the test method from JUnit.
+     * @return {@code null} if no data was copied or an actual destination directory used.
+     * @see #dumpData(String)
+     */
+    public Path dumpData(final String testClass, final String testMethod)
+    {
+        return copyData(testClass + SEPARATOR + testMethod);
+    }
+
+    /**
      * Copy data from all of the added locations to the directory {@code $rootDir/$destinationDir}, where:
      * <ul>
      *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
@@ -116,6 +136,22 @@ public final class DataCollector
         }
 
         return copyData(destinationDir);
+    }
+
+    public List<Path> cncFiles()
+    {
+        return this.locations.stream()
+            .map(p -> p.resolve(CncFileDescriptor.CNC_FILE))
+            .filter(Files::exists)
+            .collect(toList());
+    }
+
+    public List<Path> errorLogFiles()
+    {
+        return this.locations.stream()
+            .map(p -> p.resolve(TestNode.CLUSTER_ERROR_FILE))
+            .filter(Files::exists)
+            .collect(toList());
     }
 
     public String toString()
@@ -313,4 +349,5 @@ public final class DataCollector
             Files.createDirectories(dst.getParent());
         }
     }
+
 }

@@ -15,33 +15,48 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static io.aeron.test.cluster.TestCluster.TEST_CLUSTER_DEFAULT_LOG_FILTER;
 import static io.aeron.test.cluster.TestCluster.aCluster;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ServiceIpcIngressTest
 {
+    @RegisterExtension
+    final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+
+    @AfterEach
+    void tearDown()
+    {
+        assertEquals(
+            0, clusterTestWatcher.errorCount(TEST_CLUSTER_DEFAULT_LOG_FILTER), "Errors observed in cluster test");
+    }
+
     @Test
     @Timeout(20)
     public void shouldEchoIpcMessages()
     {
-        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        clusterTestWatcher.cluster(cluster);
+
+        cluster.awaitLeader();
+        cluster.connectClient();
+
+        final int messageCount = 10;
+        for (int i = 0; i < messageCount; i++)
         {
-            cluster.awaitLeader();
-            cluster.connectClient();
-
-            final int messageCount = 10;
-            for (int i = 0; i < messageCount; i++)
-            {
-                cluster.msgBuffer().putStringWithoutLengthAscii(0, ClusterTests.ECHO_IPC_INGRESS_MSG);
-                cluster.pollUntilMessageSent(ClusterTests.ECHO_IPC_INGRESS_MSG.length());
-            }
-
-            cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServicesMessageCount(messageCount);
+            cluster.msgBuffer().putStringWithoutLengthAscii(0, ClusterTests.ECHO_IPC_INGRESS_MSG);
+            cluster.pollUntilMessageSent(ClusterTests.ECHO_IPC_INGRESS_MSG.length());
         }
+
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount);
     }
 }

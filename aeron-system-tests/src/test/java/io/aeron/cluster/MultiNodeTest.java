@@ -17,33 +17,47 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static io.aeron.test.cluster.TestCluster.TEST_CLUSTER_DEFAULT_LOG_FILTER;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MultiNodeTest
 {
+    @RegisterExtension
+    final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+
+    @AfterEach
+    void tearDown()
+    {
+        assertEquals(
+            0, clusterTestWatcher.errorCount(TEST_CLUSTER_DEFAULT_LOG_FILTER), "Errors observed in cluster test");
+    }
+
     @Test
     @Timeout(20)
     public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
 
-        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderIndex).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
+        final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderIndex).start();
+        clusterTestWatcher.cluster(cluster);
 
-            assertEquals(appointedLeaderIndex, leader.index());
-            assertEquals(Cluster.Role.LEADER, leader.role());
-            assertEquals(Cluster.Role.FOLLOWER, cluster.node(0).role());
-            assertEquals(Cluster.Role.FOLLOWER, cluster.node(2).role());
-        }
+        final TestNode leader = cluster.awaitLeader();
+
+        assertEquals(appointedLeaderIndex, leader.index());
+        assertEquals(Cluster.Role.LEADER, leader.role());
+        assertEquals(Cluster.Role.FOLLOWER, cluster.node(0).role());
+        assertEquals(Cluster.Role.FOLLOWER, cluster.node(2).role());
     }
 
     @Test
@@ -52,25 +66,25 @@ public class MultiNodeTest
     {
         final int appointedLeaderIndex = 1;
 
-        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderIndex).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
+        final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderIndex).start();
+        clusterTestWatcher.cluster(cluster);
 
-            assertEquals(appointedLeaderIndex, leader.index());
-            assertEquals(Cluster.Role.LEADER, leader.role());
+        final TestNode leader = cluster.awaitLeader();
 
-            final int messageCount = 10;
-            cluster.connectClient();
-            cluster.sendMessages(messageCount);
-            cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServicesMessageCount(messageCount);
+        assertEquals(appointedLeaderIndex, leader.index());
+        assertEquals(Cluster.Role.LEADER, leader.role());
 
-            cluster.stopAllNodes();
-            cluster.restartAllNodes(false);
+        final int messageCount = 10;
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount);
 
-            cluster.awaitLeader();
-            cluster.awaitServicesMessageCount(messageCount);
-        }
+        cluster.stopAllNodes();
+        cluster.restartAllNodes(false);
+
+        cluster.awaitLeader();
+        cluster.awaitServicesMessageCount(messageCount);
     }
 
     @Test
@@ -79,33 +93,33 @@ public class MultiNodeTest
     {
         final int appointedLeaderIndex = 1;
 
-        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderIndex).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
+        final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(appointedLeaderIndex).start();
+        clusterTestWatcher.cluster(cluster);
 
-            assertEquals(appointedLeaderIndex, leader.index());
-            assertEquals(Cluster.Role.LEADER, leader.role());
+        final TestNode leader = cluster.awaitLeader();
 
-            final int preCatchupMessageCount = 5;
-            final int postCatchupMessageCount = 10;
-            final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
-            cluster.connectClient();
-            cluster.sendMessages(preCatchupMessageCount);
-            cluster.awaitResponseMessageCount(preCatchupMessageCount);
-            cluster.awaitServicesMessageCount(preCatchupMessageCount);
+        assertEquals(appointedLeaderIndex, leader.index());
+        assertEquals(Cluster.Role.LEADER, leader.role());
 
-            cluster.stopNode(cluster.node(0));
+        final int preCatchupMessageCount = 5;
+        final int postCatchupMessageCount = 10;
+        final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
+        cluster.connectClient();
+        cluster.sendMessages(preCatchupMessageCount);
+        cluster.awaitResponseMessageCount(preCatchupMessageCount);
+        cluster.awaitServicesMessageCount(preCatchupMessageCount);
 
-            cluster.sendMessages(postCatchupMessageCount);
-            cluster.awaitResponseMessageCount(totalMessageCount);
-            cluster.awaitServicesMessageCount(totalMessageCount);
+        cluster.stopNode(cluster.node(0));
 
-            cluster.stopAllNodes();
-            cluster.restartAllNodes(false);
+        cluster.sendMessages(postCatchupMessageCount);
+        cluster.awaitResponseMessageCount(totalMessageCount);
+        cluster.awaitServicesMessageCount(totalMessageCount);
 
-            cluster.awaitLeader();
-            cluster.awaitServicesMessageCount(totalMessageCount);
-        }
+        cluster.stopAllNodes();
+        cluster.restartAllNodes(false);
+
+        cluster.awaitLeader();
+        cluster.awaitServicesMessageCount(totalMessageCount);
     }
 
     @ParameterizedTest
@@ -117,12 +131,12 @@ public class MultiNodeTest
             .ingressChannel("aeron:udp?term-length=64k")
             .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:" + responsePort);
 
-        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
-        {
-            final int numMessages = 10;
-            cluster.connectClient(clientCtx);
-            cluster.sendMessages(numMessages);
-            cluster.awaitResponseMessageCount(numMessages);
-        }
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        clusterTestWatcher.cluster(cluster);
+
+        final int numMessages = 10;
+        cluster.connectClient(clientCtx);
+        cluster.sendMessages(numMessages);
+        cluster.awaitResponseMessageCount(numMessages);
     }
 }

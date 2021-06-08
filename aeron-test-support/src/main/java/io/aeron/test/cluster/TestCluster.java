@@ -25,6 +25,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -46,12 +47,14 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
+import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -60,11 +63,19 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
 import static io.aeron.test.cluster.ClusterTests.errorHandler;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCluster implements AutoCloseable
 {
+    public static final Predicate<String> UNKNOWN_HOST_FILTER = s -> s.contains(UnknownHostException.class.getName());
+    public static final Predicate<String> WARNING_FILTER = s -> s.contains("WARN");
+    public static final Predicate<String> CLUSTER_TERMINATION_FILTER =
+        s -> s.contains(ClusterTerminationException.class.getName());
+    public static final Predicate<String> TEST_CLUSTER_DEFAULT_LOG_FILTER =
+        not(WARNING_FILTER).and(not(CLUSTER_TERMINATION_FILTER));
+
     private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
     private static final long CATALOG_CAPACITY = 128 * 1024;
     private static final String LOG_CHANNEL = "aeron:udp?term-length=512k";
@@ -268,7 +279,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .errorHandler(errorHandler(index))
             .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
 
@@ -280,11 +290,9 @@ public class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart)
-            .errorHandler(errorHandler(index));
+            .deleteArchiveOnStart(cleanStart);
 
         context.consensusModuleContext
-            .errorHandler(errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(staticClusterMembers)
             .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)
@@ -305,8 +313,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .clusterDir(new File(baseDirName, "service"))
-            .clusteredService(context.service)
-            .errorHandler(errorHandler(index));
+            .clusteredService(context.service);
 
         try
         {
@@ -1208,8 +1215,8 @@ public class TestCluster implements AutoCloseable
 
     public void dumpData(final TestInfo testInfo, final Throwable ex)
     {
-        ex.printStackTrace();
-        ClusterTests.printWarning();
+//        ex.printStackTrace();
+//        ClusterTests.printWarning();
 
         dataCollector.dumpData(testInfo);
         LangUtil.rethrowUnchecked(ex);
@@ -1255,6 +1262,11 @@ public class TestCluster implements AutoCloseable
             invalidInitialResolutions.contains(0) ? "bad.invalid" : "localhost",
             invalidInitialResolutions.contains(1) ? "bad.invalid" : "localhost",
             invalidInitialResolutions.contains(2) ? "bad.invalid" : "localhost");
+    }
+
+    public DataCollector dataCollector()
+    {
+        return dataCollector;
     }
 
     public static class ServiceContext

@@ -16,66 +16,80 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
+import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static io.aeron.test.cluster.TestCluster.TEST_CLUSTER_DEFAULT_LOG_FILTER;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SingleNodeTest
 {
+    @RegisterExtension
+    final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+
+    @AfterEach
+    void tearDown()
+    {
+        assertEquals(
+            0, clusterTestWatcher.errorCount(TEST_CLUSTER_DEFAULT_LOG_FILTER), "Errors observed in cluster test");
+    }
+
     @Test
     @Timeout(20)
     public void shouldStartCluster()
     {
-        try (TestCluster cluster = aCluster().withStaticNodes(1).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
+        final TestCluster cluster = aCluster().withStaticNodes(1).start();
+        clusterTestWatcher.cluster(cluster);
 
-            assertEquals(0, leader.index());
-            assertEquals(Cluster.Role.LEADER, leader.role());
-        }
+        final TestNode leader = cluster.awaitLeader();
+
+        assertEquals(0, leader.index());
+        assertEquals(Cluster.Role.LEADER, leader.role());
     }
 
     @Test
     @Timeout(20)
     public void shouldSendMessagesToCluster()
     {
-        try (TestCluster cluster = aCluster().withStaticNodes(1).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
+        final TestCluster cluster = aCluster().withStaticNodes(1).start();
+        clusterTestWatcher.cluster(cluster);
 
-            assertEquals(0, leader.index());
-            assertEquals(Cluster.Role.LEADER, leader.role());
+        final TestNode leader = cluster.awaitLeader();
 
-            cluster.connectClient();
-            cluster.sendMessages(10);
-            cluster.awaitResponseMessageCount(10);
-            cluster.awaitServiceMessageCount(leader, 10);
-        }
+        assertEquals(0, leader.index());
+        assertEquals(Cluster.Role.LEADER, leader.role());
+
+        cluster.connectClient();
+        cluster.sendMessages(10);
+        cluster.awaitResponseMessageCount(10);
+        cluster.awaitServiceMessageCount(leader, 10);
     }
 
     @Test
     @Timeout(20)
     public void shouldReplayLog()
     {
-        try (TestCluster cluster = aCluster().withStaticNodes(1).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
+        final TestCluster cluster = aCluster().withStaticNodes(1).start();
+        clusterTestWatcher.cluster(cluster);
 
-            final int messageCount = 10;
-            cluster.connectClient();
-            cluster.sendMessages(messageCount);
-            cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(leader, messageCount);
+        final TestNode leader = cluster.awaitLeader();
 
-            cluster.stopNode(leader);
+        final int messageCount = 10;
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServiceMessageCount(leader, messageCount);
 
-            cluster.startStaticNode(0, false);
-            final TestNode newLeader = cluster.awaitLeader();
-            cluster.awaitServiceMessageCount(newLeader, messageCount);
-        }
+        cluster.stopNode(leader);
+
+        cluster.startStaticNode(0, false);
+        final TestNode newLeader = cluster.awaitLeader();
+        cluster.awaitServiceMessageCount(newLeader, messageCount);
     }
 }

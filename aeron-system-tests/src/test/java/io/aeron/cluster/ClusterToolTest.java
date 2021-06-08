@@ -15,11 +15,14 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.SlowTest;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.*;
@@ -28,6 +31,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
+import static io.aeron.test.cluster.TestCluster.TEST_CLUSTER_DEFAULT_LOG_FILTER;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,37 +41,47 @@ import static org.junit.jupiter.api.Assertions.*;
 @SlowTest
 class ClusterToolTest
 {
+    @RegisterExtension
+    final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+
+    @AfterEach
+    void tearDown()
+    {
+        assertEquals(
+            0, clusterTestWatcher.errorCount(TEST_CLUSTER_DEFAULT_LOG_FILTER), "Errors observed in cluster test");
+    }
+
     @Test
     @Timeout(30)
     void shouldHandleSnapshotOnLeaderOnly()
     {
-        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
-            final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
-            final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        clusterTestWatcher.cluster(cluster);
 
-            assertTrue(ClusterTool.snapshot(
-                leader.consensusModule().context().clusterDir(),
+        final TestNode leader = cluster.awaitLeader();
+        final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+
+        assertTrue(ClusterTool.snapshot(
+            leader.consensusModule().context().clusterDir(),
+            capturingPrintStream.resetAndGetPrintStream()));
+
+        assertThat(
+            capturingPrintStream.flushAndGetContent(),
+            containsString("SNAPSHOT applied successfully"));
+
+        final long expectedSnapshotCount = initialSnapshotCount + 1;
+        cluster.awaitSnapshotCount(expectedSnapshotCount);
+
+        for (final TestNode follower : cluster.followers())
+        {
+            assertFalse(ClusterTool.snapshot(
+                follower.consensusModule().context().clusterDir(),
                 capturingPrintStream.resetAndGetPrintStream()));
 
             assertThat(
                 capturingPrintStream.flushAndGetContent(),
-                containsString("SNAPSHOT applied successfully"));
-
-            final long expectedSnapshotCount = initialSnapshotCount + 1;
-            cluster.awaitSnapshotCount(expectedSnapshotCount);
-
-            for (final TestNode follower : cluster.followers())
-            {
-                assertFalse(ClusterTool.snapshot(
-                    follower.consensusModule().context().clusterDir(),
-                    capturingPrintStream.resetAndGetPrintStream()));
-
-                assertThat(
-                    capturingPrintStream.flushAndGetContent(),
-                    containsString("Current node is not the leader"));
-            }
+                containsString("Current node is not the leader"));
         }
     }
 
@@ -75,57 +89,57 @@ class ClusterToolTest
     @Timeout(30)
     void shouldNotSnapshotWhenSuspendedOnly()
     {
-        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
-            final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
-            final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        clusterTestWatcher.cluster(cluster);
 
-            assertTrue(ClusterTool.suspend(
-                leader.consensusModule().context().clusterDir(),
-                capturingPrintStream.resetAndGetPrintStream()));
+        final TestNode leader = cluster.awaitLeader();
+        final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
 
-            assertThat(
-                capturingPrintStream.flushAndGetContent(),
-                containsString("SUSPEND applied successfully"));
+        assertTrue(ClusterTool.suspend(
+            leader.consensusModule().context().clusterDir(),
+            capturingPrintStream.resetAndGetPrintStream()));
 
-            assertFalse(ClusterTool.snapshot(
-                leader.consensusModule().context().clusterDir(),
-                capturingPrintStream.resetAndGetPrintStream()));
+        assertThat(
+            capturingPrintStream.flushAndGetContent(),
+            containsString("SUSPEND applied successfully"));
 
-            final String expectedMessage =
-                "Unable to SNAPSHOT as the state of the consensus module is SUSPENDED, but needs to be ACTIVE";
-            assertThat(capturingPrintStream.flushAndGetContent(), containsString(expectedMessage));
+        assertFalse(ClusterTool.snapshot(
+            leader.consensusModule().context().clusterDir(),
+            capturingPrintStream.resetAndGetPrintStream()));
 
-            assertEquals(initialSnapshotCount, leader.consensusModule().context().snapshotCounter().get());
-        }
+        final String expectedMessage =
+            "Unable to SNAPSHOT as the state of the consensus module is SUSPENDED, but needs to be ACTIVE";
+        assertThat(capturingPrintStream.flushAndGetContent(), containsString(expectedMessage));
+
+        assertEquals(initialSnapshotCount, leader.consensusModule().context().snapshotCounter().get());
     }
 
     @Test
     @Timeout(30)
     void shouldSuspendAndResume()
     {
-        try (TestCluster cluster = aCluster().withStaticNodes(3).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
-            final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        clusterTestWatcher.cluster(cluster);
 
-            assertTrue(ClusterTool.suspend(
-                leader.consensusModule().context().clusterDir(),
-                capturingPrintStream.resetAndGetPrintStream()));
+        final TestNode leader = cluster.awaitLeader();
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
 
-            assertThat(
-                capturingPrintStream.flushAndGetContent(),
-                containsString("SUSPEND applied successfully"));
+        assertTrue(ClusterTool.suspend(
+            leader.consensusModule().context().clusterDir(),
+            capturingPrintStream.resetAndGetPrintStream()));
 
-            assertTrue(ClusterTool.resume(
-                leader.consensusModule().context().clusterDir(),
-                capturingPrintStream.resetAndGetPrintStream()));
+        assertThat(
+            capturingPrintStream.flushAndGetContent(),
+            containsString("SUSPEND applied successfully"));
 
-            assertThat(
-                capturingPrintStream.flushAndGetContent(),
-                containsString("RESUME applied successfully"));
-        }
+        assertTrue(ClusterTool.resume(
+            leader.consensusModule().context().clusterDir(),
+            capturingPrintStream.resetAndGetPrintStream()));
+
+        assertThat(
+            capturingPrintStream.flushAndGetContent(),
+            containsString("RESUME applied successfully"));
     }
 
     @Test

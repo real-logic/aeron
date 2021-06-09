@@ -21,7 +21,6 @@ import io.aeron.test.SlowTest;
 import io.aeron.test.cluster.TestBackupNode;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import org.agrona.concurrent.SystemNanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -53,22 +52,14 @@ public class ClusterBackupTest
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         clusterTestWatcher.cluster(cluster);
 
-        System.out.println("cluster.awaitLeader() #1");
         cluster.awaitLeader();
-        System.out.println("cluster.startClusterBackupNode(true) #1");
         cluster.startClusterBackupNode(true);
 
-        System.out.println("cluster.awaitBackupState(ClusterBackup.State.BACKING_UP)");
         cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
-        System.out.println(
-            "cluster.awaitBackupLiveLogPosition(cluster.findLeader().service().cluster().logPosition())");
         cluster.awaitBackupLiveLogPosition(cluster.findLeader().service().cluster().logPosition());
-        System.out.println("cluster.stopAllNodes()");
         cluster.stopAllNodes();
 
-        System.out.println("cluster.startStaticNodeFromBackup() #2");
         final TestNode node = cluster.startStaticNodeFromBackup();
-        System.out.println("cluster.awaitLeader() #2");
         cluster.awaitLeader();
 
         assertEquals(0, node.service().messageCount());
@@ -169,59 +160,40 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(30)
     public void shouldBackupClusterAfterCleanShutdown()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         clusterTestWatcher.cluster(cluster);
 
-        log("cluster.awaitLeader()");
         final TestNode leader = cluster.awaitLeader();
 
         final int messageCount = 10;
-        log("cluster.awaitLeader()");
         cluster.connectClient();
-        log("cluster.sendMessages(messageCount)");
         cluster.sendMessages(messageCount);
-        log("cluster.awaitResponseMessageCount(messageCount)");
         cluster.awaitResponseMessageCount(messageCount);
-        log("cluster.awaitServicesMessageCount(messageCount)");
         cluster.awaitServicesMessageCount(messageCount);
 
         cluster.node(0).isTerminationExpected(true);
         cluster.node(1).isTerminationExpected(true);
         cluster.node(2).isTerminationExpected(true);
 
-        log("cluster.shutdownCluster(leader)");
         cluster.shutdownCluster(leader);
-        log("cluster.awaitNodeTerminations()");
         cluster.awaitNodeTerminations();
 
         assertTrue(cluster.node(0).service().wasSnapshotTaken());
         assertTrue(cluster.node(1).service().wasSnapshotTaken());
         assertTrue(cluster.node(2).service().wasSnapshotTaken());
 
-        log("cluster.stopAllNodes()");
         cluster.stopAllNodes();
-        log("cluster.restartAllNodes(false)");
         cluster.restartAllNodes(false);
-        log("cluster.awaitLeader() #2");
         final TestNode newLeader = cluster.awaitLeader();
         final long logPosition = newLeader.service().cluster().logPosition();
 
-        log("cluster.startClusterBackupNode(true)");
         cluster.startClusterBackupNode(true);
 
-        log("cluster.awaitBackupState(ClusterBackup.State.BACKING_UP)");
         cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
-        log("cluster.awaitBackupLiveLogPosition(logPosition)");
         cluster.awaitBackupLiveLogPosition(logPosition);
-    }
-
-    private void log(String msg)
-    {
-        final long l = SystemNanoClock.INSTANCE.nanoTime();
-        System.out.printf("[%d.%d] %s%n", l / 1_000_000_000, l % 1_000_000_000, msg);
     }
 
     @Test

@@ -51,19 +51,23 @@ typedef int32_t (*aeron_congestion_control_strategy_on_track_rebuild_func_t)(
 
 typedef int32_t (*aeron_congestion_control_strategy_initial_window_length_func_t)(void *state);
 
+typedef int32_t (*aeron_congestion_control_strategy_max_window_length_func_t)(void *state);
+
 typedef int (*aeron_congestion_control_strategy_fini_func_t)(aeron_congestion_control_strategy_t *strategy);
 
-typedef struct aeron_congestion_control_strategy_stct
+struct aeron_congestion_control_strategy_stct
 {
     aeron_congestion_control_strategy_should_measure_rtt_func_t should_measure_rtt;
     aeron_congestion_control_strategy_on_rttm_sent_func_t on_rttm_sent;
     aeron_congestion_control_strategy_on_rttm_func_t on_rttm;
     aeron_congestion_control_strategy_on_track_rebuild_func_t on_track_rebuild;
     aeron_congestion_control_strategy_initial_window_length_func_t initial_window_length;
+    aeron_congestion_control_strategy_max_window_length_func_t max_window_length;
     aeron_congestion_control_strategy_fini_func_t fini;
     void *state;
-}
-aeron_congestion_control_strategy_t;
+};
+
+typedef struct aeron_congestion_control_strategy_stct aeron_congestion_control_strategy_t;
 
 aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strategy_supplier_load(
     const char *strategy_name);

@@ -109,12 +109,13 @@ typedef struct aeron_publication_image_stct
 
     volatile int64_t begin_sm_change;
     volatile int64_t end_sm_change;
+    int64_t last_overrun_threshold;
     int64_t next_sm_position;
     int32_t next_sm_receiver_window_length;
+    int32_t max_receiver_window_length;
 
     int64_t last_sm_change_number;
     int64_t last_sm_position;
-    int64_t last_sm_position_window_limit;
     int64_t time_of_last_sm_ns;
     int64_t sm_timeout_ns;
 
@@ -216,7 +217,7 @@ inline bool aeron_publication_image_is_flow_control_under_run(aeron_publication_
 inline bool aeron_publication_image_is_flow_control_over_run(
     aeron_publication_image_t *image, int64_t proposed_position)
 {
-    const bool is_flow_control_over_run = proposed_position > image->last_sm_position_window_limit;
+    const bool is_flow_control_over_run = proposed_position > image->last_overrun_threshold;
 
     if (is_flow_control_over_run)
     {

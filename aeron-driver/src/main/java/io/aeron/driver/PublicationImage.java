@@ -122,7 +122,7 @@ public final class PublicationImage
 
     private long lastSmChangeNumber = Aeron.NULL_VALUE;
     private long lastSmPosition;
-    private long lastOverrunStart;
+    private long lastOverrunThreshold;
     private long timeOfLastSmNs;
     private final long smTimeoutNs;
     private final long maxReceiverWindowLength;
@@ -240,7 +240,7 @@ public final class PublicationImage
         final long position = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         nextSmPosition = position;
         lastSmPosition = position;
-        lastOverrunStart = position + nextSmReceiverWindowLength;
+        lastOverrunThreshold = position + nextSmReceiverWindowLength;
         cleanPosition = position;
 
         hwmPosition.setOrdered(position);
@@ -637,7 +637,7 @@ public final class PublicationImage
                 statusMessagesSent.incrementOrdered();
 
                 lastSmPosition = smPosition;
-                lastOverrunStart = smPosition + maxReceiverWindowLength;
+                lastOverrunThreshold = smPosition + maxReceiverWindowLength;
                 lastSmChangeNumber = changeNumber;
                 timeOfLastSmNs = nowNs;
 
@@ -823,7 +823,7 @@ public final class PublicationImage
 
     private boolean isFlowControlOverRun(final long proposedPosition)
     {
-        final boolean isFlowControlOverRun = proposedPosition > lastOverrunStart;
+        final boolean isFlowControlOverRun = proposedPosition > lastOverrunThreshold;
 
         if (isFlowControlOverRun)
         {

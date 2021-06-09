@@ -67,6 +67,7 @@ public class CubicCongestionControl implements CongestionControl
     private final int mtu;
     private final int maxCwnd;
     private final int initialWindowLength;
+    private final int maxWindowLength;
 
     private double k;
     private int w_max;
@@ -119,9 +120,9 @@ public class CubicCongestionControl implements CongestionControl
 
             final int initialWindowLength = 0 != udpChannel.receiverWindowLength() ?
                 udpChannel.receiverWindowLength() : context.initialWindowLength();
-            final int maxWindow = Configuration.receiverWindowLength(termLength, initialWindowLength);
+            maxWindowLength = Configuration.receiverWindowLength(termLength, initialWindowLength);
 
-            maxCwnd = maxWindow / mtu;
+            maxCwnd = maxWindowLength / mtu;
             cwnd = Math.min(INITCWND, maxCwnd);
             this.initialWindowLength = cwnd * mtu;
             w_max = maxCwnd; // initially set w_max to max window and act in the TCP and concave region initially
@@ -178,8 +179,7 @@ public class CubicCongestionControl implements CongestionControl
      */
     public boolean shouldMeasureRtt(final long nowNs)
     {
-        return CubicCongestionControlConfiguration.MEASURE_RTT &&
-            ((lastRttTimestampNs + rttTimeoutNs) - nowNs < 0);
+        return CubicCongestionControlConfiguration.MEASURE_RTT && ((lastRttTimestampNs + rttTimeoutNs) - nowNs < 0);
     }
 
     /**
@@ -271,6 +271,14 @@ public class CubicCongestionControl implements CongestionControl
     public int initialWindowLength()
     {
         return initialWindowLength;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int maxWindowLength()
+    {
+        return maxWindowLength;
     }
 
     int maxCongestionWindow()

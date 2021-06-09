@@ -125,9 +125,16 @@ public interface CongestionControl extends AutoCloseable
     /**
      * Called by {@link DriverConductor} to initialise window length for a new {@link PublicationImage}.
      *
-     * @return new image window length
+     * @return initial window length for flow and congestion control.
      */
     int initialWindowLength();
+
+    /**
+     * Called by {@link DriverConductor} limit the window length for a new {@link PublicationImage}.
+     *
+     * @return maximum window length for flow and congestion control.
+     */
+    int maxWindowLength();
 
     /**
      * {@inheritDoc}

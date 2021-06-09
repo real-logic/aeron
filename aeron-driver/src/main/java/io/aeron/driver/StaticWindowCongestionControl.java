@@ -120,4 +120,12 @@ public class StaticWindowCongestionControl implements CongestionControl
     {
         return CongestionControl.receiverWindowLength(ccOutcome);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int maxWindowLength()
+    {
+        return CongestionControl.receiverWindowLength(ccOutcome);
+    }
 }

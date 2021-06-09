@@ -235,16 +235,13 @@ public final class PublicationImage
         termLengthMask = termLength - 1;
         positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
 
+        nextSmReceiverWindowLength = congestionControl.initialWindowLength();
+        maxReceiverWindowLength = congestionControl.maxWindowLength();
         final long position = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         nextSmPosition = position;
-        nextSmReceiverWindowLength = congestionControl.initialWindowLength();
         lastSmPosition = position;
         lastOverrunStart = position + nextSmReceiverWindowLength;
         cleanPosition = position;
-
-        maxReceiverWindowLength = Configuration.receiverWindowLength(
-            termLength,
-            channelEndpoint.subscriptionUdpChannel().receiverWindowLengthOrDefault(ctx.initialWindowLength()));
 
         hwmPosition.setOrdered(position);
         rebuildPosition.setOrdered(position);

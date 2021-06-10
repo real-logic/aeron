@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
@@ -805,7 +806,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @Timeout(10)
     public void shouldRecoverWhileMessagesContinue() throws InterruptedException
     {
         cluster = aCluster().withStaticNodes(3).start();

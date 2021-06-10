@@ -25,7 +25,6 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.Cluster;
-import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -47,14 +46,12 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
-import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -68,13 +65,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCluster implements AutoCloseable
 {
-    public static final Predicate<String> UNKNOWN_HOST_FILTER = s -> s.contains(UnknownHostException.class.getName());
-    public static final Predicate<String> WARNING_FILTER = s -> s.contains("WARN");
-    public static final Predicate<String> CLUSTER_TERMINATION_FILTER =
-        s -> s.contains(ClusterTerminationException.class.getName());
-    public static final Predicate<String> TEST_CLUSTER_DEFAULT_LOG_FILTER =
-        WARNING_FILTER.negate().and(CLUSTER_TERMINATION_FILTER.negate());
-
     private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
     private static final long CATALOG_CAPACITY = 128 * 1024;
     private static final String LOG_CHANNEL = "aeron:udp?term-length=512k";

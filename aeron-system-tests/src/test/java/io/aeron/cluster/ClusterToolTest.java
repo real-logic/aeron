@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.aeron.test.cluster.TestCluster.TEST_CLUSTER_DEFAULT_LOG_FILTER;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,7 +47,7 @@ class ClusterToolTest
     void tearDown()
     {
         assertEquals(
-            0, clusterTestWatcher.errorCount(TEST_CLUSTER_DEFAULT_LOG_FILTER), "Errors observed in cluster test");
+            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
     }
 
     @Test

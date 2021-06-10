@@ -16,6 +16,7 @@
 package io.aeron.test;
 
 import io.aeron.CommonContext;
+import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.samples.SamplesUtil;
 import io.aeron.test.cluster.TestCluster;
 import org.agrona.CloseHelper;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
+import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -39,12 +41,29 @@ import java.util.function.Predicate;
 
 public class ClusterTestWatcher implements TestWatcher
 {
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-    private volatile TestCluster testCluster = null;
+    public static final Predicate<String> UNKNOWN_HOST_FILTER = s -> s.contains(UnknownHostException.class.getName());
+    public static final Predicate<String> WARNING_FILTER = s -> s.contains("WARN");
+    public static final Predicate<String> CLUSTER_TERMINATION_FILTER =
+        s -> s.contains(ClusterTerminationException.class.getName());
+    public static final Predicate<String> TEST_CLUSTER_DEFAULT_LOG_FILTER =
+        WARNING_FILTER.negate().and(CLUSTER_TERMINATION_FILTER.negate());
 
-    public void cluster(final TestCluster testCluster)
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+
+    private TestCluster testCluster = null;
+    private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
+
+    public ClusterTestWatcher cluster(final TestCluster testCluster)
     {
         this.testCluster = testCluster;
+        return this;
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public ClusterTestWatcher ignoreErrorsMatching(final Predicate<String> logFilter)
+    {
+        this.logFilter = this.logFilter.and(logFilter.negate());
+        return this;
     }
 
     public void testFailed(final ExtensionContext context, final Throwable cause)
@@ -62,21 +81,16 @@ public class ClusterTestWatcher implements TestWatcher
         CloseHelper.close(testCluster);
     }
 
-    public int errorCount(final Predicate<String> filter)
+    public int errorCount()
     {
         if (null != testCluster)
         {
             return countErrors(
                 testCluster.dataCollector().cncFiles(),
                 testCluster.dataCollector().errorLogFiles(),
-                filter);
+                logFilter);
         }
         return 0;
-    }
-
-    public int errorCount()
-    {
-        return errorCount(s -> true);
     }
 
     private void printErrors(final List<Path> cncPaths, final List<Path> clusterErrorPaths)
@@ -100,7 +114,7 @@ public class ClusterTestWatcher implements TestWatcher
 
                 System.out.printf("%n%n%s file %s%n", fileDescription, cncFile);
                 final int distinctErrorCount = ErrorLogReader.read(
-                    buffer, ClusterTestWatcher::printObservationCallback);
+                    buffer, this::printObservationCallback);
                 System.out.format("%d distinct errors observed.%n", distinctErrorCount);
             }
             finally
@@ -152,14 +166,16 @@ public class ClusterTestWatcher implements TestWatcher
             countErrors(clusterErrorPaths, filter, UnsafeBuffer::new);
     }
 
-    private static void printObservationCallback(
+    private void printObservationCallback(
         final int observationCount,
         final long firstObservationTimestamp,
         final long lastObservationTimestamp,
         final String encodedException)
     {
+        final String ignored = !logFilter.test(encodedException) ? "(ignored) " : "";
         System.out.format(
-            "***%n%d observations from %s to %s for:%n %s%n",
+            "***%n%s%d observations from %s to %s for:%n %s%n",
+            ignored,
             observationCount,
             DATE_FORMAT.format(new Date(firstObservationTimestamp)),
             DATE_FORMAT.format(new Date(lastObservationTimestamp)),

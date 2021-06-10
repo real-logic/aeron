@@ -41,7 +41,7 @@ public class DynamicMembershipTest
     void tearDown()
     {
         assertEquals(
-            0, clusterTestWatcher.errorCount(TEST_CLUSTER_DEFAULT_LOG_FILTER), "Errors observed in cluster test");
+            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
     }
 
     @Test

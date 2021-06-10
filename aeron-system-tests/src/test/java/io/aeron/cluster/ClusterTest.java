@@ -31,10 +31,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
+import static io.aeron.test.ClusterTestWatcher.UNKNOWN_HOST_FILTER;
 import static io.aeron.test.cluster.ClusterTests.*;
 import static io.aeron.test.cluster.TestCluster.*;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
@@ -48,14 +48,12 @@ public class ClusterTest
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
 
-    private Predicate<String> errorLogFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
-
     private TestCluster cluster = null;
 
     @AfterEach
     void tearDown()
     {
-        assertEquals(0, clusterTestWatcher.errorCount(errorLogFilter), "Errors observed in cluster test");
+        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
     }
 
     @Test
@@ -225,8 +223,7 @@ public class ClusterTest
     public void shouldHandleLeaderFailOverWhenNameIsNotResolvable()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
-        errorLogFilter = errorLogFilter.and(UNKNOWN_HOST_FILTER.negate());
+        clusterTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
 
         final TestNode originalLeader = cluster.awaitLeader();
         cluster.connectClient();
@@ -254,8 +251,7 @@ public class ClusterTest
         final int initiallyUnresolvableNodeId = 1;
 
         cluster = aCluster().withStaticNodes(3).withInvalidNameResolution(initiallyUnresolvableNodeId).start();
-        clusterTestWatcher.cluster(cluster);
-        errorLogFilter = errorLogFilter.and(UNKNOWN_HOST_FILTER.negate());
+        clusterTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
 
         cluster.awaitLeader();
         cluster.connectClient();
@@ -277,8 +273,7 @@ public class ClusterTest
     public void shouldHandleClusterStartWhereMostNamesBecomeResolvableDuringElection()
     {
         cluster = aCluster().withStaticNodes(3).withInvalidNameResolution(0).withInvalidNameResolution(2).start();
-        clusterTestWatcher.cluster(cluster);
-        errorLogFilter = errorLogFilter.and(UNKNOWN_HOST_FILTER.negate());
+        clusterTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
 
         awaitElectionState(cluster.node(1), ElectionState.CANVASS);
 

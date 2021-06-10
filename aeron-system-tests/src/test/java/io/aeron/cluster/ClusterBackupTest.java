@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static io.aeron.test.cluster.TestCluster.TEST_CLUSTER_DEFAULT_LOG_FILTER;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -42,7 +41,7 @@ public class ClusterBackupTest
     void tearDown()
     {
         assertEquals(
-            0, clusterTestWatcher.errorCount(TEST_CLUSTER_DEFAULT_LOG_FILTER), "Errors observed in cluster test");
+            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
     }
 
     @Test

@@ -521,7 +521,7 @@ int aeron_publication_image_insert_packet(
             AERON_PUT_ORDERED(image->time_of_last_packet_ns, aeron_clock_cached_nano_time(image->cached_clock));
             aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
         }
-        else if (proposed_position >= (image->last_sm_position - image->next_sm_receiver_window_length))
+        else if (proposed_position >= (image->last_sm_position - image->max_receiver_window_length))
         {
             aeron_publication_image_track_connection(image, destination, addr, now_ns);
         }

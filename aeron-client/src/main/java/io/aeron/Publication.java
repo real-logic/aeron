@@ -698,6 +698,7 @@ public abstract class Publication implements AutoCloseable
             "originalRegistrationId=" + originalRegistrationId +
             ", registrationId=" + registrationId +
             ", isClosed=" + isClosed +
+            ", isConnected=" + isConnected() +
             ", initialTermId=" + initialTermId +
             ", termBufferLength=" + termBufferLength +
             ", sessionId=" + sessionId +

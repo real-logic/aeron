@@ -1558,6 +1558,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 final TimeoutException ex = new TimeoutException(
                     "cluster connect timeout: step=" + step +
+                    " ingressPublication=" + ingressPublication +
                     " egress.isConnected=" + egressSubscription.isConnected() +
                     " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort());
 

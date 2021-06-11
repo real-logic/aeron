@@ -26,6 +26,8 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.StubClusteredService;
 import io.aeron.test.cluster.TestCluster;
@@ -36,17 +38,18 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableReference;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MultiModuleSharedDriverTest
 {
     @SuppressWarnings("methodlength")
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldSupportTwoSingleNodeClusters()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
@@ -151,7 +154,7 @@ public class MultiModuleSharedDriverTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldSupportTwoMultiNodeClusters()
     {
         try (MultiClusterNode node0 = new MultiClusterNode(0);

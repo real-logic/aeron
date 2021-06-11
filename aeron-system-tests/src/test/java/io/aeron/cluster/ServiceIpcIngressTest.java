@@ -16,16 +16,19 @@
 package io.aeron.cluster;
 
 import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ServiceIpcIngressTest
 {
     @RegisterExtension
@@ -39,7 +42,7 @@ public class ServiceIpcIngressTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldEchoIpcMessages()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();

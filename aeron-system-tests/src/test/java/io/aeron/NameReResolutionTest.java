@@ -21,9 +21,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.test.NetworkTestingUtil;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.DistinctErrorLogTestWatcher;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.RedirectingNameResolver;
@@ -35,7 +33,10 @@ import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
@@ -89,6 +90,9 @@ public class NameReResolutionTest
     @RegisterExtension
     public final DistinctErrorLogTestWatcher logWatcher = new DistinctErrorLogTestWatcher();
 
+    @RegisterExtension
+    public final InterruptingTestCallback testCallback = new InterruptingTestCallback();
+
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private final FragmentHandler handler = mock(FragmentHandler.class);
     private CountersReader countersReader;
@@ -124,7 +128,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldReResolveEndpointOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
@@ -186,7 +190,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldReResolveMdcManualEndpointOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
@@ -249,7 +253,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldHandleMdcManualEndpointInitiallyUnresolved()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
@@ -295,7 +299,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldReResolveMdcDynamicControlOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
@@ -356,7 +360,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
@@ -419,7 +423,7 @@ public class NameReResolutionTest
 
     @SlowTest
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldReportErrorOnReResolveFailure() throws IOException
     {
         buffer.putInt(0, 1);

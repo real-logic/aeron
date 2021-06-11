@@ -20,6 +20,8 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
@@ -30,7 +32,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,6 +43,7 @@ import static io.aeron.CommonContext.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(InterruptingTestCallback.class)
 class SessionSpecificPublicationTest
 {
     private static final String ENDPOINT = "localhost:24325";
@@ -162,7 +165,7 @@ class SessionSpecificPublicationTest
 
     @ParameterizedTest
     @MethodSource("data")
-    @Timeout(20)
+    @InterruptAfter(20)
     @SlowTest
     void shouldNotAddPublicationWithSameSessionUntilLingerCompletes(final ChannelUriStringBuilder builder)
     {

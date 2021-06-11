@@ -18,11 +18,13 @@ package io.aeron.cluster;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -30,6 +32,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MultiNodeTest
 {
     @RegisterExtension
@@ -43,7 +46,7 @@ public class MultiNodeTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
@@ -60,7 +63,7 @@ public class MultiNodeTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
@@ -87,7 +90,7 @@ public class MultiNodeTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
@@ -123,7 +126,7 @@ public class MultiNodeTest
 
     @ParameterizedTest
     @ValueSource(strings = { "9020", "0" })
-    @Timeout(20)
+    @InterruptAfter(20)
     void shouldConnectClientUsingResolvedResponsePort(final String responsePort)
     {
         final AeronCluster.Context clientCtx = new AeronCluster.Context()

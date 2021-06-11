@@ -19,18 +19,21 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MultiSubscriberTest
 {
     private static final String CHANNEL_1 = "aeron:udp?endpoint=localhost:24325|fruit=banana";
@@ -52,7 +55,7 @@ public class MultiSubscriberTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceiveMessageOnSeparateSubscriptions()
     {
         final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);

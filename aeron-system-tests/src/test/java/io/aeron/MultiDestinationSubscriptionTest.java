@@ -22,18 +22,23 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
@@ -44,6 +49,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MultiDestinationSubscriptionTest
 {
     private static final String UNICAST_ENDPOINT_A = "localhost:24325";
@@ -120,7 +126,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void subscriptionCloseShouldAlsoCloseMediaDriverPorts()
     {
         launch(Tests::onError);
@@ -142,7 +148,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     @EnabledOnOs(OS.LINUX)
     public void destinationShouldInheritSocketBufferLengthsFromSubscription()
     {
@@ -158,7 +164,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
     {
         final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
@@ -173,7 +179,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSpinUpAndShutdownWithUnicast()
     {
         launch(Tests::onError);
@@ -187,7 +193,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSpinUpAndShutdownWithMulticast()
     {
         launch(Tests::onError);
@@ -203,7 +209,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldSpinUpAndShutdownWithDynamicMdc()
     {
         launch(Tests::onError);
@@ -217,7 +223,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSendToSingleDestinationSubscriptionWithUnicast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -245,7 +251,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     @SlowTest
     public void shouldAllowMultipleMdsSubscriptions()
     {
@@ -296,7 +302,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldFindMdsSubscriptionWithTags()
     {
         launch(Tests::onError);
@@ -329,7 +335,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     @SlowTest
     public void shouldAllowMultipleMdsSubscriptionsWithTags()
     {
@@ -390,7 +396,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSendToSingleDestinationMultipleSubscriptionsWithUnicast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -432,7 +438,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSendToSingleDestinationSubscriptionWithMulticast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -460,7 +466,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldSendToSingleDestinationSubscriptionWithDynamicMdc()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -488,7 +494,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSendToMultipleDestinationSubscriptionWithSameStream()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -563,7 +569,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldMergeStreamsFromMultiplePublicationsWithSameParams()
     {
         final int numMessagesToSend = 30;

@@ -17,16 +17,19 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class SingleNodeTest
 {
     @RegisterExtension
@@ -40,7 +43,7 @@ public class SingleNodeTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldStartCluster()
     {
         final TestCluster cluster = aCluster().withStaticNodes(1).start();
@@ -53,7 +56,7 @@ public class SingleNodeTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldSendMessagesToCluster()
     {
         final TestCluster cluster = aCluster().withStaticNodes(1).start();
@@ -71,7 +74,7 @@ public class SingleNodeTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldReplayLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(1).start();

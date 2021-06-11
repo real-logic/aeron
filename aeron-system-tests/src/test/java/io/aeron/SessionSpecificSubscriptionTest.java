@@ -20,11 +20,13 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -37,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class SessionSpecificSubscriptionTest
 {
     private static final String ENDPOINT = "localhost:24325";
@@ -77,7 +80,7 @@ public class SessionSpecificSubscriptionTest
         driver.context().deleteDirectory();
     }
 
-    @Timeout(10)
+    @InterruptAfter(10)
     @ParameterizedTest
     @MethodSource("data")
     public void shouldSubscribeToSpecificSessionIdsAndWildcard(final ChannelUriStringBuilder channelBuilder)

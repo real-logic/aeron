@@ -15,13 +15,15 @@
  */
 package io.aeron.agent;
 
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 
@@ -38,6 +40,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 final class AgentTests
 {
     static void startLogging(final EnumMap<ConfigOption, String> configOptions)
@@ -164,7 +167,7 @@ final class AgentTests
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void shouldStartAndStopLoggingAgent()
     {
         final int instanceCount = TestLoggingAgent.INSTANCE_COUNT.get();

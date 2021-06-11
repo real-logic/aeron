@@ -17,17 +17,20 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class AppointedLeaderTest
 {
     @RegisterExtension
@@ -43,7 +46,7 @@ public class AppointedLeaderTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldConnectAndSendKeepAlive()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start();
@@ -58,7 +61,7 @@ public class AppointedLeaderTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldEchoMessagesViaService()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start();

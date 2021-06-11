@@ -18,13 +18,17 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.exceptions.InvalidChannelException;
-import io.aeron.exceptions.*;
+import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.ChannelEndpointException;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -33,7 +37,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 
@@ -43,9 +47,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ChannelEndpointStatusTest
 {
     private static final String URI = "aeron:udp?endpoint=localhost:23456";
@@ -140,14 +146,14 @@ public class ChannelEndpointStatusTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldErrorBadUri()
     {
         assertThrows(RegistrationException.class, () -> clientA.addSubscription("bad uri", STREAM_ID));
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldBeAbleToQueryChannelStatusForSubscription()
     {
         final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
@@ -162,7 +168,7 @@ public class ChannelEndpointStatusTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldBeAbleToQueryChannelStatusForPublication()
     {
         final Publication publication = clientA.addPublication(URI, STREAM_ID);

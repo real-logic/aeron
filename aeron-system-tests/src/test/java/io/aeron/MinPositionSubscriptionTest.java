@@ -18,17 +18,22 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MinPositionSubscriptionTest
 {
     private static final int STREAM_ID = 1001;
@@ -53,7 +58,7 @@ public class MinPositionSubscriptionTest
         driver.context().deleteDirectory();
     }
 
-    @Timeout(10)
+    @InterruptAfter(10)
     @Test
     public void shouldJoinAtSamePositionIpc()
     {
@@ -61,7 +66,7 @@ public class MinPositionSubscriptionTest
         shouldJoinAtSamePosition(channel, channel);
     }
 
-    @Timeout(10)
+    @InterruptAfter(10)
     @Test
     public void shouldJoinAtSamePositionUdp()
     {
@@ -69,7 +74,7 @@ public class MinPositionSubscriptionTest
         shouldJoinAtSamePosition(channel, channel);
     }
 
-    @Timeout(10)
+    @InterruptAfter(10)
     @Test
     public void shouldJoinAtSamePositionUdpSpy()
     {

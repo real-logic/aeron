@@ -20,16 +20,18 @@ import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.CachedEpochClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -50,6 +52,7 @@ import static org.agrona.BitUtil.next;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+@ExtendWith(InterruptingTestCallback.class)
 class CatalogWithJumboRecordingsAndGapsTest
 {
     private static final int MTU_LENGTH = PAGE_SIZE * 4;
@@ -154,7 +157,7 @@ class CatalogWithJumboRecordingsAndGapsTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void listRecording()
     {
         final int count = aeronArchive.listRecording(recordingIds[3],
@@ -184,7 +187,7 @@ class CatalogWithJumboRecordingsAndGapsTest
     }
 
     @ParameterizedTest
-    @Timeout(10)
+    @InterruptAfter(10)
     @MethodSource("listRecordingsArguments")
     void listRecordings(final long fromRecordingId, final int recordCount, final int expectedRecordCount)
     {
@@ -215,7 +218,7 @@ class CatalogWithJumboRecordingsAndGapsTest
     }
 
     @ParameterizedTest
-    @Timeout(10)
+    @InterruptAfter(10)
     @MethodSource("listRecordingsForUriArguments")
     void listRecordingsForUri(
         final long fromRecordingId,

@@ -18,6 +18,8 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -25,7 +27,7 @@ import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.nio.ByteBuffer;
@@ -33,6 +35,7 @@ import java.nio.ByteBuffer;
 import static io.aeron.Publication.MAX_POSITION_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MaxPositionPublicationTest
 {
     private static final int STREAM_ID = 1007;
@@ -59,7 +62,7 @@ public class MaxPositionPublicationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldPublishFromExclusivePublication()
     {
         final int initialTermId = -777;

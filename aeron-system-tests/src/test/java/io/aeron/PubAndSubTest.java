@@ -23,16 +23,18 @@ import io.aeron.driver.ext.LossGenerator;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -44,9 +46,9 @@ import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.SystemTests.verifyLossOccurredForStream;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.SystemTests.verifyLossOccurredForStream;
 import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class PubAndSubTest
 {
     private static final String IPC_URI = "aeron:ipc";
@@ -111,7 +114,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceivePublishedMessageViaPollFile(final String channel)
     {
         launch(channel);
@@ -147,7 +150,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldContinueAfterBufferRollover(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -178,7 +181,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -260,7 +263,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws IOException
     {
         assumeFalse(IPC_URI.equals(channel));
@@ -303,7 +306,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws IOException
     {
         assumeFalse(IPC_URI.equals(channel));
@@ -351,7 +354,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldContinueAfterBufferRolloverBatched(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -408,7 +411,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
     {
         /*
@@ -444,7 +447,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
     {
         /*
@@ -485,7 +488,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
     {
         /*
@@ -550,7 +553,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -597,7 +600,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldFragmentExactMessageLengthsCorrectly(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -645,7 +648,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldNoticeDroppedSubscriber(final String channel)
     {
         launch(channel);

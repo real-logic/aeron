@@ -16,12 +16,14 @@
 package io.aeron.cluster;
 
 import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -38,6 +40,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
+@ExtendWith(InterruptingTestCallback.class)
 class ClusterToolTest
 {
     @RegisterExtension
@@ -51,7 +54,7 @@ class ClusterToolTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     void shouldHandleSnapshotOnLeaderOnly()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -85,7 +88,7 @@ class ClusterToolTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     void shouldNotSnapshotWhenSuspendedOnly()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -115,7 +118,7 @@ class ClusterToolTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     void shouldSuspendAndResume()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();

@@ -18,19 +18,22 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class TwoBufferOfferMessageTest
 {
     private static final String CHANNEL = "aeron:ipc?term-length=64k";
@@ -57,7 +60,7 @@ public class TwoBufferOfferMessageTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldTransferUnfragmentedTwoPartMessage()
     {
         final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[256]);
@@ -93,7 +96,7 @@ public class TwoBufferOfferMessageTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldTransferFragmentedTwoPartMessage()
     {
         final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[32 + driver.context().mtuLength()]);

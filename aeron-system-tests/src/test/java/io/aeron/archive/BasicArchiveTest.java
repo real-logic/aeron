@@ -21,16 +21,18 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
@@ -43,6 +45,7 @@ import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class BasicArchiveTest
 {
     private static final int RECORDED_STREAM_ID = 33;
@@ -114,7 +117,7 @@ public class BasicArchiveTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRecordThenReplayThenTruncate()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -193,7 +196,7 @@ public class BasicArchiveTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void jumboRecordingDescriptorEndToEndTest()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -259,7 +262,7 @@ public class BasicArchiveTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void purgeRecording()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -339,7 +342,7 @@ public class BasicArchiveTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void purgeRecordingFailsIfRecordingIsActive()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -399,7 +402,7 @@ public class BasicArchiveTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void purgeRecordingFailsIfThereAreActiveReplays()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -463,7 +466,7 @@ public class BasicArchiveTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRecordReplayAndCancelReplayEarly()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -504,7 +507,7 @@ public class BasicArchiveTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReplayRecordingFromLateJoinPosition()
     {
         final String messagePrefix = "Message-Prefix-";

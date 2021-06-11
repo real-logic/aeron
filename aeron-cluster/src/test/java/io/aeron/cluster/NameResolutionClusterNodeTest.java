@@ -26,6 +26,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
@@ -35,7 +37,7 @@ import org.agrona.ErrorHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -45,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith(InterruptingTestCallback.class)
 class NameResolutionClusterNodeTest
 {
     private static final long CATALOG_CAPACITY = 1024 * 1024;
@@ -95,7 +98,7 @@ class NameResolutionClusterNodeTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void shouldConnectAndSendKeepAliveWithBadName()
     {
         container = launchEchoService();

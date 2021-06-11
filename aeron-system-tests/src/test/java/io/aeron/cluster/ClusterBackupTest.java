@@ -17,13 +17,15 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.cluster.TestBackupNode;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
@@ -32,6 +34,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
+@ExtendWith(InterruptingTestCallback.class)
 public class ClusterBackupTest
 {
     @RegisterExtension
@@ -45,7 +48,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBackupClusterNoSnapshotsAndEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -66,7 +69,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -96,7 +99,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBackupClusterNoSnapshotsAndThenSendMessages()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -126,7 +129,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBackupClusterWithSnapshot()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -159,7 +162,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBackupClusterAfterCleanShutdown()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -196,7 +199,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBackupClusterWithSnapshotAndNonEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -236,7 +239,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBackupClusterWithSnapshotThenSend()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -276,7 +279,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBeAbleToGetTimeOfNextBackupQuery()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -292,7 +295,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -330,7 +333,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -362,7 +365,7 @@ public class ClusterBackupTest
     }
 
     @Test
-    @Timeout(60)
+    @InterruptAfter(60)
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();

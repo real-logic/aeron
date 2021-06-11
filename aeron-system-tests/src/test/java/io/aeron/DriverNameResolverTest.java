@@ -18,6 +18,8 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
@@ -28,7 +30,7 @@ import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Map;
@@ -40,6 +42,7 @@ import static org.agrona.concurrent.status.CountersReader.*;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class DriverNameResolverTest
 {
     private static final SleepingMillisIdleStrategy SLEEP_50_MS = new SleepingMillisIdleStrategy(50);
@@ -75,7 +78,7 @@ public class DriverNameResolverTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSeeNeighbor()
     {
         addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
@@ -98,7 +101,7 @@ public class DriverNameResolverTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldSeeNeighborsViaGossip()
     {
         addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
@@ -131,7 +134,7 @@ public class DriverNameResolverTest
 
     @SlowTest
     @Test
-    @Timeout(15)
+    @InterruptAfter(15)
     public void shouldSeeNeighborsViaGossipAsLateJoiningDriver()
     {
         addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
@@ -176,7 +179,7 @@ public class DriverNameResolverTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldResolveDriverNameAndAllowConnection()
     {
         addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
@@ -213,7 +216,7 @@ public class DriverNameResolverTest
 
     @SlowTest
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldTimeoutAllNeighborsAndCacheEntries()
     {
         addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
@@ -246,7 +249,7 @@ public class DriverNameResolverTest
 
     @SlowTest
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldTimeoutNeighborsAndCacheEntriesThatAreSeenViaGossip()
     {
         addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())

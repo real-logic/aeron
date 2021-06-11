@@ -730,13 +730,14 @@ public class TestCluster implements AutoCloseable
 
         while ((count = responseCount.get()) < messageCount)
         {
-            Thread.yield();
-            if (Thread.interrupted())
-            {
-                final String message = "count=" + count + " awaiting=" + messageCount;
-                Tests.unexpectedInterruptStackTrace(message);
-                fail(message);
-            }
+            Tests.sleep(1, "count=%d awaiting=%d", count, messageCount);
+//            Thread.yield();
+//            if (Thread.interrupted())
+//            {
+//                final String message = "count=" + count + " awaiting=" + messageCount;
+//                Tests.unexpectedInterruptStackTrace(message);
+//                throw new TimeoutException(message);
+//            }
 
             client.pollEgress();
 
@@ -1030,8 +1031,7 @@ public class TestCluster implements AutoCloseable
             if (Thread.interrupted())
             {
                 final String message = "count=" + count + " awaiting=" + messageCount + " node=" + node;
-                Tests.unexpectedInterruptStackTrace(message);
-                fail(message);
+                throw new TimeoutException(message);
             }
 
             if (service.hasReceivedUnexpectedMessage())

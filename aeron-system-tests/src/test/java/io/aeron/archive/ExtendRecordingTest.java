@@ -25,9 +25,11 @@ import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
@@ -36,7 +38,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -52,6 +54,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ExtendRecordingTest
 {
     private static final String MY_ALIAS = "my-log";
@@ -140,7 +143,7 @@ public class ExtendRecordingTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldExtendRecordingAndReplay()
     {
         final long controlSessionId = aeronArchive.controlSessionId();

@@ -15,7 +15,9 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.ExclusivePublication;
+import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
@@ -27,6 +29,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
@@ -38,7 +42,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -50,8 +54,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ClusterNodeRestartTest
 {
     private static final long CATALOG_CAPACITY = 1024 * 1024;
@@ -90,7 +96,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRestartServiceWithReplay()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
@@ -114,7 +120,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRestartServiceWithReplayAndContinue()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
@@ -140,7 +146,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRestartServiceFromEmptySnapshot()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
@@ -167,7 +173,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRestartServiceFromSnapshot()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
@@ -200,7 +206,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRestartServiceFromSnapshotWithFurtherLog()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
@@ -236,7 +242,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldTakeMultipleSnapshots()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
@@ -261,7 +267,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
@@ -298,7 +304,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
         final AtomicLong triggeredTimersCount = new AtomicLong();
@@ -322,7 +328,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldRestartServiceTwiceWithInvalidSnapshotAndFurtherLog()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
@@ -376,7 +382,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldRestartServiceAfterShutdownWithInvalidatedSnapshot() throws InterruptedException
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);

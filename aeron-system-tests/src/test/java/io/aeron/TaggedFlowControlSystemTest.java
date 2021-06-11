@@ -21,16 +21,18 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -46,6 +48,7 @@ import static io.aeron.FlowControlTests.awaitConnectionAndStatusMessages;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class TaggedFlowControlSystemTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
@@ -151,7 +154,7 @@ public class TaggedFlowControlSystemTest
 
     @ParameterizedTest
     @MethodSource("strategyConfigurations")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSlowToTaggedWithMulticastFlowControlStrategy(
         final FlowControlSupplier flowControlSupplier,
         final Long groupTag,
@@ -236,7 +239,7 @@ public class TaggedFlowControlSystemTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRemoveDeadReceiver()
     {
         final State state = new State();
@@ -311,7 +314,7 @@ public class TaggedFlowControlSystemTest
     @SuppressWarnings("methodlength")
     @SlowTest
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     void shouldPreventConnectionUntilRequiredGroupSizeMatchTagIsMet()
     {
         final Long groupTag = 2701L;
@@ -431,7 +434,7 @@ public class TaggedFlowControlSystemTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     void shouldPreventConnectionUntilAtLeastOneSubscriberConnectedWithRequiredGroupSizeZero()
     {
         final Long groupTag = 2701L;
@@ -478,7 +481,7 @@ public class TaggedFlowControlSystemTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldHandleSenderLimitCorrectlyWithMinGroupSize()
     {
         final String publisherUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/1";

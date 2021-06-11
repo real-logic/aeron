@@ -28,6 +28,8 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
@@ -37,7 +39,7 @@ import org.agrona.concurrent.status.Position;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -52,6 +54,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ReceiverTest
 {
     private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
@@ -186,7 +189,7 @@ public class ReceiverTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldCreateRcvTermAndSendSmOnSetup() throws IOException
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);

@@ -16,13 +16,15 @@
 package io.aeron.cluster;
 
 import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
@@ -30,6 +32,7 @@ import static io.aeron.test.cluster.TestCluster.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
+@ExtendWith(InterruptingTestCallback.class)
 public class DynamicMembershipTest
 {
     private TestCluster cluster = null;
@@ -45,7 +48,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldQueryClusterMembers(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -60,7 +63,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshots(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
@@ -79,7 +82,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
@@ -100,7 +103,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
@@ -120,7 +123,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
@@ -140,7 +143,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshot(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
@@ -166,7 +169,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
@@ -200,7 +203,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRemoveFollower(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -220,7 +223,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRemoveLeader(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -242,7 +245,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRemoveLeaderAfterDynamicNodeJoined(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
@@ -268,7 +271,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRemoveLeaderAfterDynamicNodeJoinedThenRestartCluster(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
@@ -309,7 +312,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldJoinDynamicNodeToSingleStaticLeader(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(1).withDynamicNodes(1).start();
@@ -323,7 +326,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsAndRestartDynamicNode(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();

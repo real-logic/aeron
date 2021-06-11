@@ -18,15 +18,12 @@ package io.aeron.cluster;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.log.EventLogExtension;
-import io.aeron.test.ClusterTestWatcher;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -42,7 +39,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
-@ExtendWith(EventLogExtension.class)
+@ExtendWith({EventLogExtension.class, InterruptingTestCallback.class})
 public class ClusterTest
 {
     @RegisterExtension
@@ -57,7 +54,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldStopFollowerAndRestartFollower()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -76,7 +73,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldNotifyClientOfNewLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -92,7 +89,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldStopLeaderAndFollowersThenRestartAllWithSnapshot()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -112,7 +109,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldShutdownClusterAndRestartWithSnapshots()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -140,7 +137,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldAbortClusterAndRestart()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -170,7 +167,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldAbortClusterOnTerminationTimeout()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -202,7 +199,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldEchoMessages()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -219,7 +216,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldHandleLeaderFailOverWhenNameIsNotResolvable()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -245,7 +242,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldHandleClusterStartWhenANameIsNotResolvable()
     {
         final int initiallyUnresolvableNodeId = 1;
@@ -269,7 +266,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldHandleClusterStartWhereMostNamesBecomeResolvableDuringElection()
     {
         cluster = aCluster().withStaticNodes(3).withInvalidNameResolution(0).withInvalidNameResolution(2).start();
@@ -292,7 +289,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldEchoMessagesThenContinueOnNewLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -326,7 +323,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldStopLeaderAndRestartAsFollower()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -344,7 +341,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldStopLeaderAndRestartAsFollowerWithSendingAfter()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -367,7 +364,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(60)
+    @InterruptAfter(60)
     public void shouldStopLeaderAndRestartAsFollowerWithSendingAfterThenStopLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -395,7 +392,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldAcceptMessagesAfterSingleNodeCleanRestart()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -420,7 +417,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldReplaySnapshotTakenWhileDown()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -453,7 +450,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(50)
+    @InterruptAfter(50)
     public void shouldTolerateMultipleLeaderFailures()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -480,7 +477,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(90)
+    @InterruptAfter(90)
     public void shouldRecoverAfterTwoLeadersNodesFailAndComeBackUpAtSameTime()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -514,7 +511,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldAcceptMessagesAfterTwoNodeCleanRestart()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -548,7 +545,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(60)
+    @InterruptAfter(60)
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosExceedsPreviousAppendedPos()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -602,7 +599,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosIsLessThanPreviousAppendedPos()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -645,7 +642,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldCallOnRoleChangeOnBecomingLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -673,7 +670,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -702,7 +699,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldTerminateLeaderWhenServiceStops()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -723,7 +720,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldEnterElectionWhenRecordingStopsOnLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -749,7 +746,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRecoverFollowerWhenRecordingStops()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -779,7 +776,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldCloseClientOnTimeout()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -805,7 +802,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldRecoverWhileMessagesContinue() throws InterruptedException
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -848,7 +845,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldCatchupFromEmptyLog()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -871,7 +868,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -917,7 +914,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldCatchUpTwoFreshNodesAfterRestart()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -953,7 +950,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldReplayMultipleSnapshotsWithEmptyFollowerLog()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1021,7 +1018,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldRecoverQuicklyAfterKillingFollowersThenRestartingOne()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1051,7 +1048,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldRecoverWhenLeaderHasAppendedMoreThanFollower()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1081,7 +1078,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldRecoverWhenFollowerIsMultipleTermsBehind()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1119,7 +1116,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldRecoverWhenFollowerArrivesPartWayThroughTerm()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1146,7 +1143,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     public void shouldRecoverWhenFollowerArrivePartWayThroughTermAfterMissingElection()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1186,7 +1183,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(40)
+    @InterruptAfter(40)
     void shouldRecoverWhenLastSnapshotIsMarkedInvalid()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1229,7 +1226,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     void shouldRecoverWhenLastSnapshotForShutdownIsMarkedInvalid()
     {
         cluster = aCluster().withStaticNodes(1).start();
@@ -1261,7 +1258,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(60)
+    @InterruptAfter(60)
     void shouldHandleMultipleElections()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1299,7 +1296,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(50)
+    @InterruptAfter(50)
     void shouldRecoverWhenLastSnapshotIsInvalidBetweenTwoElections()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1349,7 +1346,7 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(50)
+    @InterruptAfter(50)
     void shouldRecoverWhenLastTwosSnapshotsAreInvalidAfterElection()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -1411,14 +1408,14 @@ public class ClusterTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldCatchUpAfterFollowerMissesOneMessage()
     {
         shouldCatchUpAfterFollowerMissesMessage(NO_OP_MSG);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldCatchUpAfterFollowerMissesTimerRegistration()
     {
         shouldCatchUpAfterFollowerMissesMessage(REGISTER_TIMER_MSG);

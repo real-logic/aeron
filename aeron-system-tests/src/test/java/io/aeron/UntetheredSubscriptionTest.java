@@ -19,13 +19,15 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -40,6 +42,7 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class UntetheredSubscriptionTest
 {
     private static List<String> channels()
@@ -79,7 +82,7 @@ public class UntetheredSubscriptionTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldBecomeUnavailableWhenNotKeepingUp(final String channel)
     {
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
@@ -135,7 +138,7 @@ public class UntetheredSubscriptionTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRejoinAfterResting(final String channel)
     {
         final AtomicInteger unavailableImageCount = new AtomicInteger();

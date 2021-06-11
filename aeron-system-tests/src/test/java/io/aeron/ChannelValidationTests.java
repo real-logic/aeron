@@ -20,6 +20,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -28,7 +30,7 @@ import org.agrona.CloseHelper;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -46,6 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ChannelValidationTests
 {
     @RegisterExtension
@@ -362,7 +365,7 @@ public class ChannelValidationTests
     }
 
     @Test
-    @Timeout(5)
+    @InterruptAfter(5)
     void shouldValidateSenderMtuAgainstUriReceiverWindow() throws IOException
     {
         context.errorHandler(null);

@@ -20,6 +20,8 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -28,7 +30,7 @@ import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestWatcher;
@@ -39,6 +41,7 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class PublishFromArbitraryPositionTest
 {
     private static final int STREAM_ID = 1007;
@@ -76,7 +79,7 @@ public class PublishFromArbitraryPositionTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldPublishFromArbitraryJoinPosition() throws InterruptedException
     {
         final Random rnd = new Random();

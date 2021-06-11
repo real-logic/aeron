@@ -19,6 +19,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -28,7 +30,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,6 +49,7 @@ import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ExclusivePublicationTest
 {
     private static List<String> channels()
@@ -84,7 +87,7 @@ public class ExclusivePublicationTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldPublishFromIndependentExclusivePublications(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
@@ -132,7 +135,7 @@ public class ExclusivePublicationTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldPublishFromConcurrentExclusivePublications(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
@@ -202,7 +205,7 @@ public class ExclusivePublicationTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldOfferTwoBuffersFromIndependentExclusivePublications(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
@@ -272,7 +275,7 @@ public class ExclusivePublicationTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldOfferTwoBuffersFromConcurrentExclusivePublications(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
@@ -366,7 +369,7 @@ public class ExclusivePublicationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void offerBlockThrowsIllegalArgumentExceptionIfLengthExceedsAvailableSpaceWithinTheTerm()
     {
         final String channel = "aeron:ipc?term-length=64k";
@@ -389,7 +392,7 @@ public class ExclusivePublicationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void offerBlockReturnsClosedWhenPublicationIsClosed()
     {
         final String channel = "aeron:ipc?term-length=64k";
@@ -404,7 +407,7 @@ public class ExclusivePublicationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void offerBlockThrowsIllegalArgumentExceptionUponInvalidFirstFrame()
     {
         final String channel = "aeron:ipc?term-length=64k";
@@ -439,7 +442,7 @@ public class ExclusivePublicationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void offerBlockAcceptsUpToAnEntireTermOfData()
     {
         final String channel = "aeron:ipc?term-length=64k";
@@ -487,7 +490,7 @@ public class ExclusivePublicationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void offerBlockReturnsBackPressuredStatus()
     {
         final String channel = "aeron:ipc?term-length=64k";

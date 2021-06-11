@@ -23,16 +23,21 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.CountingFragmentHandler;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
@@ -46,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MultiDestinationCastTest
 {
     private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325";
@@ -118,7 +124,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSpinUpAndShutdownWithDynamic()
     {
         launch(Tests::onError);
@@ -135,7 +141,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSpinUpAndShutdownWithManual()
     {
         launch(Tests::onError);
@@ -162,7 +168,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldSendToTwoPortsWithDynamic()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
@@ -197,7 +203,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
@@ -232,7 +238,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSendToTwoPortsWithManualSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
@@ -267,7 +273,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
     {
         final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
@@ -282,7 +288,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldManuallyRemovePortDuringActiveStream() throws InterruptedException
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
@@ -338,7 +344,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldManuallyAddPortDuringActiveStream() throws InterruptedException
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;

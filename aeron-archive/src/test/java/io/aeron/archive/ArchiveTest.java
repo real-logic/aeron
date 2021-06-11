@@ -30,6 +30,8 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
@@ -37,7 +39,7 @@ import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -63,7 +65,7 @@ import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Timeout(10)
+@ExtendWith(InterruptingTestCallback.class)
 public class ArchiveTest
 {
     @Test
@@ -254,7 +256,7 @@ public class ArchiveTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldListRegisteredRecordingSubscriptions()
     {
         final int expectedStreamId = 7;
@@ -313,7 +315,7 @@ public class ArchiveTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldErrorOnLowSpace() throws IOException
     {
         final int streamId = 7;

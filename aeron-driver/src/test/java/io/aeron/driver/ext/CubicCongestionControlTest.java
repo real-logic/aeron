@@ -44,7 +44,6 @@ class CubicCongestionControlTest
         "aeron:udp?endpoint=127.0.0.1:9999|rcv-wnd=" + CHANNEL_RECEIVER_WINDOW_LENGTH);
     private final UdpChannel channelWithoutWindow = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:9999");
     private final int bigTermLength = 1_000_000;
-    private final int smallTermLength = 8192;
     private final NanoClock nanoClock = new CachedNanoClock();
 
     @BeforeEach
@@ -74,6 +73,7 @@ class CubicCongestionControlTest
     @Test
     void shouldSetWindowLengthFromTermLength()
     {
+        final int smallTermLength = 8192;
         final CubicCongestionControl cubicCongestionControl = new CubicCongestionControl(
             0, channelWithWindow, 0, 0, smallTermLength, MTU_LENGTH, null, null, nanoClock, context, countersManager);
 

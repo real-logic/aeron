@@ -1827,8 +1827,7 @@ final class ConsensusModuleAgent implements Agent
                 {
                     for (final ClusterMember member : activeMembers)
                     {
-                        if (member.catchupReplayCorrelationId() != NULL_VALUE &&
-                            member.catchupReplayCorrelationId() == poller.correlationId())
+                        if (member.catchupReplayCorrelationId() == poller.correlationId())
                         {
                             member.catchupReplaySessionId(NULL_VALUE);
                             member.catchupReplayCorrelationId(NULL_VALUE);

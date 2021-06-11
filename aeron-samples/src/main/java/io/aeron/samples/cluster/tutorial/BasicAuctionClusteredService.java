@@ -22,10 +22,7 @@ import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.logbuffer.Header;
-import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableDirectByteBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -49,8 +46,8 @@ public class BasicAuctionClusteredService implements ClusteredService
     public static final int SNAPSHOT_PRICE_OFFSET = SNAPSHOT_CUSTOMER_ID_OFFSET + BitUtil.SIZE_OF_LONG;
     public static final int SNAPSHOT_MESSAGE_LENGTH = SNAPSHOT_PRICE_OFFSET + BitUtil.SIZE_OF_LONG;
 
-    private final MutableDirectBuffer egressMessageBuffer = new ExpandableDirectByteBuffer(4);
-    private final MutableDirectBuffer snapshotBuffer = new ExpandableDirectByteBuffer(8);
+    private final MutableDirectBuffer egressMessageBuffer = new ExpandableArrayBuffer();
+    private final MutableDirectBuffer snapshotBuffer = new ExpandableArrayBuffer();
 
     // tag::state[]
     private final Auction auction = new Auction();

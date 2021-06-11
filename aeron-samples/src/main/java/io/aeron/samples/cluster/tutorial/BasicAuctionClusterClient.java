@@ -22,7 +22,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableDirectByteBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
@@ -41,7 +41,7 @@ import static io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode
 public class BasicAuctionClusterClient implements EgressListener
 // end::client[]
 {
-    private final MutableDirectBuffer actionBidBuffer = new ExpandableDirectByteBuffer();
+    private final MutableDirectBuffer actionBidBuffer = new ExpandableArrayBuffer();
     private final IdleStrategy idleStrategy = new BackoffIdleStrategy();
     private final long customerId;
     private final int numOfBids;

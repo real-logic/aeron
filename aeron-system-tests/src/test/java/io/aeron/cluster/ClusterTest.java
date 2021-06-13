@@ -834,6 +834,8 @@ public class ClusterTest
         }
 
         cluster.awaitResponseMessageCount(messageCounter.get());
+        cluster.awaitServiceMessageCount(followerB, messageCounter.get());
+
         cluster.client().close();
         cluster.awaitActiveSessionCount(0);
 

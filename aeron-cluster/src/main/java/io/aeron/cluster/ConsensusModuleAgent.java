@@ -3052,12 +3052,13 @@ final class ConsensusModuleAgent implements Agent
 
                 if (null != election)
                 {
-                    election.handleError(
-                        clusterClock.timeNanos(), new ClusterEvent("log recording ended unexpectedly"));
+                    election.handleError(clusterClock.timeNanos(), new ClusterEvent(
+                        "log recording ended unexpectedly (null != election)"));
                 }
                 else if (NULL_POSITION == terminationPosition)
                 {
-                    ctx.countedErrorHandler().onError(new ClusterEvent("log recording ended unexpectedly"));
+                    ctx.countedErrorHandler().onError(new ClusterEvent(
+                        "log recording ended unexpectedly (NULL_POSITION == terminationPosition"));
                     isElectionRequired = true;
                 }
             }

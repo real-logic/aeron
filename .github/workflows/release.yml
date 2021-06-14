@@ -4,7 +4,7 @@ on:
     types: [published]
 
 env:
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false"
 
 jobs:
   java-build:
@@ -31,8 +31,9 @@ jobs:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper
       - name: Setup java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
+          distribution: 'zulu'
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
         run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.WIKI_PAGE_TOKEN }} --stacktrace

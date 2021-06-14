@@ -37,7 +37,6 @@ int buildJavaVersion = getBuildJavaVersion()
 
 def toolchainLauncher = javaToolchains.launcherFor {
     languageVersion = JavaLanguageVersion.of(buildJavaVersion)
-    vendor = JvmVendorSpec.AZUL
 }
 
 def aeronGroup = 'io.aeron'
@@ -163,7 +162,6 @@ subprojects {
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(buildJavaVersion)
-            vendor = JvmVendorSpec.AZUL
         }
     }
 

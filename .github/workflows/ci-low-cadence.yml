@@ -20,11 +20,6 @@ jobs:
         java: [ '8', '11', '16', '17-ea' ]
         os: [ 'ubuntu-20.04', 'windows-latest' ]
     steps:
-      - name: Setup java
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'zulu'
-          java-version: ${{ matrix.java }}
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
@@ -39,6 +34,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: ${{ matrix.java }}
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -84,11 +84,6 @@ jobs:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
     steps:
-      - name: Setup java 8 to run the Gradle script
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'zulu'
-          java-version: 8
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
@@ -103,6 +98,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: 8
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
         run: |
           java -Xinternalversion
@@ -135,11 +135,6 @@ jobs:
       CC: cl
       CXX: cl
     steps:
-      - name: Setup java 8 to run the Gradle script
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'zulu'
-          java-version: 8
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
@@ -154,6 +149,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: 8
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
         run: |
           java -Xinternalversion
@@ -185,11 +185,6 @@ jobs:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
     steps:
-      - name: Setup java 8 to run the Gradle script
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'zulu'
-          java-version: 8
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
@@ -204,6 +199,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: 8
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
         run: |
           java -Xinternalversion
@@ -240,11 +240,6 @@ jobs:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}
     steps:
-      - name: Setup java 8 to run the Gradle script
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'zulu'
-          java-version: 8
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Cache Gradle dependencies
@@ -259,6 +254,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: 8
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
         run: |
           java -Xinternalversion

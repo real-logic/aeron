@@ -110,7 +110,6 @@ public class ElectionTest
         election.doWork(clock.nanoTime());
         election.doWork(clock.nanoTime());
 
-        verify(clusterMarkFile).candidateTermId();
         verify(consensusModuleAgent).joinLogAsLeader(eq(newLeadershipTermId), eq(logPosition), anyInt(), eq(true));
         verify(recordingLog).isUnknown(newLeadershipTermId);
         verify(recordingLog).appendTerm(RECORDING_ID, newLeadershipTermId, logPosition, clock.nanoTime());

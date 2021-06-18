@@ -109,7 +109,18 @@ class Election
 
         Objects.requireNonNull(thisMember);
         ctx.electionStateCounter().setOrdered(INIT.code());
-        init(nowNs);
+
+        if (clusterMembers.length == 1 && thisMember.id() == clusterMembers[0].id())
+        {
+            candidateTermId = Math.max(leadershipTermId + 1, ctx.clusterMarkFile().candidateTermId() + 1);
+            this.leadershipTermId = candidateTermId;
+            leaderMember = thisMember;
+            state(LEADER_LOG_REPLICATION, nowNs);
+        }
+        else
+        {
+            init(nowNs);
+        }
     }
 
     ClusterMember leader()
@@ -558,18 +569,7 @@ class Election
         }
 
         candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
-
-        if (clusterMembers.length == 1 && thisMember.id() == clusterMembers[0].id())
-        {
-            candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
-            leadershipTermId = candidateTermId;
-            leaderMember = thisMember;
-            state(LEADER_LOG_REPLICATION, nowNs);
-        }
-        else
-        {
-            state(CANVASS, nowNs);
-        }
+        state(CANVASS, nowNs);
 
         return 1;
     }

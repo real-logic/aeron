@@ -1951,7 +1951,10 @@ final class ConsensusModuleAgent implements Agent
         }
         else if (isElectionRequired)
         {
-            enterElection();
+            if (null == election)
+            {
+                enterElection();
+            }
             isElectionRequired = false;
         }
 
@@ -2731,6 +2734,11 @@ final class ConsensusModuleAgent implements Agent
 
     private void enterElection()
     {
+        if (null != election)
+        {
+            throw new IllegalStateException("election in progress");
+        }
+
         role(Cluster.Role.FOLLOWER);
 
         election = new Election(

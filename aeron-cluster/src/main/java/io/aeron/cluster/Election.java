@@ -891,9 +891,15 @@ class Election
         if (null != image)
         {
             verifyLogImage(image);
-            consensusModuleAgent.joinLogAsFollower(image, isLeaderStartup);
-            state(FOLLOWER_CATCHUP, nowNs);
-            workCount++;
+            if (consensusModuleAgent.tryJoinLogAsFollower(image, isLeaderStartup))
+            {
+                state(FOLLOWER_CATCHUP, nowNs);
+                workCount++;
+            }
+            else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
+            {
+                throw new TimeoutException("failed to join catchup log as follower", AeronException.Category.WARN);
+            }
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
         {
@@ -965,7 +971,7 @@ class Election
             }
             else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
             {
-                throw new TimeoutException("failed to join live log", AeronException.Category.WARN);
+                throw new TimeoutException("failed to join live log as follower", AeronException.Category.WARN);
             }
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))

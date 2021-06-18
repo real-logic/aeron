@@ -989,6 +989,12 @@ final class ConsensusModuleAgent implements Agent
             lastAppendPosition = getLastAppendedPosition();
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
 
+            final CountersReader counters = ctx.aeron().countersReader();
+            while (CountersReader.NULL_COUNTER_ID != RecordingPos.findCounterIdByRecording(counters, logRecordingId))
+            {
+                idle();
+            }
+
             clearSessionsAfter(logPosition);
             for (final ClusterSession session : sessionByIdMap.values())
             {
@@ -1399,7 +1405,10 @@ final class ConsensusModuleAgent implements Agent
 
         leadershipTermId(leadershipTermId);
         startLogRecording(channel, ctx.logStreamId(), SourceLocation.LOCAL);
-        createAppendPosition(logSessionId);
+        while (!tryCreateAppendPosition(logSessionId))
+        {
+            idle();
+        }
 
         awaitServicesReady(
             isIpc ? channel : SPY_PREFIX + channel,
@@ -1429,29 +1438,6 @@ final class ConsensusModuleAgent implements Agent
     String catchupLogDestination()
     {
         return catchupLogDestination;
-    }
-
-    void joinLogAsFollower(final Image image, final boolean isLeaderStartup)
-    {
-        final Subscription logSubscription = image.subscription();
-        final int streamId = logSubscription.streamId();
-        final String channel = logSubscription.channel();
-
-        startLogRecording(channel, streamId, SourceLocation.REMOTE);
-        createAppendPosition(image.sessionId());
-        appendDynamicJoinTermAndSnapshots();
-
-        logAdapter.image(image);
-        lastAppendPosition = image.joinPosition();
-
-        awaitServicesReady(
-            channel,
-            streamId,
-            image.sessionId(),
-            image.joinPosition(),
-            Long.MAX_VALUE,
-            isLeaderStartup,
-            Cluster.Role.FOLLOWER);
     }
 
     boolean tryJoinLogAsFollower(final Image image, final boolean isLeaderStartup)
@@ -2421,22 +2407,6 @@ final class ConsensusModuleAgent implements Agent
         }
 
         return false;
-    }
-
-    private void createAppendPosition(final int logSessionId)
-    {
-        final CountersReader counters = aeron.countersReader();
-        final int counterId = awaitRecordingCounter(counters, logSessionId);
-
-        long registrationId;
-        while (0 == (registrationId = counters.getCounterRegistrationId(counterId)))
-        {
-            idle();
-        }
-
-        logRecordingId = RecordingPos.getRecordingId(counters, counterId);
-        appendPosition = new ReadableCounter(counters, registrationId, counterId);
-        logRecordedPosition = NULL_POSITION;
     }
 
     private boolean tryCreateAppendPosition(final int logSessionId)

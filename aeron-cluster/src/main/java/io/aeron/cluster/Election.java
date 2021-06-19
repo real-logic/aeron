@@ -569,7 +569,15 @@ class Election
         }
 
         candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
-        state(CANVASS, nowNs);
+
+        if (clusterMembers.length == 1 && thisMember.id() == clusterMembers[0].id())
+        {
+            state(LEADER_LOG_REPLICATION, nowNs);
+        }
+        else
+        {
+            state(CANVASS, nowNs);
+        }
 
         return 1;
     }

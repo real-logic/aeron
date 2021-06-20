@@ -115,6 +115,7 @@ class Election
             candidateTermId = Math.max(leadershipTermId + 1, ctx.clusterMarkFile().candidateTermId() + 1);
             this.leadershipTermId = candidateTermId;
             leaderMember = thisMember;
+            ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(LEADER_LOG_REPLICATION, nowNs);
         }
         else

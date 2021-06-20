@@ -118,10 +118,6 @@ class Election
             ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(LEADER_LOG_REPLICATION, nowNs);
         }
-        else
-        {
-            init(nowNs);
-        }
     }
 
     ClusterMember leader()
@@ -146,12 +142,16 @@ class Election
 
     int doWork(final long nowNs)
     {
-        int workCount = INIT == state ? init(nowNs) : 0;
+        int workCount = 0;
 
         try
         {
             switch (state)
             {
+                case INIT:
+                    workCount += init(nowNs);
+                    break;
+
                 case CANVASS:
                     workCount += canvass(nowNs);
                     break;

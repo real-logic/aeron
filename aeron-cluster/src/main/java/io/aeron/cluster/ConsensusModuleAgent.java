@@ -303,6 +303,8 @@ final class ConsensusModuleAgent implements Agent
                 ctx,
                 this);
 
+            election.doWork(clusterClock.timeNanos());
+
             state(ConsensusModule.State.ACTIVE);
         }
 
@@ -1610,7 +1612,7 @@ final class ConsensusModuleAgent implements Agent
         return true;
     }
 
-    boolean dynamicJoinComplete()
+    boolean dynamicJoinComplete(final long nowNs)
     {
         if (0 == activeMembers.length)
         {
@@ -1647,6 +1649,8 @@ final class ConsensusModuleAgent implements Agent
             consensusPublisher,
             ctx,
             this);
+
+        election.doWork(nowNs);
 
         return true;
     }
@@ -2752,6 +2756,8 @@ final class ConsensusModuleAgent implements Agent
             consensusPublisher,
             ctx,
             this);
+
+        election.doWork(clusterClock.timeNanos());
     }
 
     private void idle()

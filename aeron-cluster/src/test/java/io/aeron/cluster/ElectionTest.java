@@ -310,6 +310,8 @@ public class ElectionTest
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember);
 
+        election.doWork(0);
+
         clock.update(1, clock.timeUnit());
         election.doWork(clock.nanoTime());
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
@@ -1041,11 +1043,13 @@ public class ElectionTest
             ctx,
             consensusModuleAgent);
 
+        long t1 = 0;
+        election.doWork(t1);
+
         final InOrder inOrder = inOrder(electionStateCounter);
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.INIT.code());
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
-        long t1 = 0;
         election.doWork(++t1);
 
         election.onRequestVote(leadershipTermId, leaderLogPosition, leadershipTermId, leaderId);
@@ -1235,6 +1239,8 @@ public class ElectionTest
             consensusPublisher,
             ctx,
             consensusModuleAgent);
+
+        election.doWork(0);
 
         final InOrder inOrder = inOrder(electionStateCounter);
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.INIT.code());

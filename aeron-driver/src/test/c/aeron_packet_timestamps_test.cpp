@@ -160,3 +160,30 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesAtOffset)
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
+TEST_F(PacketTimestampsTest, shouldTimestampConfigurationShouldClashIfNotMatching)
+{
+    aeron_async_add_subscription_t *async_sub = nullptr;
+
+    std::string uriOriginal = std::string(URI);
+    const char *uriOriginal_s = uriOriginal.append("|packet-ts-offset=8").c_str();
+
+    const char *uriNotSpecified_s = URI;
+
+    std::string uriDifferentOffset = std::string(URI);
+    const char *uriDifferentOffset_s = uriDifferentOffset.append("|packet-ts-offset=reserved").c_str();
+
+    ASSERT_TRUE(connect());
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, uriOriginal_s, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+    aeron_subscription_t *subscription = awaitSubscriptionOrError(async_sub);
+    ASSERT_TRUE(subscription) << aeron_errmsg();
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, uriNotSpecified_s, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+    ASSERT_FALSE(awaitSubscriptionOrError(async_sub));
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, uriDifferentOffset_s, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+    ASSERT_FALSE(awaitSubscriptionOrError(async_sub));
+}

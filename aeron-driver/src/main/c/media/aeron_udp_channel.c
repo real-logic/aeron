@@ -420,9 +420,7 @@ int aeron_udp_channel_parse(
         _channel->canonical_length = strlen(_channel->canonical_form);
     }
 
-    const char *offset_str = aeron_uri_find_param_value(
-        &_channel->uri.params.udp.additional_params, AERON_URI_PACKET_TIMESTAMP_OFFSET);
-    if (aeron_udp_channel_parse_packet_timestamp_offset(offset_str, &_channel->packet_timestamp_offset) < 0)
+    if (aeron_driver_uri_get_packet_timestamp_offset(&_channel->uri, &_channel->packet_timestamp_offset) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         goto error_cleanup;

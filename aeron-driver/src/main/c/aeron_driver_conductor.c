@@ -142,6 +142,16 @@ static bool aeron_driver_conductor_has_clashing_subscription(
                 AERON_SET_ERR(EINVAL, "option conflicts with existing subscription: rejoin=%s", value);
                 return true;
             }
+
+            if (params->packet_timestamp_offset != link->packet_timestamp_offset)
+            {
+                AERON_SET_ERR(
+                    EINVAL,
+                    "option conflicts with existing subscription: packet-ts-offset=%" PRId32 " %s",
+                    params->packet_timestamp_offset,
+                    aeron_driver_uri_get_offset_info(params->packet_timestamp_offset));
+                return true;
+            }
         }
     }
 
@@ -2983,6 +2993,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     link->subscribable_list.length = 0;
     link->subscribable_list.capacity = 0;
     link->subscribable_list.array = NULL;
+    link->packet_timestamp_offset = AERON_NULL_VALUE;
 
     aeron_driver_conductor_on_subscription_ready(
         conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
@@ -3080,6 +3091,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
     link->subscribable_list.length = 0;
     link->subscribable_list.capacity = 0;
     link->subscribable_list.array = NULL;
+    link->packet_timestamp_offset = params.packet_timestamp_offset;
 
     aeron_driver_conductor_on_subscription_ready(
         conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
@@ -3220,6 +3232,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->subscribable_list.length = 0;
         link->subscribable_list.capacity = 0;
         link->subscribable_list.array = NULL;
+        link->packet_timestamp_offset = params.packet_timestamp_offset;
 
         aeron_driver_conductor_on_subscription_ready(
             conductor, correlation_id, endpoint->channel_status.counter_id);

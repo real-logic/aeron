@@ -95,6 +95,7 @@ int aeron_udp_channel_transport_init(
 
     transport->fd = -1;
     transport->bindings_clientd = NULL;
+    transport->is_packet_timestamping = false;
     for (size_t i = 0; i < AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS; i++)
     {
         transport->interceptor_clientds[i] = NULL;
@@ -294,16 +295,14 @@ int aeron_udp_channel_transport_recvmmsg(
         char buf[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS][CMSG_SPACE(sizeof(struct timespec))],
         sizeof(struct cmsghdr));
 
-#if defined(HAVE_PACKET_TIMESTAMPS)
     if (transport->is_packet_timestamping)
     {
         for (int i = 0; i < (int)vlen && i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
         {
             msgvec[i].msg_hdr.msg_control = (void *)buf[i];
-            msgvec[i].msg_hdr.msg_controllen = sizeof(buf[i]);
+            msgvec[i].msg_hdr.msg_controllen = CMSG_LEN(sizeof(buf[i]));
         }
     }
-#endif
 
     int result = recvmmsg(transport->fd, msgvec, vlen, 0, &tv);
     if (result < 0)
@@ -326,8 +325,6 @@ int aeron_udp_channel_transport_recvmmsg(
     {
         for (size_t i = 0, length = (size_t)result; i < length; i++)
         {
-
-#if defined(HAVE_PACKET_TIMESTAMPS)
             struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgvec[i].msg_hdr);
             if (NULL != cmsg &&
                 cmsg->cmsg_level == SOL_SOCKET &&
@@ -336,7 +333,6 @@ int aeron_udp_channel_transport_recvmmsg(
             {
                 packet_timestamp = (struct timespec *)CMSG_DATA(cmsg);
             }
-#endif
 
             recv_func(
                 transport->data_paths,

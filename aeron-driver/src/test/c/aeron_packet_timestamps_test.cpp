@@ -48,6 +48,10 @@ int64_t null_reserved_value(void *clientd, uint8_t *buffer, size_t frame_length)
 
 TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValue)
 {
+#if !defined(__linux__)
+    GTEST_SKIP();
+#endif
+
     aeron_async_add_publication_t *async_pub = nullptr;
     aeron_async_add_subscription_t *async_sub = nullptr;
     std::string uri = std::string(URI);
@@ -104,6 +108,10 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValue)
 
 TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesAtOffset)
 {
+#if !defined(__linux__)
+    GTEST_SKIP();
+#endif
+
     aeron_async_add_publication_t *async_pub = nullptr;
     aeron_async_add_subscription_t *async_sub = nullptr;
     std::stringstream uriStream;

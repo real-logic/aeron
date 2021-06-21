@@ -94,6 +94,7 @@ int aeron_send_channel_endpoint_create(
         0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
         _endpoint->conductor_fields.socket_rcvbuf,
         _endpoint->conductor_fields.socket_sndbuf,
+        false,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER) < 0)
     {
@@ -291,7 +292,8 @@ void aeron_send_channel_endpoint_dispatch(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    struct timespec *packet_timestamp)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)sender_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;

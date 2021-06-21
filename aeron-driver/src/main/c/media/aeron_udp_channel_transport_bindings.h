@@ -47,6 +47,7 @@ typedef int (*aeron_udp_channel_transport_init_func_t)(
     uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf,
+    bool is_packet_timestamping,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 
@@ -60,7 +61,8 @@ typedef void (*aeron_udp_transport_recv_func_t)(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr);
+    struct sockaddr_storage *addr,
+    struct timespec *packet_timestamp);
 
 typedef int (*aeron_udp_channel_transport_recvmmsg_func_t)(
     aeron_udp_channel_transport_t *transport,
@@ -320,7 +322,8 @@ inline void aeron_udp_channel_incoming_interceptor_recv_func(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    struct timespec *packet_timestamp)
 {
     aeron_udp_channel_incoming_interceptor_t *interceptor = data_paths->incoming_interceptors;
 
@@ -356,7 +359,7 @@ inline void aeron_udp_channel_incoming_interceptor_to_endpoint(
 #pragma GCC diagnostic pop
 #endif
 
-    func(NULL, transport, receiver_clientd, endpoint_clientd, destination_clientd, buffer, length, addr);
+    func(NULL, transport, receiver_clientd, endpoint_clientd, destination_clientd, buffer, length, addr, NULL);
 }
 
 int aeron_udp_channel_data_paths_init(

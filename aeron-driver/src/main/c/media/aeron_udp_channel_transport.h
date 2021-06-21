@@ -29,6 +29,7 @@ typedef struct aeron_udp_channel_transport_stct
     void *bindings_clientd;
     void *destination_clientd;
     void *interceptor_clientds[AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS];
+    bool is_packet_timestamping;
 }
 aeron_udp_channel_transport_t;
 
@@ -42,6 +43,7 @@ int aeron_udp_channel_transport_init(
     uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf,
+    bool is_packet_timestamping,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 

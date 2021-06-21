@@ -3150,7 +3150,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
-    // If we found an existing endpoint free the channel. Channel is no longer required beyond this point.
+    // If we found an existing endpoint, free the channel. Channel is no longer required beyond this point.
     if (endpoint->conductor_fields.udp_channel != udp_channel)
     {
         aeron_udp_channel_delete(udp_channel);

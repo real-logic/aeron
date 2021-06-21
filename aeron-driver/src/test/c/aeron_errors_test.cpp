@@ -30,7 +30,7 @@ extern "C"
 #include "util/aeron_error.h"
 }
 
-#define PUB_URI "aeron:udp?endpoint=localhost:24325"
+#define URI_RESERVED "aeron:udp?endpoint=localhost:24325"
 #define STREAM_ID (117)
 
 class ErrorCallbackValidation

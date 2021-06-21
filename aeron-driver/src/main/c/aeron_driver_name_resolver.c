@@ -119,7 +119,8 @@ void aeron_driver_name_resolver_receive(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr);
+    struct sockaddr_storage *addr,
+    struct timespec *packet_timestamp);
 
 static int aeron_driver_name_resolver_from_sockaddr(
     struct sockaddr_storage *addr, aeron_name_resolver_cache_addr_t *cache_addr);
@@ -217,6 +218,7 @@ int aeron_driver_name_resolver_init(
         0,
         context->socket_rcvbuf,
         context->socket_sndbuf,
+        false,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_CONDUCTOR) < 0)
     {
@@ -511,7 +513,8 @@ void aeron_driver_name_resolver_receive(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    struct timespec *packet_timestamp)
 {
     aeron_driver_name_resolver_t *resolver = receiver_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;

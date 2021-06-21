@@ -50,6 +50,7 @@ int aeron_receive_destination_create(
         0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
         socket_rcvbuf,
         socket_sndbuf,
+        aeron_udp_channel_is_packet_timestamping(channel),
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {

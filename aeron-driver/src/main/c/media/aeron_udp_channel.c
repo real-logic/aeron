@@ -161,40 +161,6 @@ int aeron_uri_udp_canonicalise(
     return snprintf(canonical_form, length, "UDP-%s-%s%s", local_data_str, remote_data_str, unique_suffix);
 }
 
-_Static_assert(
-    AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET != AERON_NULL_VALUE,
-    "AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == AERON_NULL_VALUE");
-
-int aeron_udp_channel_parse_packet_timestamp_offset(const char *offset_str, int32_t *offset)
-{
-    *offset = AERON_NULL_VALUE;
-
-    if (NULL == offset_str)
-    {
-        return 0;
-    }
-
-    if (0 == strcmp(AERON_URI_PACKET_TIMESTAMP_OFFSET_RESERVED, offset_str))
-    {
-        *offset = AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET;
-        return 0;
-    }
-
-    char *end_ptr = NULL;
-    errno = 0;
-    long parse_offset = strtol(offset_str, &end_ptr, 0);
-    errno = 0 == errno && '\0' != *end_ptr ? EINVAL : 0;
-    if (0 != errno)
-    {
-        AERON_SET_ERR(errno, "Invalid %s: %s", AERON_URI_PACKET_TIMESTAMP_OFFSET, offset_str);
-        return -1;
-    }
-
-    *offset = (int32_t)parse_offset;
-
-    return 0;
-}
-
 int aeron_udp_channel_parse(
     size_t uri_length,
     const char *uri,

@@ -245,7 +245,7 @@ int aeron_udp_channel_transport_init(
 
     if (is_packet_timestamping)
     {
-        if (aeron_udp_channel_transport_setup_packet_timestamps(transport))
+        if (aeron_udp_channel_transport_setup_packet_timestamps(transport) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             goto error;

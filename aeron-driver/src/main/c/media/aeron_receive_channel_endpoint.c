@@ -445,7 +445,9 @@ static void aeron_receive_channel_endpoint_set_packet_timestamp(
     {
         data_header->reserved_value = timestamp_ns;
     }
-    else if (0 <= offset && offset <= (int32_t)(body_length - sizeof(timestamp_ns)))
+    else if (0 <= offset &&
+        offset <= (int32_t)(body_length - sizeof(timestamp_ns)) &&
+        offset <= (int32_t)((data_header->frame_header.frame_length - sizeof(*data_header)) - sizeof(timestamp_ns)))
     {
         memcpy(body_buffer + (size_t)offset, &timestamp_ns, sizeof(timestamp_ns));
     }

@@ -1761,10 +1761,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
         aeron_receive_destination_t *destination = NULL;
 
-        size_t socket_rcvbuf = 0 != channel->socket_rcvbuf_length ?
-            channel->socket_rcvbuf_length : conductor->context->socket_rcvbuf;
-        size_t socket_sndbuf = 0 != channel->socket_sndbuf_length ?
-            channel->socket_sndbuf_length : conductor->context->socket_sndbuf;
+        const size_t socket_rcvbuf = aeron_udp_channel_socket_so_rcvbuf(channel, conductor->context->socket_rcvbuf);
+        const size_t socket_sndbuf = aeron_udp_channel_socket_so_sndbuf(channel, conductor->context->socket_sndbuf);
 
         if (!channel->is_manual_control_mode)
         {
@@ -1776,7 +1774,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
                 correlation_id,
                 status_indicator.counter_id,
                 socket_rcvbuf,
-                socket_rcvbuf) < 0)
+                socket_sndbuf) < 0)
             {
                 AERON_APPEND_ERR("correlation_id=%" PRId64, correlation_id);
                 return NULL;

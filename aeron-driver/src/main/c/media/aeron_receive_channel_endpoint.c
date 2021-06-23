@@ -428,14 +428,20 @@ void aeron_receive_channel_endpoint_dispatch(
 static void aeron_receive_channel_endpoint_set_packet_timestamp(
     aeron_receive_channel_endpoint_t *endpoint,
     struct timespec *packet_timestamp,
-    aeron_data_header_t *data_header,
-    uint8_t *body_buffer,
-    size_t body_length)
+    uint8_t *buffer,
+    size_t length)
 {
-    if (NULL == packet_timestamp)
+    aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
+
+    if (NULL == packet_timestamp ||
+        AERON_HDR_TYPE_PAD == data_header->frame_header.type ||
+        aeron_publication_image_is_heartbeat(buffer, length))
     {
         return;
     }
+
+    uint8_t *body_buffer = buffer + sizeof(aeron_data_header_t);
+    size_t body_length = length - sizeof(aeron_data_header_t);
 
     int64_t timestamp_ns =
         (INT64_C(1000) * 1000 * 1000 * packet_timestamp->tv_sec) + packet_timestamp->tv_nsec;
@@ -466,13 +472,7 @@ int aeron_receive_channel_endpoint_on_data(
     aeron_receive_destination_update_last_activity_ns(
         destination, aeron_clock_cached_nano_time(endpoint->cached_clock));
 
-    aeron_receive_channel_endpoint_set_packet_timestamp(
-        endpoint,
-        packet_timestamp,
-        data_header,
-        buffer + sizeof(aeron_data_header_t),
-        length - sizeof(aeron_data_header_t)
-    );
+    aeron_receive_channel_endpoint_set_packet_timestamp(endpoint, packet_timestamp, buffer, length);
 
     return aeron_data_packet_dispatcher_on_data(
         &endpoint->dispatcher, endpoint, destination, data_header, buffer, length, addr);

@@ -168,6 +168,62 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesAtOffset)
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
+TEST_F(PacketTimestampsTest, shouldNotPutTimestampInMessagesAtIfOffsetExceedsMessage)
+{
+#if !defined(__linux__)
+    GTEST_SKIP();
+#endif
+
+    aeron_async_add_publication_t *async_pub = nullptr;
+    aeron_async_add_subscription_t *async_sub = nullptr;
+    std::stringstream uriStream;
+    uriStream << URI << "|pkt-ts-offset=" << sizeof(message_t) - 4 << '\0';
+    std::string uri = uriStream.str();
+    const char *uri_s = uri.c_str();
+
+    struct message_t message = {};
+
+    ASSERT_TRUE(connect());
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, uri_s, STREAM_ID), 0);
+
+    aeron_publication_t *publication = awaitPublicationOrError(async_pub);
+    ASSERT_TRUE(publication) << aeron_errmsg();
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, uri_s, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+
+    aeron_subscription_t *subscription = awaitSubscriptionOrError(async_sub);
+    ASSERT_TRUE(subscription) << aeron_errmsg();
+    awaitConnected(subscription);
+
+    while (aeron_publication_offer(
+        publication, (const uint8_t *)&message, sizeof(message), null_reserved_value, nullptr) < 0)
+    {
+        std::this_thread::yield();
+    }
+
+    int poll_result;
+    poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
+    {
+        aeron_header_values_t header_values;
+        aeron_header_values(header, &header_values);
+        message_t *incoming = (message_t*)buffer;
+        EXPECT_EQ(AERON_NULL_VALUE, header_values.frame.reserved_value);
+        EXPECT_EQ(0, incoming->padding);
+        EXPECT_EQ(0, incoming->timestamp_2);
+        EXPECT_EQ(0, memcmp(incoming->text, message.text, sizeof(incoming->text)));
+    };
+
+    while ((poll_result = poll(subscription, handler, 1)) == 0)
+    {
+        std::this_thread::yield();
+    }
+    EXPECT_EQ(poll_result, 1) << aeron_errmsg();
+
+    EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
+    EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
+}
+
 TEST_F(PacketTimestampsTest, shouldErrorIfTimestampConfigurationClashes)
 {
     aeron_async_add_subscription_t *async_sub = nullptr;

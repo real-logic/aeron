@@ -298,7 +298,7 @@ TEST_F(DriverUriTest, shouldGetPacketTimestampOffset)
 {
     aeron_driver_uri_subscription_params_t params = {};
 
-    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=1001|packet-ts-offset=reserved", &m_uri), 0);
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=1001|pkt-ts-offset=reserved", &m_uri), 0);
     EXPECT_EQ(aeron_driver_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
 
     int32_t offset = 0;

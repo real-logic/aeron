@@ -147,7 +147,7 @@ static bool aeron_driver_conductor_has_clashing_subscription(
             {
                 AERON_SET_ERR(
                     EINVAL,
-                    "option conflicts with existing subscription: packet-ts-offset=%" PRId32 " %s",
+                    "option conflicts with existing subscription: pkt-ts-offset=%" PRId32 " %s",
                     params->packet_timestamp_offset,
                     aeron_driver_uri_get_offset_info(params->packet_timestamp_offset));
                 return true;

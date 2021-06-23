@@ -343,19 +343,21 @@ final class ConsensusModuleAgent implements Agent
                 workCount += consensusWork(now, nowNs);
             }
         }
-        catch (final AgentTerminationException ex)
-        {
-            runTerminationHook(ex);
-        }
         catch (final Throwable ex)
         {
+            if (ex instanceof AgentTerminationException || ex instanceof InterruptedException)
+            {
+                runTerminationHook();
+                throw ex;
+            }
+
             if (null != election)
             {
                 election.handleError(nowNs, ex);
             }
             else
             {
-                ctx.countedErrorHandler().onError(ex);
+                throw ex;
             }
         }
 
@@ -3178,7 +3180,7 @@ final class ConsensusModuleAgent implements Agent
         }
     }
 
-    private void runTerminationHook(final AgentTerminationException ex)
+    private void runTerminationHook()
     {
         try
         {
@@ -3188,8 +3190,6 @@ final class ConsensusModuleAgent implements Agent
         {
             ctx.countedErrorHandler().onError(t);
         }
-
-        throw ex;
     }
 
     public String toString()

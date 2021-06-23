@@ -318,11 +318,10 @@ final class ConsensusModuleAgent implements Agent
     {
         int workCount = 0;
 
+        final long now = clusterClock.time();
+        final long nowNs = clusterTimeUnit.toNanos(now);
         try
         {
-            final long now = clusterClock.time();
-            final long nowNs = clusterTimeUnit.toNanos(now);
-
             if (nowNs >= slowTickDeadlineNs)
             {
                 slowTickDeadlineNs = nowNs + SLOW_TICK_INTERVAL_NS;
@@ -347,6 +346,17 @@ final class ConsensusModuleAgent implements Agent
         catch (final AgentTerminationException ex)
         {
             runTerminationHook(ex);
+        }
+        catch (final Throwable ex)
+        {
+            if (null != election)
+            {
+                election.handleError(nowNs, ex);
+            }
+            else
+            {
+                ctx.countedErrorHandler().onError(ex);
+            }
         }
 
         return workCount;

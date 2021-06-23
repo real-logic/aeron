@@ -144,82 +144,75 @@ class Election
     {
         int workCount = 0;
 
-        try
+        switch (state)
         {
-            switch (state)
-            {
-                case INIT:
-                    workCount += init(nowNs);
-                    break;
+            case INIT:
+                workCount += init(nowNs);
+                break;
 
-                case CANVASS:
-                    workCount += canvass(nowNs);
-                    break;
+            case CANVASS:
+                workCount += canvass(nowNs);
+                break;
 
-                case NOMINATE:
-                    workCount += nominate(nowNs);
-                    break;
+            case NOMINATE:
+                workCount += nominate(nowNs);
+                break;
 
-                case CANDIDATE_BALLOT:
-                    workCount += candidateBallot(nowNs);
-                    break;
+            case CANDIDATE_BALLOT:
+                workCount += candidateBallot(nowNs);
+                break;
 
-                case FOLLOWER_BALLOT:
-                    workCount += followerBallot(nowNs);
-                    break;
+            case FOLLOWER_BALLOT:
+                workCount += followerBallot(nowNs);
+                break;
 
-                case LEADER_LOG_REPLICATION:
-                    workCount += leaderLogReplication(nowNs);
-                    break;
+            case LEADER_LOG_REPLICATION:
+                workCount += leaderLogReplication(nowNs);
+                break;
 
-                case LEADER_REPLAY:
-                    workCount += leaderReplay(nowNs);
-                    break;
+            case LEADER_REPLAY:
+                workCount += leaderReplay(nowNs);
+                break;
 
-                case LEADER_INIT:
-                    workCount += leaderInit(nowNs);
-                    break;
+            case LEADER_INIT:
+                workCount += leaderInit(nowNs);
+                break;
 
-                case LEADER_READY:
-                    workCount += leaderReady(nowNs);
-                    break;
+            case LEADER_READY:
+                workCount += leaderReady(nowNs);
+                break;
 
-                case FOLLOWER_LOG_REPLICATION:
-                    workCount += followerLogReplication(nowNs);
-                    break;
+            case FOLLOWER_LOG_REPLICATION:
+                workCount += followerLogReplication(nowNs);
+                break;
 
-                case FOLLOWER_REPLAY:
-                    workCount += followerReplay(nowNs);
-                    break;
+            case FOLLOWER_REPLAY:
+                workCount += followerReplay(nowNs);
+                break;
 
-                case FOLLOWER_CATCHUP_INIT:
-                    workCount += followerCatchupInit(nowNs);
-                    break;
+            case FOLLOWER_CATCHUP_INIT:
+                workCount += followerCatchupInit(nowNs);
+                break;
 
-                case FOLLOWER_CATCHUP_AWAIT:
-                    workCount += followerCatchupAwait(nowNs);
-                    break;
+            case FOLLOWER_CATCHUP_AWAIT:
+                workCount += followerCatchupAwait(nowNs);
+                break;
 
-                case FOLLOWER_CATCHUP:
-                    workCount += followerCatchup(nowNs);
-                    break;
+            case FOLLOWER_CATCHUP:
+                workCount += followerCatchup(nowNs);
+                break;
 
-                case FOLLOWER_LOG_INIT:
-                    workCount += followerLogInit(nowNs);
-                    break;
+            case FOLLOWER_LOG_INIT:
+                workCount += followerLogInit(nowNs);
+                break;
 
-                case FOLLOWER_LOG_AWAIT:
-                    workCount += followerLogAwait(nowNs);
-                    break;
+            case FOLLOWER_LOG_AWAIT:
+                workCount += followerLogAwait(nowNs);
+                break;
 
-                case FOLLOWER_READY:
-                    workCount += followerReady(nowNs);
-                    break;
-            }
-        }
-        catch (final Throwable ex)
-        {
-            handleError(nowNs, ex);
+            case FOLLOWER_READY:
+                workCount += followerReady(nowNs);
+                break;
         }
 
         return workCount;

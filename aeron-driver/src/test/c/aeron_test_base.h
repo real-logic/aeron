@@ -130,6 +130,22 @@ public:
         return subscription;
     }
 
+    static bool awaitDestinationOrError(aeron_async_destination_t *async)
+    {
+        do
+        {
+            std::this_thread::yield();
+            switch (aeron_subscription_async_destination_poll(async))
+            {
+                case -1:
+                    return false;
+                case 1:
+                    return true;
+            }
+        }
+        while (true);
+    }
+
     static aeron_counter_t *awaitCounterOrError(aeron_async_add_counter_t *async)
     {
         aeron_counter_t *counter = nullptr;

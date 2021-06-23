@@ -137,7 +137,7 @@ protected:
         if (!channel->is_manual_control_mode)
         {
             if (0 != aeron_receive_destination_create(
-                &destination, channel, m_context, &m_counters_manager, 0, status_indicator.counter_id, 0, 0))
+                &destination, channel, m_context, &m_counters_manager, 0, status_indicator.counter_id, 0, 0, false))
             {
                 return nullptr;
             }

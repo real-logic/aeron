@@ -27,7 +27,8 @@ int aeron_receive_destination_create(
     int64_t registration_id,
     int32_t channel_status_counter_id,
     size_t socket_rcvbuf,
-    size_t socket_sndbuf)
+    size_t socket_sndbuf,
+    bool is_packet_timestamping)
 {
     aeron_receive_destination_t *_destination = NULL;
 
@@ -50,7 +51,7 @@ int aeron_receive_destination_create(
         0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
         socket_rcvbuf,
         socket_sndbuf,
-        aeron_udp_channel_is_packet_timestamping(channel),
+        is_packet_timestamping,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {

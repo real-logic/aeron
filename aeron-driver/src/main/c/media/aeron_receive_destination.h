@@ -50,7 +50,8 @@ int aeron_receive_destination_create(
     int64_t registration_id,
     int32_t channel_status_counter_id,
     size_t socket_rcvbuf,
-    size_t socket_sndbuf);
+    size_t socket_sndbuf,
+    bool is_packet_timestamping);
 
 void aeron_receive_destination_delete(
     aeron_receive_destination_t *destination, aeron_counters_manager_t *counters_manager);

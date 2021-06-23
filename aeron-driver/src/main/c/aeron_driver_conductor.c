@@ -1784,7 +1784,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
                 correlation_id,
                 status_indicator.counter_id,
                 socket_rcvbuf,
-                socket_sndbuf) < 0)
+                socket_sndbuf,
+                aeron_udp_channel_is_packet_timestamping(channel)) < 0)
             {
                 AERON_APPEND_ERR("correlation_id=%" PRId64, correlation_id);
                 return NULL;
@@ -3588,7 +3589,8 @@ int aeron_driver_conductor_on_add_receive_destination(
         command->registration_id,
         endpoint->channel_status.counter_id,
         endpoint->conductor_fields.socket_rcvbuf,
-        endpoint->conductor_fields.socket_sndbuf) < 0)
+        endpoint->conductor_fields.socket_sndbuf,
+        aeron_udp_channel_is_packet_timestamping(endpoint->conductor_fields.udp_channel)) < 0)
     {
         goto error_cleanup;
     }

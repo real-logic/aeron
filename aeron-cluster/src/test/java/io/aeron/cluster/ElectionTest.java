@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
-import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.exceptions.TimeoutException;
@@ -37,6 +36,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 public class ElectionTest
@@ -833,8 +833,7 @@ public class ElectionTest
         reset(countedErrorHandler);
 
         clock.increment(ctx.leaderHeartbeatTimeoutNs());
-        election.doWork(clock.nanoTime());
-        verify(countedErrorHandler).onError(any(TimeoutException.class));
+        assertThrows(TimeoutException.class, () -> election.doWork(clock.nanoTime()));
     }
 
     @Test
@@ -1011,75 +1010,6 @@ public class ElectionTest
 
         verify(consensusModuleAgent).newLogReplication(
             liveLeader.archiveEndpoint(), RECORDING_ID, term9BaseLogPosition, t1);
-    }
-
-    @Test
-    void followerShouldResetToInitIfFailureOccursDuringReplication()
-    {
-        final long leadershipTermId = 1;
-        final long leaderLogPosition = 120;
-        final long followerLogPosition = 60;
-        final ClusterMember[] clusterMembers = prepareClusterMembers();
-        final ClusterMember thisMember = clusterMembers[1];
-        final ClusterMember liveLeader = clusterMembers[0];
-        final int leaderId = liveLeader.id();
-        final LogReplication logReplication = mock(LogReplication.class);
-
-        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
-        when(consensusModuleAgent.prepareForNewLeadership(anyLong())).thenReturn(followerLogPosition);
-
-        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
-        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
-
-        final Election election = new Election(
-            true,
-            0,
-            followerLogPosition,
-            followerLogPosition,
-            clusterMembers,
-            clusterMemberByIdMap,
-            thisMember,
-            consensusPublisher,
-            ctx,
-            consensusModuleAgent);
-
-        long t1 = 0;
-        election.doWork(t1);
-
-        final InOrder inOrder = inOrder(electionStateCounter);
-        inOrder.verify(electionStateCounter).setOrdered(ElectionState.INIT.code());
-        inOrder.verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
-
-        election.doWork(++t1);
-
-        election.onRequestVote(leadershipTermId, leaderLogPosition, leadershipTermId, leaderId);
-        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_BALLOT.code());
-
-        election.onNewLeadershipTerm(
-            0,
-            leadershipTermId,
-            leaderLogPosition,
-            NULL_POSITION,
-            leadershipTermId,
-            leaderLogPosition,
-            leaderLogPosition,
-            RECORDING_ID,
-            t1,
-            leaderId,
-            0,
-            true);
-        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
-
-        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
-        election.doWork(++t1);
-
-        verify(consensusModuleAgent, times(1)).newLogReplication(
-            liveLeader.archiveEndpoint(), RECORDING_ID, leaderLogPosition, t1);
-
-        when(logReplication.isDone(anyLong())).thenThrow(new ClusterException());
-        election.doWork(++t1);
-
-        inOrder.verify(electionStateCounter).setOrdered(ElectionState.INIT.code());
     }
 
     @Test

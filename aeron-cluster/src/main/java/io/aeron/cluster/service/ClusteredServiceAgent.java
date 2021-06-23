@@ -177,7 +177,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
         catch (final AgentTerminationException ex)
         {
-            runTerminationHook(ex);
+            runTerminationHook();
+            throw ex;
         }
 
         return workCount;
@@ -1005,7 +1006,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
     }
 
-    private void runTerminationHook(final AgentTerminationException ex)
+    private void runTerminationHook()
     {
         try
         {
@@ -1015,7 +1016,5 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             ctx.countedErrorHandler().onError(t);
         }
-
-        throw ex;
     }
 }

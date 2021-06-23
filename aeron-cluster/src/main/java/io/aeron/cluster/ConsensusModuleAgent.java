@@ -343,14 +343,13 @@ final class ConsensusModuleAgent implements Agent
                 workCount += consensusWork(now, nowNs);
             }
         }
+        catch (final AgentTerminationException ex)
+        {
+            runTerminationHook();
+            throw ex;
+        }
         catch (final Throwable ex)
         {
-            if (ex instanceof AgentTerminationException || ex instanceof InterruptedException)
-            {
-                runTerminationHook();
-                throw ex;
-            }
-
             if (null != election)
             {
                 election.handleError(nowNs, ex);

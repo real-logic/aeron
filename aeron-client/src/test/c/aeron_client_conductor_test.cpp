@@ -52,7 +52,7 @@ extern "C"
 
 #define TIME_ADVANCE_INTERVAL_NS (1000 * 1000LL)
 
-#define PUB_URI "aeron:udp?endpoint=localhost:24567"
+#define URI_RESERVED "aeron:udp?endpoint=localhost:24567"
 #define DEST_URI "aeron:udp?endpoint=localhost:24568"
 #define SUB_URI "aeron:udp?endpoint=localhost:24567"
 #define STREAM_ID (101)
@@ -393,7 +393,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfully)
     aeron_async_add_publication_t *async = nullptr;
     aeron_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
@@ -415,7 +415,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfullyMaxMessageSize)
     aeron_async_add_publication_t *async = nullptr;
     aeron_publication_t *publication = nullptr;
     const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_publication_command_t);
-    char *uri = allocateStringWithPrefix(PUB_URI, "|alias=", 'X', uri_length);
+    char *uri = allocateStringWithPrefix(URI_RESERVED, "|alias=", 'X', uri_length);
 
     ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, uri, STREAM_ID), 0);
     doWork();
@@ -442,7 +442,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverError)
     aeron_async_add_publication_t *async = nullptr;
     aeron_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
@@ -460,7 +460,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverTimeout)
     aeron_async_add_publication_t *async = nullptr;
     aeron_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
@@ -477,7 +477,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfully)
     aeron_async_add_exclusive_publication_t *async = nullptr;
     aeron_exclusive_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
@@ -499,7 +499,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfullyMaxMessageS
     aeron_async_add_exclusive_publication_t *async = nullptr;
     aeron_exclusive_publication_t *publication = nullptr;
     const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_publication_command_t);
-    char *uri = allocateStringWithPrefix(PUB_URI, "|alias=", 'C', uri_length);
+    char *uri = allocateStringWithPrefix(URI_RESERVED, "|alias=", 'C', uri_length);
 
     ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, uri, STREAM_ID), 0);
     doWork();
@@ -526,7 +526,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddExclusivePublicationFromDriverError)
     aeron_async_add_exclusive_publication_t *async = nullptr;
     aeron_exclusive_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
@@ -543,7 +543,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddExclusivePublicationFromDriverTimeou
     aeron_async_add_exclusive_publication_t *async = nullptr;
     aeron_exclusive_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
@@ -735,7 +735,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationAndHandleOnNewPublication)
     aeron_publication_t *publication = nullptr;
     bool was_on_new_publication_called = false;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     m_on_new_publication = [&](aeron_async_add_publication_t *async,
@@ -744,7 +744,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationAndHandleOnNewPublication)
         int32_t session_id,
         int64_t correlation_id)
     {
-        EXPECT_EQ(strcmp(channel, PUB_URI), 0);
+        EXPECT_EQ(strcmp(channel, URI_RESERVED), 0);
         EXPECT_EQ(stream_id, STREAM_ID);
         EXPECT_EQ(session_id, SESSION_ID);
         EXPECT_EQ(correlation_id, async->registration_id);
@@ -772,7 +772,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationAndHandleOnNewPublicati
     aeron_exclusive_publication_t *publication = nullptr;
     bool was_on_new_exclusive_publication_called = false;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     m_on_new_exclusive_publication = [&](aeron_async_add_exclusive_publication_t *async,
@@ -781,7 +781,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationAndHandleOnNewPublicati
         int32_t session_id,
         int64_t correlation_id)
     {
-        EXPECT_EQ(strcmp(channel, PUB_URI), 0);
+        EXPECT_EQ(strcmp(channel, URI_RESERVED), 0);
         EXPECT_EQ(stream_id, STREAM_ID);
         EXPECT_EQ(session_id, SESSION_ID);
         EXPECT_EQ(correlation_id, async->registration_id);
@@ -846,7 +846,7 @@ TEST_F(ClientConductorTest, shouldHandlePublicationAddRemoveDestination)
     aeron_async_destination_t *async_remove_dest = nullptr;
     aeron_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async_pub, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async_pub, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     transmitOnPublicationReady(async_pub, m_logFileName, false);
@@ -884,7 +884,7 @@ TEST_F(ClientConductorTest, shouldHandlePublicationAddRemoveDestinationMaxMessag
     aeron_async_destination_t *async_remove_dest = nullptr;
     aeron_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async_pub, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async_pub, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     transmitOnPublicationReady(async_pub, m_logFileName, false);
@@ -926,7 +926,7 @@ TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestination)
     aeron_async_destination_t *async_dest = nullptr;
     aeron_exclusive_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async_pub, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async_pub, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     transmitOnPublicationReady(async_pub, m_logFileName, false);
@@ -964,7 +964,7 @@ TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestinationMaxMes
     aeron_async_destination_t *async_dest = nullptr;
     aeron_exclusive_publication_t *publication = nullptr;
 
-    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async_pub, &m_conductor, PUB_URI, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async_pub, &m_conductor, URI_RESERVED, STREAM_ID), 0);
     doWork();
 
     transmitOnPublicationReady(async_pub, m_logFileName, false);
@@ -1009,7 +1009,7 @@ TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestination)
 
     ASSERT_EQ(
         aeron_client_conductor_async_add_subscription(
-            &async_sub, &m_conductor, PUB_URI, STREAM_ID, nullptr, nullptr, nullptr, nullptr),
+            &async_sub, &m_conductor, URI_RESERVED, STREAM_ID, nullptr, nullptr, nullptr, nullptr),
         0);
     doWork();
 
@@ -1049,7 +1049,7 @@ TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestinationMaxMessageSize
 
     ASSERT_EQ(
         aeron_client_conductor_async_add_subscription(
-            &async_sub, &m_conductor, PUB_URI, STREAM_ID, nullptr, nullptr, nullptr, nullptr),
+            &async_sub, &m_conductor, URI_RESERVED, STREAM_ID, nullptr, nullptr, nullptr, nullptr),
         0);
     doWork();
 

@@ -33,9 +33,18 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <time.h>
+#include <inttypes.h>
 #include "util/aeron_error.h"
 #include "util/aeron_netutil.h"
 #include "aeron_udp_channel_transport.h"
+#include "aeron_driver_context.h"
+
+#if defined(__linux__)
+#define HAVE_PACKET_TIMESTAMPS
+#include <linux/net_tstamp.h>
+#include <sys/ioctl.h>
+#include <linux/sockios.h>
+#endif
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
@@ -45,6 +54,29 @@ struct mmsghdr
 };
 #endif
 
+static int aeron_udp_channel_transport_setup_packet_timestamps(aeron_udp_channel_transport_t *transport)
+{
+#if defined(HAVE_PACKET_TIMESTAMPS)
+    uint32_t enable_timestamp = 1;
+    if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_TIMESTAMPNS, &enable_timestamp, sizeof(enable_timestamp)) < 0)
+    {
+        AERON_SET_ERR(errno, "%", "setsockopt(SO_TIMESTAMPNS)");
+        return -1;
+    }
+
+    uint32_t timestamp_flags = SOF_TIMESTAMPING_RX_HARDWARE;
+    if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_TIMESTAMPING, &timestamp_flags, sizeof(timestamp_flags)) < 0)
+    {
+        AERON_SET_ERR(errno, "%", "setsockopt(SO_TIMESTAMPING)");
+        return -1;
+    }
+
+    transport->is_packet_timestamping = true;
+#endif
+
+    return 0;
+}
+
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *bind_addr,
@@ -53,6 +85,7 @@ int aeron_udp_channel_transport_init(
     uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf,
+    bool is_packet_timestamping,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity)
 {
@@ -62,6 +95,7 @@ int aeron_udp_channel_transport_init(
 
     transport->fd = -1;
     transport->bindings_clientd = NULL;
+    transport->is_packet_timestamping = false;
     for (size_t i = 0; i < AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS; i++)
     {
         transport->interceptor_clientds[i] = NULL;
@@ -209,6 +243,14 @@ int aeron_udp_channel_transport_init(
         }
     }
 
+    if (is_packet_timestamping)
+    {
+        if (aeron_udp_channel_transport_setup_packet_timestamps(transport) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
+    }
 
     if (set_socket_non_blocking(transport->fd) < 0)
     {
@@ -248,6 +290,19 @@ int aeron_udp_channel_transport_recvmmsg(
 {
 #if defined(HAVE_RECVMMSG)
     struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
+    struct timespec *packet_timestamp = NULL;
+    AERON_DECL_ALIGNED(
+        char buf[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS][CMSG_SPACE(sizeof(struct timespec))],
+        sizeof(struct cmsghdr));
+
+    if (transport->is_packet_timestamping)
+    {
+        for (int i = 0; i < (int)vlen && i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
+        {
+            msgvec[i].msg_hdr.msg_control = (void *)buf[i];
+            msgvec[i].msg_hdr.msg_controllen = CMSG_LEN(sizeof(buf[i]));
+        }
+    }
 
     int result = recvmmsg(transport->fd, msgvec, vlen, 0, &tv);
     if (result < 0)
@@ -270,6 +325,15 @@ int aeron_udp_channel_transport_recvmmsg(
     {
         for (size_t i = 0, length = (size_t)result; i < length; i++)
         {
+            struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgvec[i].msg_hdr);
+            if (NULL != cmsg &&
+                cmsg->cmsg_level == SOL_SOCKET &&
+                cmsg->cmsg_type == SCM_TIMESTAMPNS &&
+                cmsg->cmsg_len == CMSG_LEN(sizeof(struct timespec)))
+            {
+                packet_timestamp = (struct timespec *)CMSG_DATA(cmsg);
+            }
+
             recv_func(
                 transport->data_paths,
                 transport,
@@ -278,7 +342,8 @@ int aeron_udp_channel_transport_recvmmsg(
                 transport->destination_clientd,
                 msgvec[i].msg_hdr.msg_iov[0].iov_base,
                 msgvec[i].msg_len,
-                msgvec[i].msg_hdr.msg_name);
+                msgvec[i].msg_hdr.msg_name,
+                packet_timestamp);
             *bytes_rcved += msgvec[i].msg_len;
         }
 
@@ -318,7 +383,8 @@ int aeron_udp_channel_transport_recvmmsg(
             transport->destination_clientd,
             msgvec[i].msg_hdr.msg_iov[0].iov_base,
             msgvec[i].msg_len,
-            msgvec[i].msg_hdr.msg_name);
+            msgvec[i].msg_hdr.msg_name,
+            NULL);
         *bytes_rcved += msgvec[i].msg_len;
         work_count++;
     }

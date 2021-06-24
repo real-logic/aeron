@@ -375,6 +375,11 @@ int aeron_driver_uri_subscription_params(
         return -1;
     }
 
+    if (aeron_driver_uri_get_packet_timestamp_offset(uri, &params->packet_timestamp_offset) < 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 
@@ -428,4 +433,56 @@ int aeron_subscription_params_validate_initial_window_for_rcvbuf(
     }
 
     return 0;
+}
+
+int aeron_driver_uri_get_packet_timestamp_offset(aeron_uri_t *uri, int32_t *offset)
+{
+    *offset = AERON_NULL_VALUE;
+
+    if (AERON_URI_UDP != uri->type)
+    {
+        return 0;
+    }
+
+    const char *offset_str = aeron_uri_find_param_value(
+        &uri->params.udp.additional_params, AERON_URI_PACKET_TIMESTAMP_OFFSET);
+
+    if (NULL == offset_str)
+    {
+        return 0;
+    }
+
+    if (0 == strcmp(AERON_URI_PACKET_TIMESTAMP_OFFSET_RESERVED, offset_str))
+    {
+        *offset = AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET;
+        return 0;
+    }
+
+    char *end_ptr = NULL;
+    errno = 0;
+    long parse_offset = strtol(offset_str, &end_ptr, 0);
+    errno = 0 == errno && '\0' != *end_ptr ? EINVAL : 0;
+    if (0 != errno)
+    {
+        AERON_SET_ERR(errno, "Invalid %s: %s", AERON_URI_PACKET_TIMESTAMP_OFFSET, offset_str);
+        return -1;
+    }
+
+    *offset = (int32_t)parse_offset;
+
+    return 0;
+}
+
+const char *aeron_driver_uri_get_offset_info(int32_t offset)
+{
+    if (AERON_NULL_VALUE == offset)
+    {
+        return "(not specified)";
+    }
+    else if (AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == offset)
+    {
+        return "(reserved)";
+    }
+
+    return "";
 }

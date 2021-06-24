@@ -27,7 +27,7 @@ extern "C"
 #include "aeron_system_counters.h"
 }
 
-#define PUB_URI "aeron:udp?endpoint=127.0.0.1:24325"
+#define URI_RESERVED "aeron:udp?endpoint=127.0.0.1:24325"
 #define PUB_URI_2 "aeron:udp?endpoint=127.0.0.1:24326"
 #define STREAM_ID (117)
 
@@ -197,7 +197,7 @@ TEST_F(CncTest, shouldGetCountersAndDistinctErrorLogs)
 
     aeron_async_add_subscription_t *async;
     ASSERT_EQ(aeron_async_add_subscription(
-        &async, m_aeron, PUB_URI, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0) << aeron_errmsg();
+        &async, m_aeron, URI_RESERVED, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0) << aeron_errmsg();
     ASSERT_EQ(nullptr, awaitSubscriptionOrError(async));
 
     filter = CounterIdFilter{ AERON_SYSTEM_COUNTER_ERRORS };

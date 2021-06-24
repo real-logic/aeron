@@ -39,6 +39,12 @@ INSTANTIATE_TEST_SUITE_P(
     CSystemTest,
     testing::Values(std::make_tuple(PUB_URI), std::make_tuple(AERON_IPC_CHANNEL)));
 
+static int64_t set_reserved_value(void *clientd, uint8_t *buffer, size_t frame_length)
+{
+    return *(int64_t *)clientd;
+}
+
+
 TEST_P(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
 {
     aeron_context_t *context;
@@ -233,9 +239,10 @@ TEST_P(CSystemTest, shouldOfferAndPollOneMessage)
     aeron_subscription_t *subscription = awaitSubscriptionOrError(async_sub);
     ASSERT_TRUE(subscription) << aeron_errmsg();
     awaitConnected(subscription);
+    int64_t reserved_value = 0x12345678;
 
     while (aeron_publication_offer(
-        publication, (const uint8_t *)message, strlen(message), nullptr, nullptr) < 0)
+        publication, (const uint8_t *)message, strlen(message), set_reserved_value, &reserved_value) < 0)
     {
         std::this_thread::yield();
     }
@@ -245,6 +252,9 @@ TEST_P(CSystemTest, shouldOfferAndPollOneMessage)
     poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         EXPECT_EQ(length, strlen(message));
+        aeron_header_values_t header_values;
+        aeron_header_values(header, &header_values);
+        ASSERT_EQ(reserved_value, header_values.frame.reserved_value);
         called = true;
     };
 

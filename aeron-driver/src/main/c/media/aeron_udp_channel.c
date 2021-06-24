@@ -204,6 +204,7 @@ int aeron_udp_channel_parse(
     _channel->socket_rcvbuf_length = 0;
     _channel->socket_sndbuf_length = 0;
     _channel->receiver_window_length = 0;
+    _channel->packet_timestamp_offset = AERON_NULL_VALUE;
 
     if (_channel->uri.type != AERON_URI_UDP)
     {
@@ -385,6 +386,12 @@ int aeron_udp_channel_parse(
         _channel->canonical_length = strlen(_channel->canonical_form);
     }
 
+    if (aeron_driver_uri_get_packet_timestamp_offset(&_channel->uri, &_channel->packet_timestamp_offset) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error_cleanup;
+    }
+
     *channel = _channel;
     return 0;
 
@@ -416,3 +423,5 @@ extern size_t aeron_udp_channel_socket_so_sndbuf(aeron_udp_channel_t *channel, s
 extern size_t aeron_udp_channel_socket_so_rcvbuf(aeron_udp_channel_t *channel, size_t default_so_rcvbuf);
 
 extern size_t aeron_udp_channel_receiver_window(aeron_udp_channel_t *channel, size_t default_receiver_window);
+
+extern bool aeron_udp_channel_is_packet_timestamping(aeron_udp_channel_t *channel);

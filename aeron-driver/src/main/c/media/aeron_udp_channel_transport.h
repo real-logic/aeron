@@ -21,6 +21,10 @@
 #include "aeron_driver_common.h"
 #include "aeron_udp_channel_transport_bindings.h"
 
+#define AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_NONE (0x0)
+#define AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_HW (0x1)
+#define AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_SW (0x2)
+
 typedef struct aeron_udp_channel_transport_stct
 {
     aeron_socket_t fd;
@@ -29,7 +33,7 @@ typedef struct aeron_udp_channel_transport_stct
     void *bindings_clientd;
     void *destination_clientd;
     void *interceptor_clientds[AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS];
-    bool is_packet_timestamping;
+    uint32_t packet_timestamp_flags;
 }
 aeron_udp_channel_transport_t;
 

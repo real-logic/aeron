@@ -71,7 +71,10 @@ static int aeron_udp_channel_transport_setup_packet_timestamps(aeron_udp_channel
         return -1;
     }
 
-    transport->is_packet_timestamping = true;
+    // The kernel does both falling back when required.  Essentially we just need a non-zero value for normal
+    // UDP.
+    transport->packet_timestamp_flags =
+        AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_HW | AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_SW;
 #endif
 
     return 0;
@@ -95,7 +98,7 @@ int aeron_udp_channel_transport_init(
 
     transport->fd = -1;
     transport->bindings_clientd = NULL;
-    transport->is_packet_timestamping = false;
+    transport->packet_timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_NONE;
     for (size_t i = 0; i < AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS; i++)
     {
         transport->interceptor_clientds[i] = NULL;
@@ -295,7 +298,7 @@ int aeron_udp_channel_transport_recvmmsg(
         char buf[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS][CMSG_SPACE(sizeof(struct timespec))],
         sizeof(struct cmsghdr));
 
-    if (transport->is_packet_timestamping)
+    if (transport->packet_timestamp_flags)
     {
         for (int i = 0; i < (int)vlen && i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
         {

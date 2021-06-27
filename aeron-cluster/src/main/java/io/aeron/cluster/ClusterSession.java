@@ -156,7 +156,7 @@ final class ClusterSession
         responsePublication = null;
     }
 
-    boolean isResponsePublicationConnected(final Aeron aeron)
+    boolean isResponsePublicationConnected(final Aeron aeron, final long nowNs)
     {
         if (null == responsePublication)
         {
@@ -165,6 +165,7 @@ final class ClusterSession
             if (null != responsePublication)
             {
                 responsePublicationId = Aeron.NULL_VALUE;
+                timeOfLastActivityNs = nowNs;
                 state(State.CONNECTING);
             }
             else if (!aeron.isCommandActive(responsePublicationId))

@@ -2158,7 +2158,7 @@ final class ConsensusModuleAgent implements Agent
 
             if (session.state() == INIT || session.state() == CONNECTED)
             {
-                if (session.isResponsePublicationConnected(aeron))
+                if (session.isResponsePublicationConnected(aeron, nowNs))
                 {
                     session.state(CONNECTED);
                     authenticator.onConnectedSession(sessionProxy.session(session), nowMs);
@@ -2167,7 +2167,7 @@ final class ConsensusModuleAgent implements Agent
 
             if (session.state() == CHALLENGED)
             {
-                if (session.isResponsePublicationConnected(aeron))
+                if (session.isResponsePublicationConnected(aeron, nowNs))
                 {
                     authenticator.onChallengedSession(sessionProxy.session(session), nowMs);
                 }
@@ -2218,7 +2218,7 @@ final class ConsensusModuleAgent implements Agent
             final String detail = session.responseDetail();
             final EventCode eventCode = session.eventCode();
 
-            if ((session.isResponsePublicationConnected(aeron) &&
+            if ((session.isResponsePublicationConnected(aeron, nowNs) &&
                 egressPublisher.sendEvent(session, leadershipTermId, leaderMember.id(), eventCode, detail)) ||
                 (session.state() != INIT && nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs)) ||
                 session.state() == INVALID)
@@ -2242,7 +2242,7 @@ final class ConsensusModuleAgent implements Agent
             final EventCode eventCode = EventCode.REDIRECT;
             final int leaderId = leaderMember.id();
 
-            if ((session.isResponsePublicationConnected(aeron) &&
+            if ((session.isResponsePublicationConnected(aeron, nowNs) &&
                 egressPublisher.sendEvent(session, leadershipTermId, leaderId, eventCode, ingressEndpoints)) ||
                 (session.state() != INIT && nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs)) ||
                 session.state() == INVALID)

@@ -17,9 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.exceptions.ChannelEndpointException;
 import io.aeron.exceptions.RegistrationException;
-import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -137,52 +135,6 @@ class AsyncResourceTest
 
             assertFalse(aeron.isCommandActive(registrationId));
             assertFalse(aeron.hasActiveCommands());
-        }
-        finally
-        {
-            driverCtx.deleteDirectory();
-        }
-    }
-
-    @Test
-    void shouldDetectChannelEndpointError()
-    {
-        final ErrorHandler mockClientErrorHandler = mock(ErrorHandler.class);
-        final Aeron.Context clientCtx = new Aeron.Context()
-            .errorHandler(mockClientErrorHandler);
-
-        final ErrorHandler mockDriverErrorHandler = mock(ErrorHandler.class);
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .errorHandler(mockDriverErrorHandler)
-            .dirDeleteOnStart(true)
-            .threadingMode(ThreadingMode.DEDICATED);
-
-        try (
-            TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher);
-            Aeron aeron = Aeron.connect(clientCtx))
-        {
-            final String channel = "aeron:udp?control=localhost:34567|endpoint=localhost:2345";
-            final Publication publicationOne = aeron.addPublication(channel + "6", STREAM_ID);
-
-            while (publicationOne.channelStatus() == ChannelEndpointStatus.INITIALIZING)
-            {
-                Tests.yield();
-            }
-
-            final long registrationId = aeron.asyncAddPublication(channel + "7", STREAM_ID);
-
-            ConcurrentPublication publicationTwo;
-            while (null == (publicationTwo = aeron.getPublication(registrationId)))
-            {
-                Tests.yield();
-            }
-
-            assertFalse(aeron.isCommandActive(registrationId));
-            assertFalse(aeron.hasActiveCommands());
-
-            verify(mockClientErrorHandler, timeout(5000)).onError(any(ChannelEndpointException.class));
-
-            assertEquals(ChannelEndpointStatus.ERRORED, publicationTwo.channelStatus());
         }
         finally
         {

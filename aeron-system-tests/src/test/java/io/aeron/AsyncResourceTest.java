@@ -17,8 +17,6 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.driver.exceptions.InvalidChannelException;
-import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ChannelEndpointException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.status.ChannelEndpointStatus;
@@ -105,7 +103,6 @@ class AsyncResourceTest
         {
             final long registrationId = aeron.asyncAddPublication("invalid" + AERON_IPC, STREAM_ID);
 
-            verify(mockDriverErrorHandler, timeout(5000)).onError(any(InvalidChannelException.class));
             verify(mockClientErrorHandler, timeout(5000)).onError(any(RegistrationException.class));
 
             assertFalse(aeron.isCommandActive(registrationId));
@@ -136,7 +133,6 @@ class AsyncResourceTest
         {
             final long registrationId = aeron.asyncAddPublication("aeron:udp?endpoint=wibble:1234", STREAM_ID);
 
-            verify(mockDriverErrorHandler, timeout(5000)).onError(any(InvalidChannelException.class));
             verify(mockClientErrorHandler, timeout(5000)).onError(any(RegistrationException.class));
 
             assertFalse(aeron.isCommandActive(registrationId));
@@ -184,7 +180,6 @@ class AsyncResourceTest
             assertFalse(aeron.isCommandActive(registrationId));
             assertFalse(aeron.hasActiveCommands());
 
-            verify(mockDriverErrorHandler, timeout(5000)).onError(any(AeronException.class));
             verify(mockClientErrorHandler, timeout(5000)).onError(any(ChannelEndpointException.class));
 
             assertEquals(ChannelEndpointStatus.ERRORED, publicationTwo.channelStatus());

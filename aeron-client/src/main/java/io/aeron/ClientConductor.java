@@ -35,6 +35,7 @@ import java.util.concurrent.locks.Lock;
 import static io.aeron.Aeron.Configuration.IDLE_SLEEP_MS;
 import static io.aeron.Aeron.Configuration.IDLE_SLEEP_NS;
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.ErrorCode.CHANNEL_ENDPOINT_ERROR;
 import static io.aeron.status.HeartbeatTimestamp.HEARTBEAT_TYPE_ID;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -58,7 +59,6 @@ final class ClientConductor implements Agent
     private boolean isClosed;
     private boolean isInCallback;
     private boolean isTerminating;
-    private String stashedChannel;
     private RegistrationException driverException;
 
     private final Aeron.Context ctx;
@@ -72,6 +72,7 @@ final class ClientConductor implements Agent
     private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<LogBuffers> lingeringLogBuffers = new ArrayList<>();
     private final Long2ObjectHashMap<Object> resourceByRegIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<String> stashedChannelByRegistrationId = new Long2ObjectHashMap<>();
     private final LongHashSet asyncCommandIdSet = new LongHashSet();
     private final AvailableImageHandler defaultAvailableImageHandler;
     private final UnavailableImageHandler defaultUnavailableImageHandler;
@@ -160,9 +161,9 @@ final class ClientConductor implements Agent
                     isInterrupted = true;
                 }
 
-                for (int i = 0, size = lingeringLogBuffers.size(); i < size; i++)
+                for (final LogBuffers lingeringLogBuffer : lingeringLogBuffers)
                 {
-                    CloseHelper.close(ctx.errorHandler(), lingeringLogBuffers.get(i));
+                    CloseHelper.close(ctx.errorHandler(), lingeringLogBuffer);
                 }
 
                 driverProxy.clientClose();
@@ -234,35 +235,46 @@ final class ClientConductor implements Agent
             subscription.internalClose(NULL_VALUE);
             resourceByRegIdMap.remove(correlationId);
         }
+        else if (asyncCommandIdSet.remove(correlationId))
+        {
+            stashedChannelByRegistrationId.remove(correlationId);
+            handleError(new RegistrationException(correlationId, codeValue, errorCode, message));
+        }
     }
 
     void onAsyncError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
     {
+        stashedChannelByRegistrationId.remove(correlationId);
         handleError(new RegistrationException(correlationId, codeValue, errorCode, message));
     }
 
-    void onChannelEndpointError(final int statusIndicatorId, final String message)
+    void onChannelEndpointError(final long correlationId, final String message)
     {
+        final int statusIndicatorId = (int)correlationId;
+
         for (final Object resource : resourceByRegIdMap.values())
         {
             if (resource instanceof Subscription)
             {
-                final Subscription subscription = (Subscription)resource;
-
-                if (subscription.channelStatusId() == statusIndicatorId)
+                if (((Subscription)resource).channelStatusId() == statusIndicatorId)
                 {
                     handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
             }
             else if (resource instanceof Publication)
             {
-                final Publication publication = (Publication)resource;
-
-                if (publication.channelStatusId() == statusIndicatorId)
+                if (((Publication)resource).channelStatusId() == statusIndicatorId)
                 {
                     handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
             }
+        }
+
+        if (asyncCommandIdSet.remove(correlationId))
+        {
+            stashedChannelByRegistrationId.remove(correlationId);
+            handleError(new RegistrationException(
+                correlationId, CHANNEL_ENDPOINT_ERROR.value(), CHANNEL_ENDPOINT_ERROR, message));
         }
     }
 
@@ -275,6 +287,7 @@ final class ClientConductor implements Agent
         final int statusIndicatorId,
         final String logFileName)
     {
+        final String stashedChannel = stashedChannelByRegistrationId.remove(registrationId);
         final ConcurrentPublication publication = new ConcurrentPublication(
             this,
             stashedChannel,
@@ -287,6 +300,7 @@ final class ClientConductor implements Agent
             correlationId);
 
         resourceByRegIdMap.put(correlationId, publication);
+        asyncCommandIdSet.remove(correlationId);
     }
 
     void onNewExclusivePublication(
@@ -304,6 +318,7 @@ final class ClientConductor implements Agent
                 "correlationId=" + correlationId + " registrationId=" + registrationId));
         }
 
+        final String stashedChannel = stashedChannelByRegistrationId.remove(registrationId);
         final ExclusivePublication publication = new ExclusivePublication(
             this,
             stashedChannel,
@@ -316,6 +331,7 @@ final class ClientConductor implements Agent
             correlationId);
 
         resourceByRegIdMap.put(correlationId, publication);
+        asyncCommandIdSet.remove(correlationId);
     }
 
     void onNewSubscription(final long correlationId, final int statusIndicatorId)
@@ -433,8 +449,8 @@ final class ClientConductor implements Agent
             ensureActive();
             ensureNotReentrant();
 
-            stashedChannel = channel;
             final long registrationId = driverProxy.addPublication(channel, streamId);
+            stashedChannelByRegistrationId.put(registrationId, channel);
             awaitResponse(registrationId);
 
             return (ConcurrentPublication)resourceByRegIdMap.get(registrationId);
@@ -453,9 +469,95 @@ final class ClientConductor implements Agent
             ensureActive();
             ensureNotReentrant();
 
-            stashedChannel = channel;
             final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
+            stashedChannelByRegistrationId.put(registrationId, channel);
             awaitResponse(registrationId);
+
+            return (ExclusivePublication)resourceByRegIdMap.get(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    long asyncAddPublication(final String channel, final int streamId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            final long registrationId = driverProxy.addPublication(channel, streamId);
+            stashedChannelByRegistrationId.put(registrationId, channel);
+            asyncCommandIdSet.add(registrationId);
+
+            return registrationId;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    long asyncAddExclusivePublication(final String channel, final int streamId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
+            stashedChannelByRegistrationId.put(registrationId, channel);
+            asyncCommandIdSet.add(registrationId);
+
+            return registrationId;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    ConcurrentPublication getPublication(final long registrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            if (asyncCommandIdSet.contains(registrationId))
+            {
+                return null;
+            }
+
+            service(NO_CORRELATION_ID);
+
+            return (ConcurrentPublication)resourceByRegIdMap.get(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    ExclusivePublication getExclusivePublication(final long registrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            if (asyncCommandIdSet.contains(registrationId))
+            {
+                return null;
+            }
+
+            service(NO_CORRELATION_ID);
 
             return (ExclusivePublication)resourceByRegIdMap.get(registrationId);
         }
@@ -1171,7 +1273,7 @@ final class ClientConductor implements Agent
 
             if (driverEventsAdapter.receivedCorrelationId() == correlationId)
             {
-                stashedChannel = null;
+                stashedChannelByRegistrationId.remove(correlationId);
                 final RegistrationException ex = driverException;
                 if (null != ex)
                 {

@@ -316,10 +316,10 @@ final class ConsensusModuleAgent implements Agent
      */
     public int doWork()
     {
-        int workCount = 0;
-
         final long now = clusterClock.time();
         final long nowNs = clusterTimeUnit.toNanos(now);
+        int workCount = 0;
+
         try
         {
             if (nowNs >= slowTickDeadlineNs)
@@ -381,34 +381,32 @@ final class ConsensusModuleAgent implements Agent
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
 
-        if (session.connect(ctx.countedErrorHandler(), aeron))
-        {
-            final long now = clusterClock.time();
-            session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
+        session.asyncConnect(aeron);
+        final long now = clusterClock.time();
+        session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
 
-            if (Cluster.Role.LEADER != role)
+        if (Cluster.Role.LEADER != role)
+        {
+            redirectSessions.add(session);
+        }
+        else
+        {
+            if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
             {
-                redirectSessions.add(session);
+                final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                    ", cluster is " + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
+                session.reject(EventCode.ERROR, detail);
+                rejectedSessions.add(session);
+            }
+            else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
+            {
+                session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
+                rejectedSessions.add(session);
             }
             else
             {
-                if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
-                {
-                    final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
-                        ", cluster is " + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
-                    session.reject(EventCode.ERROR, detail);
-                    rejectedSessions.add(session);
-                }
-                else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
-                {
-                    session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
-                    rejectedSessions.add(session);
-                }
-                else
-                {
-                    authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
-                    pendingSessions.add(session);
-                }
+                authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
+                pendingSessions.add(session);
             }
         }
     }
@@ -843,30 +841,24 @@ final class ConsensusModuleAgent implements Agent
             else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
                 final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
-                if (session.connect(ctx.countedErrorHandler(), aeron))
+
+                session.markAsBackupSession();
+                session.asyncConnect(aeron);
+
+                final long now = clusterClock.time();
+                session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
+
+                if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
                 {
-                    session.markAsBackupSession();
-
-                    final long now = clusterClock.time();
-                    session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
-
-                    if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
-                    {
-                        final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
-                            ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
-                        session.reject(EventCode.ERROR, detail);
-                        rejectedSessions.add(session);
-                    }
-                    else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
-                    {
-                        session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
-                        rejectedSessions.add(session);
-                    }
-                    else
-                    {
-                        authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
-                        pendingSessions.add(session);
-                    }
+                    final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                        ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
+                    session.reject(EventCode.ERROR, detail);
+                    rejectedSessions.add(session);
+                }
+                else
+                {
+                    authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
+                    pendingSessions.add(session);
                 }
             }
         }
@@ -2149,7 +2141,14 @@ final class ConsensusModuleAgent implements Agent
         {
             final ClusterSession session = pendingSessions.get(i);
 
-            if (nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
+            if (session.state() == INVALID)
+            {
+                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                session.close(ctx.countedErrorHandler());
+                continue;
+            }
+
+            if (nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs) && session.state() != INIT)
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                 session.close(ctx.countedErrorHandler());
@@ -2159,7 +2158,7 @@ final class ConsensusModuleAgent implements Agent
 
             if (session.state() == INIT || session.state() == CONNECTED)
             {
-                if (session.isResponsePublicationConnected())
+                if (session.isResponsePublicationConnected(aeron))
                 {
                     session.state(CONNECTED);
                     authenticator.onConnectedSession(sessionProxy.session(session), nowMs);
@@ -2168,7 +2167,7 @@ final class ConsensusModuleAgent implements Agent
 
             if (session.state() == CHALLENGED)
             {
-                if (session.isResponsePublicationConnected())
+                if (session.isResponsePublicationConnected(aeron))
                 {
                     authenticator.onChallengedSession(sessionProxy.session(session), nowMs);
                 }
@@ -2219,8 +2218,10 @@ final class ConsensusModuleAgent implements Agent
             final String detail = session.responseDetail();
             final EventCode eventCode = session.eventCode();
 
-            if (egressPublisher.sendEvent(session, leadershipTermId, leaderMember.id(), eventCode, detail) ||
-                nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
+            if ((session.isResponsePublicationConnected(aeron) &&
+                egressPublisher.sendEvent(session, leadershipTermId, leaderMember.id(), eventCode, detail)) ||
+                (session.state() != INIT && nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs)) ||
+                session.state() == INVALID)
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex--);
                 session.close(ctx.countedErrorHandler());
@@ -2241,8 +2242,10 @@ final class ConsensusModuleAgent implements Agent
             final EventCode eventCode = EventCode.REDIRECT;
             final int leaderId = leaderMember.id();
 
-            if (egressPublisher.sendEvent(session, leadershipTermId, leaderId, eventCode, ingressEndpoints) ||
-                nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
+            if ((session.isResponsePublicationConnected(aeron) &&
+                egressPublisher.sendEvent(session, leadershipTermId, leaderId, eventCode, ingressEndpoints)) ||
+                (session.state() != INIT && nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs)) ||
+                session.state() == INVALID)
             {
                 ArrayListUtil.fastUnorderedRemove(redirectSessions, i, lastIndex--);
                 session.close(ctx.countedErrorHandler());
@@ -2464,7 +2467,7 @@ final class ConsensusModuleAgent implements Agent
             while (true)
             {
                 final int fragments = snapshotLoader.poll();
-                if (fragments == 0)
+                if (0 == fragments)
                 {
                     if (snapshotLoader.isDone())
                     {

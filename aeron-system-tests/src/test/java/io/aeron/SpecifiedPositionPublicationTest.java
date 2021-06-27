@@ -28,19 +28,19 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-public class SpecifiedPositionPublicationTest
+class SpecifiedPositionPublicationTest
 {
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @Test
-    public void shouldRejectSpecifiedPositionForConcurrentPublications()
+    void shouldRejectSpecifiedPositionForConcurrentPublications()
     {
         final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
         final MediaDriver.Context context = new MediaDriver.Context()
             .errorHandler(mockErrorHandler)
             .dirDeleteOnStart(true)
-            .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+            .ipcPublicationTermWindowLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .threadingMode(ThreadingMode.SHARED);
 
         try (

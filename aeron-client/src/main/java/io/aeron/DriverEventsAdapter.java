@@ -106,7 +106,7 @@ class DriverEventsAdapter implements MessageHandler
                 if (CHANNEL_ENDPOINT_ERROR == errorCode)
                 {
                     notProcessed = false;
-                    conductor.onChannelEndpointError((int)correlationId, errorResponse.errorMessage());
+                    conductor.onChannelEndpointError(correlationId, errorResponse.errorMessage());
                 }
                 else if (correlationId == activeCorrelationId)
                 {
@@ -141,7 +141,7 @@ class DriverEventsAdapter implements MessageHandler
                 publicationReady.wrap(buffer, index);
 
                 final long correlationId = publicationReady.correlationId();
-                if (correlationId == activeCorrelationId)
+                if (correlationId == activeCorrelationId || asyncCommandIdSet.contains(correlationId))
                 {
                     receivedCorrelationId = correlationId;
                     conductor.onNewPublication(
@@ -197,7 +197,7 @@ class DriverEventsAdapter implements MessageHandler
                 publicationReady.wrap(buffer, index);
 
                 final long correlationId = publicationReady.correlationId();
-                if (correlationId == activeCorrelationId)
+                if (correlationId == activeCorrelationId || asyncCommandIdSet.contains(correlationId))
                 {
                     receivedCorrelationId = correlationId;
                     conductor.onNewExclusivePublication(

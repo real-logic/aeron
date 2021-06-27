@@ -287,6 +287,57 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Asynchronously add a {@link Publication} for publishing messages to subscribers. The added publication returned
+     * is threadsafe.
+     *
+     * @param channel  for sending the messages known to the media layer.
+     * @param streamId within the channel scope.
+     * @return the registration id of the publication which can be used to get the added publication.
+     * @see #getPublication(long)
+     */
+    public long asyncAddPublication(final String channel, final int streamId)
+    {
+        return conductor.asyncAddPublication(channel, streamId);
+    }
+
+    /**
+     * Asynchronously add a {@link Publication} for publishing messages to subscribers from a single thread.
+     *
+     * @param channel  for sending the messages known to the media layer.
+     * @param streamId within the channel scope.
+     * @return the registration id of the publication which can be used to get the added exclusive publication.
+     * @see #getExclusivePublication(long)
+     */
+    public long asyncAddExclusivePublication(final String channel, final int streamId)
+    {
+        return conductor.asyncAddExclusivePublication(channel, streamId);
+    }
+
+    /**
+     * Get a {@link Publication} for publishing messages to subscribers. The publication returned is threadsafe.
+     *
+     * @param registrationId returned from {@link #asyncAddPublication(String, int)}.
+     * @return a new {@link ConcurrentPublication} when available otherwise null.
+     * @see #asyncAddPublication(String, int)
+     */
+    public ConcurrentPublication getPublication(final long registrationId)
+    {
+        return conductor.getPublication(registrationId);
+    }
+
+    /**
+     * Get a single threaded {@link Publication} for publishing messages to subscribers.
+     *
+     * @param registrationId returned from {@link #asyncAddExclusivePublication(String, int)}.
+     * @return a new {@link ExclusivePublication} when available otherwise null.
+     * @see #asyncAddExclusivePublication(String, int)
+     */
+    public ExclusivePublication getExclusivePublication(final long registrationId)
+    {
+        return conductor.getExclusivePublication(registrationId);
+    }
+
+    /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
      * <p>
      * The method will set up the {@link Subscription} to use the

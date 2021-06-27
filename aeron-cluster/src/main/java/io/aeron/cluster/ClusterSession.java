@@ -35,7 +35,7 @@ final class ClusterSession
 
     enum State
     {
-        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSING, CLOSED
+        INIT, CONNECTING, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSING, INVALID, CLOSED
     }
 
     private boolean hasNewLeaderEventPending = false;
@@ -46,6 +46,7 @@ final class ClusterSession
     private long openedLogPosition = Aeron.NULL_VALUE;
     private long closedLogPosition = Aeron.NULL_VALUE;
     private long timeOfLastActivityNs;
+    private long responsePublicationId = Aeron.NULL_VALUE;
     private final int responseStreamId;
     private final String responseChannel;
     private Publication responsePublication;
@@ -93,7 +94,7 @@ final class ClusterSession
     public void close(final ErrorHandler errorHandler)
     {
         CloseHelper.close(errorHandler, responsePublication);
-        this.responsePublication = null;
+        responsePublication = null;
         state(State.CLOSED);
     }
 
@@ -126,7 +127,12 @@ final class ClusterSession
         return closeReason;
     }
 
-    boolean connect(final ErrorHandler errorHandler, final Aeron aeron)
+    void asyncConnect(final Aeron aeron)
+    {
+        responsePublicationId = aeron.asyncAddPublication(responseChannel, responseStreamId);
+    }
+
+    void connect(final ErrorHandler errorHandler, final Aeron aeron)
     {
         if (null != responsePublication)
         {
@@ -141,10 +147,7 @@ final class ClusterSession
         {
             errorHandler.onError(new ClusterException(
                 "failed to connect session response publication: " + ex.getMessage(), AeronException.Category.WARN));
-            return false;
         }
-
-        return true;
     }
 
     void disconnect(final ErrorHandler errorHandler)
@@ -153,8 +156,24 @@ final class ClusterSession
         responsePublication = null;
     }
 
-    boolean isResponsePublicationConnected()
+    boolean isResponsePublicationConnected(final Aeron aeron)
     {
+        if (null == responsePublication)
+        {
+            responsePublication = aeron.getPublication(responsePublicationId);
+
+            if (null != responsePublication)
+            {
+                responsePublicationId = Aeron.NULL_VALUE;
+                state(State.CONNECTING);
+            }
+            else if (!aeron.isCommandActive(responsePublicationId))
+            {
+                responsePublicationId = Aeron.NULL_VALUE;
+                state(State.INVALID);
+            }
+        }
+
         return null != responsePublication && responsePublication.isConnected();
     }
 
@@ -323,6 +342,7 @@ final class ClusterSession
             ", timeOfLastActivityNs=" + timeOfLastActivityNs +
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +
+            ", responsePublicationId=" + responsePublicationId +
             ", closeReason=" + closeReason +
             ", state=" + state +
             ", hasNewLeaderEventPending=" + hasNewLeaderEventPending +

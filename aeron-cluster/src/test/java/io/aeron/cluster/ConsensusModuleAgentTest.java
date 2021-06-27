@@ -83,6 +83,7 @@ public class ConsensusModuleAgentTest
         when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), any(ClusterAction.class)))
             .thenReturn(TRUE);
         when(mockAeron.addPublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
+        when(mockAeron.getPublication(anyLong())).thenReturn(mockResponsePublication);
         when(mockAeron.addExclusivePublication(anyString(), anyInt())).thenReturn(mockExclusivePublication);
         when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mock(Subscription.class));
         when(mockAeron.addSubscription(anyString(), anyInt(), eq(null), any(UnavailableImageHandler.class)))

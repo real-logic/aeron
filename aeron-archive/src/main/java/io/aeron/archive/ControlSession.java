@@ -16,7 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
-import io.aeron.Publication;
+import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
@@ -54,7 +54,7 @@ final class ControlSession implements Session
     private long resendDeadlineMs;
     private long activityDeadlineMs;
     private Session activeListing = null;
-    private Publication controlPublication;
+    private ExclusivePublication controlPublication;
     private final Aeron aeron;
     private final ArchiveConductor conductor;
     private final CachedEpochClock cachedEpochClock;
@@ -126,6 +126,7 @@ final class ControlSession implements Session
         }
 
         CloseHelper.close(conductor.context().countedErrorHandler(), controlPublication);
+
         demuxer.removeControlSession(this);
         if (!conductor.context().controlSessionsCounter().isClosed())
         {
@@ -152,7 +153,7 @@ final class ControlSession implements Session
         switch (state)
         {
             case INIT:
-                workCount += waitForPublication(nowMs);
+                workCount += waitForPublication();
                 break;
 
             case CONNECTING:
@@ -202,7 +203,7 @@ final class ControlSession implements Session
         return conductor;
     }
 
-    Publication controlPublication()
+    ExclusivePublication controlPublication()
     {
         return controlPublication;
     }
@@ -670,7 +671,7 @@ final class ControlSession implements Session
             this));
     }
 
-    private int waitForPublication(final long nowMs)
+    private int waitForPublication()
     {
         int workCount = 0;
 

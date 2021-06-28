@@ -1935,7 +1935,7 @@ public final class DriverConductor implements Agent
         }
     }
 
-    private static void validateTimestampConfiguration(UdpChannel udpChannel)
+    private static void validateTimestampConfiguration(final UdpChannel udpChannel)
     {
         if (null != udpChannel.channelUri().get(PACKET_TIMESTAMP_OFFSET))
         {

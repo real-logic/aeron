@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2021 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
@@ -27,8 +42,8 @@ public class TimestampingSystemTest
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
 
-        try (final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context(), watcher);
-            final Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        try (TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context(), watcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             assertThrows(
                 RegistrationException.class,
@@ -43,8 +58,8 @@ public class TimestampingSystemTest
 
         final DirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
-        try (final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context(), watcher);
-            final Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        try (TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context(), watcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription sub = aeron.addSubscription(CHANNEL_WITH_PACKET_TIMESTAMP, 1000);
             final String uri = new ChannelUriStringBuilder()

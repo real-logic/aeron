@@ -326,6 +326,13 @@ public class CommonContext implements Cloneable
     public static final String RECEIVER_WINDOW_LENGTH_PARAM_NAME = "rcv-wnd";
 
     /**
+     * Parameter name of the offset for the packet timestamp to be inserted into the incoming message
+     * on a subscription.  The special value of 'reserved' can be used to insert into the reserved value
+     * field.
+     */
+    public static final String PACKET_TIMESTAMP_OFFSET = "pkt-ts-offset";
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(

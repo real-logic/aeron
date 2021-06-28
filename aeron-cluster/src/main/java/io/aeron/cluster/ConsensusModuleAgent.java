@@ -2156,7 +2156,7 @@ final class ConsensusModuleAgent implements Agent
                 continue;
             }
 
-            if (session.state() == INIT || session.state() == CONNECTED)
+            if (session.state() == INIT || session.state() == CONNECTING || session.state() == CONNECTED)
             {
                 if (session.isResponsePublicationConnected(aeron, nowNs))
                 {

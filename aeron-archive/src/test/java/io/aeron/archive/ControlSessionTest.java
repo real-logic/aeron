@@ -15,7 +15,8 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Publication;
+import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
 import io.aeron.security.Authenticator;
 import org.agrona.concurrent.CachedEpochClock;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,13 +31,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ControlSessionTest
+class ControlSessionTest
 {
+    private static final long CONTROL_PUBLICATION_ID = 777;
     private static final long CONNECT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
     private final ControlSessionDemuxer mockDemuxer = mock(ControlSessionDemuxer.class);
     private final ArchiveConductor mockConductor = mock(ArchiveConductor.class);
-    private final Publication mockControlPublication = mock(Publication.class);
+    private final Aeron mockAeron = mock(Aeron.class);
+    private final ExclusivePublication mockControlPublication = mock(ExclusivePublication.class);
     private final ControlResponseProxy mockProxy = mock(ControlResponseProxy.class);
     private final ControlSessionProxy mockSessionProxy = mock(ControlSessionProxy.class);
     private final Authenticator mockAuthenticator = mock(Authenticator.class);
@@ -50,14 +53,17 @@ public class ControlSessionTest
             1,
             2,
             CONNECT_TIMEOUT_MS,
+            CONTROL_PUBLICATION_ID,
             null,
             mockDemuxer,
-            mockControlPublication,
+            mockAeron,
             mockConductor,
             cachedEpochClock,
             mockProxy,
             mockAuthenticator,
             mockSessionProxy);
+
+        when(mockAeron.getExclusivePublication(CONTROL_PUBLICATION_ID)).thenReturn(mockControlPublication);
     }
 
     @Test

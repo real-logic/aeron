@@ -46,7 +46,6 @@ class AsyncResourceTest
             .errorHandler(Tests::onError);
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .errorHandler(Tests::onError)
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
 
@@ -89,9 +88,7 @@ class AsyncResourceTest
         final Aeron.Context clientCtx = new Aeron.Context()
             .errorHandler(mockClientErrorHandler);
 
-        final ErrorHandler mockDriverErrorHandler = mock(ErrorHandler.class);
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .errorHandler(mockDriverErrorHandler)
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
 
@@ -119,9 +116,7 @@ class AsyncResourceTest
         final Aeron.Context clientCtx = new Aeron.Context()
             .errorHandler(mockClientErrorHandler);
 
-        final ErrorHandler mockDriverErrorHandler = mock(ErrorHandler.class);
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .errorHandler(mockDriverErrorHandler)
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
 

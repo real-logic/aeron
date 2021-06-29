@@ -28,7 +28,7 @@ public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCa
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> timer = null;
 
-    public void afterEach(final ExtensionContext context) throws Exception
+    public void afterEach(final ExtensionContext context)
     {
         if (null != timer)
         {
@@ -36,7 +36,7 @@ public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCa
         }
     }
 
-    public void beforeEach(final ExtensionContext context) throws Exception
+    public void beforeEach(final ExtensionContext context)
     {
         timer = null;
         final InterruptAfter annotation = context.getRequiredTestMethod().getAnnotation(InterruptAfter.class);

@@ -48,6 +48,8 @@ typedef struct aeron_udp_channel_stct
     size_t socket_rcvbuf_length;
     size_t receiver_window_length;
     int32_t packet_timestamp_offset;
+    int32_t receive_timestamp_offset;
+    int32_t send_timestamp_offset;
 }
 aeron_udp_channel_t;
 

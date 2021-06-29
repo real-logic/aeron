@@ -438,6 +438,26 @@ TEST_F(UdpChannelTest, shouldParseReceiverWindow)
     ASSERT_EQ(8192u, m_channel->receiver_window_length);
 }
 
+TEST_F(UdpChannelTest, shouldParseTimestampOffsets)
+{
+    const char *uri = "aeron:udp?endpoint=localhost:0|pkt-ts-offset=reserved|snd-ts-offset=0|rcv-ts-offset=8";
+    ASSERT_EQ(0, parse_udp_channel(uri)) << aeron_errmsg();
+
+    EXPECT_EQ(AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET, m_channel->packet_timestamp_offset);
+    EXPECT_EQ(0, m_channel->send_timestamp_offset);
+    EXPECT_EQ(8, m_channel->receive_timestamp_offset);
+}
+
+TEST_F(UdpChannelTest, shouldDefaultTimestampOffsetsToMinusOne)
+{
+    const char *uri = "aeron:udp?endpoint=localhost:0";
+    ASSERT_EQ(0, parse_udp_channel(uri)) << aeron_errmsg();
+
+    EXPECT_EQ(AERON_NULL_VALUE, m_channel->packet_timestamp_offset);
+    EXPECT_EQ(AERON_NULL_VALUE, m_channel->receive_timestamp_offset);
+    EXPECT_EQ(AERON_NULL_VALUE, m_channel->send_timestamp_offset);
+}
+
 TEST_P(UdpChannelNamesParameterisedTest, DISABLED_shouldBeValid)
 {
     const char *endpoint_name = std::get<0>(GetParam());

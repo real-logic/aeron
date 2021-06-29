@@ -52,7 +52,7 @@ public class TimestampingSystemTest
     }
 
     @Test
-    void shouldSupportPacketTimestampsInJavaDriver()
+    void shouldSupportPacketTimestampsInCDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunCMediaDriver());
 

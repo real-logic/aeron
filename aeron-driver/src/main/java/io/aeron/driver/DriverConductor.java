@@ -757,6 +757,9 @@ public final class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
+
+        validateTimestampConfiguration(udpChannel);
+
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
 
         checkForClashingSubscription(params, udpChannel, streamId);
@@ -1929,6 +1932,15 @@ public final class DriverConductor implements Agent
 
             throw new InvalidChannelException(
                 paramName + "=" + newLength + " does not match existing value of " + existingValue + " uri=" + channel);
+        }
+    }
+
+    private static void validateTimestampConfiguration(final UdpChannel udpChannel)
+    {
+        if (null != udpChannel.channelUri().get(PACKET_TIMESTAMP_OFFSET))
+        {
+            throw new InvalidChannelException(
+                "Packet timestamps '" + PACKET_TIMESTAMP_OFFSET + "' are not supported in the Java driver");
         }
     }
 

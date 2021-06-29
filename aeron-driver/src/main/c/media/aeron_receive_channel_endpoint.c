@@ -59,9 +59,7 @@ int aeron_receive_channel_endpoint_create(
     aeron_receive_destination_t *straight_through_destination,
     aeron_atomic_counter_t *status_indicator,
     aeron_system_counters_t *system_counters,
-    aeron_driver_context_t *context,
-    size_t socket_rcvbuf,
-    size_t socket_sndbuf)
+    aeron_driver_context_t *context)
 {
     aeron_receive_channel_endpoint_t *_endpoint = NULL;
 
@@ -92,8 +90,6 @@ int aeron_receive_channel_endpoint_create(
         return -1;
     }
 
-    _endpoint->conductor_fields.socket_rcvbuf = socket_rcvbuf;
-    _endpoint->conductor_fields.socket_sndbuf = socket_sndbuf;
     _endpoint->conductor_fields.managed_resource.clientd = _endpoint;
     _endpoint->conductor_fields.managed_resource.registration_id = -1;
     _endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE;
@@ -754,23 +750,23 @@ int aeron_receive_channel_endpoint_on_remove_publication_image(
 }
 
 static inline bool aeron_receive_channel_endpoint_validate_so_rcvbuf(
-    aeron_receive_channel_endpoint_t *endpoint,
+    size_t so_rcvbuf,
     size_t value,
     const char *msg,
     aeron_driver_context_t *ctx)
 {
-    if (0 != endpoint->conductor_fields.socket_rcvbuf && endpoint->conductor_fields.socket_rcvbuf < value)
+    if (0 != so_rcvbuf && so_rcvbuf < value)
     {
         AERON_SET_ERR(
             EINVAL,
             "%s greater than socket SO_RCVBUF, increase '"
             AERON_RCV_INITIAL_WINDOW_LENGTH_ENV_VAR "' to match window: value=%" PRIu64 ", SO_RCVBUF=%" PRIu64,
-            msg, value, endpoint->conductor_fields.socket_rcvbuf);
+            msg, value, so_rcvbuf);
 
         return false;
     }
 
-    if (0 == endpoint->conductor_fields.socket_rcvbuf && ctx->os_buffer_lengths.default_so_rcvbuf < value)
+    if (0 == so_rcvbuf && ctx->os_buffer_lengths.default_so_rcvbuf < value)
     {
         AERON_SET_ERR(
             EINVAL,
@@ -830,12 +826,15 @@ int aeron_receiver_channel_endpoint_validate_sender_mtu_length(
         return -1;
     }
 
-    if (!aeron_receive_channel_endpoint_validate_so_rcvbuf(endpoint, window_max_length, "Max Window length", ctx))
+    const size_t socket_rcvbuf = aeron_udp_channel_socket_so_rcvbuf(
+        endpoint->conductor_fields.udp_channel, ctx->socket_rcvbuf);
+
+    if (!aeron_receive_channel_endpoint_validate_so_rcvbuf(socket_rcvbuf, window_max_length, "Max Window length", ctx))
     {
         return -1;
     }
 
-    if (!aeron_receive_channel_endpoint_validate_so_rcvbuf(endpoint, window_max_length, "Sender MTU", ctx))
+    if (!aeron_receive_channel_endpoint_validate_so_rcvbuf(socket_rcvbuf, window_max_length, "Sender MTU", ctx))
     {
         return -1;
     }

@@ -1743,6 +1743,9 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         return NULL;
     }
 
+    const size_t socket_rcvbuf = aeron_udp_channel_socket_so_rcvbuf(channel, conductor->context->socket_rcvbuf);
+    const size_t socket_sndbuf = aeron_udp_channel_socket_so_sndbuf(channel, conductor->context->socket_sndbuf);
+
     if (NULL == endpoint)
     {
         aeron_atomic_counter_t status_indicator;
@@ -1771,21 +1774,16 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
         aeron_receive_destination_t *destination = NULL;
 
-        const size_t socket_rcvbuf = aeron_udp_channel_socket_so_rcvbuf(channel, conductor->context->socket_rcvbuf);
-        const size_t socket_sndbuf = aeron_udp_channel_socket_so_sndbuf(channel, conductor->context->socket_sndbuf);
-
         if (!channel->is_manual_control_mode)
         {
             if (aeron_receive_destination_create(
                 &destination,
                 channel,
+                channel,
                 conductor->context,
                 &conductor->counters_manager,
                 correlation_id,
-                status_indicator.counter_id,
-                socket_rcvbuf,
-                socket_sndbuf,
-                aeron_udp_channel_is_packet_timestamping(channel)) < 0)
+                status_indicator.counter_id) < 0)
             {
                 AERON_APPEND_ERR("correlation_id=%" PRId64, correlation_id);
                 return NULL;
@@ -1798,9 +1796,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
             destination,
             &status_indicator,
             &conductor->system_counters,
-            conductor->context,
-            socket_rcvbuf,
-            socket_sndbuf) < 0)
+            conductor->context) < 0)
         {
             aeron_receive_destination_delete(destination, &conductor->counters_manager);
             return NULL;
@@ -1839,10 +1835,15 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
     {
         if (!channel->is_manual_control_mode && 1 == endpoint->destinations.length)
         {
+            const size_t socket_sndbuf_existing = aeron_udp_channel_socket_so_sndbuf(
+                endpoint->conductor_fields.udp_channel, conductor->context->socket_sndbuf);
+            const size_t socket_rcvbuf_existing = aeron_udp_channel_socket_so_rcvbuf(
+                endpoint->conductor_fields.udp_channel, conductor->context->socket_rcvbuf);
+
             if (aeron_driver_conductor_validate_channel_buffer_length(
                 AERON_URI_SOCKET_SNDBUF_KEY,
-                channel->socket_sndbuf_length,
-                endpoint->conductor_fields.socket_sndbuf,
+                socket_sndbuf,
+                socket_sndbuf_existing,
                 channel) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
@@ -1851,8 +1852,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
             if (aeron_driver_conductor_validate_channel_buffer_length(
                 AERON_URI_SOCKET_RCVBUF_KEY,
-                channel->socket_rcvbuf_length,
-                endpoint->conductor_fields.socket_rcvbuf,
+                socket_rcvbuf,
+                socket_rcvbuf_existing,
                 channel) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
@@ -3172,7 +3173,7 @@ int aeron_driver_conductor_on_add_network_subscription(
 
     if (aeron_subscription_params_validate_initial_window_for_rcvbuf(
         &params,
-        endpoint->conductor_fields.socket_rcvbuf,
+        aeron_udp_channel_socket_so_rcvbuf(endpoint->conductor_fields.udp_channel, conductor->context->socket_rcvbuf),
         conductor->context->os_buffer_lengths.default_so_rcvbuf) < 0)
     {
         AERON_APPEND_ERR("%s", "");
@@ -3584,13 +3585,11 @@ int aeron_driver_conductor_on_add_receive_destination(
     if (aeron_receive_destination_create(
         &destination,
         udp_channel,
+        endpoint->conductor_fields.udp_channel,
         conductor->context,
         &conductor->counters_manager,
         command->registration_id,
-        endpoint->channel_status.counter_id,
-        endpoint->conductor_fields.socket_rcvbuf,
-        endpoint->conductor_fields.socket_sndbuf,
-        aeron_udp_channel_is_packet_timestamping(endpoint->conductor_fields.udp_channel)) < 0)
+        endpoint->channel_status.counter_id) < 0)
     {
         goto error_cleanup;
     }

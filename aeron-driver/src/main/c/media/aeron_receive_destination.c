@@ -21,16 +21,17 @@
 
 int aeron_receive_destination_create(
     aeron_receive_destination_t **destination,
-    aeron_udp_channel_t *channel,
+    aeron_udp_channel_t *destination_channel,
+    aeron_udp_channel_t *endpoint_channel,
     aeron_driver_context_t *context,
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
-    int32_t channel_status_counter_id,
-    size_t socket_rcvbuf,
-    size_t socket_sndbuf,
-    bool is_packet_timestamping)
+    int32_t channel_status_counter_id)
 {
     aeron_receive_destination_t *_destination = NULL;
+    const size_t socket_rcvbuf = aeron_udp_channel_socket_so_rcvbuf(endpoint_channel, context->socket_rcvbuf);
+    const size_t socket_sndbuf = aeron_udp_channel_socket_so_sndbuf(endpoint_channel, context->socket_sndbuf);
+    bool is_packet_timestamping = aeron_udp_channel_is_packet_timestamping(endpoint_channel);
 
     if (aeron_alloc((void **)&_destination, sizeof(aeron_receive_destination_t)) < 0)
     {
@@ -45,17 +46,17 @@ int aeron_receive_destination_create(
 
     if (context->udp_channel_transport_bindings->init_func(
         &_destination->transport,
-        &channel->remote_data,
-        &channel->local_data,
-        channel->interface_index,
-        0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
+        &destination_channel->remote_data,
+        &destination_channel->local_data,
+        destination_channel->interface_index,
+        0 != destination_channel->multicast_ttl ? destination_channel->multicast_ttl : context->multicast_ttl,
         socket_rcvbuf,
         socket_sndbuf,
         is_packet_timestamping,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {
-        AERON_APPEND_ERR("uri = %s", channel->original_uri);
+        AERON_APPEND_ERR("uri = %s", destination_channel->original_uri);
         aeron_receive_destination_delete(_destination, counters_manager);
         return -1;
     }
@@ -92,22 +93,22 @@ int aeron_receive_destination_create(
     _destination->transport.destination_clientd = _destination;
     _destination->time_of_last_activity_ns = aeron_clock_cached_nano_time(context->receiver_cached_clock);
 
-    if (channel->is_multicast)
+    if (destination_channel->is_multicast)
     {
-        memcpy(&_destination->current_control_addr, &channel->remote_control, sizeof(_destination->current_control_addr));
+        memcpy(&_destination->current_control_addr, &destination_channel->remote_control, sizeof(_destination->current_control_addr));
     }
-    else if (channel->has_explicit_control)
+    else if (destination_channel->has_explicit_control)
     {
-        memcpy(&_destination->current_control_addr, &channel->local_control, sizeof(_destination->current_control_addr));
+        memcpy(&_destination->current_control_addr, &destination_channel->local_control, sizeof(_destination->current_control_addr));
     }
 
-    _destination->has_control_addr = channel->is_multicast || channel->has_explicit_control;
+    _destination->has_control_addr = destination_channel->is_multicast || destination_channel->has_explicit_control;
 
     aeron_counter_set_ordered(
         _destination->local_sockaddr_indicator.value_addr, AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE);
 
-    // Only take ownership of the channel if the receive destination is successfully created.
-    _destination->conductor_fields.udp_channel = channel;
+    // Only take ownership of the destination_channel if the receive destination is successfully created.
+    _destination->conductor_fields.udp_channel = destination_channel;
     *destination = _destination;
 
     return 0;

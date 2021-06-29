@@ -26,6 +26,8 @@ import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 import org.agrona.CloseHelper;
@@ -35,7 +37,7 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.EnumMap;
@@ -51,6 +53,7 @@ import static java.util.Collections.synchronizedSet;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ClusterLoggingAgentTest
 {
     private static final Set<ClusterEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(ClusterEventCode.class));
@@ -72,28 +75,28 @@ public class ClusterLoggingAgentTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void logAll()
     {
         testClusterEventsLogging("all", EnumSet.of(ROLE_CHANGE, STATE_CHANGE, ELECTION_STATE_CHANGE));
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void logRoleChange()
     {
         testClusterEventsLogging(ROLE_CHANGE.name(), EnumSet.of(ROLE_CHANGE));
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void logStateChange()
     {
         testClusterEventsLogging(STATE_CHANGE.name(), EnumSet.of(STATE_CHANGE));
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void logElectionStateChange()
     {
         testClusterEventsLogging(ELECTION_STATE_CHANGE.name(), EnumSet.of(ELECTION_STATE_CHANGE));

@@ -26,8 +26,6 @@
 #include "aeronc.h"
 #include "aeron_common.h"
 #include "aeron_cnc_file_descriptor.h"
-#include "concurrent/aeron_thread.h"
-#include "concurrent/aeron_mpsc_rb.h"
 #include "concurrent/aeron_distinct_error_log.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_error.h"
@@ -36,15 +34,19 @@ typedef struct aeron_error_stat_settings_stct
 {
     const char *base_path;
     int64_t timeout_ms;
+    const char *error_file;
+    size_t error_file_offset;
 }
 aeron_error_stat_settings_t;
 
 static const char *aeron_error_stat_usage()
 {
     return
-        "    -h            Displays help information.\n"
-        "    -d basePath   Base Path to shared memory. Default: /dev/shm/aeron-[user]\n"
-        "    -t timeout    Number of milliseconds to wait to see if the driver metadata is available. Default: 1000\n";
+        "    -h                 Displays help information.\n"
+        "    -d basePath        Base Path to shared memory. Default: /dev/shm/aeron-[user].\n"
+        "    -t timeout         Number of milliseconds to wait to see if the driver metadata is available. Default: 1000.\n"
+        "    -f errorFile       Read from a specific file used as a distinct error log (takes precedence over basePath).\n"
+        "    -o errorFileOffset Offset to read error messages from when using a specific file (default 0).\n";
 }
 
 static void aeron_error_stat_print_error_and_usage(const char *message)
@@ -84,12 +86,14 @@ int main(int argc, char **argv)
     aeron_error_stat_settings_t settings =
         {
             .base_path = default_directory,
-            .timeout_ms = 1000
+            .timeout_ms = 1000,
+            .error_file = NULL,
+            .error_file_offset = 0
         };
 
     int opt;
 
-    while ((opt = getopt(argc, argv, "d:t:h")) != -1)
+    while ((opt = getopt(argc, argv, "d:t:f:o:h")) != -1)
     {
         switch (opt)
         {
@@ -110,6 +114,23 @@ int main(int argc, char **argv)
                 break;
             }
 
+            case 'f':
+                settings.error_file = optarg;
+                break;
+
+            case 'o':
+            {
+                errno = 0;
+                char *endptr;
+                settings.error_file_offset = strtoull(optarg, &endptr, 10);
+                if (0 != errno || '\0' != endptr[0])
+                {
+                    aeron_error_stat_print_error_and_usage("Invalid file offset");
+                    return EXIT_FAILURE;
+                }
+                break;
+            }
+
             case 'h':
                 aeron_error_stat_print_error_and_usage(argv[0]);
                 return EXIT_SUCCESS;
@@ -120,19 +141,40 @@ int main(int argc, char **argv)
         }
     }
 
-    aeron_cnc_t *aeron_cnc = NULL;
-
-    if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)
+    size_t count;
+    if (NULL != settings.error_file)
     {
-        aeron_error_stat_print_error_and_usage(aeron_errmsg());
-        return EXIT_FAILURE;
-    }
+        aeron_mapped_file_t error_mmap;
 
-    size_t count = aeron_cnc_error_log_read(aeron_cnc, aeron_error_stat_on_observation, NULL, 0);
+        if (aeron_map_existing_file(&error_mmap, settings.error_file) < 0)
+        {
+            aeron_error_stat_print_error_and_usage(aeron_errmsg());
+            return EXIT_FAILURE;
+        }
+
+        const uint8_t *error_buffer = (uint8_t *)error_mmap.addr + settings.error_file_offset;
+        const size_t error_buffer_length = error_mmap.length - settings.error_file_offset;
+
+        count = aeron_error_log_read(error_buffer, error_buffer_length, aeron_error_stat_on_observation, NULL, 0);
+
+        aeron_unmap(&error_mmap);
+    }
+    else
+    {
+        aeron_cnc_t *aeron_cnc = NULL;
+
+        if (aeron_cnc_init(&aeron_cnc, settings.base_path, settings.timeout_ms) < 0)
+        {
+            aeron_error_stat_print_error_and_usage(aeron_errmsg());
+            return EXIT_FAILURE;
+        }
+
+        count = aeron_cnc_error_log_read(aeron_cnc, aeron_error_stat_on_observation, NULL, 0);
+
+        aeron_cnc_close(aeron_cnc);
+    }
 
     fprintf(stdout, "\n%" PRIu64 " distinct errors observed.\n", (uint64_t)count);
 
-    aeron_cnc_close(aeron_cnc);
-
-    return 0;
+    return EXIT_SUCCESS;
 }

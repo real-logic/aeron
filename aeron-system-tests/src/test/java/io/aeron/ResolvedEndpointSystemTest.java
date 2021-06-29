@@ -18,6 +18,8 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -26,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
@@ -38,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ResolvedEndpointSystemTest
 {
     private static final int STREAM_ID = 2002;
@@ -75,7 +78,7 @@ public class ResolvedEndpointSystemTest
     }
 
     @Test
-    @Timeout(5)
+    @InterruptAfter(5)
     void shouldSubscribeWithSystemAssignedPort()
     {
         final String uri = "aeron:udp?endpoint=localhost:0";
@@ -106,7 +109,7 @@ public class ResolvedEndpointSystemTest
     }
 
     @Test
-    @Timeout(5)
+    @InterruptAfter(5)
     void shouldSubscribeToSystemAssignedPorts()
     {
         final long tag1 = client.nextCorrelationId();
@@ -168,7 +171,7 @@ public class ResolvedEndpointSystemTest
     }
 
     @Test
-    @Timeout(5)
+    @InterruptAfter(5)
     void shouldSubscribeToSystemAssignedPortsUsingIPv6()
     {
         assumeFalse("true".equals(System.getProperty("java.net.preferIPv4Stack")));
@@ -217,7 +220,7 @@ public class ResolvedEndpointSystemTest
     }
 
     @Test
-    @Timeout(5)
+    @InterruptAfter(5)
     void shouldBindMultipleSystemAssignedEndpointsForMultiDestinationSubscription()
     {
         final String systemAssignedPortUri1 = "aeron:udp?endpoint=127.0.0.1:0";
@@ -260,7 +263,7 @@ public class ResolvedEndpointSystemTest
     }
 
     @Test
-    @Timeout(5)
+    @InterruptAfter(5)
     void shouldAllowSystemAssignedPortOnDynamicMultiDestinationPublication()
     {
         final String mdcUri = "aeron:udp?control=localhost:0";

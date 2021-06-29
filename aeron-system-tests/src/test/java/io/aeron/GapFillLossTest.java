@@ -23,13 +23,15 @@ import io.aeron.driver.ext.LossGenerator;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.nio.ByteBuffer;
@@ -39,6 +41,7 @@ import static io.aeron.SystemTests.verifyLossOccurredForStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class GapFillLossTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:24325";
@@ -56,7 +59,7 @@ public class GapFillLossTest
     final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldGapFillWhenLossOccurs() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));

@@ -16,50 +16,66 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
+import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class AppointedLeaderTest
 {
+    @RegisterExtension
+    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+
     private static final int LEADER_ID = 1;
 
-    @Test
-    @Timeout(20)
-    public void shouldConnectAndSendKeepAlive()
+    @AfterEach
+    void tearDown()
     {
-        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
-            assertEquals(LEADER_ID, leader.index());
-            assertEquals(Cluster.Role.LEADER, leader.role());
-
-            cluster.connectClient();
-            assertTrue(cluster.client().sendKeepAlive());
-        }
+        assertEquals(
+            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
+    public void shouldConnectAndSendKeepAlive()
+    {
+        final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start();
+        clusterTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        assertEquals(LEADER_ID, leader.index());
+        assertEquals(Cluster.Role.LEADER, leader.role());
+
+        cluster.connectClient();
+        assertTrue(cluster.client().sendKeepAlive());
+    }
+
+    @Test
+    @InterruptAfter(20)
     public void shouldEchoMessagesViaService()
     {
-        try (TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start())
-        {
-            final TestNode leader = cluster.awaitLeader();
-            assertEquals(LEADER_ID, leader.index());
-            assertEquals(Cluster.Role.LEADER, leader.role());
+        final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start();
+        clusterTestWatcher.cluster(cluster);
 
-            cluster.connectClient();
+        final TestNode leader = cluster.awaitLeader();
+        assertEquals(LEADER_ID, leader.index());
+        assertEquals(Cluster.Role.LEADER, leader.role());
 
-            final int messageCount = 10;
-            cluster.sendMessages(messageCount);
-            cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServicesMessageCount(messageCount);
-        }
+        cluster.connectClient();
+
+        final int messageCount = 10;
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount);
     }
 }

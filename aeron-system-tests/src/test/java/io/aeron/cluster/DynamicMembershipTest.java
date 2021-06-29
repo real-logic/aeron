@@ -15,401 +15,344 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.test.cluster.TestCluster.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
+@ExtendWith(InterruptingTestCallback.class)
 public class DynamicMembershipTest
 {
     private TestCluster cluster = null;
 
+    @RegisterExtension
+    final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+
     @AfterEach
-    void after()
+    void tearDown()
     {
-        CloseHelper.close(cluster);
+        assertEquals(
+            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldQueryClusterMembers(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).start();
-        try
-        {
-            final TestNode leader = cluster.awaitLeader();
-            final ClusterMembership clusterMembership = leader.clusterMembership();
+        clusterTestWatcher.cluster(cluster);
 
-            assertEquals(leader.index(), clusterMembership.leaderMemberId);
-            assertEquals("", clusterMembership.passiveMembersStr);
-            assertEquals(cluster.staticClusterMembers(), clusterMembership.activeMembersStr);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        final TestNode leader = cluster.awaitLeader();
+        final ClusterMembership clusterMembership = leader.clusterMembership();
+
+        assertEquals(leader.index(), clusterMembership.leaderMemberId);
+        assertEquals("", clusterMembership.passiveMembersStr);
+        assertEquals(cluster.staticClusterMembers(), clusterMembership.activeMembersStr);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshots(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
-        try
-        {
-            final TestNode leader = cluster.awaitLeader();
-            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+        clusterTestWatcher.cluster(cluster);
 
-            awaitElectionClosed(dynamicMember);
-            assertEquals(FOLLOWER, dynamicMember.role());
+        final TestNode leader = cluster.awaitLeader();
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-            final ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
+        awaitElectionClosed(dynamicMember);
+        assertEquals(FOLLOWER, dynamicMember.role());
 
-            assertEquals(leader.index(), clusterMembership.leaderMemberId);
-            assertEquals("", clusterMembership.passiveMembersStr);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        final ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
+
+        assertEquals(leader.index(), clusterMembership.leaderMemberId);
+        assertEquals("", clusterMembership.passiveMembersStr);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
-        try
-        {
-            final TestNode leader = cluster.awaitLeader();
-            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+        clusterTestWatcher.cluster(cluster);
 
-            awaitElectionClosed(dynamicMember);
-            assertEquals(FOLLOWER, dynamicMember.role());
+        final TestNode leader = cluster.awaitLeader();
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-            final int messageCount = 10;
-            cluster.connectClient();
-            cluster.sendMessages(messageCount);
-            cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(leader, messageCount);
-            cluster.awaitServiceMessageCount(dynamicMember, messageCount);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        awaitElectionClosed(dynamicMember);
+        assertEquals(FOLLOWER, dynamicMember.role());
+
+        final int messageCount = 10;
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServiceMessageCount(leader, messageCount);
+        cluster.awaitServiceMessageCount(dynamicMember, messageCount);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
-        try
-        {
-            final TestNode leader = cluster.awaitLeader();
+        clusterTestWatcher.cluster(cluster);
 
-            final int messageCount = 10;
-            cluster.connectClient();
-            cluster.sendMessages(messageCount);
-            cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServiceMessageCount(leader, messageCount);
+        final TestNode leader = cluster.awaitLeader();
 
-            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+        final int messageCount = 10;
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServiceMessageCount(leader, messageCount);
 
-            cluster.awaitServiceMessageCount(dynamicMember, messageCount);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+
+        cluster.awaitServiceMessageCount(dynamicMember, messageCount);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
-        try
-        {
-            final TestNode leader = cluster.awaitLeader();
+        clusterTestWatcher.cluster(cluster);
 
-            cluster.takeSnapshot(leader);
-            cluster.awaitSnapshotCount(1);
+        final TestNode leader = cluster.awaitLeader();
 
-            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+        cluster.takeSnapshot(leader);
+        cluster.awaitSnapshotCount(1);
 
-            awaitElectionClosed(dynamicMember);
-            assertEquals(FOLLOWER, dynamicMember.role());
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-            cluster.awaitSnapshotLoadedForService(dynamicMember);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        awaitElectionClosed(dynamicMember);
+        assertEquals(FOLLOWER, dynamicMember.role());
+
+        cluster.awaitSnapshotLoadedForService(dynamicMember);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshot(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
-        try
-        {
-            final TestNode leader = cluster.awaitLeader();
+        clusterTestWatcher.cluster(cluster);
 
-            final int messageCount = 10;
-            cluster.connectClient();
-            cluster.sendMessages(messageCount);
-            cluster.awaitResponseMessageCount(messageCount);
+        final TestNode leader = cluster.awaitLeader();
 
-            cluster.takeSnapshot(leader);
-            cluster.awaitSnapshotCount(1);
+        final int messageCount = 10;
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
 
-            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+        cluster.takeSnapshot(leader);
+        cluster.awaitSnapshotCount(1);
 
-            awaitElectionClosed(dynamicMember);
-            assertEquals(FOLLOWER, dynamicMember.role());
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-            cluster.awaitSnapshotLoadedForService(dynamicMember);
-            assertEquals(messageCount, dynamicMember.service().messageCount());
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        awaitElectionClosed(dynamicMember);
+        assertEquals(FOLLOWER, dynamicMember.role());
+
+        cluster.awaitSnapshotLoadedForService(dynamicMember);
+        assertEquals(messageCount, dynamicMember.service().messageCount());
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
-        try
-        {
-            final TestNode leader = cluster.awaitLeader();
+        clusterTestWatcher.cluster(cluster);
 
-            final int preSnapshotMessageCount = 10;
-            final int postSnapshotMessageCount = 7;
-            final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
-            cluster.connectClient();
-            cluster.sendMessages(preSnapshotMessageCount);
-            cluster.awaitResponseMessageCount(preSnapshotMessageCount);
+        final TestNode leader = cluster.awaitLeader();
 
-            cluster.takeSnapshot(leader);
-            cluster.awaitSnapshotCount(1);
-            assertTrue(cluster.client().sendKeepAlive());
+        final int preSnapshotMessageCount = 10;
+        final int postSnapshotMessageCount = 7;
+        final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
+        cluster.connectClient();
+        cluster.sendMessages(preSnapshotMessageCount);
+        cluster.awaitResponseMessageCount(preSnapshotMessageCount);
 
-            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+        cluster.takeSnapshot(leader);
+        cluster.awaitSnapshotCount(1);
+        assertTrue(cluster.client().sendKeepAlive());
 
-            assertTrue(cluster.client().sendKeepAlive());
-            awaitElectionClosed(dynamicMember);
-            assertEquals(FOLLOWER, dynamicMember.role());
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-            cluster.awaitSnapshotLoadedForService(dynamicMember);
-            assertEquals(preSnapshotMessageCount, dynamicMember.service().messageCount());
+        assertTrue(cluster.client().sendKeepAlive());
+        awaitElectionClosed(dynamicMember);
+        assertEquals(FOLLOWER, dynamicMember.role());
 
-            cluster.sendMessages(postSnapshotMessageCount);
-            cluster.awaitResponseMessageCount(totalMessageCount);
-            cluster.awaitServiceMessageCount(dynamicMember, totalMessageCount);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        cluster.awaitSnapshotLoadedForService(dynamicMember);
+        assertEquals(preSnapshotMessageCount, dynamicMember.service().messageCount());
+
+        cluster.sendMessages(postSnapshotMessageCount);
+        cluster.awaitResponseMessageCount(totalMessageCount);
+        cluster.awaitServiceMessageCount(dynamicMember, totalMessageCount);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRemoveFollower(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).start();
-        try
-        {
-            final TestNode leader = cluster.awaitLeader();
-            final TestNode follower = cluster.followers().get(0);
+        clusterTestWatcher.cluster(cluster);
 
-            follower.isTerminationExpected(true);
-            leader.removeMember(follower.index(), false);
+        final TestNode leader = cluster.awaitLeader();
+        final TestNode follower = cluster.followers().get(0);
 
-            cluster.awaitNodeTermination(follower);
-            cluster.stopNode(follower);
+        follower.isTerminationExpected(true);
+        leader.removeMember(follower.index(), false);
 
-            final ClusterMembership clusterMembership = awaitMembershipSize(leader, 2);
-            assertEquals(leader.index(), clusterMembership.leaderMemberId);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        cluster.awaitNodeTermination(follower);
+        cluster.stopNode(follower);
+
+        final ClusterMembership clusterMembership = awaitMembershipSize(leader, 2);
+        assertEquals(leader.index(), clusterMembership.leaderMemberId);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRemoveLeader(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).start();
-        try
-        {
-            final TestNode initialLeader = cluster.awaitLeader();
+        clusterTestWatcher.cluster(cluster);
 
-            initialLeader.isTerminationExpected(true);
-            initialLeader.removeMember(initialLeader.index(), false);
+        final TestNode initialLeader = cluster.awaitLeader();
 
-            cluster.awaitNodeTermination(initialLeader);
-            cluster.stopNode(initialLeader);
+        initialLeader.isTerminationExpected(true);
+        initialLeader.removeMember(initialLeader.index(), false);
 
-            final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
-            final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 2);
+        cluster.awaitNodeTermination(initialLeader);
+        cluster.stopNode(initialLeader);
 
-            assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
-            assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
+        final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 2);
+
+        assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
+        assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRemoveLeaderAfterDynamicNodeJoined(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
-        try
-        {
-            final TestNode initialLeader = cluster.awaitLeader();
-            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+        clusterTestWatcher.cluster(cluster);
 
-            awaitElectionClosed(dynamicMember);
-            awaitMembershipSize(initialLeader, 4);
+        final TestNode initialLeader = cluster.awaitLeader();
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-            initialLeader.isTerminationExpected(true);
-            initialLeader.removeMember(initialLeader.index(), false);
+        awaitElectionClosed(dynamicMember);
+        awaitMembershipSize(initialLeader, 4);
 
-            cluster.awaitNodeTermination(initialLeader);
-            cluster.stopNode(initialLeader);
+        initialLeader.isTerminationExpected(true);
+        initialLeader.removeMember(initialLeader.index(), false);
 
-            final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
-            final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
+        cluster.awaitNodeTermination(initialLeader);
+        cluster.stopNode(initialLeader);
 
-            assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
-            assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
+        final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
+
+        assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
+        assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldRemoveLeaderAfterDynamicNodeJoinedThenRestartCluster(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
-        try
+        clusterTestWatcher.cluster(cluster);
+
+        final TestNode initialLeader = cluster.awaitLeader();
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+
+        awaitElectionClosed(dynamicMember);
+        awaitMembershipSize(initialLeader, 4);
+
+        final int initialLeaderIndex = initialLeader.index();
+        initialLeader.isTerminationExpected(true);
+        initialLeader.removeMember(initialLeaderIndex, false);
+
+        cluster.awaitNodeTermination(initialLeader);
+        cluster.stopNode(initialLeader);
+
+        final TestNode newLeader = cluster.awaitLeader(initialLeaderIndex);
+        final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
+
+        assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
+        assertNotEquals(initialLeaderIndex, clusterMembership.leaderMemberId);
+
+        cluster.stopAllNodes();
+
+        for (int i = 0; i < 3; i++)
         {
-            final TestNode initialLeader = cluster.awaitLeader();
-            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
-
-            awaitElectionClosed(dynamicMember);
-            awaitMembershipSize(initialLeader, 4);
-
-            final int initialLeaderIndex = initialLeader.index();
-            initialLeader.isTerminationExpected(true);
-            initialLeader.removeMember(initialLeaderIndex, false);
-
-            cluster.awaitNodeTermination(initialLeader);
-            cluster.stopNode(initialLeader);
-
-            final TestNode newLeader = cluster.awaitLeader(initialLeaderIndex);
-            final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
-
-            assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
-            assertNotEquals(initialLeaderIndex, clusterMembership.leaderMemberId);
-
-            cluster.stopAllNodes();
-
-            for (int i = 0; i < 3; i++)
+            if (initialLeaderIndex != i)
             {
-                if (initialLeaderIndex != i)
-                {
-                    cluster.startStaticNode(i, false);
-                }
+                cluster.startStaticNode(i, false);
             }
+        }
 
-            cluster.awaitLeader();
-            assertEquals(1, cluster.followers().size());
-            awaitElectionClosed(cluster.followers().get(0));
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        cluster.awaitLeader();
+        assertEquals(1, cluster.followers().size());
+        awaitElectionClosed(cluster.followers().get(0));
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldJoinDynamicNodeToSingleStaticLeader(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(1).withDynamicNodes(1).start();
-        try
-        {
-            final TestNode initialLeader = cluster.awaitLeader();
-            final TestNode dynamicMember = cluster.startDynamicNode(1, true);
+        clusterTestWatcher.cluster(cluster);
 
-            awaitElectionClosed(dynamicMember);
-            awaitMembershipSize(initialLeader, 2);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        final TestNode initialLeader = cluster.awaitLeader();
+        final TestNode dynamicMember = cluster.startDynamicNode(1, true);
+
+        awaitElectionClosed(dynamicMember);
+        awaitMembershipSize(initialLeader, 2);
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsAndRestartDynamicNode(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
-        try
-        {
-            final TestNode leader = cluster.awaitLeader();
-            final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+        clusterTestWatcher.cluster(cluster);
 
-            awaitElectionClosed(dynamicMember);
-            assertEquals(FOLLOWER, dynamicMember.role());
+        final TestNode leader = cluster.awaitLeader();
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-            final ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
+        awaitElectionClosed(dynamicMember);
+        assertEquals(FOLLOWER, dynamicMember.role());
 
-            assertEquals(leader.index(), clusterMembership.leaderMemberId);
-            assertEquals("", clusterMembership.passiveMembersStr);
+        final ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
 
-            final int messageCount = 10;
-            cluster.connectClient();
-            cluster.sendMessages(messageCount);
-            cluster.awaitResponseMessageCount(messageCount);
-            cluster.awaitServicesMessageCount(messageCount);
+        assertEquals(leader.index(), clusterMembership.leaderMemberId);
+        assertEquals("", clusterMembership.passiveMembersStr);
 
-            cluster.stopNode(dynamicMember);
-            final TestNode staticMember = cluster.startStaticNodeFromDynamicNode(3);
+        final int messageCount = 10;
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount);
 
-            awaitElectionClosed(staticMember);
-            cluster.awaitServiceMessageCount(cluster.node(3), messageCount);
-        }
-        catch (final Throwable ex)
-        {
-            cluster.dumpData(testInfo, ex);
-        }
+        cluster.stopNode(dynamicMember);
+        final TestNode staticMember = cluster.startStaticNodeFromDynamicNode(3);
+
+        awaitElectionClosed(staticMember);
+        cluster.awaitServiceMessageCount(cluster.node(3), messageCount);
     }
 }

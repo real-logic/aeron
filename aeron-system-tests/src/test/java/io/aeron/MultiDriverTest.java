@@ -20,6 +20,8 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
@@ -28,7 +30,7 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MultiDriverTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
@@ -97,7 +100,7 @@ public class MultiDriverTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSpinUpAndShutdown()
     {
         launch();
@@ -113,7 +116,7 @@ public class MultiDriverTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldJoinExistingStreamWithLockStepSendingReceiving() throws InterruptedException
     {
         final int numMessagesToSendPreJoin = NUM_MESSAGES_PER_TERM / 2;
@@ -184,7 +187,7 @@ public class MultiDriverTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldJoinExistingIdleStreamWithLockStepSendingReceiving() throws InterruptedException
     {
         final int numMessagesToSendPreJoin = 0;

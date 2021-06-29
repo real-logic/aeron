@@ -23,16 +23,20 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.samples.cluster.EchoServiceNode;
 import io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.TopologyTest;
 import io.aeron.test.launcher.FileResolveUtil;
 import io.aeron.test.launcher.RemoteLaunchClient;
-import org.agrona.*;
+import org.agrona.AsciiEncoding;
+import org.agrona.IoUtil;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -63,6 +67,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TopologyTest
+@ExtendWith(InterruptingTestCallback.class)
 public class ClusterNetworkTopologyTest
 {
     private static final int REMOTE_LAUNCH_PORT = 11112;
@@ -131,7 +136,7 @@ public class ClusterNetworkTopologyTest
 
     @ParameterizedTest
     @MethodSource("provideTopologyConfigurations")
-    @Timeout(60)
+    @InterruptAfter(60)
     void shouldGetEchoFromCluster(
         final List<String> hostnames,
         final List<String> internalHostnames,
@@ -159,7 +164,7 @@ public class ClusterNetworkTopologyTest
 
     @ParameterizedTest
     @MethodSource("singleTopologyConfigurations")
-    @Timeout(60)
+    @InterruptAfter(60)
     void shouldLogReplicate(
         final List<String> hostnames,
         final List<String> internalHostnames,

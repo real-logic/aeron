@@ -18,20 +18,25 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.status.ReadableCounter;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
-@Timeout(10)
+@ExtendWith(InterruptingTestCallback.class)
 public class CounterTest
 {
     private static final int COUNTER_TYPE_ID = 1101;
@@ -72,6 +77,7 @@ public class CounterTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldBeAbleToAddCounter()
     {
         final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
@@ -100,6 +106,7 @@ public class CounterTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldBeAbleToAddReadableCounterWithinHandler()
     {
         clientB.addAvailableCounterHandler(this::createReadableCounter);
@@ -124,6 +131,7 @@ public class CounterTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldCloseReadableCounterOnUnavailableCounter()
     {
         clientB.addAvailableCounterHandler(this::createReadableCounter);

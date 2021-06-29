@@ -22,13 +22,15 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -46,6 +48,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ClientConductorTest
 {
     private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
@@ -219,7 +222,7 @@ public class ClientConductorTest
     }
 
     @Test
-    @Timeout(5)
+    @InterruptAfter(5)
     public void addPublicationShouldTimeoutWithoutReadyMessage()
     {
         assertThrows(DriverTimeoutException.class, () -> conductor.addPublication(CHANNEL, STREAM_ID_1));
@@ -396,7 +399,7 @@ public class ClientConductorTest
     }
 
     @Test
-    @Timeout(5)
+    @InterruptAfter(5)
     public void addSubscriptionShouldTimeoutWithoutOperationSuccessful()
     {
         assertThrows(DriverTimeoutException.class, () -> conductor.addSubscription(CHANNEL, STREAM_ID_1));

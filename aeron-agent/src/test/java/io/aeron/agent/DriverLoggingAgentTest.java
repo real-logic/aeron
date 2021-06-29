@@ -20,6 +20,8 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -28,7 +30,7 @@ import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -46,6 +48,7 @@ import static java.util.Collections.synchronizedSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class DriverLoggingAgentTest
 {
     private static final String NETWORK_CHANNEL =
@@ -61,7 +64,7 @@ public class DriverLoggingAgentTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void logAllNetworkChannel()
     {
         testLogMediaDriverEvents(NETWORK_CHANNEL, "all", EnumSet.of(
@@ -89,7 +92,7 @@ public class DriverLoggingAgentTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void logAllIpcChannel()
     {
         testLogMediaDriverEvents(IPC_CHANNEL, "all", EnumSet.of(
@@ -120,7 +123,7 @@ public class DriverLoggingAgentTest
         "CMD_IN_ADD_SUBSCRIPTION",
         "CMD_OUT_AVAILABLE_IMAGE"
     })
-    @Timeout(10)
+    @InterruptAfter(10)
     public void logIndividualEvents(final DriverEventCode eventCode)
     {
         try

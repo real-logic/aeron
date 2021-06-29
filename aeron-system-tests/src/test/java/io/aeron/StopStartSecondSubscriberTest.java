@@ -17,14 +17,22 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
@@ -33,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Test that a second subscriber can be stopped and started again while data is being published.
  */
+@ExtendWith(InterruptingTestCallback.class)
 public class StopStartSecondSubscriberTest
 {
     private static final String CHANNEL1 = "aeron:udp?endpoint=localhost:24325";
@@ -98,14 +107,14 @@ public class StopStartSecondSubscriberTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSpinUpAndShutdown()
     {
         launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceivePublishedMessage()
     {
         launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
@@ -142,28 +151,28 @@ public class StopStartSecondSubscriberTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceiveMessagesAfterStopStartOnSameChannelSameStream()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID1);
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceiveMessagesAfterStopStartOnSameChannelDifferentStreams()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID2);
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsSameStream()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID1);
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsDifferentStreams()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);

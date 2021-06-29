@@ -22,14 +22,16 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.LangUtil;
-import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
-import javax.management.*;
+import javax.management.Attribute;
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,7 +39,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 
 /**
@@ -96,8 +97,7 @@ public class Tests
     {
         if (Thread.currentThread().isInterrupted())
         {
-            unexpectedInterruptStackTrace(null);
-            fail("unexpected interrupt");
+            throw new TimeoutException("unexpected interrupt");
         }
     }
 
@@ -113,9 +113,7 @@ public class Tests
     {
         if (Thread.currentThread().isInterrupted())
         {
-            final String message = messageSupplier.get();
-            unexpectedInterruptStackTrace(message);
-            fail("unexpected interrupt - " + message);
+            throw new TimeoutException(messageSupplier.get());
         }
     }
 
@@ -133,9 +131,7 @@ public class Tests
     {
         if (Thread.currentThread().isInterrupted())
         {
-            final String message = String.format(format, args);
-            unexpectedInterruptStackTrace(message);
-            fail("unexpected interrupt - " + message);
+            throw new TimeoutException(String.format(format, args));
         }
     }
 
@@ -151,8 +147,7 @@ public class Tests
     {
         if (Thread.currentThread().isInterrupted())
         {
-            unexpectedInterruptStackTrace(message);
-            fail("unexpected interrupt - " + message);
+            throw new TimeoutException(message);
         }
     }
 
@@ -172,9 +167,6 @@ public class Tests
         }
 
         appendStackTrace(sb).append('\n');
-
-        System.out.println(sb);
-        System.out.println(SystemUtil.threadDump());
     }
 
     /**
@@ -220,8 +212,7 @@ public class Tests
         }
         catch (final InterruptedException ex)
         {
-            unexpectedInterruptStackTrace(null);
-            LangUtil.rethrowUnchecked(ex);
+            throw new TimeoutException(ex, AeronException.Category.ERROR);
         }
     }
 
@@ -239,8 +230,7 @@ public class Tests
         }
         catch (final InterruptedException ex)
         {
-            unexpectedInterruptStackTrace(messageSupplier.get());
-            LangUtil.rethrowUnchecked(ex);
+            throw new TimeoutException(messageSupplier.get());
         }
     }
 
@@ -259,8 +249,7 @@ public class Tests
         }
         catch (final InterruptedException ex)
         {
-            unexpectedInterruptStackTrace(String.format(format, params));
-            LangUtil.rethrowUnchecked(ex);
+            throw new TimeoutException(String.format(format, params));
         }
     }
 
@@ -434,8 +423,7 @@ public class Tests
             Thread.yield();
             if (Thread.currentThread().isInterrupted())
             {
-                unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counterValue);
-                fail("unexpected interrupt");
+                throw new TimeoutException("awaiting=" + value + " counter=" + counterValue);
             }
         }
     }
@@ -454,8 +442,7 @@ public class Tests
             Thread.yield();
             if (Thread.currentThread().isInterrupted())
             {
-                unexpectedInterruptStackTrace("awaiting=" + value + " counter=" + counterValue);
-                fail("unexpected interrupt");
+                throw new TimeoutException("awaiting=" + value + " counter=" + counterValue);
             }
 
             if (counter.isClosed())

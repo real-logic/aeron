@@ -32,19 +32,22 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.test.*;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.test.Tests.awaitConnected;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ClientErrorHandlerTest
 {
     private static final int STREAM_ID = 1001;
@@ -54,7 +57,7 @@ public class ClientErrorHandlerTest
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldHaveCorrectTermBufferLength()
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()

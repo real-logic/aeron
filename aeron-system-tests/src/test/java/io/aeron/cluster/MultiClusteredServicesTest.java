@@ -22,6 +22,8 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
@@ -30,12 +32,13 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MultiClusteredServicesTest
 {
     final AtomicLong serviceAMessageCount = new AtomicLong(0);
@@ -70,7 +73,7 @@ public class MultiClusteredServicesTest
     }
 
     @Test
-    @Timeout(20)
+    @InterruptAfter(20)
     public void shouldSupportMultipleServicesPerNode()
     {
         final List<TestCluster.NodeContext> nodeContexts = new ArrayList<>();

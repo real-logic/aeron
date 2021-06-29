@@ -20,14 +20,16 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -40,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class SpySimulatedConnectionTest
 {
     private static List<String> channels()
@@ -95,7 +98,7 @@ public class SpySimulatedConnectionTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldNotSimulateConnectionWhenNotConfigured(final String channel)
     {
         launch();
@@ -110,7 +113,7 @@ public class SpySimulatedConnectionTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSimulateConnectionWhenOnChannel(final String channel)
     {
         launch();
@@ -124,7 +127,7 @@ public class SpySimulatedConnectionTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSimulateConnectionWithNoNetworkSubscriptions(final String channel)
     {
         final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -172,7 +175,7 @@ public class SpySimulatedConnectionTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSimulateConnectionWithSlowNetworkSubscription(final String channel)
     {
         final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -220,7 +223,7 @@ public class SpySimulatedConnectionTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSimulateConnectionWithLeavingNetworkSubscription(final String channel)
     {
         final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;

@@ -21,6 +21,8 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import org.agrona.BitUtil;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableInteger;
@@ -30,7 +32,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -44,6 +46,7 @@ import java.nio.channels.DatagramChannel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class SelectorAndTransportTest
 {
     private static final int RCV_PORT = 40123;
@@ -122,7 +125,7 @@ public class SelectorAndTransportTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldHandleBasicSetupAndTearDown()
     {
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
@@ -175,7 +178,7 @@ public class SelectorAndTransportTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSendEmptyDataFrameUnicastFromSourceToReceiver()
     {
         final MutableInteger dataHeadersReceived = new MutableInteger(0);
@@ -226,7 +229,7 @@ public class SelectorAndTransportTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldSendMultipleDataFramesPerDatagramUnicastFromSourceToReceiver()
     {
         final MutableInteger dataHeadersReceived = new MutableInteger(0);
@@ -290,7 +293,7 @@ public class SelectorAndTransportTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldHandleSmFrameFromReceiverToSender()
     {
         final MutableInteger controlMessagesReceived = new MutableInteger(0);

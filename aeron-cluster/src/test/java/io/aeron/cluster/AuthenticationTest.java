@@ -25,6 +25,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.*;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
@@ -35,7 +37,7 @@ import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -45,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class AuthenticationTest
 {
     private static final long CATALOG_CAPACITY = 1024 * 1024;
@@ -78,7 +81,7 @@ public class AuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldAuthenticateOnConnectRequestWithEmptyCredentials()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
@@ -140,7 +143,7 @@ public class AuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldAuthenticateOnConnectRequestWithCredentials()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
@@ -202,7 +205,7 @@ public class AuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldAuthenticateOnChallengeResponse()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
@@ -272,7 +275,7 @@ public class AuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRejectOnConnectRequest()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
@@ -338,7 +341,7 @@ public class AuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRejectOnChallengeResponse()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);

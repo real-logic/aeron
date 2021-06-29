@@ -22,9 +22,11 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
@@ -35,7 +37,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
@@ -52,7 +54,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@Timeout(10)
+@ExtendWith(InterruptingTestCallback.class)
 public class ReplicateRecordingTest
 {
     private static final int SRC_CONTROL_STREAM_ID = AeronArchive.Configuration.CONTROL_STREAM_ID_DEFAULT;
@@ -199,6 +201,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldThrowExceptionWhenSrcRecordingIdUnknown()
     {
         final long unknownId = 7L;
@@ -221,6 +224,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldReplicateStoppedRecording()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -260,6 +264,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldReplicateStoppedRecordingsConcurrently()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -315,6 +320,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldReplicateLiveWithoutMergingRecording()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -358,6 +364,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldReplicateLiveRecordingAndStopAtSpecifiedPosition()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -413,6 +420,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldReplicateMoreThanOnce()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -466,6 +474,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldReplicateLiveRecordingAndMerge()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -510,6 +519,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldReplicateLiveRecordingAndMergeBeforeDataFlows()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -549,6 +559,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    @InterruptAfter(10)
     public void shouldReplicateLiveRecordingAndMergeWhileFollowingWithTaggedSubscription()
     {
         final String messagePrefix = "Message-Prefix-";

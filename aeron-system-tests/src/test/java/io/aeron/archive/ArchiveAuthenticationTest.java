@@ -24,16 +24,18 @@ import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.SessionProxy;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
@@ -45,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ArchiveAuthenticationTest
 {
     private static final int RECORDED_STREAM_ID = 1033;
@@ -81,7 +84,7 @@ public class ArchiveAuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldBeAbleToRecordWithDefaultCredentialsAndAuthenticator()
     {
         launchArchivingMediaDriver(null);
@@ -91,7 +94,7 @@ public class ArchiveAuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldBeAbleToRecordWithAuthenticateOnConnectRequestWithCredentials()
     {
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
@@ -144,7 +147,7 @@ public class ArchiveAuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldBeAbleToRecordWithAuthenticateOnChallengeResponse()
     {
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
@@ -205,7 +208,7 @@ public class ArchiveAuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldNotBeAbleToConnectWithRejectOnConnectRequest()
     {
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
@@ -265,7 +268,7 @@ public class ArchiveAuthenticationTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldNotBeAbleToConnectWithRejectOnChallengeResponse()
     {
         final MutableLong authenticatorSessionId = new MutableLong(-1L);

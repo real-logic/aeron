@@ -19,9 +19,11 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
@@ -29,13 +31,14 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.nio.ByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MemoryOrderingTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:24325";
@@ -69,7 +72,7 @@ public class MemoryOrderingTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
@@ -120,7 +123,7 @@ public class MemoryOrderingTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));

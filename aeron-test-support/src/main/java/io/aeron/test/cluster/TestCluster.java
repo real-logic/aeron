@@ -268,7 +268,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .errorHandler(errorHandler(index))
             .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
 
@@ -280,11 +279,9 @@ public class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart)
-            .errorHandler(errorHandler(index));
+            .deleteArchiveOnStart(cleanStart);
 
         context.consensusModuleContext
-            .errorHandler(errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(staticClusterMembers)
             .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)
@@ -305,8 +302,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .clusterDir(new File(baseDirName, "service"))
-            .clusteredService(context.service)
-            .errorHandler(errorHandler(index));
+            .clusteredService(context.service);
 
         try
         {
@@ -342,7 +338,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false);
 
@@ -357,7 +352,6 @@ public class TestCluster implements AutoCloseable
             .deleteArchiveOnStart(cleanStart);
 
         context.consensusModuleContext
-            .errorHandler(errorHandler(index))
             .clusterMemberId(NULL_VALUE)
             .clusterMembers("")
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
@@ -378,8 +372,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .clusterDir(new File(baseDirName, "service"))
-            .clusteredService(context.service)
-            .errorHandler(errorHandler(index));
+            .clusteredService(context.service);
 
         nodes[index] = new TestNode(context, dataCollector);
 
@@ -408,7 +401,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .errorHandler(errorHandler(index))
             .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
 
@@ -423,7 +415,6 @@ public class TestCluster implements AutoCloseable
             .deleteArchiveOnStart(false);
 
         context.consensusModuleContext
-            .errorHandler(errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(clusterMembers(0, staticMemberCount + 1))
             .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)
@@ -444,8 +435,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .clusterDir(new File(baseDirName, "service"))
-            .clusteredService(context.service)
-            .errorHandler(errorHandler(index));
+            .clusteredService(context.service);
 
         nodes[index] = new TestNode(context, dataCollector);
 
@@ -528,7 +518,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .errorHandler(errorHandler(backupNodeIndex))
             .dirDeleteOnStart(true);
 
         context.archiveContext
@@ -541,7 +530,6 @@ public class TestCluster implements AutoCloseable
             .deleteArchiveOnStart(false);
 
         context.consensusModuleContext
-            .errorHandler(errorHandler(backupNodeIndex))
             .clusterMemberId(backupNodeIndex)
             .clusterMembers(singleNodeClusterMember(0, backupNodeIndex))
             .appointedLeaderId(backupNodeIndex)
@@ -561,8 +549,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .clusterDir(new File(baseDirName, "service"))
-            .clusteredService(context.service)
-            .errorHandler(errorHandler(backupNodeIndex));
+            .clusteredService(context.service);
 
         backupNode = null;
         nodes[backupNodeIndex] = new TestNode(context, dataCollector);
@@ -743,13 +730,14 @@ public class TestCluster implements AutoCloseable
 
         while ((count = responseCount.get()) < messageCount)
         {
-            Thread.yield();
-            if (Thread.interrupted())
-            {
-                final String message = "count=" + count + " awaiting=" + messageCount;
-                Tests.unexpectedInterruptStackTrace(message);
-                fail(message);
-            }
+            Tests.sleep(1, "count=%d awaiting=%d", count, messageCount);
+//            Thread.yield();
+//            if (Thread.interrupted())
+//            {
+//                final String message = "count=" + count + " awaiting=" + messageCount;
+//                Tests.unexpectedInterruptStackTrace(message);
+//                throw new TimeoutException(message);
+//            }
 
             client.pollEgress();
 
@@ -1043,8 +1031,7 @@ public class TestCluster implements AutoCloseable
             if (Thread.interrupted())
             {
                 final String message = "count=" + count + " awaiting=" + messageCount + " node=" + node;
-                Tests.unexpectedInterruptStackTrace(message);
-                fail(message);
+                throw new TimeoutException(message);
             }
 
             if (service.hasReceivedUnexpectedMessage())
@@ -1208,8 +1195,8 @@ public class TestCluster implements AutoCloseable
 
     public void dumpData(final TestInfo testInfo, final Throwable ex)
     {
-        ex.printStackTrace();
-        ClusterTests.printWarning();
+//        ex.printStackTrace();
+//        ClusterTests.printWarning();
 
         dataCollector.dumpData(testInfo);
         LangUtil.rethrowUnchecked(ex);
@@ -1255,6 +1242,11 @@ public class TestCluster implements AutoCloseable
             invalidInitialResolutions.contains(0) ? "bad.invalid" : "localhost",
             invalidInitialResolutions.contains(1) ? "bad.invalid" : "localhost",
             invalidInitialResolutions.contains(2) ? "bad.invalid" : "localhost");
+    }
+
+    public DataCollector dataCollector()
+    {
+        return dataCollector;
     }
 
     public static class ServiceContext

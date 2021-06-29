@@ -15,12 +15,16 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.CommonContext;
+import io.aeron.Counter;
+import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.client.*;
+import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -30,6 +34,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
@@ -43,7 +49,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,6 +68,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SlowTest
+@ExtendWith(InterruptingTestCallback.class)
 public class StartFromTruncatedRecordingLogTest
 {
     private static final long CATALOG_CAPACITY = 1024 * 1024;
@@ -181,7 +188,7 @@ public class StartFromTruncatedRecordingLogTest
     }
 
     @Test
-    @Timeout(30)
+    @InterruptAfter(30)
     public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws IOException
     {
         try

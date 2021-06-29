@@ -27,6 +27,8 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
@@ -37,16 +39,15 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ClusterTimerTest
 {
     private static final long CATALOG_CAPACITY = 128 * 1024;
@@ -80,7 +81,7 @@ public class ClusterTimerTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
     {
         final AtomicLong triggeredTimersCounter = new AtomicLong();
@@ -121,7 +122,7 @@ public class ClusterTimerTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
         final AtomicLong triggeredTimersCounter = new AtomicLong();
@@ -153,7 +154,7 @@ public class ClusterTimerTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void shouldRescheduleTimerWhenSchedulingWithExistingCorrelationId()
     {
         final AtomicLong timerCounter1 = new AtomicLong();

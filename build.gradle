@@ -821,6 +821,7 @@ project(':aeron-test-support') {
     dependencies {
         api project(':aeron-client')
         api project(':aeron-cluster')
+        api project(':aeron-samples')
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
         implementation "org.mockito:mockito-core:${mockitoVersion}"
     }

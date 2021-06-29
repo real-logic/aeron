@@ -18,15 +18,19 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
-import io.aeron.archive.client.*;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingSignalAdapter;
+import io.aeron.archive.client.RecordingSignalConsumer;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableReference;
@@ -34,7 +38,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
@@ -43,6 +47,7 @@ import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ManageRecordingHistoryTest
 {
     private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
@@ -104,7 +109,7 @@ public class ManageRecordingHistoryTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldPurgeForStreamJoinedAtTheBeginning()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -132,7 +137,7 @@ public class ManageRecordingHistoryTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldPurgeForLateJoinedStream()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -164,7 +169,7 @@ public class ManageRecordingHistoryTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldDetachThenAttachFullSegments()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -194,7 +199,7 @@ public class ManageRecordingHistoryTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldDetachThenAttachWhenStartNotSegmentAligned()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -228,7 +233,7 @@ public class ManageRecordingHistoryTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldMigrateSegmentsForStreamJoinedAtTheBeginning()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -276,7 +281,7 @@ public class ManageRecordingHistoryTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldMigrateSegmentsForStreamNotSegmentAligned()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -327,7 +332,7 @@ public class ManageRecordingHistoryTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     public void shouldPurgeRecording()
     {
         final String messagePrefix = "Message-Prefix-";

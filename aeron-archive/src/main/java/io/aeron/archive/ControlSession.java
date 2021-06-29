@@ -153,7 +153,7 @@ final class ControlSession implements Session
         switch (state)
         {
             case INIT:
-                workCount += waitForPublication();
+                workCount += waitForPublication(nowMs);
                 break;
 
             case CONNECTING:
@@ -671,15 +671,16 @@ final class ControlSession implements Session
             this));
     }
 
-    private int waitForPublication()
+    private int waitForPublication(final long nowMs)
     {
         int workCount = 0;
 
         controlPublication = aeron.getExclusivePublication(controlPublicationId);
         if (null != controlPublication)
         {
-            workCount++;
+            activityDeadlineMs = nowMs + connectTimeoutMs;
             state(State.CONNECTING);
+            workCount += 1;
         }
 
         return workCount;

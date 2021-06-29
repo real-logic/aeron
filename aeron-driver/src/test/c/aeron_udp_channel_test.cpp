@@ -458,6 +458,13 @@ TEST_F(UdpChannelTest, shouldDefaultTimestampOffsetsToMinusOne)
     EXPECT_EQ(AERON_NULL_VALUE, m_channel->send_timestamp_offset);
 }
 
+TEST_F(UdpChannelTest, shouldValidateOffsetsDoNotOverlap)
+{
+    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|pkt-ts-offset=0|rcv-ts-offset=7"));
+    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|pkt-ts-offset=0|snd-ts-offset=7"));
+    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|snd-ts-offset=0|rcv-ts-offset=7"));
+}
+
 TEST_P(UdpChannelNamesParameterisedTest, DISABLED_shouldBeValid)
 {
     const char *endpoint_name = std::get<0>(GetParam());

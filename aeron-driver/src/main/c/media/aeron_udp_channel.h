@@ -94,4 +94,16 @@ inline bool aeron_udp_channel_is_packet_timestamping(aeron_udp_channel_t *channe
         0 <= channel->packet_timestamp_offset;
 }
 
+inline bool aeron_udp_channel_is_receive_timestamping(aeron_udp_channel_t *channel)
+{
+    return AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == channel->receive_timestamp_offset ||
+        0 <= channel->receive_timestamp_offset;
+}
+
+inline bool aeron_udp_channel_is_send_timestamping(aeron_udp_channel_t *channel)
+{
+    return AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == channel->send_timestamp_offset ||
+        0 <= channel->send_timestamp_offset;
+}
+
 #endif //AERON_UDP_CHANNEL_H

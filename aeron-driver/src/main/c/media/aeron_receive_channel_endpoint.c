@@ -421,28 +421,19 @@ void aeron_receive_channel_endpoint_dispatch(
     }
 }
 
-static void aeron_receive_channel_endpoint_set_packet_timestamp(
-    aeron_receive_channel_endpoint_t *endpoint,
-    struct timespec *packet_timestamp,
+static void aeron_receive_channel_endpoint_set_timestamp(
+    struct timespec *timestamp,
+    int32_t offset,
     uint8_t *buffer,
     size_t length)
 {
     aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
-
-    if (NULL == packet_timestamp ||
-        AERON_HDR_TYPE_PAD == data_header->frame_header.type ||
-        aeron_publication_image_is_heartbeat(buffer, length))
-    {
-        return;
-    }
-
     uint8_t *body_buffer = buffer + sizeof(aeron_data_header_t);
     size_t body_length = length - sizeof(aeron_data_header_t);
 
     int64_t timestamp_ns =
-        (INT64_C(1000) * 1000 * 1000 * packet_timestamp->tv_sec) + packet_timestamp->tv_nsec;
+        (INT64_C(1000) * 1000 * 1000 * timestamp->tv_sec) + timestamp->tv_nsec;
 
-    int32_t offset = endpoint->conductor_fields.udp_channel->packet_timestamp_offset;
     if (AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == offset)
     {
         data_header->reserved_value = timestamp_ns;
@@ -452,6 +443,36 @@ static void aeron_receive_channel_endpoint_set_packet_timestamp(
         offset <= (int32_t)((data_header->frame_header.frame_length - sizeof(*data_header)) - sizeof(timestamp_ns)))
     {
         memcpy(body_buffer + (size_t)offset, &timestamp_ns, sizeof(timestamp_ns));
+    }
+}
+
+static void aeron_receive_channel_endpoint_timestamps(
+    aeron_udp_channel_t *endpoint_channel,
+    int32_t packet_timestamp_flags,
+    struct timespec *packet_timestamp,
+    uint8_t *buffer,
+    size_t length)
+{
+    aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
+
+    if (NULL != packet_timestamp &&
+        AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
+        !aeron_publication_image_is_heartbeat(buffer, length))
+    {
+        int32_t offset = endpoint_channel->packet_timestamp_offset;
+        aeron_receive_channel_endpoint_set_timestamp(packet_timestamp, offset, buffer, length);
+    }
+
+    if ((AERON_UDP_CHANNEL_TRANSPORT_RECEIVE_TIMESTAMP & packet_timestamp_flags) &&
+        AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
+        !aeron_publication_image_is_heartbeat(buffer, length))
+    {
+        int32_t offset = endpoint_channel->receive_timestamp_offset;
+        struct timespec receive_timestamp;
+        if (0 == aeron_clock_gettime_realtime(&receive_timestamp))
+        {
+            aeron_receive_channel_endpoint_set_timestamp(&receive_timestamp, offset, buffer, length);
+        }
     }
 }
 
@@ -468,7 +489,12 @@ int aeron_receive_channel_endpoint_on_data(
     aeron_receive_destination_update_last_activity_ns(
         destination, aeron_clock_cached_nano_time(endpoint->cached_clock));
 
-    aeron_receive_channel_endpoint_set_packet_timestamp(endpoint, packet_timestamp, buffer, length);
+    aeron_receive_channel_endpoint_timestamps(
+        endpoint->conductor_fields.udp_channel,
+        destination->transport.packet_timestamp_flags,
+        packet_timestamp,
+        buffer,
+        length);
 
     return aeron_data_packet_dispatcher_on_data(
         &endpoint->dispatcher, endpoint, destination, data_header, buffer, length, addr);

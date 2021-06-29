@@ -161,6 +161,39 @@ int aeron_uri_udp_canonicalise(
     return snprintf(canonical_form, length, "UDP-%s-%s%s", local_data_str, remote_data_str, unique_suffix);
 }
 
+static int aeron_udp_channel_verify_timestamp_offsets_do_not_overlap(aeron_udp_channel_t *channel)
+{
+    if (AERON_NULL_VALUE != channel->packet_timestamp_offset)
+    {
+        if (AERON_NULL_VALUE != channel->receive_timestamp_offset &&
+            abs(channel->packet_timestamp_offset - channel->receive_timestamp_offset) < (int32_t)sizeof(int64_t))
+        {
+            AERON_SET_ERR(
+                EINVAL, "%s and %s overlap", AERON_URI_PACKET_TIMESTAMP_OFFSET, AERON_URI_RECEIVE_TIMESTAMP_OFFSET);
+            return -1;
+        }
+
+        if (AERON_NULL_VALUE != channel->send_timestamp_offset &&
+            abs(channel->packet_timestamp_offset - channel->send_timestamp_offset) < (int32_t)sizeof(int64_t))
+        {
+            AERON_SET_ERR(
+                EINVAL, "%s and %s overlap", AERON_URI_PACKET_TIMESTAMP_OFFSET, AERON_URI_SEND_TIMESTAMP_OFFSET);
+            return -1;
+        }
+    }
+
+    if (AERON_NULL_VALUE != channel->receive_timestamp_offset &&
+        AERON_NULL_VALUE != channel->send_timestamp_offset &&
+        abs(channel->packet_timestamp_offset - channel->send_timestamp_offset) < (int32_t)sizeof(int64_t))
+    {
+        AERON_SET_ERR(
+            EINVAL, "%s and %s overlap", AERON_URI_RECEIVE_TIMESTAMP_OFFSET, AERON_URI_SEND_TIMESTAMP_OFFSET);
+        return -1;
+    }
+
+    return 0;
+}
+
 int aeron_udp_channel_parse(
     size_t uri_length,
     const char *uri,
@@ -409,6 +442,12 @@ int aeron_udp_channel_parse(
         goto error_cleanup;
     }
 
+    if (aeron_udp_channel_verify_timestamp_offsets_do_not_overlap(_channel) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error_cleanup;
+    }
+
     *channel = _channel;
     return 0;
 
@@ -442,3 +481,8 @@ extern size_t aeron_udp_channel_socket_so_rcvbuf(aeron_udp_channel_t *channel, s
 extern size_t aeron_udp_channel_receiver_window(aeron_udp_channel_t *channel, size_t default_receiver_window);
 
 extern bool aeron_udp_channel_is_packet_timestamping(aeron_udp_channel_t *channel);
+
+extern bool aeron_udp_channel_is_receive_timestamping(aeron_udp_channel_t *channel);
+
+extern bool aeron_udp_channel_is_send_timestamping(aeron_udp_channel_t *channel);
+

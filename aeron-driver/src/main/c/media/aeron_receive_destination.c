@@ -61,6 +61,11 @@ int aeron_receive_destination_create(
         return -1;
     }
 
+    if (aeron_udp_channel_is_receive_timestamping(endpoint_channel))
+    {
+        _destination->transport.packet_timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_RECEIVE_TIMESTAMP;
+    }
+
     char local_sockaddr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
     if (context->udp_channel_transport_bindings->bind_addr_and_port_func(
         &_destination->transport, local_sockaddr, sizeof(local_sockaddr)) < 0)

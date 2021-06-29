@@ -50,6 +50,7 @@ typedef struct aeron_driver_uri_subscription_params_stct
     int32_t session_id;
     size_t initial_window_length;
     int32_t packet_timestamp_offset;
+    int32_t receive_timestamp_offset;
 }
 aeron_driver_uri_subscription_params_t;
 

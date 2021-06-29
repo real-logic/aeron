@@ -77,4 +77,11 @@ int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t *cached_clock);
  */
 int aeron_clock_cache_alloc(aeron_clock_cache_t **cached_clock);
 
+/**
+ *
+ * @param tp
+ * @return
+ */
+int aeron_clock_gettime_realtime(struct timespec *tp);
+
 #endif //AERON_AERON_CLOCK_H

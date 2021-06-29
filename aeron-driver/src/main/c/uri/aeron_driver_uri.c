@@ -381,6 +381,12 @@ int aeron_driver_uri_subscription_params(
         return -1;
     }
 
+    if (aeron_driver_uri_get_timestamp_offset(
+        uri, AERON_URI_RECEIVE_TIMESTAMP_OFFSET, &params->receive_timestamp_offset) < 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 

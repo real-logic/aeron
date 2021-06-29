@@ -142,17 +142,35 @@ static bool aeron_driver_conductor_has_clashing_subscription(
                 AERON_SET_ERR(EINVAL, "option conflicts with existing subscription: rejoin=%s", value);
                 return true;
             }
-
-            if (params->packet_timestamp_offset != link->packet_timestamp_offset)
-            {
-                AERON_SET_ERR(
-                    EINVAL,
-                    "option conflicts with existing subscription: pkt-ts-offset=%" PRId32 " %s",
-                    params->packet_timestamp_offset,
-                    aeron_driver_uri_get_offset_info(params->packet_timestamp_offset));
-                return true;
-            }
         }
+    }
+
+    return false;
+}
+
+bool aeron_driver_conductor_has_clashing_timestamp_offsets(
+    aeron_driver_conductor_t *conductor,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel)
+{
+    if (endpoint->conductor_fields.udp_channel->packet_timestamp_offset != channel->packet_timestamp_offset)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "option conflicts with existing subscription: pkt-ts-offset=%" PRId32 " %s",
+            channel->packet_timestamp_offset,
+            aeron_driver_uri_get_offset_info(channel->packet_timestamp_offset));
+        return true;
+    }
+
+    if (endpoint->conductor_fields.udp_channel->receive_timestamp_offset != channel->receive_timestamp_offset)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "option conflicts with existing subscription: pkt-ts-offset=%" PRId32 " %s",
+            channel->receive_timestamp_offset,
+            aeron_driver_uri_get_offset_info(channel->receive_timestamp_offset));
+        return true;
     }
 
     return false;
@@ -3158,6 +3176,13 @@ int aeron_driver_conductor_on_add_network_subscription(
     aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_get_or_add_receive_channel_endpoint(
         conductor, udp_channel, correlation_id);
     if (NULL == endpoint)
+    {
+        aeron_udp_channel_delete(udp_channel);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_driver_conductor_has_clashing_timestamp_offsets(conductor, endpoint, udp_channel))
     {
         aeron_udp_channel_delete(udp_channel);
         AERON_APPEND_ERR("%s", "");

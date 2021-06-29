@@ -41,10 +41,10 @@ import java.util.function.Predicate;
 
 public class ClusterTestWatcher implements TestWatcher
 {
-    public static final Predicate<String> UNKNOWN_HOST_FILTER = s -> s.contains(UnknownHostException.class.getName());
-    public static final Predicate<String> WARNING_FILTER = s -> s.contains("WARN");
+    public static final Predicate<String> UNKNOWN_HOST_FILTER = (s) -> s.contains(UnknownHostException.class.getName());
+    public static final Predicate<String> WARNING_FILTER = (s) -> s.contains("WARN");
     public static final Predicate<String> CLUSTER_TERMINATION_FILTER =
-        s -> s.contains(ClusterTerminationException.class.getName());
+        (s) -> s.contains(ClusterTerminationException.class.getName());
     public static final Predicate<String> TEST_CLUSTER_DEFAULT_LOG_FILTER =
         WARNING_FILTER.negate().and(CLUSTER_TERMINATION_FILTER.negate());
 
@@ -90,6 +90,7 @@ public class ClusterTestWatcher implements TestWatcher
                 testCluster.dataCollector().errorLogFiles(),
                 logFilter);
         }
+
         return 0;
     }
 

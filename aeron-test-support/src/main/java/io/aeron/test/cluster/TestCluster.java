@@ -43,7 +43,6 @@ import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -731,13 +730,6 @@ public class TestCluster implements AutoCloseable
         while ((count = responseCount.get()) < messageCount)
         {
             Tests.sleep(1, "count=%d awaiting=%d", count, messageCount);
-//            Thread.yield();
-//            if (Thread.interrupted())
-//            {
-//                final String message = "count=" + count + " awaiting=" + messageCount;
-//                Tests.unexpectedInterruptStackTrace(message);
-//                throw new TimeoutException(message);
-//            }
 
             client.pollEgress();
 
@@ -1191,15 +1183,6 @@ public class TestCluster implements AutoCloseable
                 }
             }
         }
-    }
-
-    public void dumpData(final TestInfo testInfo, final Throwable ex)
-    {
-//        ex.printStackTrace();
-//        ClusterTests.printWarning();
-
-        dataCollector.dumpData(testInfo);
-        LangUtil.rethrowUnchecked(ex);
     }
 
     public void disableNameResolution(final String hostname)

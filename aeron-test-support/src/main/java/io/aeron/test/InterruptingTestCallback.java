@@ -40,6 +40,7 @@ public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCa
     {
         timer = null;
         final InterruptAfter annotation = context.getRequiredTestMethod().getAnnotation(InterruptAfter.class);
+
         if (null != annotation)
         {
             final Thread testThread = Thread.currentThread();

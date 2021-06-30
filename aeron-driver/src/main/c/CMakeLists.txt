@@ -249,6 +249,7 @@ SET(SOURCE
     media/aeron_receive_channel_endpoint.c
     media/aeron_receive_destination.c
     media/aeron_send_channel_endpoint.c
+    media/aeron_timestamps.c
     media/aeron_udp_channel.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel_transport_bindings.c
@@ -288,6 +289,7 @@ SET(HEADERS
     media/aeron_receive_channel_endpoint.h
     media/aeron_receive_destination.h
     media/aeron_send_channel_endpoint.h
+    media/aeron_timestamps.h
     media/aeron_udp_channel.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel_transport_bindings.h

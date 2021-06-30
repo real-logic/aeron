@@ -148,7 +148,7 @@ static bool aeron_driver_conductor_has_clashing_subscription(
     return false;
 }
 
-bool aeron_driver_conductor_has_clashing_timestamp_offsets(
+static bool aeron_driver_conductor_receive_endpoint_has_clashing_timestamp_offsets(
     aeron_driver_conductor_t *conductor,
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_udp_channel_t *channel)
@@ -157,7 +157,8 @@ bool aeron_driver_conductor_has_clashing_timestamp_offsets(
     {
         AERON_SET_ERR(
             EINVAL,
-            "option conflicts with existing subscription: pkt-ts-offset=%" PRId32 " %s",
+            "option conflicts with existing subscription: %s=%" PRId32 " %s",
+            AERON_URI_PACKET_TIMESTAMP_OFFSET_KEY,
             channel->packet_timestamp_offset,
             aeron_driver_uri_get_offset_info(channel->packet_timestamp_offset));
         return true;
@@ -167,7 +168,8 @@ bool aeron_driver_conductor_has_clashing_timestamp_offsets(
     {
         AERON_SET_ERR(
             EINVAL,
-            "option conflicts with existing subscription: pkt-ts-offset=%" PRId32 " %s",
+            "option conflicts with existing subscription: %s=%" PRId32 " %s",
+            AERON_URI_RECEIVE_TIMESTAMP_OFFSET_KEY,
             channel->receive_timestamp_offset,
             aeron_driver_uri_get_offset_info(channel->receive_timestamp_offset));
         return true;
@@ -175,6 +177,26 @@ bool aeron_driver_conductor_has_clashing_timestamp_offsets(
 
     return false;
 }
+
+static bool aeron_driver_conductor_send_endpoint_has_clashing_timestamp_offsets(
+    aeron_driver_conductor_t *conductor,
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel)
+{
+    if (endpoint->conductor_fields.udp_channel->send_timestamp_offset != channel->send_timestamp_offset)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "option conflicts with existing subscription: %s=%" PRId32 " %s",
+            AERON_URI_SEND_TIMESTAMP_OFFSET_KEY,
+            channel->send_timestamp_offset,
+            aeron_driver_uri_get_offset_info(channel->send_timestamp_offset));
+        return true;
+    }
+
+    return false;
+}
+
 
 static int aeron_driver_conductor_validate_destination_uri_prefix(
     const char *channel_uri, int32_t channel_length, const char *transport_direction)
@@ -2846,6 +2868,13 @@ int aeron_driver_conductor_on_add_network_publication(
         return -1;
     }
 
+    if (aeron_driver_conductor_send_endpoint_has_clashing_timestamp_offsets(conductor, endpoint, udp_channel))
+    {
+        aeron_udp_channel_delete(udp_channel);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
     // If we've found an existing endpoint, capture the supplied
     // tag and free the supplied channel and use the channel from the existing endpoint.
     int64_t tag_id = udp_channel->tag_id;
@@ -3013,7 +3042,6 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     link->subscribable_list.length = 0;
     link->subscribable_list.capacity = 0;
     link->subscribable_list.array = NULL;
-    link->packet_timestamp_offset = AERON_NULL_VALUE;
 
     aeron_driver_conductor_on_subscription_ready(
         conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
@@ -3111,7 +3139,6 @@ int aeron_driver_conductor_on_add_spy_subscription(
     link->subscribable_list.length = 0;
     link->subscribable_list.capacity = 0;
     link->subscribable_list.array = NULL;
-    link->packet_timestamp_offset = params.packet_timestamp_offset;
 
     aeron_driver_conductor_on_subscription_ready(
         conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
@@ -3182,7 +3209,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
-    if (aeron_driver_conductor_has_clashing_timestamp_offsets(conductor, endpoint, udp_channel))
+    if (aeron_driver_conductor_receive_endpoint_has_clashing_timestamp_offsets(conductor, endpoint, udp_channel))
     {
         aeron_udp_channel_delete(udp_channel);
         AERON_APPEND_ERR("%s", "");
@@ -3259,7 +3286,6 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->subscribable_list.length = 0;
         link->subscribable_list.capacity = 0;
         link->subscribable_list.array = NULL;
-        link->packet_timestamp_offset = params.packet_timestamp_offset;
 
         aeron_driver_conductor_on_subscription_ready(
             conductor, correlation_id, endpoint->channel_status.counter_id);

@@ -37,7 +37,7 @@ struct message_t
     char text[16];
 };
 
-class PacketTimestampsTest : public CSystemTestBase, public testing::Test
+class TimestampsTest : public CSystemTestBase, public testing::Test
 {
 };
 
@@ -46,7 +46,7 @@ int64_t null_reserved_value(void *clientd, uint8_t *buffer, size_t frame_length)
     return AERON_NULL_VALUE;
 }
 
-TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValue)
+TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValue)
 {
 #if !defined(__linux__)
     GTEST_SKIP();
@@ -106,7 +106,7 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValue)
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
-TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesAtOffset)
+TEST_F(TimestampsTest, shouldPutTimestampInMessagesAtOffset)
 {
 #if !defined(__linux__)
     GTEST_SKIP();
@@ -168,7 +168,7 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesAtOffset)
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
-TEST_F(PacketTimestampsTest, shouldNotPutTimestampInMessagesAtIfOffsetExceedsMessage)
+TEST_F(TimestampsTest, shouldNotPutTimestampInMessagesAtIfOffsetExceedsMessage)
 {
 #if !defined(__linux__)
     GTEST_SKIP();
@@ -224,7 +224,7 @@ TEST_F(PacketTimestampsTest, shouldNotPutTimestampInMessagesAtIfOffsetExceedsMes
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
-TEST_F(PacketTimestampsTest, shouldErrorIfPacketTimestampConfigurationClashes)
+TEST_F(TimestampsTest, shouldErrorIfPacketTimestampConfigurationClashes)
 {
     aeron_async_add_subscription_t *async_sub = nullptr;
 
@@ -252,7 +252,7 @@ TEST_F(PacketTimestampsTest, shouldErrorIfPacketTimestampConfigurationClashes)
     ASSERT_FALSE(awaitSubscriptionOrError(async_sub));
 }
 
-TEST_F(PacketTimestampsTest, shouldErrorIfReceiveTimestampConfigurationClashes)
+TEST_F(TimestampsTest, shouldErrorIfReceiveTimestampConfigurationClashes)
 {
     aeron_async_add_subscription_t *async_sub = nullptr;
 
@@ -280,7 +280,31 @@ TEST_F(PacketTimestampsTest, shouldErrorIfReceiveTimestampConfigurationClashes)
     ASSERT_FALSE(awaitSubscriptionOrError(async_sub));
 }
 
-TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValueWithMergedMds)
+TEST_F(TimestampsTest, shouldErrorIfSendTimestampConfigurationClashes)
+{
+    aeron_async_add_subscription_t *async_pub = nullptr;
+
+    std::string uriOriginal = std::string(URI);
+    const char *uriOriginal_s = uriOriginal.append("|snd-ts-offset=8").c_str();
+
+    const char *uriNotSpecified_s = URI;
+
+    std::string uriDifferentOffset = std::string(URI);
+    const char *uriDifferentOffset_s = uriDifferentOffset.append("|snd-ts-offset=reserved").c_str();
+
+    ASSERT_TRUE(connect());
+
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, uriOriginal_s, STREAM_ID), 0);
+    ASSERT_TRUE(awaitPublicationOrError(async_pub)) << aeron_errmsg();
+
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, uriNotSpecified_s, STREAM_ID), 0);
+    ASSERT_FALSE(awaitPublicationOrError(async_pub));
+
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, uriDifferentOffset_s, STREAM_ID), 0);
+    ASSERT_FALSE(awaitPublicationOrError(async_pub));
+}
+
+TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValueWithMergedMds)
 {
 #if !defined(__linux__)
     GTEST_SKIP();
@@ -399,7 +423,7 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValueWithMerged
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
-TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValueWithNonMergedMds)
+TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValueWithNonMergedMds)
 {
 #if !defined(__linux__)
     GTEST_SKIP();
@@ -487,7 +511,7 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValueWithNonMer
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
-TEST_F(PacketTimestampsTest, shouldPutSendAndReceivesTimestampsInMessagesAtOffset)
+TEST_F(TimestampsTest, shouldPutSendAndReceivesTimestampsInMessagesAtOffset)
 {
 #if !defined(__linux__)
     GTEST_SKIP();
@@ -537,7 +561,7 @@ TEST_F(PacketTimestampsTest, shouldPutSendAndReceivesTimestampsInMessagesAtOffse
         message_t *incoming = (message_t*)buffer;
         EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_NE(AERON_NULL_VALUE, incoming->timestamp_1);
-//        EXPECT_NE(AERON_NULL_VALUE, incoming->timestamp_2);
+        EXPECT_NE(AERON_NULL_VALUE, incoming->timestamp_2);
         EXPECT_STREQ(incoming->text, message.text);
         called = true;
     };

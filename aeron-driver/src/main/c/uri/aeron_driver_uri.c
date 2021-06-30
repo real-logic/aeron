@@ -375,18 +375,6 @@ int aeron_driver_uri_subscription_params(
         return -1;
     }
 
-    if (aeron_driver_uri_get_timestamp_offset(
-        uri, AERON_URI_PACKET_TIMESTAMP_OFFSET, &params->packet_timestamp_offset) < 0)
-    {
-        return -1;
-    }
-
-    if (aeron_driver_uri_get_timestamp_offset(
-        uri, AERON_URI_RECEIVE_TIMESTAMP_OFFSET, &params->receive_timestamp_offset) < 0)
-    {
-        return -1;
-    }
-
     return 0;
 }
 
@@ -470,7 +458,7 @@ int aeron_driver_uri_get_timestamp_offset(aeron_uri_t *uri, const char *key, int
     errno = 0 == errno && '\0' != *end_ptr ? EINVAL : 0;
     if (0 != errno)
     {
-        AERON_SET_ERR(errno, "Invalid %s: %s", AERON_URI_PACKET_TIMESTAMP_OFFSET, offset_str);
+        AERON_SET_ERR(errno, "Invalid %s: %s", AERON_URI_PACKET_TIMESTAMP_OFFSET_KEY, offset_str);
         return -1;
     }
 

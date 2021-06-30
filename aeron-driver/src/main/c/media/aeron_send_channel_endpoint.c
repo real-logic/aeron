@@ -26,6 +26,7 @@
 #include "aeron_driver_context.h"
 #include "aeron_alloc.h"
 #include "aeron_position.h"
+#include "aeron_timestamps.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
@@ -101,6 +102,11 @@ int aeron_send_channel_endpoint_create(
         AERON_APPEND_ERR("uri=%s", channel->original_uri);
         aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
         return -1;
+    }
+
+    if (aeron_udp_channel_is_send_timestamping(channel))
+    {
+        _endpoint->transport.packet_timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_SEND_TIMESTAMP;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
@@ -219,6 +225,21 @@ void aeron_send_channel_endpoint_decref(void *clientd)
     }
 }
 
+void aeron_send_channel_apply_timestamps(aeron_send_channel_endpoint_t *endpoint, void *frame, size_t frame_length)
+{
+    if (AERON_UDP_CHANNEL_TRANSPORT_SEND_TIMESTAMP & endpoint->transport.packet_timestamp_flags)
+    {
+        struct timespec send_timestamp;
+        aeron_clock_gettime_realtime(&send_timestamp);
+
+        aeron_timestamps_set_timestamp(
+            &send_timestamp,
+            endpoint->conductor_fields.udp_channel->send_timestamp_offset,
+            (uint8_t *)frame,
+            frame_length);
+    }
+}
+
 int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
 {
     int result = 0;
@@ -229,6 +250,7 @@ int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct 
         {
             mmsghdr[i].msg_hdr.msg_name = &endpoint->current_data_addr;
             mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->current_data_addr);
+            aeron_send_channel_apply_timestamps(endpoint, mmsghdr[i].msg_hdr.msg_iov[0].iov_base, mmsghdr[i].msg_hdr.msg_iov[0].iov_len);
         }
 
         result = endpoint->data_paths->sendmmsg_func(endpoint->data_paths, &endpoint->transport, mmsghdr, vlen);

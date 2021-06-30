@@ -169,7 +169,7 @@ static int aeron_udp_channel_verify_timestamp_offsets_do_not_overlap(aeron_udp_c
             abs(channel->packet_timestamp_offset - channel->receive_timestamp_offset) < (int32_t)sizeof(int64_t))
         {
             AERON_SET_ERR(
-                EINVAL, "%s and %s overlap", AERON_URI_PACKET_TIMESTAMP_OFFSET, AERON_URI_RECEIVE_TIMESTAMP_OFFSET);
+                EINVAL, "%s and %s overlap", AERON_URI_PACKET_TIMESTAMP_OFFSET_KEY, AERON_URI_RECEIVE_TIMESTAMP_OFFSET_KEY);
             return -1;
         }
 
@@ -177,7 +177,7 @@ static int aeron_udp_channel_verify_timestamp_offsets_do_not_overlap(aeron_udp_c
             abs(channel->packet_timestamp_offset - channel->send_timestamp_offset) < (int32_t)sizeof(int64_t))
         {
             AERON_SET_ERR(
-                EINVAL, "%s and %s overlap", AERON_URI_PACKET_TIMESTAMP_OFFSET, AERON_URI_SEND_TIMESTAMP_OFFSET);
+                EINVAL, "%s and %s overlap", AERON_URI_PACKET_TIMESTAMP_OFFSET_KEY, AERON_URI_SEND_TIMESTAMP_OFFSET_KEY);
             return -1;
         }
     }
@@ -187,7 +187,7 @@ static int aeron_udp_channel_verify_timestamp_offsets_do_not_overlap(aeron_udp_c
         abs(channel->packet_timestamp_offset - channel->send_timestamp_offset) < (int32_t)sizeof(int64_t))
     {
         AERON_SET_ERR(
-            EINVAL, "%s and %s overlap", AERON_URI_RECEIVE_TIMESTAMP_OFFSET, AERON_URI_SEND_TIMESTAMP_OFFSET);
+            EINVAL, "%s and %s overlap", AERON_URI_RECEIVE_TIMESTAMP_OFFSET_KEY, AERON_URI_SEND_TIMESTAMP_OFFSET_KEY);
         return -1;
     }
 
@@ -422,21 +422,21 @@ int aeron_udp_channel_parse(
     }
 
     if (aeron_driver_uri_get_timestamp_offset(
-        &_channel->uri, AERON_URI_PACKET_TIMESTAMP_OFFSET, &_channel->packet_timestamp_offset) < 0)
+        &_channel->uri, AERON_URI_PACKET_TIMESTAMP_OFFSET_KEY, &_channel->packet_timestamp_offset) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         goto error_cleanup;
     }
 
     if (aeron_driver_uri_get_timestamp_offset(
-        &_channel->uri, AERON_URI_RECEIVE_TIMESTAMP_OFFSET, &_channel->receive_timestamp_offset) < 0)
+        &_channel->uri, AERON_URI_RECEIVE_TIMESTAMP_OFFSET_KEY, &_channel->receive_timestamp_offset) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         goto error_cleanup;
     }
 
     if (aeron_driver_uri_get_timestamp_offset(
-        &_channel->uri, AERON_URI_SEND_TIMESTAMP_OFFSET, &_channel->send_timestamp_offset) < 0)
+        &_channel->uri, AERON_URI_SEND_TIMESTAMP_OFFSET_KEY, &_channel->send_timestamp_offset) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         goto error_cleanup;

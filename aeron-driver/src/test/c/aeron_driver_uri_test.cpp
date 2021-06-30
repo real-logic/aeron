@@ -302,7 +302,7 @@ TEST_F(DriverUriTest, shouldGetPacketTimestampOffset)
     EXPECT_EQ(aeron_driver_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
 
     int32_t offset = 0;
-    ASSERT_NE(-1, aeron_driver_uri_get_packet_timestamp_offset(&m_uri, &offset));
+    ASSERT_NE(-1, aeron_driver_uri_get_timestamp_offset(&m_uri, "pkt-ts-offset", &offset));
     EXPECT_EQ(AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET, offset);
     EXPECT_EQ(offset, params.packet_timestamp_offset);
 }
@@ -315,7 +315,7 @@ TEST_F(DriverUriTest, shouldDefaultPacketTimestampOffsetToAeronNullValue)
     EXPECT_EQ(aeron_driver_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
 
     int32_t offset = 0;
-    ASSERT_NE(-1, aeron_driver_uri_get_packet_timestamp_offset(&m_uri, &offset));
+    ASSERT_NE(-1, aeron_driver_uri_get_timestamp_offset(&m_uri, "pkt-ts-offset", &offset));
     EXPECT_EQ(AERON_NULL_VALUE, offset);
     EXPECT_EQ(offset, params.packet_timestamp_offset);
 }

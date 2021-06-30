@@ -19,7 +19,6 @@
 #define _GNU_SOURCE
 #endif
 
-#include <time.h>
 #include "aeron_alloc.h"
 #include "util/aeron_clock.h"
 #include "concurrent/aeron_atomic.h"
@@ -90,12 +89,12 @@ int aeron_clock_gettime_monotonic(struct timespec *tp)
 #endif
 }
 
-int aeron_clock_gettime_realtime(struct timespec *tp)
+int aeron_clock_gettime_realtime(struct timespec *time)
 {
 #if defined(CLOCK_REALTIME_COARSE)
-    return clock_gettime(CLOCK_REALTIME_COARSE, tp);
+    return clock_gettime(CLOCK_REALTIME_COARSE, time);
 #else
-    return clock_gettime(CLOCK_REALTIME, tp);
+    return clock_gettime(CLOCK_REALTIME, time);
 #endif
 }
 

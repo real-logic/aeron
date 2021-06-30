@@ -1940,7 +1940,7 @@ public final class DriverConductor implements Agent
         if (null != udpChannel.channelUri().get(RX_TIMESTAMP_OFFSET))
         {
             throw new InvalidChannelException(
-                "Packet timestamps '" + RX_TIMESTAMP_OFFSET + "' are not supported in the Java driver");
+                "RX timestamps '" + RX_TIMESTAMP_OFFSET + "' are not supported in the Java driver");
         }
     }
 

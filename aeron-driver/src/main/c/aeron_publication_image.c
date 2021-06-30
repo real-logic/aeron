@@ -870,13 +870,13 @@ void aeron_publication_image_on_time_event(
     {
         case AERON_PUBLICATION_IMAGE_STATE_ACTIVE:
         {
-            int64_t last_rx_timestamp_ns;
-            AERON_GET_VOLATILE(last_rx_timestamp_ns, image->time_of_last_packet_ns);
+            int64_t last_packet_timestamp_ns;
+            AERON_GET_VOLATILE(last_packet_timestamp_ns, image->time_of_last_packet_ns);
             bool is_end_of_stream;
             AERON_GET_VOLATILE(is_end_of_stream, image->is_end_of_stream);
 
             if (0 == image->conductor_fields.subscribable.length ||
-                now_ns > (last_rx_timestamp_ns + image->conductor_fields.liveness_timeout_ns) ||
+                now_ns > (last_packet_timestamp_ns + image->conductor_fields.liveness_timeout_ns) ||
                 (is_end_of_stream &&
                  aeron_counter_get(image->rcv_pos_position.value_addr) >=
                  aeron_counter_get_volatile(image->rcv_hwm_position.value_addr)))

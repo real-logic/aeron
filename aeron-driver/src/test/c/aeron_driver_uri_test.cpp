@@ -294,19 +294,19 @@ TEST_F(DriverUriTest, shouldParseSubscriptionSessionId)
     EXPECT_EQ(params.session_id, 1001);
 }
 
-TEST_F(DriverUriTest, shouldGetPacketTimestampOffset)
+TEST_F(DriverUriTest, shouldGetRxTimestampOffset)
 {
     aeron_driver_uri_subscription_params_t params = {};
 
-    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=1001|pkt-ts-offset=reserved", &m_uri), 0);
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=1001|rx-ts-offset=reserved", &m_uri), 0);
     EXPECT_EQ(aeron_driver_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
 
     int32_t offset = 0;
-    ASSERT_NE(-1, aeron_driver_uri_get_timestamp_offset(&m_uri, "pkt-ts-offset", &offset));
+    ASSERT_NE(-1, aeron_driver_uri_get_timestamp_offset(&m_uri, "rx-ts-offset", &offset));
     EXPECT_EQ(AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET, offset);
 }
 
-TEST_F(DriverUriTest, shouldDefaultPacketTimestampOffsetToAeronNullValue)
+TEST_F(DriverUriTest, shouldDefaultRxTimestampOffsetToAeronNullValue)
 {
     aeron_driver_uri_subscription_params_t params = {};
 
@@ -314,7 +314,7 @@ TEST_F(DriverUriTest, shouldDefaultPacketTimestampOffsetToAeronNullValue)
     EXPECT_EQ(aeron_driver_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
 
     int32_t offset = 0;
-    ASSERT_NE(-1, aeron_driver_uri_get_timestamp_offset(&m_uri, "pkt-ts-offset", &offset));
+    ASSERT_NE(-1, aeron_driver_uri_get_timestamp_offset(&m_uri, "rx-ts-offset", &offset));
     EXPECT_EQ(AERON_NULL_VALUE, offset);
 }
 

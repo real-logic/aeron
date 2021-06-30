@@ -31,7 +31,7 @@ int aeron_receive_destination_create(
     aeron_receive_destination_t *_destination = NULL;
     const size_t socket_rcvbuf = aeron_udp_channel_socket_so_rcvbuf(endpoint_channel, context->socket_rcvbuf);
     const size_t socket_sndbuf = aeron_udp_channel_socket_so_sndbuf(endpoint_channel, context->socket_sndbuf);
-    bool is_packet_timestamping = aeron_udp_channel_is_packet_timestamping(endpoint_channel);
+    bool is_rx_timestamping = aeron_udp_channel_is_rx_timestamping(endpoint_channel);
 
     if (aeron_alloc((void **)&_destination, sizeof(aeron_receive_destination_t)) < 0)
     {
@@ -52,7 +52,7 @@ int aeron_receive_destination_create(
         0 != destination_channel->multicast_ttl ? destination_channel->multicast_ttl : context->multicast_ttl,
         socket_rcvbuf,
         socket_sndbuf,
-        is_packet_timestamping,
+        is_rx_timestamping,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {
@@ -63,7 +63,7 @@ int aeron_receive_destination_create(
 
     if (aeron_udp_channel_is_receive_timestamping(endpoint_channel))
     {
-        _destination->transport.packet_timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_RECEIVE_TIMESTAMP;
+        _destination->transport.timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_RECEIVE_TIMESTAMP;
     }
 
     char local_sockaddr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];

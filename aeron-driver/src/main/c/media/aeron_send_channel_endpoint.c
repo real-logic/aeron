@@ -106,7 +106,7 @@ int aeron_send_channel_endpoint_create(
 
     if (aeron_udp_channel_is_send_timestamping(channel))
     {
-        _endpoint->transport.packet_timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_SEND_TIMESTAMP;
+        _endpoint->transport.timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_SEND_TIMESTAMP;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
@@ -227,7 +227,7 @@ void aeron_send_channel_endpoint_decref(void *clientd)
 
 void aeron_send_channel_apply_timestamps(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
 {
-    if (AERON_UDP_CHANNEL_TRANSPORT_SEND_TIMESTAMP & endpoint->transport.packet_timestamp_flags)
+    if (AERON_UDP_CHANNEL_TRANSPORT_SEND_TIMESTAMP & endpoint->transport.timestamp_flags)
     {
         struct timespec send_timestamp;
         aeron_clock_gettime_realtime(&send_timestamp);
@@ -319,7 +319,7 @@ void aeron_send_channel_endpoint_dispatch(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *packet_timestamp)
+    struct timespec *rx_timestamp)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)sender_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;

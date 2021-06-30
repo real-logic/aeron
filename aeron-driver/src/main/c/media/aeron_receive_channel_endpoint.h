@@ -132,7 +132,7 @@ void aeron_receive_channel_endpoint_dispatch(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *packet_timestamp);
+    struct timespec *rx_timestamp);
 
 int aeron_receive_channel_endpoint_on_data(
     aeron_receive_channel_endpoint_t *endpoint,
@@ -140,7 +140,7 @@ int aeron_receive_channel_endpoint_on_data(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *packet_timestamp);
+    struct timespec *rx_timestamp);
 
 int aeron_receive_channel_endpoint_on_setup(
     aeron_receive_channel_endpoint_t *endpoint,

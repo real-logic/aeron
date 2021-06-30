@@ -21,10 +21,10 @@
 #include "aeron_driver_common.h"
 #include "aeron_udp_channel_transport_bindings.h"
 
-#define AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_NONE (0x0)
-#define AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_HW (0x1)
-#define AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_SW (0x2)
-#define AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP (0x3)
+#define AERON_UDP_CHANNEL_TRANSPORT_RX_TIMESTAMP_NONE (0x0)
+#define AERON_UDP_CHANNEL_TRANSPORT_RX_TIMESTAMP_HW (0x1)
+#define AERON_UDP_CHANNEL_TRANSPORT_RX_TIMESTAMP_SW (0x2)
+#define AERON_UDP_CHANNEL_TRANSPORT_RX_TIMESTAMP (0x3)
 #define AERON_UDP_CHANNEL_TRANSPORT_RECEIVE_TIMESTAMP (0x4)
 #define AERON_UDP_CHANNEL_TRANSPORT_SEND_TIMESTAMP (0x8)
 
@@ -36,7 +36,7 @@ typedef struct aeron_udp_channel_transport_stct
     void *bindings_clientd;
     void *destination_clientd;
     void *interceptor_clientds[AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS];
-    uint32_t packet_timestamp_flags;
+    uint32_t timestamp_flags;
 }
 aeron_udp_channel_transport_t;
 
@@ -50,7 +50,7 @@ int aeron_udp_channel_transport_init(
     uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf,
-    bool is_packet_timestamping,
+    bool is_rx_timestamping,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 

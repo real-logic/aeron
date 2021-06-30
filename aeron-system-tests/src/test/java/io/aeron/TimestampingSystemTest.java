@@ -32,13 +32,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class TimestampingSystemTest
 {
     public static final long SENTINEL_VALUE = -1L;
-    public static final String CHANNEL_WITH_PACKET_TIMESTAMP = "aeron:udp?endpoint=localhost:0|pkt-ts-offset=reserved";
+    public static final String CHANNEL_WITH_RX_TIMESTAMP = "aeron:udp?endpoint=localhost:0|rx-ts-offset=reserved";
 
     @RegisterExtension
     public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
     @Test
-    void shouldErrorOnPacketTimestampsInJavaDriver()
+    void shouldErrorOnRxTimestampsInJavaDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
 
@@ -47,12 +47,12 @@ public class TimestampingSystemTest
         {
             assertThrows(
                 RegistrationException.class,
-                () -> aeron.addSubscription(CHANNEL_WITH_PACKET_TIMESTAMP, 1000));
+                () -> aeron.addSubscription(CHANNEL_WITH_RX_TIMESTAMP, 1000));
         }
     }
 
     @Test
-    void shouldSupportPacketTimestampsInCDriver()
+    void shouldSupportRxTimestampsInCDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunCMediaDriver());
 
@@ -61,7 +61,7 @@ public class TimestampingSystemTest
         try (TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context(), watcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
-            final Subscription sub = aeron.addSubscription(CHANNEL_WITH_PACKET_TIMESTAMP, 1000);
+            final Subscription sub = aeron.addSubscription(CHANNEL_WITH_RX_TIMESTAMP, 1000);
             final String uri = new ChannelUriStringBuilder()
                 .media("udp")
                 .endpoint(sub.resolvedEndpoint())

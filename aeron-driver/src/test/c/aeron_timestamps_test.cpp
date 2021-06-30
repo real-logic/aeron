@@ -55,7 +55,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValue)
     aeron_async_add_publication_t *async_pub = nullptr;
     aeron_async_add_subscription_t *async_sub = nullptr;
     std::string uri = std::string(URI);
-    const char *uri_s = uri.append("|pkt-ts-offset=reserved").c_str();
+    const char *uri_s = uri.append("|rx-ts-offset=reserved").c_str();
 
     struct message_t message = {};
     message.timestamp_1 = AERON_NULL_VALUE;
@@ -115,7 +115,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesAtOffset)
     aeron_async_add_publication_t *async_pub = nullptr;
     aeron_async_add_subscription_t *async_sub = nullptr;
     std::stringstream uriStream;
-    uriStream << URI << "|pkt-ts-offset=" << offsetof(message_t, timestamp_2) << '\0';
+    uriStream << URI << "|rx-ts-offset=" << offsetof(message_t, timestamp_2) << '\0';
     std::string uri = uriStream.str();
     const char *uri_s = uri.c_str();
 
@@ -177,7 +177,7 @@ TEST_F(TimestampsTest, shouldNotPutTimestampInMessagesAtIfOffsetExceedsMessage)
     aeron_async_add_publication_t *async_pub = nullptr;
     aeron_async_add_subscription_t *async_sub = nullptr;
     std::stringstream uriStream;
-    uriStream << URI << "|pkt-ts-offset=" << sizeof(message_t) - 4 << '\0';
+    uriStream << URI << "|rx-ts-offset=" << sizeof(message_t) - 4 << '\0';
     std::string uri = uriStream.str();
     const char *uri_s = uri.c_str();
 
@@ -224,17 +224,17 @@ TEST_F(TimestampsTest, shouldNotPutTimestampInMessagesAtIfOffsetExceedsMessage)
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
-TEST_F(TimestampsTest, shouldErrorIfPacketTimestampConfigurationClashes)
+TEST_F(TimestampsTest, shouldErrorIfRxTimestampConfigurationClashes)
 {
     aeron_async_add_subscription_t *async_sub = nullptr;
 
     std::string uriOriginal = std::string(URI);
-    const char *uriOriginal_s = uriOriginal.append("|pkt-ts-offset=8").c_str();
+    const char *uriOriginal_s = uriOriginal.append("|rx-ts-offset=8").c_str();
 
     const char *uriNotSpecified_s = URI;
 
     std::string uriDifferentOffset = std::string(URI);
-    const char *uriDifferentOffset_s = uriDifferentOffset.append("|pkt-ts-offset=reserved").c_str();
+    const char *uriDifferentOffset_s = uriDifferentOffset.append("|rx-ts-offset=reserved").c_str();
 
     ASSERT_TRUE(connect());
 
@@ -317,7 +317,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValueWithMergedMds)
     aeron_async_destination_t *asyncDestB = nullptr;
     std::string destinationA = std::string("aeron:udp?endpoint=localhost:24325");
     std::string destinationB = std::string("aeron:udp?endpoint=localhost:24326");
-    std::string mdsUri = std::string("aeron:udp?control-mode=manual|pkt-ts-offset=reserved");
+    std::string mdsUri = std::string("aeron:udp?control-mode=manual|rx-ts-offset=reserved");
 
     struct message_t message = {};
     message.timestamp_1 = AERON_NULL_VALUE;
@@ -436,7 +436,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValueWithNonMergedMds
     aeron_async_destination_t *asyncDestB = nullptr;
     std::string destinationA = std::string("aeron:udp?endpoint=localhost:24325");
     std::string destinationB = std::string("aeron:udp?endpoint=localhost:24326");
-    std::string mdsUri = std::string("aeron:udp?control-mode=manual|pkt-ts-offset=reserved");
+    std::string mdsUri = std::string("aeron:udp?control-mode=manual|rx-ts-offset=reserved");
 
     struct message_t message = {};
     message.timestamp_1 = AERON_NULL_VALUE;
@@ -521,7 +521,7 @@ TEST_F(TimestampsTest, shouldPutSendAndReceivesTimestampsInMessagesAtOffset)
     aeron_async_add_subscription_t *async_sub = nullptr;
     std::stringstream uriStream;
     uriStream << URI <<
-        "|pkt-ts-offset=reserved" <<
+        "|rx-ts-offset=reserved" <<
         "|snd-ts-offset=" << offsetof(message_t, timestamp_2) <<
         "|rcv-ts-offset=" << offsetof(message_t, timestamp_1) << '\0';
 

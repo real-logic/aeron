@@ -355,7 +355,7 @@ void aeron_receive_channel_endpoint_dispatch(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *packet_timestamp)
+    struct timespec *rx_timestamp)
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)receiver_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
@@ -375,7 +375,7 @@ void aeron_receive_channel_endpoint_dispatch(
             if (length >= sizeof(aeron_data_header_t))
             {
                 if (aeron_receive_channel_endpoint_on_data(
-                    endpoint, destination, buffer, length, addr, packet_timestamp) < 0)
+                    endpoint, destination, buffer, length, addr, rx_timestamp) < 0)
                 {
                     AERON_APPEND_ERR("%s", "receiver on_data");
                     aeron_driver_receiver_log_error(receiver);
@@ -424,22 +424,22 @@ void aeron_receive_channel_endpoint_dispatch(
 
 static void aeron_receive_channel_endpoint_apply_timestamps(
     aeron_udp_channel_t *endpoint_channel,
-    int32_t packet_timestamp_flags,
-    struct timespec *packet_timestamp,
+    int32_t timestamp_flags,
+    struct timespec *rx_timestamp,
     uint8_t *buffer,
     size_t length)
 {
     aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
 
-    if (NULL != packet_timestamp &&
+    if (NULL != rx_timestamp &&
         AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
         !aeron_publication_image_is_heartbeat(buffer, length))
     {
-        int32_t offset = endpoint_channel->packet_timestamp_offset;
-        aeron_timestamps_set_timestamp(packet_timestamp, offset, buffer, length);
+        int32_t offset = endpoint_channel->rx_timestamp_offset;
+        aeron_timestamps_set_timestamp(rx_timestamp, offset, buffer, length);
     }
 
-    if ((AERON_UDP_CHANNEL_TRANSPORT_RECEIVE_TIMESTAMP & packet_timestamp_flags) &&
+    if ((AERON_UDP_CHANNEL_TRANSPORT_RECEIVE_TIMESTAMP & timestamp_flags) &&
         AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
         !aeron_publication_image_is_heartbeat(buffer, length))
     {
@@ -458,7 +458,7 @@ int aeron_receive_channel_endpoint_on_data(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *packet_timestamp)
+    struct timespec *rx_timestamp)
 {
     aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
 
@@ -467,8 +467,8 @@ int aeron_receive_channel_endpoint_on_data(
 
     aeron_receive_channel_endpoint_apply_timestamps(
         endpoint->conductor_fields.udp_channel,
-        destination->transport.packet_timestamp_flags,
-        packet_timestamp,
+        destination->transport.timestamp_flags,
+        rx_timestamp,
         buffer,
         length);
 

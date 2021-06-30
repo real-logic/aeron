@@ -304,7 +304,6 @@ TEST_F(DriverUriTest, shouldGetPacketTimestampOffset)
     int32_t offset = 0;
     ASSERT_NE(-1, aeron_driver_uri_get_timestamp_offset(&m_uri, "pkt-ts-offset", &offset));
     EXPECT_EQ(AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET, offset);
-    EXPECT_EQ(offset, params.packet_timestamp_offset);
 }
 
 TEST_F(DriverUriTest, shouldDefaultPacketTimestampOffsetToAeronNullValue)
@@ -317,7 +316,6 @@ TEST_F(DriverUriTest, shouldDefaultPacketTimestampOffsetToAeronNullValue)
     int32_t offset = 0;
     ASSERT_NE(-1, aeron_driver_uri_get_timestamp_offset(&m_uri, "pkt-ts-offset", &offset));
     EXPECT_EQ(AERON_NULL_VALUE, offset);
-    EXPECT_EQ(offset, params.packet_timestamp_offset);
 }
 
 class UriResolverTest : public testing::Test

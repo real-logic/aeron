@@ -576,3 +576,87 @@ TEST_F(TimestampsTest, shouldPutSendAndReceivesTimestampsInMessagesAtOffset)
     EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
+
+TEST_F(TimestampsTest, shouldSemdTimestampAllMessagesInReservedValueWithMdc)
+{
+#if !defined(__linux__)
+    GTEST_SKIP();
+#endif
+
+    aeron_async_add_publication_t *asyncPub = nullptr;
+    aeron_async_add_subscription_t *asyncSubA = nullptr;
+    aeron_async_add_subscription_t *asyncSubB = nullptr;
+    aeron_async_destination_t *asyncDestA = nullptr;
+    aeron_async_destination_t *asyncDestB = nullptr;
+    std::string destinationA = std::string("aeron:udp?endpoint=localhost:24325");
+    std::string destinationB = std::string("aeron:udp?endpoint=localhost:24326");
+    std::string mdcUri = std::string("aeron:udp?control-mode=manual|snd-ts-offset=reserved");
+
+    struct message_t message = {};
+    message.timestamp_1 = AERON_NULL_VALUE;
+    message.timestamp_2 = AERON_NULL_VALUE;
+    strcpy(message.text, "hello");
+
+    ASSERT_TRUE(connect());
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &asyncSubA, m_aeron, destinationA.c_str(), STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+
+    aeron_subscription_t *subA = awaitSubscriptionOrError(asyncSubA);
+    ASSERT_TRUE(subA) << aeron_errmsg();
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &asyncSubB, m_aeron, destinationB.c_str(), STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+
+    aeron_subscription_t *subB = awaitSubscriptionOrError(asyncSubB);
+    ASSERT_TRUE(subB) << aeron_errmsg();
+
+    ASSERT_EQ(aeron_async_add_publication(&asyncPub, m_aeron, mdcUri.c_str(), STREAM_ID), 0);
+    aeron_publication_t *pub = awaitPublicationOrError(asyncPub);
+    ASSERT_TRUE(pub) << aeron_errmsg();
+
+    ASSERT_EQ(0, aeron_publication_async_add_destination(&asyncDestA, m_aeron, pub, destinationA.c_str()));
+    ASSERT_TRUE(awaitDestinationOrError(asyncDestA)) << aeron_errmsg();
+
+    ASSERT_EQ(0, aeron_publication_async_add_destination(&asyncDestB, m_aeron, pub, destinationB.c_str()));
+    ASSERT_TRUE(awaitDestinationOrError(asyncDestB));
+
+    awaitConnected(subA);
+    awaitConnected(subB);
+
+    while (aeron_publication_offer(
+        pub, (const uint8_t *)&message, sizeof(message), null_reserved_value, nullptr) < 0)
+    {
+        std::this_thread::yield();
+    }
+
+    int poll_result;
+    int called = 0;
+    poll_handler_t handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
+    {
+        aeron_header_values_t header_values;
+        aeron_header_values(header, &header_values);
+        message_t *incoming = (message_t*)buffer;
+        EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
+        EXPECT_STREQ(incoming->text, message.text);
+        called++;
+    };
+
+    while ((poll_result = poll(subA, handler, 1)) == 0)
+    {
+        std::this_thread::yield();
+    }
+    EXPECT_EQ(poll_result, 1) << aeron_errmsg();
+    EXPECT_EQ(1, called);
+
+    while ((poll_result = poll(subB, handler, 1)) == 0)
+    {
+        std::this_thread::yield();
+    }
+    EXPECT_EQ(poll_result, 1) << aeron_errmsg();
+    EXPECT_EQ(2, called);
+
+    EXPECT_EQ(aeron_publication_close(pub, nullptr, nullptr), 0);
+    EXPECT_EQ(aeron_subscription_close(subA, nullptr, nullptr), 0);
+    EXPECT_EQ(aeron_subscription_close(subB, nullptr, nullptr), 0);
+}

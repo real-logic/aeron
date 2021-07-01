@@ -1349,6 +1349,7 @@ public final class DriverConductor implements Agent
         }
         else
         {
+            validateSendTimestampOffset(udpChannel, channelEndpoint);
             validateMtuForSndbuf(params, channelEndpoint.socketSndbufLength(), ctx);
             validateChannelBufferLength(
                 SOCKET_RCVBUF_PARAM_NAME,
@@ -1363,6 +1364,28 @@ public final class DriverConductor implements Agent
         }
 
         return channelEndpoint;
+    }
+
+    private void validateSendTimestampOffset(final UdpChannel udpChannel, final SendChannelEndpoint channelEndpoint)
+    {
+        if (udpChannel.sendTimestampOffset() != channelEndpoint.udpChannel().sendTimestampOffset())
+        {
+            throw new InvalidChannelException(
+                "option conflicts with existing subscription: snd-ts-offset=" +
+                    udpChannel.receiveTimestampOffset());
+        }
+    }
+
+    private void validateReceiveTimestampOffset(
+        final UdpChannel udpChannel,
+        final ReceiveChannelEndpoint channelEndpoint)
+    {
+        if (udpChannel.receiveTimestampOffset() != channelEndpoint.udpChannel().receiveTimestampOffset())
+        {
+            throw new InvalidChannelException(
+                "option conflicts with existing subscription: rcv-ts-offset=" +
+                    udpChannel.receiveTimestampOffset());
+        }
     }
 
     private SendChannelEndpoint findExistingSendChannelEndpoint(final UdpChannel udpChannel)
@@ -1403,6 +1426,8 @@ public final class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint = findExistingReceiveChannelEndpoint(udpChannel);
         if (null != channelEndpoint)
         {
+            validateReceiveTimestampOffset(udpChannel, channelEndpoint);
+
             for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
             {
                 final SubscriptionLink subscription = subscriptionLinks.get(i);

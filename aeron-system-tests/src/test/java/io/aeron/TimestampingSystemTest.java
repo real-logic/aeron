@@ -17,7 +17,6 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.RegistrationException;
-import io.aeron.log.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
@@ -33,8 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static java.util.Objects.requireNonNull;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -51,12 +49,17 @@ public class TimestampingSystemTest
     @RegisterExtension
     public final DistinctErrorLogTestWatcher logWatcher = new DistinctErrorLogTestWatcher();
 
+    private MediaDriver.Context context()
+    {
+        return new MediaDriver.Context().dirDeleteOnStart(true);
+    }
+
     @Test
     void shouldErrorOnRxTimestampsInJavaDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
 
-        try (TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context(), watcher);
+        try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             assertThrows(
@@ -66,13 +69,14 @@ public class TimestampingSystemTest
     }
 
     @Test
+    @InterruptAfter(10)
     void shouldSupportRxTimestampsInCDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunCMediaDriver());
 
         final DirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
-        try (TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context(), watcher);
+        try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription sub = aeron.addSubscription(CHANNEL_WITH_RX_TIMESTAMP, 1000);
@@ -154,6 +158,206 @@ public class TimestampingSystemTest
 
             assertNotEquals(SENTINEL_VALUE, receiveTimestamp.longValue());
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
+        }
+        finally
+        {
+            logWatcher.captureErrors(aeronDirectoryName);
+        }
+    }
+
+    @Test
+    void shouldErrorIfSubscriptionConfigurationForTimestampsDoesNotMatch()
+    {
+        try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            aeron.addSubscription("aeron:udp?endpoint=localhost:23436|rcv-ts-offset=reserved", 1000);
+
+            assertThrows(
+                RegistrationException.class, () -> aeron.addSubscription("aeron:udp?endpoint=localhost:23436", 1000));
+            assertThrows(
+                RegistrationException.class,
+                () -> aeron.addSubscription("aeron:udp?endpoint=localhost:23436|rcv-ts-offset=8", 1000));
+        }
+    }
+
+    @Test
+    void shouldErrorIfPublicationConfigurationForTimestampsDoesNotMatch()
+    {
+        try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            aeron.addPublication("aeron:udp?endpoint=localhost:23436|snd-ts-offset=reserved", 1000);
+
+            assertThrows(
+                RegistrationException.class, () -> aeron.addPublication("aeron:udp?endpoint=localhost:23436", 1000));
+            assertThrows(
+                RegistrationException.class,
+                () -> aeron.addPublication("aeron:udp?endpoint=localhost:23436|snd-ts-offset=8", 1000));
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldSupportSendTimestampsOnMdc()
+    {
+        final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
+
+        final MediaDriver.Context context = context();
+        final String aeronDirectoryName = context.aeronDirectoryName();
+
+        try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final Publication mdcPub = aeron.addPublication(
+                "aeron:udp?control-mode=manual|snd-ts-offset=0", 1000);
+
+            final Subscription sub1 = aeron.addSubscription("aeron:udp?endpoint=localhost:23424", 1000);
+            final Subscription sub2 = aeron.addSubscription("aeron:udp?endpoint=localhost:23425", 1000);
+            mdcPub.addDestination("aeron:udp?endpoint=localhost:23424");
+            mdcPub.addDestination("aeron:udp?endpoint=localhost:23425");
+
+            while (!sub1.isConnected() || !sub2.isConnected())
+            {
+                Tests.yieldingIdle("Failed to connect");
+            }
+
+            buffer.putLong(0, SENTINEL_VALUE);
+
+            while (0 > mdcPub.offer(buffer, 0, buffer.capacity()))
+            {
+                Tests.yieldingIdle("Failed to offer message");
+            }
+
+            final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
+            while (1 > sub1.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            {
+                Tests.yieldingIdle("Failed to receive message");
+            }
+
+            assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
+
+            while (1 > sub2.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            {
+                Tests.yieldingIdle("Failed to receive message");
+            }
+
+            assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
+        }
+        finally
+        {
+            logWatcher.captureErrors(aeronDirectoryName);
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldSupportReceiveTimestampsOnMds()
+    {
+        final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
+
+        final MediaDriver.Context context = context();
+        final String aeronDirectoryName = context.aeronDirectoryName();
+
+        try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final Subscription mdsSub = aeron.addSubscription(
+                "aeron:udp?control-mode=manual|rcv-ts-offset=0", 1000);
+
+            final Publication pub1 = aeron.addPublication("aeron:udp?endpoint=localhost:23424", 1000);
+            final Publication pub2 = aeron.addPublication("aeron:udp?endpoint=localhost:23425", 1000);
+            mdsSub.addDestination("aeron:udp?endpoint=localhost:23424");
+            mdsSub.addDestination("aeron:udp?endpoint=localhost:23425");
+
+            while (!pub1.isConnected() || !pub2.isConnected())
+            {
+                Tests.yieldingIdle("Failed to connect");
+            }
+
+            buffer.putLong(0, SENTINEL_VALUE);
+
+            while (0 > pub1.offer(buffer, 0, buffer.capacity()))
+            {
+                Tests.yieldingIdle("Failed to offer message");
+            }
+
+            while (0 > pub2.offer(buffer, 0, buffer.capacity()))
+            {
+                Tests.yieldingIdle("Failed to offer message");
+            }
+
+            final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
+            while (1 > mdsSub.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            {
+                Tests.yieldingIdle("Failed to receive message");
+            }
+
+            assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
+
+            while (1 > mdsSub.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            {
+                Tests.yieldingIdle("Failed to receive message");
+            }
+
+            assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
+        }
+        finally
+        {
+            logWatcher.captureErrors(aeronDirectoryName);
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldSupportReceiveTimestampsOnMergedMds()
+    {
+        final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
+
+        final MediaDriver.Context context = context();
+        final String aeronDirectoryName = context.aeronDirectoryName();
+
+        try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final Subscription mdsSub = aeron.addSubscription(
+                "aeron:udp?control-mode=manual|rcv-ts-offset=0", 1000);
+
+            final Publication pub1 = aeron.addExclusivePublication("aeron:udp?endpoint=localhost:23424", 1000);
+            final String pub2Uri = new ChannelUriStringBuilder("aeron:udp?endpoint=localhost:23425")
+                .initialPosition(0L, pub1.initialTermId(), pub1.termBufferLength())
+                .sessionId(pub1.sessionId())
+                .build();
+
+            final Publication pub2 = aeron.addExclusivePublication(pub2Uri, 1000);
+            mdsSub.addDestination("aeron:udp?endpoint=localhost:23424");
+            mdsSub.addDestination("aeron:udp?endpoint=localhost:23425");
+
+            while (!pub1.isConnected() || !pub2.isConnected())
+            {
+                Tests.yieldingIdle("Failed to connect");
+            }
+
+            buffer.putLong(0, SENTINEL_VALUE);
+
+            while (0 > pub1.offer(buffer, 0, buffer.capacity()))
+            {
+                Tests.yieldingIdle("Failed to offer message");
+            }
+
+            while (0 > pub2.offer(buffer, 0, buffer.capacity()))
+            {
+                Tests.yieldingIdle("Failed to offer message");
+            }
+
+            final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
+            while (1 > mdsSub.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            {
+                Tests.yieldingIdle("Failed to receive message");
+            }
+
+            assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
+            assertEquals(2, mdsSub.imageAtIndex(0).activeTransportCount());
         }
         finally
         {

@@ -17,7 +17,11 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.RegistrationException;
+import io.aeron.log.EventLogExtension;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.DistinctErrorLogTestWatcher;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.DirectBuffer;
@@ -25,6 +29,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static java.util.Objects.requireNonNull;
@@ -32,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class TimestampingSystemTest
 {
     public static final long SENTINEL_VALUE = -1L;
@@ -41,6 +47,9 @@ public class TimestampingSystemTest
 
     @RegisterExtension
     public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+
+    @RegisterExtension
+    public final DistinctErrorLogTestWatcher logWatcher = new DistinctErrorLogTestWatcher();
 
     @Test
     void shouldErrorOnRxTimestampsInJavaDriver()
@@ -82,12 +91,12 @@ public class TimestampingSystemTest
 
             Tests.awaitConnected(pub);
 
-            while (0 < pub.offer(buffer, 0, buffer.capacity(), (termBuffer, termOffset, frameLength) -> SENTINEL_VALUE))
+            while (0 > pub.offer(buffer, 0, buffer.capacity(), (termBuffer, termOffset, frameLength) -> SENTINEL_VALUE))
             {
                 Tests.yieldingIdle("Failed to offer message");
             }
 
-            while (1 < sub.poll(
+            while (1 > sub.poll(
                 (buffer1, offset, length, header) -> assertNotEquals(SENTINEL_VALUE, header.reservedValue()), 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
@@ -96,11 +105,16 @@ public class TimestampingSystemTest
     }
 
     @Test
+    @InterruptAfter(10)
     void shouldSupportSendReceiveTimestamps()
     {
         final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
-        try (TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true), watcher);
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .dirDeleteOnStart(true);
+        final String aeronDirectoryName = context.aeronDirectoryName();
+
+        try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription sub = aeron.addSubscription(CHANNEL_WITH_SND_RCV_TIMESTAMPS, 1000);
@@ -121,14 +135,14 @@ public class TimestampingSystemTest
             buffer.putLong(0, SENTINEL_VALUE);
             buffer.putLong(8, SENTINEL_VALUE);
 
-            while (0 < pub.offer(buffer, 0, buffer.capacity()))
+            while (0 > pub.offer(buffer, 0, buffer.capacity()))
             {
                 Tests.yieldingIdle("Failed to offer message");
             }
 
             final MutableLong receiveTimestamp = new MutableLong(SENTINEL_VALUE);
             final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
-            while (1 < sub.poll(
+            while (1 > sub.poll(
                 (buffer1, offset, length, header) ->
                 {
                     receiveTimestamp.set(buffer1.getLong(offset));
@@ -140,6 +154,10 @@ public class TimestampingSystemTest
 
             assertNotEquals(SENTINEL_VALUE, receiveTimestamp.longValue());
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
+        }
+        finally
+        {
+            logWatcher.captureErrors(aeronDirectoryName);
         }
     }
 }

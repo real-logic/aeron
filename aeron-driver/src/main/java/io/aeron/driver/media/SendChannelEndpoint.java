@@ -20,12 +20,15 @@ import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.*;
 import io.aeron.exceptions.ControlProtocolException;
+import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
+import org.agrona.BitUtil;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.EpochNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -40,6 +43,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_REC
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 import static io.aeron.status.ChannelEndpointStatus.status;
 import static java.util.Objects.requireNonNull;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.collections.Hashing.compoundKey;
 
 /**
@@ -57,6 +61,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
+    private final boolean isSendTimestamping;
+    private final EpochNanoClock sendTimestampClock;
+    private final UnsafeBuffer bufferForTimestamping = new UnsafeBuffer(new byte[0]);
+    private final DataHeaderFlyweight flyweightForTimestamping = new DataHeaderFlyweight(bufferForTimestamping);
     private AtomicCounter localSocketAddressIndicator;
 
     /**
@@ -91,6 +99,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
 
         this.multiSndDestination = multiSndDestination;
+        this.isSendTimestamping = udpChannel.isSendTimestamping();
+        this.sendTimestampClock = context.sendTimestampClock();
     }
 
     /**
@@ -240,6 +250,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         int bytesSent = 0;
 
+        applySendTimestamp(buffer);
+
         if (null != sendDatagramChannel)
         {
             final int bytesToSend = buffer.remaining();
@@ -269,6 +281,29 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
 
         return bytesSent;
+    }
+
+    private void applySendTimestamp(final ByteBuffer buffer)
+    {
+        if (isSendTimestamping && buffer.capacity() > DataHeaderFlyweight.HEADER_LENGTH)
+        {
+            bufferForTimestamping.wrap(buffer, buffer.position(), buffer.capacity());
+            flyweightForTimestamping.wrap(bufferForTimestamping);
+            if (DataHeaderFlyweight.HDR_TYPE_DATA == flyweightForTimestamping.headerType())
+            {
+                final int offset = udpChannel.sendTimestampOffset();
+                final long timestampNs = sendTimestampClock.nanoTime();
+                if (UdpChannel.RESERVED_VALUE_OFFSET == offset)
+                {
+                    flyweightForTimestamping.reservedValue(timestampNs);
+                }
+                else if (
+                    flyweightForTimestamping.dataOffset() + offset + SIZE_OF_LONG <= bufferForTimestamping.capacity())
+                {
+                    bufferForTimestamping.putLong(flyweightForTimestamping.dataOffset() + offset, timestampNs);
+                }
+            }
+        }
     }
 
     /**

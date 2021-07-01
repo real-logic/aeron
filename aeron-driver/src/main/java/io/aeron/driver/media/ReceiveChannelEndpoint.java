@@ -25,11 +25,13 @@ import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.*;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.LocalSocketAddressStatus;
+import org.agrona.BitUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
 import org.agrona.collections.Long2LongCounterMap;
 import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.EpochNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -81,6 +83,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     private final MultiRcvDestination multiRcvDestination;
     private final CachedNanoClock cachedNanoClock;
     private final Long groupTag;
+    private final boolean isReceiveTimestamping;
+    private final EpochNanoClock receiveTimestampClock;
 
     private final long receiverId;
     private InetSocketAddress currentControlAddress;
@@ -124,6 +128,9 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
 
         multiRcvDestination = udpChannel.isManualControlMode() ? new MultiRcvDestination() : null;
         currentControlAddress = udpChannel.localControl();
+
+        receiveTimestampClock = context.receiveTimestampClock();
+        isReceiveTimestamping = udpChannel.isReceiveTimestamping();
     }
 
     /**
@@ -605,8 +612,26 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
+        applyReceiveTimestamp(header, buffer, length);
         updateTimeOfLastActivityNs(cachedNanoClock.nanoTime(), transportIndex);
         return dispatcher.onDataPacket(this, header, buffer, length, srcAddress, transportIndex);
+    }
+
+    private void applyReceiveTimestamp(final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length)
+    {
+        if (isReceiveTimestamping)
+        {
+            long timestampNs = receiveTimestampClock.nanoTime();
+            final int offset = udpChannel.receiveTimestampOffset();
+            if (UdpChannel.RESERVED_VALUE_OFFSET == offset)
+            {
+                header.reservedValue(timestampNs);
+            }
+            else if (0 <= offset && header.dataOffset() + offset + BitUtil.SIZE_OF_LONG < length)
+            {
+                buffer.putLong(header.dataOffset() + offset, timestampNs);
+            }
+        }
     }
 
     /**

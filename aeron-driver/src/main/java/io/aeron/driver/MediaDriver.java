@@ -3209,12 +3209,22 @@ public final class MediaDriver implements AutoCloseable
             return osMaxSocketSndbufLength;
         }
 
-        EpochNanoClock receiveTimestampClock()
+        /**
+         * Clock used measure receive timestamps.
+         *
+         * @return a clock instance
+         */
+        public EpochNanoClock receiveTimestampClock()
         {
             return receiveTimestampClock;
         }
 
-        EpochNanoClock sendTimestampClock()
+        /**
+         * Clock used measure send timestamps.
+         *
+         * @return a clock instance
+         */
+        public EpochNanoClock sendTimestampClock()
         {
             return sendTimestampClock;
         }

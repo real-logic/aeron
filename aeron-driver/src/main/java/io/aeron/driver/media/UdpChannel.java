@@ -766,6 +766,26 @@ public final class UdpChannel
     }
 
     /**
+     * Check if receive timestamps should be recorded.
+     *
+     * @return true if receive timestamps should be collected false otherwise.
+     */
+    public boolean isReceiveTimestamping()
+    {
+        return RESERVED_VALUE_OFFSET == receiveTimestampOffset || 0 <= receiveTimestampOffset;
+    }
+
+    /**
+     * Check if send timestamps should be recorded.
+     *
+     * @return true if send timestamps should be collected false otherwise.
+     */
+    public boolean isSendTimestamping()
+    {
+        return RESERVED_VALUE_OFFSET == sendTimestampOffset || 0 <= sendTimestampOffset;
+    }
+
+    /**
      * Offset to store the send timestamp in a user message.
      *
      * @return offset of send timestamps

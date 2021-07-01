@@ -1741,7 +1741,7 @@ public final class ChannelUriStringBuilder
      * @return this for a fluent API
      * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
      */
-    public ChannelUriStringBuilder rxTimestampOffset(String rxTimestampOffset)
+    public ChannelUriStringBuilder rxTimestampOffset(final String rxTimestampOffset)
     {
         if (null != rxTimestampOffset && !RESERVED_OFFSET.equals(rxTimestampOffset))
         {
@@ -1749,7 +1749,7 @@ public final class ChannelUriStringBuilder
             {
                 Integer.parseInt(rxTimestampOffset);
             }
-            catch (NumberFormatException ex)
+            catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
                     "rxTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
@@ -1767,7 +1767,7 @@ public final class ChannelUriStringBuilder
      * @param channelUri the existing URI to extract the rxTimestampOffset from
      * @return this for a fluent API
      */
-    public ChannelUriStringBuilder rxTimestampOffset(ChannelUri channelUri)
+    public ChannelUriStringBuilder rxTimestampOffset(final ChannelUri channelUri)
     {
         return rxTimestampOffset(channelUri.get(RX_TIMESTAMP_OFFSET_PARAM_NAME));
     }
@@ -1791,7 +1791,7 @@ public final class ChannelUriStringBuilder
      * @return this for a fluent API
      * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
      */
-    public ChannelUriStringBuilder receiveTimestampOffset(String receiveTimestampOffset)
+    public ChannelUriStringBuilder receiveTimestampOffset(final String receiveTimestampOffset)
     {
         if (null != receiveTimestampOffset && !RESERVED_OFFSET.equals(receiveTimestampOffset))
         {
@@ -1799,7 +1799,7 @@ public final class ChannelUriStringBuilder
             {
                 Integer.parseInt(receiveTimestampOffset);
             }
-            catch (NumberFormatException ex)
+            catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
                     "receiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
@@ -1817,7 +1817,7 @@ public final class ChannelUriStringBuilder
      * @param channelUri the existing URI to extract the receiveTimestampOffset from
      * @return this for a fluent API
      */
-    public ChannelUriStringBuilder receiveTimestampOffset(ChannelUri channelUri)
+    public ChannelUriStringBuilder receiveTimestampOffset(final ChannelUri channelUri)
     {
         return receiveTimestampOffset(channelUri.get(RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
     }
@@ -1841,7 +1841,7 @@ public final class ChannelUriStringBuilder
      * @return this for a fluent API
      * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
      */
-    public ChannelUriStringBuilder sendTimestampOffset(String sendTimestampOffset)
+    public ChannelUriStringBuilder sendTimestampOffset(final String sendTimestampOffset)
     {
         if (null != sendTimestampOffset && !RESERVED_OFFSET.equals(sendTimestampOffset))
         {
@@ -1849,7 +1849,7 @@ public final class ChannelUriStringBuilder
             {
                 Integer.parseInt(sendTimestampOffset);
             }
-            catch (NumberFormatException ex)
+            catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
                     "sendTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "' found: " +
@@ -1868,7 +1868,7 @@ public final class ChannelUriStringBuilder
      * @param channelUri the existing URI to extract the sendTimestampOffset from
      * @return this for a fluent API
      */
-    public ChannelUriStringBuilder sendTimestampOffset(ChannelUri channelUri)
+    public ChannelUriStringBuilder sendTimestampOffset(final ChannelUri channelUri)
     {
         return sendTimestampOffset(channelUri.get(SEND_TIMESTAMP_OFFSET_PARAM_NAME));
     }

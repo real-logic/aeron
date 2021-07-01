@@ -621,7 +621,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     {
         if (isReceiveTimestamping)
         {
-            long timestampNs = receiveTimestampClock.nanoTime();
+            final long timestampNs = receiveTimestampClock.nanoTime();
             final int offset = udpChannel.receiveTimestampOffset();
             if (UdpChannel.RESERVED_VALUE_OFFSET == offset)
             {

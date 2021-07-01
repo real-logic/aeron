@@ -328,9 +328,31 @@ public class CommonContext implements Cloneable
     /**
      * Parameter name of the offset for the RX timestamp to be inserted into the incoming message
      * on a subscription.  The special value of 'reserved' can be used to insert into the reserved value
+     * field.  RX timestamp is taken as the earliest possible point after the packet is received from the network.
+     * This is only supported in the C media driver at the moment, using in the Java Media Driver will generate
+     * an error.
+     */
+    public static final String RX_TIMESTAMP_OFFSET_PARAM_NAME = "rx-ts-offset";
+
+    /**
+     * Parameter name of the offset for the receive timestamp to be inserted into the incoming message
+     * on a subscription.  The special value of 'reserved' can be used to insert into the reserved value
+     * field.  Receive timestamp is taken as soon a possible after the packet is received by Aeron.
+     */
+    public static final String RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME = "rcv-ts-offset";
+
+    /**
+     * Parameter name of the offset for the send timestamp to be inserted into the incoming message
+     * on a subscription.  The special value of 'reserved' can be used to insert into the reserved value
+     * field.  Send timestamp is taken shortly before passing the message over to the configured transport bindings.
+     */
+    public static final String SEND_TIMESTAMP_OFFSET_PARAM_NAME = "snd-ts-offset";
+
+    /**
+     * Placeholder value to use in URIs to specify that a timestamp should be stored in the reserved value
      * field.
      */
-    public static final String RX_TIMESTAMP_OFFSET = "rx-ts-offset";
+    public static final String RESERVED_OFFSET = "reserved";
 
     /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.

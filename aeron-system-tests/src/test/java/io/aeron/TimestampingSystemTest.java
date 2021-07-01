@@ -21,10 +21,13 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -33,6 +36,8 @@ public class TimestampingSystemTest
 {
     public static final long SENTINEL_VALUE = -1L;
     public static final String CHANNEL_WITH_RX_TIMESTAMP = "aeron:udp?endpoint=localhost:0|rx-ts-offset=reserved";
+    public static final String CHANNEL_WITH_SND_RCV_TIMESTAMPS =
+        "aeron:udp?endpoint=localhost:0|rcv-ts-offset=0|snd-ts-offset=8";
 
     @RegisterExtension
     public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
@@ -62,6 +67,12 @@ public class TimestampingSystemTest
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription sub = aeron.addSubscription(CHANNEL_WITH_RX_TIMESTAMP, 1000);
+
+            while (null == sub.resolvedEndpoint())
+            {
+                Tests.yieldingIdle("Failed to resolve endpoint");
+            }
+
             final String uri = new ChannelUriStringBuilder()
                 .media("udp")
                 .endpoint(sub.resolvedEndpoint())
@@ -81,6 +92,54 @@ public class TimestampingSystemTest
             {
                 Tests.yieldingIdle("Failed to receive message");
             }
+        }
+    }
+
+    @Test
+    void shouldSupportSendReceiveTimestamps()
+    {
+        final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
+
+        try (TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true), watcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final Subscription sub = aeron.addSubscription(CHANNEL_WITH_SND_RCV_TIMESTAMPS, 1000);
+
+            while (null == sub.resolvedEndpoint())
+            {
+                Tests.yieldingIdle("Failed to resolve endpoint");
+            }
+
+            final String uri = new ChannelUriStringBuilder(CHANNEL_WITH_SND_RCV_TIMESTAMPS)
+                .endpoint(requireNonNull(sub.resolvedEndpoint()))
+                .build();
+
+            final Publication pub = aeron.addPublication(uri, 1000);
+
+            Tests.awaitConnected(pub);
+
+            buffer.putLong(0, SENTINEL_VALUE);
+            buffer.putLong(8, SENTINEL_VALUE);
+
+            while (0 < pub.offer(buffer, 0, buffer.capacity()))
+            {
+                Tests.yieldingIdle("Failed to offer message");
+            }
+
+            final MutableLong receiveTimestamp = new MutableLong(SENTINEL_VALUE);
+            final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
+            while (1 < sub.poll(
+                (buffer1, offset, length, header) ->
+                {
+                    receiveTimestamp.set(buffer1.getLong(offset));
+                    sendTimestamp.set(buffer1.getLong(offset + 8));
+                }, 1))
+            {
+                Tests.yieldingIdle("Failed to receive message");
+            }
+
+            assertNotEquals(SENTINEL_VALUE, receiveTimestamp.longValue());
+            assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
     }
 }

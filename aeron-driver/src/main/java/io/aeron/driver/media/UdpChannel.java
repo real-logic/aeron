@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.driver.DefaultNameResolver;
@@ -27,6 +28,7 @@ import java.net.*;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.aeron.CommonContext.*;
 import static io.aeron.driver.media.NetworkUtil.*;
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
@@ -39,6 +41,8 @@ import static java.net.InetAddress.getByAddress;
  */
 public final class UdpChannel
 {
+    public static final int RESERVED_VALUE_OFFSET = -8;
+
     private static final AtomicInteger UNIQUE_CANONICAL_FORM_VALUE = new AtomicInteger();
     private static final InetSocketAddress ANY_IPV4 = new InetSocketAddress("0.0.0.0", 0);
     private static final InetSocketAddress ANY_IPV6 = new InetSocketAddress("::", 0);
@@ -64,6 +68,8 @@ public final class UdpChannel
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
     private final ChannelUri channelUri;
+    private final int receiveTimestampOffset;
+    private final int sendTimestampOffset;
 
     private UdpChannel(final Context context)
     {
@@ -88,6 +94,8 @@ public final class UdpChannel
         socketRcvbufLength = context.socketRcvbufLength;
         socketSndbufLength = context.socketSndbufLength;
         receiverWindowLength = context.receiverWindowLength;
+        receiveTimestampOffset = context.receiveTimestampOffset;
+        sendTimestampOffset = context.sendTimestampOffset;
     }
 
     /**
@@ -269,11 +277,31 @@ public final class UdpChannel
                     .canonicalForm(canonicalise(null, localAddress, endpointVal, endpointAddress) + suffix);
             }
 
+            context.receiveTimestampOffset(parseTimestampOffset(channelUri, RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
+            context.sendTimestampOffset(parseTimestampOffset(channelUri, SEND_TIMESTAMP_OFFSET_PARAM_NAME));
+
             return new UdpChannel(context);
         }
         catch (final Exception ex)
         {
             throw new InvalidChannelException(ex);
+        }
+    }
+
+    private static int parseTimestampOffset(final ChannelUri channelUri, final String timestampOffsetParamName)
+    {
+        final String offsetStr = channelUri.get(timestampOffsetParamName);
+        if (null == offsetStr)
+        {
+            return Aeron.NULL_VALUE;
+        }
+        else if (RESERVED_OFFSET.equals(offsetStr))
+        {
+            return RESERVED_VALUE_OFFSET;
+        }
+        else
+        {
+            return Integer.parseInt(offsetStr);
         }
     }
 
@@ -727,6 +755,26 @@ public final class UdpChannel
         return SocketAddressParser.parse(endpoint, uriParamName, isReResolution, nameResolver);
     }
 
+    /**
+     * Offset to store the receive timestamp in a user message.
+     *
+     * @return offset of receive timestamps
+     */
+    public int receiveTimestampOffset()
+    {
+        return receiveTimestampOffset;
+    }
+
+    /**
+     * Offset to store the send timestamp in a user message.
+     *
+     * @return offset of send timestamps
+     */
+    public int sendTimestampOffset()
+    {
+        return sendTimestampOffset;
+    }
+
     private static InetSocketAddress getMulticastControlAddress(final InetSocketAddress endpointAddress)
         throws UnknownHostException
     {
@@ -896,6 +944,8 @@ public final class UdpChannel
         NetworkInterface localInterface;
         ProtocolFamily protocolFamily;
         ChannelUri channelUri;
+        int receiveTimestampOffset;
+        int sendTimestampOffset;
 
         Context uriStr(final String uri)
         {
@@ -1026,6 +1076,18 @@ public final class UdpChannel
         Context receiverWindowLength(final int receiverWindowLength)
         {
             this.receiverWindowLength = receiverWindowLength;
+            return this;
+        }
+
+        Context receiveTimestampOffset(final int receiveTimestampOffset)
+        {
+            this.receiveTimestampOffset = receiveTimestampOffset;
+            return this;
+        }
+
+        Context sendTimestampOffset(final int sendTimestampOffset)
+        {
+            this.sendTimestampOffset = sendTimestampOffset;
             return this;
         }
     }

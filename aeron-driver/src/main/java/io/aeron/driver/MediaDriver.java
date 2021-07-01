@@ -532,6 +532,8 @@ public final class MediaDriver implements AutoCloseable
         private int osMaxSocketRcvbufLength = Aeron.NULL_VALUE;
         private int osDefaultSocketSndbufLength = Aeron.NULL_VALUE;
         private int osMaxSocketSndbufLength = Aeron.NULL_VALUE;
+        private EpochNanoClock receiveTimestampClock;
+        private EpochNanoClock sendTimestampClock;
 
         /**
          * Perform a shallow copy of the object.
@@ -3207,6 +3209,16 @@ public final class MediaDriver implements AutoCloseable
             return osMaxSocketSndbufLength;
         }
 
+        EpochNanoClock receiveTimestampClock()
+        {
+            return receiveTimestampClock;
+        }
+
+        EpochNanoClock sendTimestampClock()
+        {
+            return sendTimestampClock;
+        }
+
         void resolveOsSocketBufLengths()
         {
             if (Aeron.NULL_VALUE != osMaxSocketRcvbufLength)
@@ -3380,6 +3392,16 @@ public final class MediaDriver implements AutoCloseable
             if (null == nameResolver)
             {
                 nameResolver = DefaultNameResolver.INSTANCE;
+            }
+
+            if (null == receiveTimestampClock)
+            {
+                receiveTimestampClock = new SystemEpochNanoClock();
+            }
+
+            if (null == sendTimestampClock)
+            {
+                sendTimestampClock = new SystemEpochNanoClock();
             }
         }
 

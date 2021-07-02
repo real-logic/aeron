@@ -17,7 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -38,15 +38,15 @@ public final class ClusterCounters
      * Allocate a counter to represent the a component state within a cluster.
      *
      * @param aeron     to allocate the counter.
+     * @param buffer    temporary storage to create label and metadata.
      * @param name      of the counter for the label.
      * @param typeId    for the counter.
      * @param clusterId to which the allocated counter belongs.
      * @return the {@link Counter} for the commit position.
      */
-    public static Counter allocate(final Aeron aeron, final String name, final int typeId, final int clusterId)
+    public static Counter allocate(
+        final Aeron aeron, final MutableDirectBuffer buffer, final String name, final int typeId, final int clusterId)
     {
-        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-
         int index = 0;
         buffer.putInt(index, clusterId);
         index += SIZE_OF_INT;

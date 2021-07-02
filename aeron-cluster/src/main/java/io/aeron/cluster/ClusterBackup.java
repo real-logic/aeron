@@ -24,6 +24,7 @@ import io.aeron.cluster.service.*;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
@@ -489,6 +490,8 @@ public final class ClusterBackup implements AutoCloseable
         @SuppressWarnings("MethodLength")
         public void conclude()
         {
+            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
             {
                 throw new ConcurrentConcludeException();
@@ -551,7 +554,7 @@ public final class ClusterBackup implements AutoCloseable
                 if (null == errorCounter)
                 {
                     errorCounter = ClusterCounters.allocate(
-                        aeron, "ClusterBackup errors", CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID, clusterId);
+                        aeron, buffer, "ClusterBackup errors", CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID, clusterId);
                 }
             }
 
@@ -581,19 +584,20 @@ public final class ClusterBackup implements AutoCloseable
 
             if (null == stateCounter)
             {
-                stateCounter = ClusterCounters.allocate(aeron, "ClusterBackup State", BACKUP_STATE_TYPE_ID, clusterId);
+                stateCounter = ClusterCounters.allocate(
+                    aeron, buffer, "ClusterBackup State", BACKUP_STATE_TYPE_ID, clusterId);
             }
 
             if (null == liveLogPositionCounter)
             {
                 liveLogPositionCounter = ClusterCounters.allocate(
-                    aeron, "ClusterBackup live log position", LIVE_LOG_POSITION_TYPE_ID, clusterId);
+                    aeron, buffer, "ClusterBackup live log position", LIVE_LOG_POSITION_TYPE_ID, clusterId);
             }
 
             if (null == nextQueryDeadlineMsCounter)
             {
                 nextQueryDeadlineMsCounter = ClusterCounters.allocate(
-                    aeron, "ClusterBackup next query deadline (ms)", QUERY_DEADLINE_TYPE_ID, clusterId);
+                    aeron, buffer, "ClusterBackup next query deadline (ms)", QUERY_DEADLINE_TYPE_ID, clusterId);
             }
 
             if (null == threadFactory)

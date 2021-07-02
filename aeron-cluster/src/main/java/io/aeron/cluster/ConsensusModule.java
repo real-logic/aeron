@@ -1122,6 +1122,8 @@ public final class ConsensusModule implements AutoCloseable
         @SuppressWarnings("MethodLength")
         public void conclude()
         {
+            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
             {
                 throw new ConcurrentConcludeException();
@@ -1231,43 +1233,43 @@ public final class ConsensusModule implements AutoCloseable
                 }
 
                 moduleStateCounter = ClusterCounters.allocate(
-                    aeron, "Consensus Module state", CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
+                    aeron, buffer, "Consensus Module state", CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
             }
 
             if (null == electionStateCounter)
             {
                 electionStateCounter = ClusterCounters.allocate(
-                    aeron, "Cluster election state", ELECTION_STATE_TYPE_ID, clusterId);
+                    aeron, buffer, "Cluster election state", ELECTION_STATE_TYPE_ID, clusterId);
             }
 
             if (null == clusterNodeRoleCounter)
             {
                 clusterNodeRoleCounter = ClusterCounters.allocate(
-                    aeron, "Cluster node role", CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
+                    aeron, buffer, "Cluster node role", CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
             }
 
             if (null == commitPosition)
             {
                 commitPosition = ClusterCounters.allocate(
-                    aeron, "Cluster commit-pos:", COMMIT_POSITION_TYPE_ID, clusterId);
+                    aeron, buffer, "Cluster commit-pos:", COMMIT_POSITION_TYPE_ID, clusterId);
             }
 
             if (null == controlToggle)
             {
                 controlToggle = ClusterCounters.allocate(
-                    aeron, "Cluster control toggle", CONTROL_TOGGLE_TYPE_ID, clusterId);
+                    aeron, buffer, "Cluster control toggle", CONTROL_TOGGLE_TYPE_ID, clusterId);
             }
 
             if (null == snapshotCounter)
             {
                 snapshotCounter = ClusterCounters.allocate(
-                    aeron, "Cluster snapshot count", SNAPSHOT_COUNTER_TYPE_ID, clusterId);
+                    aeron, buffer, "Cluster snapshot count", SNAPSHOT_COUNTER_TYPE_ID, clusterId);
             }
 
             if (null == timedOutClientCounter)
             {
                 timedOutClientCounter = ClusterCounters.allocate(
-                    aeron, "Cluster timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
+                    aeron, buffer, "Cluster timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
             }
 
             if (null == threadFactory)

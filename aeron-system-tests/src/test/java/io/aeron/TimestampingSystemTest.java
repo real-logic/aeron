@@ -338,26 +338,46 @@ public class TimestampingSystemTest
                 Tests.yieldingIdle("Failed to connect");
             }
 
-            buffer.putLong(0, SENTINEL_VALUE);
+            final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
 
+            buffer.putLong(0, SENTINEL_VALUE);
             while (0 > pub1.offer(buffer, 0, buffer.capacity()))
             {
                 Tests.yieldingIdle("Failed to offer message");
             }
 
+            buffer.putLong(0, SENTINEL_VALUE);
             while (0 > pub2.offer(buffer, 0, buffer.capacity()))
             {
                 Tests.yieldingIdle("Failed to offer message");
             }
 
-            final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
             while (1 > mdsSub.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
             }
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
-            assertEquals(2, mdsSub.imageAtIndex(0).activeTransportCount());
+
+            buffer.putLong(0, SENTINEL_VALUE);
+            while (0 > pub2.offer(buffer, 0, buffer.capacity()))
+            {
+                Tests.yieldingIdle("Failed to offer message");
+            }
+
+            buffer.putLong(0, SENTINEL_VALUE);
+            while (0 > pub1.offer(buffer, 0, buffer.capacity()))
+            {
+                Tests.yieldingIdle("Failed to offer message");
+            }
+
+            sendTimestamp.set(SENTINEL_VALUE);
+            while (1 > mdsSub.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            {
+                Tests.yieldingIdle("Failed to receive message");
+            }
+
+            assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
         finally
         {

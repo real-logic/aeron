@@ -687,7 +687,8 @@ public final class Configuration
     public static final String RESOLVER_INTERFACE_PROP_NAME = "aeron.driver.resolver.interface";
 
     /**
-     * Property name for resolver bootstrap neighbor for which it can bootstrap naming, format is hostname:port.
+     * Property name for resolver bootstrap neighbors for which it can bootstrap naming, format is comma separated list
+     * of {@code hostname:port} pairs.
      * @see #RESOLVER_INTERFACE_PROP_NAME
      */
     public static final String RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME = "aeron.driver.resolver.bootstrap.neighbor";

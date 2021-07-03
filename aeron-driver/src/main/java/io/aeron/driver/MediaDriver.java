@@ -2978,7 +2978,8 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Get the bootstrap neighbor of the {@link MediaDriver} for name resolver purposes.
          *
-         * The format is hostname:port and follows the URI format for the endpoint parameter.
+         * The format is comma separated list of {@code hostname:port} pairs. and follows the URI format for the
+         * endpoint parameter.
          *
          * @return bootstrap neighbor of the {@link MediaDriver}.
          * @see Configuration#RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME

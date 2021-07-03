@@ -42,6 +42,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static org.agrona.concurrent.status.CountersReader.*;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class DriverNameResolverTest
@@ -324,6 +325,8 @@ public class DriverNameResolverTest
     @InterruptAfter(20)
     public void shouldFallbackToAnotherBootstrapNeighborIfOneBecomesUnavailable() throws IOException
     {
+        assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
+
         final NameResolver bootstrapResolver = DriverNameResolver.bootstrapNameResolver;
         try
         {

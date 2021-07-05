@@ -144,7 +144,7 @@ allprojects {
     }
 
     tasks.withType(JavaExec).configureEach {
-        javaLauncher = toolchainLauncher
+        javaLauncher.set(toolchainLauncher)
     }
 }
 
@@ -448,7 +448,7 @@ project(':aeron-archive') {
         inputs.files(codecsFile, markCodecsFile, sbeFile)
         outputs.dir generatedDir
 
-        main = 'uk.co.real_logic.sbe.SbeTool'
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
         classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedDir,
@@ -460,7 +460,7 @@ project(':aeron-archive') {
 
     def generatedCppDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated")
     task generateCppCodecs(type: JavaExec) {
-        main = 'uk.co.real_logic.sbe.SbeTool'
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
         classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedCppDir,
@@ -569,7 +569,7 @@ project(':aeron-cluster') {
         inputs.files(codecsFile, markCodecsFile, sbeFile)
         outputs.dir generatedDir
 
-        main = 'uk.co.real_logic.sbe.SbeTool'
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
         classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedDir,
@@ -943,6 +943,6 @@ tasks.named("dependencyUpdates").configure {
 }
 
 wrapper {
-    gradleVersion = '7.0.2'
+    gradleVersion = '7.1.1'
     distributionType = 'ALL'
 }

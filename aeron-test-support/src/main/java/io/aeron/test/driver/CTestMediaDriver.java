@@ -73,10 +73,11 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     public void close()
     {
+        final boolean interrupted = Thread.interrupted();
         try
         {
-            terminateDriver();
-            if (!aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
+            final boolean terminateSignalSent = terminateDriver();
+            if (!terminateSignalSent || !aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
             {
                 aeronMediaDriverProcess.destroyForcibly().waitFor(5, TimeUnit.SECONDS);
                 throw new RuntimeException("Failed to shutdown cleanly, forced close");
@@ -91,6 +92,13 @@ public final class CTestMediaDriver implements TestMediaDriver
         {
             throw new RuntimeException("Interrupted while waiting for shutdown", ex);
         }
+        finally
+        {
+            if (interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     public CountersReader counters()
@@ -100,9 +108,17 @@ public final class CTestMediaDriver implements TestMediaDriver
         return new CountersReader(context.countersMetaDataBuffer(), context.countersValuesBuffer());
     }
 
-    private void terminateDriver()
+    private boolean terminateDriver()
     {
-        CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
+        try
+        {
+            CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
+            return true;
+        }
+        catch (final Throwable t)
+        {
+            return false;
+        }
     }
 
     @SuppressWarnings("methodlength")

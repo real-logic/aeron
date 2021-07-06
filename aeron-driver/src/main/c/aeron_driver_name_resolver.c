@@ -53,6 +53,8 @@ struct mmsghdr
 #define AERON_NAME_RESOLVER_DRIVER_DUTY_CYCLE_MS (10)
 #define AERON_NAME_RESOLVER_DRIVER_NUM_RECV_BUFFERS (1)
 
+#define AERON_NAME_RESOLVER_DRIVER_MAX_BOOTSTRAP_NEIGHBORS (20)
+
 typedef struct aeron_driver_name_resolver_neighbor_stct
 {
     aeron_name_resolver_cache_addr_t cache_addr;
@@ -68,6 +70,9 @@ typedef struct aeron_driver_name_resolver_stct
     struct sockaddr_storage local_socket_addr;
     aeron_name_resolver_cache_addr_t local_cache_addr;
     const char *bootstrap_neighbor;
+    char *saved_bootstrap_neighbor;
+    size_t bootstrap_neighbors_length;
+    char **bootstrap_neighbors;
     struct sockaddr_storage bootstrap_neighbor_addr;
     unsigned int interface_index;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
@@ -125,6 +130,24 @@ void aeron_driver_name_resolver_receive(
 static int aeron_driver_name_resolver_from_sockaddr(
     struct sockaddr_storage *addr, aeron_name_resolver_cache_addr_t *cache_addr);
 
+int aeron_driver_name_resolver_resolve_bootstrap_neighbor(aeron_driver_name_resolver_t *driver_resolver)
+{
+    for (size_t i = 0; i < driver_resolver->bootstrap_neighbors_length; i++)
+    {
+        if (0 == aeron_name_resolver_resolve_host_and_port(
+            &driver_resolver->bootstrap_resolver,
+            driver_resolver->bootstrap_neighbors[i],
+            "bootstrap_neighbor",
+            false,
+            &driver_resolver->bootstrap_neighbor_addr))
+        {
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 int aeron_driver_name_resolver_init(
     aeron_driver_name_resolver_t **driver_resolver,
     aeron_driver_context_t *context,
@@ -140,6 +163,8 @@ int aeron_driver_name_resolver_init(
         AERON_APPEND_ERR("Failed to allocate driver resolver for: %s", name);
         goto error_cleanup;
     }
+    _driver_resolver->saved_bootstrap_neighbor = NULL;
+    _driver_resolver->bootstrap_neighbors = NULL;
 
     _driver_resolver->aligned_buffer = aeron_cache_line_align_buffer(_driver_resolver->buffer);
 
@@ -184,14 +209,42 @@ int aeron_driver_name_resolver_init(
     _driver_resolver->neighbor_removed_func = context->name_resolution_on_neighbor_removed_func;
 
     _driver_resolver->bootstrap_neighbor = bootstrap_neighbor;
-    if (NULL != _driver_resolver->bootstrap_neighbor)
+    _driver_resolver->bootstrap_neighbors_length = 0;
+    if (NULL != bootstrap_neighbor)
     {
-        if (aeron_name_resolver_resolve_host_and_port(
-            &_driver_resolver->bootstrap_resolver,
-            _driver_resolver->bootstrap_neighbor,
-            "bootstrap_neighbor",
-            false,
-            &_driver_resolver->bootstrap_neighbor_addr) < 0)
+        _driver_resolver->saved_bootstrap_neighbor = strdup(bootstrap_neighbor);
+        if (NULL == _driver_resolver->saved_bootstrap_neighbor)
+        {
+            AERON_SET_ERR(EINVAL, "Failed to duplicate bootstrap neighbors string: %s", bootstrap_neighbor);
+            goto error_cleanup;
+        }
+        char *bootstrap_neighbors[AERON_NAME_RESOLVER_DRIVER_MAX_BOOTSTRAP_NEIGHBORS];
+
+        const int num_neighbors = aeron_tokenise(
+            _driver_resolver->saved_bootstrap_neighbor,
+            ',',
+            AERON_NAME_RESOLVER_DRIVER_MAX_BOOTSTRAP_NEIGHBORS,
+            bootstrap_neighbors);
+
+        if (num_neighbors < 0)
+        {
+            AERON_SET_ERR(EINVAL, "Failed to parse bootstrap neighbors list: %s", bootstrap_neighbor);
+            goto error_cleanup;
+        }
+
+        if (aeron_alloc((void **)&_driver_resolver->bootstrap_neighbors, (strlen(bootstrap_neighbor) + num_neighbors) * sizeof(char)) < 0)
+        {
+            AERON_APPEND_ERR("%s", "Allocating bootstrap neighbors array");
+            goto error_cleanup;
+        }
+
+        _driver_resolver->bootstrap_neighbors_length = (size_t)num_neighbors;
+        for (int i = 0; i < num_neighbors; i++)
+        {
+            _driver_resolver->bootstrap_neighbors[i] = bootstrap_neighbors[num_neighbors - i - 1];
+        }
+
+        if (aeron_driver_name_resolver_resolve_bootstrap_neighbor(_driver_resolver) < 0)
         {
             goto error_cleanup;
         }
@@ -301,6 +354,8 @@ error_cleanup:
     context->udp_channel_transport_bindings->close_func(&_driver_resolver->transport);
     aeron_udp_channel_data_paths_delete(&_driver_resolver->data_paths);
     aeron_name_resolver_cache_close(&_driver_resolver->cache);
+    aeron_free(_driver_resolver->saved_bootstrap_neighbor);
+    aeron_free(_driver_resolver->bootstrap_neighbors);
     aeron_free((void *)local_hostname);
     aeron_free((void *)_driver_resolver);
 
@@ -315,6 +370,8 @@ int aeron_driver_name_resolver_close(aeron_name_resolver_t *resolver)
     aeron_udp_channel_data_paths_delete(&driver_resolver->data_paths);
     aeron_name_resolver_cache_close(&driver_resolver->cache);
     aeron_free(driver_resolver->neighbors.array);
+    aeron_free(driver_resolver->saved_bootstrap_neighbor);
+    aeron_free(driver_resolver->bootstrap_neighbors);
     aeron_free(driver_resolver);
 
     return 0;
@@ -709,7 +766,7 @@ static int aeron_driver_name_resolver_do_send(
 
 static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_resolver_t *resolver, int64_t now_ms)
 {
-    if (NULL == resolver->bootstrap_neighbor && 0 == resolver->neighbors.length)
+    if (0 == resolver->bootstrap_neighbors_length && 0 == resolver->neighbors.length)
     {
         return 0;
     }
@@ -741,7 +798,7 @@ static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_re
 
     struct sockaddr_storage neighbor_sock_addr;
 
-    bool send_to_bootstrap = NULL != resolver->bootstrap_neighbor;
+    bool send_to_bootstrap = resolver->bootstrap_neighbors_length > 0;
     int work_count = 0;
     // TODO: Optimise with sendmmsg
     for (size_t k = 0; k < resolver->neighbors.length; k++)
@@ -771,21 +828,38 @@ static int aeron_driver_name_resolver_send_self_resolutions(aeron_driver_name_re
     {
         if (now_ms > resolver->bootstrap_neighbor_resolve_deadline_ms)
         {
-            if (aeron_name_resolver_resolve_host_and_port(
-                &resolver->bootstrap_resolver,
-                resolver->bootstrap_neighbor,
-                "bootstrap_neighbor",
-                false,
-                &resolver->bootstrap_neighbor_addr) < 0)
+            struct sockaddr_storage old_address = resolver->bootstrap_neighbor_addr;
+            if (aeron_driver_name_resolver_resolve_bootstrap_neighbor(resolver) < 0)
             {
                 AERON_APPEND_ERR("failed to resolve bootstrap neighbor (%s)", resolver->bootstrap_neighbor);
                 return work_count;
             }
 
             resolver->bootstrap_neighbor_resolve_deadline_ms = now_ms + AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
+
+            if (!aeron_driver_name_resolver_sockaddr_equals(&resolver->bootstrap_neighbor_addr, &old_address))
+            {
+                // FIXME: LABEL!
+//                neighborsCounter.updateLabel(buildNeighborsCounterLabel(RESOLVER_NEIGHBORS_COUNTER_LABEL));
+
+                // avoid sending resolution frame if already sent, because node is in the neighbor list
+                for (size_t k = 0; k < resolver->neighbors.length; k++)
+                {
+                    aeron_driver_name_resolver_neighbor_t *neighbor = &resolver->neighbors.array[k];
+
+                    aeron_driver_name_resolver_to_sockaddr(&neighbor->cache_addr, &neighbor_sock_addr);
+
+                    if (aeron_driver_name_resolver_sockaddr_equals(
+                        &resolver->bootstrap_neighbor_addr, &neighbor_sock_addr))
+                    {
+                        send_to_bootstrap = false;
+                        break;
+                    }
+                }
+            }
         }
 
-        if (aeron_driver_name_resolver_do_send(
+        if (send_to_bootstrap && aeron_driver_name_resolver_do_send(
             resolver, frame_header, frame_length, &resolver->bootstrap_neighbor_addr) < 0)
         {
             AERON_APPEND_ERR("%s", "Failed to send bootstrap resolutions");

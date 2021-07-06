@@ -18,18 +18,18 @@
  * <b>Note:</b> Aeron Cluster is currently a preview feature, commercial support and training is available from
  * <a href="mailto:sales@real-logic.co.uk?subject=Aeron%20Cluster">sales@real-logic.co.uk</a>.
  * <p>
- * The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log. This log
- * is replicated and archived on a number of nodes to achieve fault tolerance. Cluster services process this log and
- * respond to cluster clients.
+ * The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log. A number of
+ * nodes will replicate and archive the log to achieve fault tolerance. Cluster services process the log and respond
+ * to cluster clients.
  * <p>
  * Aeron Cluster works on the concept of a strong leader using an adaptation of the
  * <a href="https://raft.github.io/raft.pdf" target="_blank">Raft</a> protocol. The leader sequences the log and is
  * responsible for replicating it to other cluster members known as followers.
  * <p>
- * Aeron Cluster is composed of a number of components. Central is the Consensus Module which sequences the log and
- * coordinates consensus on the recording of the sequenced log to persistent storage, and the services consuming the log
- * across cluster members. Recording of the log to persistent storage is performed by the Aeron Archive module. Services
- * consume the log once a majority of the cluster members have safely recorded the log to persistent storage.
+ * A number of components make up Aeron Cluster. Central is the Consensus Module which sequences the log and
+ * coordinates consensus for the recording of the sequenced log to persistent storage, and the services consuming the
+ * log across cluster members. Aeron Archive records the log to durable storage. Services consume the log once a
+ * majority of the cluster members have safely recorded the log to durable storage.
  * <p>
  * To enable fast recovery, the services and consensus module can take a snapshot of their state as of a given log
  * position thus enabling recovery by loading the most recent snapshot and replaying logs from that point forward.
@@ -47,14 +47,15 @@
  *         election. In the event of a leader failure then a follower will have to be manually appointed the new leader.
  *     </li>
  *     <li>
- *         <b>Automatic Elections:</b> Automatic elections can be enabled to have a leader elected at random from the
- *         members with the most up to date log.
+ *         <b>Automatic Elections:</b> Automatic elections (default) can be enabled to have a leader elected at random
+ *         from the members with the most up to date log.
  *     </li>
  * </ul>
  * <p>
- * Based on the membership size, consensus is determined by the majority of the cluster members. Clusters should be
- * 3 or 5 in population size. However, 2 node clusters are supported whereby both members must agree the log
- * and in the event of failure the remaining member must be manually reconfigured as a single node cluster.
+ * The majority of cluster members determine consensus. Clusters should be 3 or 5 in population size. However, 2 node
+ * clusters are supported whereby both members must agree the log and in the event of failure the remaining member must
+ * be manually reconfigured as a single node cluster to progress.
+ *
  * <h2>Protocol</h2>
  * Messages are specified using SBE in
  * <a href="https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/aeron-cluster-codecs.xml"

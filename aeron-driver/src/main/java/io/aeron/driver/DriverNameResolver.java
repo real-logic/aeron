@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.DriverNameResolverCache.byteSubsetEquals;
+import static io.aeron.driver.media.NetworkUtil.formatAddressAndPort;
 import static io.aeron.protocol.ResolutionEntryFlyweight.*;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
@@ -300,11 +301,8 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
         if (null != bootstrapNeighborAddress)
         {
-            builder
-                .append(" bootstrap ")
-                .append(bootstrapNeighborAddress.getHostString())
-                .append(':')
-                .append(bootstrapNeighborAddress.getPort());
+            builder.append(" bootstrap ").append(
+                formatAddressAndPort(bootstrapNeighborAddress.getAddress(), bootstrapNeighborAddress.getPort()));
         }
 
         return builder.toString();

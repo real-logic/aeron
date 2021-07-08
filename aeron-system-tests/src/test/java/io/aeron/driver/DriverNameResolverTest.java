@@ -317,7 +317,7 @@ public class DriverNameResolverTest
         awaitCounterValue("B", bNeighborsCounterId, 1);
         awaitCounterLabel("A", aNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8050");
         awaitCounterLabel(
-            "B", bNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap localhost:8050");
+            "B", bNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8050");
     }
 
     @SlowTest
@@ -363,9 +363,9 @@ public class DriverNameResolverTest
             awaitCounterValue("C", cNeighborsCounterId, 2);
             awaitCounterLabel("A", aNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8050");
             awaitCounterLabel(
-                "B", bNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap localhost:8050");
+                "B", bNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8050");
             awaitCounterLabel(
-                "C", cNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8052 bootstrap localhost:8050");
+                "C", cNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8052 bootstrap 127.0.0.1:8050");
 
             closeDriver("A");
             resolveHostA.set(false);
@@ -373,9 +373,9 @@ public class DriverNameResolverTest
             awaitCounterValue("B", bNeighborsCounterId, 1);
             awaitCounterValue("C", cNeighborsCounterId, 1);
             awaitCounterLabel("B", bNeighborsCounterId,
-                "Resolver neighbors: bound 0.0.0.0:8051 bootstrap localhost:8051");
+                "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8051");
             awaitCounterLabel("C", cNeighborsCounterId,
-                "Resolver neighbors: bound 0.0.0.0:8052 bootstrap localhost:8051");
+                "Resolver neighbors: bound 0.0.0.0:8052 bootstrap 127.0.0.1:8051");
 
             addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
                 .aeronDirectoryName(baseDir + "-D")
@@ -390,7 +390,7 @@ public class DriverNameResolverTest
             awaitCounterValue("C", cNeighborsCounterId, 2);
             awaitCounterValue("D", dNeighborsCounterId, 2);
             awaitCounterLabel("D", dNeighborsCounterId,
-                "Resolver neighbors: bound 0.0.0.0:8053 bootstrap localhost:8051");
+                "Resolver neighbors: bound 0.0.0.0:8053 bootstrap 127.0.0.1:8051");
         }
         finally
         {

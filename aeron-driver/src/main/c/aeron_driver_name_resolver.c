@@ -130,7 +130,7 @@ void aeron_driver_name_resolver_receive(
 static int aeron_driver_name_resolver_from_sockaddr(
     struct sockaddr_storage *addr, aeron_name_resolver_cache_addr_t *cache_addr);
 
-int aeron_driver_name_resolver_resolve_bootstrap_neighbor(aeron_driver_name_resolver_t *driver_resolver)
+static int aeron_driver_name_resolver_resolve_bootstrap_neighbor(aeron_driver_name_resolver_t *driver_resolver)
 {
     for (size_t i = 0; i < driver_resolver->bootstrap_neighbors_length; i++)
     {
@@ -146,6 +146,24 @@ int aeron_driver_name_resolver_resolve_bootstrap_neighbor(aeron_driver_name_reso
     }
 
     return -1;
+}
+
+static const char *aeron_driver_name_resolver_build_neighbor_counter_label(
+    aeron_driver_name_resolver_t *driver_resolver)
+{
+    static char buffer[512] = "";
+    int offset = snprintf(buffer, sizeof(buffer) - 1, "Resolver neighbors: bound ");
+    offset += aeron_format_source_identity(
+        (char *)(buffer + offset), AERON_NETUTIL_FORMATTED_MAX_LENGTH, &driver_resolver->local_socket_addr);
+
+    if (NULL != driver_resolver->bootstrap_neighbor)
+    {
+        offset += snprintf(buffer + offset, 12, " bootstrap ");
+        aeron_format_source_identity(
+            (char *)(buffer + offset), AERON_NETUTIL_FORMATTED_MAX_LENGTH, &driver_resolver->bootstrap_neighbor_addr);
+    }
+
+    return buffer;
 }
 
 int aeron_driver_name_resolver_init(
@@ -232,7 +250,9 @@ int aeron_driver_name_resolver_init(
             goto error_cleanup;
         }
 
-        if (aeron_alloc((void **)&_driver_resolver->bootstrap_neighbors, (strlen(bootstrap_neighbor) + num_neighbors) * sizeof(char)) < 0)
+        if (aeron_alloc(
+            (void **)&_driver_resolver->bootstrap_neighbors,
+            (strlen(bootstrap_neighbor) + num_neighbors) * sizeof(char)) < 0)
         {
             AERON_APPEND_ERR("%s", "Allocating bootstrap neighbors array");
             goto error_cleanup;
@@ -309,11 +329,12 @@ int aeron_driver_name_resolver_init(
     _driver_resolver->bootstrap_neighbor_resolve_deadline_ms = now_ms;
     _driver_resolver->work_deadline_ms = 0;
 
+    const char *neighbor_counter_label = aeron_driver_name_resolver_build_neighbor_counter_label(_driver_resolver);
     _driver_resolver->neighbor_counter.counter_id = aeron_counters_manager_allocate(
         context->counters_manager,
         AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID,
         NULL, 0,
-        "Resolver neighbors", strlen("Resolver neighbors"));
+        neighbor_counter_label, strlen(neighbor_counter_label));
     if (_driver_resolver->neighbor_counter.counter_id < 0)
     {
         goto error_cleanup;

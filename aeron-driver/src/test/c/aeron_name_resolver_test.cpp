@@ -114,11 +114,18 @@ protected:
 
     typedef struct counters_clientd_stct
     {
-        const aeron_counters_manager_t *counters;
         int32_t type_id;
         int64_t value;
     }
     counters_clientd_t;
+
+    typedef struct counter_label_clientd_stct
+    {
+        int32_t type_id;
+        size_t label_length;
+        char label[512];
+    }
+    counter_label_clientd_t;
 
     typedef struct find_name_counter_clientd_stct
     {
@@ -170,44 +177,70 @@ protected:
     }
 
     static void foreachFilterByTypeId(
+        int64_t value,
         int32_t id,
         int32_t type_id,
         const uint8_t *key,
         size_t key_length,
-        const uint8_t *label,
+        const char *label,
         size_t label_length,
         void *clientd)
     {
         auto *counters_clientd = static_cast<NameResolverTest::counters_clientd_t *>(clientd);
         if (counters_clientd->type_id == type_id)
         {
-            int64_t *counter_addr = aeron_counters_manager_addr(
-                (aeron_counters_manager_t *)counters_clientd->counters, id);
-            AERON_GET_VOLATILE(counters_clientd->value, *counter_addr);
+            counters_clientd->value = value;
         }
     }
 
-    static int64_t readCounterByTypeId(const aeron_counters_manager_t *counters, int32_t type_id)
+    static void foreachFilterByTypeIdGetLabel(
+        int64_t value,
+        int32_t id,
+        int32_t type_id,
+        const uint8_t *key,
+        size_t key_length,
+        const char *label,
+        size_t label_length,
+        void *clientd)
     {
-        counters_clientd_t clientd;
-        clientd.counters = counters;
-        clientd.type_id = type_id;
-        clientd.value = -1;
+        auto *label_clientd = static_cast<NameResolverTest::counter_label_clientd_t *>(clientd);
+        if (label_clientd->type_id == type_id)
+        {
+            label_clientd->label_length = label_length;
+            strncpy(label_clientd->label, label, label_length);
+        }
+    }
 
-        aeron_counters_reader_foreach_metadata(
-            counters->metadata, counters->metadata_length, foreachFilterByTypeId, &clientd);
+    static int64_t readCounterByTypeId(const aeron_counters_reader_t *counters_reader, int32_t type_id)
+    {
+        counters_clientd_t clientd = { type_id, -1 };
+
+        aeron_counters_reader_foreach_counter(
+            (aeron_counters_reader_t *)counters_reader, foreachFilterByTypeId, &clientd);
 
         return clientd.value;
     }
 
+    static counter_label_clientd_t readCounterLabelByTypeId(
+        const aeron_counters_reader_t *counters_reader, int32_t type_id)
+    {
+        counter_label_clientd_t clientd = { type_id, 0, { '\0' }};
+
+        aeron_counters_reader_foreach_counter(
+            (aeron_counters_reader_t *)counters_reader, foreachFilterByTypeIdGetLabel, &clientd);
+
+        return clientd;
+    }
+
     static int64_t readNeighborCounter(const resolver_fields_t *resolver)
     {
-        return readCounterByTypeId(&resolver->counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
+        return readCounterByTypeId(&resolver->counters_reader, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
     }
 
     static int64_t readCacheEntriesCounter(const resolver_fields_t *resolver)
     {
-        return readCounterByTypeId(&resolver->counters, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
+        return readCounterByTypeId(
+            &resolver->counters_reader, AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID);
     }
 
     static int64_t readSystemCounter(const resolver_fields_t *resolver, aeron_system_counter_enum_t counter)
@@ -230,7 +263,15 @@ protected:
         }
     }
 
-    friend std::ostream &operator << (std::ostream &output, const NameResolverTest &t)
+    static void assert_neighbor_counter_label_is(const resolver_fields_t *resolver, const char *expected_label)
+    {
+        auto result = readCounterLabelByTypeId(
+            &resolver->counters_reader, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
+        ASSERT_EQ(result.label_length, strlen(expected_label));
+        ASSERT_EQ(0, strncmp(expected_label, result.label, result.label_length));
+    }
+
+    friend std::ostream &operator<<(std::ostream &output, const NameResolverTest &t)
     {
         printCounters(output, &t.m_a, "A");
         printCounters(output, &t.m_b, "B");
@@ -347,6 +388,10 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     ASSERT_EQ(AF_INET, resolved_address_of_b.ss_family);
     struct sockaddr_in *in_addr_b = (struct sockaddr_in *)&resolved_address_of_b;
     ASSERT_NE(INADDR_ANY, in_addr_b->sin_addr.s_addr);
+
+    assert_neighbor_counter_label_is(&m_a, "Resolver neighbors: bound 0.0.0.0:8050");
+
+    assert_neighbor_counter_label_is(&m_b, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8050");
 }
 
 TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6WildCard)
@@ -512,7 +557,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
 
     ASSERT_EQ(-1, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &address));
     ASSERT_EQ(0, readCacheEntriesCounter(&m_a));
-    ASSERT_EQ(0, readCounterByTypeId(&m_a.counters, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID));
+    ASSERT_EQ(0, readNeighborCounter(&m_a));
 }
 
 TEST_F(NameResolverTest, DISABLED_shouldHandleDissection) // Useful for checking dissection formatting manually...

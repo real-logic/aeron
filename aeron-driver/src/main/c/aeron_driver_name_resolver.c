@@ -141,6 +141,7 @@ static int aeron_driver_name_resolver_resolve_bootstrap_neighbor(aeron_driver_na
             false,
             &driver_resolver->bootstrap_neighbor_addr))
         {
+            aeron_err_clear();
             return 0;
         }
     }

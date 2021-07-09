@@ -41,8 +41,8 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         throw TimeoutException(
             "Archive connect timeout: step=" + std::to_string(m_step) +
             (m_step < 2 ?
-                " publication.uri=" + m_publication->channel() :
-                " subscription.uri=" + m_subscription->channel()),
+                " publication.uri=" + (m_publication ? m_publication->channel() : "<undiscovered>") :
+                " subscription.uri=" + (m_subscription ? m_subscription->channel() : "<undiscovered>")),
             SOURCEINFO);
     }
 

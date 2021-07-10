@@ -365,7 +365,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         {
             sendResolutionFrameTo(byteBuffer, neighbor.socketAddress);
 
-            if (neighbor.socketAddress.equals(bootstrapNeighborAddress))
+            if (sendToBootstrap && neighbor.socketAddress.equals(bootstrapNeighborAddress))
             {
                 sendToBootstrap = false;
             }
@@ -383,7 +383,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
                 {
                     neighborsCounter.updateLabel(buildNeighborsCounterLabel(RESOLVER_NEIGHBORS_COUNTER_LABEL));
 
-                    // avoid sending resolution frame if already sent, because node is in the neighbor list
+                    // avoid sending resolution frame if new bootstrap is in the neighbors list
                     for (final Neighbor neighbor : neighborList)
                     {
                         if (neighbor.socketAddress.equals(bootstrapNeighborAddress))

@@ -267,8 +267,26 @@ protected:
     {
         auto result = readCounterLabelByTypeId(
             &resolver->counters_reader, AERON_COUNTER_NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID);
-        ASSERT_EQ(result.label_length, strlen(expected_label));
-        ASSERT_EQ(0, strncmp(expected_label, result.label, result.label_length));
+        EXPECT_EQ(result.label_length, strlen(expected_label));
+        ASSERT_EQ(0, strncmp(
+            expected_label, result.label,
+            result.label_length)) << "Expected: " << expected_label << ", actual: " << result.label;
+    }
+
+    static int ignore_node_a_lookup_function(
+        aeron_name_resolver_t *resolver,
+        const char *name,
+        const char *uri_param_name,
+        bool is_re_resolution,
+        const char **resolved_name)
+    {
+        if (0 == strncmp("localhost:8050", name, sizeof("localhost:8050")))
+        {
+            *resolved_name = nullptr;
+            return -1;
+        }
+        *resolved_name = name;
+        return 0;
     }
 
     friend std::ostream &operator<<(std::ostream &output, const NameResolverTest &t)
@@ -279,12 +297,6 @@ protected:
         return output;
     }
 
-    resolver_fields_t m_a = {};
-    resolver_fields_t m_b = {};
-    resolver_fields_t m_c = {};
-    aeron_clock_cache_t m_cached_clock = {};
-
-private:
     static void close(resolver_fields_t *resolver_fields)
     {
         if (nullptr != resolver_fields->context)
@@ -296,6 +308,11 @@ private:
             aeron_driver_context_close(resolver_fields->context);
         }
     }
+
+    resolver_fields_t m_a = {};
+    resolver_fields_t m_b = {};
+    resolver_fields_t m_c = {};
+    aeron_clock_cache_t m_cached_clock = {};
 };
 
 #define NAME_0 "server0"
@@ -390,7 +407,6 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
     ASSERT_NE(INADDR_ANY, in_addr_b->sin_addr.s_addr);
 
     assert_neighbor_counter_label_is(&m_a, "Resolver neighbors: bound 0.0.0.0:8050");
-
     assert_neighbor_counter_label_is(&m_b, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8050");
 }
 
@@ -483,6 +499,71 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
     ASSERT_LE(0, m_c.resolver.resolve_func(&m_c.resolver, "A", "endpoint", false, &resolved_address));
     ASSERT_LE(0, m_b.resolver.resolve_func(&m_b.resolver, "A", "endpoint", false, &resolved_address));
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "A", "endpoint", false, &resolved_address));
+}
+
+TEST_F(NameResolverTest, shouldUseAnotherNeighborIfCurrentBecomesUnavailable)
+{
+    int64_t timestamp_ms = INTMAX_C(8932472347945);
+    initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
+    initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050,test,localhost:8052");
+    initResolver(&m_c, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "C", "0.0.0.0:8052", "localhost:8050,x:y,localhost:8051");
+
+    int64_t deadline_ms = aeron_epoch_clock() + (5 * 1000);
+    while (2 > readNeighborCounter(&m_a) || 2 > readNeighborCounter(&m_b) || 2 > readNeighborCounter(&m_c))
+    {
+        timestamp_ms += 1000;
+        aeron_clock_update_cached_epoch_time(m_a.context->cached_clock, timestamp_ms);
+        aeron_clock_update_cached_epoch_time(m_b.context->cached_clock, timestamp_ms);
+        aeron_clock_update_cached_epoch_time(m_c.context->cached_clock, timestamp_ms);
+
+        int work_done;
+        do
+        {
+            work_done = 0;
+            work_done += m_c.resolver.do_work_func(&m_c.resolver, timestamp_ms);
+            ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
+
+            work_done += m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms);
+            ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
+
+            work_done += m_a.resolver.do_work_func(&m_a.resolver, timestamp_ms);
+            ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
+
+            aeron_micro_sleep(10000);
+            timestamp_ms += 10;
+
+            aeron_clock_update_cached_epoch_time(m_a.context->cached_clock, timestamp_ms);
+            aeron_clock_update_cached_epoch_time(m_b.context->cached_clock, timestamp_ms);
+            aeron_clock_update_cached_epoch_time(m_c.context->cached_clock, timestamp_ms);
+        }
+        while (0 != work_done);
+
+        ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for neighbors" << *this;
+    }
+
+
+    assert_neighbor_counter_label_is(&m_a, "Resolver neighbors: bound 0.0.0.0:8050");
+    assert_neighbor_counter_label_is(&m_b, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8050");
+    assert_neighbor_counter_label_is(&m_c, "Resolver neighbors: bound 0.0.0.0:8052 bootstrap 127.0.0.1:8050");
+
+    close(&m_a);
+    m_a.context = nullptr;
+
+    timestamp_ms += AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
+
+    m_b.resolver.lookup_func = ignore_node_a_lookup_function;
+    m_c.resolver.lookup_func = ignore_node_a_lookup_function;
+
+    timestamp_ms += AERON_NAME_RESOLVER_DRIVER_SELF_RESOLUTION_INTERVAL_MS;
+
+    m_c.resolver.do_work_func(&m_c.resolver, timestamp_ms);
+    ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
+
+    m_b.resolver.do_work_func(&m_b.resolver, timestamp_ms);
+    ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();
+
+    assert_neighbor_counter_label_is(&m_b, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8052");
+    assert_neighbor_counter_label_is(&m_c, "Resolver neighbors: bound 0.0.0.0:8052 bootstrap 127.0.0.1:8051");
 }
 
 TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)

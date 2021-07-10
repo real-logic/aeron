@@ -103,6 +103,7 @@ typedef struct aeron_driver_name_resolver_stct
     int64_t *error_counter;
 
     aeron_clock_cache_t *cached_clock;
+    aeron_counters_manager_t *counters_manager;
     aeron_position_t neighbor_counter;
     aeron_position_t cache_size_counter;
     aeron_distinct_error_log_t *error_log;
@@ -356,6 +357,7 @@ int aeron_driver_name_resolver_init(
     {
         goto error_cleanup;
     }
+    _driver_resolver->counters_manager = context->counters_manager;
 
     _driver_resolver->cache_size_counter.value_addr = aeron_counters_manager_addr(
         context->counters_manager, _driver_resolver->cache_size_counter.counter_id);
@@ -863,8 +865,12 @@ static int aeron_driver_name_resolver_send_self_resolutions(
 
             if (!aeron_driver_name_resolver_sockaddr_equals(&driver_resolver->bootstrap_neighbor_addr, &old_address))
             {
-                // FIXME: LABEL!
-//                neighborsCounter.updateLabel(buildNeighborsCounterLabel(RESOLVER_NEIGHBORS_COUNTER_LABEL));
+                const char *neighbor_counter_label = aeron_driver_name_resolver_build_neighbor_counter_label(driver_resolver);
+                aeron_counters_manager_update_label(
+                    driver_resolver->counters_manager,
+                    driver_resolver->neighbor_counter.counter_id,
+                    strlen(neighbor_counter_label),
+                    neighbor_counter_label);
 
                 // avoid sending resolution frame if new bootstrap is in the neighbors list
                 for (size_t k = 0; k < driver_resolver->neighbors.length; k++)

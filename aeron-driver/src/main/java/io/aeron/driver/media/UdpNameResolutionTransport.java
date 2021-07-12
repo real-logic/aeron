@@ -16,12 +16,13 @@
 package io.aeron.driver.media;
 
 import io.aeron.CommonContext;
-import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.NameResolver;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -167,23 +168,24 @@ public final class UdpNameResolutionTransport extends UdpChannelTransport
     /**
      * Get the {@link InetSocketAddress} for a host and port endpoint using the default name resolver.
      *
-     * @param hostAndPort to parse.
+     * @param hostAndPort  to parse.
+     * @param nameResolver to resolve a name to an {@link InetAddress}.
      * @return the resolved {@link InetSocketAddress} if successful or null if not.
      */
-    public static InetSocketAddress getInetSocketAddress(final String hostAndPort)
+    public static InetSocketAddress getInetSocketAddress(final String hostAndPort, final NameResolver nameResolver)
     {
         InetSocketAddress address = null;
 
         try
         {
             address = SocketAddressParser.parse(
-                hostAndPort, CommonContext.ENDPOINT_PARAM_NAME, false, DefaultNameResolver.INSTANCE);
+                hostAndPort, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
 
             if (address.isUnresolved())
             {
                 throw new UnknownHostException(
                     "unresolved - " + CommonContext.ENDPOINT_PARAM_NAME + "=" + hostAndPort +
-                    ", name-resolver=" + DefaultNameResolver.INSTANCE.getClass().getName());
+                    ", name-resolver=" + nameResolver.getClass().getName());
             }
         }
         catch (final UnknownHostException ex)

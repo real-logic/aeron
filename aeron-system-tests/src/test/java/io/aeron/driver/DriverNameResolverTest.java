@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron;
+package io.aeron.driver;
 
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
+import io.aeron.*;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
@@ -25,6 +24,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Supplier;
@@ -41,6 +42,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static org.agrona.concurrent.status.CountersReader.*;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class DriverNameResolverTest
@@ -291,6 +293,111 @@ public class DriverNameResolverTest
         awaitCounterValue("C", bCacheEntriesCounterId, 1);
     }
 
+    @Test
+    @InterruptAfter(10)
+    public void shouldUseFirstAvailableBootstrapNeighbor()
+    {
+        addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-A")
+            .resolverName("A")
+            .resolverInterface("0.0.0.0:8050"), testWatcher));
+
+        addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-B")
+            .resolverName("B")
+            .resolverInterface("0.0.0.0:8051")
+            .resolverBootstrapNeighbor("just:wrong,non_existing_host:8050,localhost:8050,localhost:8051"),
+            testWatcher));
+        startClients();
+
+        final int aNeighborsCounterId = awaitNeighborsCounterId("A");
+        final int bNeighborsCounterId = awaitNeighborsCounterId("B");
+
+        awaitCounterValue("A", aNeighborsCounterId, 1);
+        awaitCounterValue("B", bNeighborsCounterId, 1);
+        awaitCounterLabel("A", aNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8050");
+        awaitCounterLabel(
+            "B", bNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8050");
+    }
+
+    @SlowTest
+    @Test
+    @InterruptAfter(20)
+    public void shouldFallbackToAnotherBootstrapNeighborIfOneBecomesUnavailable() throws IOException
+    {
+        assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
+
+        final NameResolver bootstrapResolver = DriverNameResolver.bootstrapNameResolver;
+        try
+        {
+            final MutableBoolean resolveHostA = new MutableBoolean(true);
+            DriverNameResolver.bootstrapNameResolver = (name, uriParamName, isReResolution) ->
+                (resolveHostA.get() || !name.endsWith("A")) ?
+                    DefaultNameResolver.INSTANCE.resolve(
+                        name.substring(0, name.length() - 1), uriParamName, isReResolution) : null;
+
+            addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
+                .aeronDirectoryName(baseDir + "-A")
+                .resolverName("A")
+                .resolverInterface("0.0.0.0:8050"), testWatcher));
+
+            addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
+                .aeronDirectoryName(baseDir + "-B")
+                .resolverName("B")
+                .resolverInterface("0.0.0.0:8051")
+                .resolverBootstrapNeighbor("localhostA:8050,localhostB:8051"), testWatcher));
+
+            addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
+                .aeronDirectoryName(baseDir + "-C")
+                .resolverName("C")
+                .resolverInterface("0.0.0.0:8052")
+                .resolverBootstrapNeighbor("localhostA:8050,localhostB:8051"), testWatcher));
+            startClients();
+
+            final int aNeighborsCounterId = awaitNeighborsCounterId("A");
+            final int bNeighborsCounterId = awaitNeighborsCounterId("B");
+            final int cNeighborsCounterId = awaitNeighborsCounterId("C");
+
+            awaitCounterValue("A", aNeighborsCounterId, 2);
+            awaitCounterValue("B", bNeighborsCounterId, 2);
+            awaitCounterValue("C", cNeighborsCounterId, 2);
+            awaitCounterLabel("A", aNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8050");
+            awaitCounterLabel(
+                "B", bNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8050");
+            awaitCounterLabel(
+                "C", cNeighborsCounterId, "Resolver neighbors: bound 0.0.0.0:8052 bootstrap 127.0.0.1:8050");
+
+            closeDriver("A");
+            resolveHostA.set(false);
+
+            awaitCounterValue("B", bNeighborsCounterId, 1);
+            awaitCounterValue("C", cNeighborsCounterId, 1);
+            awaitCounterLabel("B", bNeighborsCounterId,
+                "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8051");
+            awaitCounterLabel("C", cNeighborsCounterId,
+                "Resolver neighbors: bound 0.0.0.0:8052 bootstrap 127.0.0.1:8051");
+
+            addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
+                .aeronDirectoryName(baseDir + "-D")
+                .resolverName("D")
+                .resolverInterface("0.0.0.0:8053")
+                .resolverBootstrapNeighbor("localhostA:8050,localhostB:8051"), testWatcher));
+            startClients();
+
+            final int dNeighborsCounterId = awaitNeighborsCounterId("D");
+
+            awaitCounterValue("B", bNeighborsCounterId, 2);
+            awaitCounterValue("C", cNeighborsCounterId, 2);
+            awaitCounterValue("D", dNeighborsCounterId, 2);
+            awaitCounterLabel("D", dNeighborsCounterId,
+                "Resolver neighbors: bound 0.0.0.0:8053 bootstrap 127.0.0.1:8051");
+        }
+        finally
+        {
+            DriverNameResolver.bootstrapNameResolver = bootstrapResolver;
+        }
+    }
+
     private void closeDriver(final String index)
     {
         clients.get(index).close();
@@ -387,6 +494,23 @@ public class DriverNameResolverTest
             () -> "Counter value: " + countersReader.getCounterValue(counterId) + ", expected: " + expectedValue;
 
         while (countersReader.getCounterValue(counterId) != expectedValue)
+        {
+            Tests.idle(SLEEP_50_MS, messageSupplier);
+            if (aeron.isClosed())
+            {
+                fail(messageSupplier.get());
+            }
+        }
+    }
+
+    private void awaitCounterLabel(final String name, final int counterId, final String expectedLabel)
+    {
+        final Aeron aeron = clients.get(name);
+        final CountersReader countersReader = aeron.countersReader();
+        final Supplier<String> messageSupplier =
+            () -> "Counter label: " + countersReader.getCounterLabel(counterId) + ", expected: " + expectedLabel;
+
+        while (!expectedLabel.equals(countersReader.getCounterLabel(counterId)))
         {
             Tests.idle(SLEEP_50_MS, messageSupplier);
             if (aeron.isClosed())

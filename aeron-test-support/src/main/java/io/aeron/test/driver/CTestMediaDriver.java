@@ -73,11 +73,11 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     public void close()
     {
-        final boolean interrupted = Thread.interrupted();
+        final boolean isInterrupted = Thread.interrupted();
         try
         {
-            final boolean terminateSignalSent = terminateDriver();
-            if (!terminateSignalSent || !aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
+            final boolean hasSentTerminateSignal = terminateDriver();
+            if (!hasSentTerminateSignal || !aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
             {
                 aeronMediaDriverProcess.destroyForcibly().waitFor(5, TimeUnit.SECONDS);
                 throw new RuntimeException("Failed to shutdown cleanly, forced close");
@@ -94,7 +94,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         }
         finally
         {
-            if (interrupted)
+            if (isInterrupted)
             {
                 Thread.currentThread().interrupt();
             }

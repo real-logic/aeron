@@ -557,6 +557,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         {
             LangUtil.rethrowUnchecked(t);
         }
+
         return null;
     }
 

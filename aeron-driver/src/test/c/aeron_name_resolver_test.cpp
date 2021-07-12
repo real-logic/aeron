@@ -123,7 +123,7 @@ protected:
     {
         int32_t type_id;
         size_t label_length;
-        char label[512];
+        char label[sizeof(aeron_counter_metadata_descriptor_t::label)];
     }
     counter_label_clientd_t;
 

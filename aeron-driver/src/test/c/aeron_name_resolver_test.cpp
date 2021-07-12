@@ -541,7 +541,6 @@ TEST_F(NameResolverTest, shouldUseAnotherNeighborIfCurrentBecomesUnavailable)
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for neighbors" << *this;
     }
 
-
     assert_neighbor_counter_label_is(&m_a, "Resolver neighbors: bound 0.0.0.0:8050");
     assert_neighbor_counter_label_is(&m_b, "Resolver neighbors: bound 0.0.0.0:8051 bootstrap 127.0.0.1:8050");
     assert_neighbor_counter_label_is(&m_c, "Resolver neighbors: bound 0.0.0.0:8052 bootstrap 127.0.0.1:8050");
@@ -568,7 +567,7 @@ TEST_F(NameResolverTest, shouldUseAnotherNeighborIfCurrentBecomesUnavailable)
 
 TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)
 {
-    uint8_t buffer[1024];
+    uint8_t buffer[1024] = { 0 };
     const char *hostname = "this.is.the.hostname";
     auto *resolution_header = (aeron_resolution_header_t *)&buffer[0];
     uint8_t flags = 0;
@@ -643,7 +642,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
 
 TEST_F(NameResolverTest, DISABLED_shouldHandleDissection) // Useful for checking dissection formatting manually...
 {
-    uint8_t buffer[65536];
+    uint8_t buffer[65536] = { 0 };
     initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", 0, "A", "[::1]:8050");
     const char *name = "ABCDEFGH";
 

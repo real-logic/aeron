@@ -31,7 +31,9 @@
 #if defined(AERON_COMPILER_GCC)
 
 #elif defined(AERON_COMPILER_MSVC)
+
 #include <intrin.h>
+
 #define __builtin_bswap32 _byteswap_ulong
 #define __builtin_bswap64 _byteswap_uint64
 #define __builtin_popcount __popcnt
@@ -58,7 +60,7 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = family_hint;
-    hints.ai_socktype = (IPPROTO_UDP == protocol) ? SOCK_DGRAM : SOCK_STREAM;
+    hints.ai_socktype = IPPROTO_UDP == protocol ? SOCK_DGRAM : SOCK_STREAM;
     hints.ai_protocol = protocol;
 
     int error, result = -1;
@@ -290,7 +292,7 @@ int aeron_lookup_interfaces(aeron_ifaddr_func_t func, void *clientd)
 int aeron_lookup_interfaces_from_ifaddrs(aeron_ifaddr_func_t func, void *clientd, struct ifaddrs *ifaddrs)
 {
     int result = 0;
-    for (struct ifaddrs *ifa = ifaddrs; ifa != NULL; ifa  = ifa->ifa_next)
+    for (struct ifaddrs *ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next)
     {
         if (NULL == ifa->ifa_addr)
         {

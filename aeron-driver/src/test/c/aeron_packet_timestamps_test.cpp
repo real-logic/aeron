@@ -87,7 +87,7 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValue)
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t*)buffer;
+        message_t *incoming = (message_t *)buffer;
         EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->padding);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_2);
@@ -149,7 +149,7 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesAtOffset)
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t*)buffer;
+        message_t *incoming = (message_t *)buffer;
         EXPECT_EQ(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->padding);
         EXPECT_NE(AERON_NULL_VALUE, incoming->timestamp_2);
@@ -207,7 +207,7 @@ TEST_F(PacketTimestampsTest, shouldNotPutTimestampInMessagesAtIfOffsetExceedsMes
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t*)buffer;
+        message_t *incoming = (message_t *)buffer;
         EXPECT_EQ(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(0, incoming->padding);
         EXPECT_EQ(0, incoming->timestamp_2);
@@ -320,7 +320,7 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValueWithMerged
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t*)buffer;
+        message_t *incoming = (message_t *)buffer;
         EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->padding);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_2);
@@ -433,7 +433,7 @@ TEST_F(PacketTimestampsTest, shouldPutTimestampInMessagesReservedValueWithNonMer
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t*)buffer;
+        message_t *incoming = (message_t *)buffer;
         EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->padding);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_2);

@@ -263,14 +263,14 @@ int aeron_udp_channel_transport_init(
 
     return 0;
 
-    error:
-        if (-1 != transport->fd)
-        {
-            aeron_close_socket(transport->fd);
-        }
+error:
+    if (-1 != transport->fd)
+    {
+        aeron_close_socket(transport->fd);
+    }
 
-        transport->fd = -1;
-        return -1;
+    transport->fd = -1;
+    return -1;
 }
 
 int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport)

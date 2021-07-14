@@ -55,7 +55,7 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
 {
     if (-1 == aeron_net_init())
     {
-        AERON_APPEND_ERR("unable to initialise network");
+        AERON_APPEND_ERR("%s", "failed to init networking");
         return -1;
     }
 

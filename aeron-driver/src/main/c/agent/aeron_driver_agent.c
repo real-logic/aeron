@@ -245,7 +245,7 @@ bool aeron_driver_agent_is_event_enabled(const aeron_driver_agent_event_t id)
     return is_valid_event_id(id) && log_events[id].enabled;
 }
 
-static void aeron_driver_agent_set_enabled_all_events(bool is_enabled)
+static void aeron_driver_agent_set_enabled_all_events(const bool is_enabled)
 {
     for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
@@ -257,7 +257,7 @@ static void aeron_driver_agent_set_enabled_all_events(bool is_enabled)
     }
 }
 
-static void aeron_driver_agent_set_enabled_admin_events(bool is_enabled)
+static void aeron_driver_agent_set_enabled_admin_events(const bool is_enabled)
 {
     log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION].enabled = is_enabled;
     log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION].enabled = is_enabled;
@@ -288,13 +288,13 @@ static void aeron_driver_agent_set_enabled_admin_events(bool is_enabled)
     log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE].enabled = is_enabled;
 }
 
-static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, bool is_enabled)
+static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, const bool is_enabled)
 {
     for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         if (type == log_events[i].type)
         {
-            log_events[i].enabled = true;
+            log_events[i].enabled = is_enabled;
         }
     }
 }
@@ -328,7 +328,7 @@ static aeron_driver_agent_event_t parse_event_name(const char *event_name)
     return event_id;
 }
 
-static bool aeron_driver_agent_events_set_enabled(char const **events, const int num_events, bool is_enabled)
+static bool aeron_driver_agent_events_set_enabled(char const **events, const int num_events, const bool is_enabled)
 {
     bool result = false;
     for (int i = num_events - 1; i >= 0; i--)

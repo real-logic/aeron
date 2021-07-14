@@ -53,7 +53,11 @@ __inline DWORD64 __builtin_popcountll(DWORD64 operand)
 
 int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, int family_hint, int protocol)
 {
-    aeron_net_init();
+    if (-1 == aeron_net_init())
+    {
+        AERON_APPEND_ERR("unable to initialise network");
+        return -1;
+    }
 
     struct addrinfo hints;
     struct addrinfo *info = NULL;

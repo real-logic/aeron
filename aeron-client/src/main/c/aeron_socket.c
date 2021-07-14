@@ -15,6 +15,7 @@
  */
 
 #include "aeron_socket.h"
+#include "util/aeron_error.h"
 
 #if defined(AERON_COMPILER_GCC)
 
@@ -22,8 +23,9 @@
 #include <unistd.h>
 #include <sys/socket.h>
 
-void aeron_net_init()
+int aeron_net_init()
 {
+    return 0;
 }
 
 int set_socket_non_blocking(aeron_socket_t fd)
@@ -63,7 +65,7 @@ void aeron_close_socket(aeron_socket_t socket)
 #include <iphlpapi.h>
 #include <stdio.h>
 
-void aeron_net_init()
+int aeron_net_init()
 {
     static int started = -1;
 
@@ -75,12 +77,14 @@ void aeron_net_init()
 
         if (0 != err)
         {
-            fprintf(stderr, "WSAStartup failed with error: %d\n", err);
-            return;
+            AERON_SET_ERR(err, "WSAStartup error=%d\n", err);
+            return -1;
         }
 
         started = 0;
     }
+
+    return 0;
 }
 
 int set_socket_non_blocking(aeron_socket_t fd)
@@ -278,8 +282,8 @@ ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
     if (SOCKET_ERROR == result)
     {
-        const int error = WSAGetLastError();
-        if (WSAEWOULDBLOCK == error || WSAECONNRESET == error)
+        const int err = WSAGetLastError();
+        if (WSAEWOULDBLOCK == err || WSAECONNRESET == err)
         {
             return 0;
         }
@@ -306,8 +310,8 @@ ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
     if (SOCKET_ERROR == result)
     {
-        const int error = WSAGetLastError();
-        if (WSAEWOULDBLOCK == error)
+        const int err = WSAGetLastError();
+        if (WSAEWOULDBLOCK == err)
         {
             return 0;
         }

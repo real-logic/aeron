@@ -368,7 +368,7 @@ int aeron_udp_channel_transport_recvmmsg(
                 break;
             }
 
-            AERON_SET_ERR(errno, "Failed to recvmmsg, fd: %d", transport->fd);
+            AERON_SET_ERR(err, "Failed to recvmmsg, fd: %d", transport->fd);
             return -1;
         }
 

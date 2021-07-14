@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
+import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -26,10 +27,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
-@Timeout(10)
 class AsyncResourceTest
 {
     private static final int STREAM_ID = 7777;
@@ -39,6 +40,7 @@ class AsyncResourceTest
     final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @Test
+    @Timeout(10)
     void shouldAddAsyncPublications()
     {
         final Aeron.Context clientCtx = new Aeron.Context()
@@ -81,6 +83,7 @@ class AsyncResourceTest
     }
 
     @Test
+    @Timeout(10)
     void shouldDetectInvalidUri()
     {
         final ErrorHandler mockClientErrorHandler = mock(ErrorHandler.class);
@@ -109,6 +112,8 @@ class AsyncResourceTest
     }
 
     @Test
+    @SlowTest
+    @Timeout(60)
     void shouldDetectUnknownHost()
     {
         final ErrorHandler mockClientErrorHandler = mock(ErrorHandler.class);
@@ -125,7 +130,7 @@ class AsyncResourceTest
         {
             final long registrationId = aeron.asyncAddPublication("aeron:udp?endpoint=wibble:1234", STREAM_ID);
 
-            verify(mockClientErrorHandler, timeout(5000)).onError(any(RegistrationException.class));
+            verify(mockClientErrorHandler, timeout(55_000)).onError(any(RegistrationException.class));
 
             assertFalse(aeron.isCommandActive(registrationId));
             assertFalse(aeron.hasActiveCommands());

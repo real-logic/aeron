@@ -281,10 +281,10 @@ public final class UdpChannel
      * Parse a buffer length for a given URI paramName with a format specified by
      * {@link SystemUtil#parseSize(String, String)}, clamping the range to 0 &lt;= x &lt;= Integer.MAX_VALUE.
      *
-     * @see SystemUtil#parseSize(String, String)
      * @param channelUri to get the value from
-     * @param paramName key for the parameter
+     * @param paramName  key for the parameter
      * @return value as an integer
+     * @see SystemUtil#parseSize(String, String)
      */
     public static int parseBufferLength(final ChannelUri channelUri, final String paramName)
     {
@@ -651,21 +651,9 @@ public final class UdpChannel
      */
     public String description()
     {
-        final StringBuilder builder = new StringBuilder("UdpChannel - ");
-        if (null != localInterface)
-        {
-            builder
-                .append("interface: ")
-                .append(localInterface.getDisplayName())
-                .append(", ");
-        }
-
-        builder
-            .append("localData: ").append(localData)
-            .append(", remoteData: ").append(remoteData)
-            .append(", ttl: ").append(multicastTtl);
-
-        return builder.toString();
+        return "localData: " + formatAddressAndPort(localData.getAddress(), localData.getPort()) +
+            ", remoteData: " + formatAddressAndPort(remoteData.getAddress(), remoteData.getPort()) +
+            ", ttl: " + multicastTtl;
     }
 
     /**

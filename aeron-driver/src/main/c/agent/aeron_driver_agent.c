@@ -1885,7 +1885,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         {
             aeron_driver_agent_name_resolver_resolve_log_header_t *hdr =
                 (aeron_driver_agent_name_resolver_resolve_log_header_t *)message;
-            char *address_str = "(null)";
+            char *address_str = "unknown-address";
             char address_buf[INET6_ADDRSTRLEN] = { 0 };
             uint8_t *resolver_name_ptr =
                 (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t);

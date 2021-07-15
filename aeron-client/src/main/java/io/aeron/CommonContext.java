@@ -346,7 +346,7 @@ public class CommonContext implements Cloneable
      * on a subscription.  The special value of 'reserved' can be used to insert into the reserved value
      * field.  Send timestamp is taken shortly before passing the message over to the configured transport bindings.
      */
-    public static final String SEND_TIMESTAMP_OFFSET_PARAM_NAME = "snd-ts-offset";
+    public static final String CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME = "channel-snd-ts-offset";
 
     /**
      * Placeholder value to use in URIs to specify that a timestamp should be stored in the reserved value

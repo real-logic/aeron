@@ -42,7 +42,7 @@ public class TimestampingSystemTest
     public static final String CHANNEL_WITH_MEDIA_TIMESTAMP =
         "aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=reserved";
     public static final String CHANNEL_WITH_CHANNEL_TIMESTAMPS =
-        "aeron:udp?endpoint=localhost:0|rcv-ts-offset=0|snd-ts-offset=8";
+        "aeron:udp?endpoint=localhost:0|rcv-ts-offset=0|channel-snd-ts-offset=8";
 
     @RegisterExtension
     public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
@@ -188,19 +188,19 @@ public class TimestampingSystemTest
         try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
-            aeron.addPublication("aeron:udp?endpoint=localhost:23436|snd-ts-offset=reserved", 1000);
+            aeron.addPublication("aeron:udp?endpoint=localhost:23436|channel-snd-ts-offset=reserved", 1000);
 
             assertThrows(
                 RegistrationException.class, () -> aeron.addPublication("aeron:udp?endpoint=localhost:23436", 1000));
             assertThrows(
                 RegistrationException.class,
-                () -> aeron.addPublication("aeron:udp?endpoint=localhost:23436|snd-ts-offset=8", 1000));
+                () -> aeron.addPublication("aeron:udp?endpoint=localhost:23436|channel-snd-ts-offset=8", 1000));
         }
     }
 
     @Test
     @InterruptAfter(10)
-    void shouldSupportSendTimestampsOnMdc()
+    void shouldSupportChannelSendTimestampsOnMdc()
     {
         final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
@@ -211,7 +211,7 @@ public class TimestampingSystemTest
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Publication mdcPub = aeron.addPublication(
-                "aeron:udp?control-mode=manual|snd-ts-offset=0", 1000);
+                "aeron:udp?control-mode=manual|channel-snd-ts-offset=0", 1000);
 
             final Subscription sub1 = aeron.addSubscription("aeron:udp?endpoint=localhost:23424", 1000);
             final Subscription sub2 = aeron.addSubscription("aeron:udp?endpoint=localhost:23425", 1000);

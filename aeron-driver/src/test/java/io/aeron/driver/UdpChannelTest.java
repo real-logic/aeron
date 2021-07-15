@@ -485,10 +485,10 @@ public class UdpChannelTest
     }
 
     @Test
-    void shouldParseSendAndReceiveTimestampOffsets()
+    void shouldParseChannelSendAndReceiveTimestampOffsets()
     {
         final UdpChannel channel = UdpChannel.parse(
-            "aeron:udp?endpoint=localhost:0|rcv-ts-offset=reserved|snd-ts-offset=8");
+            "aeron:udp?endpoint=localhost:0|rcv-ts-offset=reserved|channel-snd-ts-offset=8");
 
         assertEquals(UdpChannel.RESERVED_VALUE_OFFSET, channel.receiveTimestampOffset());
         assertEquals(8, channel.sendTimestampOffset());

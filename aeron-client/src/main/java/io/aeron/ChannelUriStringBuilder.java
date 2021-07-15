@@ -73,7 +73,7 @@ public final class ChannelUriStringBuilder
     private Integer receiverWindowLength;
     private String mediaReceiveTimestampOffset;
     private String receiveTimestampOffset;
-    private String sendTimestampOffset;
+    private String channelSendTimestampOffset;
 
     /**
      * Default constructor
@@ -133,7 +133,7 @@ public final class ChannelUriStringBuilder
         receiverWindowLength(channelUri);
         mediaReceiveTimestampOffset(channelUri);
         receiveTimestampOffset(channelUri);
-        sendTimestampOffset(channelUri);
+        channelSendTimestampOffset(channelUri);
     }
 
     /**
@@ -174,7 +174,7 @@ public final class ChannelUriStringBuilder
         receiverWindowLength = null;
         mediaReceiveTimestampOffset = null;
         receiveTimestampOffset = null;
-        sendTimestampOffset = null;
+        channelSendTimestampOffset = null;
 
         return this;
     }
@@ -1829,48 +1829,48 @@ public final class ChannelUriStringBuilder
      * @return current sendTimestampOffset value either as string representation of an integer index or the special value
      * 'reserved'
      */
-    public String sendTimestampOffset()
+    public String channelSendTimestampOffset()
     {
-        return sendTimestampOffset;
+        return channelSendTimestampOffset;
     }
 
     /**
-     * @see ChannelUriStringBuilder#sendTimestampOffset()
+     * @see ChannelUriStringBuilder#channelSendTimestampOffset()
      *
-     * @param sendTimestampOffset to use as the offset.
+     * @param channelSendTimestampOffset to use as the offset.
      * @return this for a fluent API
-     * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
+     * @throws IllegalArgumentException if the string is not null doesn't represent an int or the 'reserved' value.
      */
-    public ChannelUriStringBuilder sendTimestampOffset(final String sendTimestampOffset)
+    public ChannelUriStringBuilder channelSendTimestampOffset(final String channelSendTimestampOffset)
     {
-        if (null != sendTimestampOffset && !RESERVED_OFFSET.equals(sendTimestampOffset))
+        if (null != channelSendTimestampOffset && !RESERVED_OFFSET.equals(channelSendTimestampOffset))
         {
             try
             {
-                Integer.parseInt(sendTimestampOffset);
+                Integer.parseInt(channelSendTimestampOffset);
             }
             catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
-                    "sendTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "' found: " +
-                    sendTimestampOffset);
+                    "channelSendTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "' found: " +
+                    channelSendTimestampOffset);
             }
         }
 
-        this.sendTimestampOffset = sendTimestampOffset;
+        this.channelSendTimestampOffset = channelSendTimestampOffset;
         return this;
     }
 
     /**
-     * @see ChannelUriStringBuilder#sendTimestampOffset()
-     * @see ChannelUriStringBuilder#sendTimestampOffset(String)
+     * @see ChannelUriStringBuilder#channelSendTimestampOffset()
+     * @see ChannelUriStringBuilder#channelSendTimestampOffset(String)
      *
      * @param channelUri the existing URI to extract the sendTimestampOffset from
      * @return this for a fluent API
      */
-    public ChannelUriStringBuilder sendTimestampOffset(final ChannelUri channelUri)
+    public ChannelUriStringBuilder channelSendTimestampOffset(final ChannelUri channelUri)
     {
-        return sendTimestampOffset(channelUri.get(SEND_TIMESTAMP_OFFSET_PARAM_NAME));
+        return channelSendTimestampOffset(channelUri.get(CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME));
     }
 
     /**
@@ -2049,9 +2049,12 @@ public final class ChannelUriStringBuilder
             sb.append(RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME).append('=').append(receiveTimestampOffset).append('|');
         }
 
-        if (null != sendTimestampOffset)
+        if (null != channelSendTimestampOffset)
         {
-            sb.append(SEND_TIMESTAMP_OFFSET_PARAM_NAME).append('=').append(sendTimestampOffset).append('|');
+            sb.append(CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME)
+                .append('=')
+                .append(channelSendTimestampOffset)
+                .append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

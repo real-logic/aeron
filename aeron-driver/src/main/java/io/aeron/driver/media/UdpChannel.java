@@ -69,7 +69,7 @@ public final class UdpChannel
     private final ProtocolFamily protocolFamily;
     private final ChannelUri channelUri;
     private final int receiveTimestampOffset;
-    private final int sendTimestampOffset;
+    private final int channelSendTimestampOffset;
 
     private UdpChannel(final Context context)
     {
@@ -95,7 +95,7 @@ public final class UdpChannel
         socketSndbufLength = context.socketSndbufLength;
         receiverWindowLength = context.receiverWindowLength;
         receiveTimestampOffset = context.receiveTimestampOffset;
-        sendTimestampOffset = context.sendTimestampOffset;
+        channelSendTimestampOffset = context.channelSendTimestampOffset;
     }
 
     /**
@@ -277,8 +277,10 @@ public final class UdpChannel
                     .canonicalForm(canonicalise(null, localAddress, endpointVal, endpointAddress) + suffix);
             }
 
-            context.receiveTimestampOffset(parseTimestampOffset(channelUri, RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
-            context.sendTimestampOffset(parseTimestampOffset(channelUri, SEND_TIMESTAMP_OFFSET_PARAM_NAME));
+            context.receiveTimestampOffset(
+                parseTimestampOffset(channelUri, RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
+            context.channelSendTimestampOffset(
+                parseTimestampOffset(channelUri, CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME));
 
             return new UdpChannel(context);
         }
@@ -780,9 +782,9 @@ public final class UdpChannel
      *
      * @return true if send timestamps should be collected false otherwise.
      */
-    public boolean isSendTimestamping()
+    public boolean isChannelSendTimestampEnabled()
     {
-        return RESERVED_VALUE_OFFSET == sendTimestampOffset || 0 <= sendTimestampOffset;
+        return RESERVED_VALUE_OFFSET == channelSendTimestampOffset || 0 <= channelSendTimestampOffset;
     }
 
     /**
@@ -792,7 +794,7 @@ public final class UdpChannel
      */
     public int sendTimestampOffset()
     {
-        return sendTimestampOffset;
+        return channelSendTimestampOffset;
     }
 
     private static InetSocketAddress getMulticastControlAddress(final InetSocketAddress endpointAddress)
@@ -965,7 +967,7 @@ public final class UdpChannel
         ProtocolFamily protocolFamily;
         ChannelUri channelUri;
         int receiveTimestampOffset;
-        int sendTimestampOffset;
+        int channelSendTimestampOffset;
 
         Context uriStr(final String uri)
         {
@@ -1105,9 +1107,9 @@ public final class UdpChannel
             return this;
         }
 
-        Context sendTimestampOffset(final int sendTimestampOffset)
+        Context channelSendTimestampOffset(final int sendTimestampOffset)
         {
-            this.sendTimestampOffset = sendTimestampOffset;
+            this.channelSendTimestampOffset = sendTimestampOffset;
             return this;
         }
     }

@@ -137,7 +137,7 @@ public class ChannelUriStringBuilderTest
             "control-mode=manual|tags=2,4|alias=foo|cc=cubic|fc=min|reliable=false|ttl=16|mtu=8992|" +
             "term-length=1048576|init-term-id=5|term-offset=64|term-id=4353|session-id=2314234|gtag=3|linger=0|" +
             "sparse=true|eos=true|tether=false|group=false|ssc=true|so-sndbuf=8388608|so-rcvbuf=2097152|" +
-            "rcv-wnd=1048576|media-rcv-ts-offset=reserved|rcv-ts-offset=0|snd-ts-offset=8";
+            "rcv-wnd=1048576|media-rcv-ts-offset=reserved|rcv-ts-offset=0|channel-snd-ts-offset=8";
 
         final ChannelUri fromString = ChannelUri.parse(uri);
         final ChannelUri fromBuilder = ChannelUri.parse(new ChannelUriStringBuilder(uri).build());
@@ -163,8 +163,10 @@ public class ChannelUriStringBuilderTest
             IllegalArgumentException.class,
             () -> new ChannelUriStringBuilder().mediaReceiveTimestampOffset("breserved"));
         assertThrows(
-            IllegalArgumentException.class, () -> new ChannelUriStringBuilder().receiveTimestampOffset("breserved"));
+            IllegalArgumentException.class,
+            () -> new ChannelUriStringBuilder().receiveTimestampOffset("breserved"));
         assertThrows(
-            IllegalArgumentException.class, () -> new ChannelUriStringBuilder().sendTimestampOffset("breserved"));
+            IllegalArgumentException.class,
+            () -> new ChannelUriStringBuilder().channelSendTimestampOffset("breserved"));
     }
 }

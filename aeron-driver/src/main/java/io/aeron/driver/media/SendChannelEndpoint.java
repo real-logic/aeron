@@ -63,7 +63,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
-    private final boolean isSendTimestamping;
+    private final boolean isChannelSendTimestampEnabled;
     private final EpochNanoClock sendTimestampClock;
     private final UnsafeBuffer bufferForTimestamping = new UnsafeBuffer(new byte[0]);
     private final DataHeaderFlyweight flyweightForTimestamping = new DataHeaderFlyweight(bufferForTimestamping);
@@ -101,7 +101,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
 
         this.multiSndDestination = multiSndDestination;
-        this.isSendTimestamping = udpChannel.isSendTimestamping();
+        this.isChannelSendTimestampEnabled = udpChannel.isChannelSendTimestampEnabled();
         this.sendTimestampClock = context.sendTimestampClock();
     }
 
@@ -252,7 +252,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         int bytesSent = 0;
 
-        applySendTimestamp(buffer);
+        applyChannelSendTimestamp(buffer);
 
         if (null != sendDatagramChannel)
         {
@@ -285,9 +285,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
         return bytesSent;
     }
 
-    private void applySendTimestamp(final ByteBuffer buffer)
+    private void applyChannelSendTimestamp(final ByteBuffer buffer)
     {
-        if (isSendTimestamping && buffer.capacity() > DataHeaderFlyweight.HEADER_LENGTH)
+        if (isChannelSendTimestampEnabled && buffer.capacity() > DataHeaderFlyweight.HEADER_LENGTH)
         {
             bufferForTimestamping.wrap(buffer, buffer.position(), buffer.capacity());
             flyweightForTimestamping.wrap(bufferForTimestamping);

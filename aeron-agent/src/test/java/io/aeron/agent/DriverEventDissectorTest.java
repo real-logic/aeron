@@ -651,6 +651,25 @@ class DriverEventDissectorTest
     }
 
     @Test
+    void dissectResolveNullAddress() throws UnknownHostException
+    {
+        final String resolver = "myResolver";
+        final String hostname = "some-host";
+        final InetAddress address = null;
+
+        final int length = trailingStringLength(resolver, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(hostname, MAX_HOST_NAME_LENGTH) +
+            inetAddressLength(address);
+
+        DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, hostname, address);
+        final StringBuilder builder = new StringBuilder();
+        DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
+
+        assertThat(builder.toString(), endsWith(
+            "DRIVER: NAME_RESOLUTION_RESOLVE [31/31]: resolver=myResolver hostname=some-host address=unknown-address"));
+    }
+
+    @Test
     void dissectResolveWithReallyLongNames() throws UnknownHostException
     {
         final String longString = "testResolver.this.is.a.really.long.string.to.force.truncation.0000000000000000000" +

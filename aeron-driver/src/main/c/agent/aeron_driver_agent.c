@@ -245,7 +245,7 @@ bool aeron_driver_agent_is_event_enabled(const aeron_driver_agent_event_t id)
     return is_valid_event_id(id) && log_events[id].enabled;
 }
 
-static void aeron_driver_agent_set_enabled_all_events(bool is_enabled)
+static void aeron_driver_agent_set_enabled_all_events(const bool is_enabled)
 {
     for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
@@ -257,7 +257,7 @@ static void aeron_driver_agent_set_enabled_all_events(bool is_enabled)
     }
 }
 
-static void aeron_driver_agent_set_enabled_admin_events(bool is_enabled)
+static void aeron_driver_agent_set_enabled_admin_events(const bool is_enabled)
 {
     log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION].enabled = is_enabled;
     log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION].enabled = is_enabled;
@@ -288,13 +288,13 @@ static void aeron_driver_agent_set_enabled_admin_events(bool is_enabled)
     log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE].enabled = is_enabled;
 }
 
-static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, bool is_enabled)
+static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, const bool is_enabled)
 {
     for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         if (type == log_events[i].type)
         {
-            log_events[i].enabled = true;
+            log_events[i].enabled = is_enabled;
         }
     }
 }
@@ -328,7 +328,7 @@ static aeron_driver_agent_event_t parse_event_name(const char *event_name)
     return event_id;
 }
 
-static bool aeron_driver_agent_events_set_enabled(char const **events, const int num_events, bool is_enabled)
+static bool aeron_driver_agent_events_set_enabled(char const **events, const int num_events, const bool is_enabled)
 {
     bool result = false;
     for (int i = num_events - 1; i >= 0; i--)
@@ -656,7 +656,7 @@ void aeron_driver_agent_log_frame(
 {
     const int32_t copy_length = message_len < AERON_MAX_FRAME_LENGTH ? message_len : AERON_MAX_FRAME_LENGTH;
     const size_t command_length =
-        sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) + copy_length;
+        sizeof(aeron_driver_agent_frame_log_header_t) + msghdr->msg_namelen + copy_length;
     int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, msg_type_id, command_length);
     if (offset > 0)
     {
@@ -740,7 +740,7 @@ void aeron_driver_agent_incoming_msg(
     message.msg_name = addr;
     message.msg_control = NULL;
     message.msg_controllen = 0;
-    message.msg_namelen = sizeof(struct sockaddr_storage);
+    message.msg_namelen = AERON_ADDR_LEN(addr);
 
     aeron_driver_agent_log_frame(AERON_DRIVER_EVENT_FRAME_IN, &message, (int32_t)length, (int32_t)length);
 
@@ -800,7 +800,7 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
 void log_name_resolution_neighbor_change(const aeron_driver_agent_event_t id, const struct sockaddr_storage *addr)
 {
     int32_t offset = aeron_mpsc_rb_try_claim(
-        &logging_mpsc_rb, id, sizeof(aeron_driver_agent_log_header_t) + sizeof(struct sockaddr_storage));
+        &logging_mpsc_rb, id, sizeof(aeron_driver_agent_log_header_t) + AERON_ADDR_LEN(addr));
     if (offset > 0)
     {
         uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
@@ -809,7 +809,7 @@ void log_name_resolution_neighbor_change(const aeron_driver_agent_event_t id, co
         hdr->time_ns = aeron_nano_clock();
 
         ptr += sizeof(aeron_driver_agent_log_header_t);
-        memcpy(ptr, addr, sizeof(struct sockaddr_storage));
+        memcpy(ptr, addr, AERON_ADDR_LEN(addr));
 
         aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
     }
@@ -1500,35 +1500,6 @@ static const char *dissect_res_address(int8_t res_type, const uint8_t *address)
     return addr_buffer;
 }
 
-static const char *dissect_sockaddr(const struct sockaddr *addr)
-{
-    static char addr_buffer[128], buffer[256];
-    unsigned short port = 0;
-
-    if (AF_INET == addr->sa_family)
-    {
-        struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
-
-        inet_ntop(AF_INET, &addr4->sin_addr, addr_buffer, sizeof(addr_buffer));
-        port = ntohs(addr4->sin_port);
-    }
-    else if (AF_INET6 == addr->sa_family)
-    {
-        struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)addr;
-
-        inet_ntop(AF_INET6, &addr6->sin6_addr, addr_buffer, sizeof(addr_buffer));
-        port = ntohs(addr6->sin6_port);
-    }
-    else
-    {
-        snprintf(addr_buffer, sizeof(addr_buffer) - 1, "%s", "unknown");
-    }
-
-    snprintf(buffer, sizeof(buffer) - 1, "%s.%d", addr_buffer, port);
-
-    return buffer;
-}
-
 static const char *dissect_frame_type(int16_t type)
 {
     switch (type)
@@ -1769,16 +1740,19 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         case AERON_DRIVER_EVENT_FRAME_OUT:
         {
             aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)message;
-            const struct sockaddr *addr =
-                (const struct sockaddr *)((const char *)message + sizeof(aeron_driver_agent_frame_log_header_t));
+            struct sockaddr_storage *addr =
+                (struct sockaddr_storage *)((const char *)message + sizeof(aeron_driver_agent_frame_log_header_t));
             const char *frame =
                 (const char *)message + sizeof(aeron_driver_agent_frame_log_header_t) + hdr->sockaddr_len;
+            char addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+            const int addr_length = aeron_format_source_identity(addr_buf, sizeof(addr_buf), addr);
 
             fprintf(
                 logfp,
-                "%s: %s %s\n",
+                "%s: %.*s %s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, (size_t)hdr->message_len),
-                dissect_sockaddr(addr),
+                addr_length,
+                addr_buf,
                 dissect_frame(frame, (size_t)hdr->message_len));
             break;
         }
@@ -1835,12 +1809,21 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         case AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE:
         {
             aeron_driver_agent_on_endpoint_change_t *hdr = (aeron_driver_agent_on_endpoint_change_t *)message;
+            char local_addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+            const int local_addr_length = aeron_format_source_identity(
+                local_addr_buf, sizeof(local_addr_buf), &hdr->local_data);
+            char remote_addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+            const int remote_addr_length = aeron_format_source_identity(
+                remote_addr_buf, sizeof(remote_addr_buf), &hdr->remote_data);
+
             fprintf(
                 logfp,
-                "%s: localData: %s, remoteData: %s, ttl: %d\n",
+                "%s: localData: %.*s, remoteData: %.*s, ttl: %d\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
-                dissect_sockaddr((const struct sockaddr *)&hdr->local_data),
-                dissect_sockaddr((const struct sockaddr *)&hdr->remote_data),
+                local_addr_length,
+                local_addr_buf,
+                remote_addr_length,
+                remote_addr_buf,
                 hdr->multicast_ttl);
             break;
         }
@@ -1866,15 +1849,17 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         case AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED:
         {
             aeron_driver_agent_log_header_t *hdr = (aeron_driver_agent_log_header_t *)message;
-            const struct sockaddr *addr =
-                (const struct sockaddr *)((const char *)message +
-                    sizeof(aeron_driver_agent_untethered_subscription_state_change_log_header_t));
+            struct sockaddr_storage *addr =
+                (struct sockaddr_storage *)((const char *)message + sizeof(aeron_driver_agent_log_header_t));
+            char addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+            const int addr_length = aeron_format_source_identity(addr_buf, sizeof(addr_buf), addr);
 
             fprintf(
                 logfp,
-                "%s: %s\n",
+                "%s: %.*s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
-                dissect_sockaddr(addr));
+                addr_length,
+                addr_buf);
             break;
         }
 
@@ -1900,7 +1885,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         {
             aeron_driver_agent_name_resolver_resolve_log_header_t *hdr =
                 (aeron_driver_agent_name_resolver_resolve_log_header_t *)message;
-            char *address_str = "(null)";
+            char *address_str = "unknown-address";
             char address_buf[INET6_ADDRSTRLEN] = { 0 };
             uint8_t *resolver_name_ptr =
                 (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t);

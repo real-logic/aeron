@@ -48,7 +48,7 @@ typedef struct aeron_udp_channel_stct
     size_t socket_rcvbuf_length;
     size_t receiver_window_length;
     int32_t media_rcv_timestamp_offset;
-    int32_t receive_timestamp_offset;
+    int32_t channel_rcv_timestamp_offset;
     int32_t send_timestamp_offset;
 }
 aeron_udp_channel_t;
@@ -94,10 +94,10 @@ inline bool aeron_udp_channel_is_media_rcv_timestamps_enabled(aeron_udp_channel_
         0 <= channel->media_rcv_timestamp_offset;
 }
 
-inline bool aeron_udp_channel_is_receive_timestamping(aeron_udp_channel_t *channel)
+inline bool aeron_udp_channel_is_channel_rcv_timestamps_enabled(aeron_udp_channel_t *channel)
 {
-    return AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == channel->receive_timestamp_offset ||
-        0 <= channel->receive_timestamp_offset;
+    return AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == channel->channel_rcv_timestamp_offset ||
+        0 <= channel->channel_rcv_timestamp_offset;
 }
 
 inline bool aeron_udp_channel_is_send_timestamping(aeron_udp_channel_t *channel)

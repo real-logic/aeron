@@ -528,7 +528,7 @@ public:
 
         if (m_receiveTimestampOffset)
         {
-            sb << RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_receiveTimestampOffset << '|';
+            sb << CHANNEL_RCV_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_receiveTimestampOffset << '|';
         }
 
         if (m_sendTimestampOffset)

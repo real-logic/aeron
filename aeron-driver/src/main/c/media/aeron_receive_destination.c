@@ -61,9 +61,9 @@ int aeron_receive_destination_create(
         return -1;
     }
 
-    if (aeron_udp_channel_is_receive_timestamping(endpoint_channel))
+    if (aeron_udp_channel_is_channel_rcv_timestamps_enabled(endpoint_channel))
     {
-        _destination->transport.timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_RECEIVE_TIMESTAMP;
+        _destination->transport.timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_RCV_TIMESTAMP;
     }
 
     char local_sockaddr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];

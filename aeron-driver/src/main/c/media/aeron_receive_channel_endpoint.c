@@ -439,11 +439,11 @@ static void aeron_receive_channel_endpoint_apply_timestamps(
         aeron_timestamps_set_timestamp(rx_timestamp, offset, buffer, length);
     }
 
-    if ((AERON_UDP_CHANNEL_TRANSPORT_RECEIVE_TIMESTAMP & timestamp_flags) &&
+    if ((AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_RCV_TIMESTAMP & timestamp_flags) &&
         AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
         !aeron_publication_image_is_heartbeat(buffer, length))
     {
-        int32_t offset = endpoint_channel->receive_timestamp_offset;
+        int32_t offset = endpoint_channel->channel_rcv_timestamp_offset;
         struct timespec receive_timestamp;
         if (0 == aeron_clock_gettime_realtime(&receive_timestamp))
         {

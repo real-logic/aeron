@@ -165,11 +165,11 @@ static int aeron_udp_channel_verify_timestamp_offsets_do_not_overlap(aeron_udp_c
 {
     if (AERON_NULL_VALUE != channel->media_rcv_timestamp_offset)
     {
-        if (AERON_NULL_VALUE != channel->receive_timestamp_offset &&
-            abs(channel->media_rcv_timestamp_offset - channel->receive_timestamp_offset) < (int32_t)sizeof(int64_t))
+        if (AERON_NULL_VALUE != channel->channel_rcv_timestamp_offset &&
+            abs(channel->media_rcv_timestamp_offset - channel->channel_rcv_timestamp_offset) < (int32_t)sizeof(int64_t))
         {
             AERON_SET_ERR(
-                EINVAL, "%s and %s overlap", AERON_URI_MEDIA_RCV_TIMESTAMP_OFFSET_KEY, AERON_URI_RECEIVE_TIMESTAMP_OFFSET_KEY);
+                EINVAL, "%s and %s overlap", AERON_URI_MEDIA_RCV_TIMESTAMP_OFFSET_KEY, AERON_URI_CHANNEL_RCV_TIMESTAMP_OFFSET_KEY);
             return -1;
         }
 
@@ -182,12 +182,12 @@ static int aeron_udp_channel_verify_timestamp_offsets_do_not_overlap(aeron_udp_c
         }
     }
 
-    if (AERON_NULL_VALUE != channel->receive_timestamp_offset &&
+    if (AERON_NULL_VALUE != channel->channel_rcv_timestamp_offset &&
         AERON_NULL_VALUE != channel->send_timestamp_offset &&
         abs(channel->media_rcv_timestamp_offset - channel->send_timestamp_offset) < (int32_t)sizeof(int64_t))
     {
         AERON_SET_ERR(
-            EINVAL, "%s and %s overlap", AERON_URI_RECEIVE_TIMESTAMP_OFFSET_KEY, AERON_URI_SEND_TIMESTAMP_OFFSET_KEY);
+            EINVAL, "%s and %s overlap", AERON_URI_CHANNEL_RCV_TIMESTAMP_OFFSET_KEY, AERON_URI_SEND_TIMESTAMP_OFFSET_KEY);
         return -1;
     }
 
@@ -238,7 +238,7 @@ int aeron_udp_channel_parse(
     _channel->socket_sndbuf_length = 0;
     _channel->receiver_window_length = 0;
     _channel->media_rcv_timestamp_offset = AERON_NULL_VALUE;
-    _channel->receive_timestamp_offset = AERON_NULL_VALUE;
+    _channel->channel_rcv_timestamp_offset = AERON_NULL_VALUE;
     _channel->send_timestamp_offset = AERON_NULL_VALUE;
 
     if (_channel->uri.type != AERON_URI_UDP)
@@ -429,7 +429,7 @@ int aeron_udp_channel_parse(
     }
 
     if (aeron_driver_uri_get_timestamp_offset(
-        &_channel->uri, AERON_URI_RECEIVE_TIMESTAMP_OFFSET_KEY, &_channel->receive_timestamp_offset) < 0)
+        &_channel->uri, AERON_URI_CHANNEL_RCV_TIMESTAMP_OFFSET_KEY, &_channel->channel_rcv_timestamp_offset) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         goto error_cleanup;
@@ -482,7 +482,7 @@ extern size_t aeron_udp_channel_receiver_window(aeron_udp_channel_t *channel, si
 
 extern bool aeron_udp_channel_is_media_rcv_timestamps_enabled(aeron_udp_channel_t *channel);
 
-extern bool aeron_udp_channel_is_receive_timestamping(aeron_udp_channel_t *channel);
+extern bool aeron_udp_channel_is_channel_rcv_timestamps_enabled(aeron_udp_channel_t *channel);
 
 extern bool aeron_udp_channel_is_send_timestamping(aeron_udp_channel_t *channel);
 

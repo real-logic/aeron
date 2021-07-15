@@ -164,14 +164,14 @@ static bool aeron_driver_conductor_receive_endpoint_has_clashing_timestamp_offse
         return true;
     }
 
-    if (endpoint->conductor_fields.udp_channel->receive_timestamp_offset != channel->receive_timestamp_offset)
+    if (endpoint->conductor_fields.udp_channel->channel_rcv_timestamp_offset != channel->channel_rcv_timestamp_offset)
     {
         AERON_SET_ERR(
             EINVAL,
             "option conflicts with existing subscription: %s=%" PRId32 " %s",
-            AERON_URI_RECEIVE_TIMESTAMP_OFFSET_KEY,
-            channel->receive_timestamp_offset,
-            aeron_driver_uri_get_offset_info(channel->receive_timestamp_offset));
+            AERON_URI_CHANNEL_RCV_TIMESTAMP_OFFSET_KEY,
+            channel->channel_rcv_timestamp_offset,
+            aeron_driver_uri_get_offset_info(channel->channel_rcv_timestamp_offset));
         return true;
     }
 

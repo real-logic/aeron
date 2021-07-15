@@ -104,9 +104,9 @@ int aeron_send_channel_endpoint_create(
         return -1;
     }
 
-    if (aeron_udp_channel_is_send_timestamping(channel))
+    if (aeron_udp_channel_is_channel_snd_timestamps_enabled(channel))
     {
-        _endpoint->transport.timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_SEND_TIMESTAMP;
+        _endpoint->transport.timestamp_flags |= AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_SND_TIMESTAMP;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
@@ -227,7 +227,7 @@ void aeron_send_channel_endpoint_decref(void *clientd)
 
 void aeron_send_channel_apply_timestamps(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
 {
-    if (AERON_UDP_CHANNEL_TRANSPORT_SEND_TIMESTAMP & endpoint->transport.timestamp_flags)
+    if (AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_SND_TIMESTAMP & endpoint->transport.timestamp_flags)
     {
         struct timespec send_timestamp;
         aeron_clock_gettime_realtime(&send_timestamp);
@@ -236,7 +236,7 @@ void aeron_send_channel_apply_timestamps(aeron_send_channel_endpoint_t *endpoint
         {
             aeron_timestamps_set_timestamp(
                 &send_timestamp,
-                endpoint->conductor_fields.udp_channel->send_timestamp_offset,
+                endpoint->conductor_fields.udp_channel->channel_snd_timestamp_offset,
                 (uint8_t *)mmsghdr[i].msg_hdr.msg_iov[0].iov_base,
                 mmsghdr[i].msg_hdr.msg_iov[0].iov_len);
         }

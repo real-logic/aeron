@@ -533,7 +533,7 @@ public:
 
         if (m_sendTimestampOffset)
         {
-            sb << SEND_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_sendTimestampOffset << '|';
+            sb << CHANNEL_SND_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_sendTimestampOffset << '|';
         }
 
         std::string result = sb.str();

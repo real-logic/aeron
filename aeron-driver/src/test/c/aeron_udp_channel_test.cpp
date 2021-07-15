@@ -444,7 +444,7 @@ TEST_F(UdpChannelTest, shouldParseTimestampOffsets)
     ASSERT_EQ(0, parse_udp_channel(uri)) << aeron_errmsg();
 
     EXPECT_EQ(AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET, m_channel->media_rcv_timestamp_offset);
-    EXPECT_EQ(0, m_channel->send_timestamp_offset);
+    EXPECT_EQ(0, m_channel->channel_snd_timestamp_offset);
     EXPECT_EQ(8, m_channel->channel_rcv_timestamp_offset);
 }
 
@@ -455,7 +455,7 @@ TEST_F(UdpChannelTest, shouldDefaultTimestampOffsetsToMinusOne)
 
     EXPECT_EQ(AERON_NULL_VALUE, m_channel->media_rcv_timestamp_offset);
     EXPECT_EQ(AERON_NULL_VALUE, m_channel->channel_rcv_timestamp_offset);
-    EXPECT_EQ(AERON_NULL_VALUE, m_channel->send_timestamp_offset);
+    EXPECT_EQ(AERON_NULL_VALUE, m_channel->channel_snd_timestamp_offset);
 }
 
 TEST_F(UdpChannelTest, shouldValidateOffsetsDoNotOverlap)

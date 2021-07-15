@@ -65,7 +65,7 @@ constexpr const char SOCKET_RCVBUF_PARAM_NAME[] = "so-rcvbuf";
 constexpr const char RECEIVER_WINDOW_LENGTH_PARAM_NAME[] = "rcv-wnd";
 constexpr const char MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME[] = "media-rcv-ts-offset";
 constexpr const char CHANNEL_RCV_TIMESTAMP_OFFSET_PARAM_NAME[] = "channel-rcv-ts-offset";
-constexpr const char SEND_TIMESTAMP_OFFSET_PARAM_NAME[] = "channel-snd-ts-offset";
+constexpr const char CHANNEL_SND_TIMESTAMP_OFFSET_PARAM_NAME[] = "channel-snd-ts-offset";
 
 using namespace aeron::util;
 

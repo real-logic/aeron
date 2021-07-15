@@ -532,8 +532,8 @@ public final class MediaDriver implements AutoCloseable
         private int osMaxSocketRcvbufLength = Aeron.NULL_VALUE;
         private int osDefaultSocketSndbufLength = Aeron.NULL_VALUE;
         private int osMaxSocketSndbufLength = Aeron.NULL_VALUE;
-        private EpochNanoClock receiveTimestampClock;
-        private EpochNanoClock sendTimestampClock;
+        private EpochNanoClock channelReceiveTimestampClock;
+        private EpochNanoClock channelSendTimestampClock;
 
         /**
          * Perform a shallow copy of the object.
@@ -3210,23 +3210,23 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Clock used measure receive timestamps.
+         * Clock used record channel receive timestamps.
          *
          * @return a clock instance
          */
-        public EpochNanoClock receiveTimestampClock()
+        public EpochNanoClock channelReceiveTimestampClock()
         {
-            return receiveTimestampClock;
+            return channelReceiveTimestampClock;
         }
 
         /**
-         * Clock used measure send timestamps.
+         * Clock used record channel send timestamps.
          *
          * @return a clock instance
          */
-        public EpochNanoClock sendTimestampClock()
+        public EpochNanoClock channelSendTimestampClock()
         {
-            return sendTimestampClock;
+            return channelSendTimestampClock;
         }
 
         void resolveOsSocketBufLengths()
@@ -3404,14 +3404,14 @@ public final class MediaDriver implements AutoCloseable
                 nameResolver = DefaultNameResolver.INSTANCE;
             }
 
-            if (null == receiveTimestampClock)
+            if (null == channelReceiveTimestampClock)
             {
-                receiveTimestampClock = new SystemEpochNanoClock();
+                channelReceiveTimestampClock = new SystemEpochNanoClock();
             }
 
-            if (null == sendTimestampClock)
+            if (null == channelSendTimestampClock)
             {
-                sendTimestampClock = new SystemEpochNanoClock();
+                channelSendTimestampClock = new SystemEpochNanoClock();
             }
         }
 

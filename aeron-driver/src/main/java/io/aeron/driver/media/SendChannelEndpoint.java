@@ -102,7 +102,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         this.multiSndDestination = multiSndDestination;
         this.isChannelSendTimestampEnabled = udpChannel.isChannelSendTimestampEnabled();
-        this.sendTimestampClock = context.sendTimestampClock();
+        this.sendTimestampClock = context.channelSendTimestampClock();
     }
 
     /**

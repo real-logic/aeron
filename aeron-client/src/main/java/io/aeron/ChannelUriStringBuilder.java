@@ -1723,11 +1723,11 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Offset into a message to store the rx timestamp.  May also be the special value 'reserved' which means to
-     * store the timestamp in the reserved value field.
+     * Offset into a message to store the media receive timestamp.  May also be the special value 'reserved' which means
+     * to store the timestamp in the reserved value field.
      *
-     * @return current mediaReceiveTimestampOffset value either as string representation of an integer index or the special value
-     * 'reserved'
+     * @return current mediaReceiveTimestampOffset value either as string representation of an integer index or the
+     * special value 'reserved'
      */
     public String mediaReceiveTimestampOffset()
     {
@@ -1739,7 +1739,7 @@ public final class ChannelUriStringBuilder
      *
      * @param mediaReceiveTimestampOffset to use as the offset.
      * @return this for a fluent API
-     * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
+     * @throws IllegalArgumentException if the string is not null and doesn't represent an int or the 'reserved' value.
      */
     public ChannelUriStringBuilder mediaReceiveTimestampOffset(final String mediaReceiveTimestampOffset)
     {

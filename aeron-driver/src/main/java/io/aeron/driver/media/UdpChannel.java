@@ -778,9 +778,9 @@ public final class UdpChannel
     }
 
     /**
-     * Check if send timestamps should be recorded.
+     * Check if channel send timestamps should be recorded.
      *
-     * @return true if send timestamps should be collected false otherwise.
+     * @return true if channel send timestamps should be collected false otherwise.
      */
     public boolean isChannelSendTimestampEnabled()
     {
@@ -788,9 +788,9 @@ public final class UdpChannel
     }
 
     /**
-     * Offset to store the send timestamp in a user message.
+     * Offset to store the channel send timestamp in a user message.
      *
-     * @return offset of send timestamps
+     * @return offset of channel send timestamps
      */
     public int sendTimestampOffset()
     {

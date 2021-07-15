@@ -84,7 +84,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     private final CachedNanoClock cachedNanoClock;
     private final Long groupTag;
     private final boolean isChannelReceiveTimestampEnabled;
-    private final EpochNanoClock receiveTimestampClock;
+    private final EpochNanoClock channelReceiveTimestampClock;
 
     private final long receiverId;
     private InetSocketAddress currentControlAddress;
@@ -129,7 +129,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         multiRcvDestination = udpChannel.isManualControlMode() ? new MultiRcvDestination() : null;
         currentControlAddress = udpChannel.localControl();
 
-        receiveTimestampClock = context.receiveTimestampClock();
+        channelReceiveTimestampClock = context.channelReceiveTimestampClock();
         isChannelReceiveTimestampEnabled = udpChannel.isChannelReceiveTimestampEnabled();
     }
 
@@ -624,7 +624,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     {
         if (isChannelReceiveTimestampEnabled)
         {
-            final long timestampNs = receiveTimestampClock.nanoTime();
+            final long timestampNs = channelReceiveTimestampClock.nanoTime();
             final int offset = udpChannel.channelReceiveTimestampOffset();
             if (UdpChannel.RESERVED_VALUE_OFFSET == offset)
             {

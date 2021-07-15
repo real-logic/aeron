@@ -332,7 +332,7 @@ public class CommonContext implements Cloneable
      * This is only supported in the C media driver at the moment, using in the Java Media Driver will generate
      * an error.
      */
-    public static final String RX_TIMESTAMP_OFFSET_PARAM_NAME = "rx-ts-offset";
+    public static final String MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME = "media-rcv-ts-offset";
 
     /**
      * Parameter name of the offset for the receive timestamp to be inserted into the incoming message

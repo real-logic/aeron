@@ -39,8 +39,9 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class TimestampingSystemTest
 {
     public static final long SENTINEL_VALUE = -1L;
-    public static final String CHANNEL_WITH_RX_TIMESTAMP = "aeron:udp?endpoint=localhost:0|rx-ts-offset=reserved";
-    public static final String CHANNEL_WITH_SND_RCV_TIMESTAMPS =
+    public static final String CHANNEL_WITH_MEDIA_TIMESTAMP =
+        "aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=reserved";
+    public static final String CHANNEL_WITH_CHANNEL_TIMESTAMPS =
         "aeron:udp?endpoint=localhost:0|rcv-ts-offset=0|snd-ts-offset=8";
 
     @RegisterExtension
@@ -55,7 +56,7 @@ public class TimestampingSystemTest
     }
 
     @Test
-    void shouldErrorOnRxTimestampsInJavaDriver()
+    void shouldErrorOnMediaReceiveTimestampsInJavaDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
 
@@ -64,13 +65,13 @@ public class TimestampingSystemTest
         {
             assertThrows(
                 RegistrationException.class,
-                () -> aeron.addSubscription(CHANNEL_WITH_RX_TIMESTAMP, 1000));
+                () -> aeron.addSubscription(CHANNEL_WITH_MEDIA_TIMESTAMP, 1000));
         }
     }
 
     @Test
     @InterruptAfter(10)
-    void shouldSupportRxTimestampsInCDriver()
+    void shouldSupportMediaReceiveTimestampsInCDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunCMediaDriver());
 
@@ -79,7 +80,7 @@ public class TimestampingSystemTest
         try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
-            final Subscription sub = aeron.addSubscription(CHANNEL_WITH_RX_TIMESTAMP, 1000);
+            final Subscription sub = aeron.addSubscription(CHANNEL_WITH_MEDIA_TIMESTAMP, 1000);
 
             while (null == sub.resolvedEndpoint())
             {
@@ -121,14 +122,14 @@ public class TimestampingSystemTest
         try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
-            final Subscription sub = aeron.addSubscription(CHANNEL_WITH_SND_RCV_TIMESTAMPS, 1000);
+            final Subscription sub = aeron.addSubscription(CHANNEL_WITH_CHANNEL_TIMESTAMPS, 1000);
 
             while (null == sub.resolvedEndpoint())
             {
                 Tests.yieldingIdle("Failed to resolve endpoint");
             }
 
-            final String uri = new ChannelUriStringBuilder(CHANNEL_WITH_SND_RCV_TIMESTAMPS)
+            final String uri = new ChannelUriStringBuilder(CHANNEL_WITH_CHANNEL_TIMESTAMPS)
                 .endpoint(requireNonNull(sub.resolvedEndpoint()))
                 .build();
 

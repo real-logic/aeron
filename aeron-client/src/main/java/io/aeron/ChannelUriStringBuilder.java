@@ -71,7 +71,7 @@ public final class ChannelUriStringBuilder
     private Integer socketSndbufLength;
     private Integer socketRcvbufLength;
     private Integer receiverWindowLength;
-    private String rxTimestampOffset;
+    private String mediaReceiveTimestampOffset;
     private String receiveTimestampOffset;
     private String sendTimestampOffset;
 
@@ -131,7 +131,7 @@ public final class ChannelUriStringBuilder
         socketRcvbufLength(channelUri);
         socketSndbufLength(channelUri);
         receiverWindowLength(channelUri);
-        rxTimestampOffset(channelUri);
+        mediaReceiveTimestampOffset(channelUri);
         receiveTimestampOffset(channelUri);
         sendTimestampOffset(channelUri);
     }
@@ -172,7 +172,7 @@ public final class ChannelUriStringBuilder
         socketRcvbufLength = null;
         socketSndbufLength = null;
         receiverWindowLength = null;
-        rxTimestampOffset = null;
+        mediaReceiveTimestampOffset = null;
         receiveTimestampOffset = null;
         sendTimestampOffset = null;
 
@@ -1729,55 +1729,55 @@ public final class ChannelUriStringBuilder
      * @return current rxTimestampOffset value either as string representation of an integer index or the special value
      * 'reserved'
      */
-    public String rxTimestampOffset()
+    public String mediaReceiveTimestampOffset()
     {
-        return rxTimestampOffset;
+        return mediaReceiveTimestampOffset;
     }
 
     /**
-     * @see ChannelUriStringBuilder#rxTimestampOffset()
+     * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset()
      *
-     * @param rxTimestampOffset to use as the offset.
+     * @param mediaReceiveTimestampOffset to use as the offset.
      * @return this for a fluent API
      * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
      */
-    public ChannelUriStringBuilder rxTimestampOffset(final String rxTimestampOffset)
+    public ChannelUriStringBuilder mediaReceiveTimestampOffset(final String mediaReceiveTimestampOffset)
     {
-        if (null != rxTimestampOffset && !RESERVED_OFFSET.equals(rxTimestampOffset))
+        if (null != mediaReceiveTimestampOffset && !RESERVED_OFFSET.equals(mediaReceiveTimestampOffset))
         {
             try
             {
-                Integer.parseInt(rxTimestampOffset);
+                Integer.parseInt(mediaReceiveTimestampOffset);
             }
             catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
-                    "rxTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
+                    "mediaReceiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
             }
         }
 
-        this.rxTimestampOffset = rxTimestampOffset;
+        this.mediaReceiveTimestampOffset = mediaReceiveTimestampOffset;
         return this;
     }
 
     /**
-     * @see ChannelUriStringBuilder#rxTimestampOffset()
-     * @see ChannelUriStringBuilder#rxTimestampOffset(String)
+     * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset()
+     * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset(String)
      *
      * @param channelUri the existing URI to extract the rxTimestampOffset from
      * @return this for a fluent API
      */
-    public ChannelUriStringBuilder rxTimestampOffset(final ChannelUri channelUri)
+    public ChannelUriStringBuilder mediaReceiveTimestampOffset(final ChannelUri channelUri)
     {
-        return rxTimestampOffset(channelUri.get(RX_TIMESTAMP_OFFSET_PARAM_NAME));
+        return mediaReceiveTimestampOffset(channelUri.get(MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME));
     }
 
     /**
      * Offset into a message to store the receive timestamp.  May also be the special value 'reserved' which means to
      * store the timestamp in the reserved value field.
      *
-     * @return current receiveTimestampOffset value either as string representation of an integer index or the special value
-     * 'reserved'
+     * @return current receiveTimestampOffset value either as string representation of an integer index or the special
+     * value 'reserved'
      */
     public String receiveTimestampOffset()
     {
@@ -2036,9 +2036,12 @@ public final class ChannelUriStringBuilder
             sb.append(RECEIVER_WINDOW_LENGTH_PARAM_NAME).append('=').append(receiverWindowLength).append('|');
         }
 
-        if (null != rxTimestampOffset)
+        if (null != mediaReceiveTimestampOffset)
         {
-            sb.append(RX_TIMESTAMP_OFFSET_PARAM_NAME).append('=').append(rxTimestampOffset).append('|');
+            sb.append(MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME)
+                .append('=')
+                .append(mediaReceiveTimestampOffset)
+                .append('|');
         }
 
         if (null != receiveTimestampOffset)

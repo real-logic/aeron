@@ -83,7 +83,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     private final MultiRcvDestination multiRcvDestination;
     private final CachedNanoClock cachedNanoClock;
     private final Long groupTag;
-    private final boolean isReceiveTimestamping;
+    private final boolean isChannelReceiveTimestampEnabled;
     private final EpochNanoClock receiveTimestampClock;
 
     private final long receiverId;
@@ -130,7 +130,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         currentControlAddress = udpChannel.localControl();
 
         receiveTimestampClock = context.receiveTimestampClock();
-        isReceiveTimestamping = udpChannel.isReceiveTimestamping();
+        isChannelReceiveTimestampEnabled = udpChannel.isChannelReceiveTimestampEnabled();
     }
 
     /**
@@ -612,17 +612,20 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
-        applyReceiveTimestamp(header, buffer, length);
+        applyChannelReceiveTimestamp(header, buffer, length);
         updateTimeOfLastActivityNs(cachedNanoClock.nanoTime(), transportIndex);
         return dispatcher.onDataPacket(this, header, buffer, length, srcAddress, transportIndex);
     }
 
-    private void applyReceiveTimestamp(final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length)
+    private void applyChannelReceiveTimestamp(
+        final DataHeaderFlyweight header,
+        final UnsafeBuffer buffer,
+        final int length)
     {
-        if (isReceiveTimestamping)
+        if (isChannelReceiveTimestampEnabled)
         {
             final long timestampNs = receiveTimestampClock.nanoTime();
-            final int offset = udpChannel.receiveTimestampOffset();
+            final int offset = udpChannel.channelReceiveTimestampOffset();
             if (UdpChannel.RESERVED_VALUE_OFFSET == offset)
             {
                 header.reservedValue(timestampNs);

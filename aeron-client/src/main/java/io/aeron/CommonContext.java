@@ -339,7 +339,7 @@ public class CommonContext implements Cloneable
      * on a subscription.  The special value of 'reserved' can be used to insert into the reserved value
      * field.  Receive timestamp is taken as soon a possible after the packet is received by Aeron.
      */
-    public static final String RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME = "rcv-ts-offset";
+    public static final String CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME = "channel-rcv-ts-offset";
 
     /**
      * Parameter name of the offset for the send timestamp to be inserted into the incoming message

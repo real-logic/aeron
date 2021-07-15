@@ -42,7 +42,7 @@ public class TimestampingSystemTest
     public static final String CHANNEL_WITH_MEDIA_TIMESTAMP =
         "aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=reserved";
     public static final String CHANNEL_WITH_CHANNEL_TIMESTAMPS =
-        "aeron:udp?endpoint=localhost:0|rcv-ts-offset=0|channel-snd-ts-offset=8";
+        "aeron:udp?endpoint=localhost:0|channel-rcv-ts-offset=0|channel-snd-ts-offset=8";
 
     @RegisterExtension
     public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
@@ -172,13 +172,13 @@ public class TimestampingSystemTest
         try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
-            aeron.addSubscription("aeron:udp?endpoint=localhost:23436|rcv-ts-offset=reserved", 1000);
+            aeron.addSubscription("aeron:udp?endpoint=localhost:23436|channel-rcv-ts-offset=reserved", 1000);
 
             assertThrows(
                 RegistrationException.class, () -> aeron.addSubscription("aeron:udp?endpoint=localhost:23436", 1000));
             assertThrows(
                 RegistrationException.class,
-                () -> aeron.addSubscription("aeron:udp?endpoint=localhost:23436|rcv-ts-offset=8", 1000));
+                () -> aeron.addSubscription("aeron:udp?endpoint=localhost:23436|channel-rcv-ts-offset=8", 1000));
         }
     }
 
@@ -264,7 +264,7 @@ public class TimestampingSystemTest
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription mdsSub = aeron.addSubscription(
-                "aeron:udp?control-mode=manual|rcv-ts-offset=0", 1000);
+                "aeron:udp?control-mode=manual|channel-rcv-ts-offset=0", 1000);
 
             final Publication pub1 = aeron.addPublication("aeron:udp?endpoint=localhost:23424", 1000);
             final Publication pub2 = aeron.addPublication("aeron:udp?endpoint=localhost:23425", 1000);
@@ -322,7 +322,7 @@ public class TimestampingSystemTest
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription mdsSub = aeron.addSubscription(
-                "aeron:udp?control-mode=manual|rcv-ts-offset=0", 1000);
+                "aeron:udp?control-mode=manual|channel-rcv-ts-offset=0", 1000);
 
             final Publication pub1 = aeron.addExclusivePublication("aeron:udp?endpoint=localhost:23424", 1000);
             final String pub2Uri = new ChannelUriStringBuilder("aeron:udp?endpoint=localhost:23425")

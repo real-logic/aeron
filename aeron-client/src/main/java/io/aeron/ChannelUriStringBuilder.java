@@ -72,7 +72,7 @@ public final class ChannelUriStringBuilder
     private Integer socketRcvbufLength;
     private Integer receiverWindowLength;
     private String mediaReceiveTimestampOffset;
-    private String receiveTimestampOffset;
+    private String channelReceiveTimestampOffset;
     private String channelSendTimestampOffset;
 
     /**
@@ -132,7 +132,7 @@ public final class ChannelUriStringBuilder
         socketSndbufLength(channelUri);
         receiverWindowLength(channelUri);
         mediaReceiveTimestampOffset(channelUri);
-        receiveTimestampOffset(channelUri);
+        channelReceiveTimestampOffset(channelUri);
         channelSendTimestampOffset(channelUri);
     }
 
@@ -173,7 +173,7 @@ public final class ChannelUriStringBuilder
         socketSndbufLength = null;
         receiverWindowLength = null;
         mediaReceiveTimestampOffset = null;
-        receiveTimestampOffset = null;
+        channelReceiveTimestampOffset = null;
         channelSendTimestampOffset = null;
 
         return this;
@@ -1726,7 +1726,7 @@ public final class ChannelUriStringBuilder
      * Offset into a message to store the rx timestamp.  May also be the special value 'reserved' which means to
      * store the timestamp in the reserved value field.
      *
-     * @return current rxTimestampOffset value either as string representation of an integer index or the special value
+     * @return current mediaReceiveTimestampOffset value either as string representation of an integer index or the special value
      * 'reserved'
      */
     public String mediaReceiveTimestampOffset()
@@ -1764,7 +1764,7 @@ public final class ChannelUriStringBuilder
      * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset()
      * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset(String)
      *
-     * @param channelUri the existing URI to extract the rxTimestampOffset from
+     * @param channelUri the existing URI to extract the mediaReceiveTimestampOffset from
      * @return this for a fluent API
      */
     public ChannelUriStringBuilder mediaReceiveTimestampOffset(final ChannelUri channelUri)
@@ -1776,22 +1776,22 @@ public final class ChannelUriStringBuilder
      * Offset into a message to store the receive timestamp.  May also be the special value 'reserved' which means to
      * store the timestamp in the reserved value field.
      *
-     * @return current receiveTimestampOffset value either as string representation of an integer index or the special
+     * @return current channelReceiveTimestampOffset value either as string representation of an integer index or the special
      * value 'reserved'
      */
-    public String receiveTimestampOffset()
+    public String channelReceiveTimestampOffset()
     {
-        return receiveTimestampOffset;
+        return channelReceiveTimestampOffset;
     }
 
     /**
-     * @see ChannelUriStringBuilder#receiveTimestampOffset()
+     * @see ChannelUriStringBuilder#channelReceiveTimestampOffset()
      *
      * @param receiveTimestampOffset to use as the offset.
      * @return this for a fluent API
      * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
      */
-    public ChannelUriStringBuilder receiveTimestampOffset(final String receiveTimestampOffset)
+    public ChannelUriStringBuilder channelReceiveTimestampOffset(final String receiveTimestampOffset)
     {
         if (null != receiveTimestampOffset && !RESERVED_OFFSET.equals(receiveTimestampOffset))
         {
@@ -1806,20 +1806,20 @@ public final class ChannelUriStringBuilder
             }
         }
 
-        this.receiveTimestampOffset = receiveTimestampOffset;
+        this.channelReceiveTimestampOffset = receiveTimestampOffset;
         return this;
     }
 
     /**
-     * @see ChannelUriStringBuilder#receiveTimestampOffset()
-     * @see ChannelUriStringBuilder#receiveTimestampOffset(String)
+     * @see ChannelUriStringBuilder#channelReceiveTimestampOffset()
+     * @see ChannelUriStringBuilder#channelReceiveTimestampOffset(String)
      *
      * @param channelUri the existing URI to extract the receiveTimestampOffset from
      * @return this for a fluent API
      */
-    public ChannelUriStringBuilder receiveTimestampOffset(final ChannelUri channelUri)
+    public ChannelUriStringBuilder channelReceiveTimestampOffset(final ChannelUri channelUri)
     {
-        return receiveTimestampOffset(channelUri.get(RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
+        return channelReceiveTimestampOffset(channelUri.get(CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
     }
 
     /**
@@ -2044,9 +2044,12 @@ public final class ChannelUriStringBuilder
                 .append('|');
         }
 
-        if (null != receiveTimestampOffset)
+        if (null != channelReceiveTimestampOffset)
         {
-            sb.append(RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME).append('=').append(receiveTimestampOffset).append('|');
+            sb.append(CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME)
+                .append('=')
+                .append(channelReceiveTimestampOffset)
+                .append('|');
         }
 
         if (null != channelSendTimestampOffset)

@@ -68,7 +68,7 @@ public final class UdpChannel
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
     private final ChannelUri channelUri;
-    private final int receiveTimestampOffset;
+    private final int channelReceiveTimestampOffset;
     private final int channelSendTimestampOffset;
 
     private UdpChannel(final Context context)
@@ -94,7 +94,7 @@ public final class UdpChannel
         socketRcvbufLength = context.socketRcvbufLength;
         socketSndbufLength = context.socketSndbufLength;
         receiverWindowLength = context.receiverWindowLength;
-        receiveTimestampOffset = context.receiveTimestampOffset;
+        channelReceiveTimestampOffset = context.channelReceiveTimestampOffset;
         channelSendTimestampOffset = context.channelSendTimestampOffset;
     }
 
@@ -277,8 +277,8 @@ public final class UdpChannel
                     .canonicalForm(canonicalise(null, localAddress, endpointVal, endpointAddress) + suffix);
             }
 
-            context.receiveTimestampOffset(
-                parseTimestampOffset(channelUri, RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
+            context.channelReceiveTimestampOffset(
+                parseTimestampOffset(channelUri, CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
             context.channelSendTimestampOffset(
                 parseTimestampOffset(channelUri, CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME));
 
@@ -758,23 +758,23 @@ public final class UdpChannel
     }
 
     /**
-     * Offset to store the receive timestamp in a user message.
+     * Offset to store the channel receive timestamp in a user message.
      *
-     * @return offset of receive timestamps
+     * @return offset of channel receive timestamps
      */
-    public int receiveTimestampOffset()
+    public int channelReceiveTimestampOffset()
     {
-        return receiveTimestampOffset;
+        return channelReceiveTimestampOffset;
     }
 
     /**
-     * Check if receive timestamps should be recorded.
+     * Check if channel receive timestamps should be recorded.
      *
-     * @return true if receive timestamps should be collected false otherwise.
+     * @return true if channel receive timestamps should be collected false otherwise.
      */
-    public boolean isReceiveTimestamping()
+    public boolean isChannelReceiveTimestampEnabled()
     {
-        return RESERVED_VALUE_OFFSET == receiveTimestampOffset || 0 <= receiveTimestampOffset;
+        return RESERVED_VALUE_OFFSET == channelReceiveTimestampOffset || 0 <= channelReceiveTimestampOffset;
     }
 
     /**
@@ -966,7 +966,7 @@ public final class UdpChannel
         NetworkInterface localInterface;
         ProtocolFamily protocolFamily;
         ChannelUri channelUri;
-        int receiveTimestampOffset;
+        int channelReceiveTimestampOffset;
         int channelSendTimestampOffset;
 
         Context uriStr(final String uri)
@@ -1101,9 +1101,9 @@ public final class UdpChannel
             return this;
         }
 
-        Context receiveTimestampOffset(final int receiveTimestampOffset)
+        Context channelReceiveTimestampOffset(final int receiveTimestampOffset)
         {
-            this.receiveTimestampOffset = receiveTimestampOffset;
+            this.channelReceiveTimestampOffset = receiveTimestampOffset;
             return this;
         }
 

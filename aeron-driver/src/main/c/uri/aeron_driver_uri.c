@@ -458,7 +458,7 @@ int aeron_driver_uri_get_timestamp_offset(aeron_uri_t *uri, const char *key, int
     errno = 0 == errno && '\0' != *end_ptr ? EINVAL : 0;
     if (0 != errno)
     {
-        AERON_SET_ERR(errno, "Invalid %s: %s", AERON_URI_RX_TIMESTAMP_OFFSET_KEY, offset_str);
+        AERON_SET_ERR(errno, "Invalid %s: %s", AERON_URI_MEDIA_RCV_TIMESTAMP_OFFSET_KEY, offset_str);
         return -1;
     }
 

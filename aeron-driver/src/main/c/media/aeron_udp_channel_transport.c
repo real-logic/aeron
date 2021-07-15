@@ -40,7 +40,7 @@
 #include "aeron_driver_context.h"
 
 #if defined(__linux__)
-#define HAVE_RX_TIMESTAMPS
+#define HAS_MEDIA_RCV_TIMESTAMPS
 #include <linux/net_tstamp.h>
 #include <sys/ioctl.h>
 #include <linux/sockios.h>
@@ -54,9 +54,9 @@ struct mmsghdr
 };
 #endif
 
-static int aeron_udp_channel_transport_setup_rx_timestamps(aeron_udp_channel_transport_t *transport)
+static int aeron_udp_channel_transport_setup_media_rcv_timestamps(aeron_udp_channel_transport_t *transport)
 {
-#if defined(HAVE_RX_TIMESTAMPS)
+#if defined(HAS_MEDIA_RCV_TIMESTAMPS)
     uint32_t enable_timestamp = 1;
     if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_TIMESTAMPNS, &enable_timestamp, sizeof(enable_timestamp)) < 0)
     {
@@ -71,10 +71,8 @@ static int aeron_udp_channel_transport_setup_rx_timestamps(aeron_udp_channel_tra
         return -1;
     }
 
-    // The kernel does both falling back when required.  Essentially we just need a non-zero value for normal
-    // UDP.
-    transport->timestamp_flags =
-        AERON_UDP_CHANNEL_TRANSPORT_RX_TIMESTAMP_HW | AERON_UDP_CHANNEL_TRANSPORT_RX_TIMESTAMP_SW;
+    // The kernel does both falling back when required.  Essentially we just need a non-zero value for normal UDP.
+    transport->timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_MEDIA_RCV_TIMESTAMP;
 #endif
 
     return 0;
@@ -98,7 +96,7 @@ int aeron_udp_channel_transport_init(
 
     transport->fd = -1;
     transport->bindings_clientd = NULL;
-    transport->timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_RX_TIMESTAMP_NONE;
+    transport->timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_MEDIA_RCV_TIMESTAMP_NONE;
     for (size_t i = 0; i < AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS; i++)
     {
         transport->interceptor_clientds[i] = NULL;
@@ -248,7 +246,7 @@ int aeron_udp_channel_transport_init(
 
     if (is_rx_timestamping)
     {
-        if (aeron_udp_channel_transport_setup_rx_timestamps(transport) < 0)
+        if (aeron_udp_channel_transport_setup_media_rcv_timestamps(transport) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             goto error;

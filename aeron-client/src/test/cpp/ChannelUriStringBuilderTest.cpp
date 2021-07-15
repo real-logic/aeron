@@ -135,13 +135,13 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateOffsets)
     builder
         .media(UDP_MEDIA)
         .endpoint("localhost:9999")
-        .rxTimestampOffset("reserved")
+        .mediaReceiveTimestampOffset("reserved")
         .receiveTimestampOffset("0")
         .sendTimestampOffset("8");
 
     ASSERT_EQ(
         builder.build(),
-        "aeron:udp?endpoint=localhost:9999|rx-ts-offset=reserved|rcv-ts-offset=0|snd-ts-offset=8");
+        "aeron:udp?endpoint=localhost:9999|media-rcv-ts-offset=reserved|channel-rcv-ts-offset=0|channel-snd-ts-offset=8");
 }
 
 TEST(ChannelUriStringBuilderTest, shouldGenerateReceiveTimestampOffset)
@@ -151,24 +151,24 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateReceiveTimestampOffset)
     builder
         .media(UDP_MEDIA)
         .endpoint("localhost:9999")
-        .rxTimestampOffset("reserved");
+        .mediaReceiveTimestampOffset("reserved");
 
     ASSERT_EQ(
         builder.build(),
-        "aeron:udp?endpoint=localhost:9999|rx-ts-offset=reserved");
+        "aeron:udp?endpoint=localhost:9999|media-rcv-ts-offset=reserved");
 }
 
-TEST(ChannelUriStringBuilderTest, shouldGenerateRxTimestampOffset)
+TEST(ChannelUriStringBuilderTest, shouldGenerateMediaReceiveTimestampOffset)
 {
     ChannelUriStringBuilder builder;
 
     builder
         .media(UDP_MEDIA)
         .endpoint("localhost:9999")
-        .rxTimestampOffset("reserved");
+        .mediaReceiveTimestampOffset("reserved");
 
     ASSERT_EQ(
         builder.build(),
-        "aeron:udp?endpoint=localhost:9999|rx-ts-offset=reserved");
+        "aeron:udp?endpoint=localhost:9999|media-rcv-ts-offset=reserved");
 }
 

@@ -435,7 +435,7 @@ static void aeron_receive_channel_endpoint_apply_timestamps(
         AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
         !aeron_publication_image_is_heartbeat(buffer, length))
     {
-        int32_t offset = endpoint_channel->rx_timestamp_offset;
+        int32_t offset = endpoint_channel->media_rcv_timestamp_offset;
         aeron_timestamps_set_timestamp(rx_timestamp, offset, buffer, length);
     }
 

@@ -357,9 +357,9 @@ public:
         return *this;
     }
 
-    inline this_t &rxTimestampOffset(const std::string &rxTimestampOffset)
+    inline this_t &mediaReceiveTimestampOffset(const std::string &mediaReceiveTimestampOffset)
     {
-        m_rxTimestampOffset.reset(new std::string(rxTimestampOffset));
+        m_rxTimestampOffset.reset(new std::string(mediaReceiveTimestampOffset));
         return *this;
     }
 
@@ -523,7 +523,7 @@ public:
 
         if (m_rxTimestampOffset)
         {
-            sb << RX_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_rxTimestampOffset << '|';
+            sb << MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_rxTimestampOffset << '|';
         }
 
         if (m_receiveTimestampOffset)

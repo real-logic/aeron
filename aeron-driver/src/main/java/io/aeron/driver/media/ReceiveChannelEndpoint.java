@@ -612,23 +612,13 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
-        applyChannelReceiveTimestamp(buffer, length);
+        if (isChannelReceiveTimestampEnabled)
+        {
+            applyChannelReceiveTimestamp(buffer, length);
+        }
         updateTimeOfLastActivityNs(cachedNanoClock.nanoTime(), transportIndex);
 
         return dispatcher.onDataPacket(this, header, buffer, length, srcAddress, transportIndex);
-    }
-
-    private void applyChannelReceiveTimestamp(final UnsafeBuffer buffer, final int length)
-    {
-        if (isChannelReceiveTimestampEnabled && length > DataHeaderFlyweight.HEADER_LENGTH)
-        {
-            final int offset = udpChannel.channelReceiveTimestampOffset();
-
-            if (DataHeaderFlyweight.DATA_OFFSET + offset + BitUtil.SIZE_OF_LONG < length)
-            {
-                buffer.putLong(DataHeaderFlyweight.DATA_OFFSET + offset, channelReceiveTimestampClock.nanoTime());
-            }
-        }
     }
 
     /**
@@ -931,6 +921,19 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
             LocalSocketAddressStatus.updateBindAddress(
                 localSocketAddressIndicator, bindAddressAndPort, context.countersMetaDataBuffer());
             localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
+        }
+    }
+
+    private void applyChannelReceiveTimestamp(final UnsafeBuffer buffer, final int length)
+    {
+        if (length > DataHeaderFlyweight.HEADER_LENGTH)
+        {
+            final int offset = udpChannel.channelReceiveTimestampOffset();
+
+            if (DataHeaderFlyweight.DATA_OFFSET + offset + BitUtil.SIZE_OF_LONG < length)
+            {
+                buffer.putLong(DataHeaderFlyweight.DATA_OFFSET + offset, channelReceiveTimestampClock.nanoTime());
+            }
         }
     }
 }

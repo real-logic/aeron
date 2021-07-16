@@ -252,7 +252,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         int bytesSent = 0;
 
-        applyChannelSendTimestamp(buffer);
+        if (isChannelSendTimestampEnabled)
+        {
+            applyChannelSendTimestamp(buffer);
+        }
 
         if (null != sendDatagramChannel)
         {
@@ -283,31 +286,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
 
         return bytesSent;
-    }
-
-    private void applyChannelSendTimestamp(final ByteBuffer buffer)
-    {
-        if (isChannelSendTimestampEnabled)
-        {
-            final int length = buffer.remaining();
-
-            if (length > DataHeaderFlyweight.HEADER_LENGTH)
-            {
-                bufferForTimestamping.wrap(buffer, buffer.position(), length);
-
-                if (DataHeaderFlyweight.HDR_TYPE_DATA ==
-                    (bufferForTimestamping.getShort(DataHeaderFlyweight.TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF))
-                {
-                    final int offset = udpChannel.channelSendTimestampOffset();
-
-                    if (DataHeaderFlyweight.DATA_OFFSET + offset + SIZE_OF_LONG <= length)
-                    {
-                        bufferForTimestamping.putLong(
-                            DataHeaderFlyweight.DATA_OFFSET + offset, sendTimestampClock.nanoTime());
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -491,5 +469,27 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
 
         return true;
+    }
+
+    private void applyChannelSendTimestamp(final ByteBuffer buffer)
+    {
+        final int length = buffer.remaining();
+
+        if (length > DataHeaderFlyweight.HEADER_LENGTH)
+        {
+            bufferForTimestamping.wrap(buffer, buffer.position(), length);
+
+            if (DataHeaderFlyweight.HDR_TYPE_DATA ==
+                (bufferForTimestamping.getShort(DataHeaderFlyweight.TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF))
+            {
+                final int offset = udpChannel.channelSendTimestampOffset();
+
+                if (DataHeaderFlyweight.DATA_OFFSET + offset + SIZE_OF_LONG <= length)
+                {
+                    bufferForTimestamping.putLong(
+                        DataHeaderFlyweight.DATA_OFFSET + offset, sendTimestampClock.nanoTime());
+                }
+            }
+        }
     }
 }

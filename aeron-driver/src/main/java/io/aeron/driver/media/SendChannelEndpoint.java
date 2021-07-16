@@ -44,6 +44,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIV
 import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 import static io.aeron.status.ChannelEndpointStatus.status;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Objects.requireNonNull;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.collections.Hashing.compoundKey;
@@ -65,8 +66,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter statusIndicator;
     private final boolean isChannelSendTimestampEnabled;
     private final EpochNanoClock sendTimestampClock;
-    private final UnsafeBuffer bufferForTimestamping = new UnsafeBuffer(new byte[0]);
-    private final DataHeaderFlyweight flyweightForTimestamping = new DataHeaderFlyweight(bufferForTimestamping);
+    private final UnsafeBuffer bufferForTimestamping = new UnsafeBuffer();
     private AtomicCounter localSocketAddressIndicator;
 
     /**
@@ -287,24 +287,24 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     private void applyChannelSendTimestamp(final ByteBuffer buffer)
     {
-        if (isChannelSendTimestampEnabled && buffer.capacity() > DataHeaderFlyweight.HEADER_LENGTH)
+        if (isChannelSendTimestampEnabled)
         {
-            bufferForTimestamping.wrap(buffer, buffer.position(), buffer.capacity());
-            flyweightForTimestamping.wrap(bufferForTimestamping);
+            final int length = buffer.remaining();
 
-            if (DataHeaderFlyweight.HDR_TYPE_DATA == flyweightForTimestamping.headerType())
+            if (length > DataHeaderFlyweight.HEADER_LENGTH)
             {
-                final int offset = udpChannel.channelSendTimestampOffset();
-                final long timestampNs = sendTimestampClock.nanoTime();
+                bufferForTimestamping.wrap(buffer, buffer.position(), length);
 
-                if (UdpChannel.RESERVED_VALUE_OFFSET == offset)
+                if (DataHeaderFlyweight.HDR_TYPE_DATA ==
+                    (bufferForTimestamping.getShort(DataHeaderFlyweight.TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF))
                 {
-                    flyweightForTimestamping.reservedValue(timestampNs);
-                }
-                else if (
-                    flyweightForTimestamping.dataOffset() + offset + SIZE_OF_LONG <= bufferForTimestamping.capacity())
-                {
-                    bufferForTimestamping.putLong(flyweightForTimestamping.dataOffset() + offset, timestampNs);
+                    final int offset = udpChannel.channelSendTimestampOffset();
+
+                    if (DataHeaderFlyweight.DATA_OFFSET + offset + SIZE_OF_LONG <= length)
+                    {
+                        bufferForTimestamping.putLong(
+                            DataHeaderFlyweight.DATA_OFFSET + offset, sendTimestampClock.nanoTime());
+                    }
                 }
             }
         }

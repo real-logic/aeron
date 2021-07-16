@@ -612,28 +612,21 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
-        applyChannelReceiveTimestamp(header, buffer, length);
+        applyChannelReceiveTimestamp(buffer, length);
         updateTimeOfLastActivityNs(cachedNanoClock.nanoTime(), transportIndex);
+
         return dispatcher.onDataPacket(this, header, buffer, length, srcAddress, transportIndex);
     }
 
-    private void applyChannelReceiveTimestamp(
-        final DataHeaderFlyweight header,
-        final UnsafeBuffer buffer,
-        final int length)
+    private void applyChannelReceiveTimestamp(final UnsafeBuffer buffer, final int length)
     {
-        if (isChannelReceiveTimestampEnabled)
+        if (isChannelReceiveTimestampEnabled && length > DataHeaderFlyweight.HEADER_LENGTH)
         {
             final int offset = udpChannel.channelReceiveTimestampOffset();
-            final long timestampNs = channelReceiveTimestampClock.nanoTime();
 
-            if (UdpChannel.RESERVED_VALUE_OFFSET == offset)
+            if (DataHeaderFlyweight.DATA_OFFSET + offset + BitUtil.SIZE_OF_LONG < length)
             {
-                header.reservedValue(timestampNs);
-            }
-            else if (0 <= offset && header.dataOffset() + offset + BitUtil.SIZE_OF_LONG < length)
-            {
-                buffer.putLong(header.dataOffset() + offset, timestampNs);
+                buffer.putLong(DataHeaderFlyweight.DATA_OFFSET + offset, channelReceiveTimestampClock.nanoTime());
             }
         }
     }

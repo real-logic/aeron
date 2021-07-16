@@ -41,6 +41,9 @@ import static java.net.InetAddress.getByAddress;
  */
 public final class UdpChannel
 {
+    /**
+     * The offset from the beginning of a payload where the reserved value begins.
+     */
     public static final int RESERVED_VALUE_OFFSET = -8;
 
     private static final AtomicInteger UNIQUE_CANONICAL_FORM_VALUE = new AtomicInteger();

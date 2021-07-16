@@ -28,6 +28,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -71,6 +73,7 @@ public class TimestampingSystemTest
 
     @Test
     @InterruptAfter(10)
+    @EnabledOnOs(OS.LINUX)
     void shouldSupportMediaReceiveTimestampsInCDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunCMediaDriver());

@@ -26,7 +26,9 @@ void aeron_timestamps_set_timestamp(
 {
     aeron_data_header_t *data_header = (aeron_data_header_t *)frame;
 
-    if (frame_length > sizeof(aeron_data_header_t) && AERON_HDR_TYPE_DATA == data_header->frame_header.type)
+    if (frame_length >= sizeof(aeron_data_header_t) &&
+        AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
+        0 != data_header->frame_header.frame_length)
     {
         size_t body_length = frame_length - sizeof(aeron_data_header_t);
         uint8_t *body_buffer = frame + sizeof(aeron_data_header_t);

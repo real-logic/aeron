@@ -136,8 +136,8 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateOffsets)
         .media(UDP_MEDIA)
         .endpoint("localhost:9999")
         .mediaReceiveTimestampOffset("reserved")
-        .receiveTimestampOffset("0")
-        .sendTimestampOffset("8");
+        .channelReceiveTimestampOffset("0")
+        .channelSendTimestampOffset("8");
 
     ASSERT_EQ(
         builder.build(),

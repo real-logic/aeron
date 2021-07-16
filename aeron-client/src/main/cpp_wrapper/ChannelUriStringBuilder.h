@@ -66,9 +66,9 @@ public:
         m_socketSndbufLength.reset(nullptr);
         m_receiverWindowLength.reset(nullptr);
         m_isSessionIdTagged = false;
-        m_rxTimestampOffset.reset(nullptr);
-        m_receiveTimestampOffset.reset(nullptr);
-        m_sendTimestampOffset.reset(nullptr);
+        m_mediaReceiveTimestampOffset.reset(nullptr);
+        m_channelReceiveTimestampOffset.reset(nullptr);
+        m_channelSendTimestampOffset.reset(nullptr);
 
         return *this;
     }
@@ -359,19 +359,19 @@ public:
 
     inline this_t &mediaReceiveTimestampOffset(const std::string &rxTimestampOffset)
     {
-        m_rxTimestampOffset.reset(new std::string(rxTimestampOffset));
+        m_mediaReceiveTimestampOffset.reset(new std::string(rxTimestampOffset));
         return *this;
     }
 
-    inline this_t &receiveTimestampOffset(const std::string &receiveTimestampOffset)
+    inline this_t &channelReceiveTimestampOffset(const std::string &receiveTimestampOffset)
     {
-        m_receiveTimestampOffset.reset(new std::string(receiveTimestampOffset));
+        m_channelReceiveTimestampOffset.reset(new std::string(receiveTimestampOffset));
         return *this;
     }
 
-    inline this_t &sendTimestampOffset(const std::string &sendTimestampOffset)
+    inline this_t &channelSendTimestampOffset(const std::string &sendTimestampOffset)
     {
-        m_sendTimestampOffset.reset(new std::string(sendTimestampOffset));
+        m_channelSendTimestampOffset.reset(new std::string(sendTimestampOffset));
         return *this;
     }
 
@@ -521,19 +521,19 @@ public:
             sb << RECEIVER_WINDOW_LENGTH_PARAM_NAME << '=' << m_receiverWindowLength->value << '|';
         }
 
-        if (m_rxTimestampOffset)
+        if (m_mediaReceiveTimestampOffset)
         {
-            sb << MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_rxTimestampOffset << '|';
+            sb << MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_mediaReceiveTimestampOffset << '|';
         }
 
-        if (m_receiveTimestampOffset)
+        if (m_channelReceiveTimestampOffset)
         {
-            sb << CHANNEL_RCV_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_receiveTimestampOffset << '|';
+            sb << CHANNEL_RCV_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_channelReceiveTimestampOffset << '|';
         }
 
-        if (m_sendTimestampOffset)
+        if (m_channelSendTimestampOffset)
         {
-            sb << CHANNEL_SND_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_sendTimestampOffset << '|';
+            sb << CHANNEL_SND_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_channelSendTimestampOffset << '|';
         }
 
         std::string result = sb.str();
@@ -587,9 +587,9 @@ private:
     std::unique_ptr<Value> m_socketSndbufLength;
     std::unique_ptr<Value> m_socketRcvbufLength;
     std::unique_ptr<Value> m_receiverWindowLength;
-    std::unique_ptr<std::string> m_rxTimestampOffset;
-    std::unique_ptr<std::string> m_receiveTimestampOffset;
-    std::unique_ptr<std::string> m_sendTimestampOffset;
+    std::unique_ptr<std::string> m_mediaReceiveTimestampOffset;
+    std::unique_ptr<std::string> m_channelReceiveTimestampOffset;
+    std::unique_ptr<std::string> m_channelSendTimestampOffset;
     bool m_isSessionIdTagged = false;
 
     inline static std::string prefixTag(bool isTagged, Value &value)

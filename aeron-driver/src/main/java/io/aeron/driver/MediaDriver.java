@@ -3064,6 +3064,26 @@ public final class MediaDriver implements AutoCloseable
             return conductorCycleThresholdNs;
         }
 
+        /**
+         * Clock used record channel receive timestamps.
+         *
+         * @return a clock instance.
+         */
+        public EpochNanoClock channelReceiveTimestampClock()
+        {
+            return channelReceiveTimestampClock;
+        }
+
+        /**
+         * Clock used record channel send timestamps.
+         *
+         * @return a clock instance.
+         */
+        public EpochNanoClock channelSendTimestampClock()
+        {
+            return channelSendTimestampClock;
+        }
+
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
@@ -3207,26 +3227,6 @@ public final class MediaDriver implements AutoCloseable
         {
             resolveOsSocketBufLengths();
             return osMaxSocketSndbufLength;
-        }
-
-        /**
-         * Clock used record channel receive timestamps.
-         *
-         * @return a clock instance
-         */
-        public EpochNanoClock channelReceiveTimestampClock()
-        {
-            return channelReceiveTimestampClock;
-        }
-
-        /**
-         * Clock used record channel send timestamps.
-         *
-         * @return a clock instance
-         */
-        public EpochNanoClock channelSendTimestampClock()
-        {
-            return channelSendTimestampClock;
         }
 
         void resolveOsSocketBufLengths()

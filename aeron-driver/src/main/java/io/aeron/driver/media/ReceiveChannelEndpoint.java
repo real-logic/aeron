@@ -598,11 +598,11 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     /**
      * Callback to handle a received data packet.
      *
-     * @param header          of the data first frame.
-     * @param buffer          containing the data packet.
-     * @param length          of the data packet.
-     * @param srcAddress      from which the data packet was received.
-     * @param transportIndex  on which the packet was received.
+     * @param header         of the data first frame.
+     * @param buffer         containing the data packet.
+     * @param length         of the data packet.
+     * @param srcAddress     from which the data packet was received.
+     * @param transportIndex on which the packet was received.
      * @return number of bytes applied as a result of this action.
      */
     public int onDataPacket(
@@ -624,8 +624,9 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     {
         if (isChannelReceiveTimestampEnabled)
         {
-            final long timestampNs = channelReceiveTimestampClock.nanoTime();
             final int offset = udpChannel.channelReceiveTimestampOffset();
+            final long timestampNs = channelReceiveTimestampClock.nanoTime();
+
             if (UdpChannel.RESERVED_VALUE_OFFSET == offset)
             {
                 header.reservedValue(timestampNs);

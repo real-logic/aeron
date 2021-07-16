@@ -291,10 +291,12 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             bufferForTimestamping.wrap(buffer, buffer.position(), buffer.capacity());
             flyweightForTimestamping.wrap(bufferForTimestamping);
+
             if (DataHeaderFlyweight.HDR_TYPE_DATA == flyweightForTimestamping.headerType())
             {
-                final int offset = udpChannel.sendTimestampOffset();
+                final int offset = udpChannel.channelSendTimestampOffset();
                 final long timestampNs = sendTimestampClock.nanoTime();
+
                 if (UdpChannel.RESERVED_VALUE_OFFSET == offset)
                 {
                     flyweightForTimestamping.reservedValue(timestampNs);

@@ -850,7 +850,7 @@ public final class ChannelUriStringBuilder
 
     /**
      * Set the session id for a publication or restricted subscription from a formatted string.  Supports a format of
-     * either a string encoded signed 32 bit number or 'tag:' followed by a signed 64 bit value.
+     * either a string encoded signed 32-bit number or 'tag:' followed by a signed 64 bit value.
      *
      * @param sessionIdStr for the publication or a restricted subscription.
      * @return this for a fluent API.
@@ -920,8 +920,8 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Set the time a network publication will linger in nanoseconds after being drained. This time is so that tail loss
-     * can be recovered.
+     * Set the time a network publication will linger in nanoseconds after being drained. This time is so that tail
+     * loss can be recovered.
      *
      * @param lingerNs time for the publication after it is drained.
      * @return this for a fluent API.
@@ -960,8 +960,8 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Get the time a network publication will linger in nanoseconds after being drained. This time is so that tail loss
-     * can be recovered.
+     * Get the time a network publication will linger in nanoseconds after being drained. This time is so that tail
+     * loss can be recovered.
      *
      * @return the linger time in nanoseconds a publication will wait around after being drained.
      * @see CommonContext#LINGER_PARAM_NAME
@@ -1671,7 +1671,7 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Get the underling OS receive buffer length setting
+     * Get the underling OS receive buffer length setting.
      *
      * @return underlying OS receive buffer length setting or null if not specified.
      * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
@@ -1682,10 +1682,10 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Set the congestion control initial receiver window length for this channel.
+     * Set the flow control initial receiver window length for this channel.
      *
-     * @param receiverWindowLength initial receiver window length
-     * @return this for a fluent API
+     * @param receiverWindowLength initial receiver window length.
+     * @return this for a fluent API.
      * @see CommonContext#RECEIVER_WINDOW_LENGTH_PARAM_NAME
      */
     public ChannelUriStringBuilder receiverWindowLength(final Integer receiverWindowLength)
@@ -1695,11 +1695,11 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Set the congestion control initial receiver window length for this channel from an existing {@link ChannelUri},
+     * Set the flow control initial receiver window length for this channel from an existing {@link ChannelUri},
      * which may have a null value for this field.
      *
-     * @param channelUri to read the value from
-     * @return this for a fluent API
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
      * @see CommonContext#RECEIVER_WINDOW_LENGTH_PARAM_NAME
      */
     public ChannelUriStringBuilder receiverWindowLength(final ChannelUri channelUri)
@@ -1723,7 +1723,18 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Offset into a message to store the media receive timestamp.  May also be the special value 'reserved' which means
+     * Get the receiver window length to be used as the initial receiver window for flow control.
+     *
+     * @return receiver window length.
+     * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
+     */
+    public Integer receiverWindowLength()
+    {
+        return receiverWindowLength;
+    }
+
+    /**
+     * Offset into a message to store the media receive timestamp. May also be the special value 'reserved' which means
      * to store the timestamp in the reserved value field.
      *
      * @return current mediaReceiveTimestampOffset value either as string representation of an integer index or the
@@ -1735,7 +1746,8 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset()
+     * Offset into a message to store the media receive timestamp. May also be the special value 'reserved' which means
+     * to store the timestamp in the reserved value field.
      *
      * @param mediaReceiveTimestampOffset to use as the offset.
      * @return this for a fluent API
@@ -1761,8 +1773,8 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset()
-     * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset(String)
+     * Offset into a message to store the media receive timestamp. May also be the special value 'reserved' which means
+     * to store the timestamp in the reserved value field.
      *
      * @param channelUri the existing URI to extract the mediaReceiveTimestampOffset from
      * @return this for a fluent API
@@ -1773,11 +1785,11 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Offset into a message to store the receive timestamp.  May also be the special value 'reserved' which means to
-     * store the timestamp in the reserved value field.
+     * Offset into a message to store the channel receive timestamp. May also be the special value 'reserved' which
+     * means to store the timestamp in the reserved value field.
      *
-     * @return current channelReceiveTimestampOffset value either as string representation of an integer index or the special
-     * value 'reserved'
+     * @return current channelReceiveTimestampOffset value either as string representation of an integer index or
+     * the special value 'reserved'
      */
     public String channelReceiveTimestampOffset()
     {
@@ -1785,10 +1797,11 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * @see ChannelUriStringBuilder#channelReceiveTimestampOffset()
+     * Offset into a message to store the channel receive timestamp. May also be the special value 'reserved' which
+     * means to store the timestamp in the reserved value field.
      *
      * @param receiveTimestampOffset to use as the offset.
-     * @return this for a fluent API
+     * @return this for a fluent API.
      * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
      */
     public ChannelUriStringBuilder channelReceiveTimestampOffset(final String receiveTimestampOffset)
@@ -1802,7 +1815,7 @@ public final class ChannelUriStringBuilder
             catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
-                    "receiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
+                    "channelReceiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
             }
         }
 
@@ -1811,11 +1824,11 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * @see ChannelUriStringBuilder#channelReceiveTimestampOffset()
-     * @see ChannelUriStringBuilder#channelReceiveTimestampOffset(String)
+     * Offset into a message to store the channel receive timestamp. May also be the special value 'reserved' which
+     * means to store the timestamp in the reserved value field.
      *
-     * @param channelUri the existing URI to extract the receiveTimestampOffset from
-     * @return this for a fluent API
+     * @param channelUri the existing URI to extract the receiveTimestampOffset from.
+     * @return this for a fluent API.
      */
     public ChannelUriStringBuilder channelReceiveTimestampOffset(final ChannelUri channelUri)
     {
@@ -1823,11 +1836,11 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Offset into a message to store the send timestamp.  May also be the special value 'reserved' which means to
-     * store the timestamp in the reserved value field.
+     * Offset into a message to store the channel send timestamp. May also be the special value 'reserved' which means
+     * to store the timestamp in the reserved value field.
      *
-     * @return current sendTimestampOffset value either as string representation of an integer index or the special value
-     * 'reserved'
+     * @return current sendTimestampOffset value either as string representation of an integer index or the special
+     * value 'reserved'.
      */
     public String channelSendTimestampOffset()
     {
@@ -1835,10 +1848,11 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * @see ChannelUriStringBuilder#channelSendTimestampOffset()
+     * Offset into a message to store the channel send timestamp. May also be the special value 'reserved' which means
+     * to store the timestamp in the reserved value field.
      *
      * @param channelSendTimestampOffset to use as the offset.
-     * @return this for a fluent API
+     * @return this for a fluent API.
      * @throws IllegalArgumentException if the string is not null doesn't represent an int or the 'reserved' value.
      */
     public ChannelUriStringBuilder channelSendTimestampOffset(final String channelSendTimestampOffset)
@@ -1862,26 +1876,15 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * @see ChannelUriStringBuilder#channelSendTimestampOffset()
-     * @see ChannelUriStringBuilder#channelSendTimestampOffset(String)
+     * Offset into a message to store the channel send timestamp. May also be the special value 'reserved' which means
+     * to store the timestamp in the reserved value field.
      *
-     * @param channelUri the existing URI to extract the sendTimestampOffset from
+     * @param channelUri the existing URI to extract the channelSendTimestampOffset from.
      * @return this for a fluent API
      */
     public ChannelUriStringBuilder channelSendTimestampOffset(final ChannelUri channelUri)
     {
         return channelSendTimestampOffset(channelUri.get(CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME));
-    }
-
-    /**
-     * Get the receiver window length to be used as the initial receiver window for congestion control.
-     *
-     * @return receiver window length
-     * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
-     */
-    public Integer receiverWindowLength()
-    {
-        return receiverWindowLength;
     }
 
     /**

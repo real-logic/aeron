@@ -792,7 +792,7 @@ public final class UdpChannel
      *
      * @return offset of channel send timestamps
      */
-    public int sendTimestampOffset()
+    public int channelSendTimestampOffset()
     {
         return channelSendTimestampOffset;
     }

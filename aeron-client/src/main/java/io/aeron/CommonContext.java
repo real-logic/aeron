@@ -327,23 +327,25 @@ public class CommonContext implements Cloneable
 
     /**
      * Parameter name of the offset for the media receive timestamp to be inserted into the incoming message on a
-     * subscription.  The special value of 'reserved' can be used to insert into the reserved value field.  Media
-     * receive timestamp is taken as the earliest possible point after the packet is received from the network. This is
-     * only supported in the C media driver at the moment, using in the Java Media Driver will generate an error.
+     * subscription. The special value of 'reserved' can be used to insert into the reserved value field. Media
+     * receive timestamp is taken as the earliest possible point after the packet is received from the network. This
+     * is only supported in the C media driver at the moment, using in the Java Media Driver will generate an error.
      */
     public static final String MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME = "media-rcv-ts-offset";
 
     /**
      * Parameter name of the offset for the channel receive timestamp to be inserted into the incoming message on a
-     * subscription.  The special value of 'reserved' can be used to insert into the reserved value field.  Receive
-     * timestamp is taken as soon a possible after the packet is received by Aeron receiver from the transport bindings.
+     * subscription. The special value of 'reserved' can be used to insert into the reserved value field. Channel
+     * receive timestamp is taken as soon a possible after the packet is received by Aeron receiver from the transport
+     * bindings.
      */
     public static final String CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME = "channel-rcv-ts-offset";
 
     /**
-     * Parameter name of the offset for the send timestamp to be inserted into the incoming message
-     * on a subscription.  The special value of 'reserved' can be used to insert into the reserved value
-     * field.  Send timestamp is taken shortly before passing the message over to the configured transport bindings.
+     * Parameter name of the offset for the channel send timestamp to be inserted into the incoming message
+     * on a subscription. The special value of 'reserved' can be used to insert into the reserved value
+     * field. Channel send timestamp is taken shortly before passing the message over to the configured transport
+     * bindings.
      */
     public static final String CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME = "channel-snd-ts-offset";
 

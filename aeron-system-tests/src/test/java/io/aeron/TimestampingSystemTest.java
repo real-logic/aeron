@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.RegistrationException;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
@@ -90,11 +91,7 @@ public class TimestampingSystemTest
                 Tests.yieldingIdle("Failed to resolve endpoint");
             }
 
-            final String uri = new ChannelUriStringBuilder()
-                .media("udp")
-                .endpoint(sub.resolvedEndpoint())
-                .build();
-
+            final String uri = "aeron:udp?endpoint=" + sub.resolvedEndpoint();
             final Publication pub = aeron.addPublication(uri, 1000);
 
             Tests.awaitConnected(pub);
@@ -104,8 +101,9 @@ public class TimestampingSystemTest
                 Tests.yieldingIdle("Failed to offer message");
             }
 
-            while (1 > sub.poll(
-                (buffer1, offset, length, header) -> assertNotEquals(SENTINEL_VALUE, header.reservedValue()), 1))
+            final FragmentHandler fragmentHandler =
+                (buffer1, offset, length, header) -> assertNotEquals(SENTINEL_VALUE, header .reservedValue());
+            while (1 > sub.poll(fragmentHandler, 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
             }
@@ -150,12 +148,13 @@ public class TimestampingSystemTest
 
             final MutableLong receiveTimestamp = new MutableLong(SENTINEL_VALUE);
             final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
-            while (1 > sub.poll(
-                (buffer1, offset, length, header) ->
-                {
-                    receiveTimestamp.set(buffer1.getLong(offset));
-                    sendTimestamp.set(buffer1.getLong(offset + 8));
-                }, 1))
+            final FragmentHandler fragmentHandler = (buffer1, offset, length, header) ->
+            {
+                receiveTimestamp.set(buffer1.getLong(offset));
+                sendTimestamp.set(buffer1.getLong(offset + 8));
+            };
+
+            while (1 > sub.poll(fragmentHandler, 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
             }
@@ -234,14 +233,16 @@ public class TimestampingSystemTest
             }
 
             final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
-            while (1 > sub1.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            final FragmentHandler fragmentHandler =
+                (buffer1, offset, length, header) -> sendTimestamp.set(buffer1 .getLong(offset));
+            while (1 > sub1.poll(fragmentHandler, 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
             }
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
 
-            while (1 > sub2.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            while (1 > sub2.poll(fragmentHandler, 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
             }
@@ -292,14 +293,16 @@ public class TimestampingSystemTest
             }
 
             final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
-            while (1 > mdsSub.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            final FragmentHandler fragmentHandler =
+                (buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset));
+            while (1 > mdsSub.poll(fragmentHandler, 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
             }
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
 
-            while (1 > mdsSub.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            while (1 > mdsSub.poll(fragmentHandler, 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
             }
@@ -356,7 +359,9 @@ public class TimestampingSystemTest
                 Tests.yieldingIdle("Failed to offer message");
             }
 
-            while (1 > mdsSub.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            final FragmentHandler fragmentHandler =
+                (buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset));
+            while (1 > mdsSub.poll(fragmentHandler, 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
             }
@@ -376,7 +381,7 @@ public class TimestampingSystemTest
             }
 
             sendTimestamp.set(SENTINEL_VALUE);
-            while (1 > mdsSub.poll((buffer1, offset, length, header) -> sendTimestamp.set(buffer1.getLong(offset)), 1))
+            while (1 > mdsSub.poll(fragmentHandler, 1))
             {
                 Tests.yieldingIdle("Failed to receive message");
             }

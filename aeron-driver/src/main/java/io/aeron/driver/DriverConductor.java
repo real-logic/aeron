@@ -1370,7 +1370,7 @@ public final class DriverConductor implements Agent
         final UdpChannel udpChannel,
         final SendChannelEndpoint channelEndpoint)
     {
-        if (udpChannel.sendTimestampOffset() != channelEndpoint.udpChannel().sendTimestampOffset())
+        if (udpChannel.channelSendTimestampOffset() != channelEndpoint.udpChannel().channelSendTimestampOffset())
         {
             throw new InvalidChannelException(
                 "option conflicts with existing subscription: " + CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME + "=" +

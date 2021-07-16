@@ -491,7 +491,7 @@ public class UdpChannelTest
             "aeron:udp?endpoint=localhost:0|channel-rcv-ts-offset=reserved|channel-snd-ts-offset=8");
 
         assertEquals(UdpChannel.RESERVED_VALUE_OFFSET, channel.channelReceiveTimestampOffset());
-        assertEquals(8, channel.sendTimestampOffset());
+        assertEquals(8, channel.channelSendTimestampOffset());
     }
 
     @ParameterizedTest

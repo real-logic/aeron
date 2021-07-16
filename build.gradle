@@ -182,11 +182,6 @@ subprojects {
     }
 
     tasks.withType(JavaCompile) {
-        if (buildJavaVersion >= 16) {
-            // -- Workaround for https://github.com/gradle/gradle/issues/15538
-            options.forkOptions.jvmArgs.addAll( ['--add-opens', 'jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'] )
-            // --
-        }
         options.encoding = 'UTF-8'
         options.deprecation = true
     }

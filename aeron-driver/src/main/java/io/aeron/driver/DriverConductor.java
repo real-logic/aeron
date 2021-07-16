@@ -1374,7 +1374,7 @@ public final class DriverConductor implements Agent
         {
             throw new InvalidChannelException(
                 "option conflicts with existing subscription: " + CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME + "=" +
-                    udpChannel.channelReceiveTimestampOffset());
+                udpChannel.channelReceiveTimestampOffset());
         }
     }
 
@@ -1386,7 +1386,7 @@ public final class DriverConductor implements Agent
         {
             throw new InvalidChannelException(
                 "option conflicts with existing subscription: " + CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME + "=" +
-                    udpChannel.channelReceiveTimestampOffset());
+                udpChannel.channelReceiveTimestampOffset());
         }
     }
 

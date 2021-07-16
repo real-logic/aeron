@@ -438,6 +438,33 @@ TEST_F(UdpChannelTest, shouldParseReceiverWindow)
     ASSERT_EQ(8192u, m_channel->receiver_window_length);
 }
 
+TEST_F(UdpChannelTest, shouldParseTimestampOffsets)
+{
+    const char *uri = "aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=reserved|channel-snd-ts-offset=0|channel-rcv-ts-offset=8";
+    ASSERT_EQ(0, parse_udp_channel(uri)) << aeron_errmsg();
+
+    EXPECT_EQ(AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET, m_channel->media_rcv_timestamp_offset);
+    EXPECT_EQ(0, m_channel->channel_snd_timestamp_offset);
+    EXPECT_EQ(8, m_channel->channel_rcv_timestamp_offset);
+}
+
+TEST_F(UdpChannelTest, shouldDefaultTimestampOffsetsToMinusOne)
+{
+    const char *uri = "aeron:udp?endpoint=localhost:0";
+    ASSERT_EQ(0, parse_udp_channel(uri)) << aeron_errmsg();
+
+    EXPECT_EQ(AERON_NULL_VALUE, m_channel->media_rcv_timestamp_offset);
+    EXPECT_EQ(AERON_NULL_VALUE, m_channel->channel_rcv_timestamp_offset);
+    EXPECT_EQ(AERON_NULL_VALUE, m_channel->channel_snd_timestamp_offset);
+}
+
+TEST_F(UdpChannelTest, shouldValidateOffsetsDoNotOverlap)
+{
+    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=0|channel-rcv-ts-offset=7"));
+    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=0|channel-snd-ts-offset=7"));
+    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|channel-snd-ts-offset=0|channel-rcv-ts-offset=7"));
+}
+
 TEST_P(UdpChannelNamesParameterisedTest, DISABLED_shouldBeValid)
 {
     const char *endpoint_name = std::get<0>(GetParam());

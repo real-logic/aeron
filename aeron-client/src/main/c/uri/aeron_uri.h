@@ -65,8 +65,10 @@ aeron_uri_params_t;
 #define AERON_URI_SOCKET_SNDBUF_KEY "so-sndbuf"
 #define AERON_URI_SOCKET_RCVBUF_KEY "so-rcvbuf"
 #define AERON_URI_RECEIVER_WINDOW_KEY "rcv-wnd"
-#define AERON_URI_PACKET_TIMESTAMP_OFFSET "pkt-ts-offset"
-#define AERON_URI_PACKET_TIMESTAMP_OFFSET_RESERVED "reserved"
+#define AERON_URI_MEDIA_RCV_TIMESTAMP_OFFSET_KEY "media-rcv-ts-offset"
+#define AERON_URI_CHANNEL_RCV_TIMESTAMP_OFFSET_KEY "channel-rcv-ts-offset"
+#define AERON_URI_CHANNEL_SND_TIMESTAMP_OFFSET_KEY "channel-snd-ts-offset"
+#define AERON_URI_TIMESTAMP_OFFSET_RESERVED "reserved"
 #define AERON_URI_INVALID_TAG (-1)
 
 typedef struct aeron_udp_channel_params_stct

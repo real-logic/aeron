@@ -17,6 +17,7 @@
 #ifndef AERON_AERON_CLOCK_H
 #define AERON_AERON_CLOCK_H
 
+#include <time.h>
 #include "util/aeron_bitutil.h"
 
 typedef struct aeron_clock_cache_stct
@@ -76,5 +77,13 @@ int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t *cached_clock);
  * @return -1 if allocation fails, e.g. out of memory.
  */
 int aeron_clock_cache_alloc(aeron_clock_cache_t **cached_clock);
+
+/**
+ * Get the realtime from the system in timespec format
+ *
+ * @param time value to fill with the current time
+ * @return 0 on success, -1 on failure.
+ */
+int aeron_clock_gettime_realtime(struct timespec *time);
 
 #endif //AERON_AERON_CLOCK_H

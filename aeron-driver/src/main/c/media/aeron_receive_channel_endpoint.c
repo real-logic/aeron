@@ -26,6 +26,7 @@
 #include "collections/aeron_int64_to_ptr_hash_map.h"
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_driver_receiver.h"
+#include "aeron_timestamps.h"
 
 int aeron_receive_channel_endpoint_set_group_tag(
     aeron_receive_channel_endpoint_t *endpoint,
@@ -354,7 +355,7 @@ void aeron_receive_channel_endpoint_dispatch(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *packet_timestamp)
+    struct timespec *rx_timestamp)
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)receiver_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
@@ -374,7 +375,7 @@ void aeron_receive_channel_endpoint_dispatch(
             if (length >= sizeof(aeron_data_header_t))
             {
                 if (aeron_receive_channel_endpoint_on_data(
-                    endpoint, destination, buffer, length, addr, packet_timestamp) < 0)
+                    endpoint, destination, buffer, length, addr, rx_timestamp) < 0)
                 {
                     AERON_APPEND_ERR("%s", "receiver on_data");
                     aeron_driver_receiver_log_error(receiver);
@@ -421,37 +422,33 @@ void aeron_receive_channel_endpoint_dispatch(
     }
 }
 
-static void aeron_receive_channel_endpoint_set_packet_timestamp(
-    aeron_receive_channel_endpoint_t *endpoint,
-    struct timespec *packet_timestamp,
+static void aeron_receive_channel_endpoint_apply_timestamps(
+    aeron_udp_channel_t *endpoint_channel,
+    int32_t timestamp_flags,
+    struct timespec *rx_timestamp,
     uint8_t *buffer,
     size_t length)
 {
     aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
 
-    if (NULL == packet_timestamp ||
-        AERON_HDR_TYPE_PAD == data_header->frame_header.type ||
-        aeron_publication_image_is_heartbeat(buffer, length))
+    if (NULL != rx_timestamp &&
+        AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
+        !aeron_publication_image_is_heartbeat(buffer, length))
     {
-        return;
+        int32_t offset = endpoint_channel->media_rcv_timestamp_offset;
+        aeron_timestamps_set_timestamp(rx_timestamp, offset, buffer, length);
     }
 
-    uint8_t *body_buffer = buffer + sizeof(aeron_data_header_t);
-    size_t body_length = length - sizeof(aeron_data_header_t);
-
-    int64_t timestamp_ns =
-        (INT64_C(1000) * 1000 * 1000 * packet_timestamp->tv_sec) + packet_timestamp->tv_nsec;
-
-    int32_t offset = endpoint->conductor_fields.udp_channel->packet_timestamp_offset;
-    if (AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == offset)
+    if ((AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_RCV_TIMESTAMP & timestamp_flags) &&
+        AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
+        !aeron_publication_image_is_heartbeat(buffer, length))
     {
-        data_header->reserved_value = timestamp_ns;
-    }
-    else if (0 <= offset &&
-        offset <= (int32_t)(body_length - sizeof(timestamp_ns)) &&
-        offset <= (int32_t)((data_header->frame_header.frame_length - sizeof(*data_header)) - sizeof(timestamp_ns)))
-    {
-        memcpy(body_buffer + (size_t)offset, &timestamp_ns, sizeof(timestamp_ns));
+        int32_t offset = endpoint_channel->channel_rcv_timestamp_offset;
+        struct timespec receive_timestamp;
+        if (0 == aeron_clock_gettime_realtime(&receive_timestamp))
+        {
+            aeron_timestamps_set_timestamp(&receive_timestamp, offset, buffer, length);
+        }
     }
 }
 
@@ -461,14 +458,19 @@ int aeron_receive_channel_endpoint_on_data(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *packet_timestamp)
+    struct timespec *rx_timestamp)
 {
     aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
 
     aeron_receive_destination_update_last_activity_ns(
         destination, aeron_clock_cached_nano_time(endpoint->cached_clock));
 
-    aeron_receive_channel_endpoint_set_packet_timestamp(endpoint, packet_timestamp, buffer, length);
+    aeron_receive_channel_endpoint_apply_timestamps(
+        endpoint->conductor_fields.udp_channel,
+        destination->transport.timestamp_flags,
+        rx_timestamp,
+        buffer,
+        length);
 
     return aeron_data_packet_dispatcher_on_data(
         &endpoint->dispatcher, endpoint, destination, data_header, buffer, length, addr);

@@ -418,7 +418,7 @@ extern void aeron_udp_channel_incoming_interceptor_recv_func(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *packet_timestamp);
+    struct timespec *rx_timestamp);
 
 extern void aeron_udp_channel_incoming_interceptor_to_endpoint(
     void *interceptor_state,

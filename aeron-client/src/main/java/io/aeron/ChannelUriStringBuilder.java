@@ -71,6 +71,9 @@ public final class ChannelUriStringBuilder
     private Integer socketSndbufLength;
     private Integer socketRcvbufLength;
     private Integer receiverWindowLength;
+    private String mediaReceiveTimestampOffset;
+    private String channelReceiveTimestampOffset;
+    private String channelSendTimestampOffset;
 
     /**
      * Default constructor
@@ -128,6 +131,9 @@ public final class ChannelUriStringBuilder
         socketRcvbufLength(channelUri);
         socketSndbufLength(channelUri);
         receiverWindowLength(channelUri);
+        mediaReceiveTimestampOffset(channelUri);
+        channelReceiveTimestampOffset(channelUri);
+        channelSendTimestampOffset(channelUri);
     }
 
     /**
@@ -166,6 +172,9 @@ public final class ChannelUriStringBuilder
         socketRcvbufLength = null;
         socketSndbufLength = null;
         receiverWindowLength = null;
+        mediaReceiveTimestampOffset = null;
+        channelReceiveTimestampOffset = null;
+        channelSendTimestampOffset = null;
 
         return this;
     }
@@ -1714,6 +1723,157 @@ public final class ChannelUriStringBuilder
     }
 
     /**
+     * Offset into a message to store the media receive timestamp.  May also be the special value 'reserved' which means
+     * to store the timestamp in the reserved value field.
+     *
+     * @return current mediaReceiveTimestampOffset value either as string representation of an integer index or the
+     * special value 'reserved'
+     */
+    public String mediaReceiveTimestampOffset()
+    {
+        return mediaReceiveTimestampOffset;
+    }
+
+    /**
+     * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset()
+     *
+     * @param mediaReceiveTimestampOffset to use as the offset.
+     * @return this for a fluent API
+     * @throws IllegalArgumentException if the string is not null and doesn't represent an int or the 'reserved' value.
+     */
+    public ChannelUriStringBuilder mediaReceiveTimestampOffset(final String mediaReceiveTimestampOffset)
+    {
+        if (null != mediaReceiveTimestampOffset && !RESERVED_OFFSET.equals(mediaReceiveTimestampOffset))
+        {
+            try
+            {
+                Integer.parseInt(mediaReceiveTimestampOffset);
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException(
+                    "mediaReceiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
+            }
+        }
+
+        this.mediaReceiveTimestampOffset = mediaReceiveTimestampOffset;
+        return this;
+    }
+
+    /**
+     * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset()
+     * @see ChannelUriStringBuilder#mediaReceiveTimestampOffset(String)
+     *
+     * @param channelUri the existing URI to extract the mediaReceiveTimestampOffset from
+     * @return this for a fluent API
+     */
+    public ChannelUriStringBuilder mediaReceiveTimestampOffset(final ChannelUri channelUri)
+    {
+        return mediaReceiveTimestampOffset(channelUri.get(MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME));
+    }
+
+    /**
+     * Offset into a message to store the receive timestamp.  May also be the special value 'reserved' which means to
+     * store the timestamp in the reserved value field.
+     *
+     * @return current channelReceiveTimestampOffset value either as string representation of an integer index or the special
+     * value 'reserved'
+     */
+    public String channelReceiveTimestampOffset()
+    {
+        return channelReceiveTimestampOffset;
+    }
+
+    /**
+     * @see ChannelUriStringBuilder#channelReceiveTimestampOffset()
+     *
+     * @param receiveTimestampOffset to use as the offset.
+     * @return this for a fluent API
+     * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
+     */
+    public ChannelUriStringBuilder channelReceiveTimestampOffset(final String receiveTimestampOffset)
+    {
+        if (null != receiveTimestampOffset && !RESERVED_OFFSET.equals(receiveTimestampOffset))
+        {
+            try
+            {
+                Integer.parseInt(receiveTimestampOffset);
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException(
+                    "receiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
+            }
+        }
+
+        this.channelReceiveTimestampOffset = receiveTimestampOffset;
+        return this;
+    }
+
+    /**
+     * @see ChannelUriStringBuilder#channelReceiveTimestampOffset()
+     * @see ChannelUriStringBuilder#channelReceiveTimestampOffset(String)
+     *
+     * @param channelUri the existing URI to extract the receiveTimestampOffset from
+     * @return this for a fluent API
+     */
+    public ChannelUriStringBuilder channelReceiveTimestampOffset(final ChannelUri channelUri)
+    {
+        return channelReceiveTimestampOffset(channelUri.get(CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
+    }
+
+    /**
+     * Offset into a message to store the send timestamp.  May also be the special value 'reserved' which means to
+     * store the timestamp in the reserved value field.
+     *
+     * @return current sendTimestampOffset value either as string representation of an integer index or the special value
+     * 'reserved'
+     */
+    public String channelSendTimestampOffset()
+    {
+        return channelSendTimestampOffset;
+    }
+
+    /**
+     * @see ChannelUriStringBuilder#channelSendTimestampOffset()
+     *
+     * @param channelSendTimestampOffset to use as the offset.
+     * @return this for a fluent API
+     * @throws IllegalArgumentException if the string is not null doesn't represent an int or the 'reserved' value.
+     */
+    public ChannelUriStringBuilder channelSendTimestampOffset(final String channelSendTimestampOffset)
+    {
+        if (null != channelSendTimestampOffset && !RESERVED_OFFSET.equals(channelSendTimestampOffset))
+        {
+            try
+            {
+                Integer.parseInt(channelSendTimestampOffset);
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException(
+                    "channelSendTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "' found: " +
+                    channelSendTimestampOffset);
+            }
+        }
+
+        this.channelSendTimestampOffset = channelSendTimestampOffset;
+        return this;
+    }
+
+    /**
+     * @see ChannelUriStringBuilder#channelSendTimestampOffset()
+     * @see ChannelUriStringBuilder#channelSendTimestampOffset(String)
+     *
+     * @param channelUri the existing URI to extract the sendTimestampOffset from
+     * @return this for a fluent API
+     */
+    public ChannelUriStringBuilder channelSendTimestampOffset(final ChannelUri channelUri)
+    {
+        return channelSendTimestampOffset(channelUri.get(CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME));
+    }
+
+    /**
      * Get the receiver window length to be used as the initial receiver window for congestion control.
      *
      * @return receiver window length
@@ -1874,6 +2034,30 @@ public final class ChannelUriStringBuilder
         if (null != receiverWindowLength)
         {
             sb.append(RECEIVER_WINDOW_LENGTH_PARAM_NAME).append('=').append(receiverWindowLength).append('|');
+        }
+
+        if (null != mediaReceiveTimestampOffset)
+        {
+            sb.append(MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME)
+                .append('=')
+                .append(mediaReceiveTimestampOffset)
+                .append('|');
+        }
+
+        if (null != channelReceiveTimestampOffset)
+        {
+            sb.append(CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME)
+                .append('=')
+                .append(channelReceiveTimestampOffset)
+                .append('|');
+        }
+
+        if (null != channelSendTimestampOffset)
+        {
+            sb.append(CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME)
+                .append('=')
+                .append(channelSendTimestampOffset)
+                .append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

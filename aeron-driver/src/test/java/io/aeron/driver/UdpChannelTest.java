@@ -484,6 +484,16 @@ public class UdpChannelTest
         assertEquals(8192, udpChannelWithBufferSizes.receiverWindowLength());
     }
 
+    @Test
+    void shouldParseChannelSendAndReceiveTimestampOffsets()
+    {
+        final UdpChannel channel = UdpChannel.parse(
+            "aeron:udp?endpoint=localhost:0|channel-rcv-ts-offset=reserved|channel-snd-ts-offset=8");
+
+        assertEquals(UdpChannel.RESERVED_VALUE_OFFSET, channel.channelReceiveTimestampOffset());
+        assertEquals(8, channel.sendTimestampOffset());
+    }
+
     @ParameterizedTest
     @CsvSource({
         "NAME_ENDPOINT,192.168.1.1,,,UDP-127.0.0.1:0-NAME_ENDPOINT",

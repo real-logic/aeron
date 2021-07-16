@@ -40,7 +40,7 @@
 #include "aeron_driver_context.h"
 
 #if defined(__linux__)
-#define HAVE_PACKET_TIMESTAMPS
+#define HAS_MEDIA_RCV_TIMESTAMPS
 #include <linux/net_tstamp.h>
 #include <sys/ioctl.h>
 #include <linux/sockios.h>
@@ -54,9 +54,9 @@ struct mmsghdr
 };
 #endif
 
-static int aeron_udp_channel_transport_setup_packet_timestamps(aeron_udp_channel_transport_t *transport)
+static int aeron_udp_channel_transport_setup_media_rcv_timestamps(aeron_udp_channel_transport_t *transport)
 {
-#if defined(HAVE_PACKET_TIMESTAMPS)
+#if defined(HAS_MEDIA_RCV_TIMESTAMPS)
     uint32_t enable_timestamp = 1;
     if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_TIMESTAMPNS, &enable_timestamp, sizeof(enable_timestamp)) < 0)
     {
@@ -71,10 +71,8 @@ static int aeron_udp_channel_transport_setup_packet_timestamps(aeron_udp_channel
         return -1;
     }
 
-    // The kernel does both falling back when required.  Essentially we just need a non-zero value for normal
-    // UDP.
-    transport->packet_timestamp_flags =
-        AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_HW | AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_SW;
+    // The kernel does both falling back when required.  Essentially we just need a non-zero value for normal UDP.
+    transport->timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_MEDIA_RCV_TIMESTAMP;
 #endif
 
     return 0;
@@ -88,7 +86,7 @@ int aeron_udp_channel_transport_init(
     uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf,
-    bool is_packet_timestamping,
+    bool is_rx_timestamping,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity)
 {
@@ -98,7 +96,7 @@ int aeron_udp_channel_transport_init(
 
     transport->fd = -1;
     transport->bindings_clientd = NULL;
-    transport->packet_timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_PACKET_TIMESTAMP_NONE;
+    transport->timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_MEDIA_RCV_TIMESTAMP_NONE;
     for (size_t i = 0; i < AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS; i++)
     {
         transport->interceptor_clientds[i] = NULL;
@@ -246,9 +244,9 @@ int aeron_udp_channel_transport_init(
         }
     }
 
-    if (is_packet_timestamping)
+    if (is_rx_timestamping)
     {
-        if (aeron_udp_channel_transport_setup_packet_timestamps(transport) < 0)
+        if (aeron_udp_channel_transport_setup_media_rcv_timestamps(transport) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             goto error;
@@ -293,12 +291,12 @@ int aeron_udp_channel_transport_recvmmsg(
 {
 #if defined(HAVE_RECVMMSG)
     struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
-    struct timespec *packet_timestamp = NULL;
+    struct timespec *rx_timestamp = NULL;
     AERON_DECL_ALIGNED(
         char buf[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS][CMSG_SPACE(sizeof(struct timespec))],
         sizeof(struct cmsghdr));
 
-    if (transport->packet_timestamp_flags)
+    if (transport->timestamp_flags)
     {
         for (int i = 0; i < (int)vlen && i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
         {
@@ -334,7 +332,7 @@ int aeron_udp_channel_transport_recvmmsg(
                 cmsg->cmsg_type == SCM_TIMESTAMPNS &&
                 cmsg->cmsg_len == CMSG_LEN(sizeof(struct timespec)))
             {
-                packet_timestamp = (struct timespec *)CMSG_DATA(cmsg);
+                rx_timestamp = (struct timespec *)CMSG_DATA(cmsg);
             }
 
             recv_func(
@@ -346,7 +344,7 @@ int aeron_udp_channel_transport_recvmmsg(
                 msgvec[i].msg_hdr.msg_iov[0].iov_base,
                 msgvec[i].msg_len,
                 msgvec[i].msg_hdr.msg_name,
-                packet_timestamp);
+                rx_timestamp);
             *bytes_rcved += msgvec[i].msg_len;
         }
 

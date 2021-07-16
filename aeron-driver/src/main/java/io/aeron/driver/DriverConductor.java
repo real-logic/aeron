@@ -1349,6 +1349,7 @@ public final class DriverConductor implements Agent
         }
         else
         {
+            validateChannelSendTimestampOffset(udpChannel, channelEndpoint);
             validateMtuForSndbuf(params, channelEndpoint.socketSndbufLength(), ctx);
             validateChannelBufferLength(
                 SOCKET_RCVBUF_PARAM_NAME,
@@ -1363,6 +1364,30 @@ public final class DriverConductor implements Agent
         }
 
         return channelEndpoint;
+    }
+
+    private void validateChannelSendTimestampOffset(
+        final UdpChannel udpChannel,
+        final SendChannelEndpoint channelEndpoint)
+    {
+        if (udpChannel.sendTimestampOffset() != channelEndpoint.udpChannel().sendTimestampOffset())
+        {
+            throw new InvalidChannelException(
+                "option conflicts with existing subscription: " + CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME + "=" +
+                    udpChannel.channelReceiveTimestampOffset());
+        }
+    }
+
+    private void validateReceiveTimestampOffset(
+        final UdpChannel udpChannel,
+        final ReceiveChannelEndpoint channelEndpoint)
+    {
+        if (udpChannel.channelReceiveTimestampOffset() != channelEndpoint.udpChannel().channelReceiveTimestampOffset())
+        {
+            throw new InvalidChannelException(
+                "option conflicts with existing subscription: " + CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME + "=" +
+                    udpChannel.channelReceiveTimestampOffset());
+        }
     }
 
     private SendChannelEndpoint findExistingSendChannelEndpoint(final UdpChannel udpChannel)
@@ -1403,6 +1428,8 @@ public final class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint = findExistingReceiveChannelEndpoint(udpChannel);
         if (null != channelEndpoint)
         {
+            validateReceiveTimestampOffset(udpChannel, channelEndpoint);
+
             for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
             {
                 final SubscriptionLink subscription = subscriptionLinks.get(i);
@@ -1937,10 +1964,10 @@ public final class DriverConductor implements Agent
 
     private static void validateTimestampConfiguration(final UdpChannel udpChannel)
     {
-        if (null != udpChannel.channelUri().get(PACKET_TIMESTAMP_OFFSET))
+        if (null != udpChannel.channelUri().get(MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME))
         {
             throw new InvalidChannelException(
-                "Packet timestamps '" + PACKET_TIMESTAMP_OFFSET + "' are not supported in the Java driver");
+                "RX timestamps '" + MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME + "' are not supported in the Java driver");
         }
     }
 

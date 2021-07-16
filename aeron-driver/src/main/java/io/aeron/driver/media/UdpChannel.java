@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.driver.DefaultNameResolver;
@@ -27,6 +28,7 @@ import java.net.*;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.aeron.CommonContext.*;
 import static io.aeron.driver.media.NetworkUtil.*;
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
@@ -39,6 +41,8 @@ import static java.net.InetAddress.getByAddress;
  */
 public final class UdpChannel
 {
+    public static final int RESERVED_VALUE_OFFSET = -8;
+
     private static final AtomicInteger UNIQUE_CANONICAL_FORM_VALUE = new AtomicInteger();
     private static final InetSocketAddress ANY_IPV4 = new InetSocketAddress("0.0.0.0", 0);
     private static final InetSocketAddress ANY_IPV6 = new InetSocketAddress("::", 0);
@@ -64,6 +68,8 @@ public final class UdpChannel
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
     private final ChannelUri channelUri;
+    private final int channelReceiveTimestampOffset;
+    private final int channelSendTimestampOffset;
 
     private UdpChannel(final Context context)
     {
@@ -88,6 +94,8 @@ public final class UdpChannel
         socketRcvbufLength = context.socketRcvbufLength;
         socketSndbufLength = context.socketSndbufLength;
         receiverWindowLength = context.receiverWindowLength;
+        channelReceiveTimestampOffset = context.channelReceiveTimestampOffset;
+        channelSendTimestampOffset = context.channelSendTimestampOffset;
     }
 
     /**
@@ -269,11 +277,33 @@ public final class UdpChannel
                     .canonicalForm(canonicalise(null, localAddress, endpointVal, endpointAddress) + suffix);
             }
 
+            context.channelReceiveTimestampOffset(
+                parseTimestampOffset(channelUri, CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME));
+            context.channelSendTimestampOffset(
+                parseTimestampOffset(channelUri, CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME));
+
             return new UdpChannel(context);
         }
         catch (final Exception ex)
         {
             throw new InvalidChannelException(ex);
+        }
+    }
+
+    private static int parseTimestampOffset(final ChannelUri channelUri, final String timestampOffsetParamName)
+    {
+        final String offsetStr = channelUri.get(timestampOffsetParamName);
+        if (null == offsetStr)
+        {
+            return Aeron.NULL_VALUE;
+        }
+        else if (RESERVED_OFFSET.equals(offsetStr))
+        {
+            return RESERVED_VALUE_OFFSET;
+        }
+        else
+        {
+            return Integer.parseInt(offsetStr);
         }
     }
 
@@ -727,6 +757,46 @@ public final class UdpChannel
         return SocketAddressParser.parse(endpoint, uriParamName, isReResolution, nameResolver);
     }
 
+    /**
+     * Offset to store the channel receive timestamp in a user message.
+     *
+     * @return offset of channel receive timestamps
+     */
+    public int channelReceiveTimestampOffset()
+    {
+        return channelReceiveTimestampOffset;
+    }
+
+    /**
+     * Check if channel receive timestamps should be recorded.
+     *
+     * @return true if channel receive timestamps should be collected false otherwise.
+     */
+    public boolean isChannelReceiveTimestampEnabled()
+    {
+        return RESERVED_VALUE_OFFSET == channelReceiveTimestampOffset || 0 <= channelReceiveTimestampOffset;
+    }
+
+    /**
+     * Check if channel send timestamps should be recorded.
+     *
+     * @return true if channel send timestamps should be collected false otherwise.
+     */
+    public boolean isChannelSendTimestampEnabled()
+    {
+        return RESERVED_VALUE_OFFSET == channelSendTimestampOffset || 0 <= channelSendTimestampOffset;
+    }
+
+    /**
+     * Offset to store the channel send timestamp in a user message.
+     *
+     * @return offset of channel send timestamps
+     */
+    public int sendTimestampOffset()
+    {
+        return channelSendTimestampOffset;
+    }
+
     private static InetSocketAddress getMulticastControlAddress(final InetSocketAddress endpointAddress)
         throws UnknownHostException
     {
@@ -896,6 +966,8 @@ public final class UdpChannel
         NetworkInterface localInterface;
         ProtocolFamily protocolFamily;
         ChannelUri channelUri;
+        int channelReceiveTimestampOffset;
+        int channelSendTimestampOffset;
 
         Context uriStr(final String uri)
         {
@@ -1026,6 +1098,18 @@ public final class UdpChannel
         Context receiverWindowLength(final int receiverWindowLength)
         {
             this.receiverWindowLength = receiverWindowLength;
+            return this;
+        }
+
+        Context channelReceiveTimestampOffset(final int receiveTimestampOffset)
+        {
+            this.channelReceiveTimestampOffset = receiveTimestampOffset;
+            return this;
+        }
+
+        Context channelSendTimestampOffset(final int sendTimestampOffset)
+        {
+            this.channelSendTimestampOffset = sendTimestampOffset;
             return this;
         }
     }

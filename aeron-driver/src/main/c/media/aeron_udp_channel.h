@@ -47,7 +47,9 @@ typedef struct aeron_udp_channel_stct
     size_t socket_sndbuf_length;
     size_t socket_rcvbuf_length;
     size_t receiver_window_length;
-    int32_t packet_timestamp_offset;
+    int32_t media_rcv_timestamp_offset;
+    int32_t channel_rcv_timestamp_offset;
+    int32_t channel_snd_timestamp_offset;
 }
 aeron_udp_channel_t;
 
@@ -86,10 +88,22 @@ inline size_t aeron_udp_channel_socket_so_rcvbuf(aeron_udp_channel_t *channel, s
     return 0 != channel->socket_rcvbuf_length ? channel->socket_rcvbuf_length : default_so_rcvbuf;
 }
 
-inline bool aeron_udp_channel_is_packet_timestamping(aeron_udp_channel_t *channel)
+inline bool aeron_udp_channel_is_media_rcv_timestamps_enabled(aeron_udp_channel_t *channel)
 {
-    return AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == channel->packet_timestamp_offset ||
-        0 <= channel->packet_timestamp_offset;
+    return AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == channel->media_rcv_timestamp_offset ||
+        0 <= channel->media_rcv_timestamp_offset;
+}
+
+inline bool aeron_udp_channel_is_channel_rcv_timestamps_enabled(aeron_udp_channel_t *channel)
+{
+    return AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == channel->channel_rcv_timestamp_offset ||
+        0 <= channel->channel_rcv_timestamp_offset;
+}
+
+inline bool aeron_udp_channel_is_channel_snd_timestamps_enabled(aeron_udp_channel_t *channel)
+{
+    return AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == channel->channel_snd_timestamp_offset ||
+        0 <= channel->channel_snd_timestamp_offset;
 }
 
 #endif //AERON_UDP_CHANNEL_H

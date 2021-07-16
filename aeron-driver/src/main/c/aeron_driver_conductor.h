@@ -98,7 +98,6 @@ typedef struct aeron_subscription_link_stct
     int32_t channel_length;
     int64_t registration_id;
     int64_t client_id;
-    int32_t packet_timestamp_offset;
 
     aeron_receive_channel_endpoint_t *endpoint;
     aeron_udp_channel_t *spy_channel;

@@ -1101,15 +1101,15 @@ public final class UdpChannel
             return this;
         }
 
-        Context channelReceiveTimestampOffset(final int receiveTimestampOffset)
+        Context channelReceiveTimestampOffset(final int timestampOffset)
         {
-            this.channelReceiveTimestampOffset = receiveTimestampOffset;
+            this.channelReceiveTimestampOffset = timestampOffset;
             return this;
         }
 
-        Context channelSendTimestampOffset(final int sendTimestampOffset)
+        Context channelSendTimestampOffset(final int timestampOffset)
         {
-            this.channelSendTimestampOffset = sendTimestampOffset;
+            this.channelSendTimestampOffset = timestampOffset;
             return this;
         }
     }

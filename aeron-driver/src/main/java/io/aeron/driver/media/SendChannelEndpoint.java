@@ -475,12 +475,15 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         final int length = buffer.remaining();
 
-        if (length > DataHeaderFlyweight.HEADER_LENGTH)
+        if (length >= DataHeaderFlyweight.HEADER_LENGTH)
         {
             bufferForTimestamping.wrap(buffer, buffer.position(), length);
 
-            if (DataHeaderFlyweight.HDR_TYPE_DATA ==
-                (bufferForTimestamping.getShort(DataHeaderFlyweight.TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF))
+            final int type =
+                bufferForTimestamping.getShort(DataHeaderFlyweight.TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
+
+            if (DataHeaderFlyweight.HDR_TYPE_DATA == type &&
+                !DataHeaderFlyweight.isHeartbeat(bufferForTimestamping, length))
             {
                 final int offset = udpChannel.channelSendTimestampOffset();
 

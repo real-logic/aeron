@@ -1749,17 +1749,17 @@ public final class ChannelUriStringBuilder
      * Offset into a message to store the media receive timestamp. May also be the special value 'reserved' which means
      * to store the timestamp in the reserved value field.
      *
-     * @param mediaReceiveTimestampOffset to use as the offset.
-     * @return this for a fluent API
+     * @param timestampOffset to use as the offset.
+     * @return this for a fluent API.
      * @throws IllegalArgumentException if the string is not null and doesn't represent an int or the 'reserved' value.
      */
-    public ChannelUriStringBuilder mediaReceiveTimestampOffset(final String mediaReceiveTimestampOffset)
+    public ChannelUriStringBuilder mediaReceiveTimestampOffset(final String timestampOffset)
     {
-        if (null != mediaReceiveTimestampOffset && !RESERVED_OFFSET.equals(mediaReceiveTimestampOffset))
+        if (null != timestampOffset && !RESERVED_OFFSET.equals(timestampOffset))
         {
             try
             {
-                Integer.parseInt(mediaReceiveTimestampOffset);
+                Integer.parseInt(timestampOffset);
             }
             catch (final NumberFormatException ex)
             {
@@ -1768,7 +1768,7 @@ public final class ChannelUriStringBuilder
             }
         }
 
-        this.mediaReceiveTimestampOffset = mediaReceiveTimestampOffset;
+        this.mediaReceiveTimestampOffset = timestampOffset;
         return this;
     }
 
@@ -1777,7 +1777,7 @@ public final class ChannelUriStringBuilder
      * to store the timestamp in the reserved value field.
      *
      * @param channelUri the existing URI to extract the mediaReceiveTimestampOffset from
-     * @return this for a fluent API
+     * @return this for a fluent API.
      */
     public ChannelUriStringBuilder mediaReceiveTimestampOffset(final ChannelUri channelUri)
     {
@@ -1800,17 +1800,17 @@ public final class ChannelUriStringBuilder
      * Offset into a message to store the channel receive timestamp. May also be the special value 'reserved' which
      * means to store the timestamp in the reserved value field.
      *
-     * @param receiveTimestampOffset to use as the offset.
+     * @param timestampOffset to use as the offset.
      * @return this for a fluent API.
      * @throws IllegalArgumentException if the string doesn't represent an int or the 'reserved' value.
      */
-    public ChannelUriStringBuilder channelReceiveTimestampOffset(final String receiveTimestampOffset)
+    public ChannelUriStringBuilder channelReceiveTimestampOffset(final String timestampOffset)
     {
-        if (null != receiveTimestampOffset && !RESERVED_OFFSET.equals(receiveTimestampOffset))
+        if (null != timestampOffset && !RESERVED_OFFSET.equals(timestampOffset))
         {
             try
             {
-                Integer.parseInt(receiveTimestampOffset);
+                Integer.parseInt(timestampOffset);
             }
             catch (final NumberFormatException ex)
             {
@@ -1819,7 +1819,7 @@ public final class ChannelUriStringBuilder
             }
         }
 
-        this.channelReceiveTimestampOffset = receiveTimestampOffset;
+        this.channelReceiveTimestampOffset = timestampOffset;
         return this;
     }
 
@@ -1851,27 +1851,27 @@ public final class ChannelUriStringBuilder
      * Offset into a message to store the channel send timestamp. May also be the special value 'reserved' which means
      * to store the timestamp in the reserved value field.
      *
-     * @param channelSendTimestampOffset to use as the offset.
+     * @param timestampOffset to use as the offset.
      * @return this for a fluent API.
      * @throws IllegalArgumentException if the string is not null doesn't represent an int or the 'reserved' value.
      */
-    public ChannelUriStringBuilder channelSendTimestampOffset(final String channelSendTimestampOffset)
+    public ChannelUriStringBuilder channelSendTimestampOffset(final String timestampOffset)
     {
-        if (null != channelSendTimestampOffset && !RESERVED_OFFSET.equals(channelSendTimestampOffset))
+        if (null != timestampOffset && !RESERVED_OFFSET.equals(timestampOffset))
         {
             try
             {
-                Integer.parseInt(channelSendTimestampOffset);
+                Integer.parseInt(timestampOffset);
             }
             catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
                     "channelSendTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "' found: " +
-                    channelSendTimestampOffset);
+                    timestampOffset);
             }
         }
 
-        this.channelSendTimestampOffset = channelSendTimestampOffset;
+        this.channelSendTimestampOffset = timestampOffset;
         return this;
     }
 
@@ -1880,7 +1880,7 @@ public final class ChannelUriStringBuilder
      * to store the timestamp in the reserved value field.
      *
      * @param channelUri the existing URI to extract the channelSendTimestampOffset from.
-     * @return this for a fluent API
+     * @return this for a fluent API.
      */
     public ChannelUriStringBuilder channelSendTimestampOffset(final ChannelUri channelUri)
     {

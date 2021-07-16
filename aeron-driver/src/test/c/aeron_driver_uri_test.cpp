@@ -63,7 +63,8 @@ TEST_F(DriverUriTest, shouldParseCongestionControlParam)
     EXPECT_EQ(std::string(m_uri.params.udp.endpoint), "224.10.9.8");
     EXPECT_EQ(m_uri.params.udp.additional_params.length, 1u);
     EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].key), AERON_URI_CC_KEY);
-    EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE);
+    EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value),
+        AERON_STATICWINDOWCONGESTIONCONTROL_CC_PARAM_VALUE);
 }
 
 TEST_F(DriverUriTest, shouldParseNoPublicationParams)
@@ -294,7 +295,7 @@ TEST_F(DriverUriTest, shouldParseSubscriptionSessionId)
     EXPECT_EQ(params.session_id, 1001);
 }
 
-TEST_F(DriverUriTest, shouldGetRxTimestampOffset)
+TEST_F(DriverUriTest, shouldGetMediaReceiveTimestampOffset)
 {
     aeron_driver_uri_subscription_params_t params = {};
 
@@ -306,7 +307,7 @@ TEST_F(DriverUriTest, shouldGetRxTimestampOffset)
     EXPECT_EQ(AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET, offset);
 }
 
-TEST_F(DriverUriTest, shouldDefaultRxTimestampOffsetToAeronNullValue)
+TEST_F(DriverUriTest, shouldDefaultMediaReceiveTimestampOffsetToAeronNullValue)
 {
     aeron_driver_uri_subscription_params_t params = {};
 

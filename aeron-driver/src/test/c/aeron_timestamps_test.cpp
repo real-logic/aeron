@@ -224,7 +224,7 @@ TEST_F(TimestampsTest, shouldNotPutTimestampInMessagesAtIfOffsetExceedsMessage)
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
-TEST_F(TimestampsTest, shouldErrorIfRxTimestampConfigurationClashes)
+TEST_F(TimestampsTest, shouldErrorIfMediaReceiveTimestampConfigurationClashes)
 {
     aeron_async_add_subscription_t *async_sub = nullptr;
 
@@ -252,7 +252,7 @@ TEST_F(TimestampsTest, shouldErrorIfRxTimestampConfigurationClashes)
     ASSERT_FALSE(awaitSubscriptionOrError(async_sub));
 }
 
-TEST_F(TimestampsTest, shouldErrorIfReceiveTimestampConfigurationClashes)
+TEST_F(TimestampsTest, shouldErrorIfChannelReceiveTimestampConfigurationClashes)
 {
     aeron_async_add_subscription_t *async_sub = nullptr;
 
@@ -280,7 +280,7 @@ TEST_F(TimestampsTest, shouldErrorIfReceiveTimestampConfigurationClashes)
     ASSERT_FALSE(awaitSubscriptionOrError(async_sub));
 }
 
-TEST_F(TimestampsTest, shouldErrorIfSendTimestampConfigurationClashes)
+TEST_F(TimestampsTest, shouldErrorIfChannelSendTimestampConfigurationClashes)
 {
     aeron_async_add_subscription_t *async_pub = nullptr;
 
@@ -511,7 +511,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValueWithNonMergedMds
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
-TEST_F(TimestampsTest, shouldPutSendAndReceivesTimestampsInMessagesAtOffset)
+TEST_F(TimestampsTest, shouldPutChannelSendAndReceivesTimestampsInMessagesAtOffset)
 {
 #if !defined(__linux__)
     GTEST_SKIP();
@@ -577,7 +577,7 @@ TEST_F(TimestampsTest, shouldPutSendAndReceivesTimestampsInMessagesAtOffset)
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
 
-TEST_F(TimestampsTest, shouldSemdTimestampAllMessagesInReservedValueWithMdc)
+TEST_F(TimestampsTest, shouldSendTimestampAllMessagesInReservedValueWithMdc)
 {
 #if !defined(__linux__)
     GTEST_SKIP();

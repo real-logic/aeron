@@ -126,7 +126,7 @@ void aeron_driver_name_resolver_receive(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *rx_timestamp);
+    struct timespec *media_receive_timestamp);
 
 static int aeron_driver_name_resolver_from_sockaddr(
     struct sockaddr_storage *addr, aeron_name_resolver_cache_addr_t *cache_addr);
@@ -596,7 +596,7 @@ void aeron_driver_name_resolver_receive(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *rx_timestamp)
+    struct timespec *media_receive_timestamp)
 {
     aeron_driver_name_resolver_t *resolver = receiver_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;

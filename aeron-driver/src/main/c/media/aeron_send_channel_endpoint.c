@@ -230,22 +230,25 @@ void aeron_send_channel_apply_timestamps(aeron_send_channel_endpoint_t *endpoint
     if (AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_SND_TIMESTAMP & endpoint->transport.timestamp_flags)
     {
         struct timespec send_timestamp;
-        aeron_clock_gettime_realtime(&send_timestamp);
-
-        for (size_t i = 0; i < vlen; i++)
+        if (0 == aeron_clock_gettime_realtime(&send_timestamp))
         {
-            aeron_timestamps_set_timestamp(
-                &send_timestamp,
-                endpoint->conductor_fields.udp_channel->channel_snd_timestamp_offset,
-                (uint8_t *)mmsghdr[i].msg_hdr.msg_iov[0].iov_base,
-                mmsghdr[i].msg_hdr.msg_iov[0].iov_len);
+            int32_t offset = endpoint->conductor_fields.udp_channel->channel_snd_timestamp_offset;
+
+            for (size_t i = 0; i < vlen; i++)
+            {
+                aeron_timestamps_set_timestamp(
+                    &send_timestamp,
+                    offset,
+                    (uint8_t *)mmsghdr[i].msg_hdr.msg_iov[0].iov_base,
+                    mmsghdr[i].msg_hdr.msg_iov[0].iov_len);
+            }
         }
     }
 }
 
 int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
 {
-    int result = 0;
+    int result;
 
     aeron_send_channel_apply_timestamps(endpoint, mmsghdr, vlen);
 
@@ -319,7 +322,7 @@ void aeron_send_channel_endpoint_dispatch(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *rx_timestamp)
+    struct timespec *media_timestamp)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)sender_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;

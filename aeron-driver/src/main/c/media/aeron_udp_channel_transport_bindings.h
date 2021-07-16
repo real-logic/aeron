@@ -47,7 +47,7 @@ typedef int (*aeron_udp_channel_transport_init_func_t)(
     uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf,
-    bool is_rx_timestamping,
+    bool is_media_timestamping,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 
@@ -62,7 +62,7 @@ typedef void (*aeron_udp_transport_recv_func_t)(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *rx_timestamp);
+    struct timespec *media_timestamp);
 
 typedef int (*aeron_udp_channel_transport_recvmmsg_func_t)(
     aeron_udp_channel_transport_t *transport,
@@ -323,7 +323,7 @@ inline void aeron_udp_channel_incoming_interceptor_recv_func(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *rx_timestamp)
+    struct timespec *media_timestamp)
 {
     aeron_udp_channel_incoming_interceptor_t *interceptor = data_paths->incoming_interceptors;
 

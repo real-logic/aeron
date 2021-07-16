@@ -86,7 +86,7 @@ int aeron_udp_channel_transport_init(
     uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf,
-    bool is_rx_timestamping,
+    bool is_media_timestamping,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity)
 {
@@ -244,7 +244,7 @@ int aeron_udp_channel_transport_init(
         }
     }
 
-    if (is_rx_timestamping)
+    if (is_media_timestamping)
     {
         if (aeron_udp_channel_transport_setup_media_rcv_timestamps(transport) < 0)
         {
@@ -291,7 +291,7 @@ int aeron_udp_channel_transport_recvmmsg(
 {
 #if defined(HAVE_RECVMMSG)
     struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
-    struct timespec *rx_timestamp = NULL;
+    struct timespec *media_rcv_timestamp = NULL;
     AERON_DECL_ALIGNED(
         char buf[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS][CMSG_SPACE(sizeof(struct timespec))],
         sizeof(struct cmsghdr));
@@ -332,7 +332,7 @@ int aeron_udp_channel_transport_recvmmsg(
                 cmsg->cmsg_type == SCM_TIMESTAMPNS &&
                 cmsg->cmsg_len == CMSG_LEN(sizeof(struct timespec)))
             {
-                rx_timestamp = (struct timespec *)CMSG_DATA(cmsg);
+                media_rcv_timestamp = (struct timespec *)CMSG_DATA(cmsg);
             }
 
             recv_func(
@@ -344,7 +344,7 @@ int aeron_udp_channel_transport_recvmmsg(
                 msgvec[i].msg_hdr.msg_iov[0].iov_base,
                 msgvec[i].msg_len,
                 msgvec[i].msg_hdr.msg_name,
-                rx_timestamp);
+                media_rcv_timestamp);
             *bytes_rcved += msgvec[i].msg_len;
         }
 

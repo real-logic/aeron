@@ -50,7 +50,7 @@ int aeron_udp_channel_transport_init(
     uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf,
-    bool is_rx_timestamping,
+    bool is_media_timestamping,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 

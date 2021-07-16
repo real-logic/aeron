@@ -59,6 +59,7 @@ protected:
 
     void SetUp() override
     {
+        unresolvable_address = nullptr;
         aeron_err_clear();
     }
 
@@ -76,7 +77,8 @@ protected:
         int64_t now_ms,
         const char *driver_resolver_name = nullptr,
         const char *driver_resolver_interface = nullptr,
-        const char *driver_bootstrap_neighbour = nullptr)
+        const char *driver_bootstrap_neighbour = nullptr,
+        const aeron_name_resolver_supplier_func_t name_resolver_bootstrap_supplier_func = nullptr)
     {
         aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(resolver_supplier_name);
         ASSERT_NE(nullptr, supplier_func);
@@ -87,6 +89,8 @@ protected:
         aeron_driver_context_set_resolver_name(resolver_fields->context, driver_resolver_name);
         aeron_driver_context_set_resolver_interface(resolver_fields->context, driver_resolver_interface);
         aeron_driver_context_set_resolver_bootstrap_neighbor(resolver_fields->context, driver_bootstrap_neighbour);
+        resolver_fields->context->driver_name_resolver_bootstrap_resolver_supplier_func =
+            name_resolver_bootstrap_supplier_func;
 
         aeron_counters_manager_init(
             &resolver_fields->counters,
@@ -273,20 +277,34 @@ protected:
             result.label_length)) << "Expected: " << expected_label << ", actual: " << result.label;
     }
 
-    static int ignore_node_a_lookup_function(
+    static int ignore_unreslovable_address_lookup_function(
         aeron_name_resolver_t *resolver,
         const char *name,
         const char *uri_param_name,
         bool is_re_resolution,
         const char **resolved_name)
     {
-        if (0 == strncmp("localhost:8050", name, sizeof("localhost:8050")))
+        if (nullptr != unresolvable_address &&
+            0 == strncmp(unresolvable_address, name, strlen(unresolvable_address) + 1))
         {
             *resolved_name = nullptr;
             return -1;
         }
         *resolved_name = name;
         return 0;
+    }
+
+    static int bootstrap_name_resolver_supplier(
+        aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context)
+    {
+        if (0 == aeron_default_name_resolver_supplier(resolver, args, context))
+        {
+            resolver->lookup_func = ignore_unreslovable_address_lookup_function;
+            resolver->name = "test-bootstrap";
+            return 0;
+        }
+
+        return -1;
     }
 
     friend std::ostream &operator<<(std::ostream &output, const NameResolverTest &t)
@@ -313,7 +331,10 @@ protected:
     resolver_fields_t m_b = {};
     resolver_fields_t m_c = {};
     aeron_clock_cache_t m_cached_clock = {};
+    static const char *unresolvable_address;
 };
+
+const char *NameResolverTest::unresolvable_address;
 
 #define NAME_0 "server0"
 #define HOST_0A "127.0.0.1"
@@ -505,8 +526,24 @@ TEST_F(NameResolverTest, shouldUseAnotherNeighborIfCurrentBecomesUnavailable)
 {
     int64_t timestamp_ms = INTMAX_C(8932472347945);
     initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");
-    initResolver(&m_b, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "B", "0.0.0.0:8051", "localhost:8050,test,localhost:8052");
-    initResolver(&m_c, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "C", "0.0.0.0:8052", "localhost:8050,x:y,localhost:8051");
+    initResolver(
+        &m_b,
+        AERON_NAME_RESOLVER_DRIVER,
+        "",
+        timestamp_ms,
+        "B",
+        "0.0.0.0:8051",
+        "localhost:8050,test,localhost:8052,more garbage",
+        bootstrap_name_resolver_supplier);
+    initResolver(
+        &m_c,
+        AERON_NAME_RESOLVER_DRIVER,
+        "",
+        timestamp_ms,
+        "C",
+        "0.0.0.0:8052",
+        "localhost:8050,x:y,localhost:8051,here too",
+        bootstrap_name_resolver_supplier);
 
     int64_t deadline_ms = aeron_epoch_clock() + (5 * 1000);
     while (2 > readNeighborCounter(&m_a) || 2 > readNeighborCounter(&m_b) || 2 > readNeighborCounter(&m_c))
@@ -550,10 +587,7 @@ TEST_F(NameResolverTest, shouldUseAnotherNeighborIfCurrentBecomesUnavailable)
 
     timestamp_ms += AERON_NAME_RESOLVER_DRIVER_TIMEOUT_MS;
 
-    m_b.resolver.lookup_func = ignore_node_a_lookup_function;
-    m_c.resolver.lookup_func = ignore_node_a_lookup_function;
-
-    timestamp_ms += AERON_NAME_RESOLVER_DRIVER_SELF_RESOLUTION_INTERVAL_MS;
+    unresolvable_address = "localhost:8050"; // ensure that A is now unresolvable
 
     m_c.resolver.do_work_func(&m_c.resolver, timestamp_ms);
     ASSERT_EQ(0, aeron_errcode()) << aeron_errmsg();

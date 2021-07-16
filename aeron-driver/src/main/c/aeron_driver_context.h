@@ -248,6 +248,7 @@ typedef struct aeron_driver_context_stct
     const char *resolver_interface;
     const char *resolver_bootstrap_neighbor;
     aeron_name_resolver_supplier_func_t name_resolver_supplier_func;
+    aeron_name_resolver_supplier_func_t driver_name_resolver_bootstrap_resolver_supplier_func;
     const char *name_resolver_init_args;
     aeron_driver_name_resolver_on_resolve_t on_name_resolve_func;
 

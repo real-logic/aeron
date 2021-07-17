@@ -45,6 +45,7 @@
  *     <li>
  *         <b>Appointed Leader:</b> A leader of the cluster can be appointed via configuration without requiring an
  *         election. In the event of a leader failure then a follower will have to be manually appointed the new leader.
+ *         This is not the recommended way to use Cluster. Automatic elections are more reliable.
  *     </li>
  *     <li>
  *         <b>Automatic Elections:</b> Automatic elections (default) can be enabled to have a leader elected at random

@@ -131,13 +131,12 @@ void aeron_driver_name_resolver_receive(
 static int aeron_driver_name_resolver_from_sockaddr(
     struct sockaddr_storage *addr, aeron_name_resolver_cache_addr_t *cache_addr);
 
-static int aeron_driver_name_resolver_resolve_bootstrap_neighbor(
-    aeron_driver_name_resolver_t *driver_resolver, aeron_name_resolver_t *resolver)
+static int aeron_driver_name_resolver_resolve_bootstrap_neighbor(aeron_driver_name_resolver_t *driver_resolver)
 {
     for (size_t i = 0; i < driver_resolver->bootstrap_neighbors_length; i++)
     {
         if (0 == aeron_name_resolver_resolve_host_and_port(
-            resolver,
+            &driver_resolver->bootstrap_resolver,
             driver_resolver->bootstrap_neighbors[i],
             "bootstrap_neighbor",
             false,
@@ -220,8 +219,11 @@ int aeron_driver_name_resolver_init(
         goto error_cleanup;
     }
 
-    // TODO: Make fallback configurable...
-    if (aeron_default_name_resolver_supplier(&_driver_resolver->bootstrap_resolver, NULL, context) < 0)
+    const aeron_name_resolver_supplier_func_t bootstrap_resolver_supplier_func =
+        NULL != context->driver_name_resolver_bootstrap_resolver_supplier_func ?
+        context->driver_name_resolver_bootstrap_resolver_supplier_func :
+        aeron_default_name_resolver_supplier;
+    if (bootstrap_resolver_supplier_func(&_driver_resolver->bootstrap_resolver, NULL, context) < 0)
     {
         goto error_cleanup;
     }
@@ -267,7 +269,7 @@ int aeron_driver_name_resolver_init(
             _driver_resolver->bootstrap_neighbors[i] = bootstrap_neighbors[num_neighbors - i - 1];
         }
 
-        if (aeron_driver_name_resolver_resolve_bootstrap_neighbor(_driver_resolver, &_driver_resolver->bootstrap_resolver) < 0)
+        if (aeron_driver_name_resolver_resolve_bootstrap_neighbor(_driver_resolver) < 0)
         {
             goto error_cleanup;
         }
@@ -855,7 +857,7 @@ static int aeron_driver_name_resolver_send_self_resolutions(
         if (now_ms > driver_resolver->bootstrap_neighbor_resolve_deadline_ms)
         {
             struct sockaddr_storage old_address = driver_resolver->bootstrap_neighbor_addr;
-            if (aeron_driver_name_resolver_resolve_bootstrap_neighbor(driver_resolver, resolver) < 0)
+            if (aeron_driver_name_resolver_resolve_bootstrap_neighbor(driver_resolver) < 0)
             {
                 AERON_APPEND_ERR("failed to resolve bootstrap neighbor (%s)", driver_resolver->bootstrap_neighbor);
                 return work_count;

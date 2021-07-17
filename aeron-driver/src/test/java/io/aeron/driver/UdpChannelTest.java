@@ -18,6 +18,7 @@ package io.aeron.driver;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.UdpChannel;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.Strings;
 import org.hamcrest.Description;
@@ -490,7 +491,7 @@ public class UdpChannelTest
         final UdpChannel channel = UdpChannel.parse(
             "aeron:udp?endpoint=localhost:0|channel-rcv-ts-offset=reserved|channel-snd-ts-offset=8");
 
-        assertEquals(UdpChannel.RESERVED_VALUE_OFFSET, channel.channelReceiveTimestampOffset());
+        assertEquals(UdpChannel.RESERVED_VALUE_MESSAGE_OFFSET, channel.channelReceiveTimestampOffset());
         assertEquals(8, channel.channelSendTimestampOffset());
     }
 
@@ -554,6 +555,14 @@ public class UdpChannelTest
         final UdpChannel udpChannel = UdpChannel.parse(uriBuilder.build(), resolver);
 
         assertThat(udpChannel.canonicalForm(), is(canonicalForm));
+    }
+
+    @Test
+    void reservedValueOffsetIsCorrect()
+    {
+        assertEquals(
+            DataHeaderFlyweight.RESERVED_VALUE_OFFSET,
+            DataHeaderFlyweight.HEADER_LENGTH + UdpChannel.RESERVED_VALUE_MESSAGE_OFFSET);
     }
 
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()

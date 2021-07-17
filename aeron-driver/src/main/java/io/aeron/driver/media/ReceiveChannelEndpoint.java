@@ -44,6 +44,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.POSSIBLE_TTL_ASYMME
 import static io.aeron.driver.status.SystemCounterDescriptor.SHORT_SENDS;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 import static io.aeron.status.ChannelEndpointStatus.status;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 abstract class ReceiveChannelEndpointHotFields extends UdpChannelTransport
 {
@@ -932,7 +933,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
 
             if (DataHeaderFlyweight.DATA_OFFSET + offset + BitUtil.SIZE_OF_LONG < length)
             {
-                buffer.putLong(DataHeaderFlyweight.DATA_OFFSET + offset, channelReceiveTimestampClock.nanoTime());
+                buffer.putLong(
+                    DataHeaderFlyweight.DATA_OFFSET + offset, channelReceiveTimestampClock.nanoTime(), LITTLE_ENDIAN);
             }
         }
     }

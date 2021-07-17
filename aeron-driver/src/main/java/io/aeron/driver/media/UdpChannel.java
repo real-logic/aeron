@@ -44,7 +44,7 @@ public final class UdpChannel
     /**
      * The offset from the beginning of a payload where the reserved value begins.
      */
-    public static final int RESERVED_VALUE_OFFSET = -8;
+    public static final int RESERVED_VALUE_MESSAGE_OFFSET = -8;
 
     private static final AtomicInteger UNIQUE_CANONICAL_FORM_VALUE = new AtomicInteger();
     private static final InetSocketAddress ANY_IPV4 = new InetSocketAddress("0.0.0.0", 0);
@@ -302,7 +302,7 @@ public final class UdpChannel
         }
         else if (RESERVED_OFFSET.equals(offsetStr))
         {
-            return RESERVED_VALUE_OFFSET;
+            return RESERVED_VALUE_MESSAGE_OFFSET;
         }
         else
         {
@@ -777,7 +777,7 @@ public final class UdpChannel
      */
     public boolean isChannelReceiveTimestampEnabled()
     {
-        return RESERVED_VALUE_OFFSET == channelReceiveTimestampOffset || 0 <= channelReceiveTimestampOffset;
+        return RESERVED_VALUE_MESSAGE_OFFSET == channelReceiveTimestampOffset || 0 <= channelReceiveTimestampOffset;
     }
 
     /**
@@ -787,7 +787,7 @@ public final class UdpChannel
      */
     public boolean isChannelSendTimestampEnabled()
     {
-        return RESERVED_VALUE_OFFSET == channelSendTimestampOffset || 0 <= channelSendTimestampOffset;
+        return RESERVED_VALUE_MESSAGE_OFFSET == channelSendTimestampOffset || 0 <= channelSendTimestampOffset;
     }
 
     /**

@@ -490,7 +490,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 if (DataHeaderFlyweight.DATA_OFFSET + offset + SIZE_OF_LONG <= length)
                 {
                     bufferForTimestamping.putLong(
-                        DataHeaderFlyweight.DATA_OFFSET + offset, sendTimestampClock.nanoTime());
+                        DataHeaderFlyweight.DATA_OFFSET + offset, sendTimestampClock.nanoTime(), LITTLE_ENDIAN);
                 }
             }
         }

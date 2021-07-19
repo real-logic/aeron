@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.InterruptAfter;
@@ -55,7 +56,7 @@ public class TimestampingSystemTest
 
     private MediaDriver.Context context()
     {
-        return new MediaDriver.Context().dirDeleteOnStart(true);
+        return new MediaDriver.Context().dirDeleteOnStart(true).threadingMode(ThreadingMode.SHARED);
     }
 
     @Test
@@ -116,8 +117,7 @@ public class TimestampingSystemTest
     {
         final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
-        final MediaDriver.Context context = new MediaDriver.Context()
-            .dirDeleteOnStart(true);
+        final MediaDriver.Context context = context();
         final String aeronDirectoryName = context.aeronDirectoryName();
 
         try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);

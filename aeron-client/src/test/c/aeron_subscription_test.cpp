@@ -55,11 +55,10 @@ public:
             aeron_subscription_delete(m_subscription);
         }
 
-        std::for_each(m_filenames.begin(), m_filenames.end(),
-            [&](std::string &filename)
-            {
-                ::unlink(filename.c_str());
-            });
+        for (auto &filename : m_filenames)
+        {
+            ::unlink(filename.c_str());
+        }
     }
 
     static aeron_subscription_t *createSubscription(aeron_client_conductor_t *conductor, int64_t *channel_status)

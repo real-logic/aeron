@@ -329,7 +329,7 @@ public class CommonContext implements Cloneable
      * Parameter name of the offset for the media receive timestamp to be inserted into the incoming message on a
      * subscription. The special value of 'reserved' can be used to insert into the reserved value field. Media
      * receive timestamp is taken as the earliest possible point after the packet is received from the network. This
-     * is only supported in the C media driver at the moment, using in the Java Media Driver will generate an error.
+     * is only supported in the C media driver, the Java Media Driver will generate an error if used.
      */
     public static final String MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME = "media-rcv-ts-offset";
 
@@ -342,16 +342,15 @@ public class CommonContext implements Cloneable
     public static final String CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME = "channel-rcv-ts-offset";
 
     /**
-     * Parameter name of the offset for the channel send timestamp to be inserted into the incoming message
-     * on a subscription. The special value of 'reserved' can be used to insert into the reserved value
+     * Parameter name of the offset for the channel send timestamp to be inserted into the outgoing message
+     * on a publication. The special value of 'reserved' can be used to insert into the reserved value
      * field. Channel send timestamp is taken shortly before passing the message over to the configured transport
      * bindings.
      */
     public static final String CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME = "channel-snd-ts-offset";
 
     /**
-     * Placeholder value to use in URIs to specify that a timestamp should be stored in the reserved value
-     * field.
+     * Placeholder value to use in URIs to specify that a timestamp should be stored in the reserved value field.
      */
     public static final String RESERVED_OFFSET = "reserved";
 

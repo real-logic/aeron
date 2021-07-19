@@ -68,7 +68,6 @@ ext {
 
 def projectPom = {
     name = 'aeron'
-    packaging = 'pom'
     // optionally artifactId can be defined here
     description = 'Efficient reliable UDP unicast, UDP multicast, and IPC transport protocol.'
     url = 'https://github.com/real-logic/aeron'

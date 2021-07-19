@@ -132,6 +132,11 @@ typedef struct aeron_driver_context_stct
     uint32_t receiver_io_vector_capacity;                   /* aeron.receiver.io.vector.capacity = 2 */
     uint32_t sender_io_vector_capacity;                     /* aeron.sender.io.vector.capacity = 2 */
     uint32_t network_publication_max_messages_per_send;     /* aeron.network.publication.max.messages.per.send = 2 */
+
+    uint8_t conductor_cpu_affinity_no;                      /* aeron.conductor.cpu.affinity = 0 */
+    uint8_t receiver_cpu_affinity_no;                       /* aeron.receiver.cpu.affinity = 0 */
+    uint8_t sender_cpu_affinity_no;                         /* aeron.conductor.cpu.affinity = 0 */
+
     struct                                                  /* aeron.receiver.receiver.tag = <unset> */
     {
         bool is_present;

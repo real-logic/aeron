@@ -23,6 +23,7 @@
 #include "util/aeron_platform.h"
 
 void aeron_thread_set_name(const char *role_name);
+void aeron_thread_set_affinity(const char *role_name, uint8_t cpu_affinity_no);
 
 void aeron_nano_sleep(uint64_t nanoseconds);
 void aeron_micro_sleep(unsigned int microseconds);

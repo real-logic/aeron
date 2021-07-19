@@ -350,6 +350,7 @@ aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name)
 int aeron_agent_init(
     aeron_agent_runner_t *runner,
     const char *role_name,
+    uint8_t cpu_affinity_no,
     void *state,
     aeron_agent_on_start_func_t on_start,
     void *on_start_state,
@@ -369,6 +370,7 @@ int aeron_agent_init(
         return -1;
     }
 
+    runner->cpu_affinity_no = cpu_affinity_no;
     runner->agent_state = state;
     runner->on_start = on_start;
     runner->on_start_state = on_start_state;
@@ -396,6 +398,10 @@ static void *agent_main(void *arg)
     aeron_agent_runner_t *runner = (aeron_agent_runner_t *)arg;
 
     aeron_thread_set_name(runner->role_name);
+    if (runner->cpu_affinity_no > 0)
+    {
+        aeron_thread_set_affinity(runner->role_name, runner->cpu_affinity_no);
+    }
 
     if (NULL != runner->on_start)
     {

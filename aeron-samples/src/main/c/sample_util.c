@@ -104,6 +104,7 @@ int rate_reporter_start(rate_reporter_t *reporter, on_rate_report_t on_report)
     if (aeron_agent_init(
         &reporter->runner,
         "rate reporter",
+        0,
         reporter,
         NULL,
         NULL,

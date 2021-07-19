@@ -672,6 +672,25 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         0,
         255);
 
+    _context->conductor_cpu_affinity_no = (uint8_t)aeron_config_parse_uint64(
+        AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR),
+        _context->conductor_cpu_affinity_no,
+        0,
+        255);
+    _context->receiver_cpu_affinity_no = (uint8_t)aeron_config_parse_uint64(
+        AERON_RECEIVER_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_RECEIVER_CPU_AFFINITY_ENV_VAR),
+        _context->receiver_cpu_affinity_no,
+        0,
+        255);
+    _context->sender_cpu_affinity_no = (uint8_t)aeron_config_parse_uint64(
+        AERON_SENDER_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_SENDER_CPU_AFFINITY_ENV_VAR),
+        _context->sender_cpu_affinity_no,
+        0,
+        255);
+
     _context->send_to_sm_poll_ratio = (uint8_t)aeron_config_parse_uint64(
         AERON_SEND_TO_STATUS_POLL_RATIO_ENV_VAR,
         getenv(AERON_SEND_TO_STATUS_POLL_RATIO_ENV_VAR),

@@ -63,6 +63,7 @@ int aeron_idle_strategy_init_null(void **state, const char *env_var, const char 
 typedef struct aeron_agent_runner_stct
 {
     const char *role_name;
+    uint8_t cpu_affinity_no;
     void *agent_state;
     void *idle_strategy_state;
     void *on_start_state;
@@ -87,6 +88,7 @@ aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name);
 int aeron_agent_init(
     aeron_agent_runner_t *runner,
     const char *role_name,
+    uint8_t cpu_affinity_no,
     void *state,
     aeron_agent_on_start_func_t on_start,
     void *on_start_state,

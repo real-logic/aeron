@@ -546,6 +546,9 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(
         fpout, "\n    network_publication_max_messages_per_send=%" PRIu64,
         (uint64_t)context->network_publication_max_messages_per_send);
+    fprintf(fpout, "\n    conductor_cpu_affinity_no=%" PRIu8, context->conductor_cpu_affinity_no);
+    fprintf(fpout, "\n    receiver_cpu_affinity_no=%" PRIu8, context->receiver_cpu_affinity_no);
+    fprintf(fpout, "\n    sender_cpu_affinity_no=%" PRIu8, context->sender_cpu_affinity_no);
 
     fprintf(fpout, "\n    epoch_clock=%s",
         aeron_dlinfo_func((aeron_fptr_t)context->epoch_clock, buffer, sizeof(buffer)));
@@ -845,6 +848,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_SHARED],
                 "[conductor, sender, receiver]",
+                0,
                 _driver,
                 _driver->context->agent_on_start_func,
                 _driver->context->agent_on_start_state,
@@ -861,6 +865,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_CONDUCTOR],
                 "conductor",
+                _driver->context->conductor_cpu_affinity_no,
                 &_driver->conductor,
                 _driver->context->agent_on_start_func,
                 _driver->context->agent_on_start_state,
@@ -875,6 +880,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_SHARED_NETWORK],
                 "[sender, receiver]",
+                0,
                 _driver,
                 _driver->context->agent_on_start_func,
                 _driver->context->agent_on_start_state,
@@ -892,6 +898,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_CONDUCTOR],
                 "conductor",
+                _driver->context->conductor_cpu_affinity_no,
                 &_driver->conductor,
                 _driver->context->agent_on_start_func,
                 _driver->context->agent_on_start_state,
@@ -906,6 +913,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_SENDER],
                 "sender",
+                _driver->context->sender_cpu_affinity_no,
                 &_driver->sender,
                 _driver->context->agent_on_start_func,
                 _driver->context->agent_on_start_state,
@@ -920,6 +928,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_RECEIVER],
                 "receiver",
+                _driver->context->receiver_cpu_affinity_no,
                 &_driver->receiver,
                 _driver->context->agent_on_start_func,
                 _driver->context->agent_on_start_state,
@@ -968,6 +977,10 @@ int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
     }
     else
     {
+        if (driver->runners[0].cpu_affinity_no > 0)
+        {
+            aeron_thread_set_affinity(driver->runners[0].role_name, driver->runners[0].cpu_affinity_no);
+        }
         if (NULL != driver->runners[0].on_start)
         {
             driver->runners[0].on_start(driver->runners[0].on_start_state, driver->runners[0].role_name);

@@ -84,6 +84,7 @@ int aeron_init(aeron_t **client, aeron_context_t *context)
     if (aeron_agent_init(
         &_client->runner,
         "[aeron-client-conductor]",
+        0,
         _client,
         _client->context->agent_on_start_func,
         _client->context->agent_on_start_state,

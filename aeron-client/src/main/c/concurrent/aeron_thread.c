@@ -17,8 +17,12 @@
 #if defined(__linux__)
 #define _BSD_SOURCE
 #define _GNU_SOURCE
+#include <sched.h>
 #endif
 
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
 #include "aeron_alloc.h"
 #include "concurrent/aeron_thread.h"
 #if !defined(_WIN32)
@@ -278,6 +282,20 @@ int sched_yield(void)
 #else
 #error Unsupported platform!
 #endif
+
+void aeron_thread_set_affinity(const char *role_name, uint8_t cpu_affinity_no)
+{
+#if defined(__linux__)
+    cpu_set_t mask;
+    const size_t size = sizeof(mask);
+    CPU_ZERO(&mask);
+    CPU_SET(cpu_affinity_no, &mask);
+    if (sched_setaffinity(0, size, &mask) >= 0) fprintf(stdout, "sched_setaffinity succeeded, role=%s cpuNo=%d\n", role_name, cpu_affinity_no);
+    else fprintf(stderr, "sched_setaffinity failed, role=%s cpuNo=%d errno=%d - %s\n", role_name, cpu_affinity_no, errno, strerror(errno));
+#else
+    fprintf(stdout, "sched_setaffinity not supported on this architecture, role=%s cpuNo=%d\n", role_name, cpu_affinity_no);
+#endif
+}
 
  // sched
 

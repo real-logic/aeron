@@ -233,6 +233,10 @@ size_t aeron_driver_context_get_socket_so_sndbuf(aeron_driver_context_t *context
 int aeron_driver_context_set_socket_multicast_ttl(aeron_driver_context_t *context, uint8_t value);
 uint8_t aeron_driver_context_get_socket_multicast_ttl(aeron_driver_context_t *context);
 
+#define AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR "AERON_CONDUCTOR_CPU_AFFINITY"
+#define AERON_RECEIVER_CPU_AFFINITY_ENV_VAR "AERON_RECEIVER_CPU_AFFINITY"
+#define AERON_SENDER_CPU_AFFINITY_ENV_VAR "AERON_SENDER_CPU_AFFINITY"
+
 /**
  * Ratio of sending data to polling status messages in the Sender.
  */

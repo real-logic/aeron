@@ -45,8 +45,8 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         recorderAgentRunner = new AgentRunner(ctx.recorderIdleStrategy(), errorHandler, ctx.errorCounter(), recorder);
         replayerAgentRunner = new AgentRunner(ctx.replayerIdleStrategy(), errorHandler, ctx.errorCounter(), replayer);
 
-        AgentRunner.startOnThread(recorderAgentRunner, ctx.threadFactory());
-        AgentRunner.startOnThread(replayerAgentRunner, ctx.threadFactory());
+        AgentRunner.startOnThread(recorderAgentRunner, ctx.recorderThreadFactory());
+        AgentRunner.startOnThread(replayerAgentRunner, ctx.replayerThreadFactory());
     }
 
     /**

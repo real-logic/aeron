@@ -788,6 +788,8 @@ public final class Archive implements AutoCloseable
 
         private ArchiveThreadingMode threadingMode = Configuration.threadingMode();
         private ThreadFactory threadFactory;
+        private ThreadFactory recorderThreadFactory;
+        private ThreadFactory replayerThreadFactory;
         private CountDownLatch abortLatch;
 
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -960,6 +962,16 @@ public final class Archive implements AutoCloseable
             if (null == threadFactory)
             {
                 threadFactory = Thread::new;
+            }
+
+            if (null == recorderThreadFactory)
+            {
+                recorderThreadFactory = threadFactory;
+            }
+
+            if (null == replayerThreadFactory)
+            {
+                replayerThreadFactory = threadFactory;
             }
 
             if (null == idleStrategySupplier)
@@ -1843,7 +1855,9 @@ public final class Archive implements AutoCloseable
 
         /**
          * Set the thread factory used for creating threads in {@link ArchiveThreadingMode#SHARED} and
-         * {@link ArchiveThreadingMode#DEDICATED} threading modes.
+         * {@link ArchiveThreadingMode#DEDICATED} threading modes. The thread factories can be overridden for the
+         * recorder and replayer by using {@link #recorderThreadFactory(ThreadFactory)} and
+         * {@link #replayerThreadFactory(ThreadFactory)} respectively.
          *
          * @param threadFactory used for creating threads in SHARED and DEDICATED threading modes.
          * @return this for a fluent API.
@@ -1851,6 +1865,52 @@ public final class Archive implements AutoCloseable
         public Context threadFactory(final ThreadFactory threadFactory)
         {
             this.threadFactory = threadFactory;
+            return this;
+        }
+
+        /**
+         * Get the thread factory used for creating the recorder thread when running in DEDICATED threading mode.
+         *
+         * @return the thread factory used for creating the recorder thread when running in DEDICATED threading mode.
+         */
+        public ThreadFactory recorderThreadFactory()
+        {
+            return recorderThreadFactory;
+        }
+
+        /**
+         * Set the thread factory used for creating the recorder thread when running in DEDICATED threading mode. This
+         * will be used to override {@link #threadFactory}.
+         *
+         * @param threadFactory used for creating the recorder thread when running in DEDICATED threading mode.
+         * @return this for a fluent API.
+         */
+        public Context recorderThreadFactory(final ThreadFactory threadFactory)
+        {
+            this.recorderThreadFactory = threadFactory;
+            return this;
+        }
+
+        /**
+         * Get the thread factory used for creating the replayer thread when running in DEDICATED threading mode.
+         *
+         * @return the thread factory used for creating the replayer thread when running in DEDICATED threading mode.
+         */
+        public ThreadFactory replayerThreadFactory()
+        {
+            return replayerThreadFactory;
+        }
+
+        /**
+         * Set the thread factory used for creating the replayer thread when running in DEDICATED threading mode. This
+         * will be used to override {@link #threadFactory}.
+         *
+         * @param threadFactory used for creating the replayer thread when running in DEDICATED threading mode.
+         * @return this for a fluent API.
+         */
+        public Context replayerThreadFactory(final ThreadFactory threadFactory)
+        {
+            this.replayerThreadFactory = threadFactory;
             return this;
         }
 

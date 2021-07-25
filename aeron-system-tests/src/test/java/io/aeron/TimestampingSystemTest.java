@@ -56,7 +56,7 @@ public class TimestampingSystemTest
 
     private MediaDriver.Context context()
     {
-	// TODO: temporary removal of SHARED to test
+        // TODO: temporary removal of SHARED to test
         return new MediaDriver.Context().dirDeleteOnStart(true);
     }
 

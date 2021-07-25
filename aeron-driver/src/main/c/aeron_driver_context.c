@@ -1108,6 +1108,11 @@ int aeron_driver_context_bindings_clientd_create_entries(aeron_driver_context_t 
     return 0;
 }
 
+void aeron_driver_context_drain_all_free(void *cliend, void *item)
+{
+    aeron_free(item);
+}
+
 int aeron_driver_context_close(aeron_driver_context_t *context)
 {
     if (NULL == context)
@@ -1115,6 +1120,13 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
         AERON_SET_ERR(EINVAL, "%s", "aeron_driver_context_close(NULL)");
         return -1;
     }
+
+    aeron_mpsc_concurrent_array_queue_drain_all(
+        &context->conductor_command_queue, aeron_driver_context_drain_all_free, context);
+    aeron_spsc_concurrent_array_queue_drain_all(
+        &context->sender_command_queue, aeron_driver_context_drain_all_free, context);
+    aeron_spsc_concurrent_array_queue_drain_all(
+        &context->receiver_command_queue, aeron_driver_context_drain_all_free, context);
 
     aeron_mpsc_concurrent_array_queue_close(&context->conductor_command_queue);
     aeron_spsc_concurrent_array_queue_close(&context->sender_command_queue);

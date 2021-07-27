@@ -429,7 +429,8 @@ extern void aeron_udp_channel_incoming_interceptor_to_endpoint(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr);
+    struct sockaddr_storage *addr,
+    struct timespec *media_timestamp);
 
 extern int aeron_udp_channel_interceptors_transport_notifications(
     aeron_udp_channel_data_paths_t *data_paths,

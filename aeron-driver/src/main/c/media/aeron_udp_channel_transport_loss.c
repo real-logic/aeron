@@ -144,7 +144,8 @@ void aeron_udp_channel_interceptor_loss_incoming(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    struct timespec *media_timestamp)
 {
     if (!aeron_udp_channel_interceptor_loss_should_drop_frame(
         buffer, aeron_udp_channel_interceptor_loss_params->rate,
@@ -159,7 +160,8 @@ void aeron_udp_channel_interceptor_loss_incoming(
             destination_clientd,
             buffer,
             length,
-            addr);
+            addr,
+            media_timestamp);
     }
 }
 

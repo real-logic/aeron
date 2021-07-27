@@ -728,7 +728,8 @@ void aeron_driver_agent_incoming_msg(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    struct timespec *media_timestamp)
 {
     struct msghdr message;
     struct iovec iov;
@@ -753,7 +754,8 @@ void aeron_driver_agent_incoming_msg(
         destination_clientd,
         buffer,
         length,
-        addr);
+        addr,
+        media_timestamp);
 }
 
 void aeron_untethered_subscription_state_change(

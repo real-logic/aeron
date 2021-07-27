@@ -178,7 +178,8 @@ typedef void (*aeron_udp_channel_interceptor_incoming_func_t)(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr);
+    struct sockaddr_storage *addr,
+    struct timespec* media_timestamp);
 
 typedef int (*aeron_udp_channel_interceptor_init_func_t)(
     void **interceptor_state,
@@ -336,7 +337,8 @@ inline void aeron_udp_channel_incoming_interceptor_recv_func(
         destination_clientd,
         buffer,
         length,
-        addr);
+        addr,
+        media_timestamp);
 }
 
 inline void aeron_udp_channel_incoming_interceptor_to_endpoint(
@@ -348,18 +350,28 @@ inline void aeron_udp_channel_incoming_interceptor_to_endpoint(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    struct timespec *media_timestamp)
 {
 #if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
-    aeron_udp_transport_recv_func_t func = (aeron_udp_transport_recv_func_t)interceptor_state;
+    aeron_udp_transport_recv_func_t recv_func = (aeron_udp_transport_recv_func_t)interceptor_state;
 #if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
 #endif
 
-    func(NULL, transport, receiver_clientd, endpoint_clientd, destination_clientd, buffer, length, addr, NULL);
+    recv_func(
+        NULL,
+        transport,
+        receiver_clientd,
+        endpoint_clientd,
+        destination_clientd,
+        buffer,
+        length,
+        addr,
+        media_timestamp);
 }
 
 int aeron_udp_channel_data_paths_init(

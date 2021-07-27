@@ -39,6 +39,12 @@ struct message_t
 
 class TimestampsTest : public CSystemTestBase, public testing::Test
 {
+public:
+    TimestampsTest() : CSystemTestBase(std::vector<std::pair<std::string, std::string>>{
+            { "AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", "loss" },
+            { "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", "rate=0" }
+        })
+    {}
 };
 
 int64_t null_reserved_value(void *clientd, uint8_t *buffer, size_t frame_length)

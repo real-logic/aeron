@@ -206,7 +206,7 @@ public final class ClusterMarkFile implements AutoCloseable
     }
 
     /**
-     * Record the fact that a node is aware of an election so it can survive a restart.
+     * Record the fact that a node is aware of an election, so it can survive a restart.
      *
      * @param candidateTermId to record that a vote has taken place.
      * @param fileSyncLevel   as defined by cluster file sync level.
@@ -221,7 +221,7 @@ public final class ClusterMarkFile implements AutoCloseable
     }
 
     /**
-     * Record the fact that a node is aware of an election so it can survive a restart.
+     * Record the fact that a node is aware of an election, so it can survive a restart.
      *
      * @param candidateTermId to record that a vote has taken place.
      * @param fileSyncLevel   as defined by cluster file sync level.

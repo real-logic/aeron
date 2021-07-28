@@ -354,7 +354,7 @@ public final class ConsensusModule implements AutoCloseable
         public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
 
         /**
-         * Channel for the clustered log. This channel can exist for a potentially log time given cluster operation
+         * Channel for the clustered log. This channel can exist for a potentially long time given cluster operation
          * so attention should be given to configuration such as term-length and mtu.
          */
         public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?term-length=64m";
@@ -525,12 +525,12 @@ public final class ConsensusModule implements AutoCloseable
         public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          */
         public static final String LEADER_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.leader.heartbeat.timeout";
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          */
         public static final long LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
@@ -819,7 +819,7 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          *
          * @return timeout in nanoseconds to wait for heartbeat from a leader.
          * @see #LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
@@ -1412,9 +1412,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The directory used for for the consensus module directory.
+         * The directory used for the consensus module directory.
          *
-         * @return directory for for the consensus module directory.
+         * @return directory for the consensus module directory.
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public File clusterDir()
@@ -2205,7 +2205,7 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          *
          * @param heartbeatTimeoutNs to wait for heartbeat from a leader.
          * @return this for a fluent API.
@@ -2218,9 +2218,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          *
-         * @return the timeout for a leader if no heartbeat is received by an other member.
+         * @return the timeout for a leader if no heartbeat is received by another member.
          * @see Configuration#LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
          */
         public long leaderHeartbeatTimeoutNs()
@@ -2822,9 +2822,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         * Set the {@link ShutdownSignalBarrier} that can be used to shut down a consensus module.
          *
-         * @param barrier that can be used to shutdown a consensus module.
+         * @param barrier that can be used to shut down a consensus module.
          * @return this for a fluent API.
          */
         public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
@@ -2834,9 +2834,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         * Get the {@link ShutdownSignalBarrier} that can be used to shut down a consensus module.
          *
-         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         * @return the {@link ShutdownSignalBarrier} that can be used to shut down a consensus module.
          */
         public ShutdownSignalBarrier shutdownSignalBarrier()
         {

@@ -20,7 +20,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.status.*;
 
 /**
- * System wide counters for monitoring. These are separate from counters used for position tracking on streams.
+ * System-wide counters for monitoring. These are separate from counters used for position tracking on streams.
  */
 public enum SystemCounterDescriptor
 {
@@ -150,7 +150,7 @@ public enum SystemCounterDescriptor
     CLIENT_TIMEOUTS(24, "Client liveness timeouts"),
 
     /**
-     * Count of the times a connection endpoint has be re-resolved resulting in a change.
+     * Count of the times a connection endpoint has been re-resolved resulting in a change.
      */
     RESOLUTION_CHANGES(25, "Resolution changes"),
 
@@ -213,9 +213,9 @@ public enum SystemCounterDescriptor
     }
 
     /**
-     * The human readable label to identify a system counter.
+     * The human-readable label to identify a system counter.
      *
-     * @return the human readable label to identify a system counter.
+     * @return the human-readable label to identify a system counter.
      */
     public String label()
     {

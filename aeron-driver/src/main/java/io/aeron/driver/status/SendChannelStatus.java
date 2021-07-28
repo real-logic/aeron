@@ -32,7 +32,7 @@ public class SendChannelStatus
     public static final int SEND_CHANNEL_STATUS_TYPE_ID = AeronCounters.DRIVER_SEND_CHANNEL_STATUS_TYPE_ID;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "snd-channel";
 

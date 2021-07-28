@@ -22,6 +22,6 @@
  * is connected then the system will make periodic calls to
  * {@link io.aeron.security.Authenticator#onConnectedSession(io.aeron.security.SessionProxy, long)} until the
  * {@link io.aeron.security.Authenticator} updates the status of the {@link io.aeron.security.SessionProxy} to indicate
- * if the session is authenticated, needs challenged, or is rejected.
+ * if the session is authenticated, needs to be challenged, or is rejected.
  */
 package io.aeron.security;

@@ -47,7 +47,7 @@ public class LocalSocketAddressStatus
     private static final int MAX_IPV6_LENGTH = "[ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255]:65536".length();
 
     /**
-     * Initial length length for a key, this will be expanded later when bound.
+     * Initial length for a key, this will be expanded later when bound.
      */
     public static final int INITIAL_LENGTH = BitUtil.SIZE_OF_INT * 2;
 

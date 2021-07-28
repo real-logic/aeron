@@ -280,7 +280,7 @@ public final class ClusterBackup implements AutoCloseable
         public static final String CONSENSUS_CHANNEL_DEFAULT;
 
         /**
-         * Member endpoint used for the the catchup channel.
+         * Member endpoint used for the catchup channel.
          */
         public static final String CATCHUP_ENDPOINT_DEFAULT;
 
@@ -814,9 +814,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * The directory used for for the cluster directory.
+         * The directory used for the cluster directory.
          *
-         * @return directory for for the cluster directory.
+         * @return directory for the cluster directory.
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public File clusterDir()
@@ -1292,9 +1292,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * The endpoints representing cluster members of the cluster to attempt to contact to backup from.
+         * The endpoints representing cluster members of the cluster to attempt to a backup from.
          *
-         * @return members of the cluster to attempt to request to backup from.
+         * @return members of the cluster to attempt to request a backup from.
          */
         public String clusterConsensusEndpoints()
         {
@@ -1302,9 +1302,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         * Set the {@link ShutdownSignalBarrier} that can be used to shut down a consensus module.
          *
-         * @param barrier that can be used to shutdown a consensus module.
+         * @param barrier that can be used to shut down a consensus module.
          * @return this for a fluent API.
          */
         public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
@@ -1314,9 +1314,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown.
+         * Get the {@link ShutdownSignalBarrier} that can be used to shut down.
          *
-         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown.
+         * @return the {@link ShutdownSignalBarrier} that can be used to shut down.
          */
         public ShutdownSignalBarrier shutdownSignalBarrier()
         {

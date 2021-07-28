@@ -68,11 +68,11 @@ public final class NetworkUtil
     }
 
     /**
-     * Format an address and port pair so they can be used in a URI endpoint.
+     * Format an address and port pair, so they can be used in a URI endpoint.
      *
      * @param address part of the endpoint.
      * @param port    part of the endpoint.
-     * @return The formatted string for a the address, IPv4 or IPv6, and port separated by a ':'.
+     * @return The formatted string for an address, IPv4 or IPv6, and port separated by a ':'.
      */
     public static String formatAddressAndPort(final InetAddress address, final int port)
     {

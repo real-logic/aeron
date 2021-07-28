@@ -22,7 +22,7 @@ import org.agrona.DirectBuffer;
 
 /**
  * Interface for consuming messages coming from the cluster that also include administrative events in a controlled
- * fashion like {@link io.aeron.logbuffer.ControlledFragmentHandler}. Only session messages my be controlled in
+ * fashion like {@link io.aeron.logbuffer.ControlledFragmentHandler}. Only session messages may be controlled in
  * consumption, other are consumed via {@link io.aeron.logbuffer.ControlledFragmentHandler.Action#COMMIT}.
  */
 @FunctionalInterface

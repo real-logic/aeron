@@ -33,7 +33,7 @@ public class PublisherPos
     public static final int PUBLISHER_POS_TYPE_ID = AeronCounters.DRIVER_PUBLISHER_POS_TYPE_ID;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "pub-pos (sampled)";
 

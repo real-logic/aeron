@@ -492,7 +492,7 @@ public class PubAndSubTest
     public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
     {
         /*
-         * The subscriber will flow control before an entire term buffer. So, send until can't send no 'more.
+         * The subscriber will flow control before an entire term buffer. So, send until can't send anymore.
          * Then start up subscriber to drain.
          */
         final int termBufferLength = 64 * 1024;

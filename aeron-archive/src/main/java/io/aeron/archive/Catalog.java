@@ -52,7 +52,7 @@ import static org.agrona.BitUtil.*;
 
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
- * The format is simple, allocating a fixed 1KB record for each record descriptor. This allows offset
+ * The format is simple, allocating a fixed 1 KB record for each record descriptor. This allows offset
  * based look up of a descriptor in the file. The first record contains the catalog header.
  * <p>
  *

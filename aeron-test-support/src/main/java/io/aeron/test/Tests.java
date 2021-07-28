@@ -267,7 +267,7 @@ public class Tests
     /**
      * Helper method to mock {@link AutoCloseable#close()} method to throw exception.
      *
-     * @param mock      to have it's method mocked
+     * @param mock      to have its method mocked
      * @param exception exception to be thrown
      * @throws Exception to make compiler happy
      */

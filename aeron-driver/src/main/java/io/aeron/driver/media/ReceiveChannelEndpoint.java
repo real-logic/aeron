@@ -153,7 +153,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
      * Send contents of {@link java.nio.ByteBuffer} to the remote address.
      *
      * @param buffer        to send containing the payload.
-     * @param remoteAddress to send to send the payload to.
+     * @param remoteAddress to send the payload to.
      * @return number of bytes sent.
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
@@ -391,7 +391,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     /**
      * Has the channel got control of destinations for MDS.
      *
-     * @return true if the the channel got control of destinations for MDS.
+     * @return true if the channel got control of destinations for MDS.
      */
     public boolean hasDestinationControl()
     {
@@ -693,7 +693,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Send a RTT Measurement frame to a source.
+     * Send RTT Measurement frame to a source.
      *
      * @param transportIndex  for the source.
      * @param controlAddress  for the source.
@@ -789,7 +789,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Send a RTT Measurement frame to the sources.
+     * Send RTT Measurement frame to the sources.
      *
      * @param controlAddresses of the sources.
      * @param sessionId       for the image.

@@ -103,7 +103,7 @@ public class CommonContext implements Cloneable
     public static final String DRIVER_TIMEOUT_PROP_NAME = "aeron.driver.timeout";
 
     /**
-     * Property name for the timeout to use in debug mode. By default this is not set and the configured
+     * Property name for the timeout to use in debug mode. By default, this is not set and the configured
      * timeouts will be used. Setting this value adjusts timeouts to make debugging easier.
      */
     public static final String DEBUG_TIMEOUT_PROP_NAME = "aeron.debug.timeout";
@@ -227,7 +227,7 @@ public class CommonContext implements Cloneable
     public static final String SESSION_ID_PARAM_NAME = "session-id";
 
     /**
-     * Key for the linger timeout for a publication to wait around after draining in nanoseconds.
+     * Key for timeout a publication to linger after draining in nanoseconds.
      */
     public static final String LINGER_PARAM_NAME = "linger";
 
@@ -275,7 +275,7 @@ public class CommonContext implements Cloneable
      * Parameter name for channel URI param to indicate if a Subscription represents a group member or individual
      * from the perspective of message reception. This can inform loss handling and similar semantics.
      * <p>
-     * When configuring an subscription for an MDC publication then should be added as this is effective multicast.
+     * When configuring a subscription for an MDC publication then should be added as this is effective multicast.
      *
      * @see CommonContext#MDC_CONTROL_MODE_PARAM_NAME
      * @see CommonContext#MDC_CONTROL_PARAM_NAME
@@ -533,10 +533,10 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Get the buffer containing the counter meta data. These counters are R/W for the driver, read only for all
+     * Get the buffer containing the counter metadata. These counters are R/W for the driver, read only for all
      * other users.
      *
-     * @return The buffer storing the counter meta data.
+     * @return The buffer storing the counter metadata.
      */
     public UnsafeBuffer countersMetaDataBuffer()
     {
@@ -544,9 +544,9 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Set the buffer containing the counter meta data. Testing/internal purposes only.
+     * Set the buffer containing the counter metadata. Testing/internal purposes only.
      *
-     * @param countersMetaDataBuffer The new counter meta data buffer.
+     * @param countersMetaDataBuffer The new counter metadata buffer.
      * @return this for a fluent API.
      */
     public CommonContext countersMetaDataBuffer(final UnsafeBuffer countersMetaDataBuffer)
@@ -610,12 +610,12 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Override the supplied timeout with the debug value if it has been set and we are in debug mode.
+     * Override the supplied timeout with the debug value if it has been set, and we are in debug mode.
      *
      * @param timeout  The timeout value currently in use.
      * @param timeUnit The units of the timeout value. Debug timeout is specified in ns, so will be converted to this
      *                 unit.
-     * @return The debug timeout if specified and we are being debugged or the supplied value if not. Will be in
+     * @return The debug timeout if specified, and we are being debugged or the supplied value if not. Will be in
      * timeUnit units.
      */
     public static long checkDebugTimeout(final long timeout, final TimeUnit timeUnit)
@@ -732,7 +732,7 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Is a media driver active in the current mapped CnC buffer? If the driver is mid start then it will wait for
+     * Is a media driver active in the current mapped CnC buffer? If the driver is starting then it will wait for
      * up to the driverTimeoutMs by checking for the cncVersion being set.
      *
      * @param driverTimeoutMs for the driver liveness check.
@@ -863,7 +863,7 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Print the contents of an error log to a {@link PrintStream} in human readable format.
+     * Print the contents of an error log to a {@link PrintStream} in human-readable format.
      *
      * @param errorBuffer to read errors from.
      * @param out         print the errors to.

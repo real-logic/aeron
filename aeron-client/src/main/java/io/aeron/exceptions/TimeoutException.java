@@ -21,7 +21,7 @@ package io.aeron.exceptions;
 public class TimeoutException extends AeronException
 {
     /**
-     * Default timeout exception of {@link AeronException.Category#ERROR}.
+     * Default timeout exception as {@link AeronException.Category#ERROR}.
      */
     public TimeoutException()
     {
@@ -82,7 +82,7 @@ public class TimeoutException extends AeronException
     }
 
     /**
-     * Constructs a new timeout exception with the a detail message, cause, suppression enabled or disabled,
+     * Constructs a new timeout exception with the detail message, cause, suppression enabled or disabled,
      * writable stack trace enabled or disabled, an {@link AeronException.Category}.
      *
      * @param message            providing detail on the error.

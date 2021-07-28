@@ -28,7 +28,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 /**
- * {@link UdpChannelTransport} specialised for for name resolution between {@link MediaDriver}s.
+ * {@link UdpChannelTransport} specialised for name resolution between {@link MediaDriver}s.
  */
 public final class UdpNameResolutionTransport extends UdpChannelTransport
 {
@@ -103,7 +103,7 @@ public final class UdpNameResolutionTransport extends UdpChannelTransport
      * Send contents of {@link java.nio.ByteBuffer} to the remote address.
      *
      * @param buffer        to send containing the payload.
-     * @param remoteAddress to send to send the payload to.
+     * @param remoteAddress to send the payload to.
      * @return number of bytes sent.
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
@@ -147,7 +147,7 @@ public final class UdpNameResolutionTransport extends UdpChannelTransport
     }
 
     /**
-     * Get {@link InetSocketAddress} for for an interface of an address and port.
+     * Get {@link InetSocketAddress} for an interface of an address and port.
      *
      * @param addressAndPort for the endpoint.
      * @return the {@link InetSocketAddress} if successful or null if not.

@@ -128,7 +128,7 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Notify the archive that this control session is closed so it can promptly release resources then close the
+     * Notify the archive that this control session is closed, so it can promptly release resources then close the
      * local resources associated with the client.
      */
     public void close()
@@ -547,7 +547,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Start recording a channel and stream pairing.
      * <p>
-     * Channels that include sessionId parameters are considered different than channels without sessionIds. If a
+     * Channels that include sessionId parameters are considered different from channels without sessionIds. If a
      * publication matches both a sessionId specific channel recording and a non-sessionId specific recording,
      * it will be recorded twice.
      *
@@ -583,7 +583,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Start recording a channel and stream pairing.
      * <p>
-     * Channels that include sessionId parameters are considered different than channels without sessionIds. If a
+     * Channels that include sessionId parameters are considered different from channels without sessionIds. If a
      * publication matches both a sessionId specific channel recording and a non-sessionId specific recording,
      * it will be recorded twice.
      *
@@ -592,7 +592,7 @@ public final class AeronArchive implements AutoCloseable
      * @param sourceLocation of the publication to be recorded.
      * @param autoStop       if the recording should be automatically stopped when complete.
      * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording. This can be
-     * passed to {@link #stopRecording(long)}. However if is autoStop is true then no need to stop the recording
+     * passed to {@link #stopRecording(long)}. However, if is autoStop is true then no need to stop the recording
      * unless you want to abort early.
      */
     public long startRecording(
@@ -675,7 +675,7 @@ public final class AeronArchive implements AutoCloseable
      * @param sourceLocation of the publication to be recorded.
      * @param autoStop       if the recording should be automatically stopped when complete.
      * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording. This can be
-     * passed to {@link #stopRecording(long)}. However if is autoStop is true then no need to stop the recording
+     * passed to {@link #stopRecording(long)}. However, if is autoStop is true then no need to stop the recording
      * unless you want to abort early.
      */
     public long extendRecording(
@@ -710,7 +710,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Stop recording for a channel and stream pairing.
      * <p>
-     * Channels that include sessionId parameters are considered different than channels without sessionIds. Stopping
+     * Channels that include sessionId parameters are considered different from channels without sessionIds. Stopping
      * a recording on a channel without a sessionId parameter will not stop the recording of any sessionId specific
      * recordings that use the same channel and streamId.
      *
@@ -743,7 +743,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Try to stop a recording for a channel and stream pairing.
      * <p>
-     * Channels that include sessionId parameters are considered different than channels without sessionIds. Stopping
+     * Channels that include sessionId parameters are considered different from channels without sessionIds. Stopping
      * a recording on a channel without a sessionId parameter will not stop the recording of any sessionId specific
      * recordings that use the same channel and streamId.
      *
@@ -3083,7 +3083,7 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Allows for the async establishment of a archive session.
+     * Allows for the async establishment of an archive session.
      */
     public static final class AsyncConnect implements AutoCloseable
     {

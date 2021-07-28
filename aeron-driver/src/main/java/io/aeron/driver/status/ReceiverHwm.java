@@ -32,7 +32,7 @@ public class ReceiverHwm
     public static final int RECEIVER_HWM_TYPE_ID = AeronCounters.DRIVER_RECEIVER_HWM_TYPE_ID;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "rcv-hwm";
 

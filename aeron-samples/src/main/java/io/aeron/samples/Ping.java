@@ -33,7 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Ping component of Ping-Pong latency test recorded to a histogram to capture full distribution..
+ * Ping component of Ping-Pong latency test recorded to a histogram to capture full distribution.
  * <p>
  * Initiates messages sent to {@link Pong} and records times.
  * @see Pong

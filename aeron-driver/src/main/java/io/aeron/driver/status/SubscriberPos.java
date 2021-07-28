@@ -32,7 +32,7 @@ public class SubscriberPos
     public static final int SUBSCRIBER_POSITION_TYPE_ID = AeronCounters.DRIVER_SUBSCRIBER_POSITION_TYPE_ID;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "sub-pos";
 

@@ -90,7 +90,7 @@ public final class ArchiveEventLogger
     }
 
     /**
-     * Log a state change event for a archive control session
+     * Log a state change event for an archive control session
      *
      * @param eventCode        for the type of state change.
      * @param oldState         before the change.

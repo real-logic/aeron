@@ -470,7 +470,7 @@ public final class Archive implements AutoCloseable
         /**
          * The length of file to be used for storing recording segments that must be a power of 2.
          * <p>
-         * If the {@link Image#termBufferLength()} is greater then this will take priority.
+         * If the {@link Image#termBufferLength()} is greater than this will take priority.
          *
          * @return length of file to be used for storing recording segments.
          */
@@ -1106,7 +1106,7 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Set the the directory in which the Archive will store recordings and the {@link Catalog}.
+         * Set the directory in which the Archive will store recordings and the {@link Catalog}.
          *
          * @param archiveDir the directory in which the Archive will store recordings and the {@link Catalog}.
          * @return this for a fluent API.
@@ -2491,7 +2491,7 @@ public final class Archive implements AutoCloseable
     }
 
     /**
-     * Get the {@link FileChannel} for the parent directory for the recordings and catalog so it can be sync'ed
+     * Get the {@link FileChannel} for the parent directory for the recordings and catalog, so it can be sync'ed
      * to storage when new files are created.
      *
      * @param directory     which will store the files created by the archive.

@@ -44,7 +44,7 @@ import static org.agrona.BitUtil.*;
  *  +-----------------------------+
  * </pre>
  * <p>
- * Meta Data Layout {@link #CNC_VERSION}
+ * Metadata Layout {@link #CNC_VERSION}
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -100,7 +100,7 @@ public class CncFileDescriptor
     public static final int TO_CLIENTS_BUFFER_LENGTH_FIELD_OFFSET;
 
     /**
-     * Offset at which the length field can be found for the counters metadata, e.g. labels, can be found.
+     * Offset at which the length field can be found for counter metadata, e.g. labels, can be found.
      */
     public static final int COUNTERS_METADATA_BUFFER_LENGTH_FIELD_OFFSET;
 
@@ -198,10 +198,10 @@ public class CncFileDescriptor
     }
 
     /**
-     * Offset in the buffer at which the counters metadata buffer length field exists.
+     * Offset in the buffer at which the counter metadata buffer length field exists.
      *
      * @param baseOffset for the start of the metadata.
-     * @return offset in the buffer at which the counters metadata buffer length field exists.
+     * @return offset in the buffer at which the counter metadata buffer length field exists.
      */
     public static int countersMetaDataBufferLengthOffset(final int baseOffset)
     {
@@ -209,10 +209,10 @@ public class CncFileDescriptor
     }
 
     /**
-     * Offset in the buffer at which the counters values buffer length field exists.
+     * Offset in the buffer at which the counter value buffer length field exists.
      *
      * @param baseOffset for the start of the metadata.
-     * @return offset in the buffer at which the counters values buffer length field exists.
+     * @return offset in the buffer at which the counter value buffer length field exists.
      */
     public static int countersValuesBufferLengthOffset(final int baseOffset)
     {
@@ -298,7 +298,7 @@ public class CncFileDescriptor
     }
 
     /**
-     * Signal the the CnC file is ready for use by client by writing the version into the CnC file.
+     * Signal that the CnC file is ready for use by client by writing the version into the CnC file.
      *
      * @param cncMetaDataBuffer for the CnC file.
      */
@@ -444,7 +444,7 @@ public class CncFileDescriptor
     }
 
     /**
-     * Is the provided length for the CnC file sufficient given the what is stored in the metadata.
+     * Is the provided length for the CnC file sufficient given what is stored in the metadata.
      *
      * @param metaDataBuffer for the CnC file.
      * @param cncFileLength  to check if it is sufficient based on what is stored in the metadata.

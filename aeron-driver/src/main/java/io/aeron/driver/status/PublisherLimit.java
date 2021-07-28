@@ -32,7 +32,7 @@ public class PublisherLimit
     public static final int PUBLISHER_LIMIT_TYPE_ID = AeronCounters.DRIVER_PUBLISHER_LIMIT_TYPE_ID;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "pub-lmt";
 

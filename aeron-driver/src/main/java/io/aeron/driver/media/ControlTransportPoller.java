@@ -116,7 +116,7 @@ public final class ControlTransportPoller extends UdpTransportPoller
     }
 
     /**
-     * Register a new transport to read for control messages.
+     * Register for read a new transport for control messages.
      *
      * @param transport to register.
      * @return {@link SelectionKey} for registration to cancel.

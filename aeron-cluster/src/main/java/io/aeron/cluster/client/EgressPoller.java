@@ -140,9 +140,9 @@ public final class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Get the detail returned in the last session event.
+     * Get the detail returned from the last session event.
      *
-     * @return the detail returned in the last session event.
+     * @return the detail returned from the last session event.
      */
     public String detail()
     {

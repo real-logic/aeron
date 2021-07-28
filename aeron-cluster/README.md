@@ -36,7 +36,7 @@ The cluster can run in various configurations:
     In the event of a leader failure then a follower will have to be manually appointed the new leader. This is not the
     recommended way to use Cluster. Automatic elections are more reliable.
  - **Automatic Elections:** Automatic elections (default) can be enabled to have a leader elected at random from the
-    members with the most up to date log.
+    members with the most up-to-date log.
  - **Dynamic Membership:** Cluster node membership can be dynamic with support for members to join and quit the cluster
     with membership changes recorded in the log.
        

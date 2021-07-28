@@ -32,7 +32,7 @@ public final class AeronCounters
     // Client/driver counters
 
     /**
-     * System wide counters for monitoring. These are separate from counters used for position tracking on streams.
+     * System-wide counters for monitoring. These are separate from counters used for position tracking on streams.
      */
     public static final int DRIVER_SYSTEM_COUNTER_TYPE_ID = 0;
 
@@ -66,12 +66,12 @@ public final class AeronCounters
     public static final int DRIVER_RECEIVER_POS_TYPE_ID = 5;
 
     /**
-     * The status of a send channel endpoint represented as a counter value.
+     * The status of a send-channel-endpoint represented as a counter value.
      */
     public static final int DRIVER_SEND_CHANNEL_STATUS_TYPE_ID = 6;
 
     /**
-     * The status of a receive channel endpoint represented as a counter value.
+     * The status of a receive-channel-endpoint represented as a counter value.
      */
     public static final int DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID = 7;
 

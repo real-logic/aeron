@@ -26,7 +26,7 @@ import org.agrona.concurrent.status.CountersManager;
 public class SendLocalSocketAddress
 {
     /**
-     * The human readable name for the beginning of a label.
+     * The human-readable name for the beginning of a label.
      */
     public static final String NAME = "snd-local-sockaddr";
 

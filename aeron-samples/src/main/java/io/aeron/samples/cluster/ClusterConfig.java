@@ -68,7 +68,7 @@ public final class ClusterConfig
 
     /**
      * Create a new ClusterConfig. This call allows for 2 separate lists of hostnames, so that there can be 'external'
-     * addresses for ingress requests and 'internal' addresses that will handle all of the cluster replication and
+     * addresses for ingress requests and 'internal' addresses that will handle all the cluster replication and
      * control traffic.
      *
      * @param nodeId            id for this node.
@@ -76,7 +76,7 @@ public final class ClusterConfig
      * @param clusterHostnames  list of hostnames that will receive cluster traffic.
      * @param portBase          base port to derive remaining ports from.
      * @param clusteredService  instance of the clustered service that will run on this node.
-     * @return                  configuration that wraps all of the detail aeron service configuration.
+     * @return                  configuration that wraps all aeron service configuration.
      */
     public static ClusterConfig create(
         final int nodeId,
@@ -246,7 +246,7 @@ public final class ClusterConfig
      * {@link io.aeron.cluster.ClusterMember#parse(String)}.
      *
      * @param ingressHostnames of the cluster members.
-     * @param clusterHostnames of the cluster members internal address (can be the same as 'hostnames'}).
+     * @param clusterHostnames of the cluster members internal address (can be the same as 'hostnames').
      * @param portBase         initial port to derive other port from via appropriate node id and offset.
      * @return the String which can be used for {@link io.aeron.cluster.ClusterMember#parse(String)}.
      */

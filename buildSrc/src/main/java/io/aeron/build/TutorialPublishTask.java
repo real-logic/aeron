@@ -49,9 +49,9 @@ public class TutorialPublishTask extends DefaultTask
     private String remoteName;
 
     /**
-     * Returns the Github API key to use for publishing.
+     * Returns the GitHub API key to use for publishing.
      *
-     * @return Github API key.
+     * @return GitHub API key.
      */
     @Input
     public String getApiKey()
@@ -82,7 +82,7 @@ public class TutorialPublishTask extends DefaultTask
     }
 
     /**
-     * Sets Github API key.
+     * Sets GitHub API key.
      *
      * @param apiKey used for publishing.
      */

@@ -190,7 +190,7 @@ public final class LogBuffers implements AutoCloseable
     }
 
     /**
-     * Pre touch memory pages so they are faulted in to be available before access.
+     * Pre touch memory pages, so they are faulted in to be available before access.
      */
     public void preTouch()
     {

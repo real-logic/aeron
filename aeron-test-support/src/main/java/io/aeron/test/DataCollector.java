@@ -74,7 +74,7 @@ public final class DataCollector
     }
 
     /**
-     * Copy data from all of the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
+     * Copy data from all the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
      * <ul>
      *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
      *     <li>{@code $testClass} is the fully qualified class name of the test class.</li>
@@ -93,7 +93,7 @@ public final class DataCollector
     }
 
     /**
-     * Copy data from all of the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
+     * Copy data from all the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
      * <ul>
      *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
      *     <li>{@code $testClass} is the fully qualified class name of the test class.</li>
@@ -111,7 +111,7 @@ public final class DataCollector
     }
 
     /**
-     * Copy data from all of the added locations to the directory {@code $rootDir/$destinationDir}, where:
+     * Copy data from all the added locations to the directory {@code $rootDir/$destinationDir}, where:
      * <ul>
      *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
      *     <li>{@code $destinationDir} is the destination directory name.</li>

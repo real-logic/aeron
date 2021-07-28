@@ -216,7 +216,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
      */
     public String lookup(final String name, final String uriParamName, final boolean isReLookup)
     {
-        // here we would lookup advertised endpoints/control IP:port pairs by name. Currently, we just return delegate.
+        // here we would look up advertised endpoints/control IP:port pairs by name. Currently, we just return delegate.
         return delegateResolver.lookup(name, uriParamName, isReLookup);
     }
 

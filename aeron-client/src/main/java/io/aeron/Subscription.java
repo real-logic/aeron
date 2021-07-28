@@ -205,7 +205,7 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
 
     /**
      * Poll in a controlled manner the {@link Image}s under the subscription for available message fragments.
-     * Control is applied to fragments in the stream. If more fragments can be read on another stream
+     * Control is applied to message fragments in the stream. If more fragments can be read on another stream
      * they will even if BREAK or ABORT is returned from the fragment handler.
      * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come

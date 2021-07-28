@@ -404,7 +404,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
      *     }
      * }</pre>
      *
-     * @param length      of the range to claim, in bytes..
+     * @param length      of the range to claim, in bytes.
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
@@ -440,7 +440,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
     /**
      * Append a padding record log of a given length to make up the log to a position.
      *
-     * @param length of the range to claim, in bytes..
+     * @param length of the range to claim, in bytes.
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}.

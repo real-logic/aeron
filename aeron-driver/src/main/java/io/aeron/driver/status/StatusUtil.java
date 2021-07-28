@@ -62,7 +62,7 @@ public class StatusUtil
      *
      * @param countersReader that holds the status indicator.
      * @param channel        for the send channel.
-     * @return read-only status indicator that can be used to query the status of the send channel or null
+     * @return read-only status indicator that can be used to query the status of the send channel or null.
      * @see ChannelEndpointStatus for status values and indications.
      */
     public static StatusIndicatorReader sendChannelStatus(final CountersReader countersReader, final String channel)

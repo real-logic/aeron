@@ -116,7 +116,7 @@ public class SamplesUtil
      *
      * @param channel   for the error.
      * @param streamId  for the error.
-     * @param sessionId for the error, if source.
+     * @param sessionId for the error, if it has a source.
      * @param message   indicating what the error was.
      * @param cause     of the error.
      */

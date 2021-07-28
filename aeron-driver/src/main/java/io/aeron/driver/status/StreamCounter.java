@@ -41,28 +41,28 @@ import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
  * <li>{@link SubscriberPos}: Consumption position on an {@link io.aeron.Image} of a stream by individual Subscriber.</li>
  * </ul>
  * <p>
- * <b>Note:</b> All counters are real-time with the exception of {@link PublisherPos} which is sampled once per second
+ * <b>Note:</b> All counters are real-time except {@link PublisherPos} which is sampled once per second
  * which means it can appear to be behind.
  */
 public class StreamCounter
 {
     /**
-     * Offset in the key meta data for the registration id of the counter.
+     * Offset in the key metadata for the registration id of the counter.
      */
     public static final int REGISTRATION_ID_OFFSET = 0;
 
     /**
-     * Offset in the key meta data for the session id of the counter.
+     * Offset in the key metadata for the session id of the counter.
      */
     public static final int SESSION_ID_OFFSET = REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
 
     /**
-     * Offset in the key meta data for the stream id of the counter.
+     * Offset in the key metadata for the stream id of the counter.
      */
     public static final int STREAM_ID_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
 
     /**
-     * Offset in the key meta data for the channel of the counter.
+     * Offset in the key metadata for the channel of the counter.
      */
     public static final int CHANNEL_OFFSET = STREAM_ID_OFFSET + SIZE_OF_INT;
 
@@ -77,7 +77,7 @@ public class StreamCounter
      * @param tempBuffer      to be used for labels and key.
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
-     * @param countersManager from which to allocated the underlying storage.
+     * @param countersManager from which the underlying storage is allocated.
      * @param registrationId  to be associated with the counter.
      * @param sessionId       for the stream of messages.
      * @param streamId        for the stream of messages.
@@ -106,7 +106,7 @@ public class StreamCounter
      * @param tempBuffer      to be used for labels and key.
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
-     * @param countersManager from which to allocated the underlying storage.
+     * @param countersManager from which the underlying storage is allocated.
      * @param registrationId  to be associated with the counter.
      * @param sessionId       for the stream of messages.
      * @param streamId        for the stream of messages.
@@ -159,7 +159,7 @@ public class StreamCounter
      * @param tempBuffer      to be used for labels and key.
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
-     * @param countersManager from which to allocated the underlying storage.
+     * @param countersManager from which the underlying storage is allocated.
      * @param registrationId  to be associated with the counter.
      * @param sessionId       for the stream of messages.
      * @param streamId        for the stream of messages.

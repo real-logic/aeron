@@ -32,7 +32,7 @@ public class SenderBpe
     public static final int SENDER_BPE_TYPE_ID = AeronCounters.DRIVER_SENDER_BPE_TYPE_ID;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "snd-bpe";
 

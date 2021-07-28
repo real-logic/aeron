@@ -26,7 +26,7 @@ import org.agrona.concurrent.status.CountersManager;
 public class ReceiveLocalSocketAddress
 {
     /**
-     * The human readable name for the beginning of a label.
+     * The human-readable name for the beginning of a label.
      */
     public static final String NAME = "rcv-local-sockaddr";
 

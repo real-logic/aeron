@@ -199,9 +199,9 @@ public interface Cluster
     long time();
 
     /**
-     * The unit of time applied to timestamps and {@link #time()}.
+     * The unit of time applied when timestamping and {@link #time()} operations.
      *
-     * @return the unit of time applied to timestamps and {@link #time()}.
+     * @return the unit of time applied when timestamping and {@link #time()} operations.
      */
     TimeUnit timeUnit();
 
@@ -209,7 +209,7 @@ public interface Cluster
      * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires or
      * for cancellation. This action is asynchronous and will race with the timer expiring.
      * <p>
-     * If the correlationId is for an existing scheduled timer then it will be reschedule to the new deadline. However
+     * If the correlationId is for an existing scheduled timer then it will be rescheduled to the new deadline. However,
      * it is best to generate correlationIds in a monotonic fashion and be aware of potential clashes with other
      * services in the same cluster. Service isolation can be achieved by using the upper bits for service id.
      * <p>
@@ -306,7 +306,7 @@ public interface Cluster
 
     /**
      * {@link IdleStrategy} which should be used by the service when it experiences back-pressure on egress,
-     * closing sessions, making timer requests, or any long running actions.
+     * closing sessions, making timer requests, or any long-running actions.
      *
      * @return the {@link IdleStrategy} which should be used by the service when it experiences back-pressure.
      */

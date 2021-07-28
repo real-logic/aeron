@@ -36,7 +36,7 @@ public class PerImageIndicator
      *
      * @param tempBuffer      to be used for labels and key.
      * @param name            of the counter for the label.
-     * @param countersManager from which to allocated the underlying storage.
+     * @param countersManager from which the underlying storage is allocated.
      * @param registrationId  associated with the counter.
      * @param sessionId       for the stream of messages.
      * @param streamId        for the stream of messages.

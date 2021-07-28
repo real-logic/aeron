@@ -28,7 +28,7 @@ public interface FlowControlSupplier
      *
      * @param udpChannel     for the publication.
      * @param streamId       for the publication.
-     * @param registrationId for the the publication.
+     * @param registrationId for the publication.
      * @return flow control instance ready for immediate usage.
      */
     FlowControl newInstance(UdpChannel udpChannel, int streamId, long registrationId);

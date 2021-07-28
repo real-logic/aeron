@@ -55,7 +55,7 @@ public class ChannelEndpointStatus
     public static final int NO_ID_ALLOCATED = Aeron.NULL_VALUE;
 
     /**
-     * Offset in the key meta data for the channel of the counter.
+     * Offset in the key metadata for the channel of the counter.
      */
     public static final int CHANNEL_OFFSET = 0;
 
@@ -101,7 +101,7 @@ public class ChannelEndpointStatus
      * @param tempBuffer      to be used for labels and metadata.
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
-     * @param countersManager from which to allocated the underlying storage.
+     * @param countersManager from which the underlying storage is allocated.
      * @param registrationId  of the action the counter is associated with.
      * @param channel         for the stream of messages.
      * @return a new {@link AtomicCounter} for tracking the status.

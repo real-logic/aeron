@@ -320,7 +320,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Get the raw {@link Subscription} for receiving from the cluster.
      * <p>
-     * The can be wrapped with a {@link EgressAdapter} for dispatching events from the cluster.
+     * This can be wrapped with a {@link EgressAdapter} for dispatching events from the cluster.
      * {@link io.aeron.cluster.codecs.SessionMessageHeaderDecoder} should be used for raw access.
      *
      * @return the raw {@link Subscription} for receiving from the cluster.
@@ -1283,8 +1283,8 @@ public final class AeronCluster implements AutoCloseable
 
         /**
          * Is ingress to the cluster exclusively from a single thread to this client? The client should not be used
-         * from another thread, e.g. a separate thread calling {@link AeronCluster#sendKeepAlive()} - which is a really
-         * bad design by the way!
+         * from another thread, e.g. a separate thread calling {@link AeronCluster#sendKeepAlive()} - which is awful
+         * design by the way!
          *
          * @param isIngressExclusive true if ingress to the cluster is exclusively from a single thread for this client?
          * @return this for a fluent API.

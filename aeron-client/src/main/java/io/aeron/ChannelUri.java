@@ -224,7 +224,7 @@ public final class ChannelUri
     }
 
     /**
-     * Get the channel tag, if it exists, that refers to an another channel.
+     * Get the channel tag, if it exists, that refers to another channel.
      *
      * @return channel tag if it exists or null if not in this URI.
      * @see CommonContext#TAGS_PARAM_NAME
@@ -481,7 +481,7 @@ public final class ChannelUri
     }
 
     /**
-     * Is the param value tagged? (starts with the "tag:" prefix)
+     * Is the param value tagged? (starts with the "tag:" prefix).
      *
      * @param paramValue to check if tagged.
      * @return true if tagged or false if not.

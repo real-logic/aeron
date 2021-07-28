@@ -27,7 +27,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
- * Represents the header of the data frame for accessing meta data fields.
+ * Represents the header of the data frame for accessing metadata fields.
  */
 public final class Header
 {
@@ -199,9 +199,9 @@ public final class Header
     }
 
     /**
-     * The type of the the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}
+     * The type of the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}
      *
-     * @return type of the the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}
+     * @return type of the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}
      */
     public int type()
     {

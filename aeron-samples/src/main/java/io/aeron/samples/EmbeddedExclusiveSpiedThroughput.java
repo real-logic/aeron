@@ -57,7 +57,7 @@ public class EmbeddedExclusiveSpiedThroughput
      * Main method for launching the process.
      *
      * @param args passed to the process.
-     * @throws InterruptedException if the linger period is interrupted.
+     * @throws InterruptedException if interrupted during linger.
      */
     public static void main(final String[] args) throws InterruptedException
     {

@@ -394,7 +394,7 @@ public class ArchiveTool
     }
 
     /**
-     * Describe the metadata for a entry in the {@link Catalog} identified by recording id.
+     * Describe the metadata for an entry in the {@link Catalog} identified by recording id.
      *
      * @param out         to which the entry will be printed.
      * @param archiveDir  containing the {@link Catalog}.
@@ -493,7 +493,7 @@ public class ArchiveTool
     {
         /**
          * Enables verification for all segment files of a given recording.
-         * By default only last segment file is verify.
+         * By default, only last segment file is verify.
          */
         VERIFY_ALL_SEGMENT_FILES("-a"),
 
@@ -622,7 +622,7 @@ public class ArchiveTool
 
     /**
      * Migrate previous archive {@link org.agrona.MarkFile}, {@link Catalog}, and recordings from previous version
-     * to latest version.
+     * to the latest version.
      *
      * @param out        output stream to print results and errors to.
      * @param archiveDir that contains MarkFile, Catalog and recordings.

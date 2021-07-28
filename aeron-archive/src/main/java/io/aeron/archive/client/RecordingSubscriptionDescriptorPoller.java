@@ -78,7 +78,7 @@ public final class RecordingSubscriptionDescriptorPoller
     }
 
     /**
-     * Poll for recording recording subscriptions and delegate to the {@link RecordingSubscriptionDescriptorConsumer}.
+     * Poll for recording subscriptions and delegate to the {@link RecordingSubscriptionDescriptorConsumer}.
      *
      * @return the number of fragments read during the operation. Zero if no events are available.
      */

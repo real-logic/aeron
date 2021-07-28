@@ -16,7 +16,7 @@
 package io.aeron.exceptions;
 
 /**
- * A means to capture an event of significance that does not require a stack trace so it can be lighter weight
+ * A means to capture an event of significance that does not require a stack trace, so it can be lighter-weight
  * and take up less space in a {@link org.agrona.concurrent.errors.DistinctErrorLog}.
  */
 public class AeronEvent extends AeronException

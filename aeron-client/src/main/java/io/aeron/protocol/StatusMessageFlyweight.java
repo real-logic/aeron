@@ -83,7 +83,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     private static final int GROUP_TAG_FIELD_OFFSET = APP_SPECIFIC_FEEDBACK_FIELD_OFFSET;
 
     /**
-     * Default constructor which can later be use to wrap a frame.
+     * Default constructor which can later be used to wrap a frame.
      */
     public StatusMessageFlyweight()
     {

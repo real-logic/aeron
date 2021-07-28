@@ -23,8 +23,8 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.*;
 
 /**
- * Layout description for log buffers which contains partitions of terms with associated term meta data,
- * plus ending with overall log meta data.
+ * Layout description for log buffers which contains partitions of terms with associated term metadata,
+ * plus ending with overall log metadata.
  * <pre>
  *  +----------------------------+
  *  |           Term 0           |
@@ -45,7 +45,7 @@ public class LogBufferDescriptor
     public static final int PARTITION_COUNT = 3;
 
     /**
-     * Section index for which buffer contains the log meta data.
+     * Section index for which buffer contains the log metadata.
      */
     public static final int LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
 
@@ -592,7 +592,7 @@ public class LogBufferDescriptor
     /**
      * Compute the total length of a log file given the term length.
      *
-     * Assumes {@link #TERM_MAX_LENGTH} is 1GB and that filePageSize is 1GB or less and a power of 2.
+     * Assumes {@link #TERM_MAX_LENGTH} is 1 GB and that filePageSize is 1 GB or less and a power of 2.
      *
      * @param termLength   on which to base the calculation.
      * @param filePageSize to use for log.
@@ -628,7 +628,7 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Get a wrapper around the default frame header from the log meta data.
+     * Get a wrapper around the default frame header from the log metadata.
      *
      * @param metadataBuffer containing the raw bytes for the default frame header.
      * @return a buffer wrapping the raw bytes.
@@ -721,10 +721,10 @@ public class LogBufferDescriptor
     }
 
     /**
-     * The termOffset as a result of the append
+     * The termOffset as a result of the append operation.
      *
      * @param result into which the termOffset value has been packed.
-     * @return the termOffset after the append.
+     * @return the termOffset after the append operation.
      */
     public static int termOffset(final long result)
     {

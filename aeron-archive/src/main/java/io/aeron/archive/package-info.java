@@ -15,7 +15,7 @@
  */
 
 /**
- * The aeron-archive is an module which enables Aeron data stream recording and replay from persistent storage.
+ * The aeron-archive is a module which enables Aeron data stream recording and replay from persistent storage.
  * <p>
  * Features:
  * <ul>

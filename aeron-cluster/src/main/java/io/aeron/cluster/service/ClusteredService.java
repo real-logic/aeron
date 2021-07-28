@@ -39,7 +39,7 @@ public interface ClusteredService
      * Start event for the service where the service can perform any initialisation required and load snapshot state.
      * The snapshot image can be null if no previous snapshot exists.
      * <p>
-     * <b>Note:</b> As this is a potentially long running operation the implementation should use
+     * <b>Note:</b> As this is a potentially long-running operation the implementation should use
      * {@link Cluster#idleStrategy()} and then occasionally call {@link org.agrona.concurrent.IdleStrategy#idle()} or
      * {@link org.agrona.concurrent.IdleStrategy#idle(int)}, especially when polling the {@link Image} returns 0.
      *
@@ -94,7 +94,7 @@ public interface ClusteredService
     /**
      * The service should take a snapshot and store its state to the provided archive {@link Publication}.
      * <p>
-     * <b>Note:</b> As this is a potentially long running operation the implementation should use
+     * <b>Note:</b> As this is a potentially long-running operation the implementation should use
      * {@link Cluster#idleStrategy()} and then occasionally call {@link org.agrona.concurrent.IdleStrategy#idle()} or
      * {@link org.agrona.concurrent.IdleStrategy#idle(int)},
      * especially when the snapshot {@link ExclusivePublication} returns {@link Publication#BACK_PRESSURED}.

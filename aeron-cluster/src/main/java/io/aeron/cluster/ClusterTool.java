@@ -877,7 +877,7 @@ public class ClusterTool
     }
 
     /**
-     * Instruct the cluster to shutdown.
+     * Instruct the cluster to shut down.
      *
      * @param clusterDir where the consensus module is running.
      * @param out        to print the result of the operation.

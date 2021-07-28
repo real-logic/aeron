@@ -596,7 +596,7 @@ public final class PublicationImage
     }
 
     /**
-     * To be called from the {@link Receiver} to see if a image should be dispatched to.
+     * To be called from the {@link Receiver} to see if an image should be dispatched to.
      *
      * @param nowNs current time to check against for activity.
      * @return true if the image should be retained otherwise false.

@@ -51,7 +51,7 @@ public class RecordingSummary
     public int termBufferLength;
 
     /**
-     * UDP datagram length, or MTU, of the recording. Beyond this messages are fragmented.
+     * UDP datagram length, or MTU, of the recording. Beyond this value messages are fragmented.
      */
     public int mtuLength;
 

@@ -1390,9 +1390,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The directory used for for the cluster directory.
+         * The directory used for the cluster directory.
          *
-         * @return directory for for the cluster directory.
+         * @return directory for the cluster directory.
          * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public File clusterDir()
@@ -1401,9 +1401,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         * Set the {@link ShutdownSignalBarrier} that can be used to shut down a clustered service.
          *
-         * @param barrier that can be used to shutdown a clustered service.
+         * @param barrier that can be used to shut down a clustered service.
          * @return this for a fluent API.
          */
         public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
@@ -1413,9 +1413,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         * Get the {@link ShutdownSignalBarrier} that can be used to shut down a clustered service.
          *
-         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         * @return the {@link ShutdownSignalBarrier} that can be used to shut down a clustered service.
          */
         public ShutdownSignalBarrier shutdownSignalBarrier()
         {

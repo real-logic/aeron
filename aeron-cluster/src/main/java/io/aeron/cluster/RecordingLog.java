@@ -50,8 +50,8 @@ import static org.agrona.BitUtil.*;
  * The log is made up of entries of leadership terms or snapshots to roll up state as of a log position within a
  * leadership term.
  * <p>
- * The latest state is made up of a the latest snapshot followed by any leadership term logs which follow. It is
- * possible that a snapshot is taken mid term and therefore the latest state is the snapshot plus the log of messages
+ * The latest state is made up of the latest snapshot followed by any leadership term logs which follow. It is
+ * possible that a snapshot is taken mid-term and therefore the latest state is the snapshot plus the log of messages
  * which got appended to the log after the snapshot was taken.
  * <p>
  * Record layout as follows:
@@ -649,7 +649,7 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Force the file to backing storage. Same as calling {@link FileChannel#force(boolean)} with true.
+     * Force the file to durable storage. Same as calling {@link FileChannel#force(boolean)} with true.
      *
      * @param fileSyncLevel as defined by {@link ConsensusModule.Configuration#FILE_SYNC_LEVEL_PROP_NAME}.
      */
@@ -851,7 +851,7 @@ public final class RecordingLog implements AutoCloseable
     /**
      * Invalidate the last snapshot taken by the cluster so that on restart it can revert to the previous one.
      *
-     * @return true if the latest snapshot was found and marked as invalid so it will not be reloaded.
+     * @return true if the latest snapshot was found and marked as invalid, so it will not be reloaded.
      */
     public boolean invalidateLatestSnapshot()
     {
@@ -1110,7 +1110,7 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Invalidate an entry in the log so it is no longer valid. Be careful that the recording log is not left in an
+     * Invalidate an entry in the log, so it is no longer valid. Be careful that the recording log is not left in an
      * invalid state for recovery.
      *
      * @param leadershipTermId to match for validation.

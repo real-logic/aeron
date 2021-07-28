@@ -32,7 +32,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 /**
  * Represents a member of the cluster that participates in consensus for storing state from the perspective
- * of any single member. It is is not a global view of the cluster, perspectives only exist from a vantage point.
+ * of any single member. It is not a global view of the cluster, perspectives only exist from a vantage point.
  */
 public final class ClusterMember
 {
@@ -90,7 +90,7 @@ public final class ClusterMember
     }
 
     /**
-     * Reset the state of a cluster member so it can be canvassed and reestablished.
+     * Reset the state of a cluster member, so it can be canvassed and reestablished.
      */
     public void reset()
     {
@@ -458,7 +458,7 @@ public final class ClusterMember
     /**
      * The address:port endpoint for this cluster member to which a stream is replayed for catchup to the leader.
      * <p>
-     * It is recommended a port of 0 is used so it is system allocated to avoid potential clashes.
+     * It is recommended a port of 0 is used, so it is system allocated to avoid potential clashes.
      *
      * @return the address:port endpoint for this cluster member to which a stream is replayed for catchup to the
      * leader.
@@ -875,7 +875,7 @@ public final class ClusterMember
      * @param clusterMembers   to check.
      * @param position         to compare the {@link #logPosition()} against.
      * @param leadershipTermId expected of the members.
-     * @return true if a quorum of members have reached this position otherwise false.
+     * @return true if a quorum of members reached this position otherwise false.
      */
     public static boolean haveQuorumReachedPosition(
         final ClusterMember[] clusterMembers, final long position, final long leadershipTermId)

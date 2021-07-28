@@ -156,7 +156,7 @@ public final class BufferBuilder
     }
 
     /**
-     * Append a source buffer to the end of the internal buffer, resizing the internal buffer as required.
+     * Append a source buffer to the end of the internal buffer, resizing the internal buffer when required.
      *
      * @param srcBuffer from which to copy.
      * @param srcOffset in the source buffer from which to copy.

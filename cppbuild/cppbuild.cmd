@@ -10,12 +10,14 @@ set "AERON_SKIP_RMDIR="
 
 for %%o in (%*) do (
     if "%%o"=="--help" (
-        echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--link-samples-client-shared] [--build-archive-api] [--skip-rmdir] [--slow-system-tests] [--no-system-tests] [--debug-build] [--help]
+        echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--link-samples-client-shared] [--build-archive-api] [--skip-rmdir] [--slow-system-tests] [--no-system-tests] [--debug-build] [--sanitise-build] [--help]
         exit /b
     ) else if "%%o"=="--c-warnings-as-errors" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DC_WARNINGS_AS_ERRORS=ON"
+        echo "Enabling warnings as errors for c"
     ) else if "%%o"=="--cxx-warnings-as-errors" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCXX_WARNINGS_AS_ERRORS=ON"
+        echo "Enabling warnings as errors for c++"
     ) else if "%%o"=="--build-aeron-driver" (
         echo "Enabling building of Aeron driver is the default"
     ) else if "%%o"=="--link-samples-client-shared" (
@@ -24,6 +26,7 @@ for %%o in (%*) do (
         echo "Enabling building of Aeron Archive API is the default"
     ) else if "%%o"=="--skip-rmdir" (
         set "AERON_SKIP_RMDIR=yes"
+        echo "Disabling build directory removal"
     ) else if "%%o"=="--slow-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON"
         echo "Enabling slow system tests"
@@ -34,6 +37,7 @@ for %%o in (%*) do (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCMAKE_BUILD_TYPE=Debug"
         set "BUILD_DIR=%DIR%\Debug"
         set "BUILD_CONFIG=Debug"
+        echo "Enabling debug build"
     ) else (
         echo "Unknown option %%o"
         echo "Use --help for help"

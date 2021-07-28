@@ -43,6 +43,7 @@ do
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCMAKE_BUILD_TYPE=Debug"
       export BUILD_DIR="${SOURCE_DIR}/cppbuild/Debug"
       export BUILD_CONFIG=Debug
+      echo "Enabling debug build"
       shift
       ;;
     -b|--build-aeron-driver)

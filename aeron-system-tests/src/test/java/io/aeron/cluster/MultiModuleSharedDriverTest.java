@@ -127,8 +127,6 @@ public class MultiModuleSharedDriverTest
                 final EgressListener egressListener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
                     egress.set(buffer.getStringWithoutLengthAscii(offset, length));
 
-                Tests.sleep(1_000);
-
                 client0 = AeronCluster.connect(new AeronCluster.Context()
                     .egressListener(egressListener)
                     .ingressChannel(moduleCtx0.ingressChannel())

@@ -41,6 +41,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static io.aeron.cluster.ClusterTestConstants.CLUSTER_MEMBERS;
+import static io.aeron.cluster.ClusterTestConstants.INGRESS_ENDPOINTS;
 import static io.aeron.security.NullCredentialsSupplier.NULL_CREDENTIAL;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -462,6 +464,8 @@ public class AuthenticationTest
     {
         return AeronCluster.connect(
             new AeronCluster.Context()
+                .ingressChannel("aeron:udp")
+                .ingressEndpoints(INGRESS_ENDPOINTS)
                 .credentialsSupplier(credentialsSupplier));
     }
 
@@ -488,6 +492,8 @@ public class AuthenticationTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .authenticatorSupplier(authenticatorSupplier)
                 .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
+                .ingressChannel("aeron:udp")
+                .clusterMembers(CLUSTER_MEMBERS)
                 .replicationChannel("aeron:udp?endpoint=localhost:0")
                 .deleteDirOnStart(true));
     }

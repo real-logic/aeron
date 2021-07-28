@@ -56,6 +56,7 @@ public class MultiModuleSharedDriverTest
             .threadingMode(ThreadingMode.SHARED)
             .errorHandler(Tests::onError)
             .nameResolver(new RedirectingNameResolver(TestCluster.DEFAULT_NODE_MAPPINGS))
+            .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
 
         final Archive.Context archiveCtx = new Archive.Context()
@@ -76,7 +77,7 @@ public class MultiModuleSharedDriverTest
                 .logStreamId(100)
                 .serviceStreamId(104)
                 .consensusModuleStreamId(105)
-                .ingressChannel("aeron:udp?endpoint=localhost:9010")
+                .ingressChannel("aeron:udp?endpoint=localhost:9020")
                 .replicationChannel("aeron:udp?endpoint=localhost:0");
 
             final ClusteredServiceContainer.Context containerCtx0 = new ClusteredServiceContainer.Context()
@@ -96,7 +97,7 @@ public class MultiModuleSharedDriverTest
                 .logStreamId(200)
                 .serviceStreamId(204)
                 .consensusModuleStreamId(205)
-                .ingressChannel("aeron:udp?endpoint=localhost:9011")
+                .ingressChannel("aeron:udp?endpoint=localhost:9021")
                 .replicationChannel("aeron:udp?endpoint=localhost:0");
 
             final ClusteredServiceContainer.Context containerCtx1 = new ClusteredServiceContainer.Context()
@@ -125,6 +126,8 @@ public class MultiModuleSharedDriverTest
                 final MutableReference<String> egress = new MutableReference<>();
                 final EgressListener egressListener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
                     egress.set(buffer.getStringWithoutLengthAscii(offset, length));
+
+                Tests.sleep(1_000);
 
                 client0 = AeronCluster.connect(new AeronCluster.Context()
                     .egressListener(egressListener)

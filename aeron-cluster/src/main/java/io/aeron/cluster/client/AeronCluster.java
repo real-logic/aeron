@@ -828,7 +828,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Channel for sending messages to a cluster.
          */
-        public static final String INGRESS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9010";
+        public static final String INGRESS_CHANNEL_DEFAULT = null;
 
         /**
          * Stream id within a channel for sending messages to a cluster.
@@ -1558,6 +1558,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 final TimeoutException ex = new TimeoutException(
                     "cluster connect timeout: step=" + step +
+                    " ingressChannel=" + ctx.ingressChannel() +
                     " ingressPublication=" + ingressPublication +
                     " egress.isConnected=" + egressSubscription.isConnected() +
                     " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort());

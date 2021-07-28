@@ -51,6 +51,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.aeron.cluster.ClusterTestConstants.CLUSTER_MEMBERS;
+import static io.aeron.cluster.ClusterTestConstants.INGRESS_ENDPOINTS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.*;
@@ -636,7 +638,8 @@ public class ClusterNodeRestartTest
     private void connectClient()
     {
         CloseHelper.close(aeronCluster);
-        aeronCluster = AeronCluster.connect();
+        aeronCluster = AeronCluster.connect(
+            new AeronCluster.Context().ingressChannel("aeron:udp").ingressEndpoints(INGRESS_ENDPOINTS));
     }
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)
@@ -657,6 +660,8 @@ public class ClusterNodeRestartTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .terminationHook(terminationLatch::countDown)
                 .deleteDirOnStart(initialLaunch)
+                .ingressChannel("aeron:udp")
+                .clusterMembers(CLUSTER_MEMBERS)
                 .replicationChannel("aeron:udp?endpoint=localhost:0"));
     }
 

@@ -133,6 +133,7 @@ public class ClusterLoggingAgentTest
             .clusterMemberId(0)
             .clusterMembers("0,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010")
             .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550")
+            .ingressChannel("aeron:udp?term-length=64k")
             .replicationChannel("aeron:udp?endpoint=localhost:0");
 
         final ClusteredService clusteredService = mock(ClusteredService.class);

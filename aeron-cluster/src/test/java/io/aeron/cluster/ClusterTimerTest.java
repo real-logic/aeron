@@ -44,6 +44,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static io.aeron.cluster.ClusterTestConstants.CLUSTER_MEMBERS;
+import static io.aeron.cluster.ClusterTestConstants.INGRESS_ENDPOINTS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -289,7 +291,8 @@ public class ClusterTimerTest
 
     private void connectClient()
     {
-        aeronCluster = AeronCluster.connect();
+        aeronCluster = AeronCluster.connect(
+            new AeronCluster.Context().ingressChannel("aeron:udp").ingressEndpoints(INGRESS_ENDPOINTS));
     }
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)
@@ -311,6 +314,8 @@ public class ClusterTimerTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .logChannel("aeron:ipc")
                 .replicationChannel("aeron:udp?endpoint=localhost:0")
+                .ingressChannel("aeron:udp")
+                .clusterMembers(CLUSTER_MEMBERS)
                 .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .deleteDirOnStart(initialLaunch));
     }

@@ -40,6 +40,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
+import static io.aeron.cluster.ClusterTestConstants.CLUSTER_MEMBERS;
+import static io.aeron.cluster.ClusterTestConstants.INGRESS_ENDPOINTS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,6 +79,8 @@ class NameResolutionClusterNodeTest
                 .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
                 .logChannel("aeron:ipc")
                 .replicationChannel("aeron:udp?endpoint=localhost:0")
+                .ingressChannel("aeron:udp")
+                .clusterMembers(CLUSTER_MEMBERS)
                 .deleteDirOnStart(true));
     }
 
@@ -147,6 +151,6 @@ class NameResolutionClusterNodeTest
             new AeronCluster.Context()
                 .egressListener(egressListener)
                 .ingressChannel("aeron:udp")
-                .ingressEndpoints("0=localhost:9010,1=badname:9011"));
+                .ingressEndpoints(INGRESS_ENDPOINTS + ",1=badname:9011"));
     }
 }

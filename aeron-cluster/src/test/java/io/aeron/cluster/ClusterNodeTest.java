@@ -40,6 +40,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static io.aeron.cluster.ClusterTestConstants.CLUSTER_MEMBERS;
+import static io.aeron.cluster.ClusterTestConstants.INGRESS_ENDPOINTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,6 +71,8 @@ public class ClusterNodeTest
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
                 .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
+                .clusterMembers(CLUSTER_MEMBERS)
+                .ingressChannel("aeron:udp")
                 .logChannel("aeron:ipc")
                 .replicationChannel("aeron:udp?endpoint=localhost:0")
                 .deleteDirOnStart(true));
@@ -368,6 +372,6 @@ public class ClusterNodeTest
             new AeronCluster.Context()
                 .egressListener(egressListener)
                 .ingressChannel("aeron:udp")
-                .ingressEndpoints("0=localhost:9010"));
+                .ingressEndpoints(INGRESS_ENDPOINTS));
     }
 }

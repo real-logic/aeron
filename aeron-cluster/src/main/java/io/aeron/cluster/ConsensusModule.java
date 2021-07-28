@@ -1200,6 +1200,11 @@ public final class ConsensusModule implements AutoCloseable
                 }
             }
 
+            if (null == ingressChannel)
+            {
+                throw new ClusterException("ingressChannel must be specified");
+            }
+
             if (!(aeron.context().subscriberErrorHandler() instanceof RethrowingErrorHandler))
             {
                 throw new ClusterException("Aeron client must use a RethrowingErrorHandler");

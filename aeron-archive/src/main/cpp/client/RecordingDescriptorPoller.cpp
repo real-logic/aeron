@@ -59,7 +59,7 @@ ControlledPollAction RecordingDescriptorPoller::onFragment(
         static_cast<std::uint64_t>(length),
         MessageHeader::sbeSchemaVersion());
 
-    const std::int16_t schemaId = msgHeader.schemaId();
+    const std::uint16_t schemaId = msgHeader.schemaId();
     if (schemaId != MessageHeader::sbeSchemaId())
     {
         throw ArchiveException(

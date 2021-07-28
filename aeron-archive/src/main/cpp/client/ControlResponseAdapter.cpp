@@ -37,7 +37,8 @@ ControlResponseAdapter::ControlResponseAdapter(
     const recording_descriptor_consumer_t &onRecordingDescriptor,
     std::shared_ptr<aeron::Subscription> subscription,
     int fragmentLimit) :
-    m_fragmentHandler(fragmentHandler(*this)),
+    m_fragmentAssembler(fragmentHandler(*this)),
+    m_fragmentHandler(m_fragmentAssembler.handler()),
     m_subscription(std::move(subscription)),
     m_onResponse(onResponse),
     m_onRecordingDescriptor(onRecordingDescriptor),
@@ -53,7 +54,7 @@ void ControlResponseAdapter::onFragment(
         static_cast<std::uint64_t>(length),
         MessageHeader::sbeSchemaVersion());
 
-    const std::int16_t schemaId = msgHeader.schemaId();
+    const std::uint16_t schemaId = msgHeader.schemaId();
     if (schemaId != MessageHeader::sbeSchemaId())
     {
         throw ArchiveException(

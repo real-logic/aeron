@@ -39,9 +39,7 @@ extern "C"
 class RetransmitHandlerTest : public testing::Test
 {
 public:
-    RetransmitHandlerTest() :
-        m_time(0),
-        m_invalid_packet_counter(0)
+    RetransmitHandlerTest()
     {
     }
 
@@ -52,15 +50,15 @@ public:
 
     static int on_resend(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
     {
-        RetransmitHandlerTest *t = (RetransmitHandlerTest *)clientd;
+        auto *t = (RetransmitHandlerTest *)clientd;
 
         return t->m_resend(term_id, term_offset, length);
     }
 
 protected:
-    int64_t m_time;
-    int64_t m_invalid_packet_counter;
-    aeron_retransmit_handler_t m_handler;
+    int64_t m_time = 0;
+    int64_t m_invalid_packet_counter = 0;
+    aeron_retransmit_handler_t m_handler = {};
     std::function<int(int32_t, int32_t, size_t)> m_resend;
 };
 

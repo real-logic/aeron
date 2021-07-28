@@ -66,7 +66,7 @@ public:
      *
      * @return true of the last polling action received a complete message?
      */
-    inline bool isPollComplete()
+    inline bool isPollComplete() const
     {
         return m_pollComplete;
     }
@@ -86,7 +86,7 @@ public:
      *
      * @return the recording id of the last received event.
      */
-    inline std::int64_t recordingId()
+    inline std::int64_t recordingId() const
     {
         return m_recordingId;
     }
@@ -96,7 +96,7 @@ public:
      *
      * @return the position the recording started at.
      */
-    inline std::int64_t recordingStartPosition()
+    inline std::int64_t recordingStartPosition() const
     {
         return m_recordingStartPosition;
     }
@@ -106,7 +106,7 @@ public:
      *
      * @return the current recording position.
      */
-    inline std::int64_t recordingPosition()
+    inline std::int64_t recordingPosition() const
     {
         return m_recordingPosition;
     }
@@ -116,7 +116,7 @@ public:
      *
      * @return the position the recording stopped at.
      */
-    inline std::int64_t recordingStopPosition()
+    inline std::int64_t recordingStopPosition() const
     {
         return m_recordingStopPosition;
     }

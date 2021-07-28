@@ -35,7 +35,7 @@ public:
 protected:
     static void for_each(void *clientd, const char *key, size_t key_len, void *value)
     {
-        StrToPtrHashMapTest *t = (StrToPtrHashMapTest *)clientd;
+        auto *t = (StrToPtrHashMapTest *)clientd;
 
         t->m_for_each(key, key_len, value);
     }
@@ -46,7 +46,7 @@ protected:
         aeron_str_to_ptr_hash_map_for_each(&m_map, StrToPtrHashMapTest::for_each, this);
     }
 
-    aeron_str_to_ptr_hash_map_t m_map;
+    aeron_str_to_ptr_hash_map_t m_map = {};
     std::function<void(const char *, size_t, void *)> m_for_each;
 };
 

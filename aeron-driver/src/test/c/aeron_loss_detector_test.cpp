@@ -46,7 +46,7 @@ public:
 
     static void on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
     {
-        TermGapScannerTest *t = (TermGapScannerTest *)clientd;
+        auto *t = (TermGapScannerTest *)clientd;
 
         t->m_on_gap_detected(term_id, term_offset, length);
     }
@@ -61,7 +61,7 @@ TEST_F(TermGapScannerTest, shouldReportGapAtBeginningOfBuffer)
 {
     const int32_t frame_offset = AERON_ALIGN((HEADER_LENGTH * 3), AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int32_t high_water_mark = frame_offset + AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-    aeron_frame_header_t *hdr = (aeron_frame_header_t *)(m_ptr + frame_offset);
+    auto *hdr = (aeron_frame_header_t *)(m_ptr + frame_offset);
 
     hdr->frame_length = HEADER_LENGTH;
 
@@ -193,7 +193,7 @@ public:
 
     static void on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
     {
-        LossDetectorTest *t = (LossDetectorTest *)clientd;
+        auto *t = (LossDetectorTest *)clientd;
 
         t->m_on_gap_detected(term_id, term_offset, length);
     }
@@ -205,7 +205,7 @@ public:
 
     void insert_frame(int32_t offset)
     {
-        aeron_data_header_t *hdr = (aeron_data_header_t *)(m_ptr + offset);
+        auto *hdr = (aeron_data_header_t *)(m_ptr + offset);
 
         hdr->frame_header.frame_length = MESSAGE_LENGTH;
     }

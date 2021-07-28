@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 
             case 's':
             {
-                stream_id = strtoul(optarg, NULL, 0);
+                stream_id = (int32_t)strtoul(optarg, NULL, 0);
                 break;
             }
 

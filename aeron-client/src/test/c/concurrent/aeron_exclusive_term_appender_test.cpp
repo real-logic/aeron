@@ -144,7 +144,7 @@ TEST_F(CExclusiveTermAppenderTest, shouldAppendFrameTwiceToLog)
     resultingOffset = aeron_exclusive_term_appender_append_unfragmented_message(
         &m_term_buffer,
         m_term_tail_counter,
-        tail + alignedFrameLength,
+        (int32_t)(tail + alignedFrameLength),
         msgBuffer,
         msgLength,
         reserved_value_supplier,

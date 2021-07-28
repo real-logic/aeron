@@ -575,8 +575,8 @@ private:
     AsyncAddSubscription *m_addSubscription = nullptr;
     aeron_subscription_constants_t m_constants = {};
     std::string m_channel;
-    std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;
-    std::recursive_mutex m_adminLock;
+    std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations = {};
+    std::recursive_mutex m_adminLock = {};
 
     static void copyToVector(aeron_image_t *image, void *clientd)
     {

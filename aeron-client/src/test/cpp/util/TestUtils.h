@@ -36,7 +36,7 @@ std::string makeTempFileName()
     ::close(fd);
     ::unlink(rawname);
 
-    return std::string(rawname);
+    return { rawname };
 
 #else
     char tmpdir[MAX_PATH + 1] = {};
@@ -46,7 +46,7 @@ std::string makeTempFileName()
     {
         if (::GetTempFileName(tmpdir, TEXT("aeron-c"), 0, &tmpfile[0]) != 0)
         {
-            return std::string(tmpfile);
+            return { tmpfile };
         }
     }
 

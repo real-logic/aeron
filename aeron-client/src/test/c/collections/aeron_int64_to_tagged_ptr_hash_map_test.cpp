@@ -58,7 +58,7 @@ protected:
         aeron_int64_to_tagged_ptr_hash_map_remove_if(&m_map, Int64ToTaggedPtrHashMapTest::remove_if, this);
     }
 
-    aeron_int64_to_tagged_ptr_hash_map_t m_map;
+    aeron_int64_to_tagged_ptr_hash_map_t m_map = {};
     std::function<void(int64_t, uint32_t, void *)> m_for_each;
     std::function<bool(int64_t, uint32_t, void *)> m_remove_if;
 };

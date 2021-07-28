@@ -213,7 +213,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
             log_func(buffer);
 
             if (aeron_is_driver_active_with_cnc(
-                &cnc_mmap, context->driver_timeout_ms, aeron_epoch_clock(), log_func))
+                &cnc_mmap, (int64_t)context->driver_timeout_ms, aeron_epoch_clock(), log_func))
             {
                 aeron_unmap(&cnc_mmap);
                 return -1;
@@ -828,7 +828,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_feedback_delay_state_init(
         &_driver->context->unicast_delay_feedback_generator,
         aeron_loss_detector_nak_multicast_delay_generator,
-        _driver->context->nak_unicast_delay_ns,
+        (int64_t)_driver->context->nak_unicast_delay_ns,
         1,
         true) < 0)
     {
@@ -838,7 +838,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_feedback_delay_state_init(
         &_driver->context->multicast_delay_feedback_generator,
         aeron_loss_detector_nak_unicast_delay_generator,
-        _driver->context->nak_multicast_max_backoff_ns,
+        (int64_t)_driver->context->nak_multicast_max_backoff_ns,
         _driver->context->nak_multicast_group_size,
         false) < 0)
     {

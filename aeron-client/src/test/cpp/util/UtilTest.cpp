@@ -29,7 +29,7 @@ TEST(utilTests, scopeTest)
 {
     bool flag = false;
 
-    if (1)
+    if (true)
     {
         OnScopeExit onExit([&]()
         {

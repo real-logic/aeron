@@ -85,8 +85,7 @@ public:
             throw std::runtime_error("could not create image: " + std::string(aeron_errmsg()));
         }
 
-        aeron_logbuffer_metadata_t *metadata =
-            (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
+        auto *metadata = (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
 
         m_image = image;
         m_filename = filename;
@@ -100,10 +99,9 @@ public:
 
     void appendMessage(int64_t position, size_t length)
     {
-        aeron_logbuffer_metadata_t *metadata =
-            (aeron_logbuffer_metadata_t *)m_image->log_buffer->mapped_raw_log.log_meta_data.addr;
+        auto *metadata = (aeron_logbuffer_metadata_t *)m_image->log_buffer->mapped_raw_log.log_meta_data.addr;
         const size_t index = aeron_logbuffer_index_by_position(position, m_position_bits_to_shift);
-        uint8_t buffer[1024];
+        uint8_t buffer[1024] = { 0 };
         int32_t term_id = aeron_logbuffer_compute_term_id_from_position(
             position, m_position_bits_to_shift, m_initial_term_id);
         int32_t tail_offset = (int32_t)position & (m_term_length - 1);

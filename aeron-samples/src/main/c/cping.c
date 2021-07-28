@@ -183,13 +183,13 @@ int main(int argc, char **argv)
 
             case 'S':
             {
-                pong_stream_id = strtoul(optarg, NULL, 0);
+                pong_stream_id = (int32_t)strtoul(optarg, NULL, 0);
                 break;
             }
 
             case 's':
             {
-                ping_stream_id = strtoul(optarg, NULL, 0);
+                ping_stream_id = (int32_t)strtoul(optarg, NULL, 0);
                 break;
             }
 

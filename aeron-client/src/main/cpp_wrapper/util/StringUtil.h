@@ -140,7 +140,7 @@ inline std::string strPrintf(const char *format, ...)
     }
     else
     {
-        return std::string(buffer);
+        return { buffer };
     }
 }
 

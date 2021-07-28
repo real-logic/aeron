@@ -18,6 +18,8 @@
 #define AERON_ERROR_H
 
 #include <string.h>
+#include <stdbool.h>
+
 #include "aeron_common.h"
 #include "util/aeron_platform.h"
 

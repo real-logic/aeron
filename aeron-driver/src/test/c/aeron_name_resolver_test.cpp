@@ -147,7 +147,7 @@ protected:
         size_t label_length,
         void *clientd)
     {
-        find_name_counter_clientd_t *find_name_clientd = (find_name_counter_clientd_t *)clientd;
+        auto *find_name_clientd = (find_name_counter_clientd_t *)clientd;
         size_t query_name_length = strlen(find_name_clientd->name);
 
         if (AERON_NAME_RESOLVER_CSV_ENTRY_COUNTER_TYPE_ID == type_id)
@@ -162,7 +162,7 @@ protected:
         }
     }
 
-    int64_t *nameCounterAddrByHostname(resolver_fields_t *resolverFields, const char *name)
+    static int64_t *nameCounterAddrByHostname(resolver_fields_t *resolverFields, const char *name)
     {
         find_name_counter_clientd_t clientd = { name, -1 };
 
@@ -374,7 +374,7 @@ TEST_F(NameResolverTest, shouldUseStaticLookupTable)
 
     struct sockaddr_in address = {};
     address.sin_family = AF_INET;
-    sockaddr_storage *addr_ptr = (struct sockaddr_storage *)&address;
+    auto *addr_ptr = (struct sockaddr_storage *)&address;
 
     ASSERT_EQ(0, m_a.resolver.resolve_func(&m_a.resolver, NAME_0, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, addr_ptr));
     ASSERT_EQ(host_0a.s_addr, address.sin_addr.s_addr);
@@ -420,11 +420,11 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromBootstrapAndHandleIPv4WildCard)
         timestamp_ms += 10;
     }
 
-    struct sockaddr_storage resolved_address_of_b;
+    struct sockaddr_storage resolved_address_of_b = {};
     resolved_address_of_b.ss_family = AF_INET;
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address_of_b));
     ASSERT_EQ(AF_INET, resolved_address_of_b.ss_family);
-    struct sockaddr_in *in_addr_b = (struct sockaddr_in *)&resolved_address_of_b;
+    auto *in_addr_b = (struct sockaddr_in *)&resolved_address_of_b;
     ASSERT_NE(INADDR_ANY, in_addr_b->sin_addr.s_addr);
 
     assert_neighbor_counter_label_is(&m_a, "Resolver neighbors: bound 0.0.0.0:8050");
@@ -458,11 +458,11 @@ TEST_F(NameResolverTest, DISABLED_shouldSeeNeighborFromBootstrapAndHandleIPv6Wil
         timestamp_ms += 10;
     }
 
-    struct sockaddr_storage resolved_address_of_b;
+    struct sockaddr_storage resolved_address_of_b = {};
     resolved_address_of_b.ss_family = AF_INET6;
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address_of_b));
     ASSERT_EQ(AF_INET6, resolved_address_of_b.ss_family);
-    struct sockaddr_in6 *in_addr_b = (struct sockaddr_in6 *)&resolved_address_of_b;
+    auto *in_addr_b = (struct sockaddr_in6 *)&resolved_address_of_b;
     ASSERT_NE(0, memcmp(&in6addr_any, &in_addr_b->sin6_addr, sizeof(in6addr_any)));
 }
 
@@ -506,7 +506,7 @@ TEST_F(NameResolverTest, shouldSeeNeighborFromGossip)
         ASSERT_LT(aeron_epoch_clock(), deadline_ms) << "Timed out waiting for neighbors" << *this;
     }
 
-    struct sockaddr_storage resolved_address;
+    struct sockaddr_storage resolved_address = {};
     resolved_address.ss_family = AF_INET;
 
     ASSERT_LE(0, m_a.resolver.resolve_func(&m_a.resolver, "B", "endpoint", false, &resolved_address));
@@ -605,7 +605,7 @@ TEST_F(NameResolverTest, shouldHandleSettingNameOnHeader)
     const char *hostname = "this.is.the.hostname";
     auto *resolution_header = (aeron_resolution_header_t *)&buffer[0];
     uint8_t flags = 0;
-    struct sockaddr_storage address;
+    struct sockaddr_storage address = {};
 
     address.ss_family = AF_INET6;
     ASSERT_EQ(48, aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
@@ -632,7 +632,7 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
 {
     aeron_name_resolver_supplier_func_t supplier_func = aeron_name_resolver_supplier_load(AERON_NAME_RESOLVER_DRIVER);
     ASSERT_NE(nullptr, supplier_func);
-    struct sockaddr_storage address;
+    struct sockaddr_storage address = {};
     int64_t timestamp_ms = INTMAX_C(8932472347945);
 
     initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", timestamp_ms, "A", "0.0.0.0:8050");

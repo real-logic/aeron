@@ -166,7 +166,7 @@ public:
         aeron_context_set_on_new_exclusive_publication(m_context, on_new_exclusive_publication, this);
         aeron_context_set_on_new_subscription(m_context, on_new_subscription, this);
 
-        aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)m_context->cnc_map.addr;
+        auto *metadata = (aeron_cnc_metadata_t *)m_context->cnc_map.addr;
         metadata->to_driver_buffer_length = (int32_t)TO_DRIVER_RING_BUFFER_LENGTH;
         metadata->to_clients_buffer_length = (int32_t)TO_CLIENTS_BUFFER_LENGTH;
         metadata->counter_metadata_buffer_length = (int32_t)COUNTER_METADATA_BUFFER_LENGTH;
@@ -466,7 +466,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddPublicationFromDriverTimeout)
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr == publication);
 
-    doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
+    doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000);
 
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), -1);
     ASSERT_EQ(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, aeron_errcode());
@@ -549,7 +549,7 @@ TEST_F(ClientConductorTest, shouldErrorOnAddExclusivePublicationFromDriverTimeou
     ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr == publication);
 
-    doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000LL);
+    doWorkForNs((m_context->driver_timeout_ms + 1000) * 1000000);
 
     ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), -1);
     ASSERT_EQ(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, aeron_errcode());

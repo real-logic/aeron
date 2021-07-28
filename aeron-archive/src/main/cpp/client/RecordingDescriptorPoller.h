@@ -96,7 +96,7 @@ public:
      *
      * @return control session id for filtering responses.
      */
-    inline std::int64_t controlSessionId()
+    inline std::int64_t controlSessionId() const
     {
         return m_controlSessionId;
     }
@@ -106,7 +106,7 @@ public:
      *
      * @return true if the dispatch of descriptors complete?
      */
-    inline bool isDispatchComplete()
+    inline bool isDispatchComplete() const
     {
         return m_isDispatchComplete;
     }
@@ -116,7 +116,7 @@ public:
      *
      * @return the number of remaining records expected.
      */
-    inline std::int32_t remainingRecordCount()
+    inline std::int32_t remainingRecordCount() const
     {
         return m_remainingRecordCount;
     }

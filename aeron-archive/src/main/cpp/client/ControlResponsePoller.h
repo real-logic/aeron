@@ -72,7 +72,7 @@ public:
      *
      * @return control session id of the last polled message or Aeron#NULL_VALUE if poll returned nothing.
      */
-    inline std::int64_t controlSessionId()
+    inline std::int64_t controlSessionId() const
     {
         return m_controlSessionId;
     }
@@ -82,7 +82,7 @@ public:
      *
      * @return correlation id of the last polled message or Aeron#NULL_VALUE if poll returned nothing.
      */
-    inline std::int64_t correlationId()
+    inline std::int64_t correlationId() const
     {
         return m_correlationId;
     }
@@ -92,7 +92,7 @@ public:
      *
      * @return the relevant id returned with the response.
      */
-    inline std::int64_t relevantId()
+    inline std::int64_t relevantId() const
     {
         return m_relevantId;
     }
@@ -102,7 +102,7 @@ public:
      *
      * @return response from the server in semantic version form.
      */
-    inline std::int32_t version()
+    inline std::int32_t version() const
     {
         return m_version;
     }
@@ -112,7 +112,7 @@ public:
      *
      * @return whether the last received message was a Control Response.
      */
-    inline bool isControlResponse()
+    inline bool isControlResponse() const
     {
         return m_isControlResponse;
     }
@@ -122,7 +122,7 @@ public:
      *
      * @return true if the last polling action received a complete message?
      */
-    inline bool isPollComplete()
+    inline bool isPollComplete() const
     {
         return m_pollComplete;
     }
@@ -142,7 +142,7 @@ public:
      *
      * @return whether the last received control response had a response code of OK?
      */
-    inline bool isCodeOk()
+    inline bool isCodeOk() const
     {
         return m_isCodeOk;
     }
@@ -152,7 +152,7 @@ public:
      *
      * @return whether the last received control response had a response code of ERROR?
      */
-    inline bool isCodeError()
+    inline bool isCodeError() const
     {
         return m_isCodeError;
     }
@@ -162,7 +162,7 @@ public:
      *
      * @return the response code value of the last response.
      */
-    inline int codeValue()
+    inline int codeValue() const
     {
         return m_codeValue;
     }
@@ -172,7 +172,7 @@ public:
      *
      * @return true if the last polling action received was a challenge message, false if not.
      */
-    inline bool wasChallenged()
+    inline bool wasChallenged() const
     {
         return m_wasChallenged;
     }
@@ -200,7 +200,7 @@ private:
     std::int64_t m_relevantId = -1;
     std::int32_t m_version = 0;
     int m_codeValue = -1;
-    std::string m_errorMessage = "";
+    std::string m_errorMessage;
     bool m_pollComplete = false;
     bool m_isCodeOk = false;
     bool m_isCodeError = false;

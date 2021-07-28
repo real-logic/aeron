@@ -37,10 +37,10 @@ namespace test
 
 std::string tempFileName()
 {
-    char filename[AERON_MAX_PATH];
+    char filename[AERON_MAX_PATH] = { 0 };
 
     aeron_temp_filename(filename, sizeof(filename));
-    return std::string(filename);
+    return { filename };
 }
 
 void createLogFile(const std::string &filename)

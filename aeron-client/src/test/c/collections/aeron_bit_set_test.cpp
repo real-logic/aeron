@@ -90,8 +90,8 @@ public:
 
 TEST_F(BitSetTest, shouldSetAndGetStack)
 {
-    uint64_t bits[STATIC_ARRAY_LEN];
-    aeron_bit_set_t bit_set;
+    uint64_t bits[STATIC_ARRAY_LEN] = { 0 };
+    aeron_bit_set_t bit_set = {};
     size_t bit_set_length = STATIC_ARRAY_LEN * 64;
 
     EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
@@ -103,7 +103,7 @@ TEST_F(BitSetTest, shouldSetAndGetStack)
 
 TEST_F(BitSetTest, shouldSetAndGetHeap)
 {
-    aeron_bit_set_t *bit_set;
+    aeron_bit_set_t *bit_set = nullptr;
     size_t bit_set_length = STATIC_ARRAY_LEN * 64;
 
     EXPECT_EQ(aeron_bit_set_heap_init(bit_set_length, false, &bit_set), 0);
@@ -115,10 +115,10 @@ TEST_F(BitSetTest, shouldSetAndGetHeap)
 
 TEST_F(BitSetTest, shouldSetAndGet)
 {
-    uint64_t bits[STATIC_ARRAY_LEN];
-    aeron_bit_set_t bit_set;
+    uint64_t bits[STATIC_ARRAY_LEN] = { 0 };
+    aeron_bit_set_t bit_set = {};
     size_t bit_set_length = STATIC_ARRAY_LEN * 64;
-    bool result;
+    bool result = false;
 
     EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
 
@@ -179,10 +179,10 @@ TEST_F(BitSetTest, shouldSetAndGet)
 
 TEST_F(BitSetTest, shouldFindFirstBit)
 {
-    uint64_t bits[STATIC_ARRAY_LEN];
-    aeron_bit_set_t bit_set;
+    uint64_t bits[STATIC_ARRAY_LEN] = { 0 };
+    aeron_bit_set_t bit_set = {};
     size_t bit_set_length = STATIC_ARRAY_LEN * 64;
-    size_t result;
+    size_t result = 0;
 
     EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
 
@@ -208,19 +208,19 @@ TEST_F(BitSetTest, shouldFindFirstBit)
 
 TEST_F(BitSetTest, shouldHandleOutOfRangeRequests)
 {
-    uint64_t bits[STATIC_ARRAY_LEN];
-    aeron_bit_set_t bit_set;
+    uint64_t bits[STATIC_ARRAY_LEN] = { 0 };
+    aeron_bit_set_t bit_set = {};
     size_t bit_set_length = STATIC_ARRAY_LEN * 64;
-    bool result;
+    bool result = 0;
 
     EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
-    EXPECT_EQ(aeron_bit_set_set(NULL, 0, true), -EINVAL);
+    EXPECT_EQ(aeron_bit_set_set(nullptr, 0, true), -EINVAL);
     EXPECT_EQ(aeron_bit_set_set(&bit_set, bit_set_length, true), -EINVAL);
     EXPECT_EQ(aeron_bit_set_set(&bit_set, bit_set_length + 1, true), -EINVAL);
     EXPECT_EQ(aeron_bit_set_set(&bit_set, -1, true), -EINVAL);
 
-    EXPECT_EQ(aeron_bit_set_get(NULL, 0, &result), -EINVAL);
-    EXPECT_EQ(aeron_bit_set_get(&bit_set, 0, NULL), -EINVAL);
+    EXPECT_EQ(aeron_bit_set_get(nullptr, 0, &result), -EINVAL);
+    EXPECT_EQ(aeron_bit_set_get(&bit_set, 0, nullptr), -EINVAL);
     EXPECT_EQ(aeron_bit_set_get(&bit_set, bit_set_length, &result), -EINVAL);
     EXPECT_EQ(aeron_bit_set_get(&bit_set, bit_set_length + 1, &result), -EINVAL);
     EXPECT_EQ(aeron_bit_set_get(&bit_set, -1, &result), -EINVAL);
@@ -228,8 +228,8 @@ TEST_F(BitSetTest, shouldHandleOutOfRangeRequests)
 
 TEST_F(BitSetTest, shouldHeapAllocateIfBitsRequiredIsTooLarge)
 {
-    uint64_t bits[STATIC_ARRAY_LEN];
-    aeron_bit_set_t bit_set;
+    uint64_t bits[STATIC_ARRAY_LEN] = { 0 };
+    aeron_bit_set_t bit_set = {};
     size_t bit_set_length = STATIC_ARRAY_LEN * 64;
 
     EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, true, &bit_set), 0);
@@ -248,8 +248,8 @@ TEST_F(BitSetTest, shouldHeapAllocateIfBitsRequiredIsTooLarge)
 
 TEST_F(BitSetTest, shouldHandleNonBase2BitSetLength)
 {
-    uint64_t bits[2];
-    aeron_bit_set_t bit_set;
+    uint64_t bits[2] = { 0 };
+    aeron_bit_set_t bit_set = {};
     size_t bit_set_length = 10;
     size_t bit_index = 0;
 

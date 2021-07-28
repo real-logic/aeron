@@ -34,14 +34,14 @@ public:
 protected:
     static void for_each(void *clientd, int64_t key, void *value)
     {
-        Int64ToPtrHashMapTest *t = (Int64ToPtrHashMapTest *)clientd;
+        auto *t = (Int64ToPtrHashMapTest *)clientd;
 
         t->m_for_each(key, value);
     }
 
     static bool remove_if(void *clientd, int64_t key, void *value)
     {
-        Int64ToPtrHashMapTest *t = (Int64ToPtrHashMapTest *)clientd;
+        auto *t = (Int64ToPtrHashMapTest *)clientd;
 
         return t->m_remove_if(key, value);
     }
@@ -58,7 +58,7 @@ protected:
         aeron_int64_to_ptr_hash_map_remove_if(&m_map, Int64ToPtrHashMapTest::remove_if, this);
     }
 
-    aeron_int64_to_ptr_hash_map_t m_map;
+    aeron_int64_to_ptr_hash_map_t m_map = {};
     std::function<void(int64_t, void *)> m_for_each;
     std::function<bool(int64_t, void *)> m_remove_if;
 };

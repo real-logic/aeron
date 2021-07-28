@@ -43,7 +43,7 @@ public:
         m_fragment.fill(0);
     }
 
-    virtual void SetUp()
+    void SetUp() override
     {
         m_fragment.fill(0);
     }

@@ -54,7 +54,7 @@ public:
 
 
 protected:
-    aeron_properties_parser_state_t m_state;
+    aeron_properties_parser_state_t m_state = {};
     std::string m_name;
     std::string m_value;
 };

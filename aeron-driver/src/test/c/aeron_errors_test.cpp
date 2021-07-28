@@ -85,7 +85,7 @@ public:
 
 private:
     std::vector<std::string> m_expectedSubstrings;
-    std::vector<std::string> m_observations{};
+    std::vector<std::string> m_observations;
     bool m_validated = false;
 };
 
@@ -136,9 +136,9 @@ public:
     }
 
 protected:
-    std::int64_t *m_errorCounter = NULL;
+    std::int64_t *m_errorCounter = nullptr;
     std::int64_t m_initialErrorCount = 0;
-    aeron_counters_reader_t *m_countersReader = NULL;
+    aeron_counters_reader_t *m_countersReader = nullptr;
 
     aeron_t *connect() override
     {
@@ -153,7 +153,7 @@ protected:
 
     void waitForErrorCounterIncrease()
     {
-        int64_t currentErrorCount;
+        int64_t currentErrorCount = 0;
         do
         {
             std::this_thread::yield();
@@ -164,7 +164,7 @@ protected:
     
     void verifyDistinctErrorLogContains(const char *text, std::int64_t timeoutMs = 0)
     {
-        aeron_cnc_t *aeronCnc = NULL;
+        aeron_cnc_t *aeronCnc = nullptr;
         const char *aeron_dir = aeron_context_get_dir(m_context);
         int result = aeron_cnc_init(&aeronCnc, aeron_dir, 1000);
         ASSERT_EQ(0, result) << "CnC file not available: " << aeron_dir;
@@ -205,7 +205,7 @@ protected:
 
 TEST_F(CErrorsTest, shouldErrorOnAddCounterPoll)
 {
-    ASSERT_EQ(-1, aeron_async_add_counter_poll(NULL, NULL));
+    ASSERT_EQ(-1, aeron_async_add_counter_poll(nullptr, nullptr));
     std::string errorMessage = std::string(aeron_errmsg());
     ASSERT_THAT(errorMessage, testing::HasSubstr("Invalid argument"));
     ASSERT_THAT(errorMessage, testing::HasSubstr("Parameters must not be null"));
@@ -214,9 +214,9 @@ TEST_F(CErrorsTest, shouldErrorOnAddCounterPoll)
 TEST_F(CErrorsTest, shouldValidatePollType)
 {
     aeron_t *aeron = connect();
-    aeron_async_add_publication_t *pub_async;
-    aeron_publication_t *pub;
-    aeron_counter_t *counter;
+    aeron_async_add_publication_t *pub_async = nullptr;
+    aeron_publication_t *pub = nullptr;
+    aeron_counter_t *counter = nullptr;
 
     ASSERT_EQ(0, aeron_async_add_publication(&pub_async, aeron, "aeron:ipc", 1001));
     ASSERT_EQ(-1, aeron_async_add_counter_poll(&counter, (aeron_async_add_counter_t *)pub_async)) << aeron_errmsg();
@@ -229,14 +229,14 @@ TEST_F(CErrorsTest, shouldValidatePollType)
         std::this_thread::yield();
     }
 
-    aeron_publication_close(pub, NULL, NULL);
+    aeron_publication_close(pub, nullptr, nullptr);
 }
 
 TEST_F(CErrorsTest, publicationErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
 {
     aeron_t *aeron = connect();
-    aeron_async_add_publication_t *pub_async;
-    aeron_publication_t *pub;
+    aeron_async_add_publication_t *pub_async = nullptr;
+    aeron_publication_t *pub = nullptr;
 
     ASSERT_EQ(0, aeron_async_add_publication(&pub_async, aeron, "aeron:tcp?endpoint=localhost:21345", 1001));
 
@@ -263,8 +263,8 @@ TEST_F(CErrorsTest, publicationErrorIncludesClientAndDriverErrorAndReportsInDist
 TEST_F(CErrorsTest, exclusivePublicationErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
 {
     aeron_t *aeron = connect();
-    aeron_async_add_exclusive_publication_t *pub_async;
-    aeron_exclusive_publication_t *pub;
+    aeron_async_add_exclusive_publication_t *pub_async = nullptr;
+    aeron_exclusive_publication_t *pub = nullptr;
 
     ASSERT_EQ(0, aeron_async_add_exclusive_publication(&pub_async, aeron, "aeron:tcp?endpoint=localhost:21345", 1001));
 
@@ -291,11 +291,11 @@ TEST_F(CErrorsTest, exclusivePublicationErrorIncludesClientAndDriverErrorAndRepo
 TEST_F(CErrorsTest, subscriptionErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
 {
     aeron_t *aeron = connect();
-    aeron_async_add_subscription_t *sub_async;
-    aeron_subscription_t *sub;
+    aeron_async_add_subscription_t *sub_async = nullptr;
+    aeron_subscription_t *sub = nullptr;
 
     ASSERT_EQ(0, aeron_async_add_subscription(
-        &sub_async, aeron, "aeron:tcp?endpoint=localhost:21345", 1001, NULL, NULL, NULL, NULL));
+        &sub_async, aeron, "aeron:tcp?endpoint=localhost:21345", 1001, nullptr, nullptr, nullptr, nullptr));
 
     int result;
     while (0 == (result = aeron_async_add_subscription_poll(&sub, sub_async)))
@@ -320,8 +320,8 @@ TEST_F(CErrorsTest, subscriptionErrorIncludesClientAndDriverErrorAndReportsInDis
 TEST_F(CErrorsTest, counterErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
 {
     aeron_t *aeron = connect();
-    aeron_async_add_counter_t *counter_async;
-    aeron_counter_t *counter;
+    aeron_async_add_counter_t *counter_async = nullptr;
+    aeron_counter_t *counter = nullptr;
 
     int32_t key = 1000000;
 
@@ -361,9 +361,9 @@ TEST_F(CErrorsTest, counterErrorIncludesClientAndDriverErrorAndReportsInDistinct
 TEST_F(CErrorsTest, destinationErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
 {
     aeron_t *aeron = connect();
-    aeron_async_add_exclusive_publication_t *pub_async;
-    aeron_async_destination_t *dest_async;
-    aeron_exclusive_publication_t *pub;
+    aeron_async_add_exclusive_publication_t *pub_async = nullptr;
+    aeron_async_destination_t *dest_async = nullptr;
+    aeron_exclusive_publication_t *pub = nullptr;
 
     ASSERT_EQ(0, aeron_async_add_exclusive_publication(&pub_async, aeron, "aeron:udp?control-mode=manual", 1001));
 
@@ -402,8 +402,8 @@ TEST_F(CErrorsTest, destinationErrorIncludesClientAndDriverErrorAndReportsInDist
 TEST_F(CErrorsTest, shouldFailToResovleNameOnPublication)
 {
     aeron_t *aeron = connect();
-    aeron_async_add_publication_t *pub_async;
-    aeron_publication_t *pub;
+    aeron_async_add_publication_t *pub_async = nullptr;
+    aeron_publication_t *pub = nullptr;
 
     ASSERT_EQ(0, aeron_async_add_publication(&pub_async, aeron, "aeron:udp?endpoint=foo.example.com:20202", 1001));
 
@@ -431,8 +431,8 @@ TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
 {
     aeron_t *aeron = connect();
 
-    aeron_async_add_publication_t *pub_async;
-    aeron_publication_t *pub;
+    aeron_async_add_publication_t *pub_async = nullptr;
+    aeron_publication_t *pub = nullptr;
 
     ASSERT_EQ(0, aeron_async_add_publication(&pub_async, aeron, "aeron:udp?endpoint=localhost:21345", 1001));
 

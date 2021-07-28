@@ -909,10 +909,8 @@ int32_t aeron_driver_agent_socket_address_length(struct sockaddr_storage *addres
     {
         return sizeof(((struct sockaddr_in6*)(address))->sin6_addr);
     }
-    else
-    {
-        return 0;
-    }
+
+    return 0;
 }
 
 void aeron_driver_agent_name_resolver_on_resolve(

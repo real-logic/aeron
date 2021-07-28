@@ -196,7 +196,7 @@ public:
 
     static void setFlagOnClose(void *clientd)
     {
-        std::atomic<bool> *flag = static_cast<std::atomic<bool> *>(clientd);
+        auto *flag = static_cast<std::atomic<bool> *>(clientd);
         flag->store(true);
     }
 

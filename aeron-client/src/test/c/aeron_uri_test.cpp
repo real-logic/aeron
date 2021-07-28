@@ -137,29 +137,29 @@ public:
     static void add_ifaddr(
         int family, const char *name, const char *addr_str, const char *netmask_str, unsigned int flags)
     {
-        struct ifaddrs *entry = new struct ifaddrs;
+        auto *entry = new struct ifaddrs;
         void *addr, *netmask;
 
         if (family == AF_INET6)
         {
-            struct sockaddr_in6 *a = new struct sockaddr_in6;
+            auto *a = new struct sockaddr_in6;
             addr = &a->sin6_addr;
             a->sin6_family = AF_INET6;
             entry->ifa_addr = reinterpret_cast<struct sockaddr *>(a);
 
-            struct sockaddr_in6 *b = new struct sockaddr_in6;
+            auto *b = new struct sockaddr_in6;
             netmask = &b->sin6_addr;
             b->sin6_family = AF_INET6;
             entry->ifa_netmask = reinterpret_cast<struct sockaddr *>(b);
         }
         else
         {
-            struct sockaddr_in *a = new struct sockaddr_in;
+            auto *a = new struct sockaddr_in;
             addr = &a->sin_addr;
             a->sin_family = AF_INET;
             entry->ifa_addr = reinterpret_cast<struct sockaddr *>(a);
 
-            struct sockaddr_in *b = new struct sockaddr_in;
+            auto *b = new struct sockaddr_in;
             netmask = &b->sin_addr;
             b->sin_family = AF_INET;
             entry->ifa_netmask = reinterpret_cast<struct sockaddr *>(b);
@@ -207,8 +207,8 @@ protected:
 TEST_F(UriLookupTest, shouldFindIpv4Loopback)
 {
     char buffer[AERON_MAX_PATH];
-    struct sockaddr_storage addr;
-    struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
+    struct sockaddr_storage addr = {};
+    auto *addr_in = (struct sockaddr_in *)&addr;
     unsigned int if_index;
 
     ASSERT_EQ(aeron_find_interface("127.0.0.0/16", (struct sockaddr_storage *)&addr, &if_index), 0);
@@ -219,8 +219,8 @@ TEST_F(UriLookupTest, shouldFindIpv4Loopback)
 TEST_F(UriLookupTest, shouldFindIpv4LoopbackAsLocalhost)
 {
     char buffer[AERON_MAX_PATH];
-    struct sockaddr_storage addr;
-    struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
+    struct sockaddr_storage addr = {};
+    auto *addr_in = (struct sockaddr_in *)&addr;
     unsigned int if_index;
 
     ASSERT_EQ(aeron_find_interface("localhost:40123", (struct sockaddr_storage *)&addr, &if_index), 0);
@@ -232,8 +232,8 @@ TEST_F(UriLookupTest, shouldFindIpv4LoopbackAsLocalhost)
 TEST_F(UriLookupTest, shouldFindIpv6)
 {
     char buffer[AERON_MAX_PATH];
-    struct sockaddr_storage addr;
-    struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&addr;
+    struct sockaddr_storage addr = {};
+    auto *addr_in6 = (struct sockaddr_in6 *)&addr;
     unsigned int if_index;
 
     ASSERT_EQ(aeron_find_interface("[fe80:0:0:0:0:0:0:0]/16", (struct sockaddr_storage *)&addr, &if_index), 0);
@@ -243,8 +243,8 @@ TEST_F(UriLookupTest, shouldFindIpv6)
 
 TEST_F(UriLookupTest, shouldNotFindUnknown)
 {
-    struct sockaddr_storage addr;
-    unsigned int if_index;
+    struct sockaddr_storage addr = {};
+    unsigned int if_index = 0;
 
     ASSERT_EQ(aeron_find_interface("[fe80:ffff:0:0:0:0:0:0]/32", (struct sockaddr_storage *)&addr, &if_index), -1);
     ASSERT_EQ(aeron_find_interface("127.0.0.10/32", (struct sockaddr_storage *)&addr, &if_index), -1);
@@ -278,7 +278,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_P(UriPrintTest, shouldPrintSimpleUri)
 {
-    char print_buffer[AERON_MAX_PATH];
+    char print_buffer[AERON_MAX_PATH] = { 0 };
     const char *uri = GetParam();
 
     EXPECT_EQ(AERON_URI_PARSE(uri, &m_uri), 0);
@@ -288,8 +288,8 @@ TEST_P(UriPrintTest, shouldPrintSimpleUri)
 
 TEST_P(UriPrintTest, shouldPrintWithNarrowTruncation)
 {
-    char print_buffer[5];
-    char temp_buffer[5];
+    char print_buffer[5] = { 0 };
+    char temp_buffer[5] = { 0 };
     const char *uri = GetParam();
 
     EXPECT_EQ(AERON_URI_PARSE(uri, &m_uri), 0);
@@ -303,8 +303,8 @@ TEST_P(UriPrintTest, shouldPrintWithNarrowTruncation)
 
 TEST_P(UriPrintTest, shouldPrintWithTruncation)
 {
-    char print_buffer[16];
-    char temp_buffer[16];
+    char print_buffer[16] = { 0 };
+    char temp_buffer[16] = { 0 };
     const char *uri = GetParam();
 
     EXPECT_EQ(AERON_URI_PARSE(uri, &m_uri), 0);

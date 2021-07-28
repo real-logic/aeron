@@ -79,7 +79,7 @@ public:
             std::shared_ptr<Aeron> aeron,
             std::int64_t subscriptionId,
             std::int64_t publicationId,
-            const long long deadlineNs);
+            long long deadlineNs);
 
         /**
          * Poll for a complete connection.
@@ -271,7 +271,7 @@ public:
 
         if (!m_controlResponsePoller->subscription()->isConnected())
         {
-            return std::string(NOT_CONNECTED_MSG);
+            return { NOT_CONNECTED_MSG };
         }
 
         if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())

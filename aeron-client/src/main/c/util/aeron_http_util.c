@@ -269,7 +269,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
         request, sizeof(request) - 1, aeron_http_request_format, parsed_url.path_and_query, parsed_url.host_and_port);
     ssize_t sent_length = 0;
 
-    if (length < 0 || (sent_length = send(sock, request, (size_t)length, 0)) < length)
+    if (length < 0 || (sent_length = send(sock, request, length, 0)) < length)
     {
         AERON_SET_ERR(errno, "http sent %" PRIu64 "/%d bytes", (uint64_t)sent_length, length);
         goto error;

@@ -38,6 +38,9 @@ for %%o in (%*) do (
         set "BUILD_DIR=%DIR%\Debug"
         set "BUILD_CONFIG=Debug"
         echo "Enabling debug build"
+    ) else if "%%o"=="--sanitise-build" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DSANITISE_BUILD=ON"
+        echo "Enabling sanitise build"
     ) else (
         echo "Unknown option %%o"
         echo "Use --help for help"

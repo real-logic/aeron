@@ -218,6 +218,12 @@ elseif (MSVC)
     if (CXX_WARNINGS_AS_ERRORS)
         add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
     endif (CXX_WARNINGS_AS_ERRORS)
+
+    if (SANITISE_BUILD)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi /D AERON_SANITIZE_ENABLED")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address /Zi /D AERON_SANITIZE_ENABLED")
+    endif (SANITISE_BUILD)
+
 endif ()
 
 

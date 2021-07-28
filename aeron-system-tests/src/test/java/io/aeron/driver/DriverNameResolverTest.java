@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Supplier;
@@ -323,7 +322,7 @@ public class DriverNameResolverTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldFallbackToAnotherBootstrapNeighborIfOneBecomesUnavailable() throws IOException
+    public void shouldFallbackToAnotherBootstrapNeighborIfOneBecomesUnavailable()
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
 

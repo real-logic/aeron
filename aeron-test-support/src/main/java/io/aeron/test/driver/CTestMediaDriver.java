@@ -198,7 +198,7 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         setFlowControlStrategy(environment, context);
         setLogging(environment);
-        C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()).forEach(environment::put);
+        environment.putAll(C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()));
 
         try
         {

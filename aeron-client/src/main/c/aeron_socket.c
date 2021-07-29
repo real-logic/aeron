@@ -203,7 +203,7 @@ int getifaddrs(struct ifaddrs **ifap)
             ULONG prefixLength = unicast->OnLinkPrefixLength;
 
             /* map prefix to netmask */
-            ift->ifa_netmask = malloc(sizeof(struct sockaddr));
+            ift->ifa_netmask = malloc(unicast->Address.iSockaddrLength);
             ift->ifa_netmask->sa_family = unicast->Address.lpSockaddr->sa_family;
 
             switch (unicast->Address.lpSockaddr->sa_family)

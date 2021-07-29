@@ -95,7 +95,7 @@ public:
 
         EXPECT_EQ(result, 0);
         EXPECT_NE(nullptr, congestion_control_strategy);
-        void * const state = congestion_control_strategy->state;
+        void *const state = congestion_control_strategy->state;
         EXPECT_NE(nullptr, state);
         EXPECT_NE(nullptr, congestion_control_strategy->on_rttm_sent);
         EXPECT_NE(nullptr, congestion_control_strategy->on_rttm);
@@ -166,6 +166,13 @@ public:
         return udp_channel;
     }
 
+    int32_t get_counter_state(int32_t counter_id) const
+    {
+        const aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)
+            (m_counters_manager.metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
+        return metadata->state;
+    }
+
 protected:
     void TearDown() override
     {
@@ -177,7 +184,7 @@ protected:
             it = m_udp_channels.erase(it);
         }
     }
-    
+
     aeron_driver_context_t *m_context = nullptr;
     aeron_counters_manager_t m_counters_manager = {};
     std::vector<aeron_udp_channel_t *> m_udp_channels;
@@ -288,7 +295,7 @@ TEST_F(CongestionControlTest, defaultStrategySupplierShouldChooseCubicCongestion
 
     EXPECT_EQ(result, 0);
     EXPECT_NE(nullptr, congestion_control_strategy);
-    void * const state = congestion_control_strategy->state;
+    void *const state = congestion_control_strategy->state;
     EXPECT_NE(nullptr, state);
     EXPECT_NE(nullptr, congestion_control_strategy->on_rttm_sent);
     EXPECT_NE(nullptr, congestion_control_strategy->on_rttm);
@@ -398,7 +405,7 @@ TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
 
     EXPECT_EQ(result, 0);
     EXPECT_NE(nullptr, congestion_control_strategy);
-    void * const state = congestion_control_strategy->state;
+    void *const state = congestion_control_strategy->state;
     EXPECT_NE(nullptr, state);
     EXPECT_NE(nullptr, congestion_control_strategy->on_rttm_sent);
     EXPECT_NE(nullptr, congestion_control_strategy->on_rttm);
@@ -411,12 +418,14 @@ TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
         &m_counters_manager,
         AERON_COUNTER_PER_IMAGE_TYPE_ID,
         AERON_CUBICCONGESTIONCONTROL_RTT_INDICATOR_COUNTER_NAME);
+    EXPECT_EQ(AERON_COUNTER_RECORD_ALLOCATED, get_counter_state(rtt_indicator_counter_id));
     EXPECT_EQ(0, aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, rtt_indicator_counter_id)));
 
     const int32_t window_counter_id = find_counter_by_label_prefix(
         &m_counters_manager,
         AERON_COUNTER_PER_IMAGE_TYPE_ID,
         AERON_CUBICCONGESTIONCONTROL_WINDOW_INDICATOR_COUNTER_NAME);
+    EXPECT_EQ(AERON_COUNTER_RECORD_ALLOCATED, get_counter_state(window_counter_id));
     EXPECT_EQ(
         sender_mtu_length * 2, aeron_counter_get(aeron_counters_manager_addr(&m_counters_manager, window_counter_id)));
 
@@ -431,4 +440,8 @@ TEST_F(CongestionControlTest, cubicCongestionControlStrategyConfiguration)
     EXPECT_TRUE(congestion_control_strategy->should_measure_rtt(state, 30000000000LL));
 
     congestion_control_strategy->fini(congestion_control_strategy);
+
+    // assert that counters were freed
+    EXPECT_EQ(AERON_COUNTER_RECORD_RECLAIMED, get_counter_state(rtt_indicator_counter_id));
+    EXPECT_EQ(AERON_COUNTER_RECORD_RECLAIMED, get_counter_state(window_counter_id));
 }

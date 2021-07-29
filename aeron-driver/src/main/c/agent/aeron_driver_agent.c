@@ -452,6 +452,7 @@ bool aeron_driver_agent_logging_events_init(const char *event_log, const char *e
         if (NULL == event_log_disable_dup)
         {
             fprintf(stderr, "failed to copy logging disable events string\n");
+            aeron_free(event_log_dup);
             return false;
         }
 
@@ -461,6 +462,7 @@ bool aeron_driver_agent_logging_events_init(const char *event_log, const char *e
         if (num_events_disable < 0)
         {
             fprintf(stderr, "failed to parse logging events: '%s'\n", event_log_disable);
+            aeron_free(event_log_dup);
             aeron_free(event_log_disable_dup);
             return false;
         }

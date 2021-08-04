@@ -255,7 +255,6 @@ final class PublicationParams
         if (null != lingerParam)
         {
             lingerTimeoutNs = SystemUtil.parseDuration(LINGER_PARAM_NAME, lingerParam);
-            Configuration.validatePublicationLingerTimeoutNs(lingerTimeoutNs, lingerTimeoutNs);
         }
     }
 

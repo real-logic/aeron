@@ -1736,21 +1736,6 @@ public final class Configuration
     }
 
     /**
-     * Validate the publication linger timeout is an appropriate value.
-     *
-     * @param timeoutNs to be validated.
-     * @param driverLingerTimeoutNs set for the driver operation.
-     * @throws ConfigurationException if the values are not valid.
-     */
-    public static void validatePublicationLingerTimeoutNs(final long timeoutNs, final long driverLingerTimeoutNs)
-    {
-        if (timeoutNs < driverLingerTimeoutNs)
-        {
-            throw new ConfigurationException("linger=" + driverLingerTimeoutNs + " < timeoutNs =" + timeoutNs);
-        }
-    }
-
-    /**
      * Get the {@link TerminationValidator} implementations which can be used for validating a termination request
      * sent to the driver to ensure the client has the right to terminate a driver.
      *

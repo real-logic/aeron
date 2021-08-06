@@ -1971,7 +1971,7 @@ public final class ChannelUriStringBuilder
 
         if (null != linger)
         {
-            sb.append(LINGER_PARAM_NAME).append('=').append(linger.intValue()).append('|');
+            sb.append(LINGER_PARAM_NAME).append('=').append(linger).append('|');
         }
 
         if (null != alias)

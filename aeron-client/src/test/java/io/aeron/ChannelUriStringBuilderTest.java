@@ -18,6 +18,7 @@ package io.aeron;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -165,6 +166,40 @@ public class ChannelUriStringBuilderTest
             () -> new ChannelUriStringBuilder().media("udp").endpoint("address:9999").linger(-1L));
 
         assertEquals("linger value cannot be negative: -1", exception.getMessage());
+    }
+
+    @Test
+    public void shouldCopyLingerTimeoutFromChannelUriHumanForm()
+    {
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
+        builder.linger(ChannelUri.parse("aeron:ipc?linger=7200s"));
+
+        assertEquals(TimeUnit.HOURS.toNanos(2), builder.linger());
+    }
+
+    @Test
+    public void shouldCopyLingerTimeoutFromChannelUriNanoseconds()
+    {
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
+        builder.linger(ChannelUri.parse("aeron:udp?linger=19191919191919191"));
+
+        assertEquals(19191919191919191L, builder.linger());
+    }
+
+    @Test
+    public void shouldCopyLingerTimeoutFromChannelUriNoValue()
+    {
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
+        builder.linger(ChannelUri.parse("aeron:udp?endpoint=localhost:8080"));
+
+        assertNull(builder.linger());
+    }
+
+    @Test
+    public void shouldCopyLingerTimeoutFromChannelUriNegativeValue()
+    {
+        final ChannelUri channelUri = ChannelUri.parse("aeron:udp?linger=-1000");
+        assertThrows(IllegalArgumentException.class, () -> new ChannelUriStringBuilder().linger(channelUri));
     }
 
     @Test

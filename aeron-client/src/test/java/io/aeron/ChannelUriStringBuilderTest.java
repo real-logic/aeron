@@ -19,8 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ChannelUriStringBuilderTest
 {
@@ -131,13 +130,52 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
+    public void shouldGenerateChannelWithLingerTimeout()
+    {
+        final Long lingerNs = 987654321123456789L;
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .media("ipc")
+            .linger(lingerNs);
+
+        assertSame(lingerNs, builder.linger());
+        assertEquals(
+            "aeron:ipc?linger=987654321123456789",
+            builder.build());
+    }
+
+    @Test
+    public void shouldGenerateChannelWithoutLingerTimeoutIfNullIsPassed()
+    {
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("address:9999")
+            .linger((Long)null);
+
+        assertNull(builder.linger());
+        assertEquals(
+            "aeron:udp?endpoint=address:9999",
+            builder.build());
+    }
+
+    @Test
+    public void shouldRejectNegativeLingerTimeout()
+    {
+        final IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> new ChannelUriStringBuilder().media("udp").endpoint("address:9999").linger(-1L));
+
+        assertEquals("linger value cannot be negative: -1", exception.getMessage());
+    }
+
+    @Test
     void shouldBuildChannelBuilderUsingExistingStringWithAllTheFields()
     {
         final String uri = "aeron-spy:aeron:udp?endpoint=127.0.0.1:0|interface=127.0.0.1|control=127.0.0.2:0|" +
             "control-mode=manual|tags=2,4|alias=foo|cc=cubic|fc=min|reliable=false|ttl=16|mtu=8992|" +
-            "term-length=1048576|init-term-id=5|term-offset=64|term-id=4353|session-id=2314234|gtag=3|linger=0|" +
-            "sparse=true|eos=true|tether=false|group=false|ssc=true|so-sndbuf=8388608|so-rcvbuf=2097152|" +
-            "rcv-wnd=1048576|media-rcv-ts-offset=reserved|channel-rcv-ts-offset=0|channel-snd-ts-offset=8";
+            "term-length=1048576|init-term-id=5|term-offset=64|term-id=4353|session-id=2314234|gtag=3|" +
+            "linger=100000055000001|sparse=true|eos=true|tether=false|group=false|ssc=true|so-sndbuf=8388608|" +
+            "so-rcvbuf=2097152|rcv-wnd=1048576|media-rcv-ts-offset=reserved|channel-rcv-ts-offset=0|" +
+            "channel-snd-ts-offset=8";
 
         final ChannelUri fromString = ChannelUri.parse(uri);
         final ChannelUri fromBuilder = ChannelUri.parse(new ChannelUriStringBuilder(uri).build());

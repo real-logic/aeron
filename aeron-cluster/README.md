@@ -3,12 +3,12 @@ Aeron Cluster
 
 [![Javadocs](http://www.javadoc.io/badge/io.aeron/aeron-all.svg)](http://www.javadoc.io/doc/io.aeron/aeron-all)
 
-Aeron provides support for fault-tolerant services as replicated state machines based on the 
+Aeron Cluster provides support for fault-tolerant services as replicated state machines based on the 
 [Raft](https://raft.github.io/) consensus algorithm.
 
 The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log. A number of
-nodes will replicate and archive the log to achieve fault tolerance. Cluster services process the log and respond
-to cluster clients.
+nodes will replicate and archive the log to achieve fault tolerance. Cluster services deterministically process the log
+and respond to cluster clients.
 
 Aeron Cluster works on the concept of a strong leader. The leader sequences the log and is responsible for replicating
 the log to other cluster members known as followers.
@@ -42,9 +42,9 @@ The cluster can run in various configurations:
  - **Dynamic Membership:** Cluster node membership can be dynamic with support for members to join and quit the cluster
     with membership changes recorded in the log.
        
-The majority of cluster members determine consensus. Clusters should be 3 or 5 in population size. However, 2 node
-clusters are supported whereby both members must agree the log and in the event of failure the remaining member must be
-manually reconfigured as a single node cluster to progress.
+The majority of cluster members determine consensus. Clusters should typically be 3 or 5 in population size. However,
+2 node clusters are supported whereby both members must agree the log and in the event of failure the remaining member
+must be manually reconfigured as a single node cluster to progress.
 
 Aeron Cluster Protocol
 =====

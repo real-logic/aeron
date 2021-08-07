@@ -49,4 +49,5 @@ must be manually reconfigured as a single node cluster to progress.
 Aeron Cluster Protocol
 =====
 
-Messages specification is in SBE in [aeron-cluster-codecs.xml](https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/cluster/aeron-cluster-codecs.xml).
+Messages are specified using [SBE](https://github.com/real-logic/simple-binary-encoding) in this schema
+[aeron-cluster-codecs.xml](https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/cluster/aeron-cluster-codecs.xml).

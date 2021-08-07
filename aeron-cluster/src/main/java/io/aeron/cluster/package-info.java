@@ -28,8 +28,8 @@
  * <p>
  * A number of components make up Aeron Cluster. Central is the {@link io.aeron.cluster.ConsensusModule} which sequences
  * the log and coordinates consensus for the recording of the sequenced log to persistent storage, and the services
- * consuming the log across cluster members. Aeron Archive records the log to durable storage. Services consume the log
- * once a majority of the cluster members have safely recorded the log to durable storage.
+ * consuming the log across cluster members. Aeron {@link io.aeron.archive.Archive} records the log to durable storage.
+ * Services consume the log once a majority of the cluster members have safely recorded the log to durable storage.
  * <p>
  * To enable fast recovery, the services and consensus module can take a snapshot of their state as of a given log
  * position thus enabling recovery by loading the most recent snapshot and replaying logs from that point forward.
@@ -58,7 +58,8 @@
  * remaining member must be manually reconfigured as a single node cluster to progress.
  *
  * <h2>Protocol</h2>
- * Messages are specified using SBE in
+ * Messages are specified using <a href="https://github.com/real-logic/simple-binary-encoding" target="_blank">SBE</a>
+ * in this schema
  * <a href="https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/aeron-cluster-codecs.xml"
  *    target="_blank">aeron-cluster-codecs.xml</a>
  */

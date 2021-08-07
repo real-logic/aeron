@@ -1,6 +1,8 @@
 Aeron Cluster
 ===
 
+[![Javadocs](http://www.javadoc.io/badge/io.aeron/aeron-all.svg)](http://www.javadoc.io/doc/io.aeron/aeron-all)
+
 Aeron provides support for fault-tolerant services as replicated state machines based on the 
 [Raft](https://raft.github.io/) consensus algorithm.
 

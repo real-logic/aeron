@@ -38,7 +38,6 @@ import java.util.List;
  */
 public final class ClusterConfig
 {
-    public static final int PORT_BASE = 9000;
     public static final int PORTS_PER_NODE = 100;
     public static final int ARCHIVE_CONTROL_PORT_OFFSET = 1;
     public static final int CLIENT_FACING_PORT_OFFSET = 2;
@@ -91,7 +90,7 @@ public final class ClusterConfig
                 "nodeId=" + nodeId + " >= ingressHostnames.size()=" + ingressHostnames.size());
         }
 
-        final String clusterMembers = clusterMembers(ingressHostnames, clusterHostnames, PORT_BASE);
+        final String clusterMembers = clusterMembers(ingressHostnames, clusterHostnames, portBase);
 
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + nodeId + "-driver";
         final File baseDir = new File(System.getProperty("user.dir"), "aeron-cluster-" + nodeId);
@@ -128,6 +127,7 @@ public final class ClusterConfig
             .clusterMembers(clusterMembers)
             .clusterDir(new File(baseDir, "consensus-module"))
             .archiveContext(aeronArchiveContext.clone())
+            .ingressChannel("aeron:udp?term-length=64k")
             .replicationChannel("aeron:udp?endpoint=" + hostname + ":0");
 
         final ClusteredServiceContainer.Context clusteredServiceContext = new ClusteredServiceContainer.Context()
@@ -269,6 +269,33 @@ public final class ClusterConfig
             sb.append(',').append(endpoint(i, clusterHostnames.get(i), portBase, ARCHIVE_CONTROL_PORT_OFFSET));
             sb.append('|');
         }
+
+        return sb.toString();
+    }
+
+    /**
+     * Ingress endpoints generated from a list of hostnames.
+     *
+     * @param hostnames for the cluster members.
+     * @param portBase Base port for the cluster
+     * @param clientFacingPortOffset Offset for the client facing port
+     * @return a formatted string of ingress endpoints for connecting to a cluster.
+     */
+    public static String ingressEndpoints(
+        final List<String> hostnames,
+        final int portBase,
+        final int clientFacingPortOffset)
+    {
+        final StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < hostnames.size(); i++)
+        {
+            sb.append(i).append('=');
+            sb.append(hostnames.get(i)).append(':').append(
+                calculatePort(i, portBase, clientFacingPortOffset));
+            sb.append(',');
+        }
+
+        sb.setLength(sb.length() - 1);
 
         return sb.toString();
     }

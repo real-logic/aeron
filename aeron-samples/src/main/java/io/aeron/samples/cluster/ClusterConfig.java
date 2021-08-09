@@ -127,7 +127,6 @@ public final class ClusterConfig
             .clusterMembers(clusterMembers)
             .clusterDir(new File(baseDir, "consensus-module"))
             .archiveContext(aeronArchiveContext.clone())
-            .ingressChannel("aeron:udp?term-length=64k")
             .replicationChannel("aeron:udp?endpoint=" + hostname + ":0");
 
         final ClusteredServiceContainer.Context clusteredServiceContext = new ClusteredServiceContainer.Context()

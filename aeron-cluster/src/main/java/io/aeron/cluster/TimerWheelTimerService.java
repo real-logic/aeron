@@ -53,7 +53,7 @@ class TimerWheelTimerService extends DeadlineTimerWheel implements DeadlineTimer
                 break;
             }
         }
-        while (expired < POLL_LIMIT && super.currentTickTime() < now);
+        while (expired < POLL_LIMIT && currentTickTime() < now);
 
         return expired;
     }
@@ -113,5 +113,10 @@ class TimerWheelTimerService extends DeadlineTimerWheel implements DeadlineTimer
 
             snapshotTaker.snapshotTimer(correlationId, deadline);
         }
+    }
+
+    public void currentTime(final long now)
+    {
+        currentTickTime(now);
     }
 }

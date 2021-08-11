@@ -1587,7 +1587,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
 
             timeOfLastLogUpdateNs = nowNs - leaderHeartbeatIntervalNs;
-            timerService.currentTickTime(now);
+            timerService.currentTime(now);
             ClusterControl.ToggleState.activate(controlToggle);
             prepareSessionsForNewTerm(election.isLeaderStartup());
         }
@@ -2494,7 +2494,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             pendingServiceMessages.forEach(this::serviceSessionMessageReset, Integer.MAX_VALUE);
         }
 
-        timerService.currentTickTime(clusterClock.time());
+        timerService.currentTime(clusterClock.time());
         leadershipTermId(snapshot.leadershipTermId);
         commitPosition.setOrdered(snapshot.logPosition);
         expectedAckPosition = snapshot.logPosition;
@@ -2717,7 +2717,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
             if (appendPosition > commitPosition)
             {
-                timerService.scheduleTimerForCorrelationId(correlationId, timerService.currentTickTime());
+                timerService.scheduleTimerForCorrelationId(correlationId, 0);
             }
         }
         uncommittedTimers.clear();

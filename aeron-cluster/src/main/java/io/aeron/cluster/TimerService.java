@@ -90,16 +90,9 @@ public interface TimerService
     void snapshot(TimerSnapshotTaker snapshotTaker);
 
     /**
-     * TODO
+     * Set the current time from the Cluster in case the underlying implementation depends on it.
      *
-     * @param now current time.
+     * @param now the current time.
      */
-    void currentTickTime(long now);
-
-    /**
-     * TODO
-     *
-     * @return current tick time.
-     */
-    long currentTickTime();
+    void currentTime(long now);
 }

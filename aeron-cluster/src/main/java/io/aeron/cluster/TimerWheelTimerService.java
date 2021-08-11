@@ -18,33 +18,31 @@ package io.aeron.cluster;
 import org.agrona.DeadlineTimerWheel;
 import org.agrona.collections.Long2LongHashMap;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-class DeadlineTimerWheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.TimerHandler, TimerService
+class TimerWheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.TimerHandler, TimerService
 {
-    private boolean isAbort;
+    private final TimerService.TimerHandler timerHandler;
     private final Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private final Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
-    private TimerService.TimerHandler timerHandler;
+    private boolean isAbort;
 
-    DeadlineTimerWheelTimerService(
+    TimerWheelTimerService(
+        final TimerService.TimerHandler timerHandler,
         final TimeUnit timeUnit,
         final long startTime,
         final long tickResolution,
         final int ticksPerWheel)
     {
         super(timeUnit, startTime, tickResolution, ticksPerWheel);
+        this.timerHandler = Objects.requireNonNull(timerHandler);
     }
 
-    public int poll(final long now, final TimerService.TimerHandler timerHandler)
+    public int poll(final long now)
     {
         int expired = 0;
         isAbort = false;
-
-        if (null == this.timerHandler)
-        {
-            this.timerHandler = timerHandler;
-        }
 
         do
         {

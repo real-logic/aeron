@@ -53,7 +53,6 @@ import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.exceptions.AeronException.Category.WARN;
 import static java.lang.Math.min;
-import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
 final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 {
@@ -162,11 +161,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         this.controlToggle = ctx.controlToggleCounter();
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
-        this.timerService = new DeadlineTimerWheelTimerService(
-            clusterTimeUnit,
-            0,
-            findNextPositivePowerOfTwo(clusterTimeUnit.convert(ctx.wheelTickResolutionNs(), TimeUnit.NANOSECONDS)),
-            ctx.ticksPerWheel());
+        this.timerService = ctx.timerServiceSupplier().newInstance(this);
         this.activeMembers = ClusterMember.parse(ctx.clusterMembers());
         this.sessionProxy = new ClusterSessionProxy(egressPublisher);
         this.memberId = ctx.clusterMemberId();
@@ -2024,7 +2019,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             if (ConsensusModule.State.ACTIVE == state)
             {
-                workCount += timerService.poll(timestamp, this);
+                workCount += timerService.poll(timestamp);
                 workCount += pendingServiceMessages.forEach(
                     pendingServiceMessageHeadOffset, serviceSessionMessageAppender, SERVICE_MESSAGE_LIMIT);
                 workCount += ingressAdapter.poll();

@@ -21,7 +21,7 @@ package io.aeron.cluster;
 public interface TimerService
 {
     /**
-     * Called from {@link #poll(long, TimerHandler)}.
+     * Called from the {@link #poll(long)}.
      */
     @FunctionalInterface
     interface TimerHandler
@@ -36,7 +36,7 @@ public interface TimerService
     }
 
     /**
-     * Called from {@link #snapshot(TimerSnapshotTaker)}.
+     * Called from the {@link #snapshot(TimerSnapshotTaker)}.
      */
     @FunctionalInterface
     interface TimerSnapshotTaker
@@ -51,19 +51,20 @@ public interface TimerService
     }
 
     /**
-     * Max number of the timers to expire per single {@link #poll(long, TimerHandler)}.
+     * Max number of the timers to expire per single {@link #poll(long)}.
      */
     int POLL_LIMIT = 20;
 
     /**
-     * Poll for expired timers. Poll can be terminated early if {@link #POLL_LIMIT} is reached or if
-     * {@link TimerHandler#onTimerEvent(long)} returns {@code false}.
+     * Poll for expired timers. For each expired timer it invokes {@link TimerHandler#onTimerEvent(long)} on the
+     * {@link TimerHandler} that was provided upon creation of this {@link TimerService} instance.
+     * Poll can be terminated early if {@link #POLL_LIMIT} is reached or if {@link TimerHandler#onTimerEvent(long)}
+     * returns {@code false}.
      *
-     * @param now          current time.
-     * @param timerHandler to be invoked for each expired timer.
+     * @param now current time.
      * @return number of timers expired, never exceeds {@link #POLL_LIMIT}.
      */
-    int poll(long now, TimerHandler timerHandler);
+    int poll(long now);
 
     /**
      * Schedule timer with the given {@code correlationId} and {@code deadline}.

@@ -65,6 +65,7 @@ public class ConsensusModuleAgentTest
         .clusterNodeRoleCounter(mock(Counter.class))
         .timedOutClientCounter(mockTimedOutClientCounter)
         .idleStrategySupplier(NoOpIdleStrategy::new)
+        .timerServiceSupplier(timerHandler -> mock(TimerService.class))
         .aeron(mockAeron)
         .clusterMemberId(0)
         .authenticatorSupplier(new DefaultAuthenticatorSupplier())

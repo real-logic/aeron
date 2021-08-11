@@ -102,7 +102,7 @@ final class ConsensusModuleAgent implements Agent
     private final TimeUnit clusterTimeUnit;
     private final Counter moduleState;
     private final Counter controlToggle;
-    private final TimerService timerService;
+    private final DeadlineTimerWheelTimerService timerService;
     private final ConsensusModuleAdapter consensusModuleAdapter;
     private final ServiceProxy serviceProxy;
     private final IngressAdapter ingressAdapter;
@@ -162,7 +162,7 @@ final class ConsensusModuleAgent implements Agent
         this.controlToggle = ctx.controlToggleCounter();
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
-        this.timerService = new TimerService(
+        this.timerService = new DeadlineTimerWheelTimerService(
             this,
             clusterTimeUnit,
             0,

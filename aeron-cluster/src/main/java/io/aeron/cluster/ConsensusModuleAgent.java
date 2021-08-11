@@ -55,7 +55,7 @@ import static io.aeron.exceptions.AeronException.Category.WARN;
 import static java.lang.Math.min;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
-final class ConsensusModuleAgent implements Agent
+final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 {
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final int SERVICE_MESSAGE_LIMIT = 20;
@@ -102,7 +102,7 @@ final class ConsensusModuleAgent implements Agent
     private final TimeUnit clusterTimeUnit;
     private final Counter moduleState;
     private final Counter controlToggle;
-    private final DeadlineTimerWheelTimerService timerService;
+    private final TimerService timerService;
     private final ConsensusModuleAdapter consensusModuleAdapter;
     private final ServiceProxy serviceProxy;
     private final IngressAdapter ingressAdapter;
@@ -163,7 +163,6 @@ final class ConsensusModuleAgent implements Agent
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
         this.timerService = new DeadlineTimerWheelTimerService(
-            this,
             clusterTimeUnit,
             0,
             findNextPositivePowerOfTwo(clusterTimeUnit.convert(ctx.wheelTickResolutionNs(), TimeUnit.NANOSECONDS)),
@@ -492,7 +491,7 @@ final class ConsensusModuleAgent implements Agent
         }
     }
 
-    boolean onTimerEvent(final long correlationId)
+    public boolean onTimerEvent(final long correlationId)
     {
         final long appendPosition = logPublisher.appendTimer(correlationId, leadershipTermId, clusterClock.time());
         if (appendPosition > 0)
@@ -2025,7 +2024,7 @@ final class ConsensusModuleAgent implements Agent
         {
             if (ConsensusModule.State.ACTIVE == state)
             {
-                workCount += timerService.poll(timestamp);
+                workCount += timerService.poll(timestamp, this);
                 workCount += pendingServiceMessages.forEach(
                     pendingServiceMessageHeadOffset, serviceSessionMessageAppender, SERVICE_MESSAGE_LIMIT);
                 workCount += ingressAdapter.poll();

@@ -15,14 +15,18 @@
  */
 package io.aeron.cluster;
 
+import org.agrona.collections.Long2ObjectHashMap;
+
 import java.util.Arrays;
 import java.util.Objects;
 
 final class InOrderTimerService implements TimerService
 {
     private static final TimerEntry[] NO_TIMERS = new TimerEntry[0];
+    private static final int MIN_CAPACITY = 8;
 
     private final TimerHandler timerHandler;
+    private final Long2ObjectHashMap<TimerEntry> timerByCorrelationId = new Long2ObjectHashMap<>();
     private TimerEntry[] timers = NO_TIMERS;
     private int size;
 
@@ -64,18 +68,36 @@ final class InOrderTimerService implements TimerService
     {
         if (size == timers.length)
         {
-            timers = Arrays.copyOf(timers, Math.max(4, timers.length << 1));
+            timers = Arrays.copyOf(timers, Math.max(MIN_CAPACITY, timers.length << 1));
         }
 
         final int index = size++;
-        timers[index] = new TimerEntry(correlationId, deadline);
+        final TimerEntry entry = new TimerEntry(correlationId, deadline, index);
+        timers[index] = entry;
+        timerByCorrelationId.put(correlationId, entry);
 
         shiftUp(timers, index);
     }
 
     public boolean cancelTimerByCorrelationId(final long correlationId)
     {
-        return false;
+        final TimerEntry removed = timerByCorrelationId.remove(correlationId);
+        if (null == removed)
+        {
+            return false;
+        }
+
+        for (int i = removed.index + 1; i < size; i++)
+        {
+            final TimerEntry entry = timers[i];
+            timers[i - 1] = entry;
+            entry.index--;
+        }
+
+        size--;
+        timers[size] = null;
+
+        return true;
     }
 
     public void snapshot(final TimerSnapshotTaker snapshotTaker)
@@ -94,6 +116,10 @@ final class InOrderTimerService implements TimerService
             final int remainingTimers = size - expiredTimers;
             System.arraycopy(timers, expiredTimers, timers, 0, remainingTimers);
             Arrays.fill(timers, remainingTimers, size, null);
+            for (int i = 0; i < remainingTimers; i++)
+            {
+                timers[i].index -= expiredTimers;
+            }
         }
         else
         {
@@ -110,7 +136,9 @@ final class InOrderTimerService implements TimerService
             if (entry.deadline < prevEntry.deadline)
             {
                 timers[i - 1] = entry;
+                entry.index--;
                 timers[i] = prevEntry;
+                prevEntry.index++;
             }
             else
             {
@@ -123,11 +151,13 @@ final class InOrderTimerService implements TimerService
     {
         final long correlationId;
         final long deadline;
+        int index;
 
-        private TimerEntry(final long correlationId, final long deadline)
+        private TimerEntry(final long correlationId, final long deadline, final int index)
         {
             this.correlationId = correlationId;
             this.deadline = deadline;
+            this.index = index;
         }
 
         public String toString()
@@ -135,6 +165,7 @@ final class InOrderTimerService implements TimerService
             return "TimerEntry{" +
                 "correlationId=" + correlationId +
                 ", deadline=" + deadline +
+                ", index=" + index +
                 '}';
         }
     }

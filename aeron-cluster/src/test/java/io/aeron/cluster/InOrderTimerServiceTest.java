@@ -19,8 +19,7 @@ import io.aeron.cluster.TimerService.TimerHandler;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class InOrderTimerServiceTest
@@ -127,6 +126,86 @@ class InOrderTimerServiceTest
         inOrder.verify(timerHandler).onTimerEvent(4);
         inOrder.verify(timerHandler).onTimerEvent(3);
         inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void cancelTimerByCorrelationIdIsANoOpIfNoTimersRegistered()
+    {
+        final InOrderTimerService timerService = new InOrderTimerService(mock(TimerHandler.class));
+
+        assertFalse(timerService.cancelTimerByCorrelationId(100));
+    }
+
+    @Test
+    void cancelTimerByCorrelationIdReturnsFalseForUnknownCorrelationId()
+    {
+        final InOrderTimerService timerService = new InOrderTimerService(mock(TimerHandler.class));
+        timerService.scheduleTimerForCorrelationId(1, 100);
+        timerService.scheduleTimerForCorrelationId(7, 50);
+
+        assertFalse(timerService.cancelTimerByCorrelationId(3));
+    }
+
+    @Test
+    void cancelTimerByCorrelationIdReturnsTrueAfterCancellingTheTimer()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 100);
+        timerService.scheduleTimerForCorrelationId(7, 50);
+        timerService.scheduleTimerForCorrelationId(2, 90);
+
+        assertTrue(timerService.cancelTimerByCorrelationId(7));
+
+        assertEquals(2, timerService.poll(111));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void cancelTimerByCorrelationIdReturnsTrueAfterCancellingTheLastTimer()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 100);
+        timerService.scheduleTimerForCorrelationId(7, 50);
+        timerService.scheduleTimerForCorrelationId(2, 90);
+
+        assertTrue(timerService.cancelTimerByCorrelationId(1));
+
+        assertEquals(2, timerService.poll(111));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(7);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void cancelTimerByCorrelationIdAfterPoll()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 30);
+        timerService.scheduleTimerForCorrelationId(5, 15);
+        timerService.scheduleTimerForCorrelationId(2, 20);
+        timerService.scheduleTimerForCorrelationId(4, 40);
+
+        assertEquals(1, timerService.poll(19));
+        assertTrue(timerService.cancelTimerByCorrelationId(1));
+
+        assertEquals(2, timerService.poll(40));
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verify(timerHandler).onTimerEvent(4);
         inOrder.verifyNoMoreInteractions();
     }
 }

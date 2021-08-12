@@ -38,6 +38,7 @@ class InOrderTimerServiceTest
         final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
 
         assertEquals(0, timerService.poll(Long.MIN_VALUE));
+
         verifyNoInteractions(timerHandler);
     }
 
@@ -49,6 +50,7 @@ class InOrderTimerServiceTest
         timerService.scheduleTimerForCorrelationId(1, 100);
 
         assertEquals(0, timerService.poll(7));
+
         verifyNoInteractions(timerHandler);
     }
 
@@ -60,6 +62,7 @@ class InOrderTimerServiceTest
         timerService.scheduleTimerForCorrelationId(1, 100);
 
         assertEquals(0, timerService.poll(Long.MAX_VALUE));
+
         verify(timerHandler).onTimerEvent(1);
         verifyNoMoreInteractions(timerHandler);
     }
@@ -73,8 +76,34 @@ class InOrderTimerServiceTest
         timerService.scheduleTimerForCorrelationId(1, 100);
 
         assertEquals(1, timerService.poll(200));
+        assertEquals(0, timerService.poll(200));
+
         verify(timerHandler).onTimerEvent(1);
         verifyNoMoreInteractions(timerHandler);
+    }
+
+    @Test
+    void pollShouldRemovedExpiredTimers()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 100);
+        timerService.scheduleTimerForCorrelationId(2, 200);
+        timerService.scheduleTimerForCorrelationId(3, 300);
+        timerService.scheduleTimerForCorrelationId(4, 400);
+        timerService.scheduleTimerForCorrelationId(5, 500);
+
+        assertEquals(2, timerService.poll(200));
+        assertEquals(3, timerService.poll(500));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(4);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test

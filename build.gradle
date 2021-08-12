@@ -49,7 +49,7 @@ def checkstyleVersion = '8.39'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.7.2'
 def mockitoVersion = '3.11.2'
-def byteBuddyVersion = '1.11.9'
+def byteBuddyVersion = '1.11.12'
 def hdrHistogramVersion = '2.1.12'
 
 ext {

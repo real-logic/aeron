@@ -120,7 +120,12 @@ final class SequentialTimerService implements TimerService
 
     public void snapshot(final TimerSnapshotTaker snapshotTaker)
     {
-
+        final TimerEntry[] timers = this.timers;
+        for (int i = 0, numEntries = size; i < numEntries; i++)
+        {
+            final TimerEntry entry = timers[i];
+            snapshotTaker.snapshotTimer(entry.correlationId, entry.deadline);
+        }
     }
 
     public void currentTime(final long now)

@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.TimerService.TimerHandler;
+import io.aeron.cluster.TimerService.TimerSnapshotTaker;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
@@ -290,5 +291,31 @@ class SequentialTimerServiceTest
 
         verify(timerHandler, times(POLL_LIMIT)).onTimerEvent(anyLong());
         verifyNoMoreInteractions(timerHandler);
+    }
+
+    @Test
+    void snapshotProcessesAllScheduledTimers()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final TimerSnapshotTaker snapshotTaker = mock(TimerSnapshotTaker.class);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 10);
+        timerService.scheduleTimerForCorrelationId(2, 14);
+        timerService.scheduleTimerForCorrelationId(3, 30);
+        timerService.scheduleTimerForCorrelationId(4, 29);
+        timerService.scheduleTimerForCorrelationId(5, 15);
+
+        assertEquals(2, timerService.poll(14));
+
+        timerService.snapshot(snapshotTaker);
+
+        final InOrder inOrder = inOrder(timerHandler, snapshotTaker);
+        inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verify(snapshotTaker).snapshotTimer(5, 15);
+        inOrder.verify(snapshotTaker).snapshotTimer(4, 29);
+        inOrder.verify(snapshotTaker).snapshotTimer(3, 30);
+        inOrder.verifyNoMoreInteractions();
     }
 }

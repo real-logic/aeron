@@ -83,7 +83,7 @@ class SystemTests
 
         assertTrue(cncFile.exists());
 
-        MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cncFile");
+        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cncFile");
 
         try
         {
@@ -104,7 +104,7 @@ class SystemTests
 
         assertTrue(cncFile.exists());
 
-        MappedByteBuffer eventLogByteBuffer = IoUtil.mapExistingFile(cncFile, "event log file");
+        final MappedByteBuffer eventLogByteBuffer = IoUtil.mapExistingFile(cncFile, "event log file");
 
         try
         {

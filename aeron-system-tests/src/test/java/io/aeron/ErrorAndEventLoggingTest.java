@@ -1,28 +1,44 @@
+/*
+ * Copyright 2014-2021 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class ErrorAndEventLoggingTest
 {
     @RegisterExtension
@@ -33,6 +49,9 @@ public class ErrorAndEventLoggingTest
     private MediaDriver.Context context;
     private Aeron aeron;
     private TestMediaDriver driver;
+    private PrintStream out;
+    private PrintStream err;
+
 
     private void launch()
     {
@@ -40,9 +59,21 @@ public class ErrorAndEventLoggingTest
         aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()));
     }
 
+    @BeforeEach
+    public void before()
+    {
+        out = System.out;
+        err = System.err;
+        System.setOut(new PrintStream(OutputStream.nullOutputStream()));
+        System.setErr(new PrintStream(OutputStream.nullOutputStream()));
+    }
+
     @AfterEach
     public void after()
     {
+        System.setOut(out);
+        System.setOut(err);
+
         deleteBackupFiles("-event.log", "-error.log");
 
         CloseHelper.closeAll(closeables);
@@ -55,7 +86,7 @@ public class ErrorAndEventLoggingTest
 
     @Test
     @InterruptAfter(5)
-    void shouldValidateSenderMtuAgainstUriReceiverWindow() throws IOException
+    void shouldBackupEventAndErrorLogFiles() throws IOException
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
@@ -83,22 +114,20 @@ public class ErrorAndEventLoggingTest
         SystemTests.waitForErrorToOccur(driver.aeronDirectoryName(), exceptionMessageMatcher, Tests.SLEEP_1_MS);
 
         try (
-            final MediaDriver otherDriver1 = MediaDriver.launchEmbedded(
-                new MediaDriver.Context()
-                    .resolverName("B")
-                    .resolverInterface("0.0.0.0:8051")
-                    .resolverBootstrapNeighbor("localhost:8050")
-                    .dirDeleteOnShutdown(true));
-            final MediaDriver otherDriver2 = MediaDriver.launchEmbedded(
-                new MediaDriver.Context()
-                    .resolverName("B")
-                    .resolverInterface("0.0.0.0:8052")
-                    .resolverBootstrapNeighbor("localhost:8050")
-                    .dirDeleteOnShutdown(true)))
+            MediaDriver otherDriver1 = MediaDriver.launchEmbedded(new MediaDriver.Context()
+                .resolverName("B")
+                .resolverInterface("0.0.0.0:8051")
+                .resolverBootstrapNeighbor("localhost:8050")
+                .dirDeleteOnShutdown(true));
+            MediaDriver otherDriver2 = MediaDriver.launchEmbedded(new MediaDriver.Context()
+                .resolverName("B")
+                .resolverInterface("0.0.0.0:8052")
+                .resolverBootstrapNeighbor("localhost:8050")
+                .dirDeleteOnShutdown(true)))
         {
             SystemTests.waitForEventToOccur(
                 driver.aeronDirectoryName(),
-                containsString("Name changed for address"),
+                containsString("Address changed for name: B"),
                 Tests.SLEEP_1_MS);
         }
 
@@ -163,7 +192,7 @@ public class ErrorAndEventLoggingTest
 
     private void deleteBackupFiles(final String... suffixes)
     {
-        for (String suffix : suffixes)
+        for (final String suffix : suffixes)
         {
             final File backupErrorLogFile = findBackupFile(aeron.context().aeronDirectoryName(), suffix);
             if (null != backupErrorLogFile)

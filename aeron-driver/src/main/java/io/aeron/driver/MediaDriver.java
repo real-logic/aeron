@@ -3628,14 +3628,14 @@ public final class MediaDriver implements AutoCloseable
             }
         }
 
-        public MappedByteBuffer mapExistingEventLogBuffer()
+        private MappedByteBuffer mapExistingEventLogBuffer()
         {
             final File file = new File(aeronDirectory(), EVENT_LOG_FILE);
             try
             {
                 return IoUtil.mapExistingFile(file, "Event Log Buffer");
             }
-            catch (Exception e)
+            catch (final Exception ex)
             {
                 return null;
             }

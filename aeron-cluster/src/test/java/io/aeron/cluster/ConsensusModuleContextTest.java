@@ -22,7 +22,6 @@ import io.aeron.cluster.client.ClusterException;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -105,5 +104,20 @@ class ConsensusModuleContextTest
         {
             System.clearProperty(TIMER_SERVICE_SUPPLIER_PROP_NAME);
         }
+    }
+
+    @Test
+    void defaultTimerServiceSupplier()
+    {
+        context.conclude();
+
+        final TimerServiceSupplier supplier = context.timerServiceSupplier();
+        assertNotNull(supplier);
+
+        final TimerService.TimerHandler timerHandler = mock(TimerService.TimerHandler.class);
+        final TimerService timerService = supplier.newInstance(timerHandler);
+
+        assertNotNull(timerService);
+        assertEquals(TimerWheelTimerService.class, timerService.getClass());
     }
 }

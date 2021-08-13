@@ -75,6 +75,8 @@ public class ErrorAndEventLoggingTest
     @ExtendWith(HideOutputCallback.class)
     void shouldBackupEventAndErrorLogFiles() throws IOException
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
+
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
         context = new MediaDriver.Context()

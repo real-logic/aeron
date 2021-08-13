@@ -38,26 +38,27 @@ final class InOrderTimerService implements TimerService
     public int poll(final long now)
     {
         int expiredTimers = 0;
-        for (int i = 0; i < size; i++)
+        final TimerEntry[] timers = this.timers;
+        final TimerHandler timerHandler = this.timerHandler;
+        final int numTimers = size;
+        for (int i = 0; i < POLL_LIMIT && i < numTimers; i++)
         {
             final TimerEntry timer = timers[i];
-            if (timer.deadline <= now)
-            {
-                if (!timerHandler.onTimerEvent(timer.correlationId))
-                {
-                    break;
-                }
-                expiredTimers++;
-            }
-            else
+            if (timer.deadline > now)
             {
                 break;
             }
+
+            if (!timerHandler.onTimerEvent(timer.correlationId))
+            {
+                break;
+            }
+            expiredTimers++;
         }
 
         if (expiredTimers > 0)
         {
-            shiftAllUp(timers, expiredTimers, size);
+            shiftAllUp(timers, expiredTimers, numTimers);
             size -= expiredTimers;
         }
 

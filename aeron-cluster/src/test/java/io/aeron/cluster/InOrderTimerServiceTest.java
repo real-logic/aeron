@@ -19,6 +19,7 @@ import io.aeron.cluster.TimerService.TimerHandler;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import static io.aeron.cluster.TimerService.POLL_LIMIT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -272,5 +273,22 @@ class InOrderTimerServiceTest
         inOrder.verify(timerHandler).onTimerEvent(4);
         inOrder.verify(timerHandler).onTimerEvent(1);
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void pollShouldStopAfterPollLimitIsReached()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        for (int i = 0; i < POLL_LIMIT * 2; i++)
+        {
+            timerService.scheduleTimerForCorrelationId(i, i);
+        }
+
+        assertEquals(POLL_LIMIT, timerService.poll(Long.MAX_VALUE));
+
+        verify(timerHandler, times(POLL_LIMIT)).onTimerEvent(anyLong());
+        verifyNoMoreInteractions(timerHandler);
     }
 }

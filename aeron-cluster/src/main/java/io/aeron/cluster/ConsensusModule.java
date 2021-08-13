@@ -313,8 +313,8 @@ public final class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of cluster member endpoints.
          * <p>
          * <code>
-         *     0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
-         *     1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
+         * 0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
+         * 1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
          * </code>
          * <p>
          * The ingress endpoints will be used as the endpoint substituted into the
@@ -365,7 +365,7 @@ public final class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of member endpoints.
          * <p>
          * <code>
-         *     ingress:port,consensus:port,log:port,catchup:port,archive:port
+         * ingress:port,consensus:port,log:port,catchup:port,archive:port
          * </code>
          *
          * @see #CLUSTER_MEMBERS_PROP_NAME
@@ -667,6 +667,11 @@ public final class ConsensusModule implements AutoCloseable
          * Name of the {@link TimerServiceSupplier} that creates {@link TimerService} based on the timer wheel.
          */
         public static final String TIMER_SERVICE_SUPPLIER_TIMER_WHEEL = "TimerWheelTimerService";
+
+        /**
+         * Name of the {@link TimerServiceSupplier} that creates a sequence-preserving {@link TimerService}.
+         */
+        public static final String TIMER_SERVICE_SUPPLIER_SEQUENTIAL = "SequentialTimerService";
 
         /**
          * Default {@link TimerServiceSupplier}.
@@ -1332,6 +1337,11 @@ public final class ConsensusModule implements AutoCloseable
                             ticksPerWheel());
                         break;
                     }
+
+                    case TIMER_SERVICE_SUPPLIER_SEQUENTIAL:
+                        timerServiceSupplier = SequentialTimerService::new;
+                        break;
+
                     default:
                         throw new ClusterException("invalid TimerServiceSupplier: " + supplierName);
                 }
@@ -1636,8 +1646,8 @@ public final class ConsensusModule implements AutoCloseable
          * String representing the cluster members.
          * <p>
          * <code>
-         *     0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
-         *     1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
+         * 0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
+         * 1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
          * </code>
          * <p>
          * The ingress endpoints will be used as the endpoint substituted into the {@link #ingressChannel()}

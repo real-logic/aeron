@@ -22,6 +22,7 @@ import io.aeron.cluster.client.ClusterException;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,8 +30,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 
-import static io.aeron.cluster.ConsensusModule.Configuration.TIMER_SERVICE_SUPPLIER_PROP_NAME;
-import static io.aeron.cluster.ConsensusModule.Configuration.TIMER_SERVICE_SUPPLIER_TIMER_WHEEL;
+import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -68,7 +68,7 @@ class ConsensusModuleContextTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { TIMER_SERVICE_SUPPLIER_TIMER_WHEEL })
+    @ValueSource(strings = { TIMER_SERVICE_SUPPLIER_TIMER_WHEEL, TIMER_SERVICE_SUPPLIER_SEQUENTIAL })
     void validTimerServiceSupplier(final String supplierName)
     {
         System.setProperty(TIMER_SERVICE_SUPPLIER_PROP_NAME, supplierName);
@@ -76,7 +76,14 @@ class ConsensusModuleContextTest
         {
             context.conclude();
 
-            assertNotNull(context.timerServiceSupplier());
+            final TimerServiceSupplier supplier = context.timerServiceSupplier();
+            assertNotNull(supplier);
+
+            final TimerService.TimerHandler timerHandler = mock(TimerService.TimerHandler.class);
+            final TimerService timerService = supplier.newInstance(timerHandler);
+
+            assertNotNull(timerService);
+            assertEquals(supplierName, timerService.getClass().getSimpleName());
         }
         finally
         {

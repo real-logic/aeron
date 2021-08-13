@@ -44,7 +44,6 @@ import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.concurrent.TimeUnit.*;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 import static org.agrona.SystemUtil.*;
@@ -313,8 +312,8 @@ public final class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of cluster member endpoints.
          * <p>
          * <code>
-         * 0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
-         * 1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
+         *     0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
+         *     1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
          * </code>
          * <p>
          * The ingress endpoints will be used as the endpoint substituted into the
@@ -365,7 +364,7 @@ public final class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of member endpoints.
          * <p>
          * <code>
-         * ingress:port,consensus:port,log:port,catchup:port,archive:port
+         *     ingress:port,consensus:port,log:port,catchup:port,archive:port
          * </code>
          *
          * @see #CLUSTER_MEMBERS_PROP_NAME
@@ -524,7 +523,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Timeout for a session if no activity is observed.
          */
-        public static final long SESSION_TIMEOUT_DEFAULT_NS = SECONDS.toNanos(5);
+        public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
          * Timeout for a leader if no heartbeat is received by another member.
@@ -534,7 +533,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Timeout for a leader if no heartbeat is received by another member.
          */
-        public static final long LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS = SECONDS.toNanos(10);
+        public static final long LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Interval at which a leader will send heartbeats if the log is not progressing.
@@ -544,7 +543,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Interval at which a leader will send heartbeats if the log is not progressing.
          */
-        public static final long LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS = MILLISECONDS.toNanos(200);
+        public static final long LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
         /**
          * Timeout after which an election vote will be attempted after startup while waiting to canvass the status
@@ -556,7 +555,7 @@ public final class ConsensusModule implements AutoCloseable
          * Default timeout after which an election vote will be attempted on startup when waiting to canvass the
          * status of all members before going for a majority if possible.
          */
-        public static final long STARTUP_CANVASS_TIMEOUT_DEFAULT_NS = SECONDS.toNanos(60);
+        public static final long STARTUP_CANVASS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(60);
 
         /**
          * Timeout after which an election fails if the candidate does not get a majority of votes.
@@ -566,7 +565,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Default timeout after which an election fails if the candidate does not get a majority of votes.
          */
-        public static final long ELECTION_TIMEOUT_DEFAULT_NS = SECONDS.toNanos(1);
+        public static final long ELECTION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
          * Interval at which a member will send out status updates during election phases.
@@ -576,7 +575,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Default interval at which a member will send out status updates during election phases.
          */
-        public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = MILLISECONDS.toNanos(20);
+        public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(20);
 
         /**
          * Interval at which a dynamic joining member will send add cluster member and snapshot recording
@@ -588,7 +587,7 @@ public final class ConsensusModule implements AutoCloseable
          * Default interval at which a dynamic joining member will send add cluster member and snapshot recording
          * queries.
          */
-        public static final long DYNAMIC_JOIN_INTERVAL_DEFAULT_NS = SECONDS.toNanos(1);
+        public static final long DYNAMIC_JOIN_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.
@@ -619,7 +618,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Default timeout a leader will wait on getting termination ACKs from followers.
          */
-        public static final long TERMINATION_TIMEOUT_DEFAULT_NS = SECONDS.toNanos(10);
+        public static final long TERMINATION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Resolution in nanoseconds for each tick of the timer wheel for scheduling deadlines.
@@ -629,7 +628,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Resolution in nanoseconds for each tick of the timer wheel for scheduling deadlines. Defaults to 8ms.
          */
-        public static final long WHEEL_TICK_RESOLUTION_DEFAULT_NS = MILLISECONDS.toNanos(8);
+        public static final long WHEEL_TICK_RESOLUTION_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(8);
 
         /**
          * Number of ticks, or spokes, on the timer wheel. Higher number of ticks reduces potential conflicts
@@ -1323,28 +1322,7 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == timerServiceSupplier)
             {
-                final String supplierName = Configuration.timerServiceSupplier();
-                switch (supplierName)
-                {
-                    case TIMER_SERVICE_SUPPLIER_TIMER_WHEEL:
-                    {
-                        final TimeUnit clusterTimeUnit = clusterClock.timeUnit();
-                        timerServiceSupplier = timerHandler -> new TimerWheelTimerService(
-                            timerHandler,
-                            clusterTimeUnit,
-                            0,
-                            findNextPositivePowerOfTwo(clusterTimeUnit.convert(wheelTickResolutionNs(), NANOSECONDS)),
-                            ticksPerWheel());
-                        break;
-                    }
-
-                    case TIMER_SERVICE_SUPPLIER_SEQUENTIAL:
-                        timerServiceSupplier = SequentialTimerService::new;
-                        break;
-
-                    default:
-                        throw new ClusterException("invalid TimerServiceSupplier: " + supplierName);
-                }
+                timerServiceSupplier = getTimerServiceSupplierFromSystemProperty();
             }
 
             if (null == archiveContext)
@@ -3134,6 +3112,30 @@ public final class ConsensusModule implements AutoCloseable
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
+        }
+
+        private TimerServiceSupplier getTimerServiceSupplierFromSystemProperty()
+        {
+            final String supplierName = Configuration.timerServiceSupplier();
+            switch (supplierName)
+            {
+                case TIMER_SERVICE_SUPPLIER_TIMER_WHEEL:
+                {
+                    return timerHandler -> new TimerWheelTimerService(
+                        timerHandler,
+                        clusterClock.timeUnit(),
+                        0,
+                        findNextPositivePowerOfTwo(
+                            clusterClock.timeUnit().convert(wheelTickResolutionNs(), TimeUnit.NANOSECONDS)),
+                        ticksPerWheel());
+                }
+
+                case TIMER_SERVICE_SUPPLIER_SEQUENTIAL:
+                    return SequentialTimerService::new;
+
+                default:
+                    throw new ClusterException("invalid TimerServiceSupplier: " + supplierName);
+            }
         }
 
         /**

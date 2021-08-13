@@ -120,4 +120,17 @@ class ConsensusModuleContextTest
         assertNotNull(timerService);
         assertEquals(TimerWheelTimerService.class, timerService.getClass());
     }
+
+    @Test
+    void explicitTimerServiceSupplier()
+    {
+        final TimerServiceSupplier supplier = timerHandler -> null;
+
+        context.timerServiceSupplier(supplier);
+        assertSame(supplier, context.timerServiceSupplier());
+
+        context.conclude();
+
+        assertSame(supplier, context.timerServiceSupplier());
+    }
 }

@@ -21,6 +21,7 @@ import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -37,7 +38,7 @@ import static org.mockito.Mockito.when;
 class ConsensusModuleContextTest
 {
     @TempDir
-    public File clusterDir;
+    File clusterDir;
 
     private ConsensusModule.Context context;
 
@@ -64,6 +65,12 @@ class ConsensusModuleContextTest
             .controlToggleCounter(mock(Counter.class))
             .snapshotCounter(mock(Counter.class))
             .timedOutClientCounter(mock(Counter.class));
+    }
+
+    @AfterEach
+    void afterEach()
+    {
+        context.close();
     }
 
     @ParameterizedTest

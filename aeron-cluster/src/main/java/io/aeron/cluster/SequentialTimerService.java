@@ -20,7 +20,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 import java.util.Arrays;
 import java.util.Objects;
 
-final class InOrderTimerService implements TimerService
+final class SequentialTimerService implements TimerService
 {
     private static final TimerEntry[] NO_TIMERS = new TimerEntry[0];
     private static final int MIN_CAPACITY = 8;
@@ -30,7 +30,7 @@ final class InOrderTimerService implements TimerService
     private TimerEntry[] timers = NO_TIMERS;
     private int size;
 
-    InOrderTimerService(final TimerHandler timerHandler)
+    SequentialTimerService(final TimerHandler timerHandler)
     {
         this.timerHandler = Objects.requireNonNull(timerHandler, "TimerHandler");
     }

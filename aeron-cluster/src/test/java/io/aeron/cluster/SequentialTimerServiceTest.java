@@ -23,19 +23,19 @@ import static io.aeron.cluster.TimerService.POLL_LIMIT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class InOrderTimerServiceTest
+class SequentialTimerServiceTest
 {
     @Test
     void throwsNullPointerExceptionIfTimerHandlerIsNull()
     {
-        assertThrows(NullPointerException.class, () -> new InOrderTimerService(null));
+        assertThrows(NullPointerException.class, () -> new SequentialTimerService(null));
     }
 
     @Test
     void pollIsANoOpWhenNoTimersWhereScheduled()
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
 
         assertEquals(0, timerService.poll(Long.MIN_VALUE));
 
@@ -46,7 +46,7 @@ class InOrderTimerServiceTest
     void pollIsANoOpWhenNoScheduledTimersAreExpired()
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 100);
 
         assertEquals(0, timerService.poll(7));
@@ -58,7 +58,7 @@ class InOrderTimerServiceTest
     void pollShouldNotExpireTimerIfHandlerReturnsFalse()
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 100);
 
         assertEquals(0, timerService.poll(Long.MAX_VALUE));
@@ -72,7 +72,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 100);
 
         assertEquals(1, timerService.poll(200));
@@ -87,7 +87,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 100);
         timerService.scheduleTimerForCorrelationId(2, 200);
         timerService.scheduleTimerForCorrelationId(3, 300);
@@ -111,7 +111,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 10);
         timerService.scheduleTimerForCorrelationId(4, 3);
         timerService.scheduleTimerForCorrelationId(2, 0);
@@ -133,7 +133,7 @@ class InOrderTimerServiceTest
     @Test
     void cancelTimerByCorrelationIdIsANoOpIfNoTimersRegistered()
     {
-        final InOrderTimerService timerService = new InOrderTimerService(mock(TimerHandler.class));
+        final SequentialTimerService timerService = new SequentialTimerService(mock(TimerHandler.class));
 
         assertFalse(timerService.cancelTimerByCorrelationId(100));
     }
@@ -141,7 +141,7 @@ class InOrderTimerServiceTest
     @Test
     void cancelTimerByCorrelationIdReturnsFalseForUnknownCorrelationId()
     {
-        final InOrderTimerService timerService = new InOrderTimerService(mock(TimerHandler.class));
+        final SequentialTimerService timerService = new SequentialTimerService(mock(TimerHandler.class));
         timerService.scheduleTimerForCorrelationId(1, 100);
         timerService.scheduleTimerForCorrelationId(7, 50);
 
@@ -153,7 +153,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 100);
         timerService.scheduleTimerForCorrelationId(7, 50);
         timerService.scheduleTimerForCorrelationId(2, 90);
@@ -173,7 +173,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 100);
         timerService.scheduleTimerForCorrelationId(7, 50);
         timerService.scheduleTimerForCorrelationId(2, 90);
@@ -193,7 +193,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 30);
         timerService.scheduleTimerForCorrelationId(5, 15);
         timerService.scheduleTimerForCorrelationId(2, 20);
@@ -215,7 +215,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(3, 30);
         timerService.scheduleTimerForCorrelationId(5, 50);
         timerService.scheduleTimerForCorrelationId(7, 70);
@@ -235,7 +235,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 10);
         timerService.scheduleTimerForCorrelationId(2, 10);
         timerService.scheduleTimerForCorrelationId(3, 30);
@@ -257,7 +257,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         timerService.scheduleTimerForCorrelationId(1, 10);
         timerService.scheduleTimerForCorrelationId(2, 10);
         timerService.scheduleTimerForCorrelationId(3, 30);
@@ -280,7 +280,7 @@ class InOrderTimerServiceTest
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
-        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        final SequentialTimerService timerService = new SequentialTimerService(timerHandler);
         for (int i = 0; i < POLL_LIMIT * 2; i++)
         {
             timerService.scheduleTimerForCorrelationId(i, i);

@@ -187,6 +187,16 @@ public final class Configuration
     public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
     /**
+     * Property name for length of the memory mapped buffer for the distinct event log.
+     */
+    public static final String EVENT_BUFFER_LENGTH_PROP_NAME = "aeron.event.buffer.length";
+
+    /**
+     * Default buffer length for the event buffer for the media driver.
+     */
+    public static final int EVENT_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+
+    /**
      * Property name for length of the memory mapped buffer for the {@link io.aeron.driver.reports.LossReport}.
      */
     public static final String LOSS_REPORT_BUFFER_LENGTH_PROP_NAME = "aeron.loss.report.buffer.length";
@@ -877,6 +887,16 @@ public final class Configuration
      * @return length of the memory mapped buffer for the distinct error log.
      */
     public static int errorBufferLength()
+    {
+        return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
+    }
+
+    /**
+     * Length of the memory mapped buffer for the distinct error log.
+     *
+     * @return length of the memory mapped buffer for the distinct error log.
+     */
+    public static int eventBufferLength()
     {
         return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
     }

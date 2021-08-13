@@ -19,6 +19,7 @@ import io.aeron.driver.reports.LossReportReader;
 import io.aeron.driver.reports.LossReportUtil;
 import io.aeron.test.Tests;
 import org.agrona.BufferUtil;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.ErrorConsumer;
 import org.agrona.concurrent.errors.ErrorLogReader;
@@ -76,44 +77,69 @@ class SystemTests
     public static void waitForErrorToOccur(
         final String aeronDirectoryName,
         final Matcher<String> matcher,
-        final IdleStrategy retryIdle) throws IOException
+        final IdleStrategy retryIdle)
     {
         final File cncFile = CommonContext.newCncFile(aeronDirectoryName);
+
         assertTrue(cncFile.exists());
 
-        MappedByteBuffer cncByteBuffer = null;
+        MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cncFile");
 
-        try (
-            RandomAccessFile file = new RandomAccessFile(cncFile, "r");
-            FileChannel channel = file.getChannel())
+        try
         {
-            cncByteBuffer = channel.map(READ_ONLY, 0, channel.size());
-            final AtomicBuffer errorLogBuffer = CommonContext.errorLogBuffer(cncByteBuffer);
-
-            final MatcherErrorConsumer errorConsumer = new MatcherErrorConsumer(matcher);
-
-            ErrorLogReader.read(errorLogBuffer, errorConsumer);
-            if (errorConsumer.hasMatched())
-            {
-                return;
-            }
-
-            if (null == retryIdle)
-            {
-                fail(errorConsumer.toString());
-            }
-
-            while (!errorConsumer.hasMatched())
-            {
-                errorConsumer.reset();
-                ErrorLogReader.read(errorLogBuffer, errorConsumer);
-
-                Tests.idle(retryIdle, errorConsumer::toString);
-            }
+            waitForEntryMatching(matcher, retryIdle, CommonContext.errorLogBuffer(cncByteBuffer));
         }
         finally
         {
             BufferUtil.free(cncByteBuffer);
+        }
+    }
+
+    public static void waitForEventToOccur(
+        final String aeronDirectoryName,
+        final Matcher<String> matcher,
+        final IdleStrategy retryIdle)
+    {
+        final File cncFile = CommonContext.newEventLogFile(aeronDirectoryName);
+
+        assertTrue(cncFile.exists());
+
+        MappedByteBuffer eventLogByteBuffer = IoUtil.mapExistingFile(cncFile, "event log file");
+
+        try
+        {
+            waitForEntryMatching(matcher, retryIdle, new UnsafeBuffer(eventLogByteBuffer));
+        }
+        finally
+        {
+            BufferUtil.free(eventLogByteBuffer);
+        }
+    }
+
+    private static void waitForEntryMatching(
+        final Matcher<String> matcher,
+        final IdleStrategy retryIdle,
+        final AtomicBuffer errorLogBuffer)
+    {
+        final MatcherErrorConsumer errorConsumer = new MatcherErrorConsumer(matcher);
+
+        ErrorLogReader.read(errorLogBuffer, errorConsumer);
+        if (errorConsumer.hasMatched())
+        {
+            return;
+        }
+
+        if (null == retryIdle)
+        {
+            fail(errorConsumer.toString());
+        }
+
+        while (!errorConsumer.hasMatched())
+        {
+            errorConsumer.reset();
+            ErrorLogReader.read(errorLogBuffer, errorConsumer);
+
+            Tests.idle(retryIdle, errorConsumer::toString);
         }
     }
 

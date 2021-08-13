@@ -355,6 +355,11 @@ public class CommonContext implements Cloneable
     public static final String RESERVED_OFFSET = "reserved";
 
     /**
+     * Name of the file used to store events such as warnings.
+     */
+    public static final String EVENT_LOG_FILE = "event.dat";
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(
@@ -530,6 +535,17 @@ public class CommonContext implements Cloneable
     public static File newCncFile(final String aeronDirectoryName)
     {
         return new File(aeronDirectoryName, CncFileDescriptor.CNC_FILE);
+    }
+
+    /**
+     * Create a new event log file in the administration directory.
+     *
+     * @return The newly created File.
+     * @param aeronDirectoryName name of the aeronDirectory that containing the event log file.
+     */
+    public static File newEventLogFile(final String aeronDirectoryName)
+    {
+        return new File(aeronDirectoryName, CommonContext.EVENT_LOG_FILE);
     }
 
     /**
@@ -854,6 +870,24 @@ public class CommonContext implements Cloneable
 
         return printErrorLog(errorLogBuffer(cncByteBuffer), out);
     }
+
+    /**
+     * Read the error log to a given {@link PrintStream}
+     *
+     * @param out            to write the error log contents to.
+     * @param eventLogBuffer containing the event log.
+     * @return the number of observations from the error log.
+     */
+    public int saveEventLog(final PrintStream out, final AtomicBuffer eventLogBuffer)
+    {
+        if (null == eventLogBuffer)
+        {
+            return 0;
+        }
+
+        return printErrorLog(eventLogBuffer, out);
+    }
+
 
     /**
      * Release resources used by the CommonContext.

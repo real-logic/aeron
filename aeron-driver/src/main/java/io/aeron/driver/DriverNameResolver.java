@@ -117,7 +117,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         selfResolutionDeadlineMs = 0;
         neighborResolutionDeadlineMs = nowMs + neighborResolutionIntervalMs;
 
-        cache = new DriverNameResolverCache(TIMEOUT_MS);
+        cache = new DriverNameResolverCache(TIMEOUT_MS, ctx.eventLog());
 
         final UdpChannel placeholderChannel = UdpChannel.parse("aeron:udp?endpoint=localhost:8050");
         transport = new UdpNameResolutionTransport(placeholderChannel, localSocketAddress, unsafeBuffer, ctx);

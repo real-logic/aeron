@@ -29,6 +29,7 @@ import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -131,6 +132,38 @@ public class DriverNameResolverTest
         awaitCounterValue("A", aNeighborsCounterId, 2);
         awaitCounterValue("B", bNeighborsCounterId, 2);
         awaitCounterValue("C", cNeighborsCounterId, 2);
+    }
+
+    @Test
+    @Disabled
+    @InterruptAfter(2000000)
+    public void shouldSeeNeighborsWhichHaveTheSameName()
+    {
+        addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-B1")
+            .resolverName("B")
+            .resolverInterface("0.0.0.0:8051")
+            .resolverBootstrapNeighbor("localhost:8050"), testWatcher));
+
+        addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-B2")
+            .resolverName("B")
+            .resolverInterface("0.0.0.0:8052")
+            .resolverBootstrapNeighbor("localhost:8050"), testWatcher));
+
+        addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
+            .aeronDirectoryName(baseDir + "-A")
+            .resolverName("A")
+            .resolverInterface("0.0.0.0:8050"), testWatcher));
+
+        startClients();
+
+        final int aNeighborsCounterId = awaitNeighborsCounterId("A");
+        final int bNeighborsCounterId = awaitNeighborsCounterId("B");
+        final int cNeighborsCounterId = awaitNeighborsCounterId("B");
+
+        awaitCounterValue("A", aNeighborsCounterId, 2);
+        awaitCounterValue("B", bNeighborsCounterId, 2);
     }
 
     @SlowTest

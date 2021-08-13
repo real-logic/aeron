@@ -17,8 +17,10 @@ package io.aeron.driver;
 
 import io.aeron.protocol.ResolutionEntryFlyweight;
 import org.agrona.collections.ArrayListUtil;
+import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -28,10 +30,12 @@ final class DriverNameResolverCache implements AutoCloseable
 
     private final ArrayList<CacheEntry> entries = new ArrayList<>();
     private final long timeoutMs;
+    private final DistinctErrorLog eventLog;
 
-    DriverNameResolverCache(final long timeoutMs)
+    DriverNameResolverCache(final long timeoutMs, final DistinctErrorLog eventLog)
     {
         this.timeoutMs = timeoutMs;
+        this.eventLog = eventLog;
     }
 
     /**
@@ -79,10 +83,13 @@ final class DriverNameResolverCache implements AutoCloseable
             entry.timeOfLastActivityMs = nowMs;
             entry.deadlineMs = nowMs + timeoutMs;
 
-            if (port != entry.port || byteSubsetEquals(address, entry.address, addressLength))
+            if (port != entry.port || !byteSubsetEquals(address, entry.address, addressLength))
             {
                 entry.address = Arrays.copyOf(address, addressLength);
                 entry.port = port;
+
+                eventLog.record(new RuntimeException(
+                    "Address changed for name: " + new String(name, 0, nameLength, StandardCharsets.US_ASCII)));
             }
         }
     }

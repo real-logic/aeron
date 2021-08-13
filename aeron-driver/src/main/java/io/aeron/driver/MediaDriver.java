@@ -37,10 +37,7 @@ import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.StandardSocketOptions;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -53,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.*;
+import static io.aeron.CommonContext.errorLogBuffer;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
@@ -352,6 +350,7 @@ public final class MediaDriver implements AutoCloseable
             {
                 final Consumer<String> logger = ctx.warnIfDirectoryExists() ? System.err::println : (s) -> {};
                 final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile(logger);
+                final MappedByteBuffer eventLogByteBuffer = ctx.mapExistingEventLogBuffer();
                 try
                 {
                     if (CommonContext.isDriverActive(ctx.driverTimeoutMs(), logger, cncByteBuffer))
@@ -360,10 +359,15 @@ public final class MediaDriver implements AutoCloseable
                     }
 
                     reportExistingErrors(ctx, cncByteBuffer);
+                    if (null != eventLogByteBuffer)
+                    {
+                        reportExisting(ctx, "event", new UnsafeBuffer(eventLogByteBuffer));
+                    }
                 }
                 finally
                 {
                     BufferUtil.free(cncByteBuffer);
+                    BufferUtil.free(eventLogByteBuffer);
                 }
             }
 
@@ -375,20 +379,28 @@ public final class MediaDriver implements AutoCloseable
 
     private static void reportExistingErrors(final Context ctx, final MappedByteBuffer cncByteBuffer)
     {
+        reportExisting(ctx, "error", errorLogBuffer(cncByteBuffer));
+    }
+
+    private static void reportExisting(
+        final Context ctx,
+        final String name,
+        final AtomicBuffer existingLogBuffer)
+    {
         try
         {
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final int observations = ctx.saveErrorLog(new PrintStream(baos, false, "US-ASCII"), cncByteBuffer);
+            final int observations = ctx.saveEventLog(new PrintStream(baos, false, US_ASCII), existingLogBuffer);
             if (observations > 0)
             {
                 final StringBuilder builder = new StringBuilder(ctx.aeronDirectoryName());
                 IoUtil.removeTrailingSlashes(builder);
 
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("-yyyy-MM-dd-HH-mm-ss-SSSZ");
-                builder.append(dateFormat.format(new Date())).append("-error.log");
+                builder.append(dateFormat.format(new Date())).append("-" + name + ".log");
                 final String errorLogFilename = builder.toString();
 
-                System.err.println("WARNING: Existing errors saved to: " + errorLogFilename);
+                System.err.println("WARNING: Existing " + name + "s saved to: " + errorLogFilename);
                 try (FileOutputStream out = new FileOutputStream(errorLogFilename))
                 {
                     baos.writeTo(out);
@@ -447,6 +459,7 @@ public final class MediaDriver implements AutoCloseable
         private int toClientsBufferLength = Configuration.toClientsBufferLength();
         private int counterValuesBufferLength = Configuration.counterValuesBufferLength();
         private int errorBufferLength = Configuration.errorBufferLength();
+        private int eventBufferLength = Configuration.eventBufferLength();
         private int nakMulticastGroupSize = Configuration.nakMulticastGroupSize();
         private int publicationTermBufferLength = Configuration.termBufferLength();
         private int ipcTermBufferLength = Configuration.ipcTermBufferLength();
@@ -506,6 +519,8 @@ public final class MediaDriver implements AutoCloseable
         private NameResolver nameResolver;
 
         private DistinctErrorLog errorLog;
+        private DistinctErrorLog eventLog;
+        private MappedByteBuffer eventLogBuffer;
         private ErrorHandler errorHandler;
         private boolean useConcurrentCountersManager;
         private CountersManager countersManager;
@@ -567,6 +582,9 @@ public final class MediaDriver implements AutoCloseable
 
                 BufferUtil.free(lossReportBuffer);
                 this.lossReportBuffer = null;
+
+                BufferUtil.free(eventLogBuffer);
+                this.eventLogBuffer = null;
 
                 BufferUtil.free(cncByteBuffer);
                 this.cncByteBuffer = null;
@@ -931,6 +949,30 @@ public final class MediaDriver implements AutoCloseable
         public Context errorBufferLength(final int length)
         {
             errorBufferLength = length;
+            return this;
+        }
+
+        /**
+         * Length of the {@link DistinctErrorLog} buffer for recording warnings and events.
+         *
+         * @return length of the {@link DistinctErrorLog} buffer for recording warnings and events.
+         * @see Configuration#EVENT_BUFFER_LENGTH_PROP_NAME
+         */
+        public int eventBufferLength()
+        {
+            return eventBufferLength;
+        }
+
+        /**
+         * Length of the {@link DistinctErrorLog} buffer for recording warnings and events.
+         *
+         * @param length of the {@link DistinctErrorLog} buffer for recording warnings and events.
+         * @return this for a fluent API.
+         * @see Configuration#EVENT_BUFFER_LENGTH_PROP_NAME
+         */
+        public Context eventBufferLength(final int length)
+        {
+            eventBufferLength = length;
             return this;
         }
 
@@ -2514,6 +2556,28 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Log to which warnings and other events are recorded.
+         *
+         * @return log to which exceptions are recorded.
+         */
+        public DistinctErrorLog eventLog()
+        {
+            return eventLog;
+        }
+
+        /**
+         * Log to which warnings and other events are recorded.
+         *
+         * @param eventLog to which exceptions are recorded.
+         * @return this for a fluent API.
+         */
+        public Context eventLog(final DistinctErrorLog eventLog)
+        {
+            this.eventLog = eventLog;
+            return this;
+        }
+
+        /**
          * Should a {@link ConcurrentCountersManager} be used to allow for cross thread usage.
          *
          * @return true if a {@link ConcurrentCountersManager} should be used otherwise false.
@@ -3428,6 +3492,18 @@ public final class MediaDriver implements AutoCloseable
                     createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock, US_ASCII);
             }
 
+            if (null == eventLog)
+            {
+                final File aeronEventLogFile = new File(aeronDirectory(), CommonContext.EVENT_LOG_FILE);
+                if (aeronEventLogFile.delete())
+                {
+                    System.out.println("Deleting old log");
+                }
+
+                eventLogBuffer = IoUtil.mapNewFile(aeronEventLogFile, eventBufferLength);
+                eventLog = new DistinctErrorLog(new UnsafeBuffer(eventLogBuffer), new SystemEpochClock());
+            }
+
             if (null == errorHandler)
             {
                 errorHandler = new LoggingErrorHandler(errorLog);
@@ -3549,6 +3625,19 @@ public final class MediaDriver implements AutoCloseable
                         receiverIdleStrategy = Configuration.receiverIdleStrategy(indicator);
                     }
                     break;
+            }
+        }
+
+        public MappedByteBuffer mapExistingEventLogBuffer()
+        {
+            final File file = new File(aeronDirectory(), EVENT_LOG_FILE);
+            try
+            {
+                return IoUtil.mapExistingFile(file, "Event Log Buffer");
+            }
+            catch (Exception e)
+            {
+                return null;
             }
         }
 

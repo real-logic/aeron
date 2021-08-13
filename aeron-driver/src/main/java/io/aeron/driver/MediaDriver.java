@@ -397,7 +397,7 @@ public final class MediaDriver implements AutoCloseable
                 IoUtil.removeTrailingSlashes(builder);
 
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("-yyyy-MM-dd-HH-mm-ss-SSSZ");
-                builder.append(dateFormat.format(new Date())).append("-" + name + ".log");
+                builder.append(dateFormat.format(new Date())).append("-").append(name).append(".log");
                 final String errorLogFilename = builder.toString();
 
                 System.err.println("WARNING: Existing " + name + "s saved to: " + errorLogFilename);

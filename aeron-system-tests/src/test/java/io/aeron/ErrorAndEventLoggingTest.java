@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.test.HideOutputCallback;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
@@ -25,12 +26,12 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -49,9 +50,6 @@ public class ErrorAndEventLoggingTest
     private MediaDriver.Context context;
     private Aeron aeron;
     private TestMediaDriver driver;
-    private PrintStream out;
-    private PrintStream err;
-
 
     private void launch()
     {
@@ -59,21 +57,9 @@ public class ErrorAndEventLoggingTest
         aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()));
     }
 
-    @BeforeEach
-    public void before()
-    {
-        out = System.out;
-        err = System.err;
-        System.setOut(new PrintStream(OutputStream.nullOutputStream()));
-        System.setErr(new PrintStream(OutputStream.nullOutputStream()));
-    }
-
     @AfterEach
     public void after()
     {
-        System.setOut(out);
-        System.setOut(err);
-
         deleteBackupFiles("-event.log", "-error.log");
 
         CloseHelper.closeAll(closeables);
@@ -86,6 +72,7 @@ public class ErrorAndEventLoggingTest
 
     @Test
     @InterruptAfter(5)
+    @ExtendWith(HideOutputCallback.class)
     void shouldBackupEventAndErrorLogFiles() throws IOException
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();

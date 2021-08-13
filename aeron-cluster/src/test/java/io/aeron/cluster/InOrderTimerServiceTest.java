@@ -208,4 +208,69 @@ class InOrderTimerServiceTest
         inOrder.verify(timerHandler).onTimerEvent(4);
         inOrder.verifyNoMoreInteractions();
     }
+
+    @Test
+    void scheduleTimerForAnExistingCorrelationIdIsANoOpIfDeadlineDoesNotChange()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(3, 30);
+        timerService.scheduleTimerForCorrelationId(5, 50);
+        timerService.scheduleTimerForCorrelationId(7, 70);
+
+        timerService.scheduleTimerForCorrelationId(5, 50);
+
+        assertEquals(3, timerService.poll(70));
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verify(timerHandler).onTimerEvent(7);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void scheduleTimerForAnExistingCorrelationIdShouldShiftEntryUpWhenDeadlineIsDecreasing()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 10);
+        timerService.scheduleTimerForCorrelationId(2, 10);
+        timerService.scheduleTimerForCorrelationId(3, 30);
+        timerService.scheduleTimerForCorrelationId(4, 30);
+        timerService.scheduleTimerForCorrelationId(5, 50);
+
+        timerService.scheduleTimerForCorrelationId(5, 10);
+
+        assertEquals(3, timerService.poll(10));
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void scheduleTimerForAnExistingCorrelationIdShouldShiftEntryDownWhenDeadlineIsIncreasing()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final InOrderTimerService timerService = new InOrderTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 10);
+        timerService.scheduleTimerForCorrelationId(2, 10);
+        timerService.scheduleTimerForCorrelationId(3, 30);
+        timerService.scheduleTimerForCorrelationId(4, 30);
+        timerService.scheduleTimerForCorrelationId(5, 50);
+
+        timerService.scheduleTimerForCorrelationId(1, 30);
+
+        assertEquals(4, timerService.poll(30));
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(4);
+        inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verifyNoMoreInteractions();
+    }
 }

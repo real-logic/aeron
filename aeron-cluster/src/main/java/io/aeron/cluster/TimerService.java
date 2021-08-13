@@ -30,7 +30,8 @@ public interface TimerService
          * Invoked for each expired timer.
          *
          * @param correlationId of the timer.
-         * @return {@code true} if the timer event was processed or {@code false} otherwise.
+         * @return {@code true} if the timer event was processed or {@code false} otherwise, i.e. the timer should be
+         * kept as non-expired.
          */
         boolean onTimerEvent(long correlationId);
     }

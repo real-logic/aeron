@@ -66,17 +66,34 @@ final class InOrderTimerService implements TimerService
 
     public void scheduleTimerForCorrelationId(final long correlationId, final long deadline)
     {
-        if (size == timers.length)
+        final TimerEntry existingEntry = timerByCorrelationId.get(correlationId);
+        if (null != existingEntry)
         {
-            timers = Arrays.copyOf(timers, Math.max(MIN_CAPACITY, timers.length << 1));
+            if (deadline < existingEntry.deadline)
+            {
+                existingEntry.deadline = deadline;
+                shiftUp(timers, existingEntry.index);
+            }
+            else if (deadline > existingEntry.deadline)
+            {
+                existingEntry.deadline = deadline;
+                shiftDown(timers, existingEntry.index, size);
+            }
         }
+        else
+        {
+            if (size == timers.length)
+            {
+                timers = Arrays.copyOf(timers, Math.max(MIN_CAPACITY, timers.length << 1));
+            }
 
-        final int index = size++;
-        final TimerEntry entry = new TimerEntry(correlationId, deadline, index);
-        timers[index] = entry;
-        timerByCorrelationId.put(correlationId, entry);
+            final int index = size++;
+            final TimerEntry entry = new TimerEntry(correlationId, deadline, index);
+            timers[index] = entry;
+            timerByCorrelationId.put(correlationId, entry);
 
-        shiftUp(timers, index);
+            shiftUp(timers, index);
+        }
     }
 
     public boolean cancelTimerByCorrelationId(final long correlationId)
@@ -147,10 +164,30 @@ final class InOrderTimerService implements TimerService
         }
     }
 
+    private static void shiftDown(final TimerEntry[] timers, final int index, final int size)
+    {
+        for (int i = index, last = size - 1; i < last; i++)
+        {
+            final TimerEntry entry = timers[i];
+            final TimerEntry nextEntry = timers[i + 1];
+            if (entry.deadline >= nextEntry.deadline)
+            {
+                timers[i + 1] = entry;
+                entry.index++;
+                timers[i] = nextEntry;
+                nextEntry.index--;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
     private static final class TimerEntry
     {
         final long correlationId;
-        final long deadline;
+        long deadline;
         int index;
 
         private TimerEntry(final long correlationId, final long deadline, final int index)

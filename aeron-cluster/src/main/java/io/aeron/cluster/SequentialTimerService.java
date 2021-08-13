@@ -85,7 +85,7 @@ final class SequentialTimerService implements TimerService
         {
             if (size == timers.length)
             {
-                timers = Arrays.copyOf(timers, Math.max(MIN_CAPACITY, timers.length << 1));
+                timers = NO_TIMERS == timers ? new TimerEntry[MIN_CAPACITY] : Arrays.copyOf(timers, timers.length << 1);
             }
 
             final int index = size++;

@@ -390,7 +390,7 @@ public final class MediaDriver implements AutoCloseable
         try
         {
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final int observations = ctx.saveEventLog(new PrintStream(baos, false, US_ASCII), existingLogBuffer);
+            final int observations = ctx.saveEventLog(new PrintStream(baos, false, "ASCII"), existingLogBuffer);
             if (observations > 0)
             {
                 final StringBuilder builder = new StringBuilder(ctx.aeronDirectoryName());

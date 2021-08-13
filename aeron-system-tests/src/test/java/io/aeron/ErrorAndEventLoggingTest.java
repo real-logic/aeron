@@ -60,12 +60,11 @@ public class ErrorAndEventLoggingTest
     @AfterEach
     public void after()
     {
-        deleteBackupFiles("-event.log", "-error.log");
-
         CloseHelper.closeAll(closeables);
         CloseHelper.closeAll(aeron, driver);
         if (null != driver)
         {
+            deleteBackupFiles("-event.log", "-error.log");
             driver.context().deleteDirectory();
         }
     }

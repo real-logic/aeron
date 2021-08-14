@@ -15,10 +15,10 @@
  */
 package io.aeron.cluster;
 
-class SequentialTimerServiceClusterTimeTest extends ClusterTimerTest
+class PriorityHeapTimerServiceClusterTimeTest extends ClusterTimerTest
 {
     TimerServiceSupplier timerServiceSupplier()
     {
-        return SequentialTimerService::new;
+        return PriorityHeapTimerService::new;
     }
 }

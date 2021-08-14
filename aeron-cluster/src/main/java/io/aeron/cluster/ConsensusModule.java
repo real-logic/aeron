@@ -3131,7 +3131,7 @@ public final class ConsensusModule implements AutoCloseable
                 }
 
                 case TIMER_SERVICE_SUPPLIER_SEQUENTIAL:
-                    return SequentialTimerService::new;
+                    return PriorityHeapTimerService::new;
 
                 default:
                     throw new ClusterException("invalid TimerServiceSupplier: " + supplierName);

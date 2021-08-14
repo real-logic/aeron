@@ -3121,7 +3121,7 @@ public final class ConsensusModule implements AutoCloseable
             {
                 case TIMER_SERVICE_SUPPLIER_TIMER_WHEEL:
                 {
-                    return timerHandler -> new TimerWheelTimerService(
+                    return timerHandler -> new WheelTimerService(
                         timerHandler,
                         clusterClock.timeUnit(),
                         0,

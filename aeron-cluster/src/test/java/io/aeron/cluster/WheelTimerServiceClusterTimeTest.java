@@ -17,10 +17,10 @@ package io.aeron.cluster;
 
 import java.util.concurrent.TimeUnit;
 
-class TimerWheelTimerServiceClusterTimeTest extends ClusterTimerTest
+class WheelTimerServiceClusterTimeTest extends ClusterTimerTest
 {
     TimerServiceSupplier timerServiceSupplier()
     {
-        return timerHandler -> new TimerWheelTimerService(timerHandler, TimeUnit.MILLISECONDS, 0, 8, 128);
+        return timerHandler -> new WheelTimerService(timerHandler, TimeUnit.MILLISECONDS, 0, 8, 128);
     }
 }

@@ -125,7 +125,7 @@ class ConsensusModuleContextTest
         final TimerService timerService = supplier.newInstance(timerHandler);
 
         assertNotNull(timerService);
-        assertEquals(TimerWheelTimerService.class, timerService.getClass());
+        assertEquals(WheelTimerService.class, timerService.getClass());
     }
 
     @Test

@@ -21,14 +21,14 @@ import org.agrona.collections.Long2LongHashMap;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-class TimerWheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.TimerHandler, TimerService
+class WheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.TimerHandler, TimerService
 {
     private final TimerService.TimerHandler timerHandler;
     private final Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private final Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private boolean isAbort;
 
-    TimerWheelTimerService(
+    WheelTimerService(
         final TimerService.TimerHandler timerHandler,
         final TimeUnit timeUnit,
         final long startTime,

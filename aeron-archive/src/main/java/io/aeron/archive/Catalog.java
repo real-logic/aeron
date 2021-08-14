@@ -258,8 +258,9 @@ final class Catalog implements AutoCloseable
         {
             MappedByteBuffer catalogMappedByteBuffer = null;
 
-            final StandardOpenOption[] openOptions = writable ?
-                new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
+            final StandardOpenOption[] openOptions =
+                writable ? new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
+
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), openOptions))
             {
                 capacity = max(channel.size(), catalogCapacity);

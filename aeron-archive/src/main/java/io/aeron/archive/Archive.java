@@ -72,8 +72,7 @@ public final class Archive implements AutoCloseable
             this.ctx = ctx;
 
             final ArchiveConductor conductor = DEDICATED == ctx.threadingMode() ?
-                new DedicatedModeArchiveConductor(ctx) :
-                new SharedModeArchiveConductor(ctx);
+                (new DedicatedModeArchiveConductor(ctx)) : (new SharedModeArchiveConductor(ctx));
 
             if (ArchiveThreadingMode.INVOKER == ctx.threadingMode())
             {

@@ -22,6 +22,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
@@ -33,6 +34,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
+import java.lang.reflect.Constructor;
 import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -665,17 +667,17 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Name of the {@link TimerServiceSupplier} that creates {@link TimerService} based on the timer wheel.
          */
-        public static final String TIMER_SERVICE_SUPPLIER_TIMER_WHEEL = "TimerWheelTimerService";
+        public static final String TIMER_SERVICE_SUPPLIER_WHEEL = "io.aeron.cluster.WheelTimerService";
 
         /**
          * Name of the {@link TimerServiceSupplier} that creates a sequence-preserving {@link TimerService}.
          */
-        public static final String TIMER_SERVICE_SUPPLIER_SEQUENTIAL = "SequentialTimerService";
+        public static final String TIMER_SERVICE_SUPPLIER_PRIORITY_HEAP = "io.aeron.cluster.PriorityHeapTimerService";
 
         /**
          * Default {@link TimerServiceSupplier}.
          */
-        public static final String TIMER_SERVICE_SUPPLIER_DEFAULT = TIMER_SERVICE_SUPPLIER_TIMER_WHEEL;
+        public static final String TIMER_SERVICE_SUPPLIER_DEFAULT = TIMER_SERVICE_SUPPLIER_WHEEL;
 
         /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
@@ -3117,9 +3119,10 @@ public final class ConsensusModule implements AutoCloseable
         private TimerServiceSupplier getTimerServiceSupplierFromSystemProperty()
         {
             final String supplierName = Configuration.timerServiceSupplier();
-            switch (supplierName)
+            try
             {
-                case TIMER_SERVICE_SUPPLIER_TIMER_WHEEL:
+                final Class<?> klass = Class.forName(supplierName);
+                if (WheelTimerService.class.equals(klass))
                 {
                     return timerHandler -> new WheelTimerService(
                         timerHandler,
@@ -3129,12 +3132,27 @@ public final class ConsensusModule implements AutoCloseable
                             clusterClock.timeUnit().convert(wheelTickResolutionNs(), TimeUnit.NANOSECONDS)),
                         ticksPerWheel());
                 }
-
-                case TIMER_SERVICE_SUPPLIER_SEQUENTIAL:
-                    return PriorityHeapTimerService::new;
-
-                default:
-                    throw new ClusterException("invalid TimerServiceSupplier: " + supplierName);
+                else
+                {
+                    final Constructor<?> constructor = klass.getDeclaredConstructor(TimerService.TimerHandler.class);
+                    return timerHandler ->
+                    {
+                        try
+                        {
+                            return (TimerService)constructor.newInstance(timerHandler);
+                        }
+                        catch (final ReflectiveOperationException ex)
+                        {
+                            throw new ClusterException(
+                                "invalid TimerServiceSupplier: " + supplierName, ex, AeronException.Category.ERROR);
+                        }
+                    };
+                }
+            }
+            catch (final ReflectiveOperationException ex)
+            {
+                throw new ClusterException(
+                    "invalid TimerServiceSupplier: " + supplierName, ex, AeronException.Category.ERROR);
             }
         }
 

@@ -74,7 +74,7 @@ class ConsensusModuleContextTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { TIMER_SERVICE_SUPPLIER_TIMER_WHEEL, TIMER_SERVICE_SUPPLIER_SEQUENTIAL })
+    @ValueSource(strings = { TIMER_SERVICE_SUPPLIER_WHEEL, TIMER_SERVICE_SUPPLIER_PRIORITY_HEAP })
     void validTimerServiceSupplier(final String supplierName)
     {
         System.setProperty(TIMER_SERVICE_SUPPLIER_PROP_NAME, supplierName);
@@ -89,7 +89,7 @@ class ConsensusModuleContextTest
             final TimerService timerService = supplier.newInstance(timerHandler);
 
             assertNotNull(timerService);
-            assertEquals(supplierName, timerService.getClass().getSimpleName());
+            assertEquals(supplierName, timerService.getClass().getName());
         }
         finally
         {

@@ -318,4 +318,80 @@ class PriorityHeapTimerServiceTest
         inOrder.verify(snapshotTaker).snapshotTimer(3, 30);
         inOrder.verifyNoMoreInteractions();
     }
+
+    @Test
+    void expireThanCancelTimer()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 100);
+        timerService.scheduleTimerForCorrelationId(2, 2);
+        timerService.scheduleTimerForCorrelationId(3, 30);
+        timerService.scheduleTimerForCorrelationId(4, 4);
+        timerService.scheduleTimerForCorrelationId(5, 50);
+
+        assertEquals(2, timerService.poll(5));
+
+        assertTrue(timerService.cancelTimerByCorrelationId(1));
+
+        assertEquals(2, timerService.poll(1000));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verify(timerHandler).onTimerEvent(4);
+        inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void moveUpAnExistingTimerAndCancelAnotherOne()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 1);
+        timerService.scheduleTimerForCorrelationId(2, 1);
+        timerService.scheduleTimerForCorrelationId(3, 3);
+        timerService.scheduleTimerForCorrelationId(4, 4);
+        timerService.scheduleTimerForCorrelationId(5, 5);
+        timerService.scheduleTimerForCorrelationId(5, 1);
+
+        assertTrue(timerService.cancelTimerByCorrelationId(3));
+
+        assertEquals(4, timerService.poll(5));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verify(timerHandler).onTimerEvent(4);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void moveDownAnExistingTimerAndCancelAnotherOne()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 1);
+        timerService.scheduleTimerForCorrelationId(2, 1);
+        timerService.scheduleTimerForCorrelationId(3, 3);
+        timerService.scheduleTimerForCorrelationId(4, 4);
+        timerService.scheduleTimerForCorrelationId(5, 5);
+        timerService.scheduleTimerForCorrelationId(1, 5);
+
+        assertTrue(timerService.cancelTimerByCorrelationId(3));
+
+        assertEquals(4, timerService.poll(5));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(2);
+        inOrder.verify(timerHandler).onTimerEvent(4);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verifyNoMoreInteractions();
+    }
 }

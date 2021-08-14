@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 
 import java.util.Arrays;
@@ -83,10 +84,7 @@ final class PriorityHeapTimerService implements TimerService
         }
         else
         {
-            if (size == timers.length)
-            {
-                timers = NO_TIMERS == timers ? new TimerEntry[MIN_CAPACITY] : Arrays.copyOf(timers, timers.length << 1);
-            }
+            ensureCapacity(size + 1);
 
             final int index = size++;
             final TimerEntry entry = new TimerEntry(correlationId, deadline, index);
@@ -190,7 +188,33 @@ final class PriorityHeapTimerService implements TimerService
         }
     }
 
-    private static final class TimerEntry
+    private void ensureCapacity(final int requiredCapacity)
+    {
+        final int currentCapacity = timers.length;
+        if (requiredCapacity > currentCapacity)
+        {
+            if (requiredCapacity > ArrayUtil.MAX_CAPACITY)
+            {
+                throw new IllegalStateException("max capacity reached: " + ArrayUtil.MAX_CAPACITY);
+            }
+
+            if (NO_TIMERS == timers)
+            {
+                timers = new TimerEntry[MIN_CAPACITY];
+            }
+            else
+            {
+                int newCapacity = currentCapacity + (currentCapacity >> 1);
+                if (newCapacity < 0 || newCapacity > ArrayUtil.MAX_CAPACITY)
+                {
+                    newCapacity = ArrayUtil.MAX_CAPACITY;
+                }
+                timers = Arrays.copyOf(timers, newCapacity);
+            }
+        }
+    }
+
+    static final class TimerEntry
     {
         final long correlationId;
         long deadline;

@@ -16,7 +16,7 @@
 package io.aeron.cluster;
 
 /**
- * Supplier of {@link TimerService} implementation to be used by the consensus module.
+ * Supplier of {@link TimerService} implementations to be used by the {@link ConsensusModule}.
  */
 @FunctionalInterface
 public interface TimerServiceSupplier

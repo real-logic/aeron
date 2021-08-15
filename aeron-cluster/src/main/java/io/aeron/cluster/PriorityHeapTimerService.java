@@ -42,6 +42,7 @@ final class PriorityHeapTimerService implements TimerService
         final TimerEntry[] timers = this.timers;
         final TimerHandler timerHandler = this.timerHandler;
         final int numTimers = size;
+
         for (int i = 0; i < POLL_LIMIT && i < numTimers; i++)
         {
             final TimerEntry timer = timers[i];
@@ -54,6 +55,7 @@ final class PriorityHeapTimerService implements TimerService
             {
                 break;
             }
+
             expiredTimers++;
         }
 
@@ -119,7 +121,7 @@ final class PriorityHeapTimerService implements TimerService
     public void snapshot(final TimerSnapshotTaker snapshotTaker)
     {
         final TimerEntry[] timers = this.timers;
-        for (int i = 0, numEntries = size; i < numEntries; i++)
+        for (int i = 0, size = this.size; i < size; i++)
         {
             final TimerEntry entry = timers[i];
             snapshotTaker.snapshotTimer(entry.correlationId, entry.deadline);
@@ -154,6 +156,7 @@ final class PriorityHeapTimerService implements TimerService
         {
             final TimerEntry entry = timers[i];
             final TimerEntry prevEntry = timers[i - 1];
+
             if (entry.deadline < prevEntry.deadline)
             {
                 timers[i - 1] = entry;
@@ -174,6 +177,7 @@ final class PriorityHeapTimerService implements TimerService
         {
             final TimerEntry entry = timers[i];
             final TimerEntry nextEntry = timers[i + 1];
+
             if (entry.deadline >= nextEntry.deadline)
             {
                 timers[i + 1] = entry;
@@ -191,6 +195,7 @@ final class PriorityHeapTimerService implements TimerService
     private void ensureCapacity(final int requiredCapacity)
     {
         final int currentCapacity = timers.length;
+
         if (requiredCapacity > currentCapacity)
         {
             if (requiredCapacity > ArrayUtil.MAX_CAPACITY)

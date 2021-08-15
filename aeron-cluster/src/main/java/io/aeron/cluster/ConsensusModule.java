@@ -22,7 +22,6 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
-import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
@@ -665,12 +664,14 @@ public final class ConsensusModule implements AutoCloseable
         public static final String TIMER_SERVICE_SUPPLIER_PROP_NAME = "aeron.cluster.timer.service.supplier";
 
         /**
-         * Name of the {@link TimerServiceSupplier} that creates {@link TimerService} based on the timer wheel.
+         * Name of the {@link TimerServiceSupplier} that creates {@link TimerService} based on the timer wheel
+         * implementation.
          */
         public static final String TIMER_SERVICE_SUPPLIER_WHEEL = "io.aeron.cluster.WheelTimerService";
 
         /**
-         * Name of the {@link TimerServiceSupplier} that creates a sequence-preserving {@link TimerService}.
+         * Name of the {@link TimerServiceSupplier} that creates a sequence-preserving {@link TimerService} based
+         * on a priority heap implementation.
          */
         public static final String TIMER_SERVICE_SUPPLIER_PRIORITY_HEAP = "io.aeron.cluster.PriorityHeapTimerService";
 
@@ -1030,9 +1031,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The name of the {@link TimerServiceSupplier} to use for creating the {@link TimerService}.
+         * The name of the {@link TimerServiceSupplier} to use for supplying the {@link TimerService}.
          *
-         * @return {@link #TIMER_SERVICE_SUPPLIER_DEFAULT} or system property
+         * @return {@link #TIMER_SERVICE_SUPPLIER_DEFAULT} or system property.
          * {@link #TIMER_SERVICE_SUPPLIER_PROP_NAME} if set.
          */
         public static String timerServiceSupplier()
@@ -3124,18 +3125,18 @@ public final class ConsensusModule implements AutoCloseable
                 final Class<?> klass = Class.forName(supplierName);
                 if (WheelTimerService.class.equals(klass))
                 {
-                    return timerHandler -> new WheelTimerService(
+                    return (timerHandler) -> new WheelTimerService(
                         timerHandler,
                         clusterClock.timeUnit(),
                         0,
                         findNextPositivePowerOfTwo(
-                            clusterClock.timeUnit().convert(wheelTickResolutionNs(), TimeUnit.NANOSECONDS)),
-                        ticksPerWheel());
+                            clusterClock.timeUnit().convert(wheelTickResolutionNs, TimeUnit.NANOSECONDS)),
+                        ticksPerWheel);
                 }
                 else
                 {
                     final Constructor<?> constructor = klass.getDeclaredConstructor(TimerService.TimerHandler.class);
-                    return timerHandler ->
+                    return (timerHandler) ->
                     {
                         try
                         {
@@ -3143,16 +3144,14 @@ public final class ConsensusModule implements AutoCloseable
                         }
                         catch (final ReflectiveOperationException ex)
                         {
-                            throw new ClusterException(
-                                "invalid TimerServiceSupplier: " + supplierName, ex, AeronException.Category.ERROR);
+                            throw new ClusterException("invalid TimerServiceSupplier: " + supplierName, ex);
                         }
                     };
                 }
             }
             catch (final ReflectiveOperationException ex)
             {
-                throw new ClusterException(
-                    "invalid TimerServiceSupplier: " + supplierName, ex, AeronException.Category.ERROR);
+                throw new ClusterException("invalid TimerServiceSupplier: " + supplierName, ex);
             }
         }
 

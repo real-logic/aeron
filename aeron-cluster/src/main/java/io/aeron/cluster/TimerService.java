@@ -15,104 +15,85 @@
  */
 package io.aeron.cluster;
 
-import org.agrona.DeadlineTimerWheel;
-import org.agrona.collections.Long2LongHashMap;
-
-import java.util.concurrent.TimeUnit;
-
-class TimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.TimerHandler
+/**
+ * Timer service providing API to schedule timers in the Cluster.
+ */
+public interface TimerService
 {
-    private static final int POLL_LIMIT = 20;
-
-    private boolean isAbort;
-    private final ConsensusModuleAgent consensusModuleAgent;
-    private final Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
-    private final Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
-
-    TimerService(
-        final ConsensusModuleAgent consensusModuleAgent,
-        final TimeUnit timeUnit,
-        final long startTime,
-        final long tickResolution,
-        final int ticksPerWheel)
+    /**
+     * Called from the {@link #poll(long)}.
+     */
+    @FunctionalInterface
+    interface TimerHandler
     {
-        super(timeUnit, startTime, tickResolution, ticksPerWheel);
-        this.consensusModuleAgent = consensusModuleAgent;
+        /**
+         * Invoked for each expired timer.
+         *
+         * @param correlationId of the timer.
+         * @return {@code true} if the timer event was processed or {@code false} otherwise, i.e. the timer should be
+         * kept as non-expired.
+         */
+        boolean onTimerEvent(long correlationId);
     }
 
-    int poll(final long now)
+    /**
+     * Called from the {@link #snapshot(TimerSnapshotTaker)}.
+     */
+    @FunctionalInterface
+    interface TimerSnapshotTaker
     {
-        int expired = 0;
-        isAbort = false;
-
-        do
-        {
-            expired += super.poll(now, this, POLL_LIMIT);
-
-            if (isAbort)
-            {
-                break;
-            }
-        }
-        while (expired < POLL_LIMIT && super.currentTickTime() < now);
-
-        return expired;
+        /**
+         * Take a snapshot of the timer.
+         *
+         * @param correlationId of the timer.
+         * @param deadline      when the timer expires.
+         */
+        void snapshotTimer(long correlationId, long deadline);
     }
 
-    public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId)
-    {
-        final long correlationId = correlationIdByTimerIdMap.get(timerId);
+    /**
+     * Max number of the timers to expire per single {@link #poll(long)}.
+     */
+    int POLL_LIMIT = 20;
 
-        if (consensusModuleAgent.onTimerEvent(correlationId))
-        {
-            correlationIdByTimerIdMap.remove(timerId);
-            timerIdByCorrelationIdMap.remove(correlationId);
+    /**
+     * Poll for expired timers. For each expired timer it invokes {@link TimerHandler#onTimerEvent(long)} on the
+     * {@link TimerHandler} that was provided upon creation of this {@link TimerService} instance.
+     * Poll can be terminated early if {@link #POLL_LIMIT} is reached or if {@link TimerHandler#onTimerEvent(long)}
+     * returns {@code false}.
+     *
+     * @param now current time.
+     * @return number of timers expired, never exceeds {@link #POLL_LIMIT}.
+     */
+    int poll(long now);
 
-            return true;
-        }
-        else
-        {
-            isAbort = true;
+    /**
+     * Schedule timer with the given {@code correlationId} and {@code deadline}.
+     *
+     * @param correlationId to associate with the timer.
+     * @param deadline      when the timer expires.
+     */
+    void scheduleTimerForCorrelationId(long correlationId, long deadline);
 
-            return false;
-        }
-    }
+    /**
+     * Cancels timer by its {@code correlationId}.
+     *
+     * @param correlationId of the timer to cancel.
+     * @return {@code true} if the timer was cancelled.
+     */
+    boolean cancelTimerByCorrelationId(long correlationId);
 
-    void scheduleTimerForCorrelationId(final long correlationId, final long deadline)
-    {
-        cancelTimerByCorrelationId(correlationId);
+    /**
+     * Takes a snapshot of the timer service state, i.e. serializes all non-expired timers.
+     *
+     * @param snapshotTaker to take a snapshot.
+     */
+    void snapshot(TimerSnapshotTaker snapshotTaker);
 
-        final long timerId = super.scheduleTimer(deadline);
-        timerIdByCorrelationIdMap.put(correlationId, timerId);
-        correlationIdByTimerIdMap.put(timerId, correlationId);
-    }
-
-    boolean cancelTimerByCorrelationId(final long correlationId)
-    {
-        final long timerId = timerIdByCorrelationIdMap.remove(correlationId);
-        if (Long.MAX_VALUE != timerId)
-        {
-            super.cancelTimer(timerId);
-            correlationIdByTimerIdMap.remove(timerId);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    void snapshot(final ConsensusModuleSnapshotTaker snapshotTaker)
-    {
-        final Long2LongHashMap.EntryIterator iter = timerIdByCorrelationIdMap.entrySet().iterator();
-
-        while (iter.hasNext())
-        {
-            iter.next();
-
-            final long correlationId = iter.getLongKey();
-            final long deadline = super.deadline(iter.getLongValue());
-
-            snapshotTaker.snapshotTimer(correlationId, deadline);
-        }
-    }
+    /**
+     * Set the current time from the Cluster in case the underlying implementation depends on it.
+     *
+     * @param now the current time.
+     */
+    void currentTime(long now);
 }

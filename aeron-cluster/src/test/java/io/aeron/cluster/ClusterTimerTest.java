@@ -50,7 +50,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ClusterTimerTest
+abstract class ClusterTimerTest
 {
     private static final long CATALOG_CAPACITY = 128 * 1024;
     private static final int INTERVAL_MS = 20;
@@ -60,13 +60,13 @@ public class ClusterTimerTest
     private AeronCluster aeronCluster;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         launchClusteredMediaDriver(true);
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         final ConsensusModule consensusModule = null == clusteredMediaDriver ?
             null : clusteredMediaDriver.consensusModule();
@@ -84,7 +84,7 @@ public class ClusterTimerTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
+    void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
     {
         final AtomicLong triggeredTimersCounter = new AtomicLong();
 
@@ -125,7 +125,7 @@ public class ClusterTimerTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldTriggerRescheduledTimerAfterReplay()
+    void shouldTriggerRescheduledTimerAfterReplay()
     {
         final AtomicLong triggeredTimersCounter = new AtomicLong();
 
@@ -206,6 +206,8 @@ public class ClusterTimerTest
 
         ClusterTests.failOnClusterError();
     }
+
+    abstract TimerServiceSupplier timerServiceSupplier();
 
     private void launchReschedulingService(final AtomicLong triggeredTimersCounter)
     {
@@ -317,6 +319,7 @@ public class ClusterTimerTest
                 .ingressChannel("aeron:udp")
                 .clusterMembers(CLUSTER_MEMBERS)
                 .terminationHook(ClusterTests.NOOP_TERMINATION_HOOK)
+                .timerServiceSupplier(timerServiceSupplier())
                 .deleteDirOnStart(initialLaunch));
     }
 }

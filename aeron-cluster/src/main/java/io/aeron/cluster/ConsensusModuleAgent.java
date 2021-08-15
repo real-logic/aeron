@@ -53,9 +53,8 @@ import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.exceptions.AeronException.Category.WARN;
 import static java.lang.Math.min;
-import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
-final class ConsensusModuleAgent implements Agent
+final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 {
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final int SERVICE_MESSAGE_LIMIT = 20;
@@ -162,12 +161,7 @@ final class ConsensusModuleAgent implements Agent
         this.controlToggle = ctx.controlToggleCounter();
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
-        this.timerService = new TimerService(
-            this,
-            clusterTimeUnit,
-            0,
-            findNextPositivePowerOfTwo(clusterTimeUnit.convert(ctx.wheelTickResolutionNs(), TimeUnit.NANOSECONDS)),
-            ctx.ticksPerWheel());
+        this.timerService = ctx.timerServiceSupplier().newInstance(this);
         this.activeMembers = ClusterMember.parse(ctx.clusterMembers());
         this.sessionProxy = new ClusterSessionProxy(egressPublisher);
         this.memberId = ctx.clusterMemberId();
@@ -492,7 +486,7 @@ final class ConsensusModuleAgent implements Agent
         }
     }
 
-    boolean onTimerEvent(final long correlationId)
+    public boolean onTimerEvent(final long correlationId)
     {
         final long appendPosition = logPublisher.appendTimer(correlationId, leadershipTermId, clusterClock.time());
         if (appendPosition > 0)
@@ -1593,7 +1587,7 @@ final class ConsensusModuleAgent implements Agent
             }
 
             timeOfLastLogUpdateNs = nowNs - leaderHeartbeatIntervalNs;
-            timerService.currentTickTime(now);
+            timerService.currentTime(now);
             ClusterControl.ToggleState.activate(controlToggle);
             prepareSessionsForNewTerm(election.isLeaderStartup());
         }
@@ -2500,7 +2494,7 @@ final class ConsensusModuleAgent implements Agent
             pendingServiceMessages.forEach(this::serviceSessionMessageReset, Integer.MAX_VALUE);
         }
 
-        timerService.currentTickTime(clusterClock.time());
+        timerService.currentTime(clusterClock.time());
         leadershipTermId(snapshot.leadershipTermId);
         commitPosition.setOrdered(snapshot.logPosition);
         expectedAckPosition = snapshot.logPosition;
@@ -2723,7 +2717,7 @@ final class ConsensusModuleAgent implements Agent
 
             if (appendPosition > commitPosition)
             {
-                timerService.scheduleTimerForCorrelationId(correlationId, timerService.currentTickTime());
+                timerService.scheduleTimerForCorrelationId(correlationId, 0);
             }
         }
         uncommittedTimers.clear();

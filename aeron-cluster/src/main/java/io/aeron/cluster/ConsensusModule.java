@@ -22,6 +22,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
@@ -33,6 +34,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
+import java.lang.reflect.Constructor;
 import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +47,7 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.S
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 import static org.agrona.SystemUtil.*;
 
 /**
@@ -657,6 +660,26 @@ public final class ConsensusModule implements AutoCloseable
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
 
         /**
+         * {@link TimerServiceSupplier} to be used for creating the {@link TimerService} used by consensus module.
+         */
+        public static final String TIMER_SERVICE_SUPPLIER_PROP_NAME = "aeron.cluster.timer.service.supplier";
+
+        /**
+         * Name of the {@link TimerServiceSupplier} that creates {@link TimerService} based on the timer wheel.
+         */
+        public static final String TIMER_SERVICE_SUPPLIER_WHEEL = "io.aeron.cluster.WheelTimerService";
+
+        /**
+         * Name of the {@link TimerServiceSupplier} that creates a sequence-preserving {@link TimerService}.
+         */
+        public static final String TIMER_SERVICE_SUPPLIER_PRIORITY_HEAP = "io.aeron.cluster.PriorityHeapTimerService";
+
+        /**
+         * Default {@link TimerServiceSupplier}.
+         */
+        public static final String TIMER_SERVICE_SUPPLIER_DEFAULT = TIMER_SERVICE_SUPPLIER_WHEEL;
+
+        /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
          * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
          *
@@ -1005,6 +1028,17 @@ public final class ConsensusModule implements AutoCloseable
         {
             return Integer.getInteger(FILE_SYNC_LEVEL_PROP_NAME, FILE_SYNC_LEVEL_DEFAULT);
         }
+
+        /**
+         * The name of the {@link TimerServiceSupplier} to use for creating the {@link TimerService}.
+         *
+         * @return {@link #TIMER_SERVICE_SUPPLIER_DEFAULT} or system property
+         * {@link #TIMER_SERVICE_SUPPLIER_PROP_NAME} if set.
+         */
+        public static String timerServiceSupplier()
+        {
+            return System.getProperty(TIMER_SERVICE_SUPPLIER_PROP_NAME, TIMER_SERVICE_SUPPLIER_DEFAULT);
+        }
     }
 
     /**
@@ -1077,6 +1111,7 @@ public final class ConsensusModule implements AutoCloseable
         private ClusterClock clusterClock;
         private EpochClock epochClock;
         private Random random;
+        private TimerServiceSupplier timerServiceSupplier;
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -1285,6 +1320,11 @@ public final class ConsensusModule implements AutoCloseable
             if (null == idleStrategySupplier)
             {
                 idleStrategySupplier = ClusteredServiceContainer.Configuration.idleStrategySupplier(null);
+            }
+
+            if (null == timerServiceSupplier)
+            {
+                timerServiceSupplier = getTimerServiceSupplierFromSystemProperty();
             }
 
             if (null == archiveContext)
@@ -1586,8 +1626,8 @@ public final class ConsensusModule implements AutoCloseable
          * String representing the cluster members.
          * <p>
          * <code>
-         *     0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
-         *     1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
+         * 0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
+         * 1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
          * </code>
          * <p>
          * The ingress endpoints will be used as the endpoint substituted into the {@link #ingressChannel()}
@@ -2958,6 +2998,29 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Provides an {@link TimerService} supplier for the idle strategy for the agent duty cycle.
+         *
+         * @param timerServiceSupplier supplier for the idle strategy for the agent duty cycle.
+         * @return this for a fluent API.
+         */
+        public Context timerServiceSupplier(final TimerServiceSupplier timerServiceSupplier)
+        {
+            this.timerServiceSupplier = timerServiceSupplier;
+            return this;
+        }
+
+        /**
+         * Supplier of the {@link TimerService} instances.
+         *
+         * @return supplier of dynamically created {@link TimerService} instances.
+         * @see io.aeron.driver.Configuration#CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
+         */
+        public TimerServiceSupplier timerServiceSupplier()
+        {
+            return timerServiceSupplier;
+        }
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -3051,6 +3114,46 @@ public final class ConsensusModule implements AutoCloseable
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
+        }
+
+        private TimerServiceSupplier getTimerServiceSupplierFromSystemProperty()
+        {
+            final String supplierName = Configuration.timerServiceSupplier();
+            try
+            {
+                final Class<?> klass = Class.forName(supplierName);
+                if (WheelTimerService.class.equals(klass))
+                {
+                    return timerHandler -> new WheelTimerService(
+                        timerHandler,
+                        clusterClock.timeUnit(),
+                        0,
+                        findNextPositivePowerOfTwo(
+                            clusterClock.timeUnit().convert(wheelTickResolutionNs(), TimeUnit.NANOSECONDS)),
+                        ticksPerWheel());
+                }
+                else
+                {
+                    final Constructor<?> constructor = klass.getDeclaredConstructor(TimerService.TimerHandler.class);
+                    return timerHandler ->
+                    {
+                        try
+                        {
+                            return (TimerService)constructor.newInstance(timerHandler);
+                        }
+                        catch (final ReflectiveOperationException ex)
+                        {
+                            throw new ClusterException(
+                                "invalid TimerServiceSupplier: " + supplierName, ex, AeronException.Category.ERROR);
+                        }
+                    };
+                }
+            }
+            catch (final ReflectiveOperationException ex)
+            {
+                throw new ClusterException(
+                    "invalid TimerServiceSupplier: " + supplierName, ex, AeronException.Category.ERROR);
+            }
         }
 
         /**

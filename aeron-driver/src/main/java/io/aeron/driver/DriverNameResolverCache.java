@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.protocol.ResolutionEntryFlyweight;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -88,7 +89,7 @@ final class DriverNameResolverCache implements AutoCloseable
                 entry.address = Arrays.copyOf(address, addressLength);
                 entry.port = port;
 
-                eventLog.record(new RuntimeException(
+                eventLog.record(new AeronEvent(
                     "Address changed for name: " + new String(name, 0, nameLength, StandardCharsets.US_ASCII)));
             }
         }

@@ -59,6 +59,7 @@ final class PriorityHeapTimerService implements TimerService
             final int lastIndex = --size;
             final TimerEntry lastEntry = timers[lastIndex];
             timers[lastIndex] = null;
+
             if (0 != lastIndex)
             {
                 shiftDown(timers, lastIndex, 0, lastEntry);
@@ -90,8 +91,8 @@ final class PriorityHeapTimerService implements TimerService
 
             final int index = size++;
             final TimerEntry entry = new TimerEntry(correlationId, deadline, index);
-            timerByCorrelationId.put(correlationId, entry);
 
+            timerByCorrelationId.put(correlationId, entry);
             shiftUp(timers, index, entry);
         }
     }
@@ -137,14 +138,17 @@ final class PriorityHeapTimerService implements TimerService
         {
             final int prevIndex = (index - 1) >>> 1;
             final TimerEntry prevEntry = timers[prevIndex];
+
             if (entry.deadline >= prevEntry.deadline)
             {
                 break;
             }
+
             timers[index] = prevEntry;
             prevEntry.index = index;
             index = prevIndex;
         }
+
         timers[index] = entry;
         entry.index = index;
     }
@@ -157,21 +161,25 @@ final class PriorityHeapTimerService implements TimerService
         while (index < half)
         {
             int nextIndex = (index << 1) + 1;
-            TimerEntry nextEntry = timers[nextIndex];
             final int right = nextIndex + 1;
+            TimerEntry nextEntry = timers[nextIndex];
+
             if (right < size && nextEntry.deadline > timers[right].deadline)
             {
                 nextIndex = right;
                 nextEntry = timers[nextIndex];
             }
+
             if (entry.deadline < nextEntry.deadline)
             {
                 break;
             }
+
             timers[index] = nextEntry;
             nextEntry.index = index;
             index = nextIndex;
         }
+
         timers[index] = entry;
         entry.index = index;
     }

@@ -107,7 +107,11 @@ final class PriorityHeapTimerService implements TimerService
         final int lastIndex = --size;
         final TimerEntry last = timers[lastIndex];
         timers[lastIndex] = null;
-        shiftDown(timers, lastIndex, removed.index, last);
+
+        if (lastIndex != removed.index)
+        {
+            shiftDown(timers, lastIndex, removed.index, last);
+        }
 
         return true;
     }

@@ -41,11 +41,10 @@ final class PriorityHeapTimerService implements TimerService
         int expiredTimers = 0;
         final TimerEntry[] timers = this.timers;
         final TimerHandler timerHandler = this.timerHandler;
-        final int numTimers = size;
 
-        for (int i = 0; i < POLL_LIMIT && i < numTimers; i++)
+        while (size > 0 && expiredTimers < POLL_LIMIT)
         {
-            final TimerEntry timer = timers[i];
+            final TimerEntry timer = timers[0];
             if (timer.deadline > now)
             {
                 break;
@@ -57,12 +56,13 @@ final class PriorityHeapTimerService implements TimerService
             }
 
             expiredTimers++;
-        }
-
-        if (expiredTimers > 0)
-        {
-            shiftAllUp(timers, expiredTimers, numTimers);
-            size -= expiredTimers;
+            final int lastIndex = --size;
+            final TimerEntry lastEntry = timers[lastIndex];
+            timers[lastIndex] = null;
+            if (0 != lastIndex)
+            {
+                shiftDown(timers, lastIndex, 0, lastEntry);
+            }
         }
 
         return expiredTimers;
@@ -76,12 +76,12 @@ final class PriorityHeapTimerService implements TimerService
             if (deadline < existingEntry.deadline)
             {
                 existingEntry.deadline = deadline;
-                shiftUp(timers, existingEntry.index);
+                shiftUp(timers, existingEntry.index, existingEntry);
             }
             else if (deadline > existingEntry.deadline)
             {
                 existingEntry.deadline = deadline;
-                shiftDown(timers, existingEntry.index, size);
+                shiftDown(timers, size, existingEntry.index, existingEntry);
             }
         }
         else
@@ -90,10 +90,9 @@ final class PriorityHeapTimerService implements TimerService
 
             final int index = size++;
             final TimerEntry entry = new TimerEntry(correlationId, deadline, index);
-            timers[index] = entry;
             timerByCorrelationId.put(correlationId, entry);
 
-            shiftUp(timers, index);
+            shiftUp(timers, index, entry);
         }
     }
 
@@ -105,15 +104,14 @@ final class PriorityHeapTimerService implements TimerService
             return false;
         }
 
-        for (int i = removed.index + 1; i < size; i++)
-        {
-            final TimerEntry entry = timers[i];
-            timers[i - 1] = entry;
-            entry.index--;
-        }
+        final int lastIndex = --size;
+        final TimerEntry last = timers[lastIndex];
+        timers[lastIndex] = null;
 
-        size--;
-        timers[size] = null;
+        if (lastIndex != removed.index)
+        {
+            shiftDown(timers, lastIndex, removed.index, last);
+        }
 
         return true;
     }
@@ -132,64 +130,50 @@ final class PriorityHeapTimerService implements TimerService
     {
     }
 
-    private static void shiftAllUp(final TimerEntry[] timers, final int expiredTimers, final int size)
+    private static void shiftUp(final TimerEntry[] timers, final int startIndex, final TimerEntry entry)
     {
-        if (expiredTimers < size)
+        int index = startIndex;
+        while (index > 0)
         {
-            final int remainingTimers = size - expiredTimers;
-            System.arraycopy(timers, expiredTimers, timers, 0, remainingTimers);
-            Arrays.fill(timers, remainingTimers, size, null);
-            for (int i = 0; i < remainingTimers; i++)
-            {
-                timers[i].index -= expiredTimers;
-            }
-        }
-        else
-        {
-            Arrays.fill(timers, null);
-        }
-    }
-
-    private static void shiftUp(final TimerEntry[] timers, final int index)
-    {
-        for (int i = index; i > 0; i--)
-        {
-            final TimerEntry entry = timers[i];
-            final TimerEntry prevEntry = timers[i - 1];
-
-            if (entry.deadline < prevEntry.deadline)
-            {
-                timers[i - 1] = entry;
-                entry.index--;
-                timers[i] = prevEntry;
-                prevEntry.index++;
-            }
-            else
+            final int prevIndex = (index - 1) >>> 1;
+            final TimerEntry prevEntry = timers[prevIndex];
+            if (entry.deadline >= prevEntry.deadline)
             {
                 break;
             }
+            timers[index] = prevEntry;
+            prevEntry.index = index;
+            index = prevIndex;
         }
+        timers[index] = entry;
+        entry.index = index;
     }
 
-    private static void shiftDown(final TimerEntry[] timers, final int index, final int size)
+    private static void shiftDown(
+        final TimerEntry[] timers, final int size, final int startIndex, final TimerEntry entry)
     {
-        for (int i = index, last = size - 1; i < last; i++)
+        final int half = size >>> 1;
+        int index = startIndex;
+        while (index < half)
         {
-            final TimerEntry entry = timers[i];
-            final TimerEntry nextEntry = timers[i + 1];
-
-            if (entry.deadline >= nextEntry.deadline)
+            int nextIndex = (index << 1) + 1;
+            TimerEntry nextEntry = timers[nextIndex];
+            final int right = nextIndex + 1;
+            if (right < size && nextEntry.deadline > timers[right].deadline)
             {
-                timers[i + 1] = entry;
-                entry.index++;
-                timers[i] = nextEntry;
-                nextEntry.index--;
+                nextIndex = right;
+                nextEntry = timers[nextIndex];
             }
-            else
+            if (entry.deadline < nextEntry.deadline)
             {
                 break;
             }
+            timers[index] = nextEntry;
+            nextEntry.index = index;
+            index = nextIndex;
         }
+        timers[index] = entry;
+        entry.index = index;
     }
 
     private void ensureCapacity(final int requiredCapacity)

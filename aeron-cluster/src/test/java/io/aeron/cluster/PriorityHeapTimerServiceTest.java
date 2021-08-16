@@ -108,7 +108,7 @@ class PriorityHeapTimerServiceTest
     }
 
     @Test
-    void pollShouldExpireTimersInOrderWithinTheSameDeadline()
+    void pollShouldExpireTimersInOrderOfDeadlineButWithinTheDeadlineOrderIsUndefined()
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
         when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
@@ -125,8 +125,8 @@ class PriorityHeapTimerServiceTest
         final InOrder inOrder = inOrder(timerHandler);
         inOrder.verify(timerHandler).onTimerEvent(2);
         inOrder.verify(timerHandler).onTimerEvent(5);
-        inOrder.verify(timerHandler).onTimerEvent(4);
         inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(4);
         inOrder.verify(timerHandler).onTimerEvent(1);
         inOrder.verifyNoMoreInteractions();
     }
@@ -270,9 +270,9 @@ class PriorityHeapTimerServiceTest
         assertEquals(4, timerService.poll(30));
         final InOrder inOrder = inOrder(timerHandler);
         inOrder.verify(timerHandler).onTimerEvent(2);
-        inOrder.verify(timerHandler).onTimerEvent(3);
         inOrder.verify(timerHandler).onTimerEvent(4);
         inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verify(timerHandler).onTimerEvent(3);
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -390,8 +390,8 @@ class PriorityHeapTimerServiceTest
         final InOrder inOrder = inOrder(timerHandler);
         inOrder.verify(timerHandler).onTimerEvent(2);
         inOrder.verify(timerHandler).onTimerEvent(4);
-        inOrder.verify(timerHandler).onTimerEvent(5);
         inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verify(timerHandler).onTimerEvent(5);
         inOrder.verifyNoMoreInteractions();
     }
 }

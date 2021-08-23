@@ -215,6 +215,8 @@ subprojects {
             'aeron.dir.delete.on.start': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false')
+
+        javaLauncher.set(toolchainLauncher)
     }
 
     task slowTest(type: Test, group: 'verification') {

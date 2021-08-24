@@ -21,6 +21,7 @@ import io.aeron.samples.SamplesUtil;
 import io.aeron.test.cluster.TestCluster;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -66,21 +67,6 @@ public class ClusterTestWatcher implements TestWatcher
         return this;
     }
 
-    public void testFailed(final ExtensionContext context, final Throwable cause)
-    {
-        if (null != testCluster)
-        {
-            printErrors(testCluster.dataCollector().cncFiles(), testCluster.dataCollector().errorLogFiles());
-
-            final String testClass = context.getTestClass().orElseThrow(IllegalStateException::new).getName();
-            final String testMethod = context.getTestMethod().orElseThrow(IllegalStateException::new).getName();
-
-            testCluster.dataCollector().dumpData(testClass, testMethod);
-        }
-
-        CloseHelper.close(testCluster);
-    }
-
     public int errorCount()
     {
         if (null != testCluster)
@@ -94,35 +80,33 @@ public class ClusterTestWatcher implements TestWatcher
         return 0;
     }
 
-    private void printErrors(final List<Path> cncPaths, final List<Path> clusterErrorPaths)
+    public void testFailed(final ExtensionContext context, final Throwable cause)
     {
-        printErrors(cncPaths, "Command `n Control", CommonContext::errorLogBuffer);
-        printErrors(clusterErrorPaths, "Cluster Errors", UnsafeBuffer::new);
+        reportAndTerminate(context);
     }
 
-    private void printErrors(
-        final List<Path> paths,
-        final String fileDescription,
-        final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer)
+    public void testAborted(final ExtensionContext context, final Throwable cause)
     {
-        for (final Path path : paths)
-        {
-            final File cncFile = path.toFile();
-            final MappedByteBuffer mmap = SamplesUtil.mapExistingFileReadOnly(cncFile);
-            try
-            {
-                final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
+        reportAndTerminate(context);
+    }
 
-                System.out.printf("%n%n%s file %s%n", fileDescription, cncFile);
-                final int distinctErrorCount = ErrorLogReader.read(
-                    buffer, this::printObservationCallback);
-                System.out.format("%d distinct errors observed.%n", distinctErrorCount);
-            }
-            finally
-            {
-                IoUtil.unmap(mmap);
-            }
-        }
+    public void testDisabled(final ExtensionContext context, final Optional<String> reason)
+    {
+        CloseHelper.close(testCluster);
+    }
+
+    public void testSuccessful(final ExtensionContext context)
+    {
+        CloseHelper.close(testCluster);
+    }
+
+    private int countErrors(
+        final List<Path> cncPaths,
+        final List<Path> clusterErrorPaths,
+        final Predicate<String> filter)
+    {
+        return countErrors(cncPaths, filter, CommonContext::errorLogBuffer) +
+            countErrors(clusterErrorPaths, filter, UnsafeBuffer::new);
     }
 
     private int countErrors(
@@ -158,15 +142,6 @@ public class ClusterTestWatcher implements TestWatcher
         return errorCount.get();
     }
 
-    private int countErrors(
-        final List<Path> cncPaths,
-        final List<Path> clusterErrorPaths,
-        final Predicate<String> filter)
-    {
-        return countErrors(cncPaths, filter, CommonContext::errorLogBuffer) +
-            countErrors(clusterErrorPaths, filter, UnsafeBuffer::new);
-    }
-
     private void printObservationCallback(
         final int observationCount,
         final long firstObservationTimestamp,
@@ -183,18 +158,91 @@ public class ClusterTestWatcher implements TestWatcher
             encodedException);
     }
 
-    public void testDisabled(final ExtensionContext context, final Optional<String> reason)
+    private void reportAndTerminate(final ExtensionContext context)
     {
-        CloseHelper.close(testCluster);
+        Throwable error = null;
+
+        if (null != testCluster)
+        {
+            try
+            {
+                printErrors(testCluster.dataCollector().cncFiles(), testCluster.dataCollector().errorLogFiles());
+            }
+            catch (final Throwable t)
+            {
+                error = t;
+            }
+
+            try
+            {
+                final String testClass = context.getTestClass().orElseThrow(IllegalStateException::new).getName();
+                final String testMethod = context.getTestMethod().orElseThrow(IllegalStateException::new).getName();
+
+                testCluster.dataCollector().dumpData(testClass, testMethod);
+            }
+            catch (final Throwable t)
+            {
+                if (null != error)
+                {
+                    error.addSuppressed(t);
+                }
+                else
+                {
+                    error = t;
+                }
+            }
+        }
+
+        try
+        {
+            CloseHelper.close(testCluster);
+        }
+        catch (final Throwable t)
+        {
+            if (null != error)
+            {
+                error.addSuppressed(t);
+            }
+            else
+            {
+                error = t;
+            }
+        }
+
+        if (null != error)
+        {
+            LangUtil.rethrowUnchecked(error);
+        }
     }
 
-    public void testSuccessful(final ExtensionContext context)
+    private void printErrors(final List<Path> cncPaths, final List<Path> clusterErrorPaths)
     {
-        CloseHelper.close(testCluster);
+        printErrors(cncPaths, "Command `n Control", CommonContext::errorLogBuffer);
+        printErrors(clusterErrorPaths, "Cluster Errors", UnsafeBuffer::new);
     }
 
-    public void testAborted(final ExtensionContext context, final Throwable cause)
+    private void printErrors(
+        final List<Path> paths,
+        final String fileDescription,
+        final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer)
     {
-        CloseHelper.close(testCluster);
+        for (final Path path : paths)
+        {
+            final File cncFile = path.toFile();
+            final MappedByteBuffer mmap = SamplesUtil.mapExistingFileReadOnly(cncFile);
+            try
+            {
+                final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
+
+                System.out.printf("%n%n%s file %s%n", fileDescription, cncFile);
+                final int distinctErrorCount = ErrorLogReader.read(
+                    buffer, this::printObservationCallback);
+                System.out.format("%d distinct errors observed.%n", distinctErrorCount);
+            }
+            finally
+            {
+                IoUtil.unmap(mmap);
+            }
+        }
     }
 }

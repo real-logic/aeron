@@ -128,6 +128,63 @@ jobs:
           name: crash-logs-cpp-slow-tests-gcc-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.dir }}
 
+  cpp-slow-tests-clang:
+    name: C++ Slow System Tests Clang ${{ matrix.version }}
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '12' ]
+    env:
+      CC: clang-${{ matrix.version }}
+      CXX: clang++-${{ matrix.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-caches-
+      - name: Cache Gradle wrappers
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          java -Xinternalversion
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+      - name: Install compiler
+        run: |
+          curl --retry ${INSTALL_COMPILER_RETRIES} -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
+          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.version }} main"
+          sudo apt-get update
+          sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev libidn11
+      - name: Build
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --no-system-tests
+      - name: Copy test logs
+        id: copy_test_logs
+        if: failure()
+        run: |
+          echo "::set-output name=dir::build/test_logs"
+          ./gradlew copyTestLogs
+      - name: Upload crash logs
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        uses: actions/upload-artifact@v2
+        with:
+          name:  crash-logs-cpp-slow-tests-clang-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.dir }}
+
   cpp-slow-tests-msvc:
     name: C++ Slow System Tests MSVC
     runs-on: windows-latest

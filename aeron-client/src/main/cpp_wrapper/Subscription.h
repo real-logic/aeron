@@ -236,7 +236,7 @@ public:
      */
     std::string tryResolveChannelEndpointPort() const
     {
-        char uri_buffer[AERON_MAX_PATH];
+        char uri_buffer[AERON_MAX_PATH] = { 0 };
 
         if (aeron_subscription_try_resolve_channel_endpoint_port(m_subscription, uri_buffer, sizeof(uri_buffer)) < 0)
         {
@@ -260,7 +260,7 @@ public:
      */
     std::string resolvedEndpoint() const
     {
-        char buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+        char buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN] = { 0 };
 
         int result = aeron_subscription_resolved_endpoint(m_subscription, buffer, sizeof(buffer));
         if (result < 0)

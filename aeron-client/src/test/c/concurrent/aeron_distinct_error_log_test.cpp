@@ -76,7 +76,7 @@ std::atomic<int64_t> DistinctErrorLogTest::m_atomic_clock_value;
 
 TEST_F(DistinctErrorLogTest, shouldFailToRecordWhenInsufficientSpace)
 {
-    AERON_DECL_ALIGNED(insufficient_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(insufficient_buffer_t buffer, 16) = {};
 
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, buffer.data(), buffer.size(), clock), 0);
 

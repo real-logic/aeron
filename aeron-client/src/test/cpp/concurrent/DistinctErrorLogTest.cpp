@@ -62,7 +62,7 @@ protected:
 
 TEST_F(DistinctErrorLogTest, shouldFailToRecordWhenInsufficientSpace)
 {
-    AERON_DECL_ALIGNED(insufficient_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(insufficient_buffer_t buffer, 16) = {};
     AtomicBuffer b(&buffer[0], buffer.size());
     DistinctErrorLog log(b, [&]() { return m_clock.now(); });
 

@@ -163,7 +163,7 @@ if (UNIX)
 
     if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "11" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.2")
         add_compile_options(-Wno-error=maybe-uninitialized)
-    endif (CMAKE_COMPILER_IS_GNUCXX)
+    endif ()
 
     if (C_WARNINGS_AS_ERRORS)
         add_compile_options($<$<COMPILE_LANGUAGE:C>:-Werror>)

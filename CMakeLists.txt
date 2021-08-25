@@ -161,7 +161,7 @@ add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
 if (UNIX)
     add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter)
 
-    if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "11")
+    if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "11" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.2")
         add_compile_options(-Wno-error=maybe-uninitialized)
     endif (CMAKE_COMPILER_IS_GNUCXX)
 

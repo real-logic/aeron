@@ -448,6 +448,7 @@ public final class DriverConductor implements Agent
         final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
         final ChannelUri channelUri = udpChannel.channelUri();
         final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, false);
+        validateEndpointForPublication(udpChannel);
         validateMtuForMaxMessage(params);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(params, udpChannel, correlationId);
@@ -699,6 +700,7 @@ public final class DriverConductor implements Agent
     {
         final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
         validateDestinationUri(channelUri, destinationChannel);
+        validateSendDestinationUri(channelUri, destinationChannel);
 
         SendChannelEndpoint sendChannelEndpoint = null;
 
@@ -758,6 +760,7 @@ public final class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
 
+        validateControlForSubscription(udpChannel);
         validateTimestampConfiguration(udpChannel);
 
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
@@ -1962,6 +1965,26 @@ public final class DriverConductor implements Agent
         }
     }
 
+    private static void validateEndpointForPublication(final UdpChannel udpChannel)
+    {
+        if (!udpChannel.isManualControlMode() &&
+            !udpChannel.isDynamicControlMode() &&
+            udpChannel.hasExplicitEndpoint() &&
+            0 == udpChannel.remoteData().getPort())
+        {
+            throw new IllegalArgumentException(ENDPOINT_PARAM_NAME + " has port=0 for publication");
+        }
+    }
+
+    private static void validateControlForSubscription(final UdpChannel udpChannel)
+    {
+        if (udpChannel.hasExplicitControl() &&
+            0 == udpChannel.localControl().getPort())
+        {
+            throw new IllegalArgumentException(MDC_CONTROL_PARAM_NAME + " has port=0 for subscription");
+        }
+    }
+
     private static void validateTimestampConfiguration(final UdpChannel udpChannel)
     {
         if (null != udpChannel.channelUri().get(MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME))
@@ -1986,6 +2009,16 @@ public final class DriverConductor implements Agent
                 throw new InvalidChannelException(
                     "destinations must not contain the key: " + invalidKey + " uri=" + destinationUri);
             }
+        }
+    }
+
+    private static void validateSendDestinationUri(final ChannelUri uri, final String destinationUri)
+    {
+        final String endpoint = uri.get(ENDPOINT_PARAM_NAME);
+
+        if (null != endpoint && endpoint.endsWith(":0"))
+        {
+            throw new InvalidChannelException(ENDPOINT_PARAM_NAME + " has port=0 for send destination");
         }
     }
 }

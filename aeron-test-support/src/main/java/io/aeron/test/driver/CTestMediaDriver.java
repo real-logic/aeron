@@ -60,6 +60,9 @@ public final class CTestMediaDriver implements TestMediaDriver
     private final Process aeronMediaDriverProcess;
     private final MediaDriver.Context context;
     private final DriverOutputConsumer driverOutputConsumer;
+    private Aeron.Context aeronContext;
+    private CountersReader countersReader;
+    private boolean isClosed = false;
 
     private CTestMediaDriver(
         final Process aeronMediaDriverProcess,
@@ -73,11 +76,30 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     public void close()
     {
+        if (isClosed)
+        {
+            return;
+        }
+
+        isClosed = true;
+
         final boolean isInterrupted = Thread.interrupted();
+        Throwable error = null;
         try
         {
-            final boolean hasSentTerminateSignal = terminateDriver();
-            if (!hasSentTerminateSignal || !aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
+            if (null != aeronContext)
+            {
+                aeronContext.close();
+            }
+        }
+        catch (final Throwable t)
+        {
+            error = t;
+        }
+
+        try
+        {
+            if (!(terminateDriver() && aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS)))
             {
                 aeronMediaDriverProcess.destroyForcibly().waitFor(5, TimeUnit.SECONDS);
                 throw new RuntimeException("Failed to shutdown cleanly, forced close");
@@ -88,9 +110,16 @@ public final class CTestMediaDriver implements TestMediaDriver
                 driverOutputConsumer.exitCode(context.aeronDirectoryName(), aeronMediaDriverProcess.exitValue());
             }
         }
-        catch (final InterruptedException ex)
+        catch (final Throwable t)
         {
-            throw new RuntimeException("Interrupted while waiting for shutdown", ex);
+            if (null == error)
+            {
+                error = t;
+            }
+            else
+            {
+                error.addSuppressed(t);
+            }
         }
         finally
         {
@@ -99,26 +128,23 @@ public final class CTestMediaDriver implements TestMediaDriver
                 Thread.currentThread().interrupt();
             }
         }
+
+        if (null != error)
+        {
+            LangUtil.rethrowUnchecked(error);
+        }
     }
 
     public CountersReader counters()
     {
-        final Aeron.Context context = new Aeron.Context()
-            .aeronDirectoryName(this.context.aeronDirectoryName()).conclude();
-        return new CountersReader(context.countersMetaDataBuffer(), context.countersValuesBuffer());
-    }
+        if (null == countersReader)
+        {
+            aeronContext = new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()).conclude();
+            countersReader = new CountersReader(
+                aeronContext.countersMetaDataBuffer(), aeronContext.countersValuesBuffer());
+        }
 
-    private boolean terminateDriver()
-    {
-        try
-        {
-            CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
-            return true;
-        }
-        catch (final Throwable t)
-        {
-            return false;
-        }
+        return countersReader;
     }
 
     @SuppressWarnings("methodlength")
@@ -229,6 +255,48 @@ public final class CTestMediaDriver implements TestMediaDriver
         }
     }
 
+    public MediaDriver.Context context()
+    {
+        return context;
+    }
+
+    public String aeronDirectoryName()
+    {
+        return context.aeronDirectoryName();
+    }
+
+    public AgentInvoker sharedAgentInvoker()
+    {
+        throw new UnsupportedOperationException("Not supported in C media driver");
+    }
+
+    public static void enableLossGenerationOnReceive(
+        final MediaDriver.Context context,
+        final double rate,
+        final long seed,
+        final boolean loseDataMessages,
+        final boolean loseControlMessages)
+    {
+        int receiveMessageTypeMask = 0;
+        receiveMessageTypeMask |= loseDataMessages ? 1 << HeaderFlyweight.HDR_TYPE_DATA : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_SM : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_NAK : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_RTTM : 0;
+
+        final Object2ObjectHashMap<String, String> lossTransportEnv = new Object2ObjectHashMap<>();
+
+        final String interceptor = "loss";
+        final String lossArgs = "rate=" + rate +
+            "|seed=" + seed +
+            "|recv-msg-mask=0x" + Integer.toHexString(receiveMessageTypeMask);
+
+        lossTransportEnv.put("AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", interceptor);
+        lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
+
+        // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
+        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, lossTransportEnv);
+    }
+
     private static void setLogging(final Map<String, String> environment)
     {
         environment.put("AERON_EVENT_LOG", System.getProperty("aeron.event.log", "admin,NAME_RESOLUTION_RESOLVE"));
@@ -283,45 +351,16 @@ public final class CTestMediaDriver implements TestMediaDriver
             null : C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.get(flowControlSupplier.getClass());
     }
 
-    public MediaDriver.Context context()
+    private boolean terminateDriver()
     {
-        return context;
-    }
-
-    public String aeronDirectoryName()
-    {
-        return context.aeronDirectoryName();
-    }
-
-    public AgentInvoker sharedAgentInvoker()
-    {
-        throw new UnsupportedOperationException("Not supported in C media driver");
-    }
-
-    public static void enableLossGenerationOnReceive(
-        final MediaDriver.Context context,
-        final double rate,
-        final long seed,
-        final boolean loseDataMessages,
-        final boolean loseControlMessages)
-    {
-        int receiveMessageTypeMask = 0;
-        receiveMessageTypeMask |= loseDataMessages ? 1 << HeaderFlyweight.HDR_TYPE_DATA : 0;
-        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_SM : 0;
-        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_NAK : 0;
-        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_RTTM : 0;
-
-        final Object2ObjectHashMap<String, String> lossTransportEnv = new Object2ObjectHashMap<>();
-
-        final String interceptor = "loss";
-        final String lossArgs = "rate=" + rate +
-            "|seed=" + seed +
-            "|recv-msg-mask=0x" + Integer.toHexString(receiveMessageTypeMask);
-
-        lossTransportEnv.put("AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", interceptor);
-        lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
-
-        // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
-        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, lossTransportEnv);
+        try
+        {
+            CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
+            return true;
+        }
+        catch (final Throwable t)
+        {
+            return false;
+        }
     }
 }

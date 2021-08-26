@@ -49,6 +49,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -99,18 +100,23 @@ public class TestNode implements AutoCloseable
             context.consensusModuleContext.errorHandler(clusterErrorHandler);
             context.serviceContainerContext.errorHandler(clusterErrorHandler);
 
-            archive = Archive.launch(context.archiveContext.aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+            final Path aeronDirectory = mediaDriver.context().aeronDirectory().toPath().toAbsolutePath();
+            final String aeronDirectoryName = aeronDirectory.toString();
+            archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
-            context.consensusModuleContext.terminationHook(ClusterTests.terminationHook(
+            context.consensusModuleContext
+                .aeronDirectoryName(aeronDirectoryName)
+                .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
 
-            consensusModule = ConsensusModule.launch(
-                context.consensusModuleContext.aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+            consensusModule = ConsensusModule.launch(context.consensusModuleContext);
 
-            container = ClusteredServiceContainer.launch(
-                context.serviceContainerContext
-                    .terminationHook(ClusterTests.terminationHook(
-                        context.isTerminationExpected, context.hasServiceTerminated)));
+            context.serviceContainerContext
+                .aeronDirectoryName(aeronDirectoryName)
+                .terminationHook(ClusterTests.terminationHook(
+                context.isTerminationExpected, context.hasServiceTerminated));
+
+            container = ClusteredServiceContainer.launch(context.serviceContainerContext);
 
             service = context.service;
             this.context = context;
@@ -119,11 +125,19 @@ public class TestNode implements AutoCloseable
             dataCollector.add(container.context().clusterDir().toPath());
             dataCollector.add(consensusModule.context().clusterDir().toPath());
             dataCollector.add(archive.context().archiveDir().toPath());
-            dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
+            dataCollector.add(aeronDirectory);
         }
         catch (final RuntimeException ex)
         {
-            closeAndDelete();
+            try
+            {
+                closeAndDelete();
+            }
+            catch (final Throwable t)
+            {
+                ex.addSuppressed(t);
+            }
+
             throw ex;
         }
     }
@@ -169,59 +183,86 @@ public class TestNode implements AutoCloseable
 
         try
         {
-            if (!isClosed)
-            {
-                close();
-            }
+            close();
         }
         catch (final Throwable t)
         {
             error = t;
         }
 
-        try
+        if (null != container)
         {
-            if (null != container)
+            try
             {
                 container.context().deleteDirectory();
             }
-        }
-        catch (final Throwable t)
-        {
-            if (error == null)
+            catch (final Throwable t)
             {
-                error = t;
-            }
-            else
-            {
-                error.addSuppressed(t);
+                if (error == null)
+                {
+                    error = t;
+                }
+                else
+                {
+                    error.addSuppressed(t);
+                }
             }
         }
 
-        try
+        if (null != consensusModule)
         {
-            if (null != consensusModule)
+            try
             {
                 consensusModule.context().deleteDirectory();
             }
-            if (null != archive)
+            catch (final Throwable t)
+            {
+                if (null == error)
+                {
+                    error = t;
+                }
+                else
+                {
+                    error.addSuppressed(t);
+                }
+            }
+        }
+
+        if (null != archive)
+        {
+            try
             {
                 archive.context().deleteDirectory();
             }
-            if (null != mediaDriver)
+            catch (final Throwable t)
+            {
+                if (null == error)
+                {
+                    error = t;
+                }
+                else
+                {
+                    error.addSuppressed(t);
+                }
+            }
+        }
+
+        if (null != mediaDriver)
+        {
+            try
             {
                 mediaDriver.context().deleteDirectory();
             }
-        }
-        catch (final Throwable t)
-        {
-            if (null == error)
+            catch (final Throwable t)
             {
-                error = t;
-            }
-            else
-            {
-                error.addSuppressed(t);
+                if (null == error)
+                {
+                    error = t;
+                }
+                else
+                {
+                    error.addSuppressed(t);
+                }
             }
         }
 

@@ -123,6 +123,7 @@ public:
     {
         m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
 
+        std::string aeronDirArg = "-Daeron.dir=" + m_context.aeronDirectoryName();
         std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
         const char * const argv[] =
         {
@@ -150,6 +151,7 @@ public:
             "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
             "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
             archiveDirArg.c_str(),
+            aeronDirArg.c_str(),
             "-cp",
             m_aeronAllJar.c_str(),
             "io.aeron.archive.ArchivingMediaDriver",

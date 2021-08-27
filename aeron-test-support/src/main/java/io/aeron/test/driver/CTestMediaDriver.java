@@ -138,8 +138,8 @@ public final class CTestMediaDriver implements TestMediaDriver
     public static CTestMediaDriver launch(
         final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)
     {
-        final String aeronDirPath = System.getProperty(TestMediaDriver.AERONMD_PATH_PROP_NAME);
-        final File aeronBinary = new File(aeronDirPath);
+        final String aeronMediaDriverPath = System.getProperty(TestMediaDriver.AERONMD_PATH_PROP_NAME);
+        final File aeronBinary = new File(aeronMediaDriverPath);
 
         if (!aeronBinary.exists())
         {
@@ -221,9 +221,11 @@ public final class CTestMediaDriver implements TestMediaDriver
             final ProcessBuilder pb = new ProcessBuilder(aeronBinary.getAbsolutePath());
             if (null != driverOutputConsumer)
             {
-                stdoutFile = File.createTempFile("CTestMediaDriver-", ".out");
+                stdoutFile = File.createTempFile(context.aeronDirectory().getName() + "-", ".out");
+                stdoutFile.deleteOnExit();
                 final String tmpName = stdoutFile.getName().substring(0, stdoutFile.getName().length() - 4) + ".err";
                 stderrFile = new File(stdoutFile.getParent(), tmpName);
+                stderrFile.deleteOnExit();
                 driverOutputConsumer.outputFiles(context.aeronDirectoryName(), stdoutFile, stderrFile);
                 driverOutputConsumer.environmentVariables(context.aeronDirectoryName(), environment);
             }

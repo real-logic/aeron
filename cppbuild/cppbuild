@@ -54,6 +54,10 @@ do
       ncpus=1
       shift
       ;;
+    --spare-cpu)
+      ((ncpus=(ncpus > 1 ? ncpus-1 : 1)))
+      shift
+      ;;
     --no-system-tests)
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SYSTEM_TESTS=OFF"
       echo "Disabling system tests"

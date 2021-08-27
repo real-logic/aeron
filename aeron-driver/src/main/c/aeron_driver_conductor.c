@@ -28,6 +28,7 @@
 #include <unistd.h>
 #endif
 
+
 #include "util/aeron_math.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"
@@ -35,6 +36,9 @@
 #include "aeron_driver_sender.h"
 #include "aeron_driver_receiver.h"
 #include "collections/aeron_bit_set.h"
+#include "uri/aeron_uri.h"
+#include "util/aeron_parse_util.h"
+
 
 #define STATIC_BIT_SET_U64_LEN (512u)
 
@@ -217,6 +221,24 @@ static int aeron_driver_conductor_validate_destination_uri_prefix(
     return 0;
 }
 
+static int aeron_driver_conductor_validate_send_destination_uri(aeron_uri_t *uri)
+{
+    if (AERON_URI_UDP == uri->type && NULL != uri->params.udp.endpoint)
+    {
+        aeron_parsed_address_t parsed_address = { 0 };
+        if (0 <= aeron_address_split(uri->params.udp.endpoint, &parsed_address))
+        {
+            if (0 == strcmp("0", parsed_address.port))
+            {
+                AERON_SET_ERR(EINVAL, "%s has port=0 for send destination", AERON_UDP_CHANNEL_ENDPOINT_KEY);
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *uri)
 {
     aeron_uri_params_t *params = NULL;
@@ -271,6 +293,34 @@ static inline int aeron_driver_conductor_validate_channel_buffer_length(
             (int)channel->uri_length,
             channel->original_uri);
 
+        return -1;
+    }
+
+    return 0;
+}
+
+static inline int aeron_driver_conductor_validate_endpoint_for_publication(aeron_udp_channel_t *udp_channel)
+{
+    if (!udp_channel->is_dynamic_control_mode &&
+        !udp_channel->is_manual_control_mode &&
+        udp_channel->has_explicit_endpoint &&
+        aeron_is_wildcard_port(&udp_channel->remote_data))
+    {
+        AERON_SET_ERR(EINVAL, "%s has port=0 for publication", AERON_UDP_CHANNEL_ENDPOINT_KEY);
+        return -1;
+    }
+
+    return 0;
+}
+
+static inline int aeron_driver_conductor_validate_control_for_subscription(aeron_udp_channel_t *udp_channel)
+{
+    if (!udp_channel->is_dynamic_control_mode &&
+    !udp_channel->is_manual_control_mode &&
+    udp_channel->has_explicit_control &&
+    aeron_is_wildcard_port(&udp_channel->local_control))
+    {
+        AERON_SET_ERR(EINVAL, "%s has port=0 for publication", AERON_UDP_CHANNEL_CONTROL_KEY);
         return -1;
     }
 
@@ -2846,7 +2896,8 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_driver_uri_publication_params_t params;
 
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
-        aeron_diver_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0)
+        aeron_diver_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0 ||
+        aeron_driver_conductor_validate_endpoint_for_publication(udp_channel) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_udp_channel_delete(udp_channel);
@@ -3186,7 +3237,8 @@ int aeron_driver_conductor_on_add_network_subscription(
     aeron_driver_uri_subscription_params_t params;
 
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
-        aeron_driver_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
+        aeron_driver_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0 ||
+        aeron_driver_conductor_validate_control_for_subscription(udp_channel) < 0)
     {
         aeron_udp_channel_delete(udp_channel);
         AERON_APPEND_ERR("%s", "");
@@ -3440,7 +3492,8 @@ int aeron_driver_conductor_on_add_send_destination(
         }
 
         size_t uri_length = (size_t)command->channel_length;
-        if (aeron_uri_parse(uri_length, command_uri, uri) < 0)
+        if (aeron_uri_parse(uri_length, command_uri, uri) < 0 ||
+            aeron_driver_conductor_validate_send_destination_uri(uri) < 0)
         {
             goto error_cleanup;
         }

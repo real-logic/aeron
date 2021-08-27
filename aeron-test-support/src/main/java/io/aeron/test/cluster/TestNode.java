@@ -75,6 +75,8 @@ public class TestNode implements AutoCloseable
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
+        this.context = context;
+
         try
         {
             mediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
@@ -99,21 +101,24 @@ public class TestNode implements AutoCloseable
             context.consensusModuleContext.errorHandler(clusterErrorHandler);
             context.serviceContainerContext.errorHandler(clusterErrorHandler);
 
-            archive = Archive.launch(context.archiveContext.aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+            final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
+            archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
-            context.consensusModuleContext.terminationHook(ClusterTests.terminationHook(
-                context.isTerminationExpected, context.hasMemberTerminated));
+            final Runnable terminationHook = ClusterTests.terminationHook(
+                context.isTerminationExpected, context.hasMemberTerminated);
+            context.consensusModuleContext
+                .aeronDirectoryName(aeronDirectoryName)
+                .terminationHook(terminationHook);
 
-            consensusModule = ConsensusModule.launch(
-                context.consensusModuleContext.aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+            consensusModule = ConsensusModule.launch(context.consensusModuleContext);
 
-            container = ClusteredServiceContainer.launch(
-                context.serviceContainerContext
-                    .terminationHook(ClusterTests.terminationHook(
-                        context.isTerminationExpected, context.hasServiceTerminated)));
+            context.serviceContainerContext
+                .aeronDirectoryName(aeronDirectoryName)
+                .terminationHook(terminationHook);
+
+            container = ClusteredServiceContainer.launch(context.serviceContainerContext);
 
             service = context.service;
-            this.context = context;
 
             dataCollector.add(baseDir.toPath());
             dataCollector.add(container.context().clusterDir().toPath());
@@ -123,7 +128,15 @@ public class TestNode implements AutoCloseable
         }
         catch (final RuntimeException ex)
         {
-            closeAndDelete();
+            try
+            {
+                closeAndDelete();
+            }
+            catch (final Throwable t)
+            {
+                ex.addSuppressed(t);
+            }
+
             throw ex;
         }
     }
@@ -169,60 +182,16 @@ public class TestNode implements AutoCloseable
 
         try
         {
-            if (!isClosed)
-            {
-                close();
-            }
+            CloseHelper.closeAll(
+                this,
+                context.serviceContainerContext::deleteDirectory,
+                context.consensusModuleContext::deleteDirectory,
+                context.archiveContext::deleteDirectory,
+                context.mediaDriverContext::deleteDirectory);
         }
         catch (final Throwable t)
         {
             error = t;
-        }
-
-        try
-        {
-            if (null != container)
-            {
-                container.context().deleteDirectory();
-            }
-        }
-        catch (final Throwable t)
-        {
-            if (error == null)
-            {
-                error = t;
-            }
-            else
-            {
-                error.addSuppressed(t);
-            }
-        }
-
-        try
-        {
-            if (null != consensusModule)
-            {
-                consensusModule.context().deleteDirectory();
-            }
-            if (null != archive)
-            {
-                archive.context().deleteDirectory();
-            }
-            if (null != mediaDriver)
-            {
-                mediaDriver.context().deleteDirectory();
-            }
-        }
-        catch (final Throwable t)
-        {
-            if (null == error)
-            {
-                error = t;
-            }
-            else
-            {
-                error.addSuppressed(t);
-            }
         }
 
         if (null != clusterErrorFile)

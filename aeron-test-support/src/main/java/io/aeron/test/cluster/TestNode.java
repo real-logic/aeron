@@ -49,7 +49,6 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
-import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -100,8 +99,7 @@ public class TestNode implements AutoCloseable
             context.consensusModuleContext.errorHandler(clusterErrorHandler);
             context.serviceContainerContext.errorHandler(clusterErrorHandler);
 
-            final Path aeronDirectory = mediaDriver.context().aeronDirectory().toPath().toAbsolutePath();
-            final String aeronDirectoryName = aeronDirectory.toString();
+            final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
             archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
             context.consensusModuleContext
@@ -125,7 +123,7 @@ public class TestNode implements AutoCloseable
             dataCollector.add(container.context().clusterDir().toPath());
             dataCollector.add(consensusModule.context().clusterDir().toPath());
             dataCollector.add(archive.context().archiveDir().toPath());
-            dataCollector.add(aeronDirectory);
+            dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
         }
         catch (final RuntimeException ex)
         {

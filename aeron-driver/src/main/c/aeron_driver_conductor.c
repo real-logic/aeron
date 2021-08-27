@@ -225,7 +225,9 @@ static int aeron_driver_conductor_validate_send_destination_uri(aeron_uri_t *uri
 {
     if (AERON_URI_UDP == uri->type && NULL != uri->params.udp.endpoint)
     {
-        aeron_parsed_address_t parsed_address = {{ 0 }};
+        aeron_parsed_address_t parsed_address = {{ 0 }, { 0 }, 0 };
+        memset(&parsed_address, 0, sizeof(parsed_address));
+
         if (0 <= aeron_address_split(uri->params.udp.endpoint, &parsed_address))
         {
             if (0 == strcmp("0", parsed_address.port))

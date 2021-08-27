@@ -74,6 +74,8 @@ public class TestNode implements AutoCloseable
     private boolean isClosed = false;
     private final MappedByteBuffer clusterErrorMmap;
     private final File clusterErrorFile;
+    private File stdoutFile;
+    private File stderrFile;
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
@@ -90,6 +92,8 @@ public class TestNode implements AutoCloseable
                     {
                         dataCollector.add(stdoutFile.toPath());
                         dataCollector.add(stderrFile.toPath());
+                        TestNode.this.stdoutFile = stdoutFile;
+                        TestNode.this.stderrFile = stderrFile;
                     }
 
                     public void exitCode(final String aeronDirectoryName, final int exitValue)
@@ -218,6 +222,16 @@ public class TestNode implements AutoCloseable
         if (null != clusterErrorFile)
         {
             IoUtil.delete(clusterErrorFile, true);
+        }
+
+        if (null != stdoutFile)
+        {
+            IoUtil.delete(stdoutFile, true);
+        }
+
+        if (null != stderrFile)
+        {
+            IoUtil.delete(stderrFile, true);
         }
 
         if (null != error)

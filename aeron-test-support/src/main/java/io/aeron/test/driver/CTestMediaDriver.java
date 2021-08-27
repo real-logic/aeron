@@ -222,10 +222,8 @@ public final class CTestMediaDriver implements TestMediaDriver
             if (null != driverOutputConsumer)
             {
                 stdoutFile = File.createTempFile(context.aeronDirectory().getName() + "-driver-", ".out");
-                stdoutFile.deleteOnExit();
                 final String tmpName = stdoutFile.getName().substring(0, stdoutFile.getName().length() - 4) + ".err";
                 stderrFile = new File(stdoutFile.getParent(), tmpName);
-                stderrFile.deleteOnExit();
                 driverOutputConsumer.outputFiles(context.aeronDirectoryName(), stdoutFile, stderrFile);
                 driverOutputConsumer.environmentVariables(context.aeronDirectoryName(), environment);
             }

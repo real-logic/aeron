@@ -234,10 +234,12 @@ endif ()
 ##########################################################
 # Project variables, etc.
 
-if (MSVC)
-    set(GRADLE_WRAPPER "gradlew.bat" CACHE INTERNAL "Location of the Gradle wrapper script")
-else ()
-    set(GRADLE_WRAPPER "./gradlew" CACHE INTERNAL "Location of the Gradle wrapper script")
+if (NOT DEFINED GRADLE_WRAPPER)
+    if (MSVC)
+        set(GRADLE_WRAPPER "gradlew.bat" CACHE INTERNAL "Location of the Gradle wrapper script")
+    else ()
+        set(GRADLE_WRAPPER "./gradlew" CACHE INTERNAL "Location of the Gradle wrapper script")
+    endif ()
 endif ()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/binaries")

@@ -75,8 +75,14 @@ do
       fi
       shift
       ;;
+    --gradle-wrapper)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DGRADLE_WRAPPER=${2}"
+      echo "Setting -DGRADLE_WRAPPER=${2}"
+      shift
+      shift
+      ;;
     -h|--help)
-      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests]"
+      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--help]"
       exit
       ;;
     *)

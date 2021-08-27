@@ -221,7 +221,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             final ProcessBuilder pb = new ProcessBuilder(aeronBinary.getAbsolutePath());
             if (null != driverOutputConsumer)
             {
-                stdoutFile = File.createTempFile(context.aeronDirectory().getName() + "-", ".out");
+                stdoutFile = File.createTempFile(context.aeronDirectory().getName() + "-driver-", ".out");
                 stdoutFile.deleteOnExit();
                 final String tmpName = stdoutFile.getName().substring(0, stdoutFile.getName().length() - 4) + ".err";
                 stderrFile = new File(stdoutFile.getParent(), tmpName);

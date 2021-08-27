@@ -125,17 +125,17 @@ public class TestNode implements AutoCloseable
             final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
             archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
-            final Runnable terminationHook = ClusterTests.terminationHook(
-                context.isTerminationExpected, context.hasMemberTerminated);
             context.consensusModuleContext
                 .aeronDirectoryName(aeronDirectoryName)
-                .terminationHook(terminationHook);
+                .terminationHook(ClusterTests.terminationHook(
+                context.isTerminationExpected, context.hasMemberTerminated));
 
             consensusModule = ConsensusModule.launch(context.consensusModuleContext);
 
             context.serviceContainerContext
                 .aeronDirectoryName(aeronDirectoryName)
-                .terminationHook(terminationHook);
+                .terminationHook(ClusterTests.terminationHook(
+                context.isTerminationExpected, context.hasServiceTerminated));
 
             container = ClusteredServiceContainer.launch(context.serviceContainerContext);
 

@@ -19,7 +19,6 @@ import io.aeron.driver.MediaDriver;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 
@@ -28,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class TestMediaDriverTest
 {
     @Test
-    @Timeout(10)
     void countersReaderReturnsTheSameInstanceForTheEntireLifetimeOfTheDriver()
     {
         final File aeronDirectory;
@@ -37,7 +35,6 @@ class TestMediaDriverTest
         {
             aeronDirectory = driver.context().aeronDirectory();
             assertNotNull(aeronDirectory);
-            assertTrue(aeronDirectory.exists());
 
             final CountersReader countersReader = driver.counters();
             assertNotNull(countersReader);

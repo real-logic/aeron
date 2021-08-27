@@ -83,7 +83,6 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         isClosed = true;
 
-        final boolean isInterrupted = Thread.interrupted();
         Throwable error = null;
         try
         {
@@ -99,15 +98,10 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         try
         {
-            if (!(terminateDriver() && aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS)))
-            {
-                aeronMediaDriverProcess.destroyForcibly().waitFor(5, TimeUnit.SECONDS);
-                throw new RuntimeException("Failed to shutdown cleanly, forced close");
-            }
-
+            final int exitCode = terminateDriver();
             if (null != driverOutputConsumer)
             {
-                driverOutputConsumer.exitCode(context.aeronDirectoryName(), aeronMediaDriverProcess.exitValue());
+                driverOutputConsumer.exitCode(context.aeronDirectoryName(), exitCode);
             }
         }
         catch (final Throwable t)
@@ -119,13 +113,6 @@ public final class CTestMediaDriver implements TestMediaDriver
             else
             {
                 error.addSuppressed(t);
-            }
-        }
-        finally
-        {
-            if (isInterrupted)
-            {
-                Thread.currentThread().interrupt();
             }
         }
 
@@ -351,7 +338,45 @@ public final class CTestMediaDriver implements TestMediaDriver
             null : C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.get(flowControlSupplier.getClass());
     }
 
-    private boolean terminateDriver()
+    private int terminateDriver()
+    {
+        boolean isInterrupted = false;
+        boolean requestTermination = true;
+        try
+        {
+            while (true)
+            {
+                isInterrupted |= Thread.interrupted();
+                try
+                {
+                    if (requestTermination)
+                    {
+                        requestTermination = false;
+                        if (requestDriverTermination() && aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
+                        {
+                            return aeronMediaDriverProcess.exitValue();
+                        }
+                    }
+
+                    aeronMediaDriverProcess.destroyForcibly().waitFor(5, TimeUnit.SECONDS);
+                    return aeronMediaDriverProcess.exitValue();
+                }
+                catch (final InterruptedException ex)
+                {
+                    isInterrupted = true;
+                }
+            }
+        }
+        finally
+        {
+            if (isInterrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    private boolean requestDriverTermination()
     {
         try
         {

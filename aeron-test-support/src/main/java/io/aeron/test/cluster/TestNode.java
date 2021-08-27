@@ -75,6 +75,8 @@ public class TestNode implements AutoCloseable
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
+        this.context = context;
+
         try
         {
             mediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
@@ -102,22 +104,21 @@ public class TestNode implements AutoCloseable
             final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
             archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
+            final Runnable terminationHook = ClusterTests.terminationHook(
+                context.isTerminationExpected, context.hasMemberTerminated);
             context.consensusModuleContext
                 .aeronDirectoryName(aeronDirectoryName)
-                .terminationHook(ClusterTests.terminationHook(
-                context.isTerminationExpected, context.hasMemberTerminated));
+                .terminationHook(terminationHook);
 
             consensusModule = ConsensusModule.launch(context.consensusModuleContext);
 
             context.serviceContainerContext
                 .aeronDirectoryName(aeronDirectoryName)
-                .terminationHook(ClusterTests.terminationHook(
-                context.isTerminationExpected, context.hasServiceTerminated));
+                .terminationHook(terminationHook);
 
             container = ClusteredServiceContainer.launch(context.serviceContainerContext);
 
             service = context.service;
-            this.context = context;
 
             dataCollector.add(baseDir.toPath());
             dataCollector.add(container.context().clusterDir().toPath());
@@ -181,87 +182,16 @@ public class TestNode implements AutoCloseable
 
         try
         {
-            close();
+            CloseHelper.closeAll(
+                this,
+                context.serviceContainerContext::deleteDirectory,
+                context.consensusModuleContext::deleteDirectory,
+                context.archiveContext::deleteDirectory,
+                context.mediaDriverContext::deleteDirectory);
         }
         catch (final Throwable t)
         {
             error = t;
-        }
-
-        if (null != container)
-        {
-            try
-            {
-                container.context().deleteDirectory();
-            }
-            catch (final Throwable t)
-            {
-                if (error == null)
-                {
-                    error = t;
-                }
-                else
-                {
-                    error.addSuppressed(t);
-                }
-            }
-        }
-
-        if (null != consensusModule)
-        {
-            try
-            {
-                consensusModule.context().deleteDirectory();
-            }
-            catch (final Throwable t)
-            {
-                if (null == error)
-                {
-                    error = t;
-                }
-                else
-                {
-                    error.addSuppressed(t);
-                }
-            }
-        }
-
-        if (null != archive)
-        {
-            try
-            {
-                archive.context().deleteDirectory();
-            }
-            catch (final Throwable t)
-            {
-                if (null == error)
-                {
-                    error = t;
-                }
-                else
-                {
-                    error.addSuppressed(t);
-                }
-            }
-        }
-
-        if (null != mediaDriver)
-        {
-            try
-            {
-                mediaDriver.context().deleteDirectory();
-            }
-            catch (final Throwable t)
-            {
-                if (null == error)
-                {
-                    error = t;
-                }
-                else
-                {
-                    error.addSuppressed(t);
-                }
-            }
         }
 
         if (null != clusterErrorFile)

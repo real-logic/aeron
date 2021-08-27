@@ -105,8 +105,19 @@ public class ClusterTestWatcher implements TestWatcher
         final List<Path> clusterErrorPaths,
         final Predicate<String> filter)
     {
-        return countErrors(cncPaths, filter, CommonContext::errorLogBuffer) +
-            countErrors(clusterErrorPaths, filter, UnsafeBuffer::new);
+        final boolean isInterrupted = Thread.interrupted();
+        try
+        {
+            return countErrors(cncPaths, filter, CommonContext::errorLogBuffer) +
+                countErrors(clusterErrorPaths, filter, UnsafeBuffer::new);
+        }
+        finally
+        {
+            if (isInterrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private int countErrors(
@@ -161,6 +172,7 @@ public class ClusterTestWatcher implements TestWatcher
     private void reportAndTerminate(final ExtensionContext context)
     {
         Throwable error = null;
+        final boolean isInterrupted = Thread.interrupted();
 
         if (null != testCluster)
         {
@@ -207,6 +219,11 @@ public class ClusterTestWatcher implements TestWatcher
             {
                 error = t;
             }
+        }
+
+        if (isInterrupted)
+        {
+            Thread.currentThread().interrupt();
         }
 
         if (null != error)

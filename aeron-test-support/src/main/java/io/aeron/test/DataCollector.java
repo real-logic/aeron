@@ -100,7 +100,7 @@ public final class DataCollector
      *     <li>{@code $testMethod} is the test method name.</li>
      * </ul>
      *
-     * @param testClass name of the test class from JUnit.
+     * @param testClass  name of the test class from JUnit.
      * @param testMethod name of the test method from JUnit.
      * @return {@code null} if no data was copied or an actual destination directory used.
      * @see #dumpData(String)
@@ -164,6 +164,7 @@ public final class DataCollector
 
     private Path copyData(final String destinationDir)
     {
+        final boolean isInterrupted = Thread.interrupted();
         final List<Path> locations = this.locations.stream().filter(Files::exists).collect(toList());
         if (locations.isEmpty())
         {
@@ -194,6 +195,13 @@ public final class DataCollector
         catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
+        }
+        finally
+        {
+            if (isInterrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
         }
         return null;
     }

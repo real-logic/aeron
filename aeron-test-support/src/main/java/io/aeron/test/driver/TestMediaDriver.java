@@ -72,6 +72,8 @@ public interface TestMediaDriver extends AutoCloseable
 
     void close();
 
+    void cleanup();
+
     AgentInvoker sharedAgentInvoker();
 
     CountersReader counters();

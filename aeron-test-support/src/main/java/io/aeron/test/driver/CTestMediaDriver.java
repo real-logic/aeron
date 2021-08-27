@@ -60,6 +60,8 @@ public final class CTestMediaDriver implements TestMediaDriver
     private final Process aeronMediaDriverProcess;
     private final MediaDriver.Context context;
     private final DriverOutputConsumer driverOutputConsumer;
+    private final File stdoutFile;
+    private final File stderrFile;
     private Aeron.Context aeronContext;
     private CountersReader countersReader;
     private boolean isClosed = false;
@@ -67,11 +69,15 @@ public final class CTestMediaDriver implements TestMediaDriver
     private CTestMediaDriver(
         final Process aeronMediaDriverProcess,
         final MediaDriver.Context context,
-        final DriverOutputConsumer driverOutputConsumer)
+        final DriverOutputConsumer driverOutputConsumer,
+        final File stdoutFile,
+        final File stderrFile)
     {
         this.aeronMediaDriverProcess = aeronMediaDriverProcess;
         this.context = context;
         this.driverOutputConsumer = driverOutputConsumer;
+        this.stdoutFile = stdoutFile;
+        this.stderrFile = stderrFile;
     }
 
     public void close()
@@ -119,6 +125,19 @@ public final class CTestMediaDriver implements TestMediaDriver
         if (null != error)
         {
             LangUtil.rethrowUnchecked(error);
+        }
+    }
+
+    public void cleanup()
+    {
+        if (NULL_FILE != stdoutFile)
+        {
+            IoUtil.delete(stdoutFile, true);
+        }
+
+        if (NULL_FILE != stderrFile)
+        {
+            IoUtil.delete(stderrFile, true);
         }
     }
 
@@ -233,7 +252,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             final Process process = pb.start();
             Thread.yield();
 
-            return new CTestMediaDriver(process, context, driverOutputConsumer);
+            return new CTestMediaDriver(process, context, driverOutputConsumer, stdoutFile, stderrFile);
         }
         catch (final IOException ex)
         {

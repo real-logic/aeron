@@ -74,8 +74,6 @@ public class TestNode implements AutoCloseable
     private boolean isClosed = false;
     private final MappedByteBuffer clusterErrorMmap;
     private final File clusterErrorFile;
-    private File stdoutFile;
-    private File stderrFile;
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
@@ -92,8 +90,6 @@ public class TestNode implements AutoCloseable
                     {
                         dataCollector.add(stdoutFile.toPath());
                         dataCollector.add(stderrFile.toPath());
-                        TestNode.this.stdoutFile = stdoutFile;
-                        TestNode.this.stderrFile = stderrFile;
                     }
 
                     public void exitCode(final String aeronDirectoryName, final int exitValue)
@@ -196,8 +192,14 @@ public class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.closeAll(consensusModule, container, archive, mediaDriver);
-            IoUtil.unmap(clusterErrorMmap);
+            try
+            {
+                CloseHelper.closeAll(consensusModule, container, archive, mediaDriver);
+            }
+            finally
+            {
+                IoUtil.unmap(clusterErrorMmap);
+            }
         }
     }
 
@@ -212,7 +214,8 @@ public class TestNode implements AutoCloseable
                 context.serviceContainerContext::deleteDirectory,
                 context.consensusModuleContext::deleteDirectory,
                 context.archiveContext::deleteDirectory,
-                context.mediaDriverContext::deleteDirectory);
+                context.mediaDriverContext::deleteDirectory,
+                this::cleanup);
         }
         catch (final Throwable t)
         {
@@ -224,19 +227,17 @@ public class TestNode implements AutoCloseable
             IoUtil.delete(clusterErrorFile, true);
         }
 
-        if (null != stdoutFile)
-        {
-            IoUtil.delete(stdoutFile, true);
-        }
-
-        if (null != stderrFile)
-        {
-            IoUtil.delete(stderrFile, true);
-        }
-
         if (null != error)
         {
             LangUtil.rethrowUnchecked(error);
+        }
+    }
+
+    void cleanup()
+    {
+        if (null != mediaDriver)
+        {
+            mediaDriver.cleanup();
         }
     }
 

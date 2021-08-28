@@ -109,6 +109,9 @@ public class TestNode implements AutoCloseable
             if (clusterErrorFile.exists())
             {
                 clusterErrorMmap = IoUtil.mapExistingFile(clusterErrorFile, "cluster error log file");
+                // Erase existing errors
+                final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(clusterErrorMmap);
+                unsafeBuffer.setMemory(0, unsafeBuffer.capacity(), (byte)0);
             }
             else
             {

@@ -42,10 +42,13 @@ import java.util.function.Predicate;
 
 public class ClusterTestWatcher implements TestWatcher
 {
-    public static final Predicate<String> UNKNOWN_HOST_FILTER = (s) -> s.contains(UnknownHostException.class.getName());
+    private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
+    private static final String UNKNOWN_HOST_EXCEPTION = UnknownHostException.class.getName();
+    public static final Predicate<String> UNKNOWN_HOST_FILTER =
+        (s) -> s.contains(UNKNOWN_HOST_EXCEPTION) || s.contains("unknown host");
     public static final Predicate<String> WARNING_FILTER = (s) -> s.contains("WARN");
     public static final Predicate<String> CLUSTER_TERMINATION_FILTER =
-        (s) -> s.contains(ClusterTerminationException.class.getName());
+        (s) -> s.contains(CLUSTER_TERMINATION_EXCEPTION);
     public static final Predicate<String> TEST_CLUSTER_DEFAULT_LOG_FILTER =
         WARNING_FILTER.negate().and(CLUSTER_TERMINATION_FILTER.negate());
 

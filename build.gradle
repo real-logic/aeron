@@ -805,7 +805,7 @@ project(':aeron-system-tests') {
         }
     }
 
-    test {
+    tasks.withType(Test) {
         systemProperty('java.net.preferIPv4Stack', 'true')
         systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
     }

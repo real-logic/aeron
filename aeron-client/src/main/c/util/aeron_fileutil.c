@@ -221,6 +221,7 @@ int aeron_is_directory(const char *path)
 #include <sys/statvfs.h>
 #include <ftw.h>
 #include <stdio.h>
+#include <pwd.h>
 
 static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool pre_touch)
 {
@@ -655,6 +656,7 @@ inline static bool has_file_separator_at_end(const char *path)
 
 inline static const char *username()
 {
+    static char static_buffer[256];
     const char *username = getenv("USER");
 #if (_MSC_VER)
     if (NULL == username)
@@ -668,7 +670,12 @@ inline static const char *username()
 #else
     if (NULL == username)
     {
-        username = "default";
+        // using uid instead of euid as that is what the JVM seems to do.
+        uid_t uid = getuid();
+        struct passwd pw, *pw_result = NULL;
+
+        getpwuid_r(uid, &pw, static_buffer, sizeof(static_buffer), &pw_result);
+        username = (NULL != pw_result) ? pw_result->pw_name : "default";
     }
 #endif
     return username;

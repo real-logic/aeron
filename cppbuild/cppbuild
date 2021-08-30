@@ -34,11 +34,6 @@ do
       echo "Enabling building of Aeron Archive API is the default"
       shift
       ;;
-    --slow-system-tests)
-      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SLOW_SYSTEM_TESTS=ON"
-      echo "Enabling slow system tests"
-      shift
-      ;;
     -d|--debug-build)
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCMAKE_BUILD_TYPE=Debug"
       export BUILD_DIR="${SOURCE_DIR}/cppbuild/Debug"
@@ -54,9 +49,19 @@ do
       ncpus=1
       shift
       ;;
+    --no-tests)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_TESTS=OFF"
+      echo "Disabling all tests"
+      shift
+      ;;
     --no-system-tests)
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SYSTEM_TESTS=OFF"
       echo "Disabling system tests"
+      shift
+      ;;
+    --slow-system-tests)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SLOW_SYSTEM_TESTS=ON"
+      echo "Enabling slow system tests"
       shift
       ;;
     --sanitise-build)

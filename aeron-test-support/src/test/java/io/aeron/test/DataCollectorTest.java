@@ -79,6 +79,96 @@ class DataCollectorTest
     @Test
     void dumpDataUsingTestInfo(final @TempDir Path tempDir, final TestInfo testInfo) throws Exception
     {
+        testDumpDataUsingTestInfo(tempDir, testInfo);
+    }
+
+    @Test
+    void dumpDataUsingTestInfoShouldHandleThreadInterrupt(
+        final @TempDir Path tempDir, final TestInfo testInfo) throws Exception
+    {
+        Thread.currentThread().interrupt();
+
+        testDumpDataUsingTestInfo(tempDir, testInfo);
+
+        assertTrue(Thread.interrupted());
+    }
+
+    @Test
+    void dumpDataUsingDirectoryName(final @TempDir Path tempDir) throws Exception
+    {
+        testDumpDataUsingDirectoryName(tempDir);
+    }
+
+    @Test
+    void dumpDataUsingDirectoryNameShouldHandleThreadInterrupt(final @TempDir Path tempDir) throws Exception
+    {
+        Thread.currentThread().interrupt();
+
+        testDumpDataUsingDirectoryName(tempDir);
+
+        assertTrue(Thread.interrupted());
+    }
+
+    @Test
+    void dumpDataUsingTestInfoIsANoOpIfNoFilesRegistered(final @TempDir Path tempDir, final TestInfo testInfo)
+    {
+        final Path rootDirectory = tempDir.resolve("no-copy");
+        final DataCollector dataCollector = new DataCollector(rootDirectory);
+
+        assertNull(dataCollector.dumpData(testInfo));
+
+        assertFalse(exists(rootDirectory));
+    }
+
+    @Test
+    void dumpDataUsingDirectoryNameIsANoOpIfNoFilesRegistered(final @TempDir Path tempDir)
+    {
+        final Path rootDirectory = tempDir.resolve("no-copy");
+        final DataCollector dataCollector = new DataCollector(rootDirectory);
+
+        assertNull(dataCollector.dumpData("some-dir"));
+
+        assertFalse(exists(rootDirectory));
+    }
+
+    @Test
+    void dumpDataUsingTestInfoShouldProduceAThreadDump(
+        final @TempDir Path tempDir, final TestInfo testInfo) throws IOException
+    {
+        final Path rootDirectory = tempDir.resolve("thread-dump");
+        final DataCollector dataCollector = new DataCollector(rootDirectory);
+        dataCollector.add(createFile(tempDir.resolve("my.txt")));
+
+        final Path destination = dataCollector.dumpData(testInfo);
+
+        assertNotNull(destination);
+        assertTrue(exists(destination));
+        assertTrue(exists(destination.resolve("my.txt")));
+        final Path threadDump = destination.resolve(THREAD_DUMP_FILE_NAME);
+        assertTrue(exists(threadDump));
+        assertTrue(new String(readAllBytes(threadDump), UTF_8).contains(Thread.currentThread().getName()));
+    }
+
+    @Test
+    void dumpDataUsingDirectoryNameShouldProduceAThreadDump(final @TempDir Path tempDir) throws IOException
+    {
+        final Path rootDirectory = tempDir.resolve("thread-dump");
+        final DataCollector dataCollector = new DataCollector(rootDirectory);
+        dataCollector.add(createFile(tempDir.resolve("my.txt")));
+
+        final Path destination = dataCollector.dumpData("my-out-dir");
+
+        assertNotNull(destination);
+        assertTrue(exists(destination));
+        assertTrue(exists(destination.resolve("my.txt")));
+        final Path threadDump = destination.resolve(THREAD_DUMP_FILE_NAME);
+        assertTrue(exists(threadDump));
+        assertTrue(new String(readAllBytes(threadDump), UTF_8).contains(Thread.currentThread().getName()));
+    }
+
+
+    private void testDumpDataUsingTestInfo(final Path tempDir, final TestInfo testInfo) throws IOException
+    {
         final Path buildDir = Paths.get("build/test/source").toAbsolutePath();
         createDirectories(buildDir);
 
@@ -162,8 +252,8 @@ class DataCollectorTest
         }
     }
 
-    @Test
-    void dumpDataUsingDirectoryName(final @TempDir Path tempDir) throws Exception
+
+    private void testDumpDataUsingDirectoryName(final Path tempDir) throws IOException
     {
         final Path rootDir = tempDir.resolve("copy-root");
         createDirectories(rootDir.resolve("destination"));
@@ -199,62 +289,5 @@ class DataCollectorTest
         assertTrue(exists(destination.resolve("nested/again/file3.txt")));
         assertTrue(exists(destination.resolve("level1/level2/level3/again/file4.txt")));
         assertTrue(exists(destination.resolve("non-existing/folder/some.png")));
-    }
-
-    @Test
-    void dumpDataUsingTestInfoIsANoOpIfNoFilesRegistered(final @TempDir Path tempDir, final TestInfo testInfo)
-    {
-        final Path rootDirectory = tempDir.resolve("no-copy");
-        final DataCollector dataCollector = new DataCollector(rootDirectory);
-
-        assertNull(dataCollector.dumpData(testInfo));
-
-        assertFalse(exists(rootDirectory));
-    }
-
-    @Test
-    void dumpDataUsingDirectoryNameIsANoOpIfNoFilesRegistered(final @TempDir Path tempDir)
-    {
-        final Path rootDirectory = tempDir.resolve("no-copy");
-        final DataCollector dataCollector = new DataCollector(rootDirectory);
-
-        assertNull(dataCollector.dumpData("some-dir"));
-
-        assertFalse(exists(rootDirectory));
-    }
-
-    @Test
-    void dumpDataUsingTestInfoShouldProduceAThreadDump(
-        final @TempDir Path tempDir, final TestInfo testInfo) throws IOException
-    {
-        final Path rootDirectory = tempDir.resolve("thread-dump");
-        final DataCollector dataCollector = new DataCollector(rootDirectory);
-        dataCollector.add(createFile(tempDir.resolve("my.txt")));
-
-        final Path destination = dataCollector.dumpData(testInfo);
-
-        assertNotNull(destination);
-        assertTrue(exists(destination));
-        assertTrue(exists(destination.resolve("my.txt")));
-        final Path threadDump = destination.resolve(THREAD_DUMP_FILE_NAME);
-        assertTrue(exists(threadDump));
-        assertTrue(new String(readAllBytes(threadDump), UTF_8).contains(Thread.currentThread().getName()));
-    }
-
-    @Test
-    void dumpDataUsingDirectoryNameShouldProduceAThreadDump(final @TempDir Path tempDir) throws IOException
-    {
-        final Path rootDirectory = tempDir.resolve("thread-dump");
-        final DataCollector dataCollector = new DataCollector(rootDirectory);
-        dataCollector.add(createFile(tempDir.resolve("my.txt")));
-
-        final Path destination = dataCollector.dumpData("my-out-dir");
-
-        assertNotNull(destination);
-        assertTrue(exists(destination));
-        assertTrue(exists(destination.resolve("my.txt")));
-        final Path threadDump = destination.resolve(THREAD_DUMP_FILE_NAME);
-        assertTrue(exists(threadDump));
-        assertTrue(new String(readAllBytes(threadDump), UTF_8).contains(Thread.currentThread().getName()));
     }
 }

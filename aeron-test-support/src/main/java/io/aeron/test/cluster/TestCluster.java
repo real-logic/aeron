@@ -559,12 +559,20 @@ public class TestCluster implements AutoCloseable
     public void stopNode(final TestNode testNode)
     {
         testNode.close();
+        testNode.cleanup();
     }
 
     public void stopAllNodes()
     {
         CloseHelper.close(backupNode);
         CloseHelper.closeAll(nodes);
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                node.cleanup();
+            }
+        }
     }
 
     public void restartAllNodes(final boolean cleanStart)

@@ -37,6 +37,10 @@ public final class JavaTestMediaDriver implements TestMediaDriver
         mediaDriver.close();
     }
 
+    public void cleanup()
+    {
+    }
+
     public static JavaTestMediaDriver launch(final MediaDriver.Context context)
     {
         final MediaDriver mediaDriver = MediaDriver.launch(context);

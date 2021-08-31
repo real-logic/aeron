@@ -60,73 +60,107 @@ public final class CTestMediaDriver implements TestMediaDriver
     private final Process aeronMediaDriverProcess;
     private final MediaDriver.Context context;
     private final DriverOutputConsumer driverOutputConsumer;
+    private final File stdoutFile;
+    private final File stderrFile;
+    private Aeron.Context aeronContext;
+    private CountersReader countersReader;
+    private boolean isClosed = false;
 
     private CTestMediaDriver(
         final Process aeronMediaDriverProcess,
         final MediaDriver.Context context,
-        final DriverOutputConsumer driverOutputConsumer)
+        final DriverOutputConsumer driverOutputConsumer,
+        final File stdoutFile,
+        final File stderrFile)
     {
         this.aeronMediaDriverProcess = aeronMediaDriverProcess;
         this.context = context;
         this.driverOutputConsumer = driverOutputConsumer;
+        this.stdoutFile = stdoutFile;
+        this.stderrFile = stderrFile;
     }
 
     public void close()
     {
-        final boolean isInterrupted = Thread.interrupted();
+        if (isClosed)
+        {
+            return;
+        }
+
+        isClosed = true;
+
+        Throwable error = null;
         try
         {
-            final boolean hasSentTerminateSignal = terminateDriver();
-            if (!hasSentTerminateSignal || !aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
+            if (null != aeronContext)
             {
-                aeronMediaDriverProcess.destroyForcibly().waitFor(5, TimeUnit.SECONDS);
-                throw new RuntimeException("Failed to shutdown cleanly, forced close");
+                aeronContext.close();
             }
+        }
+        catch (final Throwable t)
+        {
+            error = t;
+        }
 
+        try
+        {
+            final int exitCode = terminateDriver();
             if (null != driverOutputConsumer)
             {
-                driverOutputConsumer.exitCode(context.aeronDirectoryName(), aeronMediaDriverProcess.exitValue());
+                driverOutputConsumer.exitCode(context.aeronDirectoryName(), exitCode);
             }
         }
-        catch (final InterruptedException ex)
+        catch (final Throwable t)
         {
-            throw new RuntimeException("Interrupted while waiting for shutdown", ex);
-        }
-        finally
-        {
-            if (isInterrupted)
+            if (null == error)
             {
-                Thread.currentThread().interrupt();
+                error = t;
             }
+            else
+            {
+                error.addSuppressed(t);
+            }
+        }
+
+        if (null != error)
+        {
+            LangUtil.rethrowUnchecked(error);
+        }
+    }
+
+    public void cleanup()
+    {
+        if (NULL_FILE != stdoutFile)
+        {
+            IoUtil.delete(stdoutFile, true);
+        }
+
+        if (NULL_FILE != stderrFile)
+        {
+            IoUtil.delete(stderrFile, true);
         }
     }
 
     public CountersReader counters()
     {
-        final Aeron.Context context = new Aeron.Context()
-            .aeronDirectoryName(this.context.aeronDirectoryName()).conclude();
-        return new CountersReader(context.countersMetaDataBuffer(), context.countersValuesBuffer());
-    }
+        if (null == countersReader)
+        {
+            aeronContext = new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()).conclude();
+            countersReader = new CountersReader(
+                aeronContext.countersMetaDataBuffer(), aeronContext.countersValuesBuffer());
+        }
 
-    private boolean terminateDriver()
-    {
-        try
-        {
-            CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
-            return true;
-        }
-        catch (final Throwable t)
-        {
-            return false;
-        }
+        return countersReader;
     }
 
     @SuppressWarnings("methodlength")
     public static CTestMediaDriver launch(
-        final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)
+        final MediaDriver.Context context,
+        final boolean withAeronDir,
+        final DriverOutputConsumer driverOutputConsumer)
     {
-        final String aeronDirPath = System.getProperty(TestMediaDriver.AERONMD_PATH_PROP_NAME);
-        final File aeronBinary = new File(aeronDirPath);
+        final String aeronMediaDriverPath = System.getProperty(TestMediaDriver.AERONMD_PATH_PROP_NAME);
+        final File aeronBinary = new File(aeronMediaDriverPath);
 
         if (!aeronBinary.exists())
         {
@@ -138,9 +172,12 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         final HashMap<String, String> environment = new HashMap<>();
 
+        if (withAeronDir)
+        {
+            environment.put("AERON_DIR", context.aeronDirectoryName());
+        }
         environment.put("AERON_CLIENT_LIVENESS_TIMEOUT", String.valueOf(context.clientLivenessTimeoutNs()));
         environment.put("AERON_IMAGE_LIVENESS_TIMEOUT", String.valueOf(context.imageLivenessTimeoutNs()));
-        environment.put("AERON_DIR", context.aeronDirectoryName());
         environment.put("AERON_DRIVER_TERMINATION_VALIDATOR", "allow");
         environment.put("AERON_DIR_DELETE_ON_START", Boolean.toString(context.dirDeleteOnStart()));
         environment.put("AERON_DIR_DELETE_ON_SHUTDOWN", Boolean.toString(context.dirDeleteOnShutdown()));
@@ -208,7 +245,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             final ProcessBuilder pb = new ProcessBuilder(aeronBinary.getAbsolutePath());
             if (null != driverOutputConsumer)
             {
-                stdoutFile = File.createTempFile("CTestMediaDriver-", ".out");
+                stdoutFile = File.createTempFile(context.aeronDirectory().getName() + "-driver-", ".out");
                 final String tmpName = stdoutFile.getName().substring(0, stdoutFile.getName().length() - 4) + ".err";
                 stderrFile = new File(stdoutFile.getParent(), tmpName);
                 driverOutputConsumer.outputFiles(context.aeronDirectoryName(), stdoutFile, stderrFile);
@@ -220,13 +257,55 @@ public final class CTestMediaDriver implements TestMediaDriver
             final Process process = pb.start();
             Thread.yield();
 
-            return new CTestMediaDriver(process, context, driverOutputConsumer);
+            return new CTestMediaDriver(process, context, driverOutputConsumer, stdoutFile, stderrFile);
         }
         catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
             return null;
         }
+    }
+
+    public MediaDriver.Context context()
+    {
+        return context;
+    }
+
+    public String aeronDirectoryName()
+    {
+        return context.aeronDirectoryName();
+    }
+
+    public AgentInvoker sharedAgentInvoker()
+    {
+        throw new UnsupportedOperationException("Not supported in C media driver");
+    }
+
+    public static void enableLossGenerationOnReceive(
+        final MediaDriver.Context context,
+        final double rate,
+        final long seed,
+        final boolean loseDataMessages,
+        final boolean loseControlMessages)
+    {
+        int receiveMessageTypeMask = 0;
+        receiveMessageTypeMask |= loseDataMessages ? 1 << HeaderFlyweight.HDR_TYPE_DATA : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_SM : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_NAK : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_RTTM : 0;
+
+        final Object2ObjectHashMap<String, String> lossTransportEnv = new Object2ObjectHashMap<>();
+
+        final String interceptor = "loss";
+        final String lossArgs = "rate=" + rate +
+            "|seed=" + seed +
+            "|recv-msg-mask=0x" + Integer.toHexString(receiveMessageTypeMask);
+
+        lossTransportEnv.put("AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", interceptor);
+        lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
+
+        // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
+        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, lossTransportEnv);
     }
 
     private static void setLogging(final Map<String, String> environment)
@@ -283,45 +362,54 @@ public final class CTestMediaDriver implements TestMediaDriver
             null : C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.get(flowControlSupplier.getClass());
     }
 
-    public MediaDriver.Context context()
+    private int terminateDriver()
     {
-        return context;
+        boolean isInterrupted = false;
+        boolean requestTermination = true;
+        try
+        {
+            while (true)
+            {
+                isInterrupted |= Thread.interrupted();
+                try
+                {
+                    if (requestTermination)
+                    {
+                        requestTermination = false;
+                        if (requestDriverTermination() && aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
+                        {
+                            return aeronMediaDriverProcess.exitValue();
+                        }
+                    }
+
+                    aeronMediaDriverProcess.destroyForcibly().waitFor(5, TimeUnit.SECONDS);
+                    return aeronMediaDriverProcess.exitValue();
+                }
+                catch (final InterruptedException ex)
+                {
+                    isInterrupted = true;
+                }
+            }
+        }
+        finally
+        {
+            if (isInterrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
-    public String aeronDirectoryName()
+    private boolean requestDriverTermination()
     {
-        return context.aeronDirectoryName();
-    }
-
-    public AgentInvoker sharedAgentInvoker()
-    {
-        throw new UnsupportedOperationException("Not supported in C media driver");
-    }
-
-    public static void enableLossGenerationOnReceive(
-        final MediaDriver.Context context,
-        final double rate,
-        final long seed,
-        final boolean loseDataMessages,
-        final boolean loseControlMessages)
-    {
-        int receiveMessageTypeMask = 0;
-        receiveMessageTypeMask |= loseDataMessages ? 1 << HeaderFlyweight.HDR_TYPE_DATA : 0;
-        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_SM : 0;
-        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_NAK : 0;
-        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_RTTM : 0;
-
-        final Object2ObjectHashMap<String, String> lossTransportEnv = new Object2ObjectHashMap<>();
-
-        final String interceptor = "loss";
-        final String lossArgs = "rate=" + rate +
-            "|seed=" + seed +
-            "|recv-msg-mask=0x" + Integer.toHexString(receiveMessageTypeMask);
-
-        lossTransportEnv.put("AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", interceptor);
-        lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
-
-        // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
-        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, lossTransportEnv);
+        try
+        {
+            CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
+            return true;
+        }
+        catch (final Throwable t)
+        {
+            return false;
+        }
     }
 }

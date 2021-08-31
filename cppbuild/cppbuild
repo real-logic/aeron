@@ -34,11 +34,6 @@ do
       echo "Enabling building of Aeron Archive API is the default"
       shift
       ;;
-    --slow-system-tests)
-      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SLOW_SYSTEM_TESTS=ON"
-      echo "Enabling slow system tests"
-      shift
-      ;;
     -d|--debug-build)
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCMAKE_BUILD_TYPE=Debug"
       export BUILD_DIR="${SOURCE_DIR}/cppbuild/Debug"
@@ -58,9 +53,19 @@ do
       ((ncpus=(ncpus > 1 ? ncpus-1 : 1)))
       shift
       ;;
+    --no-tests)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_TESTS=OFF"
+      echo "Disabling all tests"
+      shift
+      ;;
     --no-system-tests)
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SYSTEM_TESTS=OFF"
       echo "Disabling system tests"
+      shift
+      ;;
+    --slow-system-tests)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SLOW_SYSTEM_TESTS=ON"
+      echo "Enabling slow system tests"
       shift
       ;;
     --sanitise-build)
@@ -79,8 +84,14 @@ do
       fi
       shift
       ;;
+    --gradle-wrapper)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DGRADLE_WRAPPER=${2}"
+      echo "Setting -DGRADLE_WRAPPER=${2}"
+      shift
+      shift
+      ;;
     -h|--help)
-      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests]"
+      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--help]"
       exit
       ;;
     *)

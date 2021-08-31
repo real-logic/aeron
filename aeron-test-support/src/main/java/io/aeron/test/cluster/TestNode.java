@@ -34,6 +34,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
+import io.aeron.test.driver.DriverOutputConsumer;
 import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
@@ -49,6 +50,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,9 +77,30 @@ public class TestNode implements AutoCloseable
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
+        this.context = context;
+
         try
         {
-            mediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
+            mediaDriver = TestMediaDriver.launch(
+                context.mediaDriverContext,
+                TestMediaDriver.shouldRunCMediaDriver() ? new DriverOutputConsumer()
+                {
+                    public void outputFiles(
+                        final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
+                    {
+                        dataCollector.add(stdoutFile.toPath());
+                        dataCollector.add(stderrFile.toPath());
+                    }
+
+                    public void exitCode(final String aeronDirectoryName, final int exitValue)
+                    {
+                    }
+
+                    public void environmentVariables(
+                        final String aeronDirectoryName, final Map<String, String> environment)
+                    {
+                    }
+                } : null);
 
             final File baseDir = context.archiveContext.archiveDir().getParentFile();
             IoUtil.ensureDirectoryExists(baseDir, "cluster base directory");
@@ -86,6 +109,9 @@ public class TestNode implements AutoCloseable
             if (clusterErrorFile.exists())
             {
                 clusterErrorMmap = IoUtil.mapExistingFile(clusterErrorFile, "cluster error log file");
+                // Erase existing errors
+                final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(clusterErrorMmap);
+                unsafeBuffer.setMemory(0, unsafeBuffer.capacity(), (byte)0);
             }
             else
             {
@@ -99,21 +125,24 @@ public class TestNode implements AutoCloseable
             context.consensusModuleContext.errorHandler(clusterErrorHandler);
             context.serviceContainerContext.errorHandler(clusterErrorHandler);
 
-            archive = Archive.launch(context.archiveContext.aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+            final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
+            archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
-            context.consensusModuleContext.terminationHook(ClusterTests.terminationHook(
+            context.consensusModuleContext
+                .aeronDirectoryName(aeronDirectoryName)
+                .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
 
-            consensusModule = ConsensusModule.launch(
-                context.consensusModuleContext.aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+            consensusModule = ConsensusModule.launch(context.consensusModuleContext);
 
-            container = ClusteredServiceContainer.launch(
-                context.serviceContainerContext
-                    .terminationHook(ClusterTests.terminationHook(
-                        context.isTerminationExpected, context.hasServiceTerminated)));
+            context.serviceContainerContext
+                .aeronDirectoryName(aeronDirectoryName)
+                .terminationHook(ClusterTests.terminationHook(
+                context.isTerminationExpected, context.hasServiceTerminated));
+
+            container = ClusteredServiceContainer.launch(context.serviceContainerContext);
 
             service = context.service;
-            this.context = context;
 
             dataCollector.add(baseDir.toPath());
             dataCollector.add(container.context().clusterDir().toPath());
@@ -123,7 +152,15 @@ public class TestNode implements AutoCloseable
         }
         catch (final RuntimeException ex)
         {
-            closeAndDelete();
+            try
+            {
+                closeAndDelete();
+            }
+            catch (final Throwable t)
+            {
+                ex.addSuppressed(t);
+            }
+
             throw ex;
         }
     }
@@ -158,8 +195,14 @@ public class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.closeAll(consensusModule, container, archive, mediaDriver);
-            IoUtil.unmap(clusterErrorMmap);
+            try
+            {
+                CloseHelper.closeAll(consensusModule, container, archive, mediaDriver);
+            }
+            finally
+            {
+                IoUtil.unmap(clusterErrorMmap);
+            }
         }
     }
 
@@ -169,60 +212,17 @@ public class TestNode implements AutoCloseable
 
         try
         {
-            if (!isClosed)
-            {
-                close();
-            }
+            CloseHelper.closeAll(
+                this,
+                context.serviceContainerContext::deleteDirectory,
+                context.consensusModuleContext::deleteDirectory,
+                context.archiveContext::deleteDirectory,
+                context.mediaDriverContext::deleteDirectory,
+                this::cleanup);
         }
         catch (final Throwable t)
         {
             error = t;
-        }
-
-        try
-        {
-            if (null != container)
-            {
-                container.context().deleteDirectory();
-            }
-        }
-        catch (final Throwable t)
-        {
-            if (error == null)
-            {
-                error = t;
-            }
-            else
-            {
-                error.addSuppressed(t);
-            }
-        }
-
-        try
-        {
-            if (null != consensusModule)
-            {
-                consensusModule.context().deleteDirectory();
-            }
-            if (null != archive)
-            {
-                archive.context().deleteDirectory();
-            }
-            if (null != mediaDriver)
-            {
-                mediaDriver.context().deleteDirectory();
-            }
-        }
-        catch (final Throwable t)
-        {
-            if (null == error)
-            {
-                error = t;
-            }
-            else
-            {
-                error.addSuppressed(t);
-            }
         }
 
         if (null != clusterErrorFile)
@@ -233,6 +233,14 @@ public class TestNode implements AutoCloseable
         if (null != error)
         {
             LangUtil.rethrowUnchecked(error);
+        }
+    }
+
+    void cleanup()
+    {
+        if (null != mediaDriver)
+        {
+            mediaDriver.cleanup();
         }
     }
 

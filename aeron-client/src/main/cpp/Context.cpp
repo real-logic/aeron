@@ -23,6 +23,10 @@
         #define NOMINMAX
     #endif // !NOMINMAX
     #include <Windows.h>
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 #endif
 
 using namespace aeron;
@@ -97,6 +101,7 @@ inline static std::string tmpDir()
 
 inline static std::string getUserName()
 {
+    char tmpBuffer[256];
     const char *username = ::getenv("USER");
 #if (_MSC_VER)
     if (nullptr == username)
@@ -110,10 +115,15 @@ inline static std::string getUserName()
 #else
     if (nullptr == username)
     {
-        username = "default";
+        // using uid instead of euid as that is what the JVM seems to do.
+        uid_t uid = ::getuid();
+        struct passwd pw{}, *pwResult = nullptr;
+
+        ::getpwuid_r(uid, &pw, tmpBuffer, sizeof(tmpBuffer), &pwResult);
+        username = (nullptr != pwResult) ? pwResult->pw_name : "default";
     }
 #endif
-    return username;
+    return {username};
 }
 
 std::string Context::defaultAeronPath()

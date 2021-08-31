@@ -42,10 +42,13 @@ import java.util.function.Predicate;
 
 public class ClusterTestWatcher implements TestWatcher
 {
-    public static final Predicate<String> UNKNOWN_HOST_FILTER = (s) -> s.contains(UnknownHostException.class.getName());
+    private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
+    private static final String UNKNOWN_HOST_EXCEPTION = UnknownHostException.class.getName();
+    public static final Predicate<String> UNKNOWN_HOST_FILTER =
+        (s) -> s.contains(UNKNOWN_HOST_EXCEPTION) || s.contains("unknown host");
     public static final Predicate<String> WARNING_FILTER = (s) -> s.contains("WARN");
     public static final Predicate<String> CLUSTER_TERMINATION_FILTER =
-        (s) -> s.contains(ClusterTerminationException.class.getName());
+        (s) -> s.contains(CLUSTER_TERMINATION_EXCEPTION);
     public static final Predicate<String> TEST_CLUSTER_DEFAULT_LOG_FILTER =
         WARNING_FILTER.negate().and(CLUSTER_TERMINATION_FILTER.negate());
 
@@ -105,8 +108,19 @@ public class ClusterTestWatcher implements TestWatcher
         final List<Path> clusterErrorPaths,
         final Predicate<String> filter)
     {
-        return countErrors(cncPaths, filter, CommonContext::errorLogBuffer) +
-            countErrors(clusterErrorPaths, filter, UnsafeBuffer::new);
+        final boolean isInterrupted = Thread.interrupted();
+        try
+        {
+            return countErrors(cncPaths, filter, CommonContext::errorLogBuffer) +
+                countErrors(clusterErrorPaths, filter, UnsafeBuffer::new);
+        }
+        finally
+        {
+            if (isInterrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private int countErrors(
@@ -161,6 +175,7 @@ public class ClusterTestWatcher implements TestWatcher
     private void reportAndTerminate(final ExtensionContext context)
     {
         Throwable error = null;
+        final boolean isInterrupted = Thread.interrupted();
 
         if (null != testCluster)
         {
@@ -207,6 +222,11 @@ public class ClusterTestWatcher implements TestWatcher
             {
                 error = t;
             }
+        }
+
+        if (isInterrupted)
+        {
+            Thread.currentThread().interrupt();
         }
 
         if (null != error)

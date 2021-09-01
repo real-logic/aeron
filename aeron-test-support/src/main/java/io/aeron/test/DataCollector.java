@@ -16,7 +16,8 @@
 package io.aeron.test;
 
 import io.aeron.CncFileDescriptor;
-import io.aeron.test.cluster.TestNode;
+import io.aeron.archive.ArchiveMarkFile;
+import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.junit.jupiter.api.TestInfo;
@@ -26,6 +27,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
@@ -138,6 +140,11 @@ public final class DataCollector
         return copyData(destinationDir);
     }
 
+    /**
+     * Find all the driver cnc files
+     *
+     * @return list of paths to collected driver cnc files.
+     */
     public List<Path> cncFiles()
     {
         return this.locations.stream()
@@ -146,12 +153,55 @@ public final class DataCollector
             .collect(toList());
     }
 
-    public List<Path> errorLogFiles()
+    /**
+     * Find all the clustered service mark files.
+     *
+     * @return list of paths to the clustered service mark files.
+     */
+    public List<Path> clusterServiceMarkFiles()
     {
         return this.locations.stream()
-            .map(p -> p.resolve(TestNode.CLUSTER_ERROR_FILE))
-            .filter(Files::exists)
+            .flatMap(DataCollector::list)
+            .filter(ClusterMarkFile::isServiceMarkFile)
             .collect(toList());
+    }
+
+    /**
+     * Find all the consensus module mark files.
+     *
+     * @return list of paths to the consensus module mark files
+     */
+    public List<Path> consensusModuleMarkFiles()
+    {
+        return this.locations.stream()
+            .flatMap(DataCollector::list)
+            .filter(ClusterMarkFile::isConsensusModuleMarkFile)
+            .collect(toList());
+    }
+
+    /**
+     * Find all the archive mark files.
+     *
+     * @return list of paths to the archive mark files
+     */
+    public List<Path> archiveMarkFiles()
+    {
+        return this.locations.stream()
+            .flatMap(DataCollector::list)
+            .filter(ArchiveMarkFile::isArchiveMarkFile)
+            .collect(toList());
+    }
+
+    private static Stream<Path> list(final Path p)
+    {
+        try
+        {
+            return Files.list(p);
+        }
+        catch (final IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public String toString()

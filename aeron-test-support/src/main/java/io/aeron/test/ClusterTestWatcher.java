@@ -16,6 +16,8 @@
 package io.aeron.test;
 
 import io.aeron.CommonContext;
+import io.aeron.archive.ArchiveMarkFile;
+import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.samples.SamplesUtil;
 import io.aeron.test.cluster.TestCluster;
@@ -24,7 +26,7 @@ import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.errors.ErrorLogReader;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
@@ -76,7 +78,9 @@ public class ClusterTestWatcher implements TestWatcher
         {
             return countErrors(
                 testCluster.dataCollector().cncFiles(),
-                testCluster.dataCollector().errorLogFiles(),
+                testCluster.dataCollector().archiveMarkFiles(),
+                testCluster.dataCollector().consensusModuleMarkFiles(),
+                testCluster.dataCollector().clusterServiceMarkFiles(),
                 logFilter);
         }
 
@@ -105,14 +109,18 @@ public class ClusterTestWatcher implements TestWatcher
 
     private int countErrors(
         final List<Path> cncPaths,
-        final List<Path> clusterErrorPaths,
+        final List<Path> archiveMarkFiles,
+        final List<Path> consensusModuleMarkFiles,
+        final List<Path> clusterServiceMarkFiles,
         final Predicate<String> filter)
     {
         final boolean isInterrupted = Thread.interrupted();
         try
         {
             return countErrors(cncPaths, filter, CommonContext::errorLogBuffer) +
-                countErrors(clusterErrorPaths, filter, UnsafeBuffer::new);
+                countArchiveMarkFileErrors(archiveMarkFiles, filter) +
+                countClusterMarkFileErrors(consensusModuleMarkFiles, filter) +
+                countClusterMarkFileErrors(clusterServiceMarkFiles, filter);
         }
         finally
         {
@@ -132,11 +140,11 @@ public class ClusterTestWatcher implements TestWatcher
 
         for (final Path path : paths)
         {
-            final File cncFile = path.toFile();
-            final MappedByteBuffer cncMmap = SamplesUtil.mapExistingFileReadOnly(cncFile);
+            final File file = path.toFile();
+            final MappedByteBuffer mmap = SamplesUtil.mapExistingFileReadOnly(file);
             try
             {
-                final AtomicBuffer buffer = toErrorBuffer.apply(cncMmap);
+                final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
                 ErrorLogReader.read(
                     buffer,
                     (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
@@ -149,11 +157,76 @@ public class ClusterTestWatcher implements TestWatcher
             }
             finally
             {
-                IoUtil.unmap(cncMmap);
+                IoUtil.unmap(mmap);
             }
         }
 
         return errorCount.get();
+    }
+
+    private int countClusterMarkFileErrors(
+        final List<Path> paths,
+        final Predicate<String> filter)
+    {
+
+        final MutableInteger errorCount = new MutableInteger(0);
+
+        for (final Path path : paths)
+        {
+            try (ClusterMarkFile clusterMarkFile = openClusterMarkFile(path))
+            {
+                final AtomicBuffer buffer = clusterMarkFile.errorBuffer();
+                ErrorLogReader.read(
+                    buffer,
+                    (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+                    {
+                        if (filter.test(encodedException))
+                        {
+                            errorCount.set(errorCount.get() + observationCount);
+                        }
+                    });
+            }
+        }
+
+        return errorCount.get();
+    }
+
+    private int countArchiveMarkFileErrors(
+        final List<Path> paths,
+        final Predicate<String> filter)
+    {
+        final MutableInteger errorCount = new MutableInteger(0);
+
+        for (final Path path : paths)
+        {
+            try (ArchiveMarkFile archive = openArchiveMarkFile(path))
+            {
+                final AtomicBuffer buffer = archive.errorBuffer();
+                ErrorLogReader.read(
+                    buffer,
+                    (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+                    {
+                        if (filter.test(encodedException))
+                        {
+                            errorCount.set(errorCount.get() + observationCount);
+                        }
+                    });
+            }
+        }
+
+        return errorCount.get();
+    }
+
+    private static ClusterMarkFile openClusterMarkFile(final Path path)
+    {
+        return new ClusterMarkFile(
+            path.getParent().toFile(), path.getFileName().toString(), SystemEpochClock.INSTANCE, 0, s -> {});
+    }
+
+    private static ArchiveMarkFile openArchiveMarkFile(final Path path)
+    {
+        return new ArchiveMarkFile(
+            path.getParent().toFile(), path.getFileName().toString(), SystemEpochClock.INSTANCE, 0, s -> {});
     }
 
     private void printObservationCallback(
@@ -181,7 +254,13 @@ public class ClusterTestWatcher implements TestWatcher
         {
             try
             {
-                printErrors(testCluster.dataCollector().cncFiles(), testCluster.dataCollector().errorLogFiles());
+                printCncErrors(
+                    testCluster.dataCollector().cncFiles(), "Command `n Control Errors", CommonContext::errorLogBuffer);
+                printArchiveMarkFileErrors(testCluster.dataCollector().archiveMarkFiles(), "Archive Errors");
+                printClusterMarkFileErrors(
+                    testCluster.dataCollector().consensusModuleMarkFiles(), "Consensus Module Errors");
+                printClusterMarkFileErrors(
+                    testCluster.dataCollector().clusterServiceMarkFiles(), "Cluster Service Errors");
             }
             catch (final Throwable t)
             {
@@ -235,13 +314,7 @@ public class ClusterTestWatcher implements TestWatcher
         }
     }
 
-    private void printErrors(final List<Path> cncPaths, final List<Path> clusterErrorPaths)
-    {
-        printErrors(cncPaths, "Command `n Control", CommonContext::errorLogBuffer);
-        printErrors(clusterErrorPaths, "Cluster Errors", UnsafeBuffer::new);
-    }
-
-    private void printErrors(
+    private void printCncErrors(
         final List<Path> paths,
         final String fileDescription,
         final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer)
@@ -262,6 +335,42 @@ public class ClusterTestWatcher implements TestWatcher
             finally
             {
                 IoUtil.unmap(mmap);
+            }
+        }
+    }
+
+    private void printArchiveMarkFileErrors(
+        final List<Path> paths,
+        final String fileDescription)
+    {
+        for (final Path path : paths)
+        {
+            try (ArchiveMarkFile archiveFile = openArchiveMarkFile(path))
+            {
+                final AtomicBuffer buffer = archiveFile.errorBuffer();
+
+                System.out.printf("%n%n%s file %s%n", fileDescription, path);
+                final int distinctErrorCount = ErrorLogReader.read(
+                    buffer, this::printObservationCallback);
+                System.out.format("%d distinct errors observed.%n", distinctErrorCount);
+            }
+        }
+    }
+
+    private void printClusterMarkFileErrors(
+        final List<Path> paths,
+        final String fileDescription)
+    {
+        for (final Path path : paths)
+        {
+            try (ClusterMarkFile clusterMarkFile = openClusterMarkFile(path))
+            {
+                final AtomicBuffer buffer = clusterMarkFile.errorBuffer();
+
+                System.out.printf("%n%n%s file %s%n", fileDescription, path);
+                final int distinctErrorCount = ErrorLogReader.read(
+                    buffer, this::printObservationCallback);
+                System.out.format("%d distinct errors observed.%n", distinctErrorCount);
             }
         }
     }

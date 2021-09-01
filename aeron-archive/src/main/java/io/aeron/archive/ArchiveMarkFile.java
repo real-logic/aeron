@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.Consumer;
@@ -309,6 +310,17 @@ public class ArchiveMarkFile implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    /**
+     * Determine if the path matches the archive mark file name
+     *
+     * @param path to examine
+     * @return true if the filename matches.
+     */
+    public static boolean isArchiveMarkFile(final Path path)
+    {
+        return path.getFileName().toString().equals(FILENAME);
     }
 
     private static int alignedTotalFileLength(final Archive.Context ctx)

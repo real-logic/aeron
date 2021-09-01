@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.Consumer;
@@ -174,6 +175,29 @@ public final class ClusterMarkFile implements AutoCloseable
         buffer = markFile.buffer();
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
         errorBuffer = new UnsafeBuffer(buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+    }
+
+    /**
+     * Determines if this path name matches the service mark file name pattern
+     *
+     * @param p to examine
+     * @return true if the name matches
+     */
+    public static boolean isServiceMarkFile(final Path p)
+    {
+        return p.getFileName().toString().startsWith(SERVICE_FILENAME_PREFIX) &&
+            p.getFileName().toString().endsWith(FILE_EXTENSION);
+    }
+
+    /**
+     * Determines if this path name matches the consensus module file name pattern.
+     *
+     * @param path to examine
+     * @return true if the name matches
+     */
+    public static boolean isConsensusModuleMarkFile(final Path path)
+    {
+        return path.getFileName().toString().equals(FILENAME);
     }
 
     /**

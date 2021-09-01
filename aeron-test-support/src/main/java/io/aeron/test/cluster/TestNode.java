@@ -39,17 +39,12 @@ import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.AgentTerminationException;
-import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
-import java.nio.MappedByteBuffer;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,9 +57,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestNode implements AutoCloseable
 {
-    public static final String CLUSTER_ERROR_FILE = "cluster.err";
-    public static final int CLUSTER_ERROR_LOG_LENGTH = 1 << 20;
-
     private final Archive archive;
     private final ConsensusModule consensusModule;
     private final ClusteredServiceContainer container;
@@ -72,8 +64,6 @@ public class TestNode implements AutoCloseable
     private final Context context;
     private final TestMediaDriver mediaDriver;
     private boolean isClosed = false;
-    private final MappedByteBuffer clusterErrorMmap;
-    private final File clusterErrorFile;
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
@@ -102,29 +92,6 @@ public class TestNode implements AutoCloseable
                     }
                 } : null);
 
-            final File baseDir = context.archiveContext.archiveDir().getParentFile();
-            IoUtil.ensureDirectoryExists(baseDir, "cluster base directory");
-            clusterErrorFile = new File(baseDir, CLUSTER_ERROR_FILE);
-
-            if (clusterErrorFile.exists())
-            {
-                clusterErrorMmap = IoUtil.mapExistingFile(clusterErrorFile, "cluster error log file");
-                // Erase existing errors
-                final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(clusterErrorMmap);
-                unsafeBuffer.setMemory(0, unsafeBuffer.capacity(), (byte)0);
-            }
-            else
-            {
-                clusterErrorMmap = IoUtil.mapNewFile(clusterErrorFile, CLUSTER_ERROR_LOG_LENGTH);
-            }
-
-            final LoggingErrorHandler clusterErrorHandler = new LoggingErrorHandler(
-                new DistinctErrorLog(new UnsafeBuffer(clusterErrorMmap), new SystemEpochClock()));
-
-            context.archiveContext.errorHandler(clusterErrorHandler);
-            context.consensusModuleContext.errorHandler(clusterErrorHandler);
-            context.serviceContainerContext.errorHandler(clusterErrorHandler);
-
             final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
             archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
@@ -144,7 +111,6 @@ public class TestNode implements AutoCloseable
 
             service = context.service;
 
-            dataCollector.add(baseDir.toPath());
             dataCollector.add(container.context().clusterDir().toPath());
             dataCollector.add(consensusModule.context().clusterDir().toPath());
             dataCollector.add(archive.context().archiveDir().toPath());
@@ -195,14 +161,7 @@ public class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            try
-            {
-                CloseHelper.closeAll(consensusModule, container, archive, mediaDriver);
-            }
-            finally
-            {
-                IoUtil.unmap(clusterErrorMmap);
-            }
+            CloseHelper.closeAll(consensusModule, container, archive, mediaDriver);
         }
     }
 
@@ -223,11 +182,6 @@ public class TestNode implements AutoCloseable
         catch (final Throwable t)
         {
             error = t;
-        }
-
-        if (null != clusterErrorFile)
-        {
-            IoUtil.delete(clusterErrorFile, true);
         }
 
         if (null != error)

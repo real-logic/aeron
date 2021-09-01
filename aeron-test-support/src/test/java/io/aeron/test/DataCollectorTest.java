@@ -52,7 +52,7 @@ class DataCollectorTest
     void addFileThrowsNullPointerExceptionIfFileIsNull()
     {
         final DataCollector dataCollector = new DataCollector();
-        assertThrows(NullPointerException.class, () -> dataCollector.add(null));
+        assertThrows(NullPointerException.class, () -> dataCollector.add((Path)null));
     }
 
     @Test

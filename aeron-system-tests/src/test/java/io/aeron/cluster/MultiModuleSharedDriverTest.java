@@ -26,9 +26,7 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.cluster.StubClusteredService;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.driver.RedirectingNameResolver;
@@ -37,8 +35,11 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableReference;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 
@@ -47,14 +48,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ExtendWith(InterruptingTestCallback.class)
 public class MultiModuleSharedDriverTest
 {
+    @RegisterExtension
+    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+
+    private final DataCollector dataCollector = new DataCollector();
+
+    @BeforeEach
+    void setUp()
+    {
+        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
+    }
+
     @SuppressWarnings("methodlength")
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(20_000)
     public void shouldSupportTwoSingleNodeClusters()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
-            .errorHandler(Tests::onError)
             .nameResolver(new RedirectingNameResolver(TestCluster.DEFAULT_NODE_MAPPINGS))
             .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
@@ -62,7 +79,6 @@ public class MultiModuleSharedDriverTest
         final Archive.Context archiveCtx = new Archive.Context()
             .threadingMode(ArchiveThreadingMode.SHARED)
             .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
-            .errorHandler(Tests::onError)
             .recordingEventsEnabled(false)
             .deleteArchiveOnStart(true);
 
@@ -70,7 +86,6 @@ public class MultiModuleSharedDriverTest
         {
             final ConsensusModule.Context moduleCtx0 = new ConsensusModule.Context()
                 .clusterId(0)
-                .errorHandler(Tests::onError)
                 .deleteDirOnStart(true)
                 .clusterDir(new File(SystemUtil.tmpDirName(), "cluster-0-0"))
                 .logChannel("aeron:ipc?term-length=64k")
@@ -82,7 +97,6 @@ public class MultiModuleSharedDriverTest
 
             final ClusteredServiceContainer.Context containerCtx0 = new ClusteredServiceContainer.Context()
                 .clusterId(moduleCtx0.clusterId())
-                .errorHandler(Tests::onError)
                 .clusteredService(new EchoService())
                 .clusterDir(moduleCtx0.clusterDir())
                 .serviceStreamId(moduleCtx0.serviceStreamId())
@@ -90,7 +104,6 @@ public class MultiModuleSharedDriverTest
 
             final ConsensusModule.Context moduleCtx1 = new ConsensusModule.Context()
                 .clusterId(1)
-                .errorHandler(Tests::onError)
                 .deleteDirOnStart(true)
                 .clusterDir(new File(SystemUtil.tmpDirName(), "cluster-0-1"))
                 .logChannel("aeron:ipc?term-length=64k")
@@ -101,7 +114,6 @@ public class MultiModuleSharedDriverTest
                 .replicationChannel("aeron:udp?endpoint=localhost:0");
 
             final ClusteredServiceContainer.Context containerCtx1 = new ClusteredServiceContainer.Context()
-                .errorHandler(Tests::onError)
                 .clusteredService(new EchoService())
                 .clusterDir(moduleCtx1.clusterDir())
                 .serviceStreamId(moduleCtx1.serviceStreamId())
@@ -142,15 +154,15 @@ public class MultiModuleSharedDriverTest
             }
             finally
             {
+                dataCollector.add(moduleCtx0.clusterDir());
+                dataCollector.add(moduleCtx1.clusterDir());
                 CloseHelper.closeAll(client0, client1, consensusModule0, consensusModule1, container0, container1);
-                moduleCtx0.deleteDirectory();
-                moduleCtx1.deleteDirectory();
             }
         }
         finally
         {
-            archiveCtx.deleteDirectory();
-            driverCtx.deleteDirectory();
+            dataCollector.add(driverCtx.aeronDirectory());
+            dataCollector.add(archiveCtx.archiveDir());
         }
     }
 
@@ -158,8 +170,8 @@ public class MultiModuleSharedDriverTest
     @InterruptAfter(30)
     public void shouldSupportTwoMultiNodeClusters()
     {
-        try (MultiClusterNode node0 = new MultiClusterNode(0);
-            MultiClusterNode node1 = new MultiClusterNode(1))
+        try (MultiClusterNode node0 = new MultiClusterNode(0, dataCollector);
+            MultiClusterNode node1 = new MultiClusterNode(1, dataCollector))
         {
             final MutableReference<String> egress = new MutableReference<>();
             final EgressListener egressListener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
@@ -226,6 +238,7 @@ public class MultiModuleSharedDriverTest
     static class MultiClusterNode implements AutoCloseable
     {
         final int nodeId;
+        final DataCollector dataCollector;
         final ArchivingMediaDriver archivingMediaDriver;
 
         final ConsensusModule consensusModule0;
@@ -236,14 +249,14 @@ public class MultiModuleSharedDriverTest
         final ClusteredServiceContainer container1;
         AeronCluster client1;
 
-        MultiClusterNode(final int nodeId)
+        MultiClusterNode(final int nodeId, final DataCollector dataCollector)
         {
             this.nodeId = nodeId;
+            this.dataCollector = dataCollector;
 
             final MediaDriver.Context driverCtx = new MediaDriver.Context()
                 .aeronDirectoryName(CommonContext.getAeronDirectoryName() + "-" + nodeId)
                 .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
                 .nameResolver(new RedirectingNameResolver(TestCluster.DEFAULT_NODE_MAPPINGS))
                 .dirDeleteOnStart(true);
 
@@ -251,7 +264,6 @@ public class MultiModuleSharedDriverTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive-" + nodeId))
                 .controlChannel("aeron:udp?endpoint=localhost:801" + nodeId)
-                .errorHandler(Tests::onError)
                 .recordingEventsEnabled(false)
                 .deleteArchiveOnStart(true);
 
@@ -264,6 +276,11 @@ public class MultiModuleSharedDriverTest
 
         public void close()
         {
+            dataCollector.add(consensusModule0.context().clusterDir());
+            dataCollector.add(consensusModule1.context().clusterDir());
+            dataCollector.add(archivingMediaDriver.archive().context().archiveDir());
+            dataCollector.add(archivingMediaDriver.mediaDriver().context().aeronDirectory());
+
             CloseHelper.closeAll(
                 client0,
                 consensusModule0,
@@ -272,11 +289,6 @@ public class MultiModuleSharedDriverTest
                 consensusModule1,
                 container1,
                 archivingMediaDriver);
-
-            consensusModule0.context().deleteDirectory();
-            consensusModule1.context().deleteDirectory();
-            archivingMediaDriver.archive().context().deleteDirectory();
-            archivingMediaDriver.mediaDriver().context().deleteDirectory();
         }
 
         ConsensusModule consensusModule(final int clusterId, final String aeronDirectoryName)
@@ -285,7 +297,6 @@ public class MultiModuleSharedDriverTest
             final ConsensusModule.Context ctx = new ConsensusModule.Context()
                 .clusterMemberId(nodeId)
                 .clusterId(clusterId)
-                .errorHandler(Tests::onError)
                 .deleteDirOnStart(true)
                 .aeronDirectoryName(aeronDirectoryName)
                 .clusterDir(new File(SystemUtil.tmpDirName(), "cluster-" + nodeId + "-" + clusterId))
@@ -303,7 +314,6 @@ public class MultiModuleSharedDriverTest
         {
             final ClusteredServiceContainer.Context ctx = new ClusteredServiceContainer.Context()
                 .clusterId(moduleCtx.clusterId())
-                .errorHandler(Tests::onError)
                 .clusteredService(new EchoService())
                 .aeronDirectoryName(moduleCtx.aeronDirectoryName())
                 .clusterDir(moduleCtx.clusterDir())

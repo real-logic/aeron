@@ -22,6 +22,7 @@ import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.junit.jupiter.api.TestInfo;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -73,6 +74,21 @@ public final class DataCollector
     public void add(final Path location)
     {
         locations.add(requireNonNull(location));
+    }
+
+    /**
+     * Add a file/directory to be preserved.  Converting from a File to a Path if not null.
+     *
+     * @param location file or directory to preserve.
+     * @see #dumpData(TestInfo)
+     * @see #dumpData(String)
+     */
+    public void add(final File location)
+    {
+        if (null != location)
+        {
+            add(location.toPath());
+        }
     }
 
     /**
@@ -190,6 +206,16 @@ public final class DataCollector
             .flatMap(DataCollector::list)
             .filter(ArchiveMarkFile::isArchiveMarkFile)
             .collect(toList());
+    }
+
+    /**
+     * Gets a collection of all registered locations.
+     *
+     * @return list of all locations.
+     */
+    public Collection<Path> allLocations()
+    {
+        return locations;
     }
 
     private static Stream<Path> list(final Path p)
@@ -407,5 +433,4 @@ public final class DataCollector
             Files.createDirectories(dst.getParent());
         }
     }
-
 }

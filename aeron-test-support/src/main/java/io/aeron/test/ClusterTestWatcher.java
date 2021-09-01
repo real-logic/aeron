@@ -56,12 +56,29 @@ public class ClusterTestWatcher implements TestWatcher
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
 
-    private TestCluster testCluster = null;
     private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
+
+    private DataCollector dataCollector = null;
+    private AutoCloseable closeable = () -> {};
+    private boolean deleteOnCompletion = false;
 
     public ClusterTestWatcher cluster(final TestCluster testCluster)
     {
-        this.testCluster = testCluster;
+        this.dataCollector = testCluster.dataCollector();
+        closeable = testCluster;
+
+        return this;
+    }
+
+    public ClusterTestWatcher dataCollector(final DataCollector dataCollector)
+    {
+        this.dataCollector = dataCollector;
+        return this;
+    }
+
+    public ClusterTestWatcher closeable(final AutoCloseable closeable)
+    {
+        this.closeable = closeable;
         return this;
     }
 
@@ -74,13 +91,13 @@ public class ClusterTestWatcher implements TestWatcher
 
     public int errorCount()
     {
-        if (null != testCluster)
+        if (null != dataCollector)
         {
             return countErrors(
-                testCluster.dataCollector().cncFiles(),
-                testCluster.dataCollector().archiveMarkFiles(),
-                testCluster.dataCollector().consensusModuleMarkFiles(),
-                testCluster.dataCollector().clusterServiceMarkFiles(),
+                dataCollector.cncFiles(),
+                dataCollector.archiveMarkFiles(),
+                dataCollector.consensusModuleMarkFiles(),
+                dataCollector.clusterServiceMarkFiles(),
                 logFilter);
         }
 
@@ -89,22 +106,50 @@ public class ClusterTestWatcher implements TestWatcher
 
     public void testFailed(final ExtensionContext context, final Throwable cause)
     {
-        reportAndTerminate(context);
+        try
+        {
+            reportAndTerminate(context);
+        }
+        finally
+        {
+            deleteAllLocations();
+        }
     }
 
     public void testAborted(final ExtensionContext context, final Throwable cause)
     {
-        reportAndTerminate(context);
+        try
+        {
+            reportAndTerminate(context);
+        }
+        finally
+        {
+            deleteAllLocations();
+        }
     }
 
     public void testDisabled(final ExtensionContext context, final Optional<String> reason)
     {
-        CloseHelper.close(testCluster);
+        try
+        {
+            CloseHelper.close(closeable);
+        }
+        finally
+        {
+            deleteAllLocations();
+        }
     }
 
     public void testSuccessful(final ExtensionContext context)
     {
-        CloseHelper.close(testCluster);
+        try
+        {
+            CloseHelper.close(closeable);
+        }
+        finally
+        {
+            deleteAllLocations();
+        }
     }
 
     private int countErrors(
@@ -250,17 +295,14 @@ public class ClusterTestWatcher implements TestWatcher
         Throwable error = null;
         final boolean isInterrupted = Thread.interrupted();
 
-        if (null != testCluster)
+        if (null != dataCollector)
         {
             try
             {
-                printCncErrors(
-                    testCluster.dataCollector().cncFiles(), "Command `n Control Errors", CommonContext::errorLogBuffer);
-                printArchiveMarkFileErrors(testCluster.dataCollector().archiveMarkFiles(), "Archive Errors");
-                printClusterMarkFileErrors(
-                    testCluster.dataCollector().consensusModuleMarkFiles(), "Consensus Module Errors");
-                printClusterMarkFileErrors(
-                    testCluster.dataCollector().clusterServiceMarkFiles(), "Cluster Service Errors");
+                printCncErrors(dataCollector.cncFiles(), "Command `n Control Errors", CommonContext::errorLogBuffer);
+                printArchiveMarkFileErrors(dataCollector.archiveMarkFiles());
+                printClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), "Consensus Module Errors");
+                printClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), "Cluster Service Errors");
             }
             catch (final Throwable t)
             {
@@ -272,7 +314,7 @@ public class ClusterTestWatcher implements TestWatcher
                 final String testClass = context.getTestClass().orElseThrow(IllegalStateException::new).getName();
                 final String testMethod = context.getTestMethod().orElseThrow(IllegalStateException::new).getName();
 
-                testCluster.dataCollector().dumpData(testClass, testMethod);
+                dataCollector.dumpData(testClass, testMethod);
             }
             catch (final Throwable t)
             {
@@ -289,7 +331,7 @@ public class ClusterTestWatcher implements TestWatcher
 
         try
         {
-            CloseHelper.close(testCluster);
+            CloseHelper.close(closeable);
         }
         catch (final Throwable t)
         {
@@ -339,9 +381,7 @@ public class ClusterTestWatcher implements TestWatcher
         }
     }
 
-    private void printArchiveMarkFileErrors(
-        final List<Path> paths,
-        final String fileDescription)
+    private void printArchiveMarkFileErrors(final List<Path> paths)
     {
         for (final Path path : paths)
         {
@@ -349,7 +389,7 @@ public class ClusterTestWatcher implements TestWatcher
             {
                 final AtomicBuffer buffer = archiveFile.errorBuffer();
 
-                System.out.printf("%n%n%s file %s%n", fileDescription, path);
+                System.out.printf("%n%n%s file %s%n", "Archive Errors", path);
                 final int distinctErrorCount = ErrorLogReader.read(
                     buffer, this::printObservationCallback);
                 System.out.format("%d distinct errors observed.%n", distinctErrorCount);
@@ -373,5 +413,21 @@ public class ClusterTestWatcher implements TestWatcher
                 System.out.format("%d distinct errors observed.%n", distinctErrorCount);
             }
         }
+    }
+
+    public void deleteAllLocations()
+    {
+        if (deleteOnCompletion)
+        {
+            for (final Path path : dataCollector.allLocations())
+            {
+                IoUtil.delete(path.toFile(), true);
+            }
+        }
+    }
+
+    public void deleteOnCompletion(final boolean deleteOnCompletion)
+    {
+        this.deleteOnCompletion = deleteOnCompletion;
     }
 }

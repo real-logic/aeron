@@ -170,9 +170,10 @@ class CatalogTest
     {
         setNextRecordingId(recordingTwoId);
 
-        final Catalog catalog = new Catalog(archiveDir, clock);
-
-        assertEquals(recordingTwoId, catalog.nextRecordingId());
+        try (Catalog catalog = new Catalog(archiveDir, clock))
+        {
+            assertEquals(recordingTwoId, catalog.nextRecordingId());
+        }
     }
 
     @Test

@@ -21,9 +21,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
@@ -56,6 +54,10 @@ public class ArchiveDeleteAndRestartTest
     @RegisterExtension
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
+    @RegisterExtension
+    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    private final DataCollector dataCollector = new DataCollector();
+
     private TestMediaDriver driver;
     private Archive archive;
     private Aeron client;
@@ -65,21 +67,20 @@ public class ArchiveDeleteAndRestartTest
     @BeforeEach
     public void before()
     {
+        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+
         final Random rnd = new Random();
         rnd.setSeed(seed);
 
         final int termLength = 1 << (16 + rnd.nextInt(10)); // 1M to 8M
         final int segmentFileLength = termLength << rnd.nextInt(4);
 
-        driver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
-                .spiesSimulateConnection(true)
-                .errorHandler(Tests::onError)
-                .dirDeleteOnStart(true),
-            testWatcher);
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .spiesSimulateConnection(true)
+            .dirDeleteOnStart(true);
 
         archiveContext = new Archive.Context()
             .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
@@ -88,10 +89,18 @@ public class ArchiveDeleteAndRestartTest
             .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))
             .segmentFileLength(segmentFileLength)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .idleStrategySupplier(YieldingIdleStrategy::new)
-            .errorHandler(Tests::onError);
+            .idleStrategySupplier(YieldingIdleStrategy::new);
 
-        archive = Archive.launch(archiveContext.clone());
+        try
+        {
+            driver = TestMediaDriver.launch(driverCtx, testWatcher);
+            archive = Archive.launch(archiveContext.clone());
+        }
+        finally
+        {
+            dataCollector.add(driverCtx.aeronDirectory());
+            dataCollector.add(archiveContext.archiveDir());
+        }
         client = Aeron.connect();
     }
 
@@ -100,15 +109,7 @@ public class ArchiveDeleteAndRestartTest
     {
         CloseHelper.closeAll(client, archive, driver);
 
-        if (null != archive)
-        {
-            archive.context().deleteDirectory();
-        }
-
-        if (null != driver)
-        {
-            driver.context().deleteDirectory();
-        }
+        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @InterruptAfter(10)

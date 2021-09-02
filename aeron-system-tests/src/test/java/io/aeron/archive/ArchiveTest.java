@@ -26,9 +26,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.*;
@@ -36,6 +34,7 @@ import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestWatcher;
@@ -85,6 +84,10 @@ public class ArchiveTest
     @RegisterExtension
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
+    @RegisterExtension
+    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    private final DataCollector dataCollector = new DataCollector();
+
     private long controlSessionId;
     private String publishUri;
     private Aeron client;
@@ -126,15 +129,12 @@ public class ArchiveTest
         final int requestedStartTermId = requestedInitialTermId + rnd.nextInt(1000);
         final int segmentFileLength = termLength << rnd.nextInt(4);
 
-        driver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .termBufferSparseFile(true)
-                .threadingMode(threadingMode)
-                .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
-                .spiesSimulateConnection(true)
-                .errorHandler(Tests::onError)
-                .dirDeleteOnStart(true),
-            testWatcher);
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .termBufferSparseFile(true)
+            .threadingMode(threadingMode)
+            .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .spiesSimulateConnection(true)
+            .dirDeleteOnStart(true);
 
         final Archive.Context archiveContext = new Archive.Context()
             .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
@@ -143,15 +143,24 @@ public class ArchiveTest
             .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))
             .segmentFileLength(segmentFileLength)
             .threadingMode(archiveThreadingMode)
-            .idleStrategySupplier(YieldingIdleStrategy::new)
-            .errorHandler(Tests::onError);
-
-        if (threadingMode == ThreadingMode.INVOKER)
+            .idleStrategySupplier(YieldingIdleStrategy::new);
+        try
         {
-            archiveContext.mediaDriverAgentInvoker(driver.sharedAgentInvoker());
+            driver = TestMediaDriver.launch(driverCtx, testWatcher);
+
+            if (threadingMode == ThreadingMode.INVOKER)
+            {
+                archiveContext.mediaDriverAgentInvoker(driver.sharedAgentInvoker());
+            }
+
+            archive = Archive.launch(archiveContext);
+        }
+        finally
+        {
+            dataCollector.add(driverCtx.aeronDirectory());
+            dataCollector.add(archiveContext.archiveDir());
         }
 
-        archive = Archive.launch(archiveContext);
         client = Aeron.connect();
 
         requestedStartPosition =
@@ -166,6 +175,12 @@ public class ArchiveTest
             .termId(requestedStartTermId)
             .termOffset(requestedStartTermOffset)
             .build();
+    }
+
+    @BeforeEach
+    void setUp()
+    {
+        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
     }
 
     @AfterEach
@@ -188,17 +203,9 @@ public class ArchiveTest
         finally
         {
             CloseHelper.closeAll(client, archive, driver);
-
-            if (null != archive)
-            {
-                archive.context().deleteDirectory();
-            }
-
-            if (null != driver)
-            {
-                driver.context().deleteDirectory();
-            }
         }
+
+        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @ParameterizedTest

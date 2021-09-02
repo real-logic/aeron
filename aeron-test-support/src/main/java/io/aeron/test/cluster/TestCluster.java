@@ -1284,8 +1284,7 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "service"))
             .clusteredService(serviceCtx.service)
             .serviceId(serviceId)
-            .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k")
-            .errorHandler(errorHandler(serviceIndex));
+            .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k");
 
         return serviceCtx;
     }
@@ -1300,7 +1299,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
-            .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false)
             .nameResolver(new RedirectingNameResolver(DEFAULT_NODE_MAPPINGS));
@@ -1322,7 +1320,6 @@ public class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName);
 
         nodeCtx.consensusModuleCtx
-            .errorHandler(errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(clusterMembers(0, 3))
             .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)

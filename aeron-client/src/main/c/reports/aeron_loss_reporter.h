@@ -79,8 +79,17 @@ inline void aeron_loss_reporter_record_observation(
         int64_t dest;
 
         AERON_PUT_ORDERED(entry->last_observation_timestamp, timestamp_ms);
+
+        // this is aligned as far as usage goes. And should perform fine.
+#if defined(__clang__) && defined(AERON_CPU_ARM)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Watomic-alignment"
+#endif
         AERON_GET_AND_ADD_INT64(dest, entry->total_bytes_lost, bytes_lost);
         AERON_GET_AND_ADD_INT64(dest, entry->observation_count, 1);
+#if defined(__clang__) && defined(AERON_CPU_ARM)
+#pragma clang diagnostic pop
+#endif
     }
 }
 

@@ -42,7 +42,7 @@
         #define AERON_CPU_X64 1
     #endif
 
-    #if defined(__ARM_ARCH)
+    #if defined(__aarch64__)
         #define AERON_CPU_ARM 1
     #endif
 

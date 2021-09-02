@@ -21,6 +21,11 @@
 #include <stdint.h>
 #include <stdatomic.h>
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc11-extensions"
+#endif
+
 #define AERON_GET_VOLATILE(dst, src) \
 do \
 { \
@@ -49,30 +54,30 @@ while (false) \
 #define AERON_GET_AND_ADD_INT64(original, dst, value) \
 do \
 { \
-    original = atomic_fetch_add((_Atomic int64_t *)&dst, value); \
+    original = atomic_fetch_add((_Atomic(int64_t) *)&dst, value); \
 } \
 while (false) \
 
 #define AERON_GET_AND_ADD_INT32(original, dst, value) \
 do \
 { \
-    original = atomic_fetch_add((_Atomic int32_t *)&dst, value); \
+    original = atomic_fetch_add((_Atomic(int32_t) *)&dst, value); \
 } \
 while (false) \
 
 inline bool aeron_cas_int64(volatile int64_t *dst, int64_t expected, int64_t desired)
 {
-    return atomic_compare_exchange_strong((_Atomic int64_t *)dst, &expected, desired);
+    return atomic_compare_exchange_strong((_Atomic(int64_t) *)dst, &expected, desired);
 }
 
 inline bool aeron_cas_uint64(volatile uint64_t *dst, uint64_t expected, uint64_t desired)
 {
-    return atomic_compare_exchange_strong((_Atomic uint64_t *)dst, &expected, desired);
+    return atomic_compare_exchange_strong((_Atomic(uint64_t) *)dst, &expected, desired);
 }
 
 inline bool aeron_cas_int32(volatile int32_t *dst, int32_t expected, int32_t desired)
 {
-    return atomic_compare_exchange_strong((_Atomic int32_t *)dst, &expected, desired);
+    return atomic_compare_exchange_strong((_Atomic(int32_t) *)dst, &expected, desired);
 }
 
 inline void aeron_acquire()
@@ -85,6 +90,10 @@ inline void aeron_release()
     atomic_thread_fence(memory_order_release);
 }
 
+// intentionally commented out, but kept in if we ever make the GET_AND_FETCH into inline functions, then can be used.
+//#if defined(__clang__)
+//#pragma clang diagnostic pop
+//#endif
 
 /*-------------------------------------
  *  Alignment
@@ -94,4 +103,4 @@ inline void aeron_release()
  */
 #define AERON_DECL_ALIGNED(declaration, amt) declaration __attribute__((aligned(amt)))
 
-#endif //AERON_AERON_ATOMIC64_C11_H
+#endif //AERON_ATOMIC64_C11_H

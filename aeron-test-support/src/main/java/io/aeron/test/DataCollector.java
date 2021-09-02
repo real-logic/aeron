@@ -243,6 +243,11 @@ public final class DataCollector
             return Stream.empty();
             // File may have already been removed...
         }
+        catch (final NoSuchFileException e)
+        {
+            System.out.println("Directory: " + p + " does not exist, maybe the test didn't start correctly");
+            return Stream.empty();
+        }
         catch (final IOException e)
         {
             throw new RuntimeException(e);

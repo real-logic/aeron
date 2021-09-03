@@ -215,23 +215,6 @@ public final class DataCollector
         return locations;
     }
 
-    private static Stream<Path> list(final Path p)
-    {
-        try
-        {
-            return Files.walk(p, 1);
-        }
-        catch (final NoSuchFileException ignore)
-        {
-            return Stream.empty();
-            // File may have already been removed...
-        }
-        catch (final IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     private static Stream<Path> find(final Path p, final BiPredicate<Path, BasicFileAttributes> matcher)
     {
         try
@@ -242,11 +225,6 @@ public final class DataCollector
         {
             return Stream.empty();
             // File may have already been removed...
-        }
-        catch (final NoSuchFileException e)
-        {
-            System.out.println("Directory: " + p + " does not exist, maybe the test didn't start correctly");
-            return Stream.empty();
         }
         catch (final IOException e)
         {

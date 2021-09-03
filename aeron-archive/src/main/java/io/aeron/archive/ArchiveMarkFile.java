@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.Consumer;
@@ -315,10 +316,11 @@ public class ArchiveMarkFile implements AutoCloseable
     /**
      * Determine if the path matches the archive mark file name
      *
-     * @param path to examine
+     * @param path to match
+     * @param attributes ignored, only needed for BiPredicate signature matching
      * @return true if the filename matches.
      */
-    public static boolean isArchiveMarkFile(final Path path)
+    public static boolean isArchiveMarkFile(final Path path, final BasicFileAttributes attributes)
     {
         return path.getFileName().toString().equals(FILENAME);
     }

@@ -28,6 +28,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -164,8 +165,7 @@ public final class DataCollector
     public List<Path> cncFiles()
     {
         return this.locations.stream()
-            .map(p -> p.resolve(CncFileDescriptor.CNC_FILE))
-            .filter(Files::exists)
+            .flatMap(path -> DataCollector.find(path, CncFileDescriptor::isCncFile))
             .collect(toList());
     }
 
@@ -177,8 +177,7 @@ public final class DataCollector
     public List<Path> clusterServiceMarkFiles()
     {
         return this.locations.stream()
-            .flatMap(DataCollector::list)
-            .filter(ClusterMarkFile::isServiceMarkFile)
+            .flatMap(path -> DataCollector.find(path, ClusterMarkFile::isServiceMarkFile))
             .collect(toList());
     }
 
@@ -190,8 +189,7 @@ public final class DataCollector
     public List<Path> consensusModuleMarkFiles()
     {
         return this.locations.stream()
-            .flatMap(DataCollector::list)
-            .filter(ClusterMarkFile::isConsensusModuleMarkFile)
+            .flatMap(path -> DataCollector.find(path, ClusterMarkFile::isConsensusModuleMarkFile))
             .collect(toList());
     }
 
@@ -203,8 +201,7 @@ public final class DataCollector
     public List<Path> archiveMarkFiles()
     {
         return this.locations.stream()
-            .flatMap(DataCollector::list)
-            .filter(ArchiveMarkFile::isArchiveMarkFile)
+            .flatMap(path -> DataCollector.find(path, ArchiveMarkFile::isArchiveMarkFile))
             .collect(toList());
     }
 
@@ -223,6 +220,23 @@ public final class DataCollector
         try
         {
             return Files.walk(p, 1);
+        }
+        catch (final NoSuchFileException ignore)
+        {
+            return Stream.empty();
+            // File may have already been removed...
+        }
+        catch (final IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Stream<Path> find(final Path p, final BiPredicate<Path, BasicFileAttributes> matcher)
+    {
+        try
+        {
+            return Files.find(p, 1, matcher);
         }
         catch (final NoSuchFileException ignore)
         {

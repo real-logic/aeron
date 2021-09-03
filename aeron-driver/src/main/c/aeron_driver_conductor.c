@@ -225,8 +225,7 @@ static int aeron_driver_conductor_validate_send_destination_uri(aeron_uri_t *uri
 {
     if (AERON_URI_UDP == uri->type && NULL != uri->params.udp.endpoint)
     {
-        aeron_parsed_address_t parsed_address = {{ 0 }, { 0 }, 0 };
-        memset(&parsed_address, 0, sizeof(parsed_address));
+        aeron_parsed_address_t parsed_address = { .host = { 0 }, .port = { 0 }, .ip_version_hint= 0 };
 
         if (0 <= aeron_address_split(uri->params.udp.endpoint, &parsed_address))
         {
@@ -318,9 +317,9 @@ static inline int aeron_driver_conductor_validate_endpoint_for_publication(aeron
 static inline int aeron_driver_conductor_validate_control_for_subscription(aeron_udp_channel_t *udp_channel)
 {
     if (!udp_channel->is_dynamic_control_mode &&
-    !udp_channel->is_manual_control_mode &&
-    udp_channel->has_explicit_control &&
-    aeron_is_wildcard_port(&udp_channel->local_control))
+        !udp_channel->is_manual_control_mode &&
+        udp_channel->has_explicit_control &&
+        aeron_is_wildcard_port(&udp_channel->local_control))
     {
         AERON_SET_ERR(EINVAL, "%s has port=0 for publication", AERON_UDP_CHANNEL_CONTROL_KEY);
         return -1;

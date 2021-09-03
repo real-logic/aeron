@@ -38,6 +38,7 @@ extern "C"
 #define PUB_URI_ENDPOINT "127.0.0.1"
 #define PUB_URI_CONTROL "127.0.0.1:24326"
 #define URI_RESERVED "aeron:udp?endpoint=" PUB_URI_ENDPOINT ":0|control=" PUB_URI_CONTROL
+#define URI_PUB "aeron:udp?endpoint=" PUB_URI_ENDPOINT ":1024|control=" PUB_URI_CONTROL
 #define PUB_URI_IPV6 "aeron:udp?endpoint=[::1]:0"
 #define STREAM_ID (117)
 
@@ -83,7 +84,7 @@ TEST_F(CLocalAddressesTest, shouldGetAddressForPublication)
 
     ASSERT_TRUE(connect());
 
-    ASSERT_EQ(aeron_async_add_publication(&async, m_aeron, URI_RESERVED, STREAM_ID), 0);
+    ASSERT_EQ(aeron_async_add_publication(&async, m_aeron, URI_PUB, STREAM_ID), 0);
     ASSERT_TRUE((publication = awaitPublicationOrError(async))) << aeron_errmsg();
 
     ASSERT_EQ(1, aeron_publication_local_sockaddrs(publication, m_addrs, NUM_BUFFERS));
@@ -105,7 +106,7 @@ TEST_F(CLocalAddressesTest, shouldGetAddressForExclusivePublication)
 
     ASSERT_TRUE(connect());
 
-    ASSERT_EQ(aeron_async_add_exclusive_publication(&async, m_aeron, URI_RESERVED, STREAM_ID), 0);
+    ASSERT_EQ(aeron_async_add_exclusive_publication(&async, m_aeron, URI_PUB, STREAM_ID), 0);
     ASSERT_TRUE((publication = awaitExclusivePublicationOrError(async))) << aeron_errmsg();
 
     ASSERT_EQ(1, aeron_exclusive_publication_local_sockaddrs(publication, m_addrs, NUM_BUFFERS));

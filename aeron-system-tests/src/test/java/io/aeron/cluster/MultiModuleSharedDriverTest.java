@@ -67,7 +67,7 @@ public class MultiModuleSharedDriverTest
 
     @SuppressWarnings("methodlength")
     @Test
-    @InterruptAfter(20_000)
+    @InterruptAfter(20)
     public void shouldSupportTwoSingleNodeClusters()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()

@@ -28,7 +28,6 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -225,7 +224,7 @@ public final class DataCollector
         {
             return Files.walk(p, 1);
         }
-        catch (NoSuchFileException ignore)
+        catch (final NoSuchFileException ignore)
         {
             return Stream.empty();
             // File may have already been removed...

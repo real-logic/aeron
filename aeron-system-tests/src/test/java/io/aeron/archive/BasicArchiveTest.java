@@ -21,9 +21,7 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
@@ -68,35 +66,47 @@ public class BasicArchiveTest
 
     @RegisterExtension
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
+    @RegisterExtension
+    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    private final DataCollector dataCollector = new DataCollector();
+
     private File archiveDir;
 
     @BeforeEach
     public void before()
     {
+        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
-        driver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
-                .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true),
-            testWatcher);
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .spiesSimulateConnection(false)
+            .dirDeleteOnStart(true);
 
         archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
-        archive = Archive.launch(
-            new Archive.Context()
-                .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
-                .aeronDirectoryName(aeronDirectoryName)
-                .errorHandler(Tests::onError)
-                .deleteArchiveOnStart(true)
-                .archiveDir(archiveDir)
-                .fileSyncLevel(0)
-                .errorHandler(Tests::onError)
-                .threadingMode(ArchiveThreadingMode.SHARED));
+        final Archive.Context archiveCtx = new Archive.Context()
+            .catalogCapacity(CATALOG_CAPACITY)
+            .aeronDirectoryName(aeronDirectoryName)
+            .deleteArchiveOnStart(true)
+            .archiveDir(archiveDir)
+            .fileSyncLevel(0)
+            .threadingMode(ArchiveThreadingMode.SHARED);
+
+        try
+        {
+            driver = TestMediaDriver.launch(driverCtx, testWatcher);
+            archive = Archive.launch(archiveCtx);
+        }
+        finally
+        {
+            dataCollector.add(driverCtx.aeronDirectory());
+            dataCollector.add(archiveCtx.archiveDir());
+        }
 
         aeron = Aeron.connect(
             new Aeron.Context()
@@ -111,9 +121,7 @@ public class BasicArchiveTest
     public void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
-
-        archive.context().deleteDirectory();
-        driver.context().deleteDirectory();
+        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test

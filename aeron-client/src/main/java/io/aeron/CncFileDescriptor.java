@@ -21,6 +21,8 @@ import org.agrona.SemanticVersion;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import static org.agrona.BitUtil.*;
 
@@ -461,5 +463,17 @@ public class CncFileDescriptor
             metaDataBuffer.getInt(ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET);
 
         return cncFileLength >= metadataRequiredLength;
+    }
+
+    /**
+     * Determines if this path name matches the cnc file name pattern
+     *
+     * @param p to examine
+     * @param attributes ignored, only needed for BiPredicate signature matching
+     * @return true if the name matches
+     */
+    public static boolean isCncFile(final Path p, final BasicFileAttributes attributes)
+    {
+        return p.getFileName().toString().equals(CNC_FILE);
     }
 }

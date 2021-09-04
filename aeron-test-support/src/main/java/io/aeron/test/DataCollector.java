@@ -16,16 +16,20 @@
 package io.aeron.test;
 
 import io.aeron.CncFileDescriptor;
-import io.aeron.test.cluster.TestNode;
+import io.aeron.archive.ArchiveMarkFile;
+import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.junit.jupiter.api.TestInfo;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
+import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
@@ -71,6 +75,21 @@ public final class DataCollector
     public void add(final Path location)
     {
         locations.add(requireNonNull(location));
+    }
+
+    /**
+     * Add a file/directory to be preserved.  Converting from a File to a Path if not null.
+     *
+     * @param location file or directory to preserve.
+     * @see #dumpData(TestInfo)
+     * @see #dumpData(String)
+     */
+    public void add(final File location)
+    {
+        if (null != location)
+        {
+            add(location.toPath());
+        }
     }
 
     /**
@@ -138,20 +157,96 @@ public final class DataCollector
         return copyData(destinationDir);
     }
 
+    /**
+     * Find all the driver cnc files
+     *
+     * @return list of paths to collected driver cnc files.
+     */
     public List<Path> cncFiles()
     {
         return this.locations.stream()
-            .map(p -> p.resolve(CncFileDescriptor.CNC_FILE))
-            .filter(Files::exists)
+            .flatMap(path -> DataCollector.find(path, CncFileDescriptor::isCncFile))
             .collect(toList());
     }
 
-    public List<Path> errorLogFiles()
+    /**
+     * Find all the clustered service mark files.
+     *
+     * @return list of paths to the clustered service mark files.
+     */
+    public List<Path> clusterServiceMarkFiles()
     {
         return this.locations.stream()
-            .map(p -> p.resolve(TestNode.CLUSTER_ERROR_FILE))
-            .filter(Files::exists)
+            .flatMap(path -> DataCollector.find(path, ClusterMarkFile::isServiceMarkFile))
             .collect(toList());
+    }
+
+    /**
+     * Find all the consensus module mark files.
+     *
+     * @return list of paths to the consensus module mark files
+     */
+    public List<Path> consensusModuleMarkFiles()
+    {
+        return this.locations.stream()
+            .flatMap(path -> DataCollector.find(path, ClusterMarkFile::isConsensusModuleMarkFile))
+            .collect(toList());
+    }
+
+    /**
+     * Find all the archive mark files.
+     *
+     * @return list of paths to the archive mark files
+     */
+    public List<Path> archiveMarkFiles()
+    {
+        return this.locations.stream()
+            .flatMap(path -> DataCollector.find(path, ArchiveMarkFile::isArchiveMarkFile))
+            .collect(toList());
+    }
+
+    /**
+     * Gets a collection of all registered locations.
+     *
+     * @return list of all locations.
+     */
+    public Collection<Path> allLocations()
+    {
+        return locations;
+    }
+
+    private static Stream<Path> list(final Path p)
+    {
+        try
+        {
+            return Files.walk(p, 1);
+        }
+        catch (final NoSuchFileException ignore)
+        {
+            return Stream.empty();
+            // File may have already been removed...
+        }
+        catch (final IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Stream<Path> find(final Path p, final BiPredicate<Path, BasicFileAttributes> matcher)
+    {
+        try
+        {
+            return Files.find(p, 1, matcher);
+        }
+        catch (final NoSuchFileException ignore)
+        {
+            return Stream.empty();
+            // File may have already been removed...
+        }
+        catch (final IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public String toString()
@@ -357,5 +452,4 @@ public final class DataCollector
             Files.createDirectories(dst.getParent());
         }
     }
-
 }

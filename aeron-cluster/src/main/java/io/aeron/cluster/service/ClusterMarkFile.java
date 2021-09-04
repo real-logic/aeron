@@ -181,14 +181,14 @@ public final class ClusterMarkFile implements AutoCloseable
     /**
      * Determines if this path name matches the service mark file name pattern
      *
-     * @param p to examine
+     * @param path to examine
      * @param attributes ignored, only needed for BiPredicate signature matching
      * @return true if the name matches
      */
-    public static boolean isServiceMarkFile(final Path p, final BasicFileAttributes attributes)
+    public static boolean isServiceMarkFile(final Path path, final BasicFileAttributes attributes)
     {
-        return p.getFileName().toString().startsWith(SERVICE_FILENAME_PREFIX) &&
-            p.getFileName().toString().endsWith(FILE_EXTENSION);
+        final String fileName = path.getFileName().toString();
+        return fileName.startsWith(SERVICE_FILENAME_PREFIX) && fileName.endsWith(FILE_EXTENSION);
     }
 
     /**

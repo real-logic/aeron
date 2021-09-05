@@ -287,7 +287,9 @@ int sched_yield(void)
 
 void proc_yield()
 {
+#if !defined(AERON_CPU_ARM)
     __asm__ volatile("pause\n": : : "memory");
+#endif
 }
 
 #elif defined(AERON_COMPILER_MSVC)

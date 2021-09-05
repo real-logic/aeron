@@ -415,6 +415,33 @@ public class ChannelValidationTests
         assertThat(registrationException.getMessage(), containsString(parameter));
     }
 
+    @Test
+    void shouldErrorOnPublicationWithWildcardEndpoint()
+    {
+        launch();
+
+        assertThrows(RegistrationException.class, () -> addPublication("aeron:udp?endpoint=localhost:0", 10001));
+    }
+
+    @Test
+    void shouldErrorOnPublicationAddDestinationWithWildcardEndpoint()
+    {
+        launch();
+
+        final Publication publication = addPublication("aeron:udp?control-mode=manual", 10001);
+        assertThrows(RegistrationException.class, () -> publication.addDestination("aeron:udp?endpoint=localhost:0"));
+    }
+
+    @Test
+    void shouldErrorOnSubscriptionWithWildcardControl()
+    {
+        launch();
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?control=localhost:0|endpoint=localhost:20000", 10001));
+    }
+
     private Publication addPublication(final String channel, final int streamId)
     {
         final Publication pub = aeron.addPublication(channel, streamId);

@@ -15,6 +15,8 @@
  */
 package io.aeron.test.driver;
 
+import io.aeron.Aeron;
+import io.aeron.CommonContext;
 import io.aeron.driver.MediaDriver;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.status.CountersReader;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class TestMediaDriverTest
 {
@@ -44,5 +47,25 @@ class TestMediaDriverTest
         assertTrue(aeronDirectory.exists());
         IoUtil.delete(aeronDirectory, false);
         assertFalse(aeronDirectory.exists());
+    }
+
+    @Test
+    void connectToCMediaDriverWithoutSpecifyingAeronDir()
+    {
+        assumeTrue(TestMediaDriver.shouldRunCMediaDriver());
+
+        final MediaDriver.Context context = new MediaDriver.Context().dirDeleteOnStart(true).dirDeleteOnShutdown(false);
+        assertEquals(CommonContext.getAeronDirectoryName(), context.aeronDirectoryName());
+        try (TestMediaDriver ignore = CTestMediaDriver.launch(context, false, null);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName())))
+        {
+            final File aeronDirectory = aeron.context().aeronDirectory();
+            assertNotNull(aeronDirectory);
+            assertTrue(aeronDirectory.exists());
+        }
+        finally
+        {
+            context.deleteDirectory();
+        }
     }
 }

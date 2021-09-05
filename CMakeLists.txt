@@ -50,6 +50,10 @@ unset(STANDALONE_BUILD)
 
 include(ExternalProject)
 
+# CMAKE_OSX_ARCHITECTURES can be set to arm64 or x86_64 (or both) to make a specific architecture version. Requires
+# CMake 3.21. Must be set before project(), etc.
+#set(CMAKE_OSX_ARCHITECTURES x86_64)
+
 project("aeron" VERSION "${AERON_VERSION_FROM_FILE}")
 
 if (AERON_TESTS)

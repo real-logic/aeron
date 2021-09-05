@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+SOURCE_DIR="$(pwd)"
+
+# Install dev tools
+yum install --disableplugin=subscription-manager -y gcc gcc-c++ cmake make
+
+# Install Java
+rpm --import http://repos.azulsystems.com/RPM-GPG-KEY-azulsystems
+curl -o /etc/yum.repos.d/zulu.repo http://repos.azulsystems.com/rhel/zulu.repo
+yum install --disableplugin=subscription-manager -y zulu-8
+
+# Run the build
+export JAVA_HOME=/usr/lib/jvm/zulu-8
+export BUILD_JAVA_HOME=${JAVA_HOME}
+export BUILD_JAVA_VERSION=8
+export GRADLE_OPTS="-Dorg.gradle.daemon=false"
+export CC=gcc
+export CXX=g++
+"${SOURCE_DIR}/cppbuild/cppbuild" --c-warnings-as-errors --cxx-warnings-as-errors

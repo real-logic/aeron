@@ -28,12 +28,15 @@ if not "%1"=="" (
     ) else if "%1"=="--skip-rmdir" (
         set "AERON_SKIP_RMDIR=yes"
         echo "Disabling build directory removal"
-    ) else if "%1"=="--slow-system-tests" (
-        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON"
-        echo "Enabling slow system tests"
+    ) else if "%1"=="--no-tests" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_TESTS=OFF"
+        echo "Disabling all tests"
     ) else if "%1"=="--no-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SYSTEM_TESTS=OFF"
         echo "Disabling system tests"
+    ) else if "%1"=="--slow-system-tests" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON"
+        echo "Enabling slow system tests"
     ) else if "%1"=="--debug-build" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCMAKE_BUILD_TYPE=Debug"
         set "BUILD_DIR=%DIR%\Debug"

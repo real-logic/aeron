@@ -221,7 +221,7 @@ final class Catalog implements AutoCloseable
             }
             firstRecordingDescriptorOffset = CatalogHeaderEncoder.BLOCK_LENGTH;
 
-            buildIndex();
+            buildIndex(true);
             refreshCatalog(true, checksum, buffer);
         }
         catch (final Throwable ex)
@@ -305,7 +305,7 @@ final class Catalog implements AutoCloseable
                 firstRecordingDescriptorOffset = DEFAULT_RECORD_LENGTH;
             }
 
-            buildIndex();
+            buildIndex(writable);
             refreshCatalog(false, null, null);
         }
         catch (final Throwable ex)
@@ -853,7 +853,7 @@ final class Catalog implements AutoCloseable
         headerAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
     }
 
-    private void buildIndex()
+    private void buildIndex(final boolean writable)
     {
         int offset = firstRecordingDescriptorOffset;
         long recordingId = -1;
@@ -880,7 +880,7 @@ final class Catalog implements AutoCloseable
         {
             nextRecordingId = recordingId + 1;
         }
-        else if (nextRecordingId < recordingId + 1)
+        else if (writable && nextRecordingId < recordingId + 1)
         {
             throw new ArchiveException("invalid nextRecordingId: expected value greater or equal to " +
                 (recordingId + 1) + ", was " + nextRecordingId);

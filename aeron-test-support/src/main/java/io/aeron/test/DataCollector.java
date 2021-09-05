@@ -164,8 +164,8 @@ public final class DataCollector
      */
     public List<Path> cncFiles()
     {
-        return this.locations.stream()
-            .flatMap(path -> DataCollector.find(path, CncFileDescriptor::isCncFile))
+        return locations.stream()
+            .flatMap((path) -> DataCollector.find(path, CncFileDescriptor::isCncFile))
             .collect(toList());
     }
 
@@ -176,8 +176,8 @@ public final class DataCollector
      */
     public List<Path> clusterServiceMarkFiles()
     {
-        return this.locations.stream()
-            .flatMap(path -> DataCollector.find(path, ClusterMarkFile::isServiceMarkFile))
+        return locations.stream()
+            .flatMap((path) -> DataCollector.find(path, ClusterMarkFile::isServiceMarkFile))
             .collect(toList());
     }
 
@@ -188,8 +188,8 @@ public final class DataCollector
      */
     public List<Path> consensusModuleMarkFiles()
     {
-        return this.locations.stream()
-            .flatMap(path -> DataCollector.find(path, ClusterMarkFile::isConsensusModuleMarkFile))
+        return locations.stream()
+            .flatMap((path) -> DataCollector.find(path, ClusterMarkFile::isConsensusModuleMarkFile))
             .collect(toList());
     }
 
@@ -200,8 +200,8 @@ public final class DataCollector
      */
     public List<Path> archiveMarkFiles()
     {
-        return this.locations.stream()
-            .flatMap(path -> DataCollector.find(path, ArchiveMarkFile::isArchiveMarkFile))
+        return locations.stream()
+            .flatMap((path) -> DataCollector.find(path, ArchiveMarkFile::isArchiveMarkFile))
             .collect(toList());
     }
 
@@ -226,9 +226,9 @@ public final class DataCollector
             return Stream.empty();
             // File may have already been removed...
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 

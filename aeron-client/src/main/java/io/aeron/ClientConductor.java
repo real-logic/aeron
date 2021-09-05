@@ -287,7 +287,7 @@ final class ClientConductor implements Agent
         final int statusIndicatorId,
         final String logFileName)
     {
-        final String stashedChannel = stashedChannelByRegistrationId.remove(registrationId);
+        final String stashedChannel = stashedChannelByRegistrationId.remove(correlationId);
         final ConcurrentPublication publication = new ConcurrentPublication(
             this,
             stashedChannel,
@@ -318,7 +318,7 @@ final class ClientConductor implements Agent
                 "correlationId=" + correlationId + " registrationId=" + registrationId));
         }
 
-        final String stashedChannel = stashedChannelByRegistrationId.remove(registrationId);
+        final String stashedChannel = stashedChannelByRegistrationId.remove(correlationId);
         final ExclusivePublication publication = new ExclusivePublication(
             this,
             stashedChannel,

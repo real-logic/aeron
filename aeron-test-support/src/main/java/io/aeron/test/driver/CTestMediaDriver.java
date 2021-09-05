@@ -155,7 +155,9 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     @SuppressWarnings("methodlength")
     public static CTestMediaDriver launch(
-        final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)
+        final MediaDriver.Context context,
+        final boolean withAeronDir,
+        final DriverOutputConsumer driverOutputConsumer)
     {
         final String aeronMediaDriverPath = System.getProperty(TestMediaDriver.AERONMD_PATH_PROP_NAME);
         final File aeronBinary = new File(aeronMediaDriverPath);
@@ -170,9 +172,12 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         final HashMap<String, String> environment = new HashMap<>();
 
+        if (withAeronDir)
+        {
+            environment.put("AERON_DIR", context.aeronDirectoryName());
+        }
         environment.put("AERON_CLIENT_LIVENESS_TIMEOUT", String.valueOf(context.clientLivenessTimeoutNs()));
         environment.put("AERON_IMAGE_LIVENESS_TIMEOUT", String.valueOf(context.imageLivenessTimeoutNs()));
-        environment.put("AERON_DIR", context.aeronDirectoryName());
         environment.put("AERON_DRIVER_TERMINATION_VALIDATOR", "allow");
         environment.put("AERON_DIR_DELETE_ON_START", Boolean.toString(context.dirDeleteOnStart()));
         environment.put("AERON_DIR_DELETE_ON_SHUTDOWN", Boolean.toString(context.dirDeleteOnShutdown()));

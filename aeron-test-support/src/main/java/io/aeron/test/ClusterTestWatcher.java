@@ -76,12 +76,6 @@ public class ClusterTestWatcher implements TestWatcher
         return this;
     }
 
-    public ClusterTestWatcher closeable(final AutoCloseable closeable)
-    {
-        this.closeable = closeable;
-        return this;
-    }
-
     @SuppressWarnings("UnusedReturnValue")
     public ClusterTestWatcher ignoreErrorsMatching(final Predicate<String> logFilter)
     {
@@ -181,7 +175,7 @@ public class ClusterTestWatcher implements TestWatcher
         final Predicate<String> filter,
         final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer)
     {
-        final MutableInteger errorCount = new MutableInteger(0);
+        final MutableInteger errorCount = new MutableInteger();
 
         for (final Path path : paths)
         {
@@ -213,8 +207,7 @@ public class ClusterTestWatcher implements TestWatcher
         final List<Path> paths,
         final Predicate<String> filter)
     {
-
-        final MutableInteger errorCount = new MutableInteger(0);
+        final MutableInteger errorCount = new MutableInteger();
 
         for (final Path path : paths)
         {
@@ -240,7 +233,7 @@ public class ClusterTestWatcher implements TestWatcher
         final List<Path> paths,
         final Predicate<String> filter)
     {
-        final MutableInteger errorCount = new MutableInteger(0);
+        final MutableInteger errorCount = new MutableInteger();
 
         for (final Path path : paths)
         {
@@ -265,13 +258,13 @@ public class ClusterTestWatcher implements TestWatcher
     private static ClusterMarkFile openClusterMarkFile(final Path path)
     {
         return new ClusterMarkFile(
-            path.getParent().toFile(), path.getFileName().toString(), SystemEpochClock.INSTANCE, 0, s -> {});
+            path.getParent().toFile(), path.getFileName().toString(), SystemEpochClock.INSTANCE, 0, (s) -> {});
     }
 
     private static ArchiveMarkFile openArchiveMarkFile(final Path path)
     {
         return new ArchiveMarkFile(
-            path.getParent().toFile(), path.getFileName().toString(), SystemEpochClock.INSTANCE, 0, s -> {});
+            path.getParent().toFile(), path.getFileName().toString(), SystemEpochClock.INSTANCE, 0, (s) -> {});
     }
 
     private void printObservationCallback(
@@ -370,8 +363,7 @@ public class ClusterTestWatcher implements TestWatcher
                 final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
 
                 System.out.printf("%n%n%s file %s%n", fileDescription, cncFile);
-                final int distinctErrorCount = ErrorLogReader.read(
-                    buffer, this::printObservationCallback);
+                final int distinctErrorCount = ErrorLogReader.read(buffer, this::printObservationCallback);
                 System.out.format("%d distinct errors observed.%n", distinctErrorCount);
             }
             finally
@@ -390,8 +382,7 @@ public class ClusterTestWatcher implements TestWatcher
                 final AtomicBuffer buffer = archiveFile.errorBuffer();
 
                 System.out.printf("%n%n%s file %s%n", "Archive Errors", path);
-                final int distinctErrorCount = ErrorLogReader.read(
-                    buffer, this::printObservationCallback);
+                final int distinctErrorCount = ErrorLogReader.read(buffer, this::printObservationCallback);
                 System.out.format("%d distinct errors observed.%n", distinctErrorCount);
             }
         }
@@ -408,8 +399,7 @@ public class ClusterTestWatcher implements TestWatcher
                 final AtomicBuffer buffer = clusterMarkFile.errorBuffer();
 
                 System.out.printf("%n%n%s file %s%n", fileDescription, path);
-                final int distinctErrorCount = ErrorLogReader.read(
-                    buffer, this::printObservationCallback);
+                final int distinctErrorCount = ErrorLogReader.read(buffer, this::printObservationCallback);
                 System.out.format("%d distinct errors observed.%n", distinctErrorCount);
             }
         }

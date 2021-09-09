@@ -24,9 +24,7 @@ import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.SessionProxy;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
@@ -34,6 +32,7 @@ import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,6 +60,7 @@ public class ArchiveAuthenticationTest
     private static final String CHALLENGE_STRING = "I challenge you!";
     private static final String PRINCIPAL_STRING = "I am THE Principal!";
 
+
     private final byte[] encodedCredentials = CREDENTIALS_STRING.getBytes();
     private final byte[] encodedChallenge = CHALLENGE_STRING.getBytes();
 
@@ -74,13 +74,22 @@ public class ArchiveAuthenticationTest
     @RegisterExtension
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
+    @RegisterExtension
+    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    private final DataCollector dataCollector = new DataCollector();
+
+    @BeforeEach
+    void setUp()
+    {
+        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+    }
+
     @AfterEach
     public void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
 
-        archive.context().deleteDirectory();
-        driver.context().deleteDirectory();
+        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test
@@ -349,27 +358,34 @@ public class ArchiveAuthenticationTest
 
     private void launchArchivingMediaDriver(final AuthenticatorSupplier authenticatorSupplier)
     {
-        driver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
-                .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true),
-            testWatcher);
+        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .spiesSimulateConnection(false)
+            .dirDeleteOnStart(true);
 
-        archive = Archive.launch(
-            new Archive.Context()
-                .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
-                .aeronDirectoryName(aeronDirectoryName)
-                .deleteArchiveOnStart(true)
-                .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
-                .errorHandler(Tests::onError)
-                .fileSyncLevel(0)
-                .authenticatorSupplier(authenticatorSupplier)
-                .threadingMode(ArchiveThreadingMode.SHARED));
+        final Archive.Context archiveCtx = new Archive.Context()
+            .catalogCapacity(CATALOG_CAPACITY)
+            .aeronDirectoryName(aeronDirectoryName)
+            .deleteArchiveOnStart(true)
+            .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
+            .fileSyncLevel(0)
+            .authenticatorSupplier(authenticatorSupplier)
+            .threadingMode(ArchiveThreadingMode.SHARED);
+
+        try
+        {
+            driver = TestMediaDriver.launch(mediaDriverCtx, testWatcher);
+            archive = Archive.launch(archiveCtx);
+        }
+        finally
+        {
+            dataCollector.add(mediaDriverCtx.aeronDirectory());
+            dataCollector.add(archiveCtx.archiveDir());
+        }
     }
+
 
     private void createRecording()
     {

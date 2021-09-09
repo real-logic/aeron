@@ -20,9 +20,7 @@ import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
@@ -81,9 +79,15 @@ class CatalogWithJumboRecordingsAndGapsTest
     @RegisterExtension
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
+    @RegisterExtension
+    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    private final DataCollector dataCollector = new DataCollector();
+
     @BeforeEach
     void before()
     {
+        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+
         epochClock.update(1);
         recordingIds = new long[NUM_RECORDINGS];
 
@@ -117,26 +121,32 @@ class CatalogWithJumboRecordingsAndGapsTest
 
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
-        mediaDriver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
-                .spiesSimulateConnection(false)
-                .publicationTermBufferLength(TERM_MIN_LENGTH)
-                .ipcTermBufferLength(TERM_MIN_LENGTH)
-                .dirDeleteOnStart(true),
-            testWatcher);
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .spiesSimulateConnection(false)
+            .publicationTermBufferLength(TERM_MIN_LENGTH)
+            .ipcTermBufferLength(TERM_MIN_LENGTH)
+            .dirDeleteOnStart(true);
 
-        archive = Archive.launch(
-            new Archive.Context()
-                .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
-                .aeronDirectoryName(aeronDirectoryName)
-                .errorHandler(Tests::onError)
-                .archiveDir(archiveDir)
-                .fileSyncLevel(0)
-                .threadingMode(ArchiveThreadingMode.SHARED));
+        final Archive.Context archiveCtx = new Archive.Context()
+            .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
+            .aeronDirectoryName(aeronDirectoryName)
+            .archiveDir(archiveDir)
+            .fileSyncLevel(0)
+            .threadingMode(ArchiveThreadingMode.SHARED);
+
+        try
+        {
+            mediaDriver = TestMediaDriver.launch(driverCtx, testWatcher);
+            archive = Archive.launch(archiveCtx);
+        }
+        finally
+        {
+            dataCollector.add(driverCtx.aeronDirectory());
+            dataCollector.add(archiveCtx.archiveDir());
+        }
 
         aeron = Aeron.connect(
             new Aeron.Context()
@@ -152,8 +162,7 @@ class CatalogWithJumboRecordingsAndGapsTest
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, mediaDriver);
 
-        archive.context().deleteDirectory();
-        mediaDriver.context().deleteDirectory();
+        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test

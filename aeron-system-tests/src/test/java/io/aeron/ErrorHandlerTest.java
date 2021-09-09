@@ -20,6 +20,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.CTestMediaDriver;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
@@ -79,6 +80,8 @@ public class ErrorHandlerTest
     @InterruptAfter(5)
     void shouldReportToErrorHandlerAndDistinctErrorLog() throws IOException
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support ErrorHandler callbacks");
+
         final MutableReference<Throwable> throwableRef = new MutableReference<>(null);
         context.errorHandler(throwableRef::set);
 

@@ -32,7 +32,6 @@ import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.*;
@@ -3428,10 +3427,7 @@ public final class MediaDriver implements AutoCloseable
                     createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock, US_ASCII);
             }
 
-            if (null == errorHandler)
-            {
-                errorHandler = new LoggingErrorHandler(errorLog);
-            }
+            errorHandler = CommonContext.setupErrorHandler(this.errorHandler, errorLog);
 
             receiverProxy = new ReceiverProxy(
                 threadingMode, receiverCommandQueue, systemCounters.get(RECEIVER_PROXY_FAILS));

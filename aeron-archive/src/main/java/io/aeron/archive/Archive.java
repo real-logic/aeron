@@ -27,7 +27,6 @@ import io.aeron.security.AuthenticatorSupplier;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
@@ -914,11 +913,9 @@ public final class Archive implements AutoCloseable
                 markFile = new ArchiveMarkFile(this);
             }
 
-            if (null == errorHandler)
-            {
-                errorHandler = new LoggingErrorHandler(new DistinctErrorLog(
-                    markFile.errorBuffer(), epochClock, US_ASCII));
-            }
+            errorHandler = CommonContext.setupErrorHandler(
+                errorHandler,
+                new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII));
 
             if (null == aeron)
             {

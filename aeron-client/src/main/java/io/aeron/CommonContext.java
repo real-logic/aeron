@@ -17,14 +17,13 @@ package io.aeron;
 
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.DriverTimeoutException;
-import org.agrona.BufferUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
-import org.agrona.SystemUtil;
+import org.agrona.*;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.ErrorConsumer;
 import org.agrona.concurrent.errors.ErrorLogReader;
+import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.File;
@@ -905,5 +904,30 @@ public class CommonContext implements Cloneable
         CncFileDescriptor.checkVersion(cncVersion);
 
         return CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
+    }
+
+    /**
+     * Wrap a user ErrorHandler so that error will continue to write to the errorLog.
+     * @param userErrorHandler  the user specified ErrorHandler, can be null.
+     * @param errorLog          the configured errorLog, either the default or user supplied.
+     * @return                  the error handler that will delegate to both the userErrorHandler and the errorLog.
+     */
+    public static ErrorHandler setupErrorHandler(
+        final ErrorHandler userErrorHandler,
+        final DistinctErrorLog errorLog)
+    {
+        final LoggingErrorHandler loggingErrorHandler = new LoggingErrorHandler(errorLog);
+        if (null == userErrorHandler)
+        {
+            return loggingErrorHandler;
+        }
+        else
+        {
+            return (throwable) ->
+            {
+                loggingErrorHandler.onError(throwable);
+                userErrorHandler.onError(throwable);
+            };
+        }
     }
 }

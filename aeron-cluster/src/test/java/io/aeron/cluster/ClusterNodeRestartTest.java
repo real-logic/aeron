@@ -29,9 +29,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
 import org.agrona.CloseHelper;
@@ -59,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(InterruptingTestCallback.class)
+@ExtendWith({InterruptingTestCallback.class, HideStdErrExtension.class})
 public class ClusterNodeRestartTest
 {
     private static final long CATALOG_CAPACITY = 1024 * 1024;
@@ -385,6 +383,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(20)
+    @IgnoreStdErr
     public void shouldRestartServiceAfterShutdownWithInvalidatedSnapshot() throws InterruptedException
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);

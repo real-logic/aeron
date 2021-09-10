@@ -114,7 +114,7 @@ public final class ClusterMarkFile implements AutoCloseable
             final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
                 buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
 
-            saveExistingErrors(file, existingErrorBuffer, System.err);
+            saveExistingErrors(file, existingErrorBuffer, type, System.err);
             existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
         }
         else
@@ -379,12 +379,16 @@ public final class ClusterMarkFile implements AutoCloseable
 
     /**
      * Save the existing errors from a {@link MarkFile} to a {@link PrintStream} for logging.
-     *
      * @param markFile    which contains the error buffer.
      * @param errorBuffer which wraps the error log.
+     * @param type        type of the mark file being checked.
      * @param logger      to which the existing errors will be printed.
      */
-    public static void saveExistingErrors(final File markFile, final AtomicBuffer errorBuffer, final PrintStream logger)
+    public static void saveExistingErrors(
+        final File markFile,
+        final AtomicBuffer errorBuffer,
+        final ClusterComponentType type,
+        final PrintStream logger)
     {
         try
         {
@@ -394,7 +398,7 @@ public final class ClusterMarkFile implements AutoCloseable
             {
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
                 final String errorLogFilename =
-                    markFile.getParent() + '-' + dateFormat.format(new Date()) + "-error.log";
+                    markFile.getParent() + '-' + type.name() + '-' + dateFormat.format(new Date()) + "-error.log";
 
                 if (null != logger)
                 {

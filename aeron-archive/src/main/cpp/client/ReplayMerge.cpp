@@ -99,7 +99,6 @@ int ReplayMerge::resolveReplayPort(long long nowMs)
     const std::string resolvedEndpoint = m_subscription->resolvedEndpoint();
     if (!resolvedEndpoint.empty())
     {
-        std::cout << resolvedEndpoint << std::endl;
         std::size_t i = resolvedEndpoint.find_last_of(':');
 
         m_replayChannelUri->put(

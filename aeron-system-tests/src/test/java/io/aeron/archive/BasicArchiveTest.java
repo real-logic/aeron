@@ -584,7 +584,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReturnNullValueWithFindLastMatchingRecordingIdDoesntFindTheRecording()
+    public void shouldReturnNullValueWithFindLastMatchingRecordingIdDoesNotFindTheRecording()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -597,6 +597,7 @@ public class BasicArchiveTest
             final CountersReader counters = aeron.countersReader();
             final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+            assertNotEquals(RecordingPos.NULL_RECORDING_ID, recordingId);
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
@@ -612,6 +613,4 @@ public class BasicArchiveTest
 
         aeronArchive.stopRecording(subscriptionId);
     }
-
-
 }

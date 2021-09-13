@@ -594,16 +594,8 @@ abstract class ArchiveConductor
         else
         {
             final long recordingId = catalog.findLast(minRecordingId, sessionId, streamId, channelFragment);
-            if (Catalog.NULL_RECORD_ID == recordingId)
-            {
-                final String msg = "recording was not found: minRecordingId=" + minRecordingId +
-                    ", sessionId=" + sessionId + ", streamId=" + streamId;
-                controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-            }
-            else
-            {
-                controlSession.sendOkResponse(correlationId, recordingId, controlResponseProxy);
-            }
+            // If not found, recordingId is -1, which matches client side specification.
+            controlSession.sendOkResponse(correlationId, recordingId, controlResponseProxy);
         }
     }
 

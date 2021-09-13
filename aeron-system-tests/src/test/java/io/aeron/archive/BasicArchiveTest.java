@@ -550,4 +550,68 @@ public class BasicArchiveTest
 
         aeronArchive.stopRecording(subscriptionId);
     }
+
+    @Test
+    @InterruptAfter(10)
+    public void shouldFindLastMatchingRecordingIdWithFullUri()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+
+        final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
+
+        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+            Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
+        {
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
+            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            consume(subscription, messageCount, messagePrefix);
+
+            final long currentPosition = publication.position();
+            awaitPosition(counters, counterId, currentPosition);
+
+            final long lastMatchingRecording = aeronArchive.findLastMatchingRecording(
+                0, RECORDED_CHANNEL, RECORDED_STREAM_ID, publication.sessionId());
+
+            assertEquals(lastMatchingRecording, recordingId);
+        }
+
+        aeronArchive.stopRecording(subscriptionId);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    public void shouldReturnNullValueWithFindLastMatchingRecordingIdDoesntFindTheRecording()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+
+        final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
+
+        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+            Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
+        {
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
+            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            consume(subscription, messageCount, messagePrefix);
+
+            final long currentPosition = publication.position();
+            awaitPosition(counters, counterId, currentPosition);
+
+            final long lastMatchingRecording = aeronArchive.findLastMatchingRecording(
+                0, RECORDED_CHANNEL, RECORDED_STREAM_ID, publication.sessionId() + 1);
+
+            assertEquals(Aeron.NULL_VALUE, lastMatchingRecording);
+        }
+
+        aeronArchive.stopRecording(subscriptionId);
+    }
+
+
 }

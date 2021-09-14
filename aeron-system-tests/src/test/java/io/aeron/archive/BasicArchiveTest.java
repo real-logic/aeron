@@ -46,11 +46,13 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(InterruptingTestCallback.class)
 public class BasicArchiveTest
 {
+    private static final String RECORDED_CHANNEL_ALIAS = "named-log";
     private static final int RECORDED_STREAM_ID = 33;
     private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
         .termLength(ArchiveSystemTests.TERM_LENGTH)
+        .alias(RECORDED_CHANNEL_ALIAS)
         .build();
 
     private static final int REPLAY_STREAM_ID = 66;
@@ -162,7 +164,7 @@ public class BasicArchiveTest
         aeronArchive.stopRecording(subscriptionId);
 
         final long recordingId = aeronArchive.findLastMatchingRecording(
-            0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
+            0, "alias=" + RECORDED_CHANNEL_ALIAS, RECORDED_STREAM_ID, sessionId);
 
         assertFalse(aeronArchive.tryStopRecordingByIdentity(recordingId));
 
@@ -307,7 +309,7 @@ public class BasicArchiveTest
         aeronArchive.stopRecording(subscriptionId);
 
         final long recordingId = aeronArchive.findLastMatchingRecording(
-            0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
+            0, "alias=" + RECORDED_CHANNEL_ALIAS, RECORDED_STREAM_ID, sessionId);
         assertEquals(recordingIdFromCounter, recordingId);
 
         assertFalse(aeronArchive.tryStopRecordingByIdentity(recordingId));
@@ -386,7 +388,7 @@ public class BasicArchiveTest
                 assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
 
                 final long recordingId = aeronArchive.findLastMatchingRecording(
-                    0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
+                    0, "alias=" + RECORDED_CHANNEL_ALIAS, RECORDED_STREAM_ID, sessionId);
                 assertEquals(recordingIdFromCounter, recordingId);
 
                 final ArchiveException exception = assertThrows(
@@ -447,7 +449,7 @@ public class BasicArchiveTest
         aeronArchive.stopRecording(subscriptionId);
 
         final long recordingId = aeronArchive.findLastMatchingRecording(
-            0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
+            0, "alias=" + RECORDED_CHANNEL_ALIAS, RECORDED_STREAM_ID, sessionId);
         assertEquals(recordingIdFromCounter, recordingId);
         assertEquals(stopPosition, aeronArchive.getStopPosition(recordingIdFromCounter));
 

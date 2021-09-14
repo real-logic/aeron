@@ -23,7 +23,6 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
-import org.agrona.collections.MutableReference;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +32,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -81,7 +81,7 @@ public class ErrorHandlerTest
     {
         TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support ErrorHandler callbacks");
 
-        final MutableReference<Throwable> throwableRef = new MutableReference<>(null);
+        final AtomicReference<Throwable> throwableRef = new AtomicReference<>(null);
         context.errorHandler(throwableRef::set);
 
         launch();
@@ -102,17 +102,15 @@ public class ErrorHandlerTest
         assertNotNull(throwableRef.get());
     }
 
-    private Publication addPublication(final String channel, final int streamId)
+    private void addPublication(final String channel, final int streamId)
     {
         final Publication pub = aeron.addPublication(channel, streamId);
         closeables.add(pub);
-        return pub;
     }
 
-    private Subscription addSubscription(final String channel, final int streamId)
+    private void addSubscription(final String channel, final int streamId)
     {
         final Subscription sub = aeron.addSubscription(channel, streamId);
         closeables.add(sub);
-        return sub;
     }
 }

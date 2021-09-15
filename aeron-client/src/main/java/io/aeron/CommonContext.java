@@ -523,8 +523,8 @@ public class CommonContext implements Cloneable
     /**
      * Create a new command and control file in the administration directory.
      *
-     * @return The newly created File.
      * @param aeronDirectoryName name of the aeronDirectory that containing the cnc file.
+     * @return The newly created File.
      */
     public static File newCncFile(final String aeronDirectoryName)
     {
@@ -908,13 +908,13 @@ public class CommonContext implements Cloneable
 
     /**
      * Wrap a user ErrorHandler so that error will continue to write to the errorLog.
-     * @param userErrorHandler  the user specified ErrorHandler, can be null.
-     * @param errorLog          the configured errorLog, either the default or user supplied.
-     * @return                  the error handler that will delegate to both the userErrorHandler and the errorLog.
+     *
+     * @param userErrorHandler the user specified ErrorHandler, can be null.
+     * @param errorLog         the configured errorLog, either the default or user supplied.
+     * @return the error handler that will delegate to both the userErrorHandler and the errorLog.
      */
     public static ErrorHandler setupErrorHandler(
-        final ErrorHandler userErrorHandler,
-        final DistinctErrorLog errorLog)
+        final ErrorHandler userErrorHandler, final DistinctErrorLog errorLog)
     {
         final LoggingErrorHandler loggingErrorHandler = new LoggingErrorHandler(errorLog);
         if (null == userErrorHandler)
@@ -929,10 +929,10 @@ public class CommonContext implements Cloneable
                 {
                     userErrorHandler.onError(throwable);
                 }
-                catch (final Exception ex)
+                catch (final Throwable t)
                 {
                     // Not much more we can do if the user's error handler fails.
-                    ex.printStackTrace();
+                    t.printStackTrace();
                 }
                 loggingErrorHandler.onError(throwable);
             };

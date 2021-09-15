@@ -32,7 +32,6 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -911,8 +910,7 @@ public class CommonContext implements Cloneable
         try
         {
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final int observations =
-                printErrorLog(errorBuffer, new PrintStream(baos, false, StandardCharsets.US_ASCII));
+            final int observations = printErrorLog(errorBuffer, new PrintStream(baos, false, "US-ASCII"));
             if (observations > 0)
             {
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");

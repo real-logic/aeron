@@ -181,7 +181,7 @@ public final class ClusterMarkFile implements AutoCloseable
     /**
      * Determines if this path name matches the service mark file name pattern
      *
-     * @param path to examine
+     * @param path       to examine
      * @param attributes ignored, only needed for BiPredicate signature matching
      * @return true if the name matches
      */
@@ -194,7 +194,7 @@ public final class ClusterMarkFile implements AutoCloseable
     /**
      * Determines if this path name matches the consensus module file name pattern.
      *
-     * @param path to examine
+     * @param path       to examine
      * @param attributes ignored, only needed for BiPredicate signature matching
      * @return true if the name matches
      */
@@ -379,6 +379,7 @@ public final class ClusterMarkFile implements AutoCloseable
 
     /**
      * Save the existing errors from a {@link MarkFile} to a {@link PrintStream} for logging.
+     *
      * @param markFile    which contains the error buffer.
      * @param errorBuffer which wraps the error log.
      * @param type        type of the mark file being checked.
@@ -397,15 +398,15 @@ public final class ClusterMarkFile implements AutoCloseable
             if (observations > 0)
             {
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
-                final String errorLogFilename =
-                    markFile.getParent() + '-' + type.name() + '-' + dateFormat.format(new Date()) + "-error.log";
+                final File errorLogFile = new File(
+                    markFile.getParentFile(), type.name() + '-' + dateFormat.format(new Date()) + "-error.log");
 
                 if (null != logger)
                 {
-                    logger.println("WARNING: existing errors saved to: " + errorLogFilename);
+                    logger.println("WARNING: existing errors saved to: " + errorLogFile);
                 }
 
-                try (FileOutputStream out = new FileOutputStream(errorLogFilename))
+                try (FileOutputStream out = new FileOutputStream(errorLogFile))
                 {
                     baos.writeTo(out);
                 }

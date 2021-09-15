@@ -26,10 +26,13 @@ import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -888,6 +891,49 @@ public class CommonContext implements Cloneable
         }
 
         return distinctErrorCount;
+    }
+
+    /**
+     * Save the existing errors from a {@link MarkFile} to a file in the same directory as the original {@link MarkFile}
+     * and optionally print location of such file to the supplied {@link PrintStream}.
+     *
+     * @param markFile        which contains the error buffer.
+     * @param errorBuffer     which wraps the error log.
+     * @param logger          to which the existing errors will be printed.
+     * @param errorFilePrefix to add to the generated error file.
+     */
+    public static void saveExistingErrors(
+        final File markFile,
+        final AtomicBuffer errorBuffer,
+        final PrintStream logger,
+        final String errorFilePrefix)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final int observations =
+                printErrorLog(errorBuffer, new PrintStream(baos, false, StandardCharsets.US_ASCII));
+            if (observations > 0)
+            {
+                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
+                final File errorLogFile = new File(
+                    markFile.getParentFile(), errorFilePrefix + '-' + dateFormat.format(new Date()) + "-error.log");
+
+                if (null != logger)
+                {
+                    logger.println("WARNING: existing errors saved to: " + errorLogFile);
+                }
+
+                try (FileOutputStream out = new FileOutputStream(errorLogFile))
+                {
+                    baos.writeTo(out);
+                }
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
     /**

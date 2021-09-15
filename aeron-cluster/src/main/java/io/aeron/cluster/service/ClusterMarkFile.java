@@ -22,19 +22,18 @@ import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.cluster.codecs.mark.VarAsciiEncodingEncoder;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.MarkFile;
+import org.agrona.SemanticVersion;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.function.Consumer;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -391,31 +390,7 @@ public final class ClusterMarkFile implements AutoCloseable
         final ClusterComponentType type,
         final PrintStream logger)
     {
-        try
-        {
-            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final int observations = CommonContext.printErrorLog(errorBuffer, new PrintStream(baos, false, "US-ASCII"));
-            if (observations > 0)
-            {
-                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
-                final File errorLogFile = new File(
-                    markFile.getParentFile(), type.name() + '-' + dateFormat.format(new Date()) + "-error.log");
-
-                if (null != logger)
-                {
-                    logger.println("WARNING: existing errors saved to: " + errorLogFile);
-                }
-
-                try (FileOutputStream out = new FileOutputStream(errorLogFile))
-                {
-                    baos.writeTo(out);
-                }
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        CommonContext.saveExistingErrors(markFile, errorBuffer, logger, type.name());
     }
 
     /**

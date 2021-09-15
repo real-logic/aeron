@@ -20,19 +20,18 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.archive.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.archive.codecs.mark.VarAsciiEncodingEncoder;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.MarkFile;
+import org.agrona.SemanticVersion;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -286,37 +285,13 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public static void saveExistingErrors(final File markFile, final AtomicBuffer errorBuffer, final PrintStream logger)
     {
-        try
-        {
-            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final int observations = CommonContext.printErrorLog(errorBuffer, new PrintStream(baos, false, "US-ASCII"));
-            if (observations > 0)
-            {
-                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
-                final String errorLogFilename =
-                    markFile.getParent() + '-' + dateFormat.format(new Date()) + "-error.log";
-
-                if (null != logger)
-                {
-                    logger.println("WARNING: existing errors saved to: " + errorLogFilename);
-                }
-
-                try (FileOutputStream out = new FileOutputStream(errorLogFilename))
-                {
-                    baos.writeTo(out);
-                }
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        CommonContext.saveExistingErrors(markFile, errorBuffer, logger, "archive");
     }
 
     /**
      * Determine if the path matches the archive mark file name
      *
-     * @param path to match
+     * @param path       to match
      * @param attributes ignored, only needed for BiPredicate signature matching
      * @return true if the filename matches.
      */

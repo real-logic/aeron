@@ -17,16 +17,27 @@ package io.aeron;
 
 import io.aeron.exceptions.ConcurrentConcludeException;
 import org.agrona.ErrorHandler;
+import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InOrder;
 
+import java.io.File;
+import java.io.PrintStream;
+import java.nio.file.Path;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.*;
 
 public class CommonContextTest
 {
+    @TempDir
+    private Path tempDir;
+
     @Test
     void shouldNotAllowConcludeMoreThanOnce()
     {
@@ -70,5 +81,39 @@ public class CommonContextTest
         inOrder.verify(distinctErrorLog).record(userHandlerError);
         inOrder.verify(distinctErrorLog).record(throwable);
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void saveExistingErrorsIsANoOpIfErrorBufferIsEmpty()
+    {
+        final File markFile = tempDir.resolve("mark.dat").toFile();
+        final UnsafeBuffer errorBuffer = new UnsafeBuffer(new byte[0]);
+        final PrintStream logger = mock(PrintStream.class);
+        final String errorFilePrefix = "test-error-";
+
+        CommonContext.saveExistingErrors(markFile, errorBuffer, logger, errorFilePrefix);
+
+        verifyNoInteractions(logger);
+    }
+
+    @Test
+    void saveExistingErrorsCreatesErrorFileInTheSameDirectoryAsTheCorrespondingMarkFile()
+    {
+        final File markFile = tempDir.resolve("mark.dat").toFile();
+        final DistinctErrorLog errorLog =
+            new DistinctErrorLog(new UnsafeBuffer(new byte[10 * 1024]), SystemEpochClock.INSTANCE);
+        assertTrue(errorLog.record(new Exception("Just to test")));
+        final PrintStream logger = mock(PrintStream.class);
+        final String errorFilePrefix = "my-file-";
+
+        CommonContext.saveExistingErrors(markFile, errorLog.buffer(), logger, errorFilePrefix);
+
+        final File[] files = tempDir.toFile().listFiles(
+            (dir, name) -> name.endsWith("-error.log") && name.startsWith(errorFilePrefix));
+        assertNotNull(files);
+        assertEquals(1, files.length);
+
+        verify(logger).println(and(startsWith("WARNING: existing errors saved to: "), endsWith("-error.log")));
+        verifyNoMoreInteractions(logger);
     }
 }

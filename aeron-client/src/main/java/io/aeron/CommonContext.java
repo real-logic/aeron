@@ -931,8 +931,7 @@ public class CommonContext implements Cloneable
                 }
                 catch (final Throwable t)
                 {
-                    // Not much more we can do if the user's error handler fails.
-                    t.printStackTrace();
+                    loggingErrorHandler.onError(t);
                 }
                 loggingErrorHandler.onError(throwable);
             };

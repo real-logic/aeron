@@ -129,7 +129,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 {
                     service.onTerminate(this);
                 }
-                catch (final Throwable ex)
+                catch (final Exception ex)
                 {
                     errorHandler.onError(ex);
                 }
@@ -1012,9 +1012,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             ctx.terminationHook().run();
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            ctx.countedErrorHandler().onError(t);
+            ctx.countedErrorHandler().onError(ex);
         }
     }
 }

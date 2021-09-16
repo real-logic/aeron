@@ -313,7 +313,7 @@ public final class ClusterBackupAgent implements Agent
             {
                 backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 ctx.countedErrorHandler().onError(ex);
             }
@@ -824,7 +824,7 @@ public final class ClusterBackupAgent implements Agent
                 leaderLastTermEntry = null;
             }
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             ctx.countedErrorHandler().onError(ex);
             throw new AgentTerminationException("failed to update recording log", ex);
@@ -992,9 +992,9 @@ public final class ClusterBackupAgent implements Agent
         {
             ctx.terminationHook().run();
         }
-        catch (final Throwable t)
+        catch (final Exception e)
         {
-            ctx.countedErrorHandler().onError(t);
+            ctx.countedErrorHandler().onError(e);
         }
 
         throw ex;

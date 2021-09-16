@@ -64,9 +64,9 @@ public class Tests
             field.setAccessible(true);
             field.set(instance, value);
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            LangUtil.rethrowUnchecked(t);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 

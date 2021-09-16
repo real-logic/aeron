@@ -321,7 +321,7 @@ public final class DriverConductor implements Agent
                         sourceIdentity);
                 }
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 subscriberPositions.forEach((subscriberPosition) -> subscriberPosition.position().close());
                 CloseHelper.quietCloseAll(rawLog, congestionControl, hwmPos, rcvPos);
@@ -354,7 +354,7 @@ public final class DriverConductor implements Agent
                 senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
             }
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             ctx.errorHandler().onError(ex);
             errorCounter.increment();
@@ -382,7 +382,7 @@ public final class DriverConductor implements Agent
                 receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
             }
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             ctx.errorHandler().onError(ex);
             errorCounter.increment();
@@ -1209,7 +1209,7 @@ public final class DriverConductor implements Agent
 
             return publication;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             CloseHelper.quietCloseAll(rawLog, publisherPos, publisherLmt, senderPos, senderLmt, senderBpe);
             throw ex;
@@ -1737,7 +1737,7 @@ public final class DriverConductor implements Agent
 
             return publication;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             CloseHelper.quietCloseAll(rawLog, publisherPosition, publisherLimit);
             throw ex;

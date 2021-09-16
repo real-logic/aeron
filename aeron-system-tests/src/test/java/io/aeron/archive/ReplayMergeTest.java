@@ -220,7 +220,7 @@ public class ReplayMergeTest
             assertEquals(TOTAL_MESSAGE_COUNT, receivedMessageCount.get());
             assertEquals(publication.position(), receivedPosition.get());
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             dataCollector.dumpData(testInfo);
             LangUtil.rethrowUnchecked(ex);

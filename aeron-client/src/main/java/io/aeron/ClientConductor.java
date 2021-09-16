@@ -368,7 +368,7 @@ final class ClientConductor implements Agent
                 {
                     handler.onAvailableImage(image);
                 }
-                catch (final Throwable ex)
+                catch (final Exception ex)
                 {
                     handleError(ex);
                 }
@@ -1222,7 +1222,7 @@ final class ClientConductor implements Agent
             }
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             if (driverEventsAdapter.isInvalid())
             {
@@ -1436,7 +1436,7 @@ final class ClientConductor implements Agent
                 }
                 handleError(ex);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 handleError(ex);
             }
@@ -1462,7 +1462,7 @@ final class ClientConductor implements Agent
             }
             handleError(ex);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             handleError(ex);
         }
@@ -1484,7 +1484,7 @@ final class ClientConductor implements Agent
         {
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             handleError(ex);
         }
@@ -1503,7 +1503,7 @@ final class ClientConductor implements Agent
             {
                 closeHandler.run();
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 handleError(ex);
             }

@@ -675,7 +675,7 @@ public class TestCluster implements AutoCloseable
             {
                 pollUntilMessageSent(BitUtil.SIZE_OF_INT);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 throw new ClusterException("failed to send message " + i + " of " + messageCount, ex);
             }
@@ -691,7 +691,7 @@ public class TestCluster implements AutoCloseable
             {
                 pollUntilMessageSent(length);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 throw new ClusterException("failed to send message " + i + " of " + messageCount, ex);
             }

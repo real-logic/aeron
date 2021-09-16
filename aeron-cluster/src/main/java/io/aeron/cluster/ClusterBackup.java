@@ -201,7 +201,7 @@ public final class ClusterBackup implements AutoCloseable
         {
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             CloseHelper.quietClose(ctx::close);
             throw ex;

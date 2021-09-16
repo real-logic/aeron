@@ -207,7 +207,7 @@ public final class ConsensusModule implements AutoCloseable
         {
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             if (null != ctx.markFile)
             {

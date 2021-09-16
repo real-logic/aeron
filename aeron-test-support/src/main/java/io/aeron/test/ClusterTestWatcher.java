@@ -297,7 +297,7 @@ public class ClusterTestWatcher implements TestWatcher
                 printClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), "Consensus Module Errors");
                 printClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), "Cluster Service Errors");
             }
-            catch (final Throwable t)
+            catch (final Exception t)
             {
                 error = t;
             }
@@ -309,7 +309,7 @@ public class ClusterTestWatcher implements TestWatcher
 
                 dataCollector.dumpData(testClass, testMethod);
             }
-            catch (final Throwable t)
+            catch (final Exception t)
             {
                 if (null != error)
                 {
@@ -326,7 +326,7 @@ public class ClusterTestWatcher implements TestWatcher
         {
             CloseHelper.close(closeable);
         }
-        catch (final Throwable t)
+        catch (final Exception t)
         {
             if (null != error)
             {

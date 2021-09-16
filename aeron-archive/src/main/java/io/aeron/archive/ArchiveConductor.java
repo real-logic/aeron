@@ -685,7 +685,7 @@ abstract class ArchiveConductor
             {
                 replayLimitCounter = new Counter(aeron.countersReader(), NULL_VALUE, limitCounterId);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 final String msg = "unable to create replay limit counter id= " + limitCounterId +
                     " because of: " + ex.getMessage();
@@ -1026,7 +1026,7 @@ abstract class ArchiveConductor
                     position,
                     RecordingSignal.STOP);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 errorHandler.onError(ex);
             }
@@ -1047,7 +1047,7 @@ abstract class ArchiveConductor
             {
                 session.sendPendingError(controlResponseProxy);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 errorHandler.onError(ex);
             }

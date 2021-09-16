@@ -221,7 +221,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                     break;
             }
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             state(State.DONE);
             error(ex.getMessage(), ArchiveException.GENERIC);

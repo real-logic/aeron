@@ -224,7 +224,7 @@ final class Catalog implements AutoCloseable
             buildIndex(true);
             refreshCatalog(true, checksum, buffer);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             close();
             throw ex;
@@ -308,7 +308,7 @@ final class Catalog implements AutoCloseable
             buildIndex(writable);
             refreshCatalog(false, null, null);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             close();
             throw ex;
@@ -781,7 +781,7 @@ final class Catalog implements AutoCloseable
             catalogChannel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE);
             mappedByteBuffer = catalogChannel.map(READ_WRITE, 0, newCapacity);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             close();
             LangUtil.rethrowUnchecked(ex);

@@ -718,10 +718,10 @@ public class ArchiveTest
                         }
                     }
                 }
-                catch (final Throwable throwable)
+                catch (final Exception ex)
                 {
-                    throwable.printStackTrace();
-                    trackerError = throwable;
+                    ex.printStackTrace();
+                    trackerError = ex;
                 }
 
                 latch.countDown();

@@ -76,7 +76,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             ctx.conclude();
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             if (null != ctx.markFile)
             {

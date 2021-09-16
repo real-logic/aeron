@@ -204,7 +204,7 @@ public class StartFromTruncatedRecordingLogTest
 
             ClusterTests.failOnClusterError();
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             ex.printStackTrace();
             ClusterTests.printWarning();

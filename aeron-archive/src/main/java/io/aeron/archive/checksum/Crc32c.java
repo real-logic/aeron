@@ -80,9 +80,9 @@ final class Crc32c implements Checksum
         {
             return (int)UPDATE_DIRECT_BYTE_BUFFER.invokeExact(address, offset, offset + length /* end */);
         }
-        catch (final Throwable throwable)
+        catch (final Throwable t)
         {
-            LangUtil.rethrowUnchecked(throwable);
+            LangUtil.rethrowUnchecked(t);
             return -1;
         }
     }

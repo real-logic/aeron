@@ -219,9 +219,9 @@ public final class LogBuffers implements AutoCloseable
         {
             CloseHelper.close(fileChannel);
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            error = t;
+            error = ex;
         }
 
         for (int i = 0, length = mappedByteBuffers.length; i < length; i++)

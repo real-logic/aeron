@@ -122,9 +122,9 @@ public class TestNode implements AutoCloseable
             {
                 closeAndDelete();
             }
-            catch (final Throwable t)
+            catch (final Exception e)
             {
-                ex.addSuppressed(t);
+                ex.addSuppressed(e);
             }
 
             throw ex;
@@ -179,9 +179,9 @@ public class TestNode implements AutoCloseable
                 context.mediaDriverContext::deleteDirectory,
                 this::cleanup);
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            error = t;
+            error = ex;
         }
 
         if (null != error)

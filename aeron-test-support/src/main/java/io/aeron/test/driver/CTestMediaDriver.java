@@ -89,7 +89,7 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         isClosed = true;
 
-        Throwable error = null;
+        Exception error = null;
         try
         {
             if (null != aeronContext)
@@ -97,9 +97,9 @@ public final class CTestMediaDriver implements TestMediaDriver
                 aeronContext.close();
             }
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            error = t;
+            error = ex;
         }
 
         try
@@ -110,15 +110,15 @@ public final class CTestMediaDriver implements TestMediaDriver
                 driverOutputConsumer.exitCode(context.aeronDirectoryName(), exitCode);
             }
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
             if (null == error)
             {
-                error = t;
+                error = ex;
             }
             else
             {
-                error.addSuppressed(t);
+                error.addSuppressed(ex);
             }
         }
 
@@ -407,7 +407,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
             return true;
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
             return false;
         }

@@ -115,7 +115,7 @@ public class ClientErrorHandlerTest
 
                 fail("Expected exception");
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 assertEquals(expectedException, ex);
             }

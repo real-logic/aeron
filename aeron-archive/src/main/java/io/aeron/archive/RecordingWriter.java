@@ -147,7 +147,7 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
             close();
             checkErrorType(ex, length);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             close();
             LangUtil.rethrowUnchecked(ex);

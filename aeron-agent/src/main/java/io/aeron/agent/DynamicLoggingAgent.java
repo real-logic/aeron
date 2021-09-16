@@ -103,9 +103,9 @@ public class DynamicLoggingAgent
         {
             ByteBuddyAgent.attach(agentJar, processId, agentArgs);
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            out.println("Command '" + command + "' failed, cause: " + getCause(t));
+            out.println("Command '" + command + "' failed, cause: " + getCause(ex));
             System.exit(-1);
         }
     }

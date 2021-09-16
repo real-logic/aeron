@@ -342,7 +342,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             runTerminationHook();
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             if (null != election)
             {
@@ -3183,9 +3183,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             ctx.terminationHook().run();
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            ctx.countedErrorHandler().onError(t);
+            ctx.countedErrorHandler().onError(ex);
         }
     }
 

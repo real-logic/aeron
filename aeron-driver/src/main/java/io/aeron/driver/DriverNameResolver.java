@@ -533,14 +533,14 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
     private InetSocketAddress resolveBootstrapNeighbor()
     {
-        Throwable t = null;
+        Exception t = null;
         for (final String neighbor : bootstrapNeighbors)
         {
             try
             {
                 return UdpNameResolutionTransport.getInetSocketAddress(neighbor, bootstrapNameResolver);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 if (null == t)
                 {

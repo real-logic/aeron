@@ -316,7 +316,7 @@ public class RemoteLaunchServer
                 {
                     return (long)PID_HANDLE.invoke(process);
                 }
-                catch (final Throwable throwable)
+                catch (final Throwable t)
                 {
                     return 0;
                 }

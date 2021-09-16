@@ -955,10 +955,9 @@ public class CommonContext implements Cloneable
      *
      * @param userErrorHandler the user specified ErrorHandler, can be null.
      * @param errorLog         the configured errorLog, either the default or user supplied.
-     * @return the error handler that will delegate to both the userErrorHandler and the errorLog.
+     * @return an error handler that will delegate to both the userErrorHandler and the errorLog.
      */
-    public static ErrorHandler setupErrorHandler(
-        final ErrorHandler userErrorHandler, final DistinctErrorLog errorLog)
+    public static ErrorHandler setupErrorHandler(final ErrorHandler userErrorHandler, final DistinctErrorLog errorLog)
     {
         final LoggingErrorHandler loggingErrorHandler = new LoggingErrorHandler(errorLog);
         if (null == userErrorHandler)
@@ -973,10 +972,11 @@ public class CommonContext implements Cloneable
                 {
                     userErrorHandler.onError(throwable);
                 }
-                catch (final Throwable t)
+                catch (final Exception ex)
                 {
-                    loggingErrorHandler.onError(t);
+                    loggingErrorHandler.onError(ex);
                 }
+
                 loggingErrorHandler.onError(throwable);
             };
         }

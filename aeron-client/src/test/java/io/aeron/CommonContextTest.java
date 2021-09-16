@@ -23,7 +23,6 @@ import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -33,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.*;
 
-public class CommonContextTest
+class CommonContextTest
 {
     @TempDir
     private Path tempDir;
@@ -57,30 +56,6 @@ public class CommonContextTest
         assertNotNull(errorHandler);
         final LoggingErrorHandler loggingErrorHandler = assertInstanceOf(LoggingErrorHandler.class, errorHandler);
         assertSame(distinctErrorLog, loggingErrorHandler.distinctErrorLog());
-    }
-
-    @Test
-    void setupErrorHandlerReturnsAnErrorHandlerThatFirstInvokesUserSuppliedErrorHandlerBeforeTheLoggingErrorHandler()
-    {
-        final Throwable throwable = new Throwable("Hello, world!");
-        final ErrorHandler userErrorHandler = mock(ErrorHandler.class);
-        final AssertionError userHandlerError = new AssertionError("user handler error");
-        doThrow(userHandlerError).when(userErrorHandler).onError(throwable);
-        final DistinctErrorLog distinctErrorLog = mock(DistinctErrorLog.class);
-        doReturn(true).when(distinctErrorLog).record(any(Throwable.class));
-        final InOrder inOrder = inOrder(userErrorHandler, distinctErrorLog);
-
-        final ErrorHandler errorHandler = CommonContext.setupErrorHandler(userErrorHandler, distinctErrorLog);
-
-        assertNotNull(errorHandler);
-        assertNotSame(userErrorHandler, errorHandler);
-
-        errorHandler.onError(throwable);
-
-        inOrder.verify(userErrorHandler).onError(throwable);
-        inOrder.verify(distinctErrorLog).record(userHandlerError);
-        inOrder.verify(distinctErrorLog).record(throwable);
-        inOrder.verifyNoMoreInteractions();
     }
 
     @Test

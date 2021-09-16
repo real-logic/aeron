@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class ErrorHandlerTest
@@ -97,9 +96,8 @@ public class ErrorHandlerTest
             containsString("mtuLength="),
             containsString("> initialWindowLength="));
 
+        Tests.await(() -> null != throwableRef.get());
         SystemTests.waitForErrorToOccur(driver.aeronDirectoryName(), exceptionMessageMatcher, Tests.SLEEP_1_MS);
-
-        assertNotNull(throwableRef.get());
     }
 
     private void addPublication(final String channel, final int streamId)

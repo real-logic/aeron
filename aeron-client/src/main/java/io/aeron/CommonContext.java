@@ -968,16 +968,8 @@ public class CommonContext implements Cloneable
         {
             return (throwable) ->
             {
-                try
-                {
-                    userErrorHandler.onError(throwable);
-                }
-                catch (final Exception ex)
-                {
-                    loggingErrorHandler.onError(ex);
-                }
-
                 loggingErrorHandler.onError(throwable);
+                userErrorHandler.onError(throwable);
             };
         }
     }

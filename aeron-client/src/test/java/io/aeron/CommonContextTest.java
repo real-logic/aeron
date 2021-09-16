@@ -60,11 +60,11 @@ class CommonContextTest
     }
 
     @Test
-    void setupErrorHandlerReturnsAnErrorHandlerThatFirstInvokesUserSuppliedErrorHandlerBeforeTheLoggingErrorHandler()
+    void setupErrorHandlerReturnsAnErrorHandlerThatFirstInvokesLoggingErrorHandlerBeforeCallingSuppliedErrorHandler()
     {
         final Throwable throwable = new Throwable("Hello, world!");
         final ErrorHandler userErrorHandler = mock(ErrorHandler.class);
-        final Exception userHandlerError = new IndexOutOfBoundsException("user handler error");
+        final AssertionError userHandlerError = new AssertionError("user handler error");
         doThrow(userHandlerError).when(userErrorHandler).onError(throwable);
         final DistinctErrorLog distinctErrorLog = mock(DistinctErrorLog.class);
         doReturn(true).when(distinctErrorLog).record(any(Throwable.class));
@@ -75,11 +75,11 @@ class CommonContextTest
         assertNotNull(errorHandler);
         assertNotSame(userErrorHandler, errorHandler);
 
-        errorHandler.onError(throwable);
+        final AssertionError error = assertThrowsExactly(AssertionError.class, () -> errorHandler.onError(throwable));
+        assertSame(userHandlerError, error);
 
-        inOrder.verify(userErrorHandler).onError(throwable);
-        inOrder.verify(distinctErrorLog).record(userHandlerError);
         inOrder.verify(distinctErrorLog).record(throwable);
+        inOrder.verify(userErrorHandler).onError(throwable);
         inOrder.verifyNoMoreInteractions();
     }
 

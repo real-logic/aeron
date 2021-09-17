@@ -210,8 +210,6 @@ public class ClusterNetworkTopologyTest
 
             connectAndSendMessages(ingressChannel, ingressEndpoints, selector, 10);
         }
-
-        assertEquals(1 + 1, 3);
     }
 
     private void setupDataCollection(final int nodeCount)

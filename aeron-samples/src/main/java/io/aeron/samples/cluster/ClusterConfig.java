@@ -44,6 +44,9 @@ public final class ClusterConfig
     public static final int MEMBER_FACING_PORT_OFFSET = 3;
     public static final int LOG_PORT_OFFSET = 4;
     public static final int TRANSFER_PORT_OFFSET = 5;
+    public static final String ARCHIVE_SUB_DIR = "archive";
+    public static final String CONSENSUS_MODULE_SUB_DIR = "consensus-module";
+    public static final String SERVICE_SUB_DIR = "service";
 
     private final MediaDriver.Context mediaDriverContext;
     private final Archive.Context archiveContext;
@@ -108,7 +111,7 @@ public final class ClusterConfig
 
         final Archive.Context archiveContext = new Archive.Context()
             .aeronDirectoryName(aeronDirName)
-            .archiveDir(new File(baseDir, "archive"))
+            .archiveDir(new File(baseDir, ARCHIVE_SUB_DIR))
             .controlChannel(udpChannel(nodeId, hostname, portBase, ARCHIVE_CONTROL_PORT_OFFSET))
             .archiveClientContext(replicationArchiveContext)
             .localControlChannel("aeron:ipc?term-length=64k")
@@ -125,14 +128,14 @@ public final class ClusterConfig
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
             .clusterMemberId(nodeId)
             .clusterMembers(clusterMembers)
-            .clusterDir(new File(baseDir, "consensus-module"))
+            .clusterDir(new File(baseDir, CONSENSUS_MODULE_SUB_DIR))
             .archiveContext(aeronArchiveContext.clone())
             .replicationChannel("aeron:udp?endpoint=" + hostname + ":0");
 
         final ClusteredServiceContainer.Context clusteredServiceContext = new ClusteredServiceContainer.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveContext(aeronArchiveContext.clone())
-            .clusterDir(new File(baseDir, "service"))
+            .clusterDir(new File(baseDir, SERVICE_SUB_DIR))
             .clusteredService(clusteredService);
 
         return new ClusterConfig(

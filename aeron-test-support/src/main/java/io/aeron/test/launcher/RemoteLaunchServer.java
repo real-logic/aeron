@@ -336,8 +336,9 @@ public class RemoteLaunchServer
 
                 final long startTimeMs = System.currentTimeMillis();
                 System.out.println("[" + pid() + "] Started: " + String.join(" ", command));
+                final PrintStream stdOutputStream = parseBaseDirectory(command);
 
-                responseReader = new ProcessResponseReader(connectionChannel, pid());
+                responseReader = new ProcessResponseReader(connectionChannel, pid(), stdOutputStream);
                 final Thread responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
                 responseThread.start();
                 final Thread processMonitorThread = new Thread(() ->
@@ -375,18 +376,46 @@ public class RemoteLaunchServer
                 return State.CLOSING;
             }
         }
+
+        private PrintStream parseBaseDirectory(final String[] command)
+        {
+            final String baseDirPrefix = "-Daeron.cluster.tutorial.baseDir=";
+            for (final String arg : command)
+            {
+                final String trimmedArg = arg.trim();
+                if (trimmedArg.startsWith(baseDirPrefix))
+                {
+                    final File file = new File(trimmedArg.substring(baseDirPrefix.length()), "command.out");
+                    try
+                    {
+                        return new PrintStream(file.getAbsolutePath(), "UTF-8");
+                    }
+                    catch (final Exception ex)
+                    {
+                        System.err.println("Failed to create stream for command std: " + ex.getMessage());
+                    }
+                }
+            }
+
+            return null;
+        }
     }
 
     private static final class ProcessResponseReader
     {
         private final SocketChannel connectionChannel;
         private final long pid;
+        private final PrintStream stdOutputStream;
         private volatile boolean isClosed = false;
 
-        private ProcessResponseReader(final SocketChannel connectionChannel, final long pid)
+        private ProcessResponseReader(
+            final SocketChannel connectionChannel,
+            final long pid,
+            final PrintStream stdOutputStream)
         {
             this.connectionChannel = connectionChannel;
             this.pid = pid;
+            this.stdOutputStream = stdOutputStream;
         }
 
         private void runResponses(final InputStream processOutput)
@@ -401,6 +430,7 @@ public class RemoteLaunchServer
                     {
                         data.position(0).limit(read);
                         connectionChannel.write(data);
+                        stdOutputStream.write(data.array(), 0, read);
                     }
                     else
                     {
@@ -419,6 +449,10 @@ public class RemoteLaunchServer
                 {
                     System.out.println("[" + pid + "] Process closed");
                 }
+            }
+            finally
+            {
+                CloseHelper.quietClose(stdOutputStream);
             }
         }
 

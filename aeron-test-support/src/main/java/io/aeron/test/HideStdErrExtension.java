@@ -19,8 +19,6 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 
 public class HideStdErrExtension implements BeforeEachCallback, AfterEachCallback
@@ -48,10 +46,4 @@ public class HideStdErrExtension implements BeforeEachCallback, AfterEachCallbac
     }
 
 
-    private static class NullOutputStream extends OutputStream
-    {
-        public void write(final int ignore) throws IOException
-        {
-        }
-    }
 }

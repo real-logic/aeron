@@ -15,6 +15,7 @@
  */
 package io.aeron.test.launcher;
 
+import io.aeron.test.NullOutputStream;
 import org.agrona.CloseHelper;
 
 import java.io.*;
@@ -397,7 +398,7 @@ public class RemoteLaunchServer
                 }
             }
 
-            return null;
+            return new PrintStream(new NullOutputStream());
         }
     }
 

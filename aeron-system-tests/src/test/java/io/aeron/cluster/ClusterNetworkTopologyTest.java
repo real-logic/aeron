@@ -154,6 +154,7 @@ public class ClusterNetworkTopologyTest
     {
         assertNotNull(hostnames);
         assertEquals(3, hostnames.size());
+        setupDataCollection(3);
         final String ingressEndpoints = ingressChannel.contains("endpoint") ?
             null : BasicAuctionClusterClient.ingressEndpoints(hostnames);
 

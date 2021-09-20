@@ -905,7 +905,7 @@ public final class Archive implements AutoCloseable
 
             if (null == markFile)
             {
-                if (0 == errorBufferLength && null == errorHandler)
+                if (0 == errorBufferLength)
                 {
                     errorBufferLength = Configuration.errorBufferLength();
                 }

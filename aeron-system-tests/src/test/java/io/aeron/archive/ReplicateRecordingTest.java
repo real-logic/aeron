@@ -85,13 +85,11 @@ public class ReplicateRecordingTest
 
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-    private final DataCollector dataCollector = new DataCollector();
 
 
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector);
 
         final String srcAeronDirectoryName = generateRandomDirName();
         final String dstAeronDirectoryName = generateRandomDirName();
@@ -144,10 +142,10 @@ public class ReplicateRecordingTest
         }
         finally
         {
-            dataCollector.add(srcContext.aeronDirectory());
-            dataCollector.add(dstContext.aeronDirectory());
-            dataCollector.add(dstArchiveCtx.archiveDir());
-            dataCollector.add(srcArchiveCtx.archiveDir());
+            clusterTestWatcher.dataCollector().add(srcContext.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(dstContext.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(dstArchiveCtx.archiveDir());
+            clusterTestWatcher.dataCollector().add(srcArchiveCtx.archiveDir());
         }
 
         srcAeron = Aeron.connect(

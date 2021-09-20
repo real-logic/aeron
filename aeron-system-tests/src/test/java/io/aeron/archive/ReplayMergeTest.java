@@ -23,12 +23,14 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.*;
+import io.aeron.test.ClusterTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
@@ -98,7 +100,6 @@ public class ReplayMergeTest
     private final MutableLong receivedMessageCount = new MutableLong();
     private final MutableLong receivedPosition = new MutableLong();
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
-    private final DataCollector dataCollector = new DataCollector();
 
     private TestMediaDriver driver;
     private Archive archive;
@@ -126,7 +127,6 @@ public class ReplayMergeTest
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector);
 
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
@@ -161,8 +161,8 @@ public class ReplayMergeTest
                 .controlResponseChannel(archive.context().localControlChannel())
                 .aeron(aeron));
 
-        dataCollector.add(Paths.get(mediaDriverContext.aeronDirectoryName()));
-        dataCollector.add(archiveDir.toPath());
+        clusterTestWatcher.dataCollector().add(Paths.get(mediaDriverContext.aeronDirectoryName()));
+        clusterTestWatcher.dataCollector().add(archiveDir.toPath());
     }
 
     @AfterEach
@@ -217,11 +217,6 @@ public class ReplayMergeTest
 
             assertEquals(TOTAL_MESSAGE_COUNT, receivedMessageCount.get());
             assertEquals(publication.position(), receivedPosition.get());
-        }
-        catch (final Exception ex)
-        {
-            dataCollector.dumpData(testInfo);
-            LangUtil.rethrowUnchecked(ex);
         }
     }
 

@@ -51,12 +51,10 @@ public class MultiModuleSharedDriverTest
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
 
-    private final DataCollector dataCollector = new DataCollector();
 
     @BeforeEach
     void setUp()
     {
-        clusterTestWatcher.dataCollector(dataCollector);
     }
 
     @AfterEach
@@ -154,15 +152,15 @@ public class MultiModuleSharedDriverTest
             }
             finally
             {
-                dataCollector.add(moduleCtx0.clusterDir());
-                dataCollector.add(moduleCtx1.clusterDir());
+                clusterTestWatcher.dataCollector().add(moduleCtx0.clusterDir());
+                clusterTestWatcher.dataCollector().add(moduleCtx1.clusterDir());
                 CloseHelper.closeAll(client0, client1, consensusModule0, consensusModule1, container0, container1);
             }
         }
         finally
         {
-            dataCollector.add(driverCtx.aeronDirectory());
-            dataCollector.add(archiveCtx.archiveDir());
+            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
     }
 
@@ -170,8 +168,8 @@ public class MultiModuleSharedDriverTest
     @InterruptAfter(30)
     public void shouldSupportTwoMultiNodeClusters()
     {
-        try (MultiClusterNode node0 = new MultiClusterNode(0, dataCollector);
-            MultiClusterNode node1 = new MultiClusterNode(1, dataCollector))
+        try (MultiClusterNode node0 = new MultiClusterNode(0, clusterTestWatcher.dataCollector());
+            MultiClusterNode node1 = new MultiClusterNode(1, clusterTestWatcher.dataCollector()))
         {
             final MutableReference<String> egress = new MutableReference<>();
             final EgressListener egressListener = (clusterSessionId, timestamp, buffer, offset, length, header) ->

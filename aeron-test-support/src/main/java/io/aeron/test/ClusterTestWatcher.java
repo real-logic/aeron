@@ -60,19 +60,12 @@ public class ClusterTestWatcher implements TestWatcher
 
     private DataCollector dataCollector = new DataCollector();
     private AutoCloseable closeable = () -> {};
-    private boolean deleteOnCompletion = true;
 
     public ClusterTestWatcher cluster(final TestCluster testCluster)
     {
         this.dataCollector = testCluster.dataCollector();
         closeable = testCluster;
 
-        return this;
-    }
-
-    public ClusterTestWatcher dataCollector(final DataCollector dataCollector)
-    {
-        this.dataCollector = dataCollector;
         return this;
     }
 
@@ -412,16 +405,9 @@ public class ClusterTestWatcher implements TestWatcher
 
     private void deleteAllLocations()
     {
-        if (deleteOnCompletion)
+        for (final Path path : dataCollector.allLocations())
         {
-            for (final Path path : dataCollector.allLocations())
-            {
-                IoUtil.delete(path.toFile(), true);
-            }
-        }
-        else
-        {
-            System.out.printf("deleteAllLocation: %s, isClosable: %s%n", deleteOnCompletion, (null == closeable));
+            IoUtil.delete(path.toFile(), true);
         }
     }
 }

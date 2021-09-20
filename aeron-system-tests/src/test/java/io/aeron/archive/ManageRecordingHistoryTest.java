@@ -69,12 +69,10 @@ public class ManageRecordingHistoryTest
 
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-    private final DataCollector dataCollector = new DataCollector();
 
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector);
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_LENGTH)
@@ -98,8 +96,8 @@ public class ManageRecordingHistoryTest
         }
         finally
         {
-            dataCollector.add(driverCtx.aeronDirectory());
-            dataCollector.add(archiveCtx.archiveDir());
+            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
 
         aeron = Aeron.connect();

@@ -81,12 +81,10 @@ class CatalogWithJumboRecordingsAndGapsTest
 
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-    private final DataCollector dataCollector = new DataCollector();
 
     @BeforeEach
     void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector);
 
         epochClock.update(1);
         recordingIds = new long[NUM_RECORDINGS];
@@ -144,8 +142,8 @@ class CatalogWithJumboRecordingsAndGapsTest
         }
         finally
         {
-            dataCollector.add(driverCtx.aeronDirectory());
-            dataCollector.add(archiveCtx.archiveDir());
+            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
 
         aeron = Aeron.connect(

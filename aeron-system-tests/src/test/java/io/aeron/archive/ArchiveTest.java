@@ -86,7 +86,6 @@ public class ArchiveTest
 
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-    private final DataCollector dataCollector = new DataCollector();
 
     private long controlSessionId;
     private String publishUri;
@@ -157,8 +156,8 @@ public class ArchiveTest
         }
         finally
         {
-            dataCollector.add(driverCtx.aeronDirectory());
-            dataCollector.add(archiveContext.archiveDir());
+            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(archiveContext.archiveDir());
         }
 
         client = Aeron.connect();
@@ -180,7 +179,6 @@ public class ArchiveTest
     @BeforeEach
     void setUp()
     {
-        clusterTestWatcher.dataCollector(dataCollector);
     }
 
     @AfterEach

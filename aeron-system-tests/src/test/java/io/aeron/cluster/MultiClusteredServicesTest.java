@@ -54,7 +54,7 @@ public class MultiClusteredServicesTest
     @BeforeEach
     void setUp()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+        clusterTestWatcher.dataCollector(dataCollector);
     }
 
     @AfterEach

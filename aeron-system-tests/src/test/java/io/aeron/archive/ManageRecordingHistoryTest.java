@@ -74,7 +74,7 @@ public class ManageRecordingHistoryTest
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+        clusterTestWatcher.dataCollector(dataCollector);
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_LENGTH)

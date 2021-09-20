@@ -91,7 +91,7 @@ public class ReplicateRecordingTest
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+        clusterTestWatcher.dataCollector(dataCollector);
 
         final String srcAeronDirectoryName = generateRandomDirName();
         final String dstAeronDirectoryName = generateRandomDirName();

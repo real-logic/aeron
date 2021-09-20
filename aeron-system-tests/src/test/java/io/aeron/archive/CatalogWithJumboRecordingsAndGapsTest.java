@@ -86,7 +86,7 @@ class CatalogWithJumboRecordingsAndGapsTest
     @BeforeEach
     void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+        clusterTestWatcher.dataCollector(dataCollector);
 
         epochClock.update(1);
         recordingIds = new long[NUM_RECORDINGS];

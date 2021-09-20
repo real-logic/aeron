@@ -80,7 +80,6 @@ public class ArchiveAuthenticationTest
     @BeforeEach
     void setUp()
     {
-        clusterTestWatcher.deleteOnCompletion(true);
     }
 
     @AfterEach

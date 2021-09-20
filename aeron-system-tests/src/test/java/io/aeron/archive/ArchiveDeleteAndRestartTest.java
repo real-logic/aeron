@@ -67,7 +67,7 @@ public class ArchiveDeleteAndRestartTest
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+        clusterTestWatcher.dataCollector(dataCollector);
 
         final Random rnd = new Random();
         rnd.setSeed(seed);

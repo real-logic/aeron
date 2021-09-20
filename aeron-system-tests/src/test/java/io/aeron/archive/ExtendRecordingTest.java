@@ -100,7 +100,7 @@ public class ExtendRecordingTest
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+        clusterTestWatcher.dataCollector(dataCollector);
 
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 

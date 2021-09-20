@@ -56,7 +56,7 @@ public class MultiModuleSharedDriverTest
     @BeforeEach
     void setUp()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+        clusterTestWatcher.dataCollector(dataCollector);
     }
 
     @AfterEach

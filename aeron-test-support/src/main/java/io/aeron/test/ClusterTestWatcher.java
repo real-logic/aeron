@@ -410,7 +410,7 @@ public class ClusterTestWatcher implements TestWatcher
         }
     }
 
-    public void deleteAllLocations()
+    private void deleteAllLocations()
     {
         if (deleteOnCompletion)
         {
@@ -423,10 +423,5 @@ public class ClusterTestWatcher implements TestWatcher
         {
             System.out.printf("deleteAllLocation: %s, isClosable: %s%n", deleteOnCompletion, (null == closeable));
         }
-    }
-
-    public void deleteOnCompletion(final boolean deleteOnCompletion)
-    {
-        this.deleteOnCompletion = deleteOnCompletion;
     }
 }

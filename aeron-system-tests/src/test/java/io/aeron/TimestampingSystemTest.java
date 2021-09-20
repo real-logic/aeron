@@ -71,7 +71,6 @@ public class TimestampingSystemTest
     @BeforeEach
     void setUp()
     {
-        clusterTestWatcher.deleteOnCompletion(true);
     }
 
     @Test

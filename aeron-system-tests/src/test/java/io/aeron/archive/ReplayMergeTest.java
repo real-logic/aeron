@@ -126,7 +126,7 @@ public class ReplayMergeTest
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+        clusterTestWatcher.dataCollector(dataCollector);
 
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 

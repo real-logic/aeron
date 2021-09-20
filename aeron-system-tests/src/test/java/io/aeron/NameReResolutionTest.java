@@ -22,7 +22,6 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.*;
-import io.aeron.test.driver.DistinctErrorLogTestWatcher;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
@@ -88,7 +87,7 @@ public class NameReResolutionTest
     public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
 
     @RegisterExtension
-    public final DistinctErrorLogTestWatcher logWatcher = new DistinctErrorLogTestWatcher();
+    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
 
     @RegisterExtension
     public final InterruptingTestCallback testCallback = new InterruptingTestCallback();
@@ -110,7 +109,14 @@ public class NameReResolutionTest
             .threadingMode(ThreadingMode.SHARED)
             .nameResolver(new RedirectingNameResolver(STUB_LOOKUP_CONFIGURATION));
 
-        driver = TestMediaDriver.launch(context, testWatcher);
+        try
+        {
+            driver = TestMediaDriver.launch(context, testWatcher);
+        }
+        finally
+        {
+            clusterTestWatcher.dataCollector().add(context.aeronDirectory());
+        }
 
         client = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()));
         countersReader = client.countersReader();
@@ -121,9 +127,10 @@ public class NameReResolutionTest
     {
         if (null != client)
         {
-            logWatcher.captureErrors(client.context().aeronDirectoryName());
             CloseHelper.closeAll(client, driver);
         }
+
+        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @SlowTest

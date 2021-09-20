@@ -76,12 +76,11 @@ public class ArchiveAuthenticationTest
 
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-    private final DataCollector dataCollector = new DataCollector();
 
     @BeforeEach
     void setUp()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
+        clusterTestWatcher.deleteOnCompletion(true);
     }
 
     @AfterEach
@@ -381,8 +380,8 @@ public class ArchiveAuthenticationTest
         }
         finally
         {
-            dataCollector.add(mediaDriverCtx.aeronDirectory());
-            dataCollector.add(archiveCtx.archiveDir());
+            clusterTestWatcher.dataCollector().add(mediaDriverCtx.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
     }
 

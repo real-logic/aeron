@@ -62,7 +62,6 @@ public class MultiDestinationCastTest
     private static final String PUB_MDC_MANUAL_URI = "aeron:udp?control-mode=manual";
     private static final String SUB1_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:24326|group=true";
     private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:24327|group=true";
-    private static final String SUB3_MDC_MANUAL_URI = CommonContext.SPY_PREFIX + PUB_MDC_MANUAL_URI;
 
     private static final int STREAM_ID = 1001;
 
@@ -327,8 +326,10 @@ public class MultiDestinationCastTest
             }
             else
             {
-                subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT);
-                Tests.yield();
+                if (0 == subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT))
+                {
+                    Tests.yield();
+                }
             }
 
             if (i == numMessageForSub2 - 1)
@@ -444,7 +445,7 @@ public class MultiDestinationCastTest
                 totalFragments += numFragments;
             }
         }
-        while (totalFragments < 1 && ((nowNs - startNs) < TimeUnit.MILLISECONDS.toNanos(5000)));
+        while (totalFragments < 1 && ((nowNs - startNs) < TimeUnit.SECONDS.toNanos(10)));
     }
 
     private void verifyFragments(final FragmentHandler fragmentHandler, final int numMessagesToSend)

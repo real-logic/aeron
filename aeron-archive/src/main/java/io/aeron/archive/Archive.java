@@ -798,7 +798,7 @@ public final class Archive implements AutoCloseable
         private AuthenticatorSupplier authenticatorSupplier;
         private Counter controlSessionsCounter;
 
-        private int errorBufferLength = 0;
+        private int errorBufferLength;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
@@ -905,7 +905,7 @@ public final class Archive implements AutoCloseable
 
             if (null == markFile)
             {
-                if (0 == errorBufferLength && null == errorHandler)
+                if (0 == errorBufferLength)
                 {
                     errorBufferLength = Configuration.errorBufferLength();
                 }
@@ -914,8 +914,7 @@ public final class Archive implements AutoCloseable
             }
 
             errorHandler = CommonContext.setupErrorHandler(
-                errorHandler,
-                new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII));
+                errorHandler, new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII));
 
             if (null == aeron)
             {

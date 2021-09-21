@@ -92,6 +92,7 @@ public final class PriorityHeapTimerService implements TimerService
                 shiftDown(timers, lastIndex, 0, lastEntry);
             }
 
+            timerByCorrelationId.remove(timer.correlationId);
             addToFreeList(timer);
         }
 

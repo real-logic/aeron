@@ -400,6 +400,22 @@ class PriorityHeapTimerServiceTest
     }
 
     @Test
+    void cancelExpiredTimerIsANoOp()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 1);
+        timerService.scheduleTimerForCorrelationId(2, 1);
+        timerService.scheduleTimerForCorrelationId(3, 3);
+
+        assertEquals(2, timerService.poll(1));
+
+        assertFalse(timerService.cancelTimerByCorrelationId(1));
+        assertFalse(timerService.cancelTimerByCorrelationId(2));
+    }
+
+    @Test
     void shouldReuseExpiredEntriesFromAFreeList()
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);

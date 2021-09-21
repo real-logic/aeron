@@ -58,9 +58,8 @@ public class ClusterTestWatcher implements TestWatcher
 
     private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
 
-    private DataCollector dataCollector = null;
+    private DataCollector dataCollector = new DataCollector();
     private AutoCloseable closeable = () -> {};
-    private boolean deleteOnCompletion = false;
 
     public ClusterTestWatcher cluster(final TestCluster testCluster)
     {
@@ -70,10 +69,9 @@ public class ClusterTestWatcher implements TestWatcher
         return this;
     }
 
-    public ClusterTestWatcher dataCollector(final DataCollector dataCollector)
+    public DataCollector dataCollector()
     {
-        this.dataCollector = dataCollector;
-        return this;
+        return dataCollector;
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -405,19 +403,11 @@ public class ClusterTestWatcher implements TestWatcher
         }
     }
 
-    public void deleteAllLocations()
+    private void deleteAllLocations()
     {
-        if (deleteOnCompletion)
+        for (final Path path : dataCollector.allLocations())
         {
-            for (final Path path : dataCollector.allLocations())
-            {
-                IoUtil.delete(path.toFile(), true);
-            }
+            IoUtil.delete(path.toFile(), true);
         }
-    }
-
-    public void deleteOnCompletion(final boolean deleteOnCompletion)
-    {
-        this.deleteOnCompletion = deleteOnCompletion;
     }
 }

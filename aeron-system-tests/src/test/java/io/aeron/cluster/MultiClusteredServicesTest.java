@@ -54,7 +54,6 @@ public class MultiClusteredServicesTest
     @BeforeEach
     void setUp()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
     }
 
     @AfterEach
@@ -121,9 +120,9 @@ public class MultiClusteredServicesTest
                 }
                 finally
                 {
-                    dataCollector.add(context.mediaDriverCtx.aeronDirectory());
-                    dataCollector.add(context.archiveCtx.archiveDir());
-                    dataCollector.add(context.consensusModuleCtx.clusterDir());
+                    clusterTestWatcher.dataCollector().add(context.mediaDriverCtx.aeronDirectory());
+                    clusterTestWatcher.dataCollector().add(context.archiveCtx.archiveDir());
+                    clusterTestWatcher.dataCollector().add(context.consensusModuleCtx.clusterDir());
                 }
             });
 
@@ -137,7 +136,7 @@ public class MultiClusteredServicesTest
                 }
                 finally
                 {
-                    dataCollector.add(context.serviceContainerCtx.clusterDir());
+                    clusterTestWatcher.dataCollector().add(context.serviceContainerCtx.clusterDir());
                 }
             });
 

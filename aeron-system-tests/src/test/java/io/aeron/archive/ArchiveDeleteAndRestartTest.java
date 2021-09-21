@@ -56,7 +56,6 @@ public class ArchiveDeleteAndRestartTest
 
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-    private final DataCollector dataCollector = new DataCollector();
 
     private TestMediaDriver driver;
     private Archive archive;
@@ -67,7 +66,6 @@ public class ArchiveDeleteAndRestartTest
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
 
         final Random rnd = new Random();
         rnd.setSeed(seed);
@@ -98,8 +96,8 @@ public class ArchiveDeleteAndRestartTest
         }
         finally
         {
-            dataCollector.add(driverCtx.aeronDirectory());
-            dataCollector.add(archiveContext.archiveDir());
+            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(archiveContext.archiveDir());
         }
         client = Aeron.connect();
     }

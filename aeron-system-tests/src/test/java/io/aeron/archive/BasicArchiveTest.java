@@ -71,14 +71,12 @@ public class BasicArchiveTest
 
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-    private final DataCollector dataCollector = new DataCollector();
 
     private File archiveDir;
 
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
 
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
@@ -106,8 +104,8 @@ public class BasicArchiveTest
         }
         finally
         {
-            dataCollector.add(driverCtx.aeronDirectory());
-            dataCollector.add(archiveCtx.archiveDir());
+            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
 
         aeron = Aeron.connect(

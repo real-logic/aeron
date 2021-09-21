@@ -95,12 +95,10 @@ public class ExtendRecordingTest
 
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-    private final DataCollector dataCollector = new DataCollector();
 
     @BeforeEach
     public void before()
     {
-        clusterTestWatcher.dataCollector(dataCollector).deleteOnCompletion(true);
 
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
@@ -130,8 +128,8 @@ public class ExtendRecordingTest
         }
         finally
         {
-            dataCollector.add(driverCtx.aeronDirectory());
-            dataCollector.add(archiveCtx.archiveDir());
+            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
 
         aeron = Aeron.connect(

@@ -77,7 +77,6 @@ public class ClusterNetworkTopologyTest
 
     @RegisterExtension
     public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-    private final DataCollector dataCollector = new DataCollector();
 
     private File baseDir;
 
@@ -107,8 +106,6 @@ public class ClusterNetworkTopologyTest
         IoUtil.delete(new File(baseDir, "node0"), true);
         IoUtil.delete(new File(baseDir, "node1"), true);
         IoUtil.delete(new File(baseDir, "node2"), true);
-
-        clusterTestWatcher.dataCollector(dataCollector);
     }
 
     @Test
@@ -217,12 +214,14 @@ public class ClusterNetworkTopologyTest
     {
         for (int nodeId = 0; nodeId < nodeCount; nodeId++)
         {
-            dataCollector.add(new File(CommonContext.getAeronDirectoryName() + "-" + nodeId + "-driver"));
-            dataCollector.add(new File(clusterNodeDir(nodeId), ClusterConfig.ARCHIVE_SUB_DIR));
-            dataCollector.add(new File(clusterNodeDir(nodeId), ClusterConfig.CONSENSUS_MODULE_SUB_DIR));
-            dataCollector.add(new File(clusterNodeDir(nodeId), ClusterConfig.SERVICE_SUB_DIR));
-            dataCollector.add(new File(clusterNodeDir(nodeId), "event.log"));
-            dataCollector.add(new File(clusterNodeDir(nodeId), "command.out"));
+            clusterTestWatcher.dataCollector().add(
+                new File(CommonContext.getAeronDirectoryName() + "-" + nodeId + "-driver"));
+            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.ARCHIVE_SUB_DIR));
+            clusterTestWatcher.dataCollector().add(
+                new File(clusterNodeDir(nodeId), ClusterConfig.CONSENSUS_MODULE_SUB_DIR));
+            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.SERVICE_SUB_DIR));
+            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "event.log"));
+            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "command.out"));
         }
     }
 

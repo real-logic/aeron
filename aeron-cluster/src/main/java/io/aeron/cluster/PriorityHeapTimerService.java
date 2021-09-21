@@ -21,7 +21,18 @@ import org.agrona.collections.Long2ObjectHashMap;
 import java.util.Arrays;
 import java.util.Objects;
 
-final class PriorityHeapTimerService implements TimerService
+/**
+ * Implementation of the {@link TimerService} that uses a priority heap to order the timestamps.
+ *
+ * <p>
+ * <b>Caveats</b>
+ * <p>
+ * Timers that expire in the same tick are not be ordered with one another. As ticks are
+ * fairly coarse resolution normally, this means that some timers may expire out of order.
+ * <p>
+ * <b>Note:</b> Not threadsafe.
+ */
+public final class PriorityHeapTimerService implements TimerService
 {
     private static final TimerEntry[] NO_TIMERS = new TimerEntry[0];
     private static final int MIN_CAPACITY = 8;
@@ -31,11 +42,23 @@ final class PriorityHeapTimerService implements TimerService
     private TimerEntry[] timers = NO_TIMERS;
     private int size;
 
-    PriorityHeapTimerService(final TimerHandler timerHandler)
+    /**
+     * Construct a Priority Heap Timer Service using the supplied handler to
+     * callback for expired timers
+     *
+     * @param timerHandler to callback when a timer expires.
+     */
+    public PriorityHeapTimerService(final TimerHandler timerHandler)
     {
         this.timerHandler = Objects.requireNonNull(timerHandler, "TimerHandler");
     }
 
+    /**
+     * Poll for expired timers, firing the callback supplied in the constructor.
+     *
+     * @param now current time.
+     * @return the number of expired timers
+     */
     public int poll(final long now)
     {
         int expiredTimers = 0;
@@ -69,6 +92,9 @@ final class PriorityHeapTimerService implements TimerService
         return expiredTimers;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void scheduleTimerForCorrelationId(final long correlationId, final long deadline)
     {
         final TimerEntry existingEntry = timerByCorrelationId.get(correlationId);
@@ -97,6 +123,9 @@ final class PriorityHeapTimerService implements TimerService
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean cancelTimerByCorrelationId(final long correlationId)
     {
         final TimerEntry removed = timerByCorrelationId.remove(correlationId);
@@ -117,6 +146,9 @@ final class PriorityHeapTimerService implements TimerService
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void snapshot(final TimerSnapshotTaker snapshotTaker)
     {
         final TimerEntry[] timers = this.timers;
@@ -127,6 +159,10 @@ final class PriorityHeapTimerService implements TimerService
         }
     }
 
+
+    /**
+     * {@inheritDoc}
+     */
     public void currentTime(final long now)
     {
     }

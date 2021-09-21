@@ -21,7 +21,22 @@ import org.agrona.collections.Long2LongHashMap;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-class WheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.TimerHandler, TimerService
+/**
+ * Implementation of the {@link TimerService} that is based on {@link DeadlineTimerWheel}.
+ *
+ * <p>
+ * <b>Caveats</b>
+ * <p>
+ * Timers that expire in the same tick are not be ordered with one another. As ticks are
+ * fairly coarse resolution normally, this means that some timers may expire out of order.
+ * <p>
+ * Upon Cluster restart the expiration order of the already expired timers is <em>not guaranteed</em>, i.e. timers with
+ * the later deadlines might expire before timers with the earlier deadlines. To avoid this behavior use the
+ * {@link PriorityHeapTimerService} instead.
+ * <p>
+ * <b>Note:</b> Not thread safe.
+ */
+final class WheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel.TimerHandler, TimerService
 {
     private final TimerService.TimerHandler timerHandler;
     private final Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
@@ -46,7 +61,7 @@ class WheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel
 
         do
         {
-            expired += super.poll(now, this, POLL_LIMIT);
+            expired += poll(now, this, POLL_LIMIT);
 
             if (isAbort)
             {
@@ -81,7 +96,7 @@ class WheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel
     {
         cancelTimerByCorrelationId(correlationId);
 
-        final long timerId = super.scheduleTimer(deadline);
+        final long timerId = scheduleTimer(deadline);
         timerIdByCorrelationIdMap.put(correlationId, timerId);
         correlationIdByTimerIdMap.put(timerId, correlationId);
     }
@@ -91,7 +106,7 @@ class WheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel
         final long timerId = timerIdByCorrelationIdMap.remove(correlationId);
         if (Long.MAX_VALUE != timerId)
         {
-            super.cancelTimer(timerId);
+            cancelTimer(timerId);
             correlationIdByTimerIdMap.remove(timerId);
 
             return true;
@@ -109,7 +124,7 @@ class WheelTimerService extends DeadlineTimerWheel implements DeadlineTimerWheel
             iter.next();
 
             final long correlationId = iter.getLongKey();
-            final long deadline = super.deadline(iter.getLongValue());
+            final long deadline = deadline(iter.getLongValue());
 
             snapshotTaker.snapshotTimer(correlationId, deadline);
         }

@@ -27,10 +27,10 @@ import java.util.Objects;
  * <p>
  * <b>Caveats</b>
  * <p>
- * Timers that expire in the same tick are not be ordered with one another. As ticks are
- * fairly coarse resolution normally, this means that some timers may expire out of order.
+ * Timers with the same deadline are not be ordered with one another. In contrast, the timers with different deadlines
+ * are guaranteed to expire in order even after Cluster restart, i.e. when the deadlines are in the past.
  * <p>
- * <b>Note:</b> Not threadsafe.
+ * <b>Note:</b> Not thread safe.
  */
 public final class PriorityHeapTimerService implements TimerService
 {

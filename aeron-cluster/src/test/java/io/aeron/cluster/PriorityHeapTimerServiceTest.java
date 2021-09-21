@@ -20,6 +20,10 @@ import io.aeron.cluster.TimerService.TimerSnapshotTaker;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
+
 import static io.aeron.cluster.TimerService.POLL_LIMIT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -391,6 +395,110 @@ class PriorityHeapTimerServiceTest
         inOrder.verify(timerHandler).onTimerEvent(2);
         inOrder.verify(timerHandler).onTimerEvent(4);
         inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void cancelExpiredTimerIsANoOp()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 1);
+        timerService.scheduleTimerForCorrelationId(2, 1);
+        timerService.scheduleTimerForCorrelationId(3, 3);
+
+        assertEquals(2, timerService.poll(1));
+
+        assertFalse(timerService.cancelTimerByCorrelationId(1));
+        assertFalse(timerService.cancelTimerByCorrelationId(2));
+    }
+
+    @Test
+    void scheduleMustRetainOrderBetweenDeadlines()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(3, 3);
+        timerService.scheduleTimerForCorrelationId(4, 4);
+        timerService.scheduleTimerForCorrelationId(5, 5);
+        timerService.scheduleTimerForCorrelationId(6, 0);
+
+        assertEquals(4, timerService.poll(5));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(6);
+        inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(4);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldReuseExpiredEntriesFromAFreeList()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 1);
+        timerService.scheduleTimerForCorrelationId(2, 2);
+        timerService.scheduleTimerForCorrelationId(3, 3);
+        final Set<PriorityHeapTimerService.TimerEntry> entries = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        timerService.forEach(entries::add);
+        assertEquals(3, entries.size());
+
+        assertEquals(2, timerService.poll(2));
+
+        timerService.scheduleTimerForCorrelationId(4, 4);
+        timerService.scheduleTimerForCorrelationId(5, 5);
+        timerService.scheduleTimerForCorrelationId(6, 0);
+
+        timerService.forEach(entries::add);
+        assertEquals(4, entries.size());
+
+        assertEquals(4, timerService.poll(5));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(6);
+        inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(4);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldReuseCanceledTimerEntriesFromAFreeList()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(1, 1);
+        timerService.scheduleTimerForCorrelationId(2, 2);
+        timerService.scheduleTimerForCorrelationId(3, 3);
+        timerService.scheduleTimerForCorrelationId(4, 4);
+        final Set<PriorityHeapTimerService.TimerEntry> entries = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        timerService.forEach(entries::add);
+        assertEquals(4, entries.size());
+
+        assertTrue(timerService.cancelTimerByCorrelationId(2));
+        assertTrue(timerService.cancelTimerByCorrelationId(4));
+
+        timerService.scheduleTimerForCorrelationId(5, 5);
+        timerService.scheduleTimerForCorrelationId(6, 0);
+
+        timerService.forEach(entries::add);
+        assertEquals(4, entries.size());
+
+        assertEquals(4, timerService.poll(5));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(6);
+        inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verify(timerHandler).onTimerEvent(3);
         inOrder.verify(timerHandler).onTimerEvent(5);
         inOrder.verifyNoMoreInteractions();
     }

@@ -15,11 +15,13 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Implementation of the {@link TimerService} that uses a priority heap to order the timestamps.
@@ -40,7 +42,9 @@ public final class PriorityHeapTimerService implements TimerService
     private final TimerHandler timerHandler;
     private final Long2ObjectHashMap<TimerEntry> timerByCorrelationId = new Long2ObjectHashMap<>();
     private TimerEntry[] timers = NO_TIMERS;
+    private TimerEntry[] freeList = NO_TIMERS;
     private int size;
+    private int freeTimers;
 
     /**
      * Construct a Priority Heap Timer Service using the supplied handler to
@@ -87,6 +91,8 @@ public final class PriorityHeapTimerService implements TimerService
             {
                 shiftDown(timers, lastIndex, 0, lastEntry);
             }
+
+            addToFreeList(timer);
         }
 
         return expiredTimers;
@@ -116,7 +122,18 @@ public final class PriorityHeapTimerService implements TimerService
             ensureCapacity(size + 1);
 
             final int index = size++;
-            final TimerEntry entry = new TimerEntry(correlationId, deadline, index);
+            final TimerEntry entry;
+            if (freeTimers > 0)
+            {
+                final int freeIndex = --freeTimers;
+                entry = freeList[freeIndex];
+                freeList[freeIndex] = null;
+                entry.reset(correlationId, deadline, index);
+            }
+            else
+            {
+                entry = new TimerEntry(correlationId, deadline, index);
+            }
 
             timerByCorrelationId.put(correlationId, entry);
             shiftUp(timers, index, entry);
@@ -143,6 +160,8 @@ public final class PriorityHeapTimerService implements TimerService
             shiftDown(timers, lastIndex, removed.index, last);
         }
 
+        addToFreeList(removed);
+
         return true;
     }
 
@@ -165,6 +184,15 @@ public final class PriorityHeapTimerService implements TimerService
      */
     public void currentTime(final long now)
     {
+    }
+
+    void forEach(final Consumer<TimerEntry> consumer)
+    {
+        final TimerEntry[] timers = this.timers;
+        for (int i = 0, size = this.size; i < size; i++)
+        {
+            consumer.accept(timers[i]);
+        }
     }
 
     private static void shiftUp(final TimerEntry[] timers, final int startIndex, final TimerEntry entry)
@@ -234,6 +262,7 @@ public final class PriorityHeapTimerService implements TimerService
             if (NO_TIMERS == timers)
             {
                 timers = new TimerEntry[MIN_CAPACITY];
+                freeList = new TimerEntry[MIN_CAPACITY];
             }
             else
             {
@@ -243,17 +272,29 @@ public final class PriorityHeapTimerService implements TimerService
                     newCapacity = ArrayUtil.MAX_CAPACITY;
                 }
                 timers = Arrays.copyOf(timers, newCapacity);
+                freeList = Arrays.copyOf(freeList, newCapacity);
             }
         }
     }
 
+    private void addToFreeList(final TimerEntry entry)
+    {
+        entry.reset(Aeron.NULL_VALUE, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
+        freeList[freeTimers++] = entry;
+    }
+
     static final class TimerEntry
     {
-        final long correlationId;
+        long correlationId;
         long deadline;
         int index;
 
-        private TimerEntry(final long correlationId, final long deadline, final int index)
+        TimerEntry(final long correlationId, final long deadline, final int index)
+        {
+            reset(correlationId, deadline, index);
+        }
+
+        void reset(final long correlationId, final long deadline, final int index)
         {
             this.correlationId = correlationId;
             this.deadline = deadline;

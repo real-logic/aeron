@@ -36,19 +36,19 @@ import java.util.function.Consumer;
  */
 public final class PriorityHeapTimerService implements TimerService
 {
-    private static final TimerEntry[] NO_TIMERS = new TimerEntry[0];
+    private static final TimerEntry[] EMPTY_TIMERS = new TimerEntry[0];
     private static final int MIN_CAPACITY = 8;
 
     private final TimerHandler timerHandler;
     private final Long2ObjectHashMap<TimerEntry> timerByCorrelationId = new Long2ObjectHashMap<>();
-    private TimerEntry[] timers = NO_TIMERS;
-    private TimerEntry[] freeList = NO_TIMERS;
+    private TimerEntry[] timers = EMPTY_TIMERS;
+    private TimerEntry[] freeTimers = EMPTY_TIMERS;
     private int size;
-    private int freeTimers;
+    private int freeTimerCount;
 
     /**
      * Construct a Priority Heap Timer Service using the supplied handler to
-     * callback for expired timers
+     * callback for expired timers.
      *
      * @param timerHandler to callback when a timer expires.
      */
@@ -124,11 +124,11 @@ public final class PriorityHeapTimerService implements TimerService
 
             final int index = size++;
             final TimerEntry entry;
-            if (freeTimers > 0)
+            if (freeTimerCount > 0)
             {
-                final int freeIndex = --freeTimers;
-                entry = freeList[freeIndex];
-                freeList[freeIndex] = null;
+                final int freeIndex = --freeTimerCount;
+                entry = freeTimers[freeIndex];
+                freeTimers[freeIndex] = null;
                 entry.reset(correlationId, deadline, index);
             }
             else
@@ -178,7 +178,6 @@ public final class PriorityHeapTimerService implements TimerService
             snapshotTaker.snapshotTimer(entry.correlationId, entry.deadline);
         }
     }
-
 
     /**
      * {@inheritDoc}
@@ -260,10 +259,10 @@ public final class PriorityHeapTimerService implements TimerService
                 throw new IllegalStateException("max capacity reached: " + ArrayUtil.MAX_CAPACITY);
             }
 
-            if (NO_TIMERS == timers)
+            if (EMPTY_TIMERS == timers)
             {
                 timers = new TimerEntry[MIN_CAPACITY];
-                freeList = new TimerEntry[MIN_CAPACITY];
+                freeTimers = new TimerEntry[MIN_CAPACITY];
             }
             else
             {
@@ -272,8 +271,9 @@ public final class PriorityHeapTimerService implements TimerService
                 {
                     newCapacity = ArrayUtil.MAX_CAPACITY;
                 }
+
                 timers = Arrays.copyOf(timers, newCapacity);
-                freeList = Arrays.copyOf(freeList, newCapacity);
+                freeTimers = Arrays.copyOf(freeTimers, newCapacity);
             }
         }
     }
@@ -281,7 +281,7 @@ public final class PriorityHeapTimerService implements TimerService
     private void addToFreeList(final TimerEntry entry)
     {
         entry.reset(Aeron.NULL_VALUE, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
-        freeList[freeTimers++] = entry;
+        freeTimers[freeTimerCount++] = entry;
     }
 
     static final class TimerEntry

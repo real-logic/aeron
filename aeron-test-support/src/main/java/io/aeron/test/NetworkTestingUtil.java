@@ -22,6 +22,7 @@ public class NetworkTestingUtil
 {
     /**
      * Return an error message if this address can't be bound, null if successful.
+     *
      * @param address The address to attempt to bind to.
      * @return null if successful, error message otherwise.
      */

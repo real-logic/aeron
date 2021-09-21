@@ -44,6 +44,4 @@ public class HideStdErrExtension implements BeforeEachCallback, AfterEachCallbac
             originalStream = null;
         }
     }
-
-
 }

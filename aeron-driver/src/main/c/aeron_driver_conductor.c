@@ -268,8 +268,7 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
         const char *param = AERON_DRIVER_CONDUCTOR_INVALID_DESTINATION_KEYS[i];
         if (NULL != aeron_uri_find_param_value(params, param))
         {
-            AERON_SET_ERR(
-                -AERON_ERROR_CODE_INVALID_CHANNEL, "Destinations must not contain the key: %s", param);
+            AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "Destinations must not contain the key: %s", param);
             return -1;
         }
     }
@@ -3699,7 +3698,7 @@ int aeron_driver_conductor_on_add_receive_destination(
         goto error_cleanup;
     }
 
-    udp_channel = NULL; // Ownership passed to the the receive_destination;
+    udp_channel = NULL; // Ownership passed to the receive_destination;
 
     aeron_driver_receiver_proxy_on_add_destination(conductor->context->receiver_proxy, endpoint, destination);
     aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);

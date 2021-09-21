@@ -416,6 +416,27 @@ class PriorityHeapTimerServiceTest
     }
 
     @Test
+    void scheduleMustRetainOrderBetweenDeadlines()
+    {
+        final TimerHandler timerHandler = mock(TimerHandler.class);
+        when(timerHandler.onTimerEvent(anyLong())).thenReturn(true);
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(timerHandler);
+        timerService.scheduleTimerForCorrelationId(3, 3);
+        timerService.scheduleTimerForCorrelationId(4, 4);
+        timerService.scheduleTimerForCorrelationId(5, 5);
+        timerService.scheduleTimerForCorrelationId(6, 0);
+
+        assertEquals(4, timerService.poll(5));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(6);
+        inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(4);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
     void shouldReuseExpiredEntriesFromAFreeList()
     {
         final TimerHandler timerHandler = mock(TimerHandler.class);
@@ -433,10 +454,19 @@ class PriorityHeapTimerServiceTest
 
         timerService.scheduleTimerForCorrelationId(4, 4);
         timerService.scheduleTimerForCorrelationId(5, 5);
-        timerService.scheduleTimerForCorrelationId(6, 6);
+        timerService.scheduleTimerForCorrelationId(6, 0);
 
         timerService.forEach(entries::add);
         assertEquals(4, entries.size());
+
+        assertEquals(4, timerService.poll(5));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(6);
+        inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(4);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -458,9 +488,18 @@ class PriorityHeapTimerServiceTest
         assertTrue(timerService.cancelTimerByCorrelationId(4));
 
         timerService.scheduleTimerForCorrelationId(5, 5);
-        timerService.scheduleTimerForCorrelationId(6, 6);
+        timerService.scheduleTimerForCorrelationId(6, 0);
 
         timerService.forEach(entries::add);
         assertEquals(4, entries.size());
+
+        assertEquals(4, timerService.poll(5));
+
+        final InOrder inOrder = inOrder(timerHandler);
+        inOrder.verify(timerHandler).onTimerEvent(6);
+        inOrder.verify(timerHandler).onTimerEvent(1);
+        inOrder.verify(timerHandler).onTimerEvent(3);
+        inOrder.verify(timerHandler).onTimerEvent(5);
+        inOrder.verifyNoMoreInteractions();
     }
 }

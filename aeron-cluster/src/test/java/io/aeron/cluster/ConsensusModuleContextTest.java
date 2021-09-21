@@ -86,7 +86,7 @@ class ConsensusModuleContextTest
             assertNotNull(supplier);
 
             final TimerService.TimerHandler timerHandler = mock(TimerService.TimerHandler.class);
-            final TimerService timerService = supplier.newInstance(timerHandler);
+            final TimerService timerService = supplier.newInstance(context.clusterClock().timeUnit(), timerHandler);
 
             assertNotNull(timerService);
             assertEquals(supplierName, timerService.getClass().getName());
@@ -122,7 +122,7 @@ class ConsensusModuleContextTest
         assertNotNull(supplier);
 
         final TimerService.TimerHandler timerHandler = mock(TimerService.TimerHandler.class);
-        final TimerService timerService = supplier.newInstance(timerHandler);
+        final TimerService timerService = supplier.newInstance(context.clusterClock().timeUnit(), timerHandler);
 
         assertNotNull(timerService);
         assertEquals(WheelTimerService.class, timerService.getClass());
@@ -131,7 +131,7 @@ class ConsensusModuleContextTest
     @Test
     void explicitTimerServiceSupplier()
     {
-        final TimerServiceSupplier supplier = timerHandler -> null;
+        final TimerServiceSupplier supplier = (clusterClock, timerHandler) -> null;
 
         context.timerServiceSupplier(supplier);
         assertSame(supplier, context.timerServiceSupplier());

@@ -21,6 +21,6 @@ class WheelTimerServiceClusterTimeTest extends ClusterTimerTest
 {
     TimerServiceSupplier timerServiceSupplier()
     {
-        return timerHandler -> new WheelTimerService(timerHandler, TimeUnit.MILLISECONDS, 0, 8, 128);
+        return (clusterClock, timerHandler) -> new WheelTimerService(timerHandler, TimeUnit.MILLISECONDS, 0, 8, 128);
     }
 }

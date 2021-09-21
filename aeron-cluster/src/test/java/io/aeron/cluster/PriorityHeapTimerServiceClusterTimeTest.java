@@ -19,6 +19,6 @@ class PriorityHeapTimerServiceClusterTimeTest extends ClusterTimerTest
 {
     TimerServiceSupplier timerServiceSupplier()
     {
-        return PriorityHeapTimerService::new;
+        return (clusterClock, timerHandler) -> new PriorityHeapTimerService(timerHandler);
     }
 }

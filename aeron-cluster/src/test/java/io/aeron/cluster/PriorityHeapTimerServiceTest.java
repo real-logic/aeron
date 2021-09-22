@@ -445,7 +445,7 @@ class PriorityHeapTimerServiceTest
         timerService.scheduleTimerForCorrelationId(1, 1);
         timerService.scheduleTimerForCorrelationId(2, 2);
         timerService.scheduleTimerForCorrelationId(3, 3);
-        final Set<PriorityHeapTimerService.TimerEntry> entries = Collections.newSetFromMap(new IdentityHashMap<>());
+        final Set<PriorityHeapTimerService.Timer> entries = Collections.newSetFromMap(new IdentityHashMap<>());
 
         timerService.forEach(entries::add);
         assertEquals(3, entries.size());
@@ -479,7 +479,7 @@ class PriorityHeapTimerServiceTest
         timerService.scheduleTimerForCorrelationId(2, 2);
         timerService.scheduleTimerForCorrelationId(3, 3);
         timerService.scheduleTimerForCorrelationId(4, 4);
-        final Set<PriorityHeapTimerService.TimerEntry> entries = Collections.newSetFromMap(new IdentityHashMap<>());
+        final Set<PriorityHeapTimerService.Timer> entries = Collections.newSetFromMap(new IdentityHashMap<>());
 
         timerService.forEach(entries::add);
         assertEquals(4, entries.size());

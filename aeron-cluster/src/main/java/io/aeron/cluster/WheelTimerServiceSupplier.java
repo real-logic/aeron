@@ -57,8 +57,8 @@ public class WheelTimerServiceSupplier implements TimerServiceSupplier
      */
     public TimerService newInstance(final TimeUnit clusterTimeUnit, final TimerService.TimerHandler timerHandler)
     {
-        final long startTimeInClusterTimeUnits = clusterTimeUnit.convert(startTime, this.timeUnit);
-        final long resolutionInClusterTimeUnits = clusterTimeUnit.convert(tickResolution, this.timeUnit);
+        final long startTimeInClusterTimeUnits = clusterTimeUnit.convert(startTime, timeUnit);
+        final long resolutionInClusterTimeUnits = clusterTimeUnit.convert(tickResolution, timeUnit);
 
         return new WheelTimerService(
             timerHandler,

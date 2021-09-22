@@ -3196,6 +3196,7 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    maxConcurrentSessions=" + maxConcurrentSessions +
                 "\n    ticksPerWheel=" + ticksPerWheel +
                 "\n    wheelTickResolutionNs=" + wheelTickResolutionNs +
+                "\n    timerServiceSupplier=" + timerServiceSupplier +
                 "\n    sessionTimeoutNs=" + sessionTimeoutNs +
                 "\n    leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs +
                 "\n    leaderHeartbeatIntervalNs=" + leaderHeartbeatIntervalNs +

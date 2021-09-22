@@ -89,7 +89,7 @@ class ConsensusModuleContextTest
             final TimerService timerService = supplier.newInstance(context.clusterClock().timeUnit(), timerHandler);
 
             assertNotNull(timerService);
-            assertEquals(supplierName, timerService.getClass().getName());
+            assertEquals(supplierName, supplier.getClass().getName());
         }
         finally
         {

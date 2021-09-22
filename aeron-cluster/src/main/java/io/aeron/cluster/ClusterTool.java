@@ -308,18 +308,17 @@ public class ClusterTool
             }
         }
 
-        final int size = entries.size();
         final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
         final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
-        final File newLogFile = new File(clusterDir, RecordingLog.RECORDING_LOG_FILE_NAME + ".sorted");
+        final Path newLogFile = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".sorted");
         try
         {
-            try (FileChannel fileChannel = FileChannel.open(newLogFile.toPath(), CREATE, READ, WRITE))
+            try (FileChannel fileChannel = FileChannel.open(newLogFile, CREATE, READ, WRITE))
             {
                 long position = 0;
-                for (int i = 0; i < size; i++)
+                for (final RecordingLog.Entry e : entries)
                 {
-                    RecordingLog.writeEntryToBuffer(entries.get(0), buffer);
+                    RecordingLog.writeEntryToBuffer(e, buffer);
                     byteBuffer.limit(RecordingLog.ENTRY_LENGTH).position(0);
 
                     if (RecordingLog.ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
@@ -332,7 +331,7 @@ public class ClusterTool
 
             final Path logFile = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
             Files.delete(logFile);
-            Files.move(newLogFile.toPath(), logFile);
+            Files.move(newLogFile, logFile);
         }
         catch (final IOException ex)
         {

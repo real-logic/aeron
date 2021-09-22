@@ -1328,7 +1328,10 @@ public class ClusterTest
         cluster.stopNode(leader1);
         cluster.awaitLeader(leader1.index());
         cluster.awaitNewLeadershipEvent(2);
-        assertTrue(cluster.client().sendKeepAlive());
+        while(!cluster.client().sendKeepAlive())
+        {
+            Tests.sleep(1, "Cluster did not accept keep alive");
+        }
         cluster.startStaticNode(leader1.index(), false);
 
         cluster.sendMessages(numMessages);

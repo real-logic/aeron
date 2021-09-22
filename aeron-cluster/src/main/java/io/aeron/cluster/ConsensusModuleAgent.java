@@ -161,7 +161,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         this.controlToggle = ctx.controlToggleCounter();
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
-        this.timerService = ctx.timerServiceSupplier().newInstance(this);
+        this.timerService = ctx.timerServiceSupplier().newInstance(ctx.clusterClock().timeUnit(), this);
         this.activeMembers = ClusterMember.parse(ctx.clusterMembers());
         this.sessionProxy = new ClusterSessionProxy(egressPublisher);
         this.memberId = ctx.clusterMemberId();

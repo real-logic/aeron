@@ -18,18 +18,15 @@ package io.aeron.cluster;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Supplier of {@link TimerService} implementations to be used by the {@link ConsensusModule}.
+ * Supplies instances of the {@link PriorityHeapTimerService}
  */
-@FunctionalInterface
-public interface TimerServiceSupplier
+public class PriorityHeapTimerServiceSupplier implements TimerServiceSupplier
 {
     /**
-     * New instance of the {@link TimerService}.
-     *
-     *
-     * @param timeUnit      units to be used by the underlying timer service.
-     * @param timerHandler  that must be invoked for each expired timer.
-     * @return              timer service instance ready for immediate usage.
+     * {@inheritDoc}
      */
-    TimerService newInstance(TimeUnit timeUnit, TimerService.TimerHandler timerHandler);
+    public TimerService newInstance(final TimeUnit timeUnit, final TimerService.TimerHandler timerHandler)
+    {
+        return new PriorityHeapTimerService(timerHandler);
+    }
 }

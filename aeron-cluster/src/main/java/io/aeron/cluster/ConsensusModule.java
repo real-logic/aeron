@@ -3121,8 +3121,7 @@ public final class ConsensusModule implements AutoCloseable
                 final Class<?> klass = Class.forName(supplierName);
                 if (WheelTimerService.class.equals(klass))
                 {
-                    return (timerHandler) -> new WheelTimerService(
-                        timerHandler,
+                    return new WheelTimerServiceSupplier(
                         clusterClock.timeUnit(),
                         0,
                         findNextPositivePowerOfTwo(
@@ -3132,7 +3131,7 @@ public final class ConsensusModule implements AutoCloseable
                 else
                 {
                     final Constructor<?> constructor = klass.getDeclaredConstructor(TimerService.TimerHandler.class);
-                    return (timerHandler) ->
+                    return (clusterClock, timerHandler) ->
                     {
                         try
                         {

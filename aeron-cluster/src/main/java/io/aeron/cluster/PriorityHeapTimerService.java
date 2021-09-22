@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  * <p>
  * <b>Note:</b> Not thread safe.
  */
-public final class PriorityHeapTimerService implements TimerService
+final class PriorityHeapTimerService implements TimerService
 {
     private static final TimerEntry[] EMPTY_TIMERS = new TimerEntry[0];
     private static final int MIN_CAPACITY = 8;
@@ -52,7 +52,7 @@ public final class PriorityHeapTimerService implements TimerService
      *
      * @param timerHandler to callback when a timer expires.
      */
-    public PriorityHeapTimerService(final TimerHandler timerHandler)
+    PriorityHeapTimerService(final TimerHandler timerHandler)
     {
         this.timerHandler = Objects.requireNonNull(timerHandler, "TimerHandler");
     }

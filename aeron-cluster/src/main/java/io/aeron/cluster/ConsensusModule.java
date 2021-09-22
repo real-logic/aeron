@@ -32,7 +32,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
-import java.lang.reflect.Constructor;
 import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -666,13 +665,14 @@ public final class ConsensusModule implements AutoCloseable
          * Name of the {@link TimerServiceSupplier} that creates {@link TimerService} based on the timer wheel
          * implementation.
          */
-        public static final String TIMER_SERVICE_SUPPLIER_WHEEL = "io.aeron.cluster.WheelTimerService";
+        public static final String TIMER_SERVICE_SUPPLIER_WHEEL = "io.aeron.cluster.WheelTimerServiceSupplier";
 
         /**
          * Name of the {@link TimerServiceSupplier} that creates a sequence-preserving {@link TimerService} based
          * on a priority heap implementation.
          */
-        public static final String TIMER_SERVICE_SUPPLIER_PRIORITY_HEAP = "io.aeron.cluster.PriorityHeapTimerService";
+        public static final String TIMER_SERVICE_SUPPLIER_PRIORITY_HEAP =
+            "io.aeron.cluster.PriorityHeapTimerServiceSupplier";
 
         /**
          * Default {@link TimerServiceSupplier}.
@@ -3115,39 +3115,22 @@ public final class ConsensusModule implements AutoCloseable
 
         private TimerServiceSupplier getTimerServiceSupplierFromSystemProperty()
         {
-            final String supplierName = Configuration.timerServiceSupplier();
-            try
+            final String timeServiceClassName = Configuration.timerServiceSupplier();
+            if (WheelTimerServiceSupplier.class.getName().equals(timeServiceClassName))
             {
-                final Class<?> klass = Class.forName(supplierName);
-                if (WheelTimerService.class.equals(klass))
-                {
-                    return new WheelTimerServiceSupplier(
-                        clusterClock.timeUnit(),
-                        0,
-                        findNextPositivePowerOfTwo(
-                            clusterClock.timeUnit().convert(wheelTickResolutionNs, TimeUnit.NANOSECONDS)),
-                        ticksPerWheel);
-                }
-                else
-                {
-                    final Constructor<?> constructor = klass.getDeclaredConstructor(TimerService.TimerHandler.class);
-                    return (clusterClock, timerHandler) ->
-                    {
-                        try
-                        {
-                            return (TimerService)constructor.newInstance(timerHandler);
-                        }
-                        catch (final ReflectiveOperationException ex)
-                        {
-                            throw new ClusterException("invalid TimerServiceSupplier: " + supplierName, ex);
-                        }
-                    };
-                }
+                return new WheelTimerServiceSupplier(
+                    clusterClock.timeUnit(),
+                    0,
+                    findNextPositivePowerOfTwo(
+                        clusterClock.timeUnit().convert(wheelTickResolutionNs, TimeUnit.NANOSECONDS)),
+                    ticksPerWheel);
             }
-            catch (final ReflectiveOperationException ex)
+            else if (PriorityHeapTimerServiceSupplier.class.getName().equals(timeServiceClassName))
             {
-                throw new ClusterException("invalid TimerServiceSupplier: " + supplierName, ex);
+                return new PriorityHeapTimerServiceSupplier();
             }
+
+            throw new ClusterException("invalid TimerServiceSupplier: " + timeServiceClassName);
         }
 
         /**

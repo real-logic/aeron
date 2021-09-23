@@ -40,8 +40,6 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.driver.Configuration.FILE_PAGE_SIZE_DEFAULT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
-import static java.util.Comparator.comparingLong;
-import static java.util.Comparator.reverseOrder;
 import static org.agrona.BitUtil.*;
 
 /**
@@ -496,7 +494,6 @@ public final class RecordingLog implements AutoCloseable
         public final Log log;
 
         /**
-         *
          * @param lastLeadershipTermId    the last, i.e. most recent, leadership term identity for the log.
          * @param lastTermBaseLogPosition last, i.e. most recent, leadership term base log position.
          * @param appendedLogPosition     reached for local appended log.
@@ -597,10 +594,35 @@ public final class RecordingLog implements AutoCloseable
     static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
     private static final Comparator<Entry> ENTRY_COMPARATOR =
-        comparingLong((Entry e) -> e.leadershipTermId)
-        .thenComparingInt((e) -> e.type)
-        .thenComparingLong((e) -> e.logPosition)
-        .thenComparing(Entry::serviceId, reverseOrder());
+        (Entry e1, Entry e2) ->
+        {
+            int result = Long.compare(e1.leadershipTermId, e2.leadershipTermId);
+            if (0 != result)
+            {
+                return result;
+            }
+
+            result = Integer.compare(e1.type, e2.type);
+            if (0 != result)
+            {
+                return result;
+            }
+
+            if (ENTRY_TYPE_TERM == e1.type)
+            {
+                return Integer.compare(e1.entryIndex, e2.entryIndex);
+            }
+            else
+            {
+                result = Long.compare(e1.logPosition, e2.logPosition);
+                if (0 != result)
+                {
+                    return result;
+                }
+
+                return Integer.compare(e2.serviceId, e1.serviceId);
+            }
+        };
 
     private long termRecordingId = NULL_VALUE;
     private int nextEntryIndex;
@@ -1233,6 +1255,22 @@ public final class RecordingLog implements AutoCloseable
         }
     }
 
+    static void writeEntryToBuffer(final Entry entry, final UnsafeBuffer buffer)
+    {
+        buffer.putLong(RECORDING_ID_OFFSET, entry.recordingId, LITTLE_ENDIAN);
+        buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, entry.leadershipTermId, LITTLE_ENDIAN);
+        buffer.putLong(TERM_BASE_LOG_POSITION_OFFSET, entry.termBaseLogPosition, LITTLE_ENDIAN);
+        buffer.putLong(LOG_POSITION_OFFSET, entry.logPosition, LITTLE_ENDIAN);
+        buffer.putLong(TIMESTAMP_OFFSET, entry.timestamp, LITTLE_ENDIAN);
+        buffer.putInt(SERVICE_ID_OFFSET, entry.serviceId, LITTLE_ENDIAN);
+        buffer.putInt(ENTRY_TYPE_OFFSET, entry.type, LITTLE_ENDIAN);
+    }
+
+    static boolean isValidSnapshot(final Entry entry)
+    {
+        return entry.isValid && ENTRY_TYPE_SNAPSHOT == entry.type;
+    }
+
     private static void validateRecordingId(final long recordingId)
     {
         if (NULL_VALUE == recordingId)
@@ -1330,10 +1368,7 @@ public final class RecordingLog implements AutoCloseable
         for (int i = size - 1; i >= 0; i--)
         {
             final Entry e = entries.get(i);
-            if (e.leadershipTermId > leadershipTermId ||
-                (leadershipTermId == e.leadershipTermId &&
-                ENTRY_TYPE_SNAPSHOT == e.type &&
-                e.logPosition > logPosition))
+            if (ENTRY_COMPARATOR.compare(entry, e) < 0)
             {
                 index--;
             }
@@ -1381,17 +1416,6 @@ public final class RecordingLog implements AutoCloseable
         }
 
         return index;
-    }
-
-    static void writeEntryToBuffer(final Entry entry, final UnsafeBuffer buffer)
-    {
-        buffer.putLong(RECORDING_ID_OFFSET, entry.recordingId, LITTLE_ENDIAN);
-        buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, entry.leadershipTermId, LITTLE_ENDIAN);
-        buffer.putLong(TERM_BASE_LOG_POSITION_OFFSET, entry.termBaseLogPosition, LITTLE_ENDIAN);
-        buffer.putLong(LOG_POSITION_OFFSET, entry.logPosition, LITTLE_ENDIAN);
-        buffer.putLong(TIMESTAMP_OFFSET, entry.timestamp, LITTLE_ENDIAN);
-        buffer.putInt(SERVICE_ID_OFFSET, entry.serviceId, LITTLE_ENDIAN);
-        buffer.putInt(ENTRY_TYPE_OFFSET, entry.type, LITTLE_ENDIAN);
     }
 
     private void persistToStorage(final int entryIndex, final int offset, final int length)
@@ -1509,8 +1533,7 @@ public final class RecordingLog implements AutoCloseable
                 snapshotIndex = i;
             }
             else if (-1 == logIndex &&
-                entry.isValid &&
-                ENTRY_TYPE_TERM == entry.type &&
+                isValidTerm(entry) &&
                 NULL_VALUE != entry.recordingId)
             {
                 logIndex = i;
@@ -1550,11 +1573,6 @@ public final class RecordingLog implements AutoCloseable
                 recordingExtent.mtuLength,
                 recordingExtent.sessionId));
         }
-    }
-
-    private static boolean isValidSnapshot(final Entry entry)
-    {
-        return entry.isValid && ENTRY_TYPE_SNAPSHOT == entry.type;
     }
 
     private static boolean isValidTerm(final Entry entry)

@@ -59,8 +59,8 @@ public class TestNode implements AutoCloseable
 {
     private final Archive archive;
     private final ConsensusModule consensusModule;
-    private final ClusteredServiceContainer container;
-    private final TestService service;
+    private final ClusteredServiceContainer[] containers;
+    private final TestService[] services;
     private final Context context;
     private final TestMediaDriver mediaDriver;
     private boolean isClosed = false;
@@ -95,23 +95,35 @@ public class TestNode implements AutoCloseable
             final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
             archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
+            services = context.services;
+
             context.consensusModuleContext
+                .serviceCount(services.length)
                 .aeronDirectoryName(aeronDirectoryName)
                 .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
 
             consensusModule = ConsensusModule.launch(context.consensusModuleContext);
 
-            context.serviceContainerContext
-                .aeronDirectoryName(aeronDirectoryName)
-                .terminationHook(ClusterTests.terminationHook(
-                context.isTerminationExpected, context.hasServiceTerminated));
+            containers = new ClusteredServiceContainer[services.length];
+            final File baseDir = context.consensusModuleContext.clusterDir().getParentFile();
+            for (int i = 0; i < services.length; i++)
+            {
+                final File clusterDir = new File(baseDir, "service" + i);
+                final ClusteredServiceContainer.Context ctx = context.serviceContainerContext.clone();
+                ctx.aeronDirectoryName(aeronDirectoryName)
+                    .archiveContext(context.aeronArchiveContext.clone()
+                        .controlRequestChannel("aeron:ipc")
+                        .controlResponseChannel("aeron:ipc"))
+                    .terminationHook(ClusterTests.terminationHook(
+                        context.isTerminationExpected, context.hasServiceTerminated[i]))
+                    .clusterDir(clusterDir)
+                    .clusteredService(services[i])
+                    .serviceId(i);
+                containers[i] = ClusteredServiceContainer.launch(ctx);
+                dataCollector.add(clusterDir.toPath());
+            }
 
-            container = ClusteredServiceContainer.launch(context.serviceContainerContext);
-
-            service = context.service;
-
-            dataCollector.add(container.context().clusterDir().toPath());
             dataCollector.add(consensusModule.context().clusterDir().toPath());
             dataCollector.add(archive.context().archiveDir().toPath());
             dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
@@ -126,7 +138,6 @@ public class TestNode implements AutoCloseable
             {
                 ex.addSuppressed(e);
             }
-
             throw ex;
         }
     }
@@ -148,12 +159,25 @@ public class TestNode implements AutoCloseable
 
     public ClusteredServiceContainer container()
     {
-        return container;
+        if (1 != containers.length)
+        {
+            throw new IllegalStateException("multiple containers in use");
+        }
+        return containers[0];
     }
 
     public TestService service()
     {
-        return service;
+        if (1 != services.length)
+        {
+            throw new IllegalStateException("multiple services in use");
+        }
+        return services[0];
+    }
+
+    public TestService[] services()
+    {
+        return services;
     }
 
     public void close()
@@ -161,7 +185,7 @@ public class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.closeAll(consensusModule, container, archive, mediaDriver);
+            CloseHelper.closeAll(consensusModule, () -> CloseHelper.closeAll(containers), archive, mediaDriver);
         }
     }
 
@@ -173,7 +197,13 @@ public class TestNode implements AutoCloseable
         {
             CloseHelper.closeAll(
                 this,
-                context.serviceContainerContext::deleteDirectory,
+                () ->
+                {
+                    for (final ClusteredServiceContainer c : containers)
+                    {
+                        c.context().deleteDirectory();
+                    }
+                },
                 context.consensusModuleContext::deleteDirectory,
                 context.archiveContext::deleteDirectory,
                 context.mediaDriverContext::deleteDirectory,
@@ -264,7 +294,11 @@ public class TestNode implements AutoCloseable
 
     boolean hasServiceTerminated()
     {
-        return context.hasServiceTerminated.get();
+        if (1 != services.length)
+        {
+            throw new IllegalStateException("multiple services in use");
+        }
+        return context.hasServiceTerminated[0].get();
     }
 
     public boolean hasMemberTerminated()
@@ -274,7 +308,11 @@ public class TestNode implements AutoCloseable
 
     public int index()
     {
-        return service.index();
+        if (1 != services.length)
+        {
+            throw new IllegalStateException("multiple services in use");
+        }
+        return services[0].index();
     }
 
     CountersReader countersReader()
@@ -315,14 +353,27 @@ public class TestNode implements AutoCloseable
         return TestCluster.hostname(index());
     }
 
+    public boolean allSnapshotsLoaded()
+    {
+        for (final TestService service : services)
+        {
+            if (!service.wasSnapshotLoaded())
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static class TestService extends StubClusteredService
     {
         static final int SNAPSHOT_FRAGMENT_COUNT = 500;
         static final int SNAPSHOT_MSG_LENGTH = 1000;
 
+        protected volatile boolean wasSnapshotTaken = false;
+        protected volatile boolean wasSnapshotLoaded = false;
         private int index;
-        private volatile boolean wasSnapshotTaken = false;
-        private volatile boolean wasSnapshotLoaded = false;
         private volatile boolean hasReceivedUnexpectedMessage = false;
         private volatile Cluster.Role roleChangedTo = null;
         private final AtomicInteger activeSessionCount = new AtomicInteger();
@@ -516,13 +567,18 @@ public class TestNode implements AutoCloseable
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context();
         final AtomicBoolean isTerminationExpected = new AtomicBoolean();
         final AtomicBoolean hasMemberTerminated = new AtomicBoolean();
-        final AtomicBoolean hasServiceTerminated = new AtomicBoolean();
-        final TestService service;
+        final AtomicBoolean[] hasServiceTerminated;
+        final TestService[] services;
 
-        Context(final TestService service, final String nodeMappings)
+        Context(final TestService[] services, final String nodeMappings)
         {
             mediaDriverContext.nameResolver(new RedirectingNameResolver(nodeMappings));
-            this.service = service;
+            this.services = services;
+            hasServiceTerminated = new AtomicBoolean[services.length];
+            for (int i = 0; i < services.length; i++)
+            {
+                hasServiceTerminated[i] = new AtomicBoolean();
+            }
         }
     }
 

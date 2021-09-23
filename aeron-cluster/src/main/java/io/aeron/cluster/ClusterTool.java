@@ -25,6 +25,7 @@ import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterNodeControlProperties;
 import io.aeron.cluster.service.ConsensusModuleProxy;
+import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
@@ -308,35 +309,7 @@ public class ClusterTool
             }
         }
 
-        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
-        final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
-        final Path newLogFile = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".sorted");
-        try
-        {
-            try (FileChannel fileChannel = FileChannel.open(newLogFile, CREATE, READ, WRITE))
-            {
-                long position = 0;
-                for (final RecordingLog.Entry e : entries)
-                {
-                    RecordingLog.writeEntryToBuffer(e, buffer);
-                    byteBuffer.limit(RecordingLog.ENTRY_LENGTH).position(0);
-
-                    if (RecordingLog.ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
-                    {
-                        throw new ClusterException("failed to write recording");
-                    }
-                    position += RecordingLog.ENTRY_LENGTH;
-                }
-            }
-
-            final Path logFile = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
-            Files.delete(logFile);
-            Files.move(newLogFile, logFile);
-        }
-        catch (final IOException ex)
-        {
-            throw new UncheckedIOException(ex);
-        }
+        updateRecordingLog(clusterDir, entries);
 
         return true;
     }
@@ -1095,6 +1068,52 @@ public class ClusterTool
         }
 
         return true;
+    }
+
+    private static void updateRecordingLog(final File clusterDir, final List<RecordingLog.Entry> entries)
+    {
+        final Path recordingLog = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
+        try
+        {
+            if (entries.isEmpty())
+            {
+                Files.delete(recordingLog);
+            }
+            else
+            {
+                final Path newRecordingLog = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".tmp");
+                Files.deleteIfExists(newRecordingLog);
+                final ByteBuffer byteBuffer =
+                    ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
+                final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
+                try (FileChannel fileChannel = FileChannel.open(newRecordingLog, CREATE_NEW, WRITE))
+                {
+                    long position = 0;
+                    for (final RecordingLog.Entry e : entries)
+                    {
+                        RecordingLog.writeEntryToBuffer(e, buffer);
+                        byteBuffer.limit(RecordingLog.ENTRY_LENGTH).position(0);
+
+                        if (RecordingLog.ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
+                        {
+                            throw new ClusterException("failed to write recording");
+                        }
+                        position += RecordingLog.ENTRY_LENGTH;
+                    }
+                }
+                finally
+                {
+                    BufferUtil.free(byteBuffer);
+                }
+
+                Files.delete(recordingLog);
+                Files.move(newRecordingLog, recordingLog);
+            }
+        }
+        catch (final IOException ex)
+        {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     private static void exitWithErrorOnFailure(final boolean success)

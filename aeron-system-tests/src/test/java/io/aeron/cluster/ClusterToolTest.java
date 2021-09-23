@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -232,6 +233,91 @@ class ClusterToolTest
         {
             final List<RecordingLog.Entry> entries = recordingLog.entries();
             assertEquals(sortedEntries, entries);
+        }
+    }
+
+    @Test
+    void truncateRecordingLogShouldDeleteLogFileIfThereAreNoValidSnapshots(final @TempDir Path emptyClusterDir)
+    {
+        final File clusterDir = emptyClusterDir.toFile();
+        final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        {
+            recordingLog.appendTerm(1, 1, 0, 100);
+            recordingLog.appendSnapshot(1, 1, 1000, 256, 300, 0);
+            recordingLog.appendSnapshot(1, 1, 1000, 256, 300, ConsensusModule.Configuration.SERVICE_ID);
+            recordingLog.appendTerm(1, 2, 2000, 400);
+            recordingLog.appendSnapshot(2, 5, 56, 111, 500, 5);
+
+            assertTrue(recordingLog.invalidateLatestSnapshot());
+        }
+
+        assertTrue(Files.exists(logFile));
+
+        ClusterTool.truncateRecordingLog(clusterDir);
+
+        assertFalse(Files.exists(logFile));
+    }
+
+    @Test
+    void truncateRecordingLogShouldRetainOnlyLatestValidSnapshotAndResetLogPositions(
+        final @TempDir Path emptyClusterDir)
+    {
+        testTruncateRecordingLog(emptyClusterDir, ClusterTool::truncateRecordingLog);
+    }
+
+    @Test
+    void truncateRecordingLogShouldRetainOnlyLatestValidSnapshotAndResetLogPositionsCommandLine(
+        final @TempDir Path emptyClusterDir)
+    {
+        testTruncateRecordingLog(
+            emptyClusterDir,
+            clusterDir -> ClusterTool.main(new String[]{ clusterDir.toString(), "truncate-recording-log" }));
+    }
+
+    private void testTruncateRecordingLog(final Path emptyClusterDir, final Consumer<File> truncateAction)
+    {
+        final File clusterDir = emptyClusterDir.toFile();
+        final List<RecordingLog.Entry> truncatedEntries = new ArrayList<>();
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        {
+            recordingLog.appendTerm(1, 0, 0, 0);
+            recordingLog.appendSnapshot(1, 3, 4000, 4000, 600, 2);
+            recordingLog.appendTerm(1, 3, 3000, 500);
+            recordingLog.appendSnapshot(1, 2, 2900, 2200, 400, 2);
+            recordingLog.appendSnapshot(1, 2, 2900, 2200, 400, 1);
+            recordingLog.appendSnapshot(1, 2, 2900, 2200, 400, 0);
+            recordingLog.appendSnapshot(1, 2, 2900, 2200, 400, ConsensusModule.Configuration.SERVICE_ID);
+            recordingLog.appendTerm(1, 2, 2000, 300);
+            recordingLog.appendSnapshot(1, 1, 1800, 1000, 200, ConsensusModule.Configuration.SERVICE_ID);
+            recordingLog.appendSnapshot(1, 1, 1800, 1000, 200, 0);
+            recordingLog.appendSnapshot(1, 1, 1800, 1000, 200, 1);
+            recordingLog.appendTerm(1, 1, 1000, 100);
+
+            assertTrue(recordingLog.invalidateLatestSnapshot());
+
+            final List<RecordingLog.Entry> entries = recordingLog.entries();
+            for (int i = 2; i < 5; i++)
+            {
+                final RecordingLog.Entry entry = entries.get(i);
+                truncatedEntries.add(new RecordingLog.Entry(
+                    entry.recordingId,
+                    entry.leadershipTermId,
+                    0,
+                    0,
+                    entry.timestamp,
+                    entry.serviceId,
+                    entry.type,
+                    entry.isValid,
+                    i - 2));
+            }
+        }
+
+        truncateAction.accept(clusterDir);
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        {
+            assertEquals(truncatedEntries, recordingLog.entries());
         }
     }
 

@@ -46,10 +46,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -145,6 +142,7 @@ public class TestCluster implements AutoCloseable
     private final int appointedLeaderId;
     private final int backupNodeIndex;
     private final IntHashSet invalidInitialResolutions;
+    private final IntFunction<TestNode.TestService[]> serviceSupplier;
     private boolean shouldErrorOnClientClose = true;
     private String logChannel;
     private String ingressChannel;
@@ -158,8 +156,10 @@ public class TestCluster implements AutoCloseable
         final int staticMemberCount,
         final int dynamicMemberCount,
         final int appointedLeaderId,
-        final IntHashSet invalidInitialResolutions)
+        final IntHashSet invalidInitialResolutions,
+        final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
+        this.serviceSupplier = Objects.requireNonNull(serviceSupplier);
         final int memberCount = staticMemberCount + dynamicMemberCount;
         if ((memberCount + 1) >= 10)
         {
@@ -251,8 +251,7 @@ public class TestCluster implements AutoCloseable
 
     public TestNode startStaticNode(final int index, final boolean cleanStart)
     {
-        return startStaticNode(
-            index, cleanStart, i -> new TestNode.TestService[]{ new TestNode.TestService().index(i) });
+        return startStaticNode(index, cleanStart, serviceSupplier);
     }
 
     public TestNode startStaticNode(
@@ -314,8 +313,7 @@ public class TestCluster implements AutoCloseable
 
     public TestNode startDynamicNode(final int index, final boolean cleanStart)
     {
-        return startDynamicNode(
-            index, cleanStart, i -> new TestNode.TestService[]{ new TestNode.TestService().index(i) });
+        return startDynamicNode(index, cleanStart, serviceSupplier);
     }
 
     public TestNode startDynamicNode(
@@ -370,8 +368,7 @@ public class TestCluster implements AutoCloseable
 
     public TestNode startStaticNodeFromDynamicNode(final int index)
     {
-        return startStaticNodeFromDynamicNode(
-            index, i -> new TestNode.TestService[]{ new TestNode.TestService().index(i) });
+        return startStaticNodeFromDynamicNode(index, serviceSupplier);
     }
 
     public TestNode startStaticNodeFromDynamicNode(
@@ -475,7 +472,7 @@ public class TestCluster implements AutoCloseable
 
     public TestNode startStaticNodeFromBackup()
     {
-        return startStaticNodeFromBackup(i -> new TestNode.TestService[]{ new TestNode.TestService().index(i) });
+        return startStaticNodeFromBackup(serviceSupplier);
     }
 
     public TestNode startStaticNodeFromBackup(final IntFunction<TestNode.TestService[]> serviceSupplier)
@@ -1048,7 +1045,7 @@ public class TestCluster implements AutoCloseable
 
     public void awaitSnapshotLoadedForService(final TestNode node)
     {
-        while (!node.service().wasSnapshotLoaded())
+        while (!node.allSnapshotsLoaded())
         {
             Tests.yield();
         }
@@ -1335,6 +1332,8 @@ public class TestCluster implements AutoCloseable
         private String logChannel = LOG_CHANNEL;
         private String ingressChannel = INGRESS_CHANNEL;
         private String egressChannel = EGRESS_CHANNEL;
+        private IntFunction<TestNode.TestService[]> serviceSupplier =
+            i -> new TestNode.TestService[]{ new TestNode.TestService().index(i) };
         private final IntHashSet invalidInitialResolutions = new IntHashSet();
 
         public Builder withStaticNodes(final int nodeCount)
@@ -1384,13 +1383,20 @@ public class TestCluster implements AutoCloseable
             return this;
         }
 
+        public Builder withServiceSupplier(final IntFunction<TestNode.TestService[]> serviceSupplier)
+        {
+            this.serviceSupplier = serviceSupplier;
+            return this;
+        }
+
         public TestCluster start()
         {
             final TestCluster testCluster = new TestCluster(
                 nodeCount,
                 dynamicNodeCount,
                 appointedLeaderId,
-                invalidInitialResolutions);
+                invalidInitialResolutions,
+                serviceSupplier);
             testCluster.logChannel(logChannel);
             testCluster.ingressChannel(ingressChannel);
             testCluster.egressChannel(egressChannel);

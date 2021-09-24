@@ -1447,8 +1447,7 @@ public class ClusterTest
 
     @Test
     @InterruptAfter(30)
-    @SuppressWarnings("MethodLength")
-    public void termBufferLengthAndMtuCanBeChangedAfterRecordingLogIsTruncatedToLatestSnapshot()
+    public void shouldAllowChangingTermBufferLengthAndMtuAfterRecordingLogIsTruncatedToTheLatestSnapshot()
     {
         final int originalTermLength = 256 * 1024;
         final int originalMtu = 1408;
@@ -1467,10 +1466,9 @@ public class ClusterTest
         clusterTestWatcher.cluster(cluster);
 
         TestNode leader = cluster.awaitLeader();
-        assertEquals(2, leader.services().length);
-        for (final TestNode follower : cluster.followers())
+        for (int i = 0; i < 3; i++)
         {
-            assertEquals(2, follower.services().length);
+            assertEquals(2, cluster.node(i).services().length);
         }
 
         cluster.connectClient();
@@ -1519,10 +1517,9 @@ public class ClusterTest
         cluster.restartAllNodes(false);
         leader = cluster.awaitLeader();
         assertEquals(2, cluster.followers().size());
-        assertEquals(2, leader.services().length);
-        for (final TestNode follower : cluster.followers())
+        for (int i = 0; i < 3; i++)
         {
-            assertEquals(2, follower.services().length);
+            assertEquals(2, cluster.node(i).services().length);
         }
 
         cluster.awaitSnapshotsLoaded();
@@ -1543,12 +1540,11 @@ public class ClusterTest
         }
         cluster.awaitResponseMessageCount(firstBatch + secondBatch + thirdBatch);
 
-        assertEquals(firstBatch + thirdBatch, leader.services()[0].messageCount());
-        assertEquals(checksum, ((ChecksumService)leader.services()[1]).checksum);
-        for (final TestNode follower : cluster.followers())
+        for (int i = 0; i < 3; i++)
         {
-            assertEquals(firstBatch + thirdBatch, follower.services()[0].messageCount());
-            assertEquals(checksum, ((ChecksumService)follower.services()[1]).checksum);
+            final TestNode node = cluster.node(i);
+            assertEquals(firstBatch + thirdBatch, node.services()[0].messageCount());
+            assertEquals(checksum, ((ChecksumService)node.services()[1]).checksum);
         }
     }
 

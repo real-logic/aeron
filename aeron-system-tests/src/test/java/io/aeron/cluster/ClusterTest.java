@@ -1505,10 +1505,10 @@ public class ClusterTest
 
         cluster.stopAllNodes();
 
-        // truncate all recording logs to the latest snapshot
+        // seed all recording logs from the latest snapshot
         for (int i = 0; i < 3; i++)
         {
-            ClusterTool.truncateRecordingLog(cluster.node(i).consensusModule().context().clusterDir());
+            ClusterTool.seedRecordingLogFromSnapshot(cluster.node(i).consensusModule().context().clusterDir());
         }
 
         cluster.logChannel("aeron:udp?term-length=" + newTermLength + "|mtu=" + newMtu);

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +38,8 @@ import java.util.function.Consumer;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
@@ -237,10 +240,12 @@ class ClusterToolTest
     }
 
     @Test
-    void truncateRecordingLogShouldDeleteLogFileIfThereAreNoValidSnapshots(final @TempDir Path emptyClusterDir)
+    void seedRecordingLogFromSnapshotShouldDeleteOriginalRecordingLogFileIfThereAreNoValidSnapshots(
+        final @TempDir Path emptyClusterDir) throws IOException
     {
         final File clusterDir = emptyClusterDir.toFile();
         final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
+        final Path backupLogFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".bak");
         try (RecordingLog recordingLog = new RecordingLog(clusterDir))
         {
             recordingLog.appendTerm(1, 1, 0, 100);
@@ -253,30 +258,40 @@ class ClusterToolTest
         }
 
         assertTrue(Files.exists(logFile));
+        assertFalse(Files.exists(backupLogFile));
+        final byte[] logContents = Files.readAllBytes(logFile);
 
-        ClusterTool.truncateRecordingLog(clusterDir);
+        ClusterTool.seedRecordingLogFromSnapshot(clusterDir);
 
         assertFalse(Files.exists(logFile));
+        assertTrue(Files.exists(backupLogFile));
+        assertArrayEquals(logContents, Files.readAllBytes(backupLogFile));
     }
 
     @Test
-    void truncateRecordingLogShouldRetainOnlyLatestValidSnapshotAndResetLogPositions(
-        final @TempDir Path emptyClusterDir)
+    void seedRecordingLogFromSnapshotShouldCreateANewRecordingLogFromALatestValidSnapshot(
+        final @TempDir Path emptyClusterDir) throws IOException
     {
-        testTruncateRecordingLog(emptyClusterDir, ClusterTool::truncateRecordingLog);
+        testSeedRecordingLogFromSnapshot(emptyClusterDir, ClusterTool::seedRecordingLogFromSnapshot);
     }
 
     @Test
-    void truncateRecordingLogShouldRetainOnlyLatestValidSnapshotAndResetLogPositionsCommandLine(
-        final @TempDir Path emptyClusterDir)
+    void seedRecordingLogFromSnapshotShouldCreateANewRecordingLogFromALatestValidSnapshotCommandLine(
+        final @TempDir Path emptyClusterDir) throws IOException
     {
-        testTruncateRecordingLog(
+        testSeedRecordingLogFromSnapshot(
             emptyClusterDir,
-            clusterDir -> ClusterTool.main(new String[]{ clusterDir.toString(), "truncate-recording-log" }));
+            clusterDir -> ClusterTool.main(new String[]{ clusterDir.toString(), "seed-recording-log-from-snapshot" }));
     }
 
-    private void testTruncateRecordingLog(final Path emptyClusterDir, final Consumer<File> truncateAction)
+    private void testSeedRecordingLogFromSnapshot(final Path emptyClusterDir, final Consumer<File> truncateAction)
+        throws IOException
     {
+        final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
+        final Path backupLogFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".bak");
+        Files.write(backupLogFile, new byte[]{ 0x1, -128, 0, 1, -1, 127 }, CREATE_NEW, WRITE);
+        Files.setLastModifiedTime(backupLogFile, FileTime.fromMillis(0));
+
         final File clusterDir = emptyClusterDir.toFile();
         final List<RecordingLog.Entry> truncatedEntries = new ArrayList<>();
         try (RecordingLog recordingLog = new RecordingLog(clusterDir))
@@ -313,12 +328,18 @@ class ClusterToolTest
             }
         }
 
+        final byte[] logContents = Files.readAllBytes(logFile);
+        final FileTime logLastModifiedTime = Files.getLastModifiedTime(logFile);
+
         truncateAction.accept(clusterDir);
 
         try (RecordingLog recordingLog = new RecordingLog(clusterDir))
         {
             assertEquals(truncatedEntries, recordingLog.entries());
         }
+
+        assertArrayEquals(logContents, Files.readAllBytes(backupLogFile));
+        assertEquals(logLastModifiedTime, Files.getLastModifiedTime(backupLogFile));
     }
 
     static class CapturingPrintStream

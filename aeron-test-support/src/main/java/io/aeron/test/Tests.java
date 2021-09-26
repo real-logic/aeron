@@ -528,6 +528,19 @@ public class Tests
     }
 
     /**
+     * Await a Publication having an available windows for sending by yielding and checking for thread interrupt.
+     *
+     * @param publication to await having an available window.
+     */
+    public static void awaitAvailableWindow(final Publication publication)
+    {
+        while (publication.availableWindow() <= 0)
+        {
+            Tests.yield();
+        }
+    }
+
+    /**
      * Await a Subscription being connected by yielding and checking for thread interrupt.
      *
      * @param subscription to await being connected.

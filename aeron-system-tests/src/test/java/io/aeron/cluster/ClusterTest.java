@@ -32,7 +32,7 @@ import java.util.List;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static io.aeron.test.ClusterTestWatcher.UNKNOWN_HOST_FILTER;
-import static io.aeron.test.Tests.awaitConnected;
+import static io.aeron.test.Tests.awaitAvailableWindow;
 import static io.aeron.test.cluster.ClusterTests.*;
 import static io.aeron.test.cluster.TestCluster.*;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
@@ -1211,7 +1211,7 @@ public class ClusterTest
         cluster.stopNode(leader0);
         cluster.awaitLeader(leader0.index());
         cluster.awaitNewLeadershipEvent(1);
-        awaitConnected(cluster.client().ingressPublication());
+        awaitAvailableWindow(cluster.client().ingressPublication());
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader0.index(), false);
 
@@ -1279,7 +1279,7 @@ public class ClusterTest
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader(leader0.index());
         cluster.awaitNewLeadershipEvent(1);
-        awaitConnected(cluster.client().ingressPublication());
+        awaitAvailableWindow(cluster.client().ingressPublication());
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader0.index(), false);
         awaitElectionClosed(cluster.node(leader0.index()));
@@ -1291,7 +1291,7 @@ public class ClusterTest
         cluster.stopNode(leader1);
         cluster.awaitLeader(leader1.index());
         cluster.awaitNewLeadershipEvent(2);
-        awaitConnected(cluster.client().ingressPublication());
+        awaitAvailableWindow(cluster.client().ingressPublication());
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader1.index(), false);
         awaitElectionClosed(cluster.node(leader1.index()));
@@ -1319,7 +1319,7 @@ public class ClusterTest
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader(leader0.index());
         cluster.awaitNewLeadershipEvent(1);
-        awaitConnected(cluster.client().ingressPublication());
+        awaitAvailableWindow(cluster.client().ingressPublication());
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader0.index(), false);
 
@@ -1333,7 +1333,7 @@ public class ClusterTest
         cluster.stopNode(leader1);
         cluster.awaitLeader(leader1.index());
         cluster.awaitNewLeadershipEvent(2);
-        awaitConnected(cluster.client().ingressPublication());
+        awaitAvailableWindow(cluster.client().ingressPublication());
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader1.index(), false);
 
@@ -1374,7 +1374,7 @@ public class ClusterTest
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader(leader0.index());
         cluster.awaitNewLeadershipEvent(1);
-        awaitConnected(cluster.client().ingressPublication());
+        awaitAvailableWindow(cluster.client().ingressPublication());
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader0.index(), false);
 

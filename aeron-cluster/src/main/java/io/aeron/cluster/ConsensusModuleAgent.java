@@ -2893,7 +2893,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         snapshotTaker.snapshotConsensusModuleState(
             nextSessionId, nextServiceSessionId, logServiceSessionId, pendingServiceMessages.size());
-        snapshotTaker.snapshotClusterMembers(memberId, highMemberId, activeMembers);
+        snapshotTaker.snapshotClusterMembers(memberId, highMemberId, ClusterMember.encodeAsString(activeMembers));
 
         for (final ClusterSession session : sessionByIdMap.values())
         {

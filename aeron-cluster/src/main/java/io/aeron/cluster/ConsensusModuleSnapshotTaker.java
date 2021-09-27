@@ -23,8 +23,9 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.IdleStrategy;
 
-class ConsensusModuleSnapshotTaker extends SnapshotTaker implements ExpandableRingBuffer.MessageConsumer,
-    TimerService.TimerSnapshotTaker
+class ConsensusModuleSnapshotTaker
+    extends SnapshotTaker
+    implements ExpandableRingBuffer.MessageConsumer, TimerService.TimerSnapshotTaker
 {
     private static final int ENCODED_TIMER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH + TimerEncoder.BLOCK_LENGTH;
 
@@ -136,9 +137,8 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker implements ExpandableRi
         }
     }
 
-    void snapshotClusterMembers(final int memberId, final int highMemberId, final ClusterMember[] members)
+    void snapshotClusterMembers(final int memberId, final int highMemberId, final String clusterMembers)
     {
-        final String clusterMembers = ClusterMember.encodeAsString(members);
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersEncoder.BLOCK_LENGTH +
             ClusterMembersEncoder.clusterMembersHeaderLength() + clusterMembers.length();
 

@@ -339,7 +339,9 @@ class ClusterToolTest
         }
 
         assertArrayEquals(logContents, Files.readAllBytes(backupLogFile));
-        assertEquals(logLastModifiedTime, Files.getLastModifiedTime(backupLogFile));
+        // compare up to millis, because upon copy file timestamp seems to be truncated
+        // e.g. expected: <2021-09-27T09:49:22.756944756Z> but was: <2021-09-27T09:49:22.756944Z>
+        assertEquals(logLastModifiedTime.toMillis(), Files.getLastModifiedTime(backupLogFile).toMillis());
     }
 
     static class CapturingPrintStream

@@ -1324,7 +1324,7 @@ public class TestCluster implements AutoCloseable
         return new Builder();
     }
 
-    public static class Builder
+    public static final class Builder
     {
         private int nodeCount = 3;
         private int dynamicNodeCount = 0;
@@ -1333,7 +1333,7 @@ public class TestCluster implements AutoCloseable
         private String ingressChannel = INGRESS_CHANNEL;
         private String egressChannel = EGRESS_CHANNEL;
         private IntFunction<TestNode.TestService[]> serviceSupplier =
-            i -> new TestNode.TestService[]{ new TestNode.TestService().index(i) };
+            (i) -> new TestNode.TestService[]{ new TestNode.TestService().index(i) };
         private final IntHashSet invalidInitialResolutions = new IntHashSet();
 
         public Builder withStaticNodes(final int nodeCount)

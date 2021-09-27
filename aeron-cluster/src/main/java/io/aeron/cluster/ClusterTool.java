@@ -66,27 +66,21 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * Tool for control and investigating the state of a cluster node.
  * <pre>
  * Usage: ClusterTool &#60;cluster-dir&#62; &#60;command&#62; [options]
- *                         describe: prints out all descriptors in the file.
+ *                         describe: prints out all descriptors in the mark file.
  *                              pid: prints PID of cluster component.
  *                    recovery-plan: [service count] prints recovery plan of cluster component.
  *                    recording-log: prints recording log of cluster component.
- *               sort-recording-log: re-arranges entries in the recording log file to match the order in
- *                                   memory.
- * seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot whose
- *                                   base term and log positions are set to zero. The old recording log
- *                                   file is backed up as 'recording.log.bak'.
+ *               sort-recording-log: reorders entries in the recording log to match the order in memory.
+ * seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot.
  *                           errors: prints Aeron and cluster component error logs.
- *                     list-members: prints leader memberId, active members list, and passive members
- *                                   list.
- *                    remove-member: [memberId] requests removal of a member specified in memberId.
- *                   remove-passive: [memberId] requests removal of passive member specified in memberId.
- *                     backup-query: [delay] get time of next backup query or set time of next backup
- *                                   query.
- *       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded
- *                                   instead.
+ *                     list-members: prints leader memberId, active members and passive members lists.
+ *                    remove-member: [memberId] requests removal of a member by memberId.
+ *                   remove-passive: [memberId] requests removal of a passive member by memberId.
+ *                     backup-query: [delay] get, or set, time of next backup query.
+ *       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.
  *                         snapshot: triggers a snapshot on the leader.
- *                          suspend: suspends reading from the ingress channel.
- *                           resume: resumes reading from the ingress channel.
+ *                          suspend: suspends appending to the log.
+ *                           resume: resumes reading from the log.
  *                         shutdown: initiates an orderly stop of the cluster with a snapshot.
  *                            abort: stops the cluster without a snapshot.
  * </pre>
@@ -330,7 +324,7 @@ public class ClusterTool
     }
 
     /**
-     * Create a new {@link RecordingLog} based on the latest valid snapshot whose base term and log positions are set
+     * Create a new {@link RecordingLog} based on the latest valid snapshot whose term base and log positions are set
      * to zero. The original recording log file is backed up as {@code recording.log.bak}.
      *
      * @param clusterDir where the cluster is running.
@@ -1171,8 +1165,7 @@ public class ClusterTool
             {
                 final Path newRecordingLog = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".tmp");
                 Files.deleteIfExists(newRecordingLog);
-                final ByteBuffer byteBuffer =
-                    ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
+                final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
                 final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
                 try (FileChannel fileChannel = FileChannel.open(newRecordingLog, CREATE_NEW, WRITE))
                 {
@@ -1216,28 +1209,21 @@ public class ClusterTool
     {
         out.format(
             "Usage: <cluster-dir> <command> [options]%n" +
-            "                         describe: prints out all descriptors in the file.%n" +
+            "                         describe: prints out all descriptors in the mark file.%n" +
             "                              pid: prints PID of cluster component.%n" +
             "                    recovery-plan: [service count] prints recovery plan of cluster component.%n" +
             "                    recording-log: prints recording log of cluster component.%n" +
-            "               sort-recording-log: re-arranges entries in the recording log file to match the order in" +
-            "                                   memory.%n" +
-            " seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot whose" +
-            "                                   base term and log positions are set to zero. The old recording log" +
-            "                                   file is backed up as 'recording.log.bak'.%n" +
+            "               sort-recording-log: reorders entries in the recording log to match the order in memory.%n" +
+            " seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot.%n" +
             "                           errors: prints Aeron and cluster component error logs.%n" +
-            "                     list-members: prints leader memberId, active members list, and passive members" +
-            "                                   list.%n" +
-            "                    remove-member: [memberId] requests removal of a member specified in memberId.%n" +
-            "                   remove-passive: [memberId] requests removal of passive member specified in memberId." +
-            "                                   %n" +
-            "                     backup-query: [delay] get time of next backup query or set time of next backup" +
-            "                                   query.%n" +
-            "       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded" +
-            "                                   instead.%n" +
+            "                     list-members: prints leader memberId, active members and passive members lists.%n" +
+            "                    remove-member: [memberId] requests removal of a member by memberId.%n" +
+            "                   remove-passive: [memberId] requests removal of a passive member by memberId.%n" +
+            "                     backup-query: [delay] get, or set, time of next backup query.%n" +
+            "       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.%n" +
             "                         snapshot: triggers a snapshot on the leader.%n" +
-            "                          suspend: suspends reading from the ingress channel.%n" +
-            "                           resume: resumes reading from the ingress channel.%n" +
+            "                          suspend: suspends appending to the log.%n" +
+            "                           resume: resumes appending to the log.%n" +
             "                         shutdown: initiates an orderly stop of the cluster with a snapshot.%n" +
             "                            abort: stops the cluster without a snapshot.%n");
         out.flush();

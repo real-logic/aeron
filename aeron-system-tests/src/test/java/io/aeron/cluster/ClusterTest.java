@@ -15,21 +15,12 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ExclusivePublication;
-import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.service.ClientSession;
-import io.aeron.cluster.service.Cluster;
 import io.aeron.log.EventLogExtension;
-import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
 import io.aeron.test.*;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.AfterEach;
@@ -51,7 +42,6 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -1461,11 +1451,11 @@ public class ClusterTest
             .withEgressChannel(
                 "aeron:udp?endpoint=localhost:0|term-length=" + originalTermLength + "|mtu=" + originalMtu)
             .withServiceSupplier(
-                i -> new TestNode.TestService[]{ new TestNode.TestService(), new ChecksumService() })
+                (i) -> new TestNode.TestService[]{ new TestNode.TestService(), new TestNode.ChecksumService() })
             .start();
         clusterTestWatcher.cluster(cluster);
 
-        TestNode leader = cluster.awaitLeader();
+        final TestNode leader = cluster.awaitLeader();
         for (int i = 0; i < 3; i++)
         {
             assertEquals(2, cluster.node(i).services().length);
@@ -1515,7 +1505,7 @@ public class ClusterTest
         cluster.ingressChannel("aeron:udp?term-length=" + newTermLength + "|mtu=" + newMtu);
         cluster.egressChannel("aeron:udp?endpoint=localhost:0|term-length=" + newTermLength + "|mtu=" + newMtu);
         cluster.restartAllNodes(false);
-        leader = cluster.awaitLeader();
+        cluster.awaitLeader();
         assertEquals(2, cluster.followers().size());
         for (int i = 0; i < 3; i++)
         {
@@ -1544,7 +1534,7 @@ public class ClusterTest
         {
             final TestNode node = cluster.node(i);
             assertEquals(firstBatch + thirdBatch, node.services()[0].messageCount());
-            assertEquals(checksum, ((ChecksumService)node.services()[1]).checksum);
+            assertEquals(checksum, ((TestNode.ChecksumService)node.services()[1]).checksum());
         }
     }
 
@@ -1567,74 +1557,5 @@ public class ClusterTest
 
         awaitElectionClosed(follower);
         assertEquals(FOLLOWER, follower.role());
-    }
-
-    static class ChecksumService extends TestNode.TestService
-    {
-        private final BufferClaim bufferClaim = new BufferClaim();
-        private final CRC32 crc32 = new CRC32();
-        long checksum;
-
-        public void onStart(final Cluster cluster, final Image snapshotImage)
-        {
-            checksum = 0;
-            wasSnapshotLoaded = false;
-            this.cluster = cluster;
-            this.idleStrategy = cluster.idleStrategy();
-
-            if (null != snapshotImage)
-            {
-                final FragmentHandler handler =
-                    (buffer, offset, length, header) -> checksum = buffer.getLong(offset, LITTLE_ENDIAN);
-                while (true)
-                {
-                    final int fragments = snapshotImage.poll(handler, 1);
-
-                    if (snapshotImage.isClosed() || snapshotImage.isEndOfStream())
-                    {
-                        break;
-                    }
-
-                    idleStrategy.idle(fragments);
-                }
-                wasSnapshotLoaded = true;
-            }
-        }
-
-        public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
-        {
-            idleStrategy.reset();
-            while (true)
-            {
-                if (snapshotPublication.tryClaim(SIZE_OF_LONG, bufferClaim) > 0)
-                {
-                    bufferClaim.buffer().putLong(bufferClaim.offset(), checksum, LITTLE_ENDIAN);
-                    bufferClaim.commit();
-                    break;
-                }
-                idleStrategy.idle();
-            }
-            wasSnapshotTaken = true;
-        }
-
-        public void onSessionMessage(
-            final ClientSession session,
-            final long timestamp,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length,
-            final Header header)
-        {
-            final int payloadLength = length - SIZE_OF_INT;
-            final int msgChecksum = buffer.getInt(offset + payloadLength, LITTLE_ENDIAN);
-            crc32.reset();
-            crc32.update(buffer.byteArray(), offset, payloadLength);
-            final int computedChecksum = (int)crc32.getValue();
-            if (computedChecksum != msgChecksum)
-            {
-                throw new ClusterException("checksum mismatch");
-            }
-            checksum = Hashing.hash(checksum ^ msgChecksum);
-        }
     }
 }

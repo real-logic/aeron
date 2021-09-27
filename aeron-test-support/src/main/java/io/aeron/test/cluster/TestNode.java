@@ -25,12 +25,14 @@ import io.aeron.cluster.ClusterMembership;
 import io.aeron.cluster.ClusterTool;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.ElectionState;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
@@ -40,6 +42,7 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.agrona.collections.Hashing;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -49,10 +52,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.CRC32;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestNode implements AutoCloseable
@@ -555,6 +561,81 @@ public class TestNode implements AutoCloseable
         public void onRoleChange(final Cluster.Role newRole)
         {
             roleChangedTo = newRole;
+        }
+    }
+
+    public static class ChecksumService extends TestNode.TestService
+    {
+        private final BufferClaim bufferClaim = new BufferClaim();
+        private final CRC32 crc32 = new CRC32();
+        private long checksum;
+
+        public long checksum()
+        {
+            return checksum;
+        }
+
+        public void onStart(final Cluster cluster, final Image snapshotImage)
+        {
+            checksum = 0;
+            wasSnapshotLoaded = false;
+            this.cluster = cluster;
+            this.idleStrategy = cluster.idleStrategy();
+
+            if (null != snapshotImage)
+            {
+                final FragmentHandler handler =
+                    (buffer, offset, length, header) -> checksum = buffer.getLong(offset, LITTLE_ENDIAN);
+                while (true)
+                {
+                    final int fragments = snapshotImage.poll(handler, 1);
+
+                    if (snapshotImage.isClosed() || snapshotImage.isEndOfStream())
+                    {
+                        break;
+                    }
+
+                    idleStrategy.idle(fragments);
+                }
+                wasSnapshotLoaded = true;
+            }
+        }
+
+        public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
+        {
+            idleStrategy.reset();
+            while (true)
+            {
+                if (snapshotPublication.tryClaim(SIZE_OF_LONG, bufferClaim) > 0)
+                {
+                    bufferClaim.buffer().putLong(bufferClaim.offset(), checksum, LITTLE_ENDIAN);
+                    bufferClaim.commit();
+                    break;
+                }
+                idleStrategy.idle();
+            }
+            wasSnapshotTaken = true;
+        }
+
+        public void onSessionMessage(
+            final ClientSession session,
+            final long timestamp,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
+        {
+            final int payloadLength = length - SIZE_OF_INT;
+            final int msgChecksum = buffer.getInt(offset + payloadLength, LITTLE_ENDIAN);
+            crc32.reset();
+            crc32.update(buffer.byteArray(), offset, payloadLength);
+            final int computedChecksum = (int)crc32.getValue();
+            if (computedChecksum != msgChecksum)
+            {
+                throw new ClusterException("checksum mismatch");
+            }
+
+            checksum = Hashing.hash(checksum ^ msgChecksum);
         }
     }
 

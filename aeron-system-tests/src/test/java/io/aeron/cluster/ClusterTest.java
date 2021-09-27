@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.zip.CRC32;
 
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
@@ -1435,6 +1436,7 @@ public class ClusterTest
         shouldCatchUpAfterFollowerMissesMessage(REGISTER_TIMER_MSG);
     }
 
+    @SuppressWarnings("MethodLength")
     @Test
     @InterruptAfter(30)
     public void shouldAllowChangingTermBufferLengthAndMtuAfterRecordingLogIsTruncatedToTheLatestSnapshot()
@@ -1530,11 +1532,20 @@ public class ClusterTest
         }
         cluster.awaitResponseMessageCount(firstBatch + secondBatch + thirdBatch);
 
+        final int finalMessageCount = firstBatch + thirdBatch;
+        final long finalChecksum = checksum;
+        final Predicate<TestNode> finalServiceState =
+            node ->
+            {
+                final TestNode.TestService[] services = node.services();
+                return finalMessageCount == services[0].messageCount() &&
+                    finalChecksum == ((TestNode.ChecksumService)services[1]).checksum();
+            };
+
         for (int i = 0; i < 3; i++)
         {
             final TestNode node = cluster.node(i);
-            assertEquals(firstBatch + thirdBatch, node.services()[0].messageCount());
-            assertEquals(checksum, ((TestNode.ChecksumService)node.services()[1]).checksum());
+            cluster.awaitServiceState(node, finalServiceState);
         }
     }
 

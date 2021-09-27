@@ -49,6 +49,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1021,6 +1022,28 @@ public class TestCluster implements AutoCloseable
             if (service.hasReceivedUnexpectedMessage())
             {
                 fail("service received unexpected message");
+            }
+
+            final long nowMs = epochClock.time();
+            if (nowMs > keepAliveDeadlineMs)
+            {
+                client.sendKeepAlive();
+                keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+            }
+        }
+    }
+
+    public void awaitServiceState(final TestNode node, final Predicate<TestNode> predicate)
+    {
+        final EpochClock epochClock = client.context().aeron().context().epochClock();
+        long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+
+        while (!predicate.test(node))
+        {
+            Thread.yield();
+            if (Thread.interrupted())
+            {
+                throw new TimeoutException("timeout while awaiting condition");
             }
 
             final long nowMs = epochClock.time();

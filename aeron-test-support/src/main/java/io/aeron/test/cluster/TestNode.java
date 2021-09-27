@@ -377,8 +377,8 @@ public class TestNode implements AutoCloseable
         static final int SNAPSHOT_FRAGMENT_COUNT = 500;
         static final int SNAPSHOT_MSG_LENGTH = 1000;
 
-        protected volatile boolean wasSnapshotTaken = false;
-        protected volatile boolean wasSnapshotLoaded = false;
+        volatile boolean wasSnapshotTaken = false;
+        volatile boolean wasSnapshotLoaded = false;
         private int index;
         private volatile boolean hasReceivedUnexpectedMessage = false;
         private volatile Cluster.Role roleChangedTo = null;

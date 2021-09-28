@@ -127,7 +127,6 @@ public class ReplayMergeTest
     @BeforeEach
     public void before()
     {
-
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
         driver = TestMediaDriver.launch(

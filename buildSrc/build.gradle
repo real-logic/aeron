@@ -3,6 +3,12 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.asciidoctor:asciidoctorj:2.2.0'
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.6.0.201912101111-r'
+    implementation 'org.asciidoctor:asciidoctorj:2.5.2'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.13.0.202109080827-r'
+}
+
+tasks.withType(JavaCompile) {
+    configure(options) {
+        options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked' // examples
+    }
 }

@@ -16,6 +16,9 @@
 package io.aeron.build;
 
 import org.asciidoctor.Asciidoctor;
+import org.asciidoctor.Attributes;
+import org.asciidoctor.Options;
+import org.asciidoctor.SafeMode;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.PreprocessorReader;
 import org.asciidoctor.log.Severity;
@@ -153,13 +156,15 @@ public class AsciidoctorPreprocessTask extends DefaultTask
                     }
                 });
 
-            final HashMap<String, Object> attributes = new HashMap<>();
-            attributes.put("sampleBaseDir", requireNonNull(sampleBaseDir, "Must specify sampleBaseDir"));
-            attributes.put("sampleSourceDir", requireNonNull(sampleSourceDir, "Must specify sampleSourceDir"));
+            final Attributes attributes = Attributes.builder()
+                .attribute("sampleBaseDir", requireNonNull(sampleBaseDir, "Must specify sampleBaseDir"))
+                .attribute("sampleSourceDir", requireNonNull(sampleSourceDir, "Must specify sampleSourceDir"))
+                .build();
 
-            final HashMap<String, Object> options = new HashMap<>();
-            options.put("attributes", attributes);
-            options.put("safe", org.asciidoctor.SafeMode.UNSAFE.getLevel());
+            final Options options = Options.builder()
+                .attributes(attributes)
+                .safe(SafeMode.UNSAFE)
+                .build();
 
             try (PrintStream output = new PrintStream(outputFile))
             {

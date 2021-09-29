@@ -289,4 +289,32 @@ class BufferBuilderTest
 
         BufferUtil.assertDirectByteBufferFreed(originalByteBuffer);
     }
+
+    @Test
+    void freeIsANoOpIfBufferIsNotDirect()
+    {
+        final BufferBuilder builder = new BufferBuilder(64);
+        final MutableDirectBuffer buffer = builder.buffer();
+        final byte[] byteArray = buffer.byteArray();
+
+        builder.free();
+
+        assertSame(buffer, builder.buffer());
+        assertSame(byteArray, buffer.byteArray());
+    }
+
+    @Test
+    void freeShouldFreeDirectByteBuffer()
+    {
+        final BufferBuilder builder = new BufferBuilder(64, true);
+        final MutableDirectBuffer buffer = builder.buffer();
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
+        BufferUtil.assertDirectByteBufferAllocated(byteBuffer);
+
+        builder.free();
+
+        assertSame(buffer, builder.buffer());
+        assertSame(byteBuffer, buffer.byteBuffer());
+        BufferUtil.assertDirectByteBufferFreed(byteBuffer);
+    }
 }

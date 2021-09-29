@@ -178,6 +178,14 @@ public final class BufferBuilder
         return this;
     }
 
+    void free()
+    {
+        if (isDirect)
+        {
+            BufferUtil.free(buffer);
+        }
+    }
+
     private void ensureCapacity(final int additionalLength)
     {
         final long requiredCapacity = (long)limit + additionalLength;

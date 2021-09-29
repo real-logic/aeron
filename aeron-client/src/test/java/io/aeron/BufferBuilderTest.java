@@ -15,26 +15,27 @@
  */
 package io.aeron;
 
-import org.junit.jupiter.api.Test;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static io.aeron.BufferBuilder.INIT_MIN_CAPACITY;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class BufferBuilderTest
+class BufferBuilderTest
 {
     private final BufferBuilder bufferBuilder = new BufferBuilder();
 
     @Test
-    public void shouldFindMaxCapacityWhenRequested()
+    void shouldFindMaxCapacityWhenRequested()
     {
         assertEquals(
             BufferBuilder.MAX_CAPACITY,
@@ -42,7 +43,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldInitialiseToDefaultValues()
+    void shouldInitialiseToDefaultValues()
     {
         assertEquals(0, bufferBuilder.capacity());
         assertEquals(0, bufferBuilder.buffer().capacity());
@@ -50,7 +51,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldGrowDirectBuffer()
+    void shouldGrowDirectBuffer()
     {
         final BufferBuilder builder = new BufferBuilder(0, true);
         assertEquals(0, builder.capacity());
@@ -67,7 +68,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldAppendNothingForZeroLength()
+    void shouldAppendNothingForZeroLength()
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
 
@@ -77,7 +78,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldGrowToMultipleOfInitialCapacity()
+    void shouldGrowToMultipleOfInitialCapacity()
     {
         final int srcCapacity = INIT_MIN_CAPACITY * 5;
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[srcCapacity]);
@@ -89,7 +90,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldAppendThenReset()
+    void shouldAppendThenReset()
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
 
@@ -103,7 +104,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldAppendOneBufferWithoutResizing()
+    void shouldAppendOneBufferWithoutResizing()
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
         final byte[] bytes = "Hello World".getBytes(StandardCharsets.UTF_8);
@@ -120,7 +121,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldAppendTwoBuffersWithoutResizing()
+    void shouldAppendTwoBuffersWithoutResizing()
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
         final byte[] bytes = "1111111122222222".getBytes(StandardCharsets.UTF_8);
@@ -138,7 +139,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldFillBufferWithoutResizing()
+    void shouldFillBufferWithoutResizing()
     {
         final int bufferLength = 128;
         final byte[] buffer = new byte[bufferLength];
@@ -158,7 +159,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldResizeWhenBufferJustDoesNotFit()
+    void shouldResizeWhenBufferJustDoesNotFit()
     {
         final int bufferLength = 128;
         final byte[] buffer = new byte[bufferLength + 1];
@@ -178,7 +179,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldAppendTwoBuffersAndResize()
+    void shouldAppendTwoBuffersAndResize()
     {
         final int bufferLength = 128;
         final byte[] buffer = new byte[bufferLength];
@@ -201,7 +202,7 @@ public class BufferBuilderTest
     }
 
     @Test
-    public void shouldCompactBufferToLowerLimit()
+    void shouldCompactBufferToLowerLimit()
     {
         final int bufferLength = INIT_MIN_CAPACITY / 2;
         final byte[] buffer = new byte[bufferLength];
@@ -230,5 +231,41 @@ public class BufferBuilderTest
 
         assertEquals(buffer.length * 3, bufferBuilder.limit());
         assertThat(bufferBuilder.capacity(), lessThan(expandedCapacity));
+    }
+
+    @Test
+    void compactShouldIncreaseCapacityToMatchTheMinCapacity()
+    {
+        final BufferBuilder builder = new BufferBuilder();
+        final MutableDirectBuffer buffer = builder.buffer();
+        final byte[] array = buffer.byteArray();
+        assertEquals(0, builder.capacity());
+
+        assertSame(builder, builder.compact());
+
+        assertEquals(INIT_MIN_CAPACITY, builder.capacity());
+        assertSame(buffer, builder.buffer());
+        assertNotSame(array, buffer.byteArray());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void compactIsANoOpIfCapacityIsAlreadyCorrect(final boolean isDirect)
+    {
+        final int initialCapacity = INIT_MIN_CAPACITY;
+        final BufferBuilder builder = new BufferBuilder(initialCapacity, isDirect);
+        final MutableDirectBuffer buffer = builder.buffer();
+        final byte[] array = buffer.byteArray();
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
+        final long addressOffset = buffer.addressOffset();
+        assertEquals(initialCapacity, builder.capacity());
+
+        assertSame(builder, builder.compact());
+
+        assertEquals(initialCapacity, builder.capacity());
+        assertSame(buffer, builder.buffer());
+        assertSame(array, buffer.byteArray());
+        assertSame(byteBuffer, buffer.byteBuffer());
+        assertEquals(addressOffset, buffer.addressOffset());
     }
 }

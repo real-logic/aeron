@@ -70,7 +70,7 @@ public final class BufferBuilder
         {
             throw new IllegalArgumentException(
                 "initialCapacity outside range 0 - " + MAX_CAPACITY +
-                ": initialCapacity=" + initialCapacity);
+                    ": initialCapacity=" + initialCapacity);
         }
 
         this.isDirect = isDirect;
@@ -150,7 +150,11 @@ public final class BufferBuilder
      */
     public BufferBuilder compact()
     {
-        resize(Math.max(INIT_MIN_CAPACITY, limit));
+        final int newCapacity = Math.max(INIT_MIN_CAPACITY, limit);
+        if (newCapacity != buffer.capacity())
+        {
+            resize(newCapacity);
+        }
 
         return this;
     }
@@ -184,8 +188,8 @@ public final class BufferBuilder
             {
                 throw new IllegalStateException(
                     "insufficient capacity: maxCapacity=" + MAX_CAPACITY +
-                    " limit=" + limit +
-                    " additionalLength=" + additionalLength);
+                        " limit=" + limit +
+                        " additionalLength=" + additionalLength);
             }
 
             resize(findSuitableCapacity(capacity, requiredCapacity));

@@ -29,6 +29,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.NoOpLock;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,20 +52,20 @@ public final class ClusterConfig
     private final Archive.Context archiveContext;
     private final AeronArchive.Context aeronArchiveContext;
     private final ConsensusModule.Context consensusModuleContext;
-    private final ClusteredServiceContainer.Context clusteredServiceContext;
+    private final List<ClusteredServiceContainer.Context> clusteredServiceContexts;
 
     ClusterConfig(
         final MediaDriver.Context mediaDriverContext,
         final Archive.Context archiveContext,
         final AeronArchive.Context aeronArchiveContext,
         final ConsensusModule.Context consensusModuleContext,
-        final ClusteredServiceContainer.Context clusteredServiceContext)
+        final List<ClusteredServiceContainer.Context> clusteredServiceContexts)
     {
         this.mediaDriverContext = mediaDriverContext;
         this.archiveContext = archiveContext;
         this.aeronArchiveContext = aeronArchiveContext;
         this.consensusModuleContext = consensusModuleContext;
-        this.clusteredServiceContext = clusteredServiceContext;
+        this.clusteredServiceContexts = clusteredServiceContexts;
     }
 
     /**
@@ -72,19 +73,21 @@ public final class ClusterConfig
      * addresses for ingress requests and 'internal' addresses that will handle all the cluster replication and
      * control traffic.
      *
-     * @param nodeId            id for this node.
-     * @param ingressHostnames  list of hostnames that will receive ingress request traffic.
-     * @param clusterHostnames  list of hostnames that will receive cluster traffic.
-     * @param portBase          base port to derive remaining ports from.
-     * @param clusteredService  instance of the clustered service that will run on this node.
-     * @return                  configuration that wraps all aeron service configuration.
+     * @param nodeId                id for this node.
+     * @param ingressHostnames      list of hostnames that will receive ingress request traffic.
+     * @param clusterHostnames      list of hostnames that will receive cluster traffic.
+     * @param portBase              base port to derive remaining ports from.
+     * @param clusteredService      instance of the clustered service that will run with this configuration.
+     * @param additionalServices    instances of additional clustered services that will run with this configuration.
+     * @return                      configuration that wraps all aeron service configuration.
      */
     public static ClusterConfig create(
         final int nodeId,
         final List<String> ingressHostnames,
         final List<String> clusterHostnames,
         final int portBase,
-        final ClusteredService clusteredService)
+        final ClusteredService clusteredService,
+        final ClusteredService... additionalServices)
     {
         if (nodeId >= ingressHostnames.size())
         {
@@ -129,16 +132,32 @@ public final class ClusterConfig
             .clusterMembers(clusterMembers)
             .clusterDir(new File(baseDir, CLUSTER_SUB_DIR))
             .archiveContext(aeronArchiveContext.clone())
+            .serviceCount(1 + additionalServices.length)
             .replicationChannel("aeron:udp?endpoint=" + hostname + ":0");
+
+        final List<ClusteredServiceContainer.Context> serviceContexts = new ArrayList<>();
 
         final ClusteredServiceContainer.Context clusteredServiceContext = new ClusteredServiceContainer.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveContext(aeronArchiveContext.clone())
             .clusterDir(new File(baseDir, CLUSTER_SUB_DIR))
-            .clusteredService(clusteredService);
+            .clusteredService(clusteredService)
+            .serviceId(0);
+        serviceContexts.add(clusteredServiceContext);
+
+        for (int i = 0; i < additionalServices.length; i++)
+        {
+            final ClusteredServiceContainer.Context additionalServiceContext = new ClusteredServiceContainer.Context()
+                .aeronDirectoryName(aeronDirName)
+                .archiveContext(aeronArchiveContext.clone())
+                .clusterDir(new File(baseDir, CLUSTER_SUB_DIR))
+                .clusteredService(clusteredService)
+                .serviceId(i + 1);
+            serviceContexts.add(additionalServiceContext);
+        }
 
         return new ClusterConfig(
-            mediaDriverContext, archiveContext, aeronArchiveContext, consensusModuleContext, clusteredServiceContext);
+            mediaDriverContext, archiveContext, aeronArchiveContext, consensusModuleContext, serviceContexts);
     }
 
     /**
@@ -170,7 +189,7 @@ public final class ClusterConfig
         this.archiveContext.errorHandler(errorHandler);
         this.aeronArchiveContext.errorHandler(errorHandler);
         this.consensusModuleContext.errorHandler(errorHandler);
-        this.clusteredServiceContext.errorHandler(errorHandler);
+        this.clusteredServiceContexts.forEach(ctx -> ctx.errorHandler(errorHandler));
     }
 
     /**
@@ -184,7 +203,7 @@ public final class ClusterConfig
         this.archiveContext.aeronDirectoryName(aeronDir);
         this.aeronArchiveContext.aeronDirectoryName(aeronDir);
         this.consensusModuleContext.aeronDirectoryName(aeronDir);
-        this.clusteredServiceContext.aeronDirectoryName(aeronDir);
+        this.clusteredServiceContexts.forEach(ctx -> ctx.aeronDirectoryName(aeronDir));
     }
 
     /**
@@ -196,7 +215,7 @@ public final class ClusterConfig
     {
         this.archiveContext.archiveDir(new File(baseDir, ARCHIVE_SUB_DIR));
         this.consensusModuleContext.clusterDir(new File(baseDir, CLUSTER_SUB_DIR));
-        this.clusteredServiceContext.clusterDir(new File(baseDir, CLUSTER_SUB_DIR));
+        this.clusteredServiceContexts.forEach(ctx -> ctx.clusterDir(new File(baseDir, CLUSTER_SUB_DIR)));
     }
 
     /**
@@ -251,7 +270,18 @@ public final class ClusterConfig
      */
     public ClusteredServiceContainer.Context clusteredServiceContext()
     {
-        return clusteredServiceContext;
+        return clusteredServiceContexts.get(0);
+    }
+
+    /**
+     * Gets the configuration's list of clustered service container contexts.
+     *
+     * @return configured list of {@link io.aeron.cluster.service.ClusteredServiceContainer.Context}.
+     * @see io.aeron.cluster.service.ClusteredServiceContainer.Context
+     */
+    public List<ClusteredServiceContainer.Context> clusteredServiceContexts()
+    {
+        return clusteredServiceContexts;
     }
 
     /**

@@ -157,7 +157,16 @@ public class FragmentAssembler implements FragmentHandler
      */
     public boolean freeSessionBuffer(final int sessionId)
     {
-        return null != builderBySessionIdMap.remove(sessionId);
+        final BufferBuilder builder = builderBySessionIdMap.remove(sessionId);
+        if (null != builder)
+        {
+            if (isDirectByteBuffer)
+            {
+                builder.free();
+            }
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -165,6 +174,13 @@ public class FragmentAssembler implements FragmentHandler
      */
     public void clear()
     {
+        if (isDirectByteBuffer)
+        {
+            for (final BufferBuilder builder : builderBySessionIdMap.values())
+            {
+                builder.free();
+            }
+        }
         builderBySessionIdMap.clear();
     }
 

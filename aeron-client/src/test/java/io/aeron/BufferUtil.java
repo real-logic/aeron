@@ -71,15 +71,10 @@ final class BufferUtil
     private static long getAddressFromCleaner(final ByteBuffer buffer)
     {
         assertTrue(buffer.isDirect());
-        final Class<? extends ByteBuffer> bufferClass = buffer.getClass();
-        assertEquals("java.nio.DirectByteBuffer", bufferClass.getName());
-
         final Object cleaner = UNSAFE.getObject(buffer, CLEANER_FIELD_OFFSET);
         assertNotNull(cleaner);
-
         final Object thunk = UNSAFE.getObject(cleaner, THUNK_FIELD_OFFSET);
         assertNotNull(thunk);
-
         return UNSAFE.getLong(thunk, ADDRESS_FIELD_OFFSET);
     }
 }

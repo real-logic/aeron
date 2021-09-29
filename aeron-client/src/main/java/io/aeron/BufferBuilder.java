@@ -178,6 +178,7 @@ public final class BufferBuilder
         return this;
     }
 
+    // intentionally left package-private
     void free()
     {
         if (isDirect)

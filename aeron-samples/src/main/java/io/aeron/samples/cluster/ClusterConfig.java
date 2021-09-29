@@ -45,8 +45,7 @@ public final class ClusterConfig
     public static final int LOG_PORT_OFFSET = 4;
     public static final int TRANSFER_PORT_OFFSET = 5;
     public static final String ARCHIVE_SUB_DIR = "archive";
-    public static final String CONSENSUS_MODULE_SUB_DIR = "consensus-module";
-    public static final String SERVICE_SUB_DIR = "service";
+    public static final String CLUSTER_SUB_DIR = "cluster";
 
     private final MediaDriver.Context mediaDriverContext;
     private final Archive.Context archiveContext;
@@ -128,14 +127,14 @@ public final class ClusterConfig
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
             .clusterMemberId(nodeId)
             .clusterMembers(clusterMembers)
-            .clusterDir(new File(baseDir, CONSENSUS_MODULE_SUB_DIR))
+            .clusterDir(new File(baseDir, CLUSTER_SUB_DIR))
             .archiveContext(aeronArchiveContext.clone())
             .replicationChannel("aeron:udp?endpoint=" + hostname + ":0");
 
         final ClusteredServiceContainer.Context clusteredServiceContext = new ClusteredServiceContainer.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveContext(aeronArchiveContext.clone())
-            .clusterDir(new File(baseDir, SERVICE_SUB_DIR))
+            .clusterDir(new File(baseDir, CLUSTER_SUB_DIR))
             .clusteredService(clusteredService);
 
         return new ClusterConfig(
@@ -186,6 +185,18 @@ public final class ClusterConfig
         this.aeronArchiveContext.aeronDirectoryName(aeronDir);
         this.consensusModuleContext.aeronDirectoryName(aeronDir);
         this.clusteredServiceContext.aeronDirectoryName(aeronDir);
+    }
+
+    /**
+     * Set the base directory for cluster and archive.
+     *
+     * @param baseDir parent directory to be used for archive and cluster stored data.
+     */
+    public void baseDir(final File baseDir)
+    {
+        this.archiveContext.archiveDir(new File(baseDir, ARCHIVE_SUB_DIR));
+        this.consensusModuleContext.clusterDir(new File(baseDir, CLUSTER_SUB_DIR));
+        this.clusteredServiceContext.clusterDir(new File(baseDir, CLUSTER_SUB_DIR));
     }
 
     /**

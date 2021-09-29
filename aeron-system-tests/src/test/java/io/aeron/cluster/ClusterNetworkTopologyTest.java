@@ -217,9 +217,7 @@ public class ClusterNetworkTopologyTest
             clusterTestWatcher.dataCollector().add(
                 new File(CommonContext.getAeronDirectoryName() + "-" + nodeId + "-driver"));
             clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.ARCHIVE_SUB_DIR));
-            clusterTestWatcher.dataCollector().add(
-                new File(clusterNodeDir(nodeId), ClusterConfig.CONSENSUS_MODULE_SUB_DIR));
-            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.SERVICE_SUB_DIR));
+            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.CLUSTER_SUB_DIR));
             clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "event.log"));
             clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "command.out"));
         }

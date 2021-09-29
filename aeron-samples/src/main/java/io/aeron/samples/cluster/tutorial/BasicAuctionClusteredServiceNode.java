@@ -172,7 +172,7 @@ public class BasicAuctionClusteredServiceNode
             .errorHandler(errorHandler("Consensus Module"))
             .clusterMemberId(nodeId)                                                                     // <1>
             .clusterMembers(clusterMembers(Arrays.asList(hostnames)))                                    // <2>
-            .clusterDir(new File(baseDir, "consensus-module"))                                           // <3>
+            .clusterDir(new File(baseDir, "cluster"))                                                    // <3>
             .ingressChannel("aeron:udp?term-length=64k")                                                 // <4>
             .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
             .replicationChannel(logReplicationChannel(hostname))                                         // <6>
@@ -184,7 +184,7 @@ public class BasicAuctionClusteredServiceNode
             new ClusteredServiceContainer.Context()
             .aeronDirectoryName(aeronDirName)                                                            // <1>
             .archiveContext(aeronArchiveContext.clone())                                                 // <2>
-            .clusterDir(new File(baseDir, "service"))
+            .clusterDir(new File(baseDir, "cluster"))
             .clusteredService(new BasicAuctionClusteredService())                                        // <3>
             .errorHandler(errorHandler("Clustered Service"));
         // end::clustered_service[]

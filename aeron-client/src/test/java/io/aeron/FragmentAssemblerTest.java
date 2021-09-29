@@ -15,21 +15,24 @@
  */
 package io.aeron;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class FragmentAssemblerTest
+class FragmentAssemblerTest
 {
     private static final int SESSION_ID = 777;
     private static final int INITIAL_TERM_ID = 3;
@@ -40,14 +43,14 @@ public class FragmentAssemblerTest
     private final FragmentAssembler adapter = new FragmentAssembler(delegateFragmentHandler);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         header.buffer(termBuffer);
         when(termBuffer.getInt(anyInt(), any(ByteOrder.class))).thenReturn(SESSION_ID);
     }
 
     @Test
-    public void shouldPassThroughUnfragmentedMessage()
+    void shouldPassThroughUnfragmentedMessage()
     {
         when(header.flags()).thenReturn(FrameDescriptor.UNFRAGMENTED);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[128]);
@@ -60,7 +63,7 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldAssembleTwoPartMessage()
+    void shouldAssembleTwoPartMessage()
     {
         when(header.flags())
             .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
@@ -94,7 +97,7 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldAssembleFourPartMessage()
+    void shouldAssembleFourPartMessage()
     {
         when(header.flags())
             .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
@@ -134,7 +137,7 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldFreeSessionBuffer()
+    void shouldFreeSessionBuffer()
     {
         when(header.flags())
             .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
@@ -157,7 +160,7 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldDoNotingIfEndArrivesWithoutBegin()
+    void shouldDoNotingIfEndArrivesWithoutBegin()
     {
         when(header.flags()).thenReturn(FrameDescriptor.END_FRAG_FLAG);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
@@ -170,7 +173,7 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldDoNotingIfMidArrivesWithoutBegin()
+    void shouldDoNotingIfMidArrivesWithoutBegin()
     {
         when(header.flags())
             .thenReturn((byte)0)
@@ -184,5 +187,60 @@ public class FragmentAssemblerTest
         adapter.onFragment(srcBuffer, offset, length, header);
 
         verify(delegateFragmentHandler, never()).onFragment(any(), anyInt(), anyInt(), any());
+    }
+
+    @Test
+    void shouldFreeDirectByteBuffers()
+    {
+        final FragmentAssembler fragmentAssembler = new FragmentAssembler(delegateFragmentHandler, 100, true);
+
+        when(header.flags()).thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG);
+        when(header.sessionId()).thenReturn(1, 2);
+
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
+        srcBuffer.setMemory(0, srcBuffer.capacity(), (byte)1);
+        final int length = srcBuffer.capacity() / 2;
+
+        fragmentAssembler.onFragment(srcBuffer, 0, length, header);
+        fragmentAssembler.onFragment(srcBuffer, length, length, header);
+
+        final List<BufferBuilder> builders = new ArrayList<>(fragmentAssembler.bufferBuilders());
+        assertEquals(2, builders.size());
+        for (final BufferBuilder builder : builders)
+        {
+            BufferUtil.assertDirectByteBufferAllocated(builder.buffer().byteBuffer());
+        }
+
+        fragmentAssembler.clear();
+
+        assertTrue(fragmentAssembler.bufferBuilders().isEmpty());
+        for (final BufferBuilder builder : builders)
+        {
+            BufferUtil.assertDirectByteBufferFreed(builder.buffer().byteBuffer());
+        }
+    }
+
+    @Test
+    void shouldFreeDirectSessionBuffer()
+    {
+        final FragmentAssembler fragmentAssembler = new FragmentAssembler(delegateFragmentHandler, 100, true);
+
+        final int sessionId = -100;
+        when(header.flags()).thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG);
+        when(header.sessionId()).thenReturn(sessionId);
+
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[64]);
+
+        fragmentAssembler.onFragment(srcBuffer, 0, srcBuffer.capacity(), header);
+
+        final Collection<BufferBuilder> builders = fragmentAssembler.bufferBuilders();
+        assertEquals(1, builders.size());
+        final BufferBuilder builder = builders.iterator().next();
+        BufferUtil.assertDirectByteBufferAllocated(builder.buffer().byteBuffer());
+
+        assertTrue(fragmentAssembler.freeSessionBuffer(sessionId));
+
+        assertTrue(fragmentAssembler.bufferBuilders().isEmpty());
+        BufferUtil.assertDirectByteBufferFreed(builder.buffer().byteBuffer());
     }
 }

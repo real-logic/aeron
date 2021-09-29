@@ -20,6 +20,8 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
+import java.util.Collection;
+
 import static io.aeron.logbuffer.FrameDescriptor.*;
 
 /**
@@ -182,6 +184,11 @@ public class FragmentAssembler implements FragmentHandler
             }
         }
         builderBySessionIdMap.clear();
+    }
+
+    Collection<BufferBuilder> bufferBuilders()
+    {
+        return builderBySessionIdMap.values();
     }
 
     private BufferBuilder getBufferBuilder(final int sessionId)

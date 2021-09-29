@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -200,10 +201,12 @@ public final class BufferBuilder
     {
         if (isDirect)
         {
-            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(newCapacity);
-            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            buffer.getBytes(0, byteBuffer, 0, limit);
-            buffer.wrap(byteBuffer);
+            final ByteBuffer newByteBuffer = ByteBuffer.allocateDirect(newCapacity);
+            newByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            buffer.getBytes(0, newByteBuffer, 0, limit);
+            final ByteBuffer originalByteBuffer = buffer.byteBuffer();
+            buffer.wrap(newByteBuffer);
+            BufferUtil.free(originalByteBuffer);
         }
         else
         {

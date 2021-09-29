@@ -268,4 +268,25 @@ class BufferBuilderTest
         assertSame(byteBuffer, buffer.byteBuffer());
         assertEquals(addressOffset, buffer.addressOffset());
     }
+
+    @Test
+    void resizeShouldFreePreviouslyUsedDirectByteBuffer()
+    {
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[128]);
+        final BufferBuilder builder = new BufferBuilder(32, true);
+        final MutableDirectBuffer buffer = builder.buffer();
+        final ByteBuffer originalByteBuffer = buffer.byteBuffer();
+        final long originalAddressOffset = buffer.addressOffset();
+        assertNotEquals(0, originalAddressOffset);
+        BufferUtil.assertDirectByteBufferAllocated(originalByteBuffer);
+
+        assertSame(builder, builder.append(srcBuffer, 0, srcBuffer.capacity()));
+
+        assertEquals(INIT_MIN_CAPACITY, buffer.capacity());
+        assertNotSame(originalByteBuffer, buffer.byteBuffer());
+        assertNotEquals(originalAddressOffset, buffer.addressOffset());
+        BufferUtil.assertDirectByteBufferAllocated(buffer.byteBuffer());
+
+        BufferUtil.assertDirectByteBufferFreed(originalByteBuffer);
+    }
 }

@@ -1440,6 +1440,33 @@ public final class AeronCluster implements AutoCloseable
                 CloseHelper.close(aeron);
             }
         }
+
+        /**
+         * {@inheritDoc}
+         */
+        public String toString()
+        {
+            return "AeronCluster.Context" +
+                "\n{" +
+                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    ownsAeronClient=" + ownsAeronClient +
+                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
+                "\n    aeron=" + aeron +
+                "\n    messageTimeoutNs=" + messageTimeoutNs +
+                "\n    ingressEndpoints='" + ingressEndpoints + '\'' +
+                "\n    ingressChannel='" + ingressChannel + '\'' +
+                "\n    ingressStreamId=" + ingressStreamId +
+                "\n    egressChannel='" + egressChannel + '\'' +
+                "\n    egressStreamId=" + egressStreamId +
+                "\n    idleStrategy=" + idleStrategy +
+                "\n    credentialsSupplier=" + credentialsSupplier +
+                "\n    isIngressExclusive=" + isIngressExclusive +
+                "\n    errorHandler=" + errorHandler +
+                "\n    isDirectAssemblers=" + isDirectAssemblers +
+                "\n    egressListener=" + egressListener +
+                "\n    controlledEgressListener=" + controlledEgressListener +
+                "\n}";
+        }
     }
 
     /**

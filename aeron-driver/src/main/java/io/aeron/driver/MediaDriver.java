@@ -3560,7 +3560,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    isClosed=" + isClosed +
                 "\n    cncVersion=" + SemanticVersion.toString(CNC_VERSION) +
                 "\n    aeronDirectory=" + aeronDirectory() +
-                "\n    aeronDirectoryName=" + aeronDirectoryName() +
+                "\n    aeronDirectoryName='" + aeronDirectoryName() + '\'' +
                 "\n    cncFile=" + cncFile() +
                 "\n    countersMetaDataBuffer=" + countersMetaDataBuffer() +
                 "\n    countersValuesBuffer=" + countersValuesBuffer() +
@@ -3644,9 +3644,9 @@ public final class MediaDriver implements AutoCloseable
                 "\n    terminationValidator=" + terminationValidator +
                 "\n    terminationHook=" + terminationHook +
                 "\n    nameResolver=" + nameResolver +
-                "\n    resolverName=" + resolverName +
-                "\n    resolverInterface=" + resolverInterface +
-                "\n    resolverBootstrapNeighbor=" + resolverBootstrapNeighbor +
+                "\n    resolverName='" + resolverName + '\'' +
+                "\n    resolverInterface='" + resolverInterface + '\'' +
+                "\n    resolverBootstrapNeighbor='" + resolverBootstrapNeighbor + '\'' +
                 "\n    sendToStatusMessagePollRatio=" + sendToStatusMessagePollRatio +
                 "\n    unicastFeedbackDelayGenerator=" + unicastFeedbackDelayGenerator +
                 "\n    multicastFeedbackDelayGenerator=" + multicastFeedbackDelayGenerator +

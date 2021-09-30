@@ -1469,7 +1469,7 @@ public class Aeron implements AutoCloseable
                 "\n{" +
                 "\n    isConcluded=" + isConcluded() +
                 "\n    aeronDirectory=" + aeronDirectory() +
-                "\n    aeronDirectoryName=" + aeronDirectoryName() +
+                "\n    aeronDirectoryName='" + aeronDirectoryName() + '\'' +
                 "\n    cncFile=" + cncFile() +
                 "\n    countersMetaDataBuffer=" + countersMetaDataBuffer() +
                 "\n    countersValuesBuffer=" + countersValuesBuffer() +

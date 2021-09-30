@@ -1460,6 +1460,50 @@ public class Aeron implements AutoCloseable
             super.close();
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        public String toString()
+        {
+            return "Aeron.Context" +
+                "\n{" +
+                "\n    isConcluded=" + isConcluded() +
+                "\n    aeronDirectory=" + aeronDirectory() +
+                "\n    aeronDirectoryName=" + aeronDirectoryName() +
+                "\n    cncFile=" + cncFile() +
+                "\n    countersMetaDataBuffer=" + countersMetaDataBuffer() +
+                "\n    countersValuesBuffer=" + countersValuesBuffer() +
+                "\n    driverTimeoutMs=" + driverTimeoutMs() +
+                "\n    clientId=" + clientId +
+                "\n    useConductorAgentInvoker=" + useConductorAgentInvoker +
+                "\n    preTouchMappedMemory=" + preTouchMappedMemory +
+                "\n    driverAgentInvoker=" + driverAgentInvoker +
+                "\n    clientLock=" + clientLock +
+                "\n    epochClock=" + epochClock +
+                "\n    nanoClock=" + nanoClock +
+                "\n    idleStrategy=" + idleStrategy +
+                "\n    awaitingIdleStrategy=" + awaitingIdleStrategy +
+                "\n    toClientBuffer=" + toClientBuffer +
+                "\n    toDriverBuffer=" + toDriverBuffer +
+                "\n    driverProxy=" + driverProxy +
+                "\n    cncByteBuffer=" + cncByteBuffer +
+                "\n    cncMetaDataBuffer=" + cncMetaDataBuffer +
+                "\n    logBuffersFactory=" + logBuffersFactory +
+                "\n    errorHandler=" + errorHandler +
+                "\n    subscriberErrorHandler=" + subscriberErrorHandler +
+                "\n    availableImageHandler=" + availableImageHandler +
+                "\n    unavailableImageHandler=" + unavailableImageHandler +
+                "\n    availableCounterHandler=" + availableCounterHandler +
+                "\n    unavailableCounterHandler=" + unavailableCounterHandler +
+                "\n    closeHandler=" + closeHandler +
+                "\n    keepAliveIntervalNs=" + keepAliveIntervalNs +
+                "\n    interServiceTimeoutNs=" + interServiceTimeoutNs +
+                "\n    resourceLingerDurationNs=" + resourceLingerDurationNs +
+                "\n    closeLingerDurationNs=" + closeLingerDurationNs +
+                "\n    threadFactory=" + threadFactory +
+                "\n}";
+        }
+
         private void connectToDriver()
         {
             final long deadlineMs = epochClock.time() + driverTimeoutMs();

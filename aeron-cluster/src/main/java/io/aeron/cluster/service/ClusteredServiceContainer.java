@@ -1577,6 +1577,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
             return "ClusteredServiceContainer.Context" +
                 "\n{" +
                 "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    ownsAeronClient=" + ownsAeronClient +
+                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
+                "\n    aeron=" + aeron +
+                "\n    archiveContext=" + archiveContext +
+                "\n    clusterDirectoryName='" + clusterDirectoryName + '\'' +
+                "\n    clusterDir=" + clusterDir +
                 "\n    appVersion=" + appVersion +
                 "\n    clusterId=" + clusterId +
                 "\n    serviceId=" + serviceId +
@@ -1600,17 +1606,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 "\n    delegatingErrorHandler=" + delegatingErrorHandler +
                 "\n    errorCounter=" + errorCounter +
                 "\n    countedErrorHandler=" + countedErrorHandler +
-                "\n    archiveContext=" + archiveContext +
-                "\n    clusterDirectoryName='" + clusterDirectoryName + '\'' +
-                "\n    clusterDir=" + clusterDir +
-                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
-                "\n    aeron=" + aeron +
-                "\n    ownsAeronClient=" + ownsAeronClient +
                 "\n    clusteredService=" + clusteredService +
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
                 "\n    terminationHook=" + terminationHook +
                 "\n    markFile=" + markFile +
-                '}';
+                "\n}";
         }
     }
 }

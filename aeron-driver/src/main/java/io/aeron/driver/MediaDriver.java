@@ -3562,6 +3562,8 @@ public final class MediaDriver implements AutoCloseable
                 "\n    aeronDirectory=" + aeronDirectory() +
                 "\n    aeronDirectoryName=" + aeronDirectoryName() +
                 "\n    cncFile=" + cncFile() +
+                "\n    countersMetaDataBuffer=" + countersMetaDataBuffer() +
+                "\n    countersValuesBuffer=" + countersValuesBuffer() +
                 "\n    driverTimeoutMs=" + driverTimeoutMs() +
                 "\n    printConfigurationOnStart=" + printConfigurationOnStart +
                 "\n    useWindowsHighResTimer=" + useWindowsHighResTimer +

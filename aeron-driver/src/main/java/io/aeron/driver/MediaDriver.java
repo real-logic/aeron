@@ -3559,7 +3559,9 @@ public final class MediaDriver implements AutoCloseable
                 "\n    isConcluded=" + isConcluded() +
                 "\n    isClosed=" + isClosed +
                 "\n    cncVersion=" + SemanticVersion.toString(CNC_VERSION) +
+                "\n    aeronDirectory=" + aeronDirectory() +
                 "\n    aeronDirectoryName=" + aeronDirectoryName() +
+                "\n    cncFile=" + cncFile() +
                 "\n    driverTimeoutMs=" + driverTimeoutMs() +
                 "\n    printConfigurationOnStart=" + printConfigurationOnStart +
                 "\n    useWindowsHighResTimer=" + useWindowsHighResTimer +

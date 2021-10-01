@@ -2469,7 +2469,7 @@ public final class Archive implements AutoCloseable
                 "\n    dataBuffer=" + dataBuffer +
                 "\n    replayBuffer=" + replayBuffer +
                 "\n    recordChecksumBuffer=" + recordChecksumBuffer +
-                '}';
+                "\n}";
         }
     }
 

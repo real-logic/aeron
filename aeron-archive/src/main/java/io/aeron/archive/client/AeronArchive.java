@@ -3061,6 +3061,34 @@ public final class AeronArchive implements AutoCloseable
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        public String toString()
+        {
+            return "AeronArchive.Context" +
+                "\n{" +
+                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    ownsAeronClient=" + ownsAeronClient +
+                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
+                "\n    aeron=" + aeron +
+                "\n    messageTimeoutNs=" + messageTimeoutNs +
+                "\n    recordingEventsChannel='" + recordingEventsChannel + '\'' +
+                "\n    recordingEventsStreamId=" + recordingEventsStreamId +
+                "\n    controlRequestChannel='" + controlRequestChannel + '\'' +
+                "\n    controlRequestStreamId=" + controlRequestStreamId +
+                "\n    controlResponseChannel='" + controlResponseChannel + '\'' +
+                "\n    controlResponseStreamId=" + controlResponseStreamId +
+                "\n    controlTermBufferSparse=" + controlTermBufferSparse +
+                "\n    controlTermBufferLength=" + controlTermBufferLength +
+                "\n    controlMtuLength=" + controlMtuLength +
+                "\n    idleStrategy=" + idleStrategy +
+                "\n    lock=" + lock +
+                "\n    errorHandler=" + errorHandler +
+                "\n    credentialsSupplier=" + credentialsSupplier +
+                "\n}";
+        }
+
         private String applyDefaultParams(final String channel)
         {
             final ChannelUri channelUri = ChannelUri.parse(channel);

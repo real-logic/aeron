@@ -1603,7 +1603,7 @@ public final class ClusterBackup implements AutoCloseable
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
                 "\n    terminationHook=" + terminationHook +
                 "\n    eventsListener=" + eventsListener +
-                '}';
+                "\n}";
         }
 
         private void concludeMarkFile()

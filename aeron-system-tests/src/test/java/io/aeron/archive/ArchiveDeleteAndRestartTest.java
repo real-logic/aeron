@@ -21,6 +21,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.samples.archive.RecordingDescriptorCollector;
 import io.aeron.test.*;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -133,14 +134,14 @@ public class ArchiveDeleteAndRestartTest
         }
 
         final long position1 = recordedPublication1.position();
-        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector();
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
 
-        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector) < 1)
+        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector.reset()) < 1)
         {
             Tests.yieldingIdle("Didn't find recording");
         }
 
-        while (position1 != aeronArchive.getRecordingPosition(collector.descriptors.get(0).recordingId))
+        while (position1 != aeronArchive.getRecordingPosition(collector.descriptors().get(0).recordingId()))
         {
             Tests.yieldingIdle("Failed to record data");
         }
@@ -148,7 +149,7 @@ public class ArchiveDeleteAndRestartTest
         recordedPublication1.close();
         aeronArchive.stopRecording(subscriptionId);
 
-        while (position1 != aeronArchive.getStopPosition(collector.descriptors.get(0).recordingId))
+        while (position1 != aeronArchive.getStopPosition(collector.descriptors().get(0).recordingId()))
         {
             Tests.yieldingIdle("Failed to stop recording");
         }
@@ -171,12 +172,12 @@ public class ArchiveDeleteAndRestartTest
             }
         }
 
-        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector) < 1)
+        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector.reset()) < 1)
         {
             Tests.yieldingIdle("Didn't find recording");
         }
 
-        collector.descriptors.clear();
-        assertEquals(1, aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector), collector.descriptors::toString);
+        assertEquals(
+            1, aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector.reset()), collector.descriptors()::toString);
     }
 }

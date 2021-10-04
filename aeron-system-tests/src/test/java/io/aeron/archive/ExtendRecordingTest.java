@@ -25,6 +25,8 @@ import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.samples.archive.RecordingDescriptor;
+import io.aeron.samples.archive.RecordingDescriptorCollector;
 import io.aeron.test.*;
 import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
@@ -195,16 +197,17 @@ public class ExtendRecordingTest
             }
         }
 
-        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector();
-        assertEquals(1L, aeronArchive.listRecordingsForUri(0, 1, "alias=" + MY_ALIAS, RECORDED_STREAM_ID, collector));
-        final RecordingDescriptor recording = collector.descriptors.get(0);
-        assertEquals(recordingId, recording.recordingId);
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
+        assertEquals(
+            1L, aeronArchive.listRecordingsForUri(0, 1, "alias=" + MY_ALIAS, RECORDED_STREAM_ID, collector.reset()));
+        final RecordingDescriptor recording = collector.descriptors().get(0);
+        assertEquals(recordingId, recording.recordingId());
 
         final String publicationExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:3333")
-            .initialPosition(recording.stopPosition, recording.initialTermId, recording.termBufferLength)
-            .mtu(recording.mtuLength)
+            .initialPosition(recording.stopPosition(), recording.initialTermId(), recording.termBufferLength())
+            .mtu(recording.mtuLength())
             .alias(MY_ALIAS)
             .build();
 

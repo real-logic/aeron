@@ -151,7 +151,7 @@ public final class ClusterConfig
                 .aeronDirectoryName(aeronDirName)
                 .archiveContext(aeronArchiveContext.clone())
                 .clusterDir(new File(baseDir, CLUSTER_SUB_DIR))
-                .clusteredService(clusteredService)
+                .clusteredService(additionalServices[i])
                 .serviceId(i + 1);
             serviceContexts.add(additionalServiceContext);
         }

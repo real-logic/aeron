@@ -585,10 +585,9 @@ abstract class ArchiveConductor
         final byte[] channelFragment,
         final ControlSession controlSession)
     {
-        if (minRecordingId < 0 || minRecordingId >= catalog.nextRecordingId())
+        if (minRecordingId < 0)
         {
-            final String msg = "min recording id outside valid range [0, " +
-                max(0, catalog.nextRecordingId() - 1) + "]: " + minRecordingId;
+            final String msg = "minRecordingId=" + minRecordingId + " is < 0";
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
         }
         else

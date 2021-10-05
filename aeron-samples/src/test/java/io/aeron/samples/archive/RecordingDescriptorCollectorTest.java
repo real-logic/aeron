@@ -70,7 +70,6 @@ public class RecordingDescriptorCollectorTest
                     .max()
                     .getAsLong();
 
-                System.out.println("Paged from: " + fromRecordingId);
                 fromRecordingId = maxRecordingId + 1;
             }
         }

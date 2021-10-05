@@ -16,7 +16,7 @@
 
 plugins {
     id 'java-library'
-    id 'com.github.johnrengelman.shadow' version '7.0.0' apply false
+    id 'com.github.johnrengelman.shadow' version '7.1.0' apply false
     id 'biz.aQute.bnd.builder' version '5.3.0' apply false
     id "com.github.ben-manes.versions" version "0.39.0"
 }

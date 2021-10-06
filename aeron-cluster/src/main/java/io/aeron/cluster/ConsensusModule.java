@@ -487,6 +487,12 @@ public final class ConsensusModule implements AutoCloseable
             AeronCounters.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 
         /**
+         * Counter type id for the last timestamp processed by the consensus module's duty cycle.
+         */
+        public static final int CLUSTER_CONSENSUS_MODULE_LAST_TIMESTAMP_TYPE_ID =
+            AeronCounters.CLUSTER_CONSENSUS_MODULE_LAST_TIMESTAMP_TYPE_ID;
+
+        /**
          * Counter type id for the number of invalid requests which the cluster has received.
          */
         public static final int CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID =
@@ -1125,6 +1131,7 @@ public final class ConsensusModule implements AutoCloseable
         private Counter controlToggle;
         private Counter snapshotCounter;
         private Counter timedOutClientCounter;
+        private Counter lastTimestampCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
 
@@ -1307,6 +1314,16 @@ public final class ConsensusModule implements AutoCloseable
             {
                 timedOutClientCounter = ClusterCounters.allocate(
                     aeron, buffer, "Cluster timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
+            }
+
+            if (null == lastTimestampCounter)
+            {
+                lastTimestampCounter = ClusterCounters.allocate(
+                    aeron,
+                    buffer,
+                    "Cluster last processed timestamp (" + clusterClock.timeUnit() + ")",
+                    CLUSTER_CONSENSUS_MODULE_LAST_TIMESTAMP_TYPE_ID,
+                    clusterId);
             }
 
             if (null == threadFactory)
@@ -2735,6 +2752,28 @@ public final class ConsensusModule implements AutoCloseable
         public Context timedOutClientCounter(final Counter timedOutClientCounter)
         {
             this.timedOutClientCounter = timedOutClientCounter;
+            return this;
+        }
+
+        /**
+         * Get the counter that contains the last processed timestamp by the agent's duty cycle.
+         *
+         * @return timestamp counter
+         */
+        public Counter lastTimestampCounter()
+        {
+            return lastTimestampCounter;
+        }
+
+        /**
+         * Set the counter that contains the last processed timestamp by the agent's duty cycle.
+         *
+         * @param lastTimestampCounter to be used for the timestamp.
+         * @return this for a fluent API.
+         */
+        public Context lastTimestampCounter(final Counter lastTimestampCounter)
+        {
+            this.lastTimestampCounter = lastTimestampCounter;
             return this;
         }
 

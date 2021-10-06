@@ -55,6 +55,7 @@ public class ConsensusModuleAgentTest
     private final ConcurrentPublication mockResponsePublication = mock(ConcurrentPublication.class);
     private final ExclusivePublication mockExclusivePublication = mock(ExclusivePublication.class);
     private final Counter mockTimedOutClientCounter = mock(Counter.class);
+    private final Counter mockLastTimestampCounter = mock(Counter.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .errorHandler(Tests::onError)
@@ -63,6 +64,7 @@ public class ConsensusModuleAgentTest
         .commitPositionCounter(mock(Counter.class))
         .controlToggleCounter(mock(Counter.class))
         .clusterNodeRoleCounter(mock(Counter.class))
+        .lastTimestampCounter(mockLastTimestampCounter)
         .timedOutClientCounter(mockTimedOutClientCounter)
         .idleStrategySupplier(NoOpIdleStrategy::new)
         .timerServiceSupplier((clusterClock, timerHandler) -> mock(TimerService.class))
@@ -297,5 +299,22 @@ public class ConsensusModuleAgentTest
 
         assertThrows(ClusterTerminationException.class,
             () -> agent.onServiceAck(1024, 100, 0, 55, 0));
+    }
+
+    @Test
+    public void shouldUpdateLastTimestampCounter()
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        final long startMs = SLOW_TICK_INTERVAL_MS;
+        clock.update(startMs, TimeUnit.MILLISECONDS);
+
+        ctx.epochClock(clock)
+            .clusterClock(clock);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+
+        agent.doWork();
+
+        verify(mockLastTimestampCounter).setOrdered(clock.time());
     }
 }

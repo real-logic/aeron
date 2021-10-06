@@ -101,6 +101,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final TimeUnit clusterTimeUnit;
     private final Counter moduleState;
     private final Counter controlToggle;
+    private final Counter lastTimestampCounter;
     private final TimerService timerService;
     private final ConsensusModuleAdapter consensusModuleAdapter;
     private final ServiceProxy serviceProxy;
@@ -159,6 +160,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         this.moduleState = ctx.moduleStateCounter();
         this.commitPosition = ctx.commitPositionCounter();
         this.controlToggle = ctx.controlToggleCounter();
+        this.lastTimestampCounter = ctx.lastTimestampCounter();
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
         this.timerService = ctx.timerServiceSupplier().newInstance(ctx.clusterClock().timeUnit(), this);
@@ -352,6 +354,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             {
                 throw ex;
             }
+        }
+        finally
+        {
+            lastTimestampCounter.setOrdered(now);
         }
 
         return workCount;

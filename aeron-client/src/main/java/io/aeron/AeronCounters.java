@@ -215,7 +215,7 @@ public final class AeronCounters
     public static final int CLUSTER_CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID = 215;
 
     /**
-     * Counter type id for the consensus module current timestamp
+     * Counter type id for the last timestamp processed by the consensus module's duty cycle.
      */
     public static final int CLUSTER_CONSENSUS_MODULE_LAST_TIMESTAMP_TYPE_ID = 216;
 

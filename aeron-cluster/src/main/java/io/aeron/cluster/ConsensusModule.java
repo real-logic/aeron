@@ -487,12 +487,6 @@ public final class ConsensusModule implements AutoCloseable
             AeronCounters.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 
         /**
-         * Counter type id for the last timestamp processed by the consensus module's duty cycle.
-         */
-        public static final int CLUSTER_CONSENSUS_MODULE_LAST_TIMESTAMP_TYPE_ID =
-            AeronCounters.CLUSTER_CONSENSUS_MODULE_LAST_TIMESTAMP_TYPE_ID;
-
-        /**
          * Counter type id for the number of invalid requests which the cluster has received.
          */
         public static final int CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID =
@@ -1322,7 +1316,7 @@ public final class ConsensusModule implements AutoCloseable
                     aeron,
                     buffer,
                     "Cluster last processed timestamp (" + clusterClock.timeUnit() + ")",
-                    CLUSTER_CONSENSUS_MODULE_LAST_TIMESTAMP_TYPE_ID,
+                    AeronCounters.CLUSTER_CONSENSUS_MODULE_LAST_TIMESTAMP_TYPE_ID,
                     clusterId);
             }
 

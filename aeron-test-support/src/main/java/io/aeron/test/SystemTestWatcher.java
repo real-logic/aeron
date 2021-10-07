@@ -102,7 +102,7 @@ public class SystemTestWatcher implements TestWatcher, DriverOutputConsumer, Aft
         return this;
     }
 
-    public void afterTestExecution(final ExtensionContext context) throws Exception
+    public void afterTestExecution(final ExtensionContext context)
     {
         mediaDriverTestUtil.afterTestExecution(context);
         assertEquals(0, errorCount(), "Errors observed in " + context.getDisplayName());

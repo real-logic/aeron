@@ -82,7 +82,7 @@ public class ClusterNetworkTopologyTest
 
 
     @BeforeEach
-    void setUp() throws IOException
+    void setUp()
     {
         Tests.await(
             () ->

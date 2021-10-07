@@ -23,11 +23,10 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -37,7 +36,6 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -119,10 +117,7 @@ public class ReplayMergeTest
         });
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
-
-    @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
     public void before()
@@ -137,7 +132,7 @@ public class ReplayMergeTest
                 .spiesSimulateConnection(false)
                 .imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(10))
                 .dirDeleteOnStart(true),
-            testWatcher);
+            systemTestWatcher);
 
         archive = Archive.launch(
             new Archive.Context()
@@ -160,8 +155,8 @@ public class ReplayMergeTest
                 .controlResponseChannel(archive.context().localControlChannel())
                 .aeron(aeron));
 
-        clusterTestWatcher.dataCollector().add(Paths.get(mediaDriverContext.aeronDirectoryName()));
-        clusterTestWatcher.dataCollector().add(archiveDir.toPath());
+        systemTestWatcher.dataCollector().add(Paths.get(mediaDriverContext.aeronDirectoryName()));
+        systemTestWatcher.dataCollector().add(archiveDir.toPath());
     }
 
     @AfterEach
@@ -175,12 +170,11 @@ public class ReplayMergeTest
         }
 
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test
     @InterruptAfter(30)
-    public void shouldMergeFromReplayToLive(final TestInfo testInfo)
+    public void shouldMergeFromReplayToLive()
     {
         try (Publication publication = aeron.addPublication(publicationChannel, STREAM_ID))
         {

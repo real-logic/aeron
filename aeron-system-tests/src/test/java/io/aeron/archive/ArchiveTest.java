@@ -26,8 +26,10 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.test.*;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.*;
 import org.agrona.collections.MutableBoolean;
@@ -82,10 +84,7 @@ public class ArchiveTest
     public final TestWatcher randomSeedWatcher = ArchiveTests.newWatcher(seed);
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
-
-    @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private long controlSessionId;
     private String publishUri;
@@ -145,7 +144,7 @@ public class ArchiveTest
             .idleStrategySupplier(YieldingIdleStrategy::new);
         try
         {
-            driver = TestMediaDriver.launch(driverCtx, testWatcher);
+            driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
 
             if (threadingMode == ThreadingMode.INVOKER)
             {
@@ -156,8 +155,8 @@ public class ArchiveTest
         }
         finally
         {
-            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
-            clusterTestWatcher.dataCollector().add(archiveContext.archiveDir());
+            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            systemTestWatcher.dataCollector().add(archiveContext.archiveDir());
         }
 
         client = Aeron.connect();
@@ -202,8 +201,6 @@ public class ArchiveTest
         {
             CloseHelper.closeAll(client, archive, driver);
         }
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @ParameterizedTest

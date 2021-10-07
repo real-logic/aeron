@@ -21,8 +21,10 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.test.*;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -67,10 +69,7 @@ public class BasicArchiveTest
     private AeronArchive aeronArchive;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
-
-    @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private File archiveDir;
 
@@ -99,13 +98,13 @@ public class BasicArchiveTest
 
         try
         {
-            driver = TestMediaDriver.launch(driverCtx, testWatcher);
+            driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
             archive = Archive.launch(archiveCtx);
         }
         finally
         {
-            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
-            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
+            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
 
         aeron = Aeron.connect(
@@ -121,7 +120,6 @@ public class BasicArchiveTest
     public void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test

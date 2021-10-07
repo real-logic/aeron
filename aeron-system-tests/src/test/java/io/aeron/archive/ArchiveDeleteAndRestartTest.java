@@ -22,8 +22,10 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.samples.archive.RecordingDescriptorCollector;
-import io.aeron.test.*;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -53,10 +55,7 @@ public class ArchiveDeleteAndRestartTest
     public final TestWatcher randomSeedWatcher = ArchiveTests.newWatcher(seed);
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
-
-    @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private TestMediaDriver driver;
     private Archive archive;
@@ -92,13 +91,13 @@ public class ArchiveDeleteAndRestartTest
 
         try
         {
-            driver = TestMediaDriver.launch(driverCtx, testWatcher);
+            driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
             archive = Archive.launch(archiveContext.clone());
         }
         finally
         {
-            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
-            clusterTestWatcher.dataCollector().add(archiveContext.archiveDir());
+            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            systemTestWatcher.dataCollector().add(archiveContext.archiveDir());
         }
         client = Aeron.connect();
     }
@@ -107,8 +106,6 @@ public class ArchiveDeleteAndRestartTest
     public void after()
     {
         CloseHelper.closeAll(client, archive, driver);
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @InterruptAfter(10)

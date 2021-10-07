@@ -24,11 +24,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -80,7 +76,7 @@ public class MinFlowControlSystemTest
     private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private void launch()
     {

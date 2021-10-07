@@ -21,8 +21,8 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
@@ -67,7 +67,7 @@ public class ExclusivePublicationTest
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[65 * 1024]);
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final MediaDriver.Context driverContext = new MediaDriver.Context()
         .errorHandler(Tests::onError)

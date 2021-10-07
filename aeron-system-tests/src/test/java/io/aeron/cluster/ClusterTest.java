@@ -23,7 +23,6 @@ import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableInteger;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -35,7 +34,7 @@ import java.util.zip.CRC32;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static io.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
-import static io.aeron.test.ClusterTestWatcher.UNKNOWN_HOST_FILTER;
+import static io.aeron.test.SystemTestWatcher.UNKNOWN_HOST_FILTER;
 import static io.aeron.test.Tests.awaitAvailableWindow;
 import static io.aeron.test.cluster.ClusterTests.*;
 import static io.aeron.test.cluster.TestCluster.*;
@@ -50,22 +49,16 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ClusterTest
 {
     @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private TestCluster cluster = null;
-
-    @AfterEach
-    void tearDown()
-    {
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
-    }
 
     @Test
     @InterruptAfter(30)
     public void shouldStopFollowerAndRestartFollower()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         TestNode follower = cluster.followers().get(0);
@@ -84,7 +77,7 @@ public class ClusterTest
     public void shouldNotifyClientOfNewLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -100,7 +93,7 @@ public class ClusterTest
     public void shouldStopLeaderAndFollowersThenRestartAllWithSnapshot()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -120,7 +113,7 @@ public class ClusterTest
     public void shouldShutdownClusterAndRestartWithSnapshots()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -148,7 +141,7 @@ public class ClusterTest
     public void shouldAbortClusterAndRestart()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -178,7 +171,7 @@ public class ClusterTest
     public void shouldAbortClusterOnTerminationTimeout()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -210,7 +203,7 @@ public class ClusterTest
     public void shouldEchoMessages()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         cluster.connectClient();
@@ -227,7 +220,7 @@ public class ClusterTest
     public void shouldHandleLeaderFailOverWhenNameIsNotResolvable()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
+        systemTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
 
         final TestNode originalLeader = cluster.awaitLeader();
         cluster.connectClient();
@@ -255,7 +248,7 @@ public class ClusterTest
         final int initiallyUnresolvableNodeId = 1;
 
         cluster = aCluster().withStaticNodes(3).withInvalidNameResolution(initiallyUnresolvableNodeId).start();
-        clusterTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
+        systemTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
 
         cluster.awaitLeader();
         cluster.connectClient();
@@ -277,7 +270,7 @@ public class ClusterTest
     public void shouldHandleClusterStartWhereMostNamesBecomeResolvableDuringElection()
     {
         cluster = aCluster().withStaticNodes(3).withInvalidNameResolution(0).withInvalidNameResolution(2).start();
-        clusterTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
+        systemTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
 
         awaitElectionState(cluster.node(1), ElectionState.CANVASS);
 
@@ -300,7 +293,7 @@ public class ClusterTest
     public void shouldEchoMessagesThenContinueOnNewLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode originalLeader = cluster.awaitLeader();
         cluster.connectClient();
@@ -334,7 +327,7 @@ public class ClusterTest
     public void shouldStopLeaderAndRestartAsFollower()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode originalLeader = cluster.awaitLeader();
 
@@ -352,7 +345,7 @@ public class ClusterTest
     public void shouldStopLeaderAndRestartAsFollowerWithSendingAfter()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode originalLeader = cluster.awaitLeader();
 
@@ -375,7 +368,7 @@ public class ClusterTest
     public void shouldStopLeaderAndRestartAsFollowerWithSendingAfterThenStopLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode originalLeader = cluster.awaitLeader();
 
@@ -403,7 +396,7 @@ public class ClusterTest
     public void shouldAcceptMessagesAfterSingleNodeCleanRestart()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         TestNode follower = cluster.followers().get(0);
@@ -428,7 +421,7 @@ public class ClusterTest
     public void shouldReplaySnapshotTakenWhileDown()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -461,7 +454,7 @@ public class ClusterTest
     public void shouldTolerateMultipleLeaderFailures()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode firstLeader = cluster.awaitLeader();
         cluster.stopNode(firstLeader);
@@ -488,7 +481,7 @@ public class ClusterTest
     public void shouldRecoverAfterTwoLeadersNodesFailAndComeBackUpAtSameTime()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode firstLeader = cluster.awaitLeader();
 
@@ -522,7 +515,7 @@ public class ClusterTest
     public void shouldAcceptMessagesAfterTwoNodeCleanRestart()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -556,7 +549,7 @@ public class ClusterTest
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosExceedsPreviousAppendedPos()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -610,7 +603,7 @@ public class ClusterTest
     public void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosIsLessThanPreviousAppendedPos()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -653,7 +646,7 @@ public class ClusterTest
     public void shouldCallOnRoleChangeOnBecomingLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leaderOne = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -681,7 +674,7 @@ public class ClusterTest
     public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final TestNode.TestService service = leader.service();
@@ -710,7 +703,7 @@ public class ClusterTest
     public void shouldTerminateLeaderWhenServiceStops()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         cluster.connectClient();
@@ -731,7 +724,7 @@ public class ClusterTest
     public void shouldEnterElectionWhenRecordingStopsOnLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         cluster.connectClient();
@@ -757,7 +750,7 @@ public class ClusterTest
     public void shouldRecoverFollowerWhenRecordingStops()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
 
@@ -787,7 +780,7 @@ public class ClusterTest
     public void shouldCloseClientOnTimeout()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -813,7 +806,7 @@ public class ClusterTest
     public void shouldRecoverWhileMessagesContinue() throws InterruptedException
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final MutableInteger messageCounter = new MutableInteger();
         final TestNode leader = cluster.awaitLeader();
@@ -858,7 +851,7 @@ public class ClusterTest
     public void shouldCatchupFromEmptyLog()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -881,7 +874,7 @@ public class ClusterTest
     public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers(2);
@@ -927,7 +920,7 @@ public class ClusterTest
     public void shouldCatchUpTwoFreshNodesAfterRestart()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -963,7 +956,7 @@ public class ClusterTest
     public void shouldReplayMultipleSnapshotsWithEmptyFollowerLog()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -1031,7 +1024,7 @@ public class ClusterTest
     public void shouldRecoverQuicklyAfterKillingFollowersThenRestartingOne()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -1061,7 +1054,7 @@ public class ClusterTest
     public void shouldRecoverWhenLeaderHasAppendedMoreThanFollower()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -1091,7 +1084,7 @@ public class ClusterTest
     public void shouldRecoverWhenFollowerIsMultipleTermsBehind()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode originalLeader = cluster.awaitLeader();
 
@@ -1129,7 +1122,7 @@ public class ClusterTest
     public void shouldRecoverWhenFollowerArrivesPartWayThroughTerm()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         final TestNode followerOne = cluster.followers().get(0);
@@ -1156,7 +1149,7 @@ public class ClusterTest
     public void shouldRecoverWhenFollowerArrivePartWayThroughTermAfterMissingElection()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
@@ -1196,7 +1189,7 @@ public class ClusterTest
     void shouldRecoverWhenLastSnapshotIsMarkedInvalid()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader0 = cluster.awaitLeader();
 
@@ -1240,7 +1233,7 @@ public class ClusterTest
     void shouldRecoverWhenLastSnapshotForShutdownIsMarkedInvalid()
     {
         cluster = aCluster().withStaticNodes(1).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         TestNode leader = cluster.awaitLeader();
 
@@ -1272,7 +1265,7 @@ public class ClusterTest
     void shouldHandleMultipleElections()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader0 = cluster.awaitLeader();
 
@@ -1312,7 +1305,7 @@ public class ClusterTest
     void shouldRecoverWhenLastSnapshotIsInvalidBetweenTwoElections()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader0 = cluster.awaitLeader();
 
@@ -1364,7 +1357,7 @@ public class ClusterTest
     void shouldRecoverWhenLastTwosSnapshotsAreInvalidAfterElection()
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader0 = cluster.awaitLeader();
 
@@ -1455,7 +1448,7 @@ public class ClusterTest
             .withServiceSupplier(
                 (i) -> new TestNode.TestService[]{ new TestNode.TestService(), new TestNode.ChecksumService() })
             .start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         for (int i = 0; i < 3; i++)
@@ -1552,7 +1545,7 @@ public class ClusterTest
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)
     {
         cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         TestNode follower = cluster.followers().get(0);

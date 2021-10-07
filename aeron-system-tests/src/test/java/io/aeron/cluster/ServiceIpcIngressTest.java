@@ -15,38 +15,29 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class ServiceIpcIngressTest
 {
     @RegisterExtension
-    final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-
-    @AfterEach
-    void tearDown()
-    {
-        assertEquals(
-            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
-    }
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(20)
     public void shouldEchoIpcMessages()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         cluster.connectClient();

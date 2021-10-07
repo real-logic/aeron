@@ -19,8 +19,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.ErrorHandler;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class AsyncResourceTest
     private static final String AERON_IPC = "aeron:ipc";
 
     @RegisterExtension
-    final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @Test
     @Timeout(10)

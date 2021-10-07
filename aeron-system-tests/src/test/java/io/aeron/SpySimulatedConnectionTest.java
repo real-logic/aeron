@@ -22,8 +22,8 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
@@ -76,7 +76,7 @@ public class SpySimulatedConnectionTest
     private final FragmentHandler fragmentHandlerSub = (buffer1, offset, length, header) -> fragmentCountSub.value++;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher watcher = new SystemTestWatcher();
 
     private void launch()
     {

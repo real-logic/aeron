@@ -18,11 +18,10 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -36,7 +35,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static java.util.Objects.requireNonNull;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -49,10 +49,7 @@ public class TimestampingSystemTest
         "aeron:udp?endpoint=localhost:0|channel-rcv-ts-offset=0|channel-snd-ts-offset=8";
 
     @RegisterExtension
-    public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
-
-    @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private TestMediaDriver driver()
     {
@@ -60,11 +57,11 @@ public class TimestampingSystemTest
         final MediaDriver.Context context = new MediaDriver.Context().dirDeleteOnStart(true);
         try
         {
-            return TestMediaDriver.launch(context, watcher);
+            return TestMediaDriver.launch(context, systemTestWatcher);
         }
         finally
         {
-            clusterTestWatcher.dataCollector().add(context.aeronDirectory());
+            systemTestWatcher.dataCollector().add(context.aeronDirectory());
         }
     }
 
@@ -77,6 +74,7 @@ public class TimestampingSystemTest
     void shouldErrorOnMediaReceiveTimestampsInJavaDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
+        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("ERROR - Media timestamps"));
 
         try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
@@ -123,8 +121,6 @@ public class TimestampingSystemTest
                 Tests.yieldingIdle("Failed to receive message");
             }
         }
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test
@@ -175,13 +171,13 @@ public class TimestampingSystemTest
             assertNotEquals(SENTINEL_VALUE, receiveTimestamp.longValue());
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test
     void shouldErrorIfSubscriptionConfigurationForTimestampsDoesNotMatch()
     {
+        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("option conflicts"));
+
         try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
@@ -198,6 +194,8 @@ public class TimestampingSystemTest
     @Test
     void shouldErrorIfPublicationConfigurationForTimestampsDoesNotMatch()
     {
+        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("option conflicts"));
+
         try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
@@ -257,8 +255,6 @@ public class TimestampingSystemTest
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test
@@ -312,8 +308,6 @@ public class TimestampingSystemTest
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test
@@ -386,7 +380,5 @@ public class TimestampingSystemTest
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 }

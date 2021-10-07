@@ -76,7 +76,7 @@ public class ClusterNetworkTopologyTest
     private static final List<String> INTERNAL_HOSTNAMES = Arrays.asList("10.42.1.10", "10.42.1.11", "10.42.1.12");
 
     @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private File baseDir;
 
@@ -214,12 +214,12 @@ public class ClusterNetworkTopologyTest
     {
         for (int nodeId = 0; nodeId < nodeCount; nodeId++)
         {
-            clusterTestWatcher.dataCollector().add(
+            systemTestWatcher.dataCollector().add(
                 new File(CommonContext.getAeronDirectoryName() + "-" + nodeId + "-driver"));
-            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.ARCHIVE_SUB_DIR));
-            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.CLUSTER_SUB_DIR));
-            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "event.log"));
-            clusterTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "command.out"));
+            systemTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.ARCHIVE_SUB_DIR));
+            systemTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.CLUSTER_SUB_DIR));
+            systemTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "event.log"));
+            systemTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "command.out"));
         }
     }
 

@@ -35,7 +35,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableReference;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,18 +48,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class MultiModuleSharedDriverTest
 {
     @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
 
     @BeforeEach
     void setUp()
     {
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @SuppressWarnings("methodlength")
@@ -152,15 +145,15 @@ public class MultiModuleSharedDriverTest
             }
             finally
             {
-                clusterTestWatcher.dataCollector().add(moduleCtx0.clusterDir());
-                clusterTestWatcher.dataCollector().add(moduleCtx1.clusterDir());
+                systemTestWatcher.dataCollector().add(moduleCtx0.clusterDir());
+                systemTestWatcher.dataCollector().add(moduleCtx1.clusterDir());
                 CloseHelper.closeAll(client0, client1, consensusModule0, consensusModule1, container0, container1);
             }
         }
         finally
         {
-            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
-            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
+            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
     }
 
@@ -168,8 +161,8 @@ public class MultiModuleSharedDriverTest
     @InterruptAfter(30)
     public void shouldSupportTwoMultiNodeClusters()
     {
-        try (MultiClusterNode node0 = new MultiClusterNode(0, clusterTestWatcher.dataCollector());
-            MultiClusterNode node1 = new MultiClusterNode(1, clusterTestWatcher.dataCollector()))
+        try (MultiClusterNode node0 = new MultiClusterNode(0, systemTestWatcher.dataCollector());
+            MultiClusterNode node1 = new MultiClusterNode(1, systemTestWatcher.dataCollector()))
         {
             final MutableReference<String> egress = new MutableReference<>();
             final EgressListener egressListener = (clusterSessionId, timestamp, buffer, offset, length, header) ->

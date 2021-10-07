@@ -22,8 +22,10 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.test.*;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -81,10 +83,7 @@ public class ReplicateRecordingTest
     private AeronArchive dstAeronArchive;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
-
-    @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
 
     @BeforeEach
@@ -135,17 +134,17 @@ public class ReplicateRecordingTest
 
         try
         {
-            srcDriver = TestMediaDriver.launch(srcContext, testWatcher);
+            srcDriver = TestMediaDriver.launch(srcContext, systemTestWatcher);
             srcArchive = Archive.launch(srcArchiveCtx);
-            dstDriver = TestMediaDriver.launch(dstContext, testWatcher);
+            dstDriver = TestMediaDriver.launch(dstContext, systemTestWatcher);
             dstArchive = Archive.launch(dstArchiveCtx);
         }
         finally
         {
-            clusterTestWatcher.dataCollector().add(srcContext.aeronDirectory());
-            clusterTestWatcher.dataCollector().add(dstContext.aeronDirectory());
-            clusterTestWatcher.dataCollector().add(dstArchiveCtx.archiveDir());
-            clusterTestWatcher.dataCollector().add(srcArchiveCtx.archiveDir());
+            systemTestWatcher.dataCollector().add(srcContext.aeronDirectory());
+            systemTestWatcher.dataCollector().add(dstContext.aeronDirectory());
+            systemTestWatcher.dataCollector().add(dstArchiveCtx.archiveDir());
+            systemTestWatcher.dataCollector().add(srcArchiveCtx.archiveDir());
         }
 
         srcAeron = Aeron.connect(
@@ -183,8 +182,6 @@ public class ReplicateRecordingTest
             dstArchive,
             dstDriver,
             srcDriver);
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test

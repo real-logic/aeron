@@ -22,8 +22,8 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -53,7 +53,7 @@ public class PublishFromArbitraryPositionTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)

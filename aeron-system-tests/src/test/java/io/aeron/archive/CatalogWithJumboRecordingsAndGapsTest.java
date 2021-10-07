@@ -20,8 +20,9 @@ import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.test.*;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
@@ -77,10 +78,7 @@ class CatalogWithJumboRecordingsAndGapsTest
     private AeronArchive aeronArchive;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
-
-    @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
     void before()
@@ -137,13 +135,13 @@ class CatalogWithJumboRecordingsAndGapsTest
 
         try
         {
-            mediaDriver = TestMediaDriver.launch(driverCtx, testWatcher);
+            mediaDriver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
             archive = Archive.launch(archiveCtx);
         }
         finally
         {
-            clusterTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
-            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
+            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
 
         aeron = Aeron.connect(
@@ -159,8 +157,6 @@ class CatalogWithJumboRecordingsAndGapsTest
     void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, mediaDriver);
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test

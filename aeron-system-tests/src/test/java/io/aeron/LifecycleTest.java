@@ -18,8 +18,8 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
 public class LifecycleTest
 {
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(10)

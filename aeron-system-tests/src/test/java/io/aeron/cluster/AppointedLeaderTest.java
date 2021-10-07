@@ -16,12 +16,11 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
-import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -34,23 +33,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class AppointedLeaderTest
 {
     @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private static final int LEADER_ID = 1;
-
-    @AfterEach
-    void tearDown()
-    {
-        assertEquals(
-            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
-    }
 
     @Test
     @InterruptAfter(20)
     public void shouldConnectAndSendKeepAlive()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         assertEquals(LEADER_ID, leader.index());
@@ -65,7 +57,7 @@ public class AppointedLeaderTest
     public void shouldEchoMessagesViaService()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         assertEquals(LEADER_ID, leader.index());

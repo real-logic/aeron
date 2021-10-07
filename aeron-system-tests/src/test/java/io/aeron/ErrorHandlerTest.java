@@ -19,8 +19,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.hamcrest.Matcher;
@@ -41,7 +41,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 public class ErrorHandlerTest
 {
     @RegisterExtension
-    public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher watcher = new SystemTestWatcher();
 
     private final MediaDriver.Context context = new MediaDriver.Context();
     {

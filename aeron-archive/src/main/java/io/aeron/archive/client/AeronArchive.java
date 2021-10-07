@@ -86,6 +86,7 @@ public final class AeronArchive implements AutoCloseable
     private final Lock lock;
     private final NanoClock nanoClock;
     private final AgentInvoker aeronClientInvoker;
+    private final DelegatingRecordingSignalConsumer signalConsumer = new DelegatingRecordingSignalConsumer();
     private RecordingDescriptorPoller recordingDescriptorPoller;
     private RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller;
 
@@ -1972,6 +1973,66 @@ public final class AeronArchive implements AutoCloseable
             }
 
             return pollForResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Add a recording signal consumer to the underlying control response poller. This will be called back
+     * whenever a signal is encountered. This can occur when calling {@link AeronArchive#pollForEvents()} or
+     * when executing a specific blocking action e.g. {@link AeronArchive#startRecording(String, int, SourceLocation)}.
+     * If this instance is being shared by multiple threads then the callback can occur from a different thread to the
+     * one that added the <code>RecordingSignalConsumer</code>.
+     *
+     * @param recordingSignalConsumer to be added to listen for signals from the archive.
+     */
+    public void addRecodingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
+    {
+        lock.lock();
+        try
+        {
+            controlResponsePoller.addRecordingSignalConsumer(recordingSignalConsumer);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Removes a recording signal consumer that was added through
+     * {@link AeronArchive#addRecodingSignalConsumer(RecordingSignalConsumer)}.
+     *
+     * @param recordingSignalConsumer to be removed.
+     */
+    public void removeRecodingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
+    {
+        lock.lock();
+        try
+        {
+            controlResponsePoller.removeRecordingSignalConsumer(recordingSignalConsumer);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Polls the underling <code>ControlResponsePoller</code>, for any asynchronous events. This is useful for getting
+     * recording signals that are sent back to the client asynchronously.
+     *
+     * @return number of fragments processed.
+     */
+    public int pollForEvents()
+    {
+        lock.lock();
+        try
+        {
+            return controlResponsePoller.poll();
         }
         finally
         {

@@ -37,9 +37,11 @@ public final class ControlResponsePoller
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
     private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
+    private final RecordingSignalEventDecoder recordingSignalEventDecoder = new RecordingSignalEventDecoder();
 
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
+    private final DelegatingRecordingSignalConsumer recordingSignalConsumer = new DelegatingRecordingSignalConsumer();
     private long controlSessionId = Aeron.NULL_VALUE;
     private long correlationId = Aeron.NULL_VALUE;
     private long relevantId = Aeron.NULL_VALUE;
@@ -52,11 +54,12 @@ public final class ControlResponsePoller
 
     /**
      * Create a poller for a given subscription to an archive for control response messages.
-     *
      * @param subscription  to poll for new events.
      * @param fragmentLimit to apply when polling.
      */
-    private ControlResponsePoller(final Subscription subscription, final int fragmentLimit)
+    private ControlResponsePoller(
+        final Subscription subscription,
+        final int fragmentLimit)
     {
         this.subscription = subscription;
         this.fragmentLimit = fragmentLimit;
@@ -207,50 +210,91 @@ public final class ControlResponsePoller
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        if (messageHeaderDecoder.templateId() == ControlResponseDecoder.TEMPLATE_ID)
+        switch (messageHeaderDecoder.templateId())
         {
-            controlResponseDecoder.wrap(
-                buffer,
-                offset + MessageHeaderEncoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+            case ControlResponseDecoder.TEMPLATE_ID:
+            {
+                controlResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderEncoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
 
-            controlSessionId = controlResponseDecoder.controlSessionId();
-            correlationId = controlResponseDecoder.correlationId();
-            relevantId = controlResponseDecoder.relevantId();
-            code = controlResponseDecoder.code();
-            version = controlResponseDecoder.version();
-            errorMessage = controlResponseDecoder.errorMessage();
-            isPollComplete = true;
+                controlSessionId = controlResponseDecoder.controlSessionId();
+                correlationId = controlResponseDecoder.correlationId();
+                relevantId = controlResponseDecoder.relevantId();
+                code = controlResponseDecoder.code();
+                version = controlResponseDecoder.version();
+                errorMessage = controlResponseDecoder.errorMessage();
+                isPollComplete = true;
 
-            return ControlledFragmentHandler.Action.BREAK;
-        }
+                return ControlledFragmentHandler.Action.BREAK;
+            }
 
-        if (messageHeaderDecoder.templateId() == ChallengeDecoder.TEMPLATE_ID)
-        {
-            challengeDecoder.wrap(
-                buffer,
-                offset + MessageHeaderEncoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+            case ChallengeDecoder.TEMPLATE_ID:
+            {
+                challengeDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderEncoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
 
-            controlSessionId = challengeDecoder.controlSessionId();
-            correlationId = challengeDecoder.correlationId();
-            relevantId = Aeron.NULL_VALUE;
-            code = ControlResponseCode.NULL_VAL;
-            version = challengeDecoder.version();
-            errorMessage = "";
+                controlSessionId = challengeDecoder.controlSessionId();
+                correlationId = challengeDecoder.correlationId();
+                relevantId = Aeron.NULL_VALUE;
+                code = ControlResponseCode.NULL_VAL;
+                version = challengeDecoder.version();
+                errorMessage = "";
 
-            final int encodedChallengeLength = challengeDecoder.encodedChallengeLength();
-            encodedChallenge = new byte[encodedChallengeLength];
-            challengeDecoder.getEncodedChallenge(encodedChallenge, 0, encodedChallengeLength);
+                final int encodedChallengeLength = challengeDecoder.encodedChallengeLength();
+                encodedChallenge = new byte[encodedChallengeLength];
+                challengeDecoder.getEncodedChallenge(encodedChallenge, 0, encodedChallengeLength);
 
-            isPollComplete = true;
+                isPollComplete = true;
 
-            return ControlledFragmentHandler.Action.BREAK;
+                return ControlledFragmentHandler.Action.BREAK;
+            }
+
+            case RecordingSignalEventDecoder.TEMPLATE_ID:
+                recordingSignalEventDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                recordingSignalConsumer.onSignal(
+                    recordingSignalEventDecoder.controlSessionId(),
+                    recordingSignalEventDecoder.correlationId(),
+                    recordingSignalEventDecoder.recordingId(),
+                    recordingSignalEventDecoder.subscriptionId(),
+                    recordingSignalEventDecoder.position(),
+                    recordingSignalEventDecoder.signal());
+
+                isPollComplete = true;
+                return ControlledFragmentHandler.Action.BREAK;
         }
 
         return ControlledFragmentHandler.Action.CONTINUE;
+    }
+
+    /**
+     * Adds a <code>RecordingSignalConsumer</code> to callback when signals arrive
+     *
+     * @param recordingSignalConsumer to call back with signals.
+     */
+    public void addRecordingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
+    {
+        this.recordingSignalConsumer.addConsumer(recordingSignalConsumer);
+    }
+
+    /**
+     * Removes a <code>RecordingSignalConsumer</code> added previously.
+     *
+     * @param recordingSignalConsumer to remove.
+     */
+    public void removeRecordingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
+    {
+        this.recordingSignalConsumer.removeConsumer(recordingSignalConsumer);
     }
 
     /**

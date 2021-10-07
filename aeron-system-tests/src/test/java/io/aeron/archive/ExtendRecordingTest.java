@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ControlEventListener;
 import io.aeron.archive.client.RecordingSignalAdapter;
 import io.aeron.archive.client.RecordingSignalConsumer;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
@@ -48,6 +49,8 @@ import org.mockito.Mockito;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
 
 import static io.aeron.archive.codecs.RecordingSignal.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
@@ -89,7 +92,7 @@ public class ExtendRecordingTest
     private File archiveDir;
     private AeronArchive aeronArchive;
 
-    private final RecordingSignalConsumer recordingSignalConsumer = mock(RecordingSignalConsumer.class);
+    private final RecordingSignalConsumer mockRecordingSignalConsumer = mock(RecordingSignalConsumer.class);
     private final ArrayList<String> errors = new ArrayList<>();
     private final ControlEventListener controlEventListener =
         (controlSessionId, correlationId, relevantId, code, errorMessage) -> errors.add(errorMessage);
@@ -167,7 +170,7 @@ public class ExtendRecordingTest
             recordingSignalAdapter = new RecordingSignalAdapter(
                 controlSessionId,
                 controlEventListener,
-                recordingSignalConsumer,
+                mockRecordingSignalConsumer,
                 aeronArchive.controlResponsePoller().subscription(),
                 ArchiveSystemTests.FRAGMENT_LIMIT);
 
@@ -236,16 +239,115 @@ public class ExtendRecordingTest
         replay(messageCount, stopTwo, recordingId);
         assertEquals(Collections.EMPTY_LIST, errors);
 
-        final InOrder inOrder = Mockito.inOrder(recordingSignalConsumer);
-        inOrder.verify(recordingSignalConsumer).onSignal(
+        final InOrder inOrder = Mockito.inOrder(mockRecordingSignalConsumer);
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(0L), eq(START));
-        inOrder.verify(recordingSignalConsumer).onSignal(
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(stopOne), eq(STOP));
-        inOrder.verify(recordingSignalConsumer).onSignal(
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopOne), eq(EXTEND));
-        inOrder.verify(recordingSignalConsumer).onSignal(
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopTwo), eq(STOP));
     }
+
+    @Test
+    @InterruptAfter(10)
+    public void shouldExtendRecordingAndReplayWithAddedSignalConsumer()
+    {
+        final long controlSessionId = aeronArchive.controlSessionId();
+        final RecordingSignalAdapter recordingSignalAdapter;
+        final int messageCount = 10;
+        final long subscriptionIdOne;
+        final long subscriptionIdTwo;
+        final long stopOne;
+        final long stopTwo;
+        final long recordingId;
+
+        final List<RecordingSignal> recordingSignals = new ArrayList<>();
+        final RecordingSignalCaptor recordingSignalCaptor = new RecordingSignalCaptor();
+
+        try (Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+            Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID))
+        {
+            aeronArchive.addRecodingSignalConsumer(mockRecordingSignalConsumer);
+            aeronArchive.addRecodingSignalConsumer(recordingSignalCaptor);
+
+            subscriptionIdOne = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
+            recordingSignalCaptor.pollAndRemove(aeronArchive, START);
+
+            try
+            {
+                offer(publication, 0, messageCount);
+
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                consume(subscription, 0, messageCount);
+
+                stopOne = publication.position();
+                ArchiveSystemTests.awaitPosition(counters, counterId, stopOne);
+            }
+            finally
+            {
+                aeronArchive.stopRecording(subscriptionIdOne);
+                recordingSignalCaptor.pollAndRemove(aeronArchive, STOP);
+            }
+        }
+
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
+        assertEquals(
+            1L, aeronArchive.listRecordingsForUri(0, 1, "alias=" + MY_ALIAS, RECORDED_STREAM_ID, collector.reset()));
+        final RecordingDescriptor recording = collector.descriptors().get(0);
+        assertEquals(recordingId, recording.recordingId());
+
+        final String publicationExtendChannel = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("localhost:3333")
+            .initialPosition(recording.stopPosition(), recording.initialTermId(), recording.termBufferLength())
+            .mtu(recording.mtuLength())
+            .alias(MY_ALIAS)
+            .build();
+
+        try (Subscription subscription = Tests.reAddSubscription(aeron, EXTEND_CHANNEL, RECORDED_STREAM_ID);
+            Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDED_STREAM_ID))
+        {
+            subscriptionIdTwo = aeronArchive.extendRecording(recordingId, EXTEND_CHANNEL, RECORDED_STREAM_ID, LOCAL);
+            recordingSignalCaptor.pollAndRemove(aeronArchive, EXTEND);
+
+            try
+            {
+                offer(publication, messageCount, messageCount);
+
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+
+                consume(subscription, messageCount, messageCount);
+
+                stopTwo = publication.position();
+                ArchiveSystemTests.awaitPosition(counters, counterId, stopTwo);
+            }
+            finally
+            {
+                aeronArchive.stopRecording(subscriptionIdTwo);
+                recordingSignalCaptor.pollAndRemove(aeronArchive, STOP);
+            }
+        }
+
+        replay(messageCount, stopTwo, recordingId);
+        assertEquals(Collections.EMPTY_LIST, errors);
+
+        final InOrder inOrder = Mockito.inOrder(mockRecordingSignalConsumer);
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
+            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(0L), eq(START));
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
+            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(stopOne), eq(STOP));
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
+            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopOne), eq(EXTEND));
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
+            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopTwo), eq(STOP));
+    }
+
 
     private void replay(final int messageCount, final long secondStopPosition, final long recordingId)
     {
@@ -299,5 +401,32 @@ public class ExtendRecordingTest
         }
 
         assertEquals(startIndex + count, received.get());
+    }
+
+    private static class RecordingSignalCaptor implements RecordingSignalConsumer
+    {
+        private final List<RecordingSignal> receivedSignals = new ArrayList<>();
+
+        public void onSignal(
+            final long controlSessionId,
+            final long correlationId,
+            final long recordingId,
+            final long subscriptionId,
+            final long position,
+            final RecordingSignal signal)
+        {
+            receivedSignals.add(signal);
+        }
+
+        public void pollAndRemove(final AeronArchive aeronArchive, final RecordingSignal expectedSignal)
+        {
+            final Supplier<String> message = () -> "Awaiting " + expectedSignal + " signal, found: " + receivedSignals;
+            while (!receivedSignals.contains(expectedSignal))
+            {
+                aeronArchive.pollForEvents();
+                Tests.yieldingIdle(message);
+            }
+            receivedSignals.remove(expectedSignal);
+        }
     }
 }

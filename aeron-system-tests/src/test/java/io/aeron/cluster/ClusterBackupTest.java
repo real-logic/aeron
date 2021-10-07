@@ -16,14 +16,13 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestBackupNode;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -38,21 +37,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ClusterBackupTest
 {
     @RegisterExtension
-    final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-
-    @AfterEach
-    void tearDown()
-    {
-        assertEquals(
-            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
-    }
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(30)
     public void shouldBackupClusterNoSnapshotsAndEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         cluster.startClusterBackupNode(true);
@@ -73,7 +65,7 @@ public class ClusterBackupTest
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -103,7 +95,7 @@ public class ClusterBackupTest
     public void shouldBackupClusterNoSnapshotsAndThenSendMessages()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         cluster.startClusterBackupNode(true);
@@ -133,7 +125,7 @@ public class ClusterBackupTest
     public void shouldBackupClusterWithSnapshot()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -166,7 +158,7 @@ public class ClusterBackupTest
     public void shouldBackupClusterAfterCleanShutdown()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -203,7 +195,7 @@ public class ClusterBackupTest
     public void shouldBackupClusterWithSnapshotAndNonEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -243,7 +235,7 @@ public class ClusterBackupTest
     public void shouldBackupClusterWithSnapshotThenSend()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -283,7 +275,7 @@ public class ClusterBackupTest
     public void shouldBeAbleToGetTimeOfNextBackupQuery()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
         final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
@@ -299,7 +291,7 @@ public class ClusterBackupTest
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -337,7 +329,7 @@ public class ClusterBackupTest
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leaderOne = cluster.awaitLeader();
 
@@ -369,7 +361,7 @@ public class ClusterBackupTest
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leaderOne = cluster.awaitLeader();
 

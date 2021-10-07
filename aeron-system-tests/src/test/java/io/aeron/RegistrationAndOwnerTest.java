@@ -31,8 +31,8 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
-import io.aeron.test.*;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -47,7 +47,7 @@ public class RegistrationAndOwnerTest
     private static final int STREAM_ID = 1001;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @ParameterizedTest
     @ValueSource(strings = { "aeron:udp?endpoint=localhost:24325", "aeron:ipc" })

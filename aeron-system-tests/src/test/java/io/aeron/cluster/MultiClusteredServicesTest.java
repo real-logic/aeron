@@ -29,7 +29,6 @@ import io.aeron.test.driver.RedirectingNameResolver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,13 +38,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @ExtendWith(InterruptingTestCallback.class)
 public class MultiClusteredServicesTest
 {
     @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     final AtomicLong serviceAMessageCount = new AtomicLong(0);
     final AtomicLong serviceBMessageCount = new AtomicLong(0);
@@ -54,12 +51,6 @@ public class MultiClusteredServicesTest
     @BeforeEach
     void setUp()
     {
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     final class ServiceA extends TestNode.TestService
@@ -120,9 +111,9 @@ public class MultiClusteredServicesTest
                 }
                 finally
                 {
-                    clusterTestWatcher.dataCollector().add(context.mediaDriverCtx.aeronDirectory());
-                    clusterTestWatcher.dataCollector().add(context.archiveCtx.archiveDir());
-                    clusterTestWatcher.dataCollector().add(context.consensusModuleCtx.clusterDir());
+                    systemTestWatcher.dataCollector().add(context.mediaDriverCtx.aeronDirectory());
+                    systemTestWatcher.dataCollector().add(context.archiveCtx.archiveDir());
+                    systemTestWatcher.dataCollector().add(context.consensusModuleCtx.clusterDir());
                 }
             });
 
@@ -136,7 +127,7 @@ public class MultiClusteredServicesTest
                 }
                 finally
                 {
-                    clusterTestWatcher.dataCollector().add(context.serviceContainerCtx.clusterDir());
+                    systemTestWatcher.dataCollector().add(context.serviceContainerCtx.clusterDir());
                 }
             });
 

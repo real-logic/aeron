@@ -22,7 +22,6 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.*;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
@@ -84,10 +83,7 @@ public class NameReResolutionTest
     private Publication publication;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
-
-    @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @RegisterExtension
     public final InterruptingTestCallback testCallback = new InterruptingTestCallback();
@@ -111,11 +107,11 @@ public class NameReResolutionTest
 
         try
         {
-            driver = TestMediaDriver.launch(context, testWatcher);
+            driver = TestMediaDriver.launch(context, systemTestWatcher);
         }
         finally
         {
-            clusterTestWatcher.dataCollector().add(context.aeronDirectory());
+            systemTestWatcher.dataCollector().add(context.aeronDirectory());
         }
 
         client = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()));
@@ -129,8 +125,6 @@ public class NameReResolutionTest
         {
             CloseHelper.closeAll(client, driver);
         }
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @SlowTest

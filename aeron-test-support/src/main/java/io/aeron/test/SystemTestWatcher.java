@@ -21,6 +21,7 @@ import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.samples.SamplesUtil;
 import io.aeron.test.cluster.TestCluster;
+import io.aeron.test.driver.DriverOutputConsumer;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
@@ -28,6 +29,7 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.errors.ErrorLogReader;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
@@ -38,11 +40,14 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class ClusterTestWatcher implements TestWatcher
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class SystemTestWatcher implements TestWatcher, DriverOutputConsumer, AfterTestExecutionCallback
 {
     private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
     private static final String UNKNOWN_HOST_EXCEPTION = UnknownHostException.class.getName();
@@ -56,12 +61,13 @@ public class ClusterTestWatcher implements TestWatcher
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
 
-    private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
+    private final MediaDriverTestUtil mediaDriverTestUtil = new MediaDriverTestUtil();
 
+    private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
     private DataCollector dataCollector = new DataCollector();
     private AutoCloseable closeable = () -> {};
 
-    public ClusterTestWatcher cluster(final TestCluster testCluster)
+    public SystemTestWatcher cluster(final TestCluster testCluster)
     {
         this.dataCollector = testCluster.dataCollector();
         closeable = testCluster;
@@ -74,11 +80,32 @@ public class ClusterTestWatcher implements TestWatcher
         return dataCollector;
     }
 
+    public void outputFiles(final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
+    {
+        mediaDriverTestUtil.outputFiles(aeronDirectoryName, stdoutFile, stderrFile);
+    }
+
+    public void exitCode(final String aeronDirectoryName, final int exitValue)
+    {
+        mediaDriverTestUtil.exitCode(aeronDirectoryName, exitValue);
+    }
+
+    public void environmentVariables(final String aeronDirectoryName, final Map<String, String> environment)
+    {
+        mediaDriverTestUtil.environmentVariables(aeronDirectoryName, environment);
+    }
+
     @SuppressWarnings("UnusedReturnValue")
-    public ClusterTestWatcher ignoreErrorsMatching(final Predicate<String> logFilter)
+    public SystemTestWatcher ignoreErrorsMatching(final Predicate<String> logFilter)
     {
         this.logFilter = this.logFilter.and(logFilter.negate());
         return this;
+    }
+
+    public void afterTestExecution(final ExtensionContext context) throws Exception
+    {
+        mediaDriverTestUtil.afterTestExecution(context);
+        assertEquals(0, errorCount(), "Errors observed in " + context.getDisplayName());
     }
 
     public int errorCount()
@@ -101,11 +128,13 @@ public class ClusterTestWatcher implements TestWatcher
         try
         {
             reportAndTerminate(context);
+            mediaDriverTestUtil.testFailed(context, cause);
         }
         finally
         {
             deleteAllLocations();
         }
+
     }
 
     public void testAborted(final ExtensionContext context, final Throwable cause)
@@ -137,6 +166,7 @@ public class ClusterTestWatcher implements TestWatcher
         try
         {
             CloseHelper.close(closeable);
+            mediaDriverTestUtil.testSuccessful(context);
         }
         finally
         {

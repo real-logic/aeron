@@ -15,13 +15,12 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -49,21 +48,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class ClusterToolTest
 {
     @RegisterExtension
-    final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-
-    @AfterEach
-    void tearDown()
-    {
-        assertEquals(
-            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
-    }
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(30)
     void shouldHandleSnapshotOnLeaderOnly()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
@@ -97,7 +89,7 @@ class ClusterToolTest
     void shouldNotSnapshotWhenSuspendedOnly()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
@@ -127,7 +119,7 @@ class ClusterToolTest
     void shouldSuspendAndResume()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();

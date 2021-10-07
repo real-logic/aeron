@@ -24,8 +24,9 @@ import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.SessionProxy;
-import io.aeron.test.*;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -72,10 +73,7 @@ public class ArchiveAuthenticationTest
     private final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
-
-    @RegisterExtension
-    public final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
     void setUp()
@@ -86,8 +84,6 @@ public class ArchiveAuthenticationTest
     public void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
-
-        assertEquals(0, clusterTestWatcher.errorCount(), "Errors observed in " + this.getClass().getSimpleName());
     }
 
     @Test
@@ -374,13 +370,13 @@ public class ArchiveAuthenticationTest
 
         try
         {
-            driver = TestMediaDriver.launch(mediaDriverCtx, testWatcher);
+            driver = TestMediaDriver.launch(mediaDriverCtx, systemTestWatcher);
             archive = Archive.launch(archiveCtx);
         }
         finally
         {
-            clusterTestWatcher.dataCollector().add(mediaDriverCtx.aeronDirectory());
-            clusterTestWatcher.dataCollector().add(archiveCtx.archiveDir());
+            systemTestWatcher.dataCollector().add(mediaDriverCtx.aeronDirectory());
+            systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
     }
 

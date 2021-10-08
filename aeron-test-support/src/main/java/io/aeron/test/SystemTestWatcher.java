@@ -32,7 +32,6 @@ import org.agrona.concurrent.errors.ErrorLogReader;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.net.UnknownHostException;
@@ -42,7 +41,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -144,57 +142,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
         return 0;
     }
-
-//    public void testFailed(final ExtensionContext context, final Throwable cause)
-//    {
-//        try
-//        {
-//            reportAndTerminate(context);
-//            mediaDriverTestUtil.testFailed();
-//        }
-//        finally
-//        {
-//            deleteAllLocations();
-//        }
-//
-//    }
-//
-//    public void testAborted(final ExtensionContext context, final Throwable cause)
-//    {
-//        try
-//        {
-//            reportAndTerminate(context);
-//        }
-//        finally
-//        {
-//            deleteAllLocations();
-//        }
-//    }
-//
-//    public void testDisabled(final ExtensionContext context, final Optional<String> reason)
-//    {
-//        try
-//        {
-//            CloseHelper.close(closeable);
-//        }
-//        finally
-//        {
-//            deleteAllLocations();
-//        }
-//    }
-//
-//    public void testSuccessful(final ExtensionContext context)
-//    {
-//        try
-//        {
-//            CloseHelper.close(closeable);
-//            mediaDriverTestUtil.testSuccessful();
-//        }
-//        finally
-//        {
-//            deleteAllLocations();
-//        }
-//    }
 
     private int countErrors(
         final List<Path> cncPaths,

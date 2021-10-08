@@ -42,8 +42,7 @@ import java.io.IOException;
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 import static io.aeron.test.driver.RedirectingNameResolver.*;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class NameReResolutionTest
@@ -101,7 +100,6 @@ public class NameReResolutionTest
         final MediaDriver.Context context = new MediaDriver.Context()
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED)
             .nameResolver(new RedirectingNameResolver(STUB_LOOKUP_CONFIGURATION));
 
@@ -427,6 +425,7 @@ public class NameReResolutionTest
     @InterruptAfter(20)
     public void shouldReportErrorOnReResolveFailure() throws IOException
     {
+        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("Unable to resolve host"));
         buffer.putInt(0, 1);
 
         subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);

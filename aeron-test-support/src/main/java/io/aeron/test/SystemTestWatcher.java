@@ -29,6 +29,7 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.errors.ErrorLogReader;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
@@ -47,7 +48,7 @@ import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SystemTestWatcher implements TestWatcher, DriverOutputConsumer, AfterTestExecutionCallback
+public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecutionCallback, AfterEachCallback
 {
     private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
     private static final String UNKNOWN_HOST_EXCEPTION = UnknownHostException.class.getName();
@@ -108,6 +109,27 @@ public class SystemTestWatcher implements TestWatcher, DriverOutputConsumer, Aft
         assertEquals(0, errorCount(), "Errors observed in " + context.getDisplayName());
     }
 
+    public void afterEach(final ExtensionContext context) throws Exception
+    {
+        try
+        {
+            if (context.getExecutionException().isPresent())
+            {
+                reportAndTerminate(context);
+                mediaDriverTestUtil.testFailed();
+            }
+            else
+            {
+                CloseHelper.close(closeable);
+                mediaDriverTestUtil.testSuccessful();
+            }
+        }
+        finally
+        {
+            deleteAllLocations();
+        }
+    }
+
     public int errorCount()
     {
         if (null != dataCollector)
@@ -123,56 +145,56 @@ public class SystemTestWatcher implements TestWatcher, DriverOutputConsumer, Aft
         return 0;
     }
 
-    public void testFailed(final ExtensionContext context, final Throwable cause)
-    {
-        try
-        {
-            reportAndTerminate(context);
-            mediaDriverTestUtil.testFailed(context, cause);
-        }
-        finally
-        {
-            deleteAllLocations();
-        }
-
-    }
-
-    public void testAborted(final ExtensionContext context, final Throwable cause)
-    {
-        try
-        {
-            reportAndTerminate(context);
-        }
-        finally
-        {
-            deleteAllLocations();
-        }
-    }
-
-    public void testDisabled(final ExtensionContext context, final Optional<String> reason)
-    {
-        try
-        {
-            CloseHelper.close(closeable);
-        }
-        finally
-        {
-            deleteAllLocations();
-        }
-    }
-
-    public void testSuccessful(final ExtensionContext context)
-    {
-        try
-        {
-            CloseHelper.close(closeable);
-            mediaDriverTestUtil.testSuccessful(context);
-        }
-        finally
-        {
-            deleteAllLocations();
-        }
-    }
+//    public void testFailed(final ExtensionContext context, final Throwable cause)
+//    {
+//        try
+//        {
+//            reportAndTerminate(context);
+//            mediaDriverTestUtil.testFailed();
+//        }
+//        finally
+//        {
+//            deleteAllLocations();
+//        }
+//
+//    }
+//
+//    public void testAborted(final ExtensionContext context, final Throwable cause)
+//    {
+//        try
+//        {
+//            reportAndTerminate(context);
+//        }
+//        finally
+//        {
+//            deleteAllLocations();
+//        }
+//    }
+//
+//    public void testDisabled(final ExtensionContext context, final Optional<String> reason)
+//    {
+//        try
+//        {
+//            CloseHelper.close(closeable);
+//        }
+//        finally
+//        {
+//            deleteAllLocations();
+//        }
+//    }
+//
+//    public void testSuccessful(final ExtensionContext context)
+//    {
+//        try
+//        {
+//            CloseHelper.close(closeable);
+//            mediaDriverTestUtil.testSuccessful();
+//        }
+//        finally
+//        {
+//            deleteAllLocations();
+//        }
+//    }
 
     private int countErrors(
         final List<Path> cncPaths,

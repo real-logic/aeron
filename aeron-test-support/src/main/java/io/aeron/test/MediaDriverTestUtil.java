@@ -31,7 +31,7 @@ class MediaDriverTestUtil
 {
     private final Map<String, ProcessDetails> outputFilesByAeronDirectoryName = new LinkedHashMap<>();
 
-    public void testFailed(final ExtensionContext context, final Throwable cause)
+    public void testFailed()
     {
         dumpMediaDriverDiagnostics();
     }
@@ -79,7 +79,7 @@ class MediaDriverTestUtil
             });
     }
 
-    public void testSuccessful(final ExtensionContext context)
+    public void testSuccessful()
     {
         if (TestMediaDriver.shouldRunCMediaDriver())
         {

@@ -36,6 +36,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
@@ -1112,6 +1113,7 @@ public final class ConsensusModule implements AutoCloseable
         private EpochClock epochClock;
         private Random random;
         private TimerServiceSupplier timerServiceSupplier;
+        private LongConsumer clusterTimeConsumer;
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -1187,6 +1189,11 @@ public final class ConsensusModule implements AutoCloseable
             if (null == epochClock)
             {
                 epochClock = SystemEpochClock.INSTANCE;
+            }
+
+            if (null == clusterTimeConsumer)
+            {
+                clusterTimeConsumer = (timestamp) -> {};
             }
 
             if (null == markFile)
@@ -2504,6 +2511,32 @@ public final class ConsensusModule implements AutoCloseable
         public EpochClock epochClock()
         {
             return epochClock;
+        }
+
+        /**
+         * Set the consumer of timestamps which can be used for testing time progress in a cluster. The timestamp
+         * passed to the consumer is the timestamp of the last completed {@link Agent#doWork()} cycle by the consensus
+         * module {@link Agent}.
+         *
+         * @param clusterTimeConsumer to which the latest timestamp will be passed.
+         * @return this for a fluent API
+         */
+        Context clusterTimeConsumer(final LongConsumer clusterTimeConsumer)
+        {
+            this.clusterTimeConsumer = clusterTimeConsumer;
+            return this;
+        }
+
+        /**
+         * Get the consumer of timestamps which can be used for testing time progress in a cluster. The timestamp
+         * passed to the consumer is the timestamp of the last completed {@link Agent#doWork()} cycle by the consensus
+         * module {@link Agent}.
+         *
+         * @return the consumer of timestamps for completed work cycles.
+         */
+        LongConsumer clusterTimeConsumer()
+        {
+            return clusterTimeConsumer;
         }
 
         /**

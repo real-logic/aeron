@@ -38,6 +38,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongConsumer;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.*;
@@ -98,6 +99,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final ClusterMarkFile markFile;
     private final AgentInvoker aeronClientInvoker;
     private final ClusterClock clusterClock;
+    private final LongConsumer clusterTimeConsumer;
     private final TimeUnit clusterTimeUnit;
     private final Counter moduleState;
     private final Counter controlToggle;
@@ -151,6 +153,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         this.ctx = ctx;
         this.aeron = ctx.aeron();
         this.clusterClock = ctx.clusterClock();
+        this.clusterTimeConsumer = ctx.clusterTimeConsumer();
         this.clusterTimeUnit = clusterClock.timeUnit();
         this.sessionTimeoutNs = ctx.sessionTimeoutNs();
         this.leaderHeartbeatIntervalNs = ctx.leaderHeartbeatIntervalNs();
@@ -353,6 +356,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 throw ex;
             }
         }
+
+        clusterTimeConsumer.accept(now);
 
         return workCount;
     }

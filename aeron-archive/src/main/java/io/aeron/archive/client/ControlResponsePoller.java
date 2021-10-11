@@ -41,7 +41,7 @@ public final class ControlResponsePoller
 
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
-    private final DelegatingRecordingSignalConsumer recordingSignalConsumer = new DelegatingRecordingSignalConsumer();
+    private final RecordingSignalConsumer recordingSignalConsumer;
     private long controlSessionId = Aeron.NULL_VALUE;
     private long correlationId = Aeron.NULL_VALUE;
     private long relevantId = Aeron.NULL_VALUE;
@@ -55,14 +55,29 @@ public final class ControlResponsePoller
     /**
      * Create a poller for a given subscription to an archive for control response messages.
      * @param subscription  to poll for new events.
+     * @param recordingSignalConsumer
      * @param fragmentLimit to apply when polling.
      */
     private ControlResponsePoller(
         final Subscription subscription,
+        final RecordingSignalConsumer recordingSignalConsumer,
         final int fragmentLimit)
     {
         this.subscription = subscription;
+        this.recordingSignalConsumer = recordingSignalConsumer;
         this.fragmentLimit = fragmentLimit;
+    }
+
+    /**
+     * Create a poller for a given subscription to an archive for control response messages with a default
+     * fragment limit for polling as {@link #FRAGMENT_LIMIT}.
+     *
+     * @param subscription              to poll for new events.
+     * @param recordingSignalConsumer   to callback with any received recording signals
+     */
+    public ControlResponsePoller(final Subscription subscription, final RecordingSignalConsumer recordingSignalConsumer)
+    {
+        this(subscription, recordingSignalConsumer, FRAGMENT_LIMIT);
     }
 
     /**
@@ -73,7 +88,7 @@ public final class ControlResponsePoller
      */
     public ControlResponsePoller(final Subscription subscription)
     {
-        this(subscription, FRAGMENT_LIMIT);
+        this(subscription, AeronArchive.Configuration.defaultRecordingSignalConsumer(), FRAGMENT_LIMIT);
     }
 
     /**
@@ -275,26 +290,6 @@ public final class ControlResponsePoller
         }
 
         return ControlledFragmentHandler.Action.CONTINUE;
-    }
-
-    /**
-     * Adds a <code>RecordingSignalConsumer</code> to callback when signals arrive
-     *
-     * @param recordingSignalConsumer to call back with signals.
-     */
-    public void addRecordingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
-    {
-        this.recordingSignalConsumer.addConsumer(recordingSignalConsumer);
-    }
-
-    /**
-     * Removes a <code>RecordingSignalConsumer</code> added previously.
-     *
-     * @param recordingSignalConsumer to remove.
-     */
-    public void removeRecordingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
-    {
-        this.recordingSignalConsumer.removeConsumer(recordingSignalConsumer);
     }
 
     /**

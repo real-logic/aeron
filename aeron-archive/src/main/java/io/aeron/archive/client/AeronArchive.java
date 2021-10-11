@@ -195,7 +195,8 @@ public final class AeronArchive implements AutoCloseable
 
             subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
-            final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(subscription);
+            final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(
+                subscription, ctx.recordingSignalConsumer());
 
             final long deadlineNs = aeron.context().nanoClock().nanoTime() + messageTimeoutNs;
             final ArchiveProxy archiveProxy = new ArchiveProxy(
@@ -1981,49 +1982,9 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Add a recording signal consumer to the underlying control response poller. This will be called back
-     * whenever a signal is encountered. This can occur when calling {@link AeronArchive#pollForEvents()} or
-     * when executing a specific blocking action e.g. {@link AeronArchive#startRecording(String, int, SourceLocation)}.
-     * If this instance is being shared by multiple threads then the callback can occur from a different thread to the
-     * one that added the <code>RecordingSignalConsumer</code>.
-     *
-     * @param recordingSignalConsumer to be added to listen for signals from the archive.
-     */
-    public void addRecodingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
-    {
-        lock.lock();
-        try
-        {
-            controlResponsePoller.addRecordingSignalConsumer(recordingSignalConsumer);
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Removes a recording signal consumer that was added through
-     * {@link AeronArchive#addRecodingSignalConsumer(RecordingSignalConsumer)}.
-     *
-     * @param recordingSignalConsumer to be removed.
-     */
-    public void removeRecodingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
-    {
-        lock.lock();
-        try
-        {
-            controlResponsePoller.removeRecordingSignalConsumer(recordingSignalConsumer);
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Polls the underling <code>ControlResponsePoller</code>, for any asynchronous events. This is useful for getting
-     * recording signals that are sent back to the client asynchronously.
+     * Polls the underling <code>ControlResponsePoller</code> for any asynchronous events. This is useful for getting
+     * recording signals that are sent back to the client asynchronously. This will trigger callbacks onto the
+     * {@link RecordingSignalConsumer} specified on {@link Context#recordingEventsChannel(String)}.
      *
      * @return number of fragments processed.
      */
@@ -2614,6 +2575,16 @@ public final class AeronArchive implements AutoCloseable
             final String propValue = System.getProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
             return null != propValue ? "true".equals(propValue) : RECORDING_EVENTS_ENABLED_DEFAULT;
         }
+
+        /**
+         * The default recording signal consumer to be used when none is specified.
+         *
+         * @return a default recording signal consumer.
+         */
+        public static RecordingSignalConsumer defaultRecordingSignalConsumer()
+        {
+            return (controlSessionId1, correlationId, recordingId, subscriptionId, position, signal) -> {};
+        }
     }
 
     /**
@@ -2648,6 +2619,7 @@ public final class AeronArchive implements AutoCloseable
         private ErrorHandler errorHandler;
         private CredentialsSupplier credentialsSupplier;
         private boolean ownsAeronClient = false;
+        private RecordingSignalConsumer recordingSignalConsumer = Configuration.defaultRecordingSignalConsumer();
 
         /**
          * Perform a shallow copy of the object.
@@ -3120,6 +3092,30 @@ public final class AeronArchive implements AutoCloseable
             {
                 CloseHelper.close(aeron);
             }
+        }
+
+        /**
+         * Specify a recording signal consumer to will be called back whenever the <code>ControlResponsePoller</code>
+         * encounters the relevant event. This can occur in any of the block methods that poll for responses or polled
+         * for manually using {@link AeronArchive#pollForEvents()}
+         *
+         * @param recordingSignalConsumer to call back with recording signal events.
+         * @return this for a fluent API.
+         */
+        public Context recordingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
+        {
+            this.recordingSignalConsumer = recordingSignalConsumer;
+            return this;
+        }
+
+        /**
+         * Get the specified recording signal consumer.
+         *
+         * @return a recording signal consumer.
+         */
+        public RecordingSignalConsumer recordingSignalConsumer()
+        {
+            return recordingSignalConsumer;
         }
 
         /**

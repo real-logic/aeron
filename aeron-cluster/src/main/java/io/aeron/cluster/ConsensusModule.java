@@ -36,6 +36,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
@@ -1113,7 +1114,7 @@ public final class ConsensusModule implements AutoCloseable
         private EpochClock epochClock;
         private Random random;
         private TimerServiceSupplier timerServiceSupplier;
-        private LongConsumer clusterTimeConsumer;
+        private Function<Context, LongConsumer> clusterTimeConsumerSupplier;
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -1191,9 +1192,9 @@ public final class ConsensusModule implements AutoCloseable
                 epochClock = SystemEpochClock.INSTANCE;
             }
 
-            if (null == clusterTimeConsumer)
+            if (null == clusterTimeConsumerSupplier)
             {
-                clusterTimeConsumer = (timestamp) -> {};
+                clusterTimeConsumerSupplier = (ctx) -> (timestamp) -> {};
             }
 
             if (null == markFile)
@@ -2514,29 +2515,30 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the consumer of timestamps which can be used for testing time progress in a cluster. The timestamp
-         * passed to the consumer is the timestamp of the last completed {@link Agent#doWork()} cycle by the consensus
-         * module {@link Agent}.
+         * Set the supplier of a consumer of timestamps which can be used for testing time progress in a cluster. The
+         * timestamp passed to the consumer is the timestamp of the last completed {@link Agent#doWork()} cycle by the
+         * consensus module {@link Agent}. The supplier will be called after the context is concluded and can be
+         * referenced during the construction of the consumer.
          *
-         * @param clusterTimeConsumer to which the latest timestamp will be passed.
+         * @param clusterTimeConsumerSupplier to which the latest timestamp will be passed.
          * @return this for a fluent API
          */
-        Context clusterTimeConsumer(final LongConsumer clusterTimeConsumer)
+        Context clusterTimeConsumerSupplier(final Function<Context, LongConsumer> clusterTimeConsumerSupplier)
         {
-            this.clusterTimeConsumer = clusterTimeConsumer;
+            this.clusterTimeConsumerSupplier = clusterTimeConsumerSupplier;
             return this;
         }
 
         /**
-         * Get the consumer of timestamps which can be used for testing time progress in a cluster. The timestamp
-         * passed to the consumer is the timestamp of the last completed {@link Agent#doWork()} cycle by the consensus
-         * module {@link Agent}.
+         * Get the supplier of a consumer of timestamps which can be used for testing time progress in a cluster. The
+         * timestamp passed to the consumer is the timestamp of the last completed {@link Agent#doWork()} cycle by the
+         * consensus module {@link Agent}.
          *
          * @return the consumer of timestamps for completed work cycles.
          */
-        LongConsumer clusterTimeConsumer()
+        Function<Context, LongConsumer> clusterTimeConsumerSupplier()
         {
-            return clusterTimeConsumer;
+            return clusterTimeConsumerSupplier;
         }
 
         /**

@@ -66,7 +66,7 @@ public class ConsensusModuleAgentTest
         .controlToggleCounter(mock(Counter.class))
         .clusterNodeRoleCounter(mock(Counter.class))
         .timedOutClientCounter(mockTimedOutClientCounter)
-        .clusterTimeConsumer(mockTimeConsumer)
+        .clusterTimeConsumerSupplier((ctx) -> mockTimeConsumer)
         .idleStrategySupplier(NoOpIdleStrategy::new)
         .timerServiceSupplier((clusterClock, timerHandler) -> mock(TimerService.class))
         .aeron(mockAeron)

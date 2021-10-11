@@ -2523,7 +2523,7 @@ public final class ConsensusModule implements AutoCloseable
          * @param clusterTimeConsumerSupplier to which the latest timestamp will be passed.
          * @return this for a fluent API
          */
-        Context clusterTimeConsumerSupplier(final Function<Context, LongConsumer> clusterTimeConsumerSupplier)
+        public Context clusterTimeConsumerSupplier(final Function<Context, LongConsumer> clusterTimeConsumerSupplier)
         {
             this.clusterTimeConsumerSupplier = clusterTimeConsumerSupplier;
             return this;
@@ -2536,7 +2536,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return the consumer of timestamps for completed work cycles.
          */
-        Function<Context, LongConsumer> clusterTimeConsumerSupplier()
+        public Function<Context, LongConsumer> clusterTimeConsumerSupplier()
         {
             return clusterTimeConsumerSupplier;
         }

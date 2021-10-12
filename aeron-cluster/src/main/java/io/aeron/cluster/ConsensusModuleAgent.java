@@ -153,7 +153,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         this.ctx = ctx;
         this.aeron = ctx.aeron();
         this.clusterClock = ctx.clusterClock();
-        this.clusterTimeConsumer = ctx.clusterTimeConsumer();
+        this.clusterTimeConsumer = ctx.clusterTimeConsumerSupplier().apply(ctx);
         this.clusterTimeUnit = clusterClock.timeUnit();
         this.sessionTimeoutNs = ctx.sessionTimeoutNs();
         this.leaderHeartbeatIntervalNs = ctx.leaderHeartbeatIntervalNs();

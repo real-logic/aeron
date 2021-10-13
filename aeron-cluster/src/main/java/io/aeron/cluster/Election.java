@@ -1238,7 +1238,15 @@ class Election
 
         if (NULL_VALUE == recordingId)
         {
-            throw new AgentTerminationException("log recording id not found");
+            if (0 == logPosition)
+            {
+                logLeadershipTermId = leadershipTermId;
+                return;
+            }
+            else
+            {
+                throw new AgentTerminationException("log recording id not found");
+            }
         }
 
         for (long termId = logLeadershipTermId + 1; termId <= leadershipTermId; termId++)

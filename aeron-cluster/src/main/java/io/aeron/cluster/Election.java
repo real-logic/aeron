@@ -417,18 +417,14 @@ class Election
                         {
                             replicationLeadershipTermId = logLeadershipTermId;
                             replicationStopPosition = nextTermBaseLogPosition;
+                            // Here we should have an open, but uncommitted term so the base position
+                            // is already known.  We could look it up from the recording log only to not right
+                            // it back again...
                             replicationBaseTermLogPosition = NULL_VALUE;
                             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
                         }
                         else if (appendPosition == nextTermBaseLogPosition)
                         {
-//                            final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId);
-//                            if (null != termEntry && Aeron.NULL_VALUE == termEntry.logPosition)
-//                            {
-//                                ctx.recordingLog().commitLogPosition(logLeadershipTermId, nextTermBaseLogPosition);
-//                                ctx.recordingLog().force(ctx.fileSyncLevel());
-//                            }
-
                             if (NULL_POSITION != nextLogPosition)
                             {
                                 replicationLeadershipTermId = nextLeadershipTermId;
@@ -1248,8 +1244,9 @@ class Election
                 {
                     throw new ClusterException(
                         "Prior term was not committed: " + lastTerm +
-                            " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId + ", logTermBasePosition = " +
-                            logTermBasePosition + ", logPosition = " + logPosition + ", nowNs = " + nowNs);
+                        " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId +
+                        ", logTermBasePosition = " + logTermBasePosition + ", logPosition = " + logPosition +
+                        ", nowNs = " + nowNs);
                 }
                 else
                 {

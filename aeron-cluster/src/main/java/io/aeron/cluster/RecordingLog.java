@@ -161,12 +161,6 @@ public final class RecordingLog implements AutoCloseable
             final boolean isValid,
             final int entryIndex)
         {
-            if (-1 == termBaseLogPosition)
-            {
-                final String msg = "recordingId = " + recordingId + ", leadershipTermId = " + leadershipTermId + ", termBaseLogPosition = " + termBaseLogPosition + ", logPosition = " + logPosition + ", timestamp = " + timestamp + ", serviceId = " + serviceId + ", type = " + type + ", isValid = " + isValid + ", entryIndex = " + entryIndex;
-                new Exception(msg).printStackTrace();
-            }
-
             this.recordingId = recordingId;
             this.leadershipTermId = leadershipTermId;
             this.termBaseLogPosition = termBaseLogPosition;

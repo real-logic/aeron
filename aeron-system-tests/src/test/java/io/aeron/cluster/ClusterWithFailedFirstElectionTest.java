@@ -20,20 +20,13 @@ import io.aeron.log.EventLogExtension;
 import io.aeron.test.*;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.agent.ByteBuddyAgent;
-import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.asm.Advice;
-import net.bytebuddy.dynamic.scaffold.TypeValidation;
-import net.bytebuddy.matcher.ElementMatchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.lang.instrument.Instrumentation;
-
-import static io.aeron.test.cluster.TestCluster.*;
+import static io.aeron.test.cluster.TestCluster.aCluster;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
@@ -58,7 +51,7 @@ public class ClusterWithFailedFirstElectionTest
             final long logPosition,
             final long candidateTermId,
             final int candidateId,
-            @Advice.This Object thisObject)
+            @Advice.This final Object thisObject)
         {
             final Election election = (Election)thisObject;
             if (candidateId != election.memberId() && candidateTermId == 0)
@@ -73,7 +66,7 @@ public class ClusterWithFailedFirstElectionTest
     @InterruptAfter(60)
     public void shouldRecoverWhenFollowerIsMultipleTermsBehindFromEmptyLog()
     {
-        TestCluster cluster = aCluster().withStaticNodes(3).start(2);
+        final TestCluster cluster = aCluster().withStaticNodes(3).start(2);
 
         systemTestWatcher.cluster(cluster);
         systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("Forced failure"));

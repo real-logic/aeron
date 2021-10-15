@@ -27,7 +27,6 @@ import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.shadow.com.univocity.parsers.common.record.Record;
 
 import java.util.List;
 import java.util.function.Predicate;

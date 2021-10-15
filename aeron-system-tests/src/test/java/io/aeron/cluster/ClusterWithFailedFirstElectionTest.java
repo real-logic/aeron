@@ -104,6 +104,6 @@ public class ClusterWithFailedFirstElectionTest
             Tests.yieldingIdle("Waiting for late joining follower to catch up");
         }
 
-        final TestNode testNode = cluster.awaitLeader();
+        cluster.assertRecordingLogsEqual();
     }
 }

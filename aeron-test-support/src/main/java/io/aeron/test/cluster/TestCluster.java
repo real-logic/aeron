@@ -43,6 +43,8 @@ import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
+import org.mockito.AdditionalMatchers;
+import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -1245,6 +1247,39 @@ public class TestCluster implements AutoCloseable
     public DataCollector dataCollector()
     {
         return dataCollector;
+    }
+
+    public void assertRecordingLogsEqual()
+    {
+        RecordingLog first = null;
+        for (TestNode node : nodes)
+        {
+            if (null == node)
+            {
+                continue;
+            }
+
+            final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
+            if (null == first)
+            {
+                first = recordingLog;
+            }
+            else
+            {
+                final List<RecordingLog.Entry> firstEntries = first.entries();
+                final List<RecordingLog.Entry> entries = recordingLog.entries();
+
+                assertEquals(firstEntries.size(), entries.size(), "length mismatch");
+                for (int i = 0; i < firstEntries.size(); i++)
+                {
+                    final RecordingLog.Entry a = firstEntries.get(i);
+                    final RecordingLog.Entry b = entries.get(i);
+
+                    final ReflectionEquals matcher = new ReflectionEquals(a, "timestamp");
+                    assertTrue(matcher.matches(b), "Mismatch (" + i + "): " + a + " != " + b);
+                }
+            }
+        }
     }
 
     public static class ServiceContext

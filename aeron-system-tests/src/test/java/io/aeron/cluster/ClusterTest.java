@@ -1635,7 +1635,7 @@ public class ClusterTest
             Tests.yieldingIdle(msg);
         }
 
-        final TestNode testNode = cluster.awaitLeader();
+        cluster.awaitLeader();
 
         cluster.connectClient();
         cluster.sendMessages(messageCount);
@@ -1646,6 +1646,8 @@ public class ClusterTest
         {
             Tests.yieldingIdle(msg);
         }
+
+        cluster.assertRecordingLogsEqual();
     }
 
 

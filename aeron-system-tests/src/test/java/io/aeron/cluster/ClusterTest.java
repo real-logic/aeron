@@ -27,6 +27,7 @@ import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.shadow.com.univocity.parsers.common.record.Record;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -1645,10 +1646,6 @@ public class ClusterTest
         {
             Tests.yieldingIdle(msg);
         }
-
-        ClusterTool.recordingLog(System.out, testNode.consensusModule().context().clusterDir());
-        ClusterTool.recordingLog(System.out, lateJoiningNode.consensusModule().context().clusterDir());
-        ClusterTool.recordingLog(System.out, node.consensusModule().context().clusterDir());
     }
 
 

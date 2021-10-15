@@ -1283,7 +1283,7 @@ class Election
 
     private void updateRecordingLog(final long nowNs)
     {
-        ensureRecordingLogCoherent(leadershipTermId, NULL_VALUE, logPosition, nowNs);
+        ensureRecordingLogCoherent(leadershipTermId, logPosition, NULL_VALUE, nowNs);
         logLeadershipTermId = leadershipTermId;
     }
 

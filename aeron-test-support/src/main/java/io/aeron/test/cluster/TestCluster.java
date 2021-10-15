@@ -1414,6 +1414,17 @@ public class TestCluster implements AutoCloseable
 
         public TestCluster start()
         {
+            return start(nodeCount);
+        }
+
+        public TestCluster start(int toStart)
+        {
+            if (toStart > nodeCount)
+            {
+                throw new IllegalStateException(
+                    "Unable to start " + toStart + " nodes, only " + nodeCount + " available");
+            }
+
             final TestCluster testCluster = new TestCluster(
                 nodeCount,
                 dynamicNodeCount,
@@ -1424,7 +1435,7 @@ public class TestCluster implements AutoCloseable
             testCluster.ingressChannel(ingressChannel);
             testCluster.egressChannel(egressChannel);
 
-            for (int i = 0; i < testCluster.staticMemberCount; i++)
+            for (int i = 0; i < toStart; i++)
             {
                 testCluster.startStaticNode(i, true);
             }

@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ChannelUriStringBuilder;
-import io.aeron.CommonContext;
-import io.aeron.Image;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
@@ -76,6 +73,7 @@ class Election
     private LogReplication logReplication = null;
     private long replicationCommitPosition = 0;
     private long replicationCommitPositionDeadlineNs = 0;
+    private long replicationBaseTermLogPosition;
 
     Election(
         final boolean isNodeStartup,
@@ -419,14 +417,23 @@ class Election
                         {
                             replicationLeadershipTermId = logLeadershipTermId;
                             replicationStopPosition = nextTermBaseLogPosition;
+                            replicationBaseTermLogPosition = NULL_VALUE;
                             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
                         }
                         else if (appendPosition == nextTermBaseLogPosition)
                         {
+//                            final RecordingLog.Entry termEntry = ctx.recordingLog().findTermEntry(logLeadershipTermId);
+//                            if (null != termEntry && Aeron.NULL_VALUE == termEntry.logPosition)
+//                            {
+//                                ctx.recordingLog().commitLogPosition(logLeadershipTermId, nextTermBaseLogPosition);
+//                                ctx.recordingLog().force(ctx.fileSyncLevel());
+//                            }
+
                             if (NULL_POSITION != nextLogPosition)
                             {
                                 replicationLeadershipTermId = nextLeadershipTermId;
                                 replicationStopPosition = nextLogPosition;
+                                replicationBaseTermLogPosition = nextTermBaseLogPosition;
                                 state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
                             }
                         }
@@ -519,23 +526,8 @@ class Election
 
         if (FOLLOWER_CATCHUP == state || FOLLOWER_REPLAY == state)
         {
-            for (long termId = Math.max(logLeadershipTermId, 0); termId <= leadershipTermId; termId++)
-            {
-                final RecordingLog recordingLog = ctx.recordingLog();
-                if (!recordingLog.isUnknown(termId - 1))
-                {
-                    recordingLog.commitLogPosition(termId - 1, termBaseLogPosition);
-                    recordingLog.force(ctx.fileSyncLevel());
-                }
-
-                if (recordingLog.isUnknown(termId))
-                {
-                    recordingLog.appendTerm(logRecordingId, termId, termBaseLogPosition, timestamp);
-                    recordingLog.force(ctx.fileSyncLevel());
-                }
-            }
-
-            this.logLeadershipTermId = leadershipTermId;
+            final long nowNs = ctx.clusterClock().timeUnit().toNanos(timestamp);
+            ensureRecordingLogCoherent(leadershipTermId, termBaseLogPosition, NULL_VALUE, nowNs);
             this.logPosition = logPosition;
         }
     }
@@ -788,7 +780,8 @@ class Election
             }
             else
             {
-                updateRecordingLogForReplication(replicationLeadershipTermId, replicationStopPosition, nowNs);
+                updateRecordingLogForReplication(
+                    replicationLeadershipTermId, replicationBaseTermLogPosition, replicationStopPosition, nowNs);
                 state(CANVASS, nowNs);
             }
         }
@@ -803,7 +796,8 @@ class Election
                 {
                     appendPosition = logReplication.position();
                     cleanupLogReplication();
-                    updateRecordingLogForReplication(replicationLeadershipTermId, replicationStopPosition, nowNs);
+                    updateRecordingLogForReplication(
+                        replicationLeadershipTermId, replicationBaseTermLogPosition, replicationStopPosition, nowNs);
                     state(CANVASS, nowNs);
                     workCount++;
                 }
@@ -1208,29 +1202,11 @@ class Election
         return null == ClusterMember.findMember(clusterMembers, thisMember.id());
     }
 
-    private void updateRecordingLog(final long nowNs)
-    {
-        final RecordingLog recordingLog = ctx.recordingLog();
-        final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
-        final long recordingId = consensusModuleAgent.logRecordingId();
-
-        if (NULL_VALUE == recordingId)
-        {
-            throw new AgentTerminationException("log recording id not found");
-        }
-
-        for (long termId = logLeadershipTermId + 1; termId <= leadershipTermId; termId++)
-        {
-            if (recordingLog.isUnknown(termId))
-            {
-                recordingLog.appendTerm(recordingId, termId, logPosition, timestamp);
-                recordingLog.force(ctx.fileSyncLevel());
-                logLeadershipTermId = termId;
-            }
-        }
-    }
-
-    private void updateRecordingLogForReplication(final long leadershipTermId, final long logPosition, final long nowNs)
+    private void ensureRecordingLogCoherent(
+        final long leadershipTermId,
+        final long logTermBasePosition,
+        final long logPosition,
+        final long nowNs)
     {
         final RecordingLog recordingLog = ctx.recordingLog();
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
@@ -1240,7 +1216,6 @@ class Election
         {
             if (0 == logPosition)
             {
-                logLeadershipTermId = leadershipTermId;
                 return;
             }
             else
@@ -1249,20 +1224,77 @@ class Election
             }
         }
 
-        for (long termId = logLeadershipTermId + 1; termId <= leadershipTermId; termId++)
+        RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
+        if (null == lastTerm)
         {
-            if (recordingLog.isUnknown(termId))
+            // Backfill empty log entries...
+            for (long termId = 0; termId < leadershipTermId; termId++)
             {
-                final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
-                final long termBaseLogPosition = null != lastTerm ? lastTerm.logPosition : 0;
-
-                recordingLog.appendTerm(recordingId, termId, termBaseLogPosition, timestamp);
+                recordingLog.appendTerm(recordingId, termId, 0, timestamp);
+                recordingLog.commitLogPosition(termId, 0);
             }
 
-            recordingLog.commitLogPosition(termId, logPosition);
-            recordingLog.force(ctx.fileSyncLevel());
-            logLeadershipTermId = termId;
+            recordingLog.appendTerm(recordingId, leadershipTermId, 0, timestamp);
+            if (NULL_VALUE != logPosition)
+            {
+                recordingLog.commitLogPosition(leadershipTermId, logPosition);
+            }
         }
+        else if (lastTerm.leadershipTermId < leadershipTermId)
+        {
+            if (Aeron.NULL_VALUE == lastTerm.logPosition)
+            {
+                if (NULL_VALUE == logTermBasePosition)
+                {
+                    throw new ClusterException(
+                        "Prior term was not committed: " + lastTerm +
+                            " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId + ", logTermBasePosition = " +
+                            logTermBasePosition + ", logPosition = " + logPosition + ", nowNs = " + nowNs);
+                }
+                else
+                {
+                    recordingLog.commitLogPosition(lastTerm.leadershipTermId, logTermBasePosition);
+                    lastTerm = Objects.requireNonNull(recordingLog.findLastTerm());
+                }
+            }
+
+            // Backfill empty log entries...
+            for (long termId = lastTerm.leadershipTermId + 1; termId < leadershipTermId; termId++)
+            {
+                recordingLog.appendTerm(recordingId, termId, lastTerm.logPosition, timestamp);
+                recordingLog.commitLogPosition(termId, lastTerm.logPosition);
+            }
+
+            recordingLog.appendTerm(recordingId, leadershipTermId, lastTerm.logPosition, timestamp);
+            if (NULL_VALUE != logPosition)
+            {
+                recordingLog.commitLogPosition(leadershipTermId, logPosition);
+            }
+        }
+        else
+        {
+            if (NULL_VALUE != logPosition)
+            {
+                recordingLog.commitLogPosition(leadershipTermId, logPosition);
+            }
+        }
+        recordingLog.force(ctx.fileSyncLevel());
+    }
+
+    private void updateRecordingLog(final long nowNs)
+    {
+        ensureRecordingLogCoherent(leadershipTermId, NULL_VALUE, logPosition, nowNs);
+        logLeadershipTermId = leadershipTermId;
+    }
+
+    private void updateRecordingLogForReplication(
+        final long leadershipTermId,
+        final long baseTermLogPosition,
+        final long logPosition,
+        final long nowNs)
+    {
+        ensureRecordingLogCoherent(leadershipTermId, baseTermLogPosition, logPosition, nowNs);
+        logLeadershipTermId = leadershipTermId;
     }
 
     private void verifyLogImage(final Image image)
@@ -1292,6 +1324,11 @@ class Election
             " appendPosition=" + appendPosition +
             " catchupPosition=" + catchupPosition);
         */
+    }
+
+    int memberId()
+    {
+        return thisMember.id();
     }
 
     public String toString()

@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.log.EventLogExtension;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.zip.CRC32;
 
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
@@ -1581,6 +1583,74 @@ public class ClusterTest
             cluster.awaitServiceState(node, finalServiceState);
         }
     }
+
+    @Test
+    @InterruptAfter(40)
+    public void shouldRecoverWhenFollowersIsMultipleTermsBehindFromEmptyLogAndPartialLogWithoutCommittedLogEntry()
+    {
+        cluster = aCluster().withStaticNodes(5).start(4);
+
+        systemTestWatcher.cluster(cluster);
+
+        final int messageCount = 10;
+        final int numTerms = 3;
+        int totalMessage = 0;
+
+        int partialNode = Aeron.NULL_VALUE;
+
+        for (int i = 0; i < numTerms; i++)
+        {
+            final TestNode oldLeader = cluster.awaitLeader();
+
+            cluster.connectClient();
+            cluster.sendMessages(messageCount);
+            totalMessage += messageCount;
+            cluster.awaitResponseMessageCount(totalMessage);
+
+            if (Aeron.NULL_VALUE == partialNode)
+            {
+                partialNode = oldLeader.index() + 1 % 4;
+                cluster.stopNode(cluster.node(partialNode));
+            }
+            cluster.stopNode(oldLeader);
+            cluster.startStaticNode(oldLeader.index(), false);
+            cluster.awaitLeader();
+        }
+
+        final TestNode lateJoiningNode = cluster.startStaticNode(4, true);
+
+        while (lateJoiningNode.service().messageCount() < totalMessage)
+        {
+            Tests.yieldingIdle("Waiting for late joining follower to catch up");
+        }
+
+        final TestNode node = cluster.startStaticNode(partialNode, false);
+
+        final int messages = totalMessage;
+        final Supplier<String> msg =
+            () -> "Waiting for partial follower to catch up: " + node.service().messageCount() + " of " + messages;
+        while (node.service().messageCount() < totalMessage)
+        {
+            Tests.yieldingIdle(msg);
+        }
+
+        final TestNode testNode = cluster.awaitLeader();
+
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        totalMessage += messageCount;
+        cluster.awaitResponseMessageCount(totalMessage);
+
+        while (node.service().messageCount() < totalMessage)
+        {
+            Tests.yieldingIdle(msg);
+        }
+
+        ClusterTool.recordingLog(System.out, testNode.consensusModule().context().clusterDir());
+        ClusterTool.recordingLog(System.out, lateJoiningNode.consensusModule().context().clusterDir());
+        ClusterTool.recordingLog(System.out, node.consensusModule().context().clusterDir());
+    }
+
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)
     {

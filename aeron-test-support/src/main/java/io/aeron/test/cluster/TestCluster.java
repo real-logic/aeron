@@ -43,7 +43,6 @@ import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
-import org.mockito.AdditionalMatchers;
 import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 
 import java.io.File;
@@ -1252,7 +1251,7 @@ public class TestCluster implements AutoCloseable
     public void assertRecordingLogsEqual()
     {
         RecordingLog first = null;
-        for (TestNode node : nodes)
+        for (final TestNode node : nodes)
         {
             if (null == node)
             {
@@ -1452,7 +1451,7 @@ public class TestCluster implements AutoCloseable
             return start(nodeCount);
         }
 
-        public TestCluster start(int toStart)
+        public TestCluster start(final int toStart)
         {
             if (toStart > nodeCount)
             {

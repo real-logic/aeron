@@ -45,7 +45,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class NameReResolutionTest
+class NameReResolutionTest
 {
     private static final String ENDPOINT_NAME = "ReResTestEndpoint";
     private static final int ENDPOINT_PORT = 24326;
@@ -82,17 +82,17 @@ public class NameReResolutionTest
     private Publication publication;
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @RegisterExtension
-    public final InterruptingTestCallback testCallback = new InterruptingTestCallback();
+    final InterruptingTestCallback testCallback = new InterruptingTestCallback();
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private final FragmentHandler handler = mock(FragmentHandler.class);
     private CountersReader countersReader;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         assumeBindAddressAvailable("127.0.0.1");
         assumeBindAddressAvailable("127.0.0.2");
@@ -117,7 +117,7 @@ public class NameReResolutionTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         if (null != client)
         {
@@ -128,7 +128,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReResolveEndpointOnNotConnected()
+    void shouldReResolveEndpointOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -190,7 +190,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReResolveMdcManualEndpointOnNotConnected()
+    void shouldReResolveMdcManualEndpointOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -253,7 +253,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldHandleMdcManualEndpointInitiallyUnresolved()
+    void shouldHandleMdcManualEndpointInitiallyUnresolved()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -299,7 +299,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReResolveMdcDynamicControlOnNotConnected()
+    void shouldReResolveMdcDynamicControlOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
         buffer.putInt(0, 1);
@@ -360,7 +360,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNotConnected()
+    void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -423,7 +423,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReportErrorOnReResolveFailure() throws IOException
+    void shouldReportErrorOnReResolveFailure() throws IOException
     {
         systemTestWatcher.ignoreErrorsMatching(s -> s.contains("Unable to resolve host"));
         buffer.putInt(0, 1);

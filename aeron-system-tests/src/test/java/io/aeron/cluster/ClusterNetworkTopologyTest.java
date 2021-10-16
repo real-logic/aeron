@@ -80,7 +80,6 @@ public class ClusterNetworkTopologyTest
 
     private File baseDir;
 
-
     @BeforeEach
     void setUp()
     {

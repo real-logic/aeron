@@ -83,7 +83,6 @@ class CatalogWithJumboRecordingsAndGapsTest
     @BeforeEach
     void before()
     {
-
         epochClock.update(1);
         recordingIds = new long[NUM_RECORDINGS];
 

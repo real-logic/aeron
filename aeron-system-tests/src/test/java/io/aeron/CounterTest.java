@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class CounterTest
+class CounterTest
 {
     private static final int COUNTER_TYPE_ID = 1101;
     private static final String COUNTER_LABEL = "counter label";
@@ -50,12 +50,12 @@ public class CounterTest
     private TestMediaDriver driver;
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private volatile ReadableCounter readableCounter;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         labelBuffer.putStringWithoutLengthAscii(0, COUNTER_LABEL);
 
@@ -70,7 +70,7 @@ public class CounterTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(clientA, clientB, driver);
         driver.context().deleteDirectory();
@@ -78,7 +78,7 @@ public class CounterTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldBeAbleToAddCounter()
+    void shouldBeAbleToAddCounter()
     {
         final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
         clientA.addAvailableCounterHandler(availableCounterHandlerClientA);
@@ -107,7 +107,7 @@ public class CounterTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldBeAbleToAddReadableCounterWithinHandler()
+    void shouldBeAbleToAddReadableCounterWithinHandler()
     {
         clientB.addAvailableCounterHandler(this::createReadableCounter);
 
@@ -132,7 +132,7 @@ public class CounterTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldCloseReadableCounterOnUnavailableCounter()
+    void shouldCloseReadableCounterOnUnavailableCounter()
     {
         clientB.addAvailableCounterHandler(this::createReadableCounter);
         clientB.addUnavailableCounterHandler(this::unavailableCounterHandler);

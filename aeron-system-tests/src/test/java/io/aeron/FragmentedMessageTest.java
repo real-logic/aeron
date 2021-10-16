@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class FragmentedMessageTest
+class FragmentedMessageTest
 {
     private static List<String> channels()
     {
@@ -57,7 +57,7 @@ public class FragmentedMessageTest
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
 
@@ -71,7 +71,7 @@ public class FragmentedMessageTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -80,7 +80,7 @@ public class FragmentedMessageTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldReceivePublishedMessage(final String channel)
+    void shouldReceivePublishedMessage(final String channel)
     {
         final FragmentAssembler assembler = new FragmentAssembler(mockFragmentHandler);
 

@@ -22,9 +22,9 @@ import org.agrona.concurrent.status.CountersReader;
 import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static org.agrona.concurrent.status.CountersReader.*;
 
-public class FlowControlTests
+class FlowControlTests
 {
-    public static void awaitConnectionAndStatusMessages(
+    static void awaitConnectionAndStatusMessages(
         final CountersReader countersReader, final Subscription subscription, final Subscription... subscriptions)
     {
         while (!subscription.isConnected())
@@ -44,7 +44,7 @@ public class FlowControlTests
         Tests.awaitCounterDelta(countersReader, STATUS_MESSAGES_RECEIVED.id(), delta);
     }
 
-    public static int findCounterIdByRegistrationId(
+    static int findCounterIdByRegistrationId(
         final CountersReader countersReader, final int counterTypeId, final long registrationId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();

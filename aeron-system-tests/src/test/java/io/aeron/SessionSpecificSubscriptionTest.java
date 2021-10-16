@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class SessionSpecificSubscriptionTest
+class SessionSpecificSubscriptionTest
 {
     private static final String ENDPOINT = "localhost:24325";
     private static final int SESSION_ID_1 = 1077;
@@ -74,7 +74,7 @@ public class SessionSpecificSubscriptionTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -83,7 +83,7 @@ public class SessionSpecificSubscriptionTest
     @InterruptAfter(10)
     @ParameterizedTest
     @MethodSource("data")
-    public void shouldSubscribeToSpecificSessionIdsAndWildcard(final ChannelUriStringBuilder channelBuilder)
+    void shouldSubscribeToSpecificSessionIdsAndWildcard(final ChannelUriStringBuilder channelBuilder)
     {
         final String channelUriWithoutSessionId = channelBuilder.build();
         final String channelUriWithSessionIdOne = channelBuilder.sessionId(SESSION_ID_1).build();
@@ -136,7 +136,7 @@ public class SessionSpecificSubscriptionTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void shouldNotSubscribeWithoutSpecificSession(final ChannelUriStringBuilder channelBuilder)
+    void shouldNotSubscribeWithoutSpecificSession(final ChannelUriStringBuilder channelBuilder)
     {
         final String channelUriWithoutSessionId = channelBuilder.build();
         final String channelUriWithSessionIdOne = channelBuilder.sessionId(SESSION_ID_1).build();

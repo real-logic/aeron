@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ResolvedEndpointSystemTest
+class ResolvedEndpointSystemTest
 {
     private static final int STREAM_ID = 2002;
 
@@ -52,7 +52,7 @@ public class ResolvedEndpointSystemTest
     private Aeron client;
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @BeforeEach
     void before()

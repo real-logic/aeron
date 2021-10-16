@@ -21,14 +21,16 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ClientContextTest
+class ClientContextTest
 {
     @Test
-    public void shouldPreventCreatingMultipleClientsWithTheSameContext()
+    void shouldPreventCreatingMultipleClientsWithTheSameContext()
     {
-        try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context()
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)))
+            .dirDeleteOnShutdown(true);
+
+        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx))
         {
             final Aeron.Context ctx = new Aeron.Context()
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName());

@@ -41,7 +41,7 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class PublicationUnblockTest
+class PublicationUnblockTest
 {
     private static List<String> channels()
     {
@@ -54,7 +54,7 @@ public class PublicationUnblockTest
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .threadingMode(ThreadingMode.SHARED)
@@ -69,7 +69,7 @@ public class PublicationUnblockTest
         .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(100)));
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -78,7 +78,7 @@ public class PublicationUnblockTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldUnblockNonCommittedMessage(final String channel)
+    void shouldUnblockNonCommittedMessage(final String channel)
     {
         final MutableInteger fragmentCount = new MutableInteger();
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;

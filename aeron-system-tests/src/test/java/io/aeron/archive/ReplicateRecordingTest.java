@@ -85,11 +85,9 @@ public class ReplicateRecordingTest
     @RegisterExtension
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
-
     @BeforeEach
     public void before()
     {
-
         final String srcAeronDirectoryName = generateRandomDirName();
         final String dstAeronDirectoryName = generateRandomDirName();
 
@@ -100,7 +98,6 @@ public class ReplicateRecordingTest
             .spiesSimulateConnection(true)
             .timerIntervalNs(TIMER_INTERVAL_NS)
             .dirDeleteOnStart(true);
-
 
         final Archive.Context srcArchiveCtx = new Archive.Context()
             .catalogCapacity(CATALOG_CAPACITY)

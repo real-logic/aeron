@@ -49,10 +49,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ChannelValidationTests
+class ChannelValidationTests
 {
     @RegisterExtension
-    public final SystemTestWatcher watcher = new SystemTestWatcher();
+    final SystemTestWatcher watcher = new SystemTestWatcher();
 
     private final MediaDriver.Context context = new MediaDriver.Context();
     {
@@ -75,7 +75,7 @@ public class ChannelValidationTests
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(closeables);
         CloseHelper.closeAll(aeron, driver);

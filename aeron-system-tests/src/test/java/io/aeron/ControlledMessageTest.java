@@ -36,7 +36,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ControlledMessageTest
+class ControlledMessageTest
 {
     private static final String CHANNEL = CommonContext.IPC_CHANNEL;
     private static final int STREAM_ID = 1001;
@@ -44,7 +44,7 @@ public class ControlledMessageTest
     private static final int PAYLOAD_LENGTH = 10;
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -55,7 +55,7 @@ public class ControlledMessageTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -63,7 +63,7 @@ public class ControlledMessageTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReceivePublishedMessage()
+    void shouldReceivePublishedMessage()
     {
         try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
@@ -111,7 +111,7 @@ public class ControlledMessageTest
         private int limit = 0;
         private int fragmentCount = 0;
 
-        public UnsafeBuffer collectedBuffer()
+        UnsafeBuffer collectedBuffer()
         {
             return collectedBuffer;
         }

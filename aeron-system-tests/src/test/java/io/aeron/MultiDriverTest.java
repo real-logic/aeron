@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MultiDriverTest
+class MultiDriverTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
 
@@ -93,7 +93,7 @@ public class MultiDriverTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(clientA, clientB, driverA, driverB);
         IoUtil.delete(new File(ROOT_DIR), true);
@@ -101,7 +101,7 @@ public class MultiDriverTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSpinUpAndShutdown()
+    void shouldSpinUpAndShutdown()
     {
         launch();
 
@@ -117,7 +117,7 @@ public class MultiDriverTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldJoinExistingStreamWithLockStepSendingReceiving() throws InterruptedException
+    void shouldJoinExistingStreamWithLockStepSendingReceiving() throws InterruptedException
     {
         final int numMessagesToSendPreJoin = NUM_MESSAGES_PER_TERM / 2;
         final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
@@ -188,7 +188,7 @@ public class MultiDriverTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldJoinExistingIdleStreamWithLockStepSendingReceiving() throws InterruptedException
+    void shouldJoinExistingIdleStreamWithLockStepSendingReceiving() throws InterruptedException
     {
         final int numMessagesToSendPreJoin = 0;
         final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;

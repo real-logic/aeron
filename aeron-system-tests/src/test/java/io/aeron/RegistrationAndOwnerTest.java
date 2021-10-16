@@ -42,16 +42,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static io.aeron.test.Tests.awaitConnected;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RegistrationAndOwnerTest
+class RegistrationAndOwnerTest
 {
     private static final int STREAM_ID = 1001;
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @ParameterizedTest
     @ValueSource(strings = { "aeron:udp?endpoint=localhost:24325", "aeron:ipc" })
-    public void shouldHaveCorrectOwnershipOnEntities(final String channel)
+    void shouldHaveCorrectOwnershipOnEntities(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .errorHandler(Tests::onError)

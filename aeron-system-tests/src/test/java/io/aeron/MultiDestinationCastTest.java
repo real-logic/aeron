@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MultiDestinationCastTest
+class MultiDestinationCastTest
 {
     private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325";
     private static final String SUB1_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325|group=true";
@@ -85,7 +85,7 @@ public class MultiDestinationCastTest
     private final FragmentHandler fragmentHandlerC = mock(FragmentHandler.class, "fragmentHandlerC");
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private void launch(final ErrorHandler errorHandler)
     {
@@ -112,7 +112,7 @@ public class MultiDestinationCastTest
     }
 
     @AfterEach
-    public void closeEverything()
+    void closeEverything()
     {
         CloseHelper.closeAll(clientB, clientA, driverB, driverA);
         IoUtil.delete(new File(ROOT_DIR), true);
@@ -120,7 +120,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSpinUpAndShutdownWithDynamic()
+    void shouldSpinUpAndShutdownWithDynamic()
     {
         launch(Tests::onError);
 
@@ -137,7 +137,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSpinUpAndShutdownWithManual()
+    void shouldSpinUpAndShutdownWithManual()
     {
         launch(Tests::onError);
 
@@ -164,7 +164,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldSendToTwoPortsWithDynamic()
+    void shouldSendToTwoPortsWithDynamic()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -199,7 +199,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldSendToTwoPortsWithDynamicSingleDriver()
+    void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -234,7 +234,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSendToTwoPortsWithManualSingleDriver()
+    void shouldSendToTwoPortsWithManualSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -269,7 +269,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
+    void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
     {
         final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
         launch(mockErrorHandler);
@@ -284,7 +284,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldManuallyRemovePortDuringActiveStream() throws InterruptedException
+    void shouldManuallyRemovePortDuringActiveStream() throws InterruptedException
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
@@ -342,7 +342,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldManuallyAddPortDuringActiveStream() throws InterruptedException
+    void shouldManuallyAddPortDuringActiveStream() throws InterruptedException
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;

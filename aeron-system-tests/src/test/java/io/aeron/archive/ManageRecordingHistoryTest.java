@@ -71,7 +71,6 @@ public class ManageRecordingHistoryTest
     @BeforeEach
     public void before()
     {
-
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_LENGTH)
             .termBufferSparseFile(true)

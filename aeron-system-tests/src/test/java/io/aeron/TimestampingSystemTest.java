@@ -40,16 +40,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class TimestampingSystemTest
+class TimestampingSystemTest
 {
-    public static final long SENTINEL_VALUE = -1L;
-    public static final String CHANNEL_WITH_MEDIA_TIMESTAMP =
+    private static final long SENTINEL_VALUE = -1L;
+    private static final String CHANNEL_WITH_MEDIA_TIMESTAMP =
         "aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=reserved";
-    public static final String CHANNEL_WITH_CHANNEL_TIMESTAMPS =
+    private static final String CHANNEL_WITH_CHANNEL_TIMESTAMPS =
         "aeron:udp?endpoint=localhost:0|channel-rcv-ts-offset=0|channel-snd-ts-offset=8";
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private TestMediaDriver driver()
     {

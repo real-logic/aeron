@@ -38,7 +38,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ErrorHandlerTest
+class ErrorHandlerTest
 {
     @RegisterExtension
     public final SystemTestWatcher watcher = new SystemTestWatcher();
@@ -64,7 +64,7 @@ public class ErrorHandlerTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(closeables);
         CloseHelper.closeAll(aeron, driver);

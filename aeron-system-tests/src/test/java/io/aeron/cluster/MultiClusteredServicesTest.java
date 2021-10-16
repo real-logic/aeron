@@ -46,7 +46,6 @@ public class MultiClusteredServicesTest
 
     final AtomicLong serviceAMessageCount = new AtomicLong(0);
     final AtomicLong serviceBMessageCount = new AtomicLong(0);
-    final DataCollector dataCollector = new DataCollector();
 
     @BeforeEach
     void setUp()

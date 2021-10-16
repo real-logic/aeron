@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class PublishFromArbitraryPositionTest
+class PublishFromArbitraryPositionTest
 {
     private static final int STREAM_ID = 1007;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
@@ -53,7 +53,7 @@ public class PublishFromArbitraryPositionTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -63,7 +63,7 @@ public class PublishFromArbitraryPositionTest
     private final Aeron aeron = Aeron.connect();
 
     @RegisterExtension
-    public final TestWatcher randomSeedWatcher = new TestWatcher()
+    final TestWatcher randomSeedWatcher = new TestWatcher()
     {
         public void testFailed(final ExtensionContext context, final Throwable cause)
         {
@@ -72,7 +72,7 @@ public class PublishFromArbitraryPositionTest
     };
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -80,7 +80,7 @@ public class PublishFromArbitraryPositionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldPublishFromArbitraryJoinPosition() throws InterruptedException
+    void shouldPublishFromArbitraryJoinPosition() throws InterruptedException
     {
         final Random rnd = new Random();
         rnd.setSeed(seed);

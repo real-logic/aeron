@@ -76,7 +76,6 @@ public class BasicArchiveTest
     @BeforeEach
     public void before()
     {
-
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()

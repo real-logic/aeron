@@ -17,10 +17,7 @@ package io.aeron.archive.client;
 
 import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
-import io.aeron.archive.codecs.ControlResponseDecoder;
-import io.aeron.archive.codecs.MessageHeaderDecoder;
-import io.aeron.archive.codecs.MessageHeaderEncoder;
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
@@ -32,24 +29,50 @@ public final class ControlResponseAdapter
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
+    private final RecordingSignalEventDecoder recordingSignalEventDecoder = new RecordingSignalEventDecoder();
 
     private final int fragmentLimit;
-    private final ControlResponseListener listener;
+    private final ControlResponseListener controlResponseListener;
+    private final RecordingSignalConsumer recordingSignalConsumer;
     private final Subscription subscription;
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
 
     /**
      * Create an adapter for a given subscription to an archive for control response messages.
      *
-     * @param listener      to which responses are dispatched.
-     * @param subscription  to poll for new events.
-     * @param fragmentLimit to apply for each polling operation.
+     * @param controlResponseListener for dispatching responses.
+     * @param subscription            to poll for responses.
+     * @param fragmentLimit           to apply for each polling operation.
      */
     public ControlResponseAdapter(
-        final ControlResponseListener listener, final Subscription subscription, final int fragmentLimit)
+        final ControlResponseListener controlResponseListener,
+        final Subscription subscription,
+        final int fragmentLimit)
+    {
+        this(
+            controlResponseListener,
+            AeronArchive.Configuration.defaultRecordingSignalConsumer(),
+            subscription,
+            fragmentLimit);
+    }
+
+    /**
+     * Create an adapter for a given subscription to an archive for control response messages.
+     *
+     * @param controlResponseListener for dispatching responses.
+     * @param recordingSignalConsumer for dispatching recording signals.
+     * @param subscription            to poll for responses.
+     * @param fragmentLimit           to apply for each polling operation.
+     */
+    public ControlResponseAdapter(
+        final ControlResponseListener controlResponseListener,
+        final RecordingSignalConsumer recordingSignalConsumer,
+        final Subscription subscription,
+        final int fragmentLimit)
     {
         this.fragmentLimit = fragmentLimit;
-        this.listener = listener;
+        this.controlResponseListener = controlResponseListener;
+        this.recordingSignalConsumer = recordingSignalConsumer;
         this.subscription = subscription;
     }
 
@@ -104,11 +127,15 @@ public final class ControlResponseAdapter
         switch (messageHeaderDecoder.templateId())
         {
             case ControlResponseDecoder.TEMPLATE_ID:
-                handleControlResponse(listener, buffer, offset);
+                handleControlResponse(controlResponseListener, buffer, offset);
                 break;
 
             case RecordingDescriptorDecoder.TEMPLATE_ID:
-                handleRecordingDescriptor(listener, buffer, offset);
+                handleRecordingDescriptor(controlResponseListener, buffer, offset);
+                break;
+
+            case RecordingSignalEventDecoder.TEMPLATE_ID:
+                handleRecordingSignal(recordingSignalConsumer, buffer, offset);
                 break;
         }
     }
@@ -140,5 +167,23 @@ public final class ControlResponseAdapter
             messageHeaderDecoder.version());
 
         dispatchDescriptor(recordingDescriptorDecoder, listener);
+    }
+
+    private void handleRecordingSignal(
+        final RecordingSignalConsumer recordingSignalConsumer, final DirectBuffer buffer, final int offset)
+    {
+        recordingSignalEventDecoder.wrap(
+            buffer,
+            offset + MessageHeaderDecoder.ENCODED_LENGTH,
+            messageHeaderDecoder.blockLength(),
+            messageHeaderDecoder.version());
+
+        recordingSignalConsumer.onSignal(
+            recordingSignalEventDecoder.controlSessionId(),
+            recordingSignalEventDecoder.correlationId(),
+            recordingSignalEventDecoder.recordingId(),
+            recordingSignalEventDecoder.subscriptionId(),
+            recordingSignalEventDecoder.position(),
+            recordingSignalEventDecoder.signal());
     }
 }

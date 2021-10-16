@@ -50,7 +50,6 @@ public class MultiModuleSharedDriverTest
     @RegisterExtension
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
-
     @BeforeEach
     void setUp()
     {

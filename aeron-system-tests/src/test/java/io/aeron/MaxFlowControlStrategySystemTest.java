@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MaxFlowControlStrategySystemTest
+class MaxFlowControlStrategySystemTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
     private static final int STREAM_ID = 1001;
@@ -71,42 +71,10 @@ public class MaxFlowControlStrategySystemTest
     private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
-
-    private void launch()
-    {
-        final String baseDirA = ROOT_DIR + "A";
-        final String baseDirB = ROOT_DIR + "B";
-
-        buffer.putInt(0, 1);
-
-        driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
-            .aeronDirectoryName(baseDirA)
-            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-            .errorHandler(Tests::onError)
-            .threadingMode(ThreadingMode.SHARED);
-
-        driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
-            .aeronDirectoryName(baseDirB)
-            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-            .errorHandler(Tests::onError)
-            .threadingMode(ThreadingMode.SHARED);
-
-        driverA = TestMediaDriver.launch(driverAContext, testWatcher);
-        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
-        clientA = Aeron.connect(
-            new Aeron.Context()
-                .errorHandler(Tests::onError)
-                .aeronDirectoryName(driverAContext.aeronDirectoryName()));
-
-        clientB = Aeron.connect(
-            new Aeron.Context()
-                .errorHandler(Tests::onError)
-                .aeronDirectoryName(driverBContext.aeronDirectoryName()));
-    }
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.quietCloseAll(clientB, clientA, driverB, driverA);
         IoUtil.delete(new File(ROOT_DIR), true);
@@ -114,7 +82,7 @@ public class MaxFlowControlStrategySystemTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSpinUpAndShutdown()
+    void shouldSpinUpAndShutdown()
     {
         launch();
 
@@ -130,7 +98,7 @@ public class MaxFlowControlStrategySystemTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldTimeoutImageWhenBehindForTooLongWithMaxMulticastFlowControlStrategy()
+    void shouldTimeoutImageWhenBehindForTooLongWithMaxMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -198,5 +166,37 @@ public class MaxFlowControlStrategySystemTest
             anyInt(),
             eq(MESSAGE_LENGTH),
             any(Header.class));
+    }
+
+    private void launch()
+    {
+        final String baseDirA = ROOT_DIR + "A";
+        final String baseDirB = ROOT_DIR + "B";
+
+        buffer.putInt(0, 1);
+
+        driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
+            .aeronDirectoryName(baseDirA)
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .errorHandler(Tests::onError)
+            .threadingMode(ThreadingMode.SHARED);
+
+        driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
+            .aeronDirectoryName(baseDirB)
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .errorHandler(Tests::onError)
+            .threadingMode(ThreadingMode.SHARED);
+
+        driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+        clientA = Aeron.connect(
+            new Aeron.Context()
+                .errorHandler(Tests::onError)
+                .aeronDirectoryName(driverAContext.aeronDirectoryName()));
+
+        clientB = Aeron.connect(
+            new Aeron.Context()
+                .errorHandler(Tests::onError)
+                .aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
 }

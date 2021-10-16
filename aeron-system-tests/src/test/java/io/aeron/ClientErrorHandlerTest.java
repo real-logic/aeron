@@ -48,17 +48,17 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ClientErrorHandlerTest
+class ClientErrorHandlerTest
 {
     private static final int STREAM_ID = 1001;
     private static final String CHANNEL = "aeron:ipc";
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(10)
-    public void shouldHaveCorrectTermBufferLength()
+    void shouldHaveCorrectTermBufferLength()
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .errorHandler(Tests::onError)

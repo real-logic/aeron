@@ -42,7 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class GapFillLossTest
+class GapFillLossTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:24325";
     private static final String UNRELIABLE_CHANNEL =
@@ -60,7 +60,7 @@ public class GapFillLossTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldGapFillWhenLossOccurs() throws Exception
+    void shouldGapFillWhenLossOccurs() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));
         srcBuffer.setMemory(0, MSG_LENGTH, (byte)7);

@@ -42,7 +42,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class BufferClaimMessageTest
+class BufferClaimMessageTest
 {
     private static List<String> channels()
     {
@@ -54,7 +54,7 @@ public class BufferClaimMessageTest
     private static final int MESSAGE_LENGTH = 200;
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -65,7 +65,7 @@ public class BufferClaimMessageTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -74,7 +74,7 @@ public class BufferClaimMessageTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldReceivePublishedMessageWithInterleavedAbort(final String channel)
+    void shouldReceivePublishedMessageWithInterleavedAbort(final String channel)
     {
         final MutableInteger fragmentCount = new MutableInteger();
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
@@ -117,7 +117,7 @@ public class BufferClaimMessageTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldTransferReservedValue(final String channel)
+    void shouldTransferReservedValue(final String channel)
     {
         final BufferClaim bufferClaim = new BufferClaim();
 

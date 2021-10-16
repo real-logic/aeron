@@ -61,7 +61,6 @@ public class ArchiveAuthenticationTest
     private static final String CHALLENGE_STRING = "I challenge you!";
     private static final String PRINCIPAL_STRING = "I am THE Principal!";
 
-
     private final byte[] encodedCredentials = CREDENTIALS_STRING.getBytes();
     private final byte[] encodedChallenge = CHALLENGE_STRING.getBytes();
 

@@ -16,8 +16,7 @@
 package io.aeron.archive.client;
 
 import io.aeron.*;
-import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.TimeoutException;
@@ -400,10 +399,22 @@ public final class AeronArchive implements AutoCloseable
 
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
-                if (controlResponsePoller.controlSessionId() == controlSessionId &&
-                    controlResponsePoller.code() == ControlResponseCode.ERROR)
+                if (controlResponsePoller.controlSessionId() == controlSessionId)
                 {
-                    return controlResponsePoller.errorMessage();
+                    if (controlResponsePoller.code() == ControlResponseCode.ERROR)
+                    {
+                        return controlResponsePoller.errorMessage();
+                    }
+                    else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
+                    {
+                        context.recordingSignalConsumer().onSignal(
+                            controlResponsePoller.controlSessionId(),
+                            controlResponsePoller.correlationId(),
+                            controlResponsePoller.recordingId(),
+                            controlResponsePoller.subscriptionId(),
+                            controlResponsePoller.position(),
+                            controlResponsePoller.recordingSignal());
+                    }
                 }
             }
 
@@ -443,24 +454,92 @@ public final class AeronArchive implements AutoCloseable
             }
             else if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
-                if (controlResponsePoller.controlSessionId() == controlSessionId &&
-                    controlResponsePoller.code() == ControlResponseCode.ERROR)
+                if (controlResponsePoller.controlSessionId() == controlSessionId)
                 {
-                    final ArchiveException ex = new ArchiveException(
-                        controlResponsePoller.errorMessage(),
-                        (int)controlResponsePoller.relevantId(),
-                        controlResponsePoller.correlationId());
+                    if (controlResponsePoller.code() == ControlResponseCode.ERROR)
+                    {
+                        final ArchiveException ex = new ArchiveException(
+                            controlResponsePoller.errorMessage(),
+                            (int)controlResponsePoller.relevantId(),
+                            controlResponsePoller.correlationId());
 
-                    if (null != context.errorHandler())
-                    {
-                        context.errorHandler().onError(ex);
+                        if (null != context.errorHandler())
+                        {
+                            context.errorHandler().onError(ex);
+                        }
+                        else
+                        {
+                            throw ex;
+                        }
                     }
-                    else
+                    else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
                     {
-                        throw ex;
+                        context.recordingSignalConsumer().onSignal(
+                            controlResponsePoller.controlSessionId(),
+                            controlResponsePoller.correlationId(),
+                            controlResponsePoller.recordingId(),
+                            controlResponsePoller.subscriptionId(),
+                            controlResponsePoller.position(),
+                            controlResponsePoller.recordingSignal());
                     }
                 }
             }
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Poll for {@link RecordingSignal}s for this session which will be dispatched to
+     * {@link Context#recordingSignalConsumer}.
+     *
+     * @return positive value if signals dispatched otherwise 0.
+     */
+    public int pollForRecordingSignals()
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+            {
+                if (controlResponsePoller.controlSessionId() == controlSessionId)
+                {
+                    if (controlResponsePoller.code() == ControlResponseCode.ERROR)
+                    {
+                        final ArchiveException ex = new ArchiveException(
+                            controlResponsePoller.errorMessage(),
+                            (int)controlResponsePoller.relevantId(),
+                            controlResponsePoller.correlationId());
+
+                        if (null != context.errorHandler())
+                        {
+                            context.errorHandler().onError(ex);
+                        }
+                        else
+                        {
+                            throw ex;
+                        }
+                    }
+                    else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
+                    {
+                        context.recordingSignalConsumer().onSignal(
+                            controlResponsePoller.controlSessionId(),
+                            controlResponsePoller.correlationId(),
+                            controlResponsePoller.recordingId(),
+                            controlResponsePoller.subscriptionId(),
+                            controlResponsePoller.position(),
+                            controlResponsePoller.recordingSignal());
+
+                        return 1;
+                    }
+                }
+            }
+
+            return 0;
         }
         finally
         {
@@ -2553,6 +2632,16 @@ public final class AeronArchive implements AutoCloseable
             final String propValue = System.getProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
             return null != propValue ? "true".equals(propValue) : RECORDING_EVENTS_ENABLED_DEFAULT;
         }
+
+        /**
+         * The default recording signal consumer to be used when none is specified.
+         *
+         * @return a default recording signal consumer.
+         */
+        public static RecordingSignalConsumer defaultRecordingSignalConsumer()
+        {
+            return (controlSessionId1, correlationId, recordingId, subscriptionId, position, signal) -> {};
+        }
     }
 
     /**
@@ -2586,6 +2675,7 @@ public final class AeronArchive implements AutoCloseable
         private Aeron aeron;
         private ErrorHandler errorHandler;
         private CredentialsSupplier credentialsSupplier;
+        private RecordingSignalConsumer recordingSignalConsumer;
         private boolean ownsAeronClient = false;
 
         /**
@@ -2633,6 +2723,11 @@ public final class AeronArchive implements AutoCloseable
             if (null == credentialsSupplier)
             {
                 credentialsSupplier = new NullCredentialsSupplier();
+            }
+
+            if (null == recordingSignalConsumer)
+            {
+                recordingSignalConsumer = Configuration.defaultRecordingSignalConsumer();
             }
 
             if (null == lock)
@@ -3046,6 +3141,28 @@ public final class AeronArchive implements AutoCloseable
         public CredentialsSupplier credentialsSupplier()
         {
             return credentialsSupplier;
+        }
+
+        /**
+         * Set the {@link RecordingSignalConsumer} to will be called  when polling for responses from an Archive.
+         *
+         * @param recordingSignalConsumer to called with recording signal events.
+         * @return this for a fluent API.
+         */
+        public Context recordingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
+        {
+            this.recordingSignalConsumer = recordingSignalConsumer;
+            return this;
+        }
+
+        /**
+         * Set the {@link RecordingSignalConsumer} to will be called  when polling for responses from an Archive.
+         *
+         * @return a recording signal consumer.
+         */
+        public RecordingSignalConsumer recordingSignalConsumer()
+        {
+            return recordingSignalConsumer;
         }
 
         /**

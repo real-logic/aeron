@@ -28,14 +28,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class LifecycleTest
+class LifecycleTest
 {
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(10)
-    public void shouldStartAndStopInstantly()
+    void shouldStartAndStopInstantly()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
@@ -57,7 +57,7 @@ public class LifecycleTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldNotifyOfClientTimestampCounter()
+    void shouldNotifyOfClientTimestampCounter()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)

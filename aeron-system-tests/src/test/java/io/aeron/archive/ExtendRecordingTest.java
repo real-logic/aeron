@@ -17,8 +17,6 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ControlEventListener;
-import io.aeron.archive.client.RecordingSignalAdapter;
 import io.aeron.archive.client.RecordingSignalConsumer;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.Configuration;
@@ -46,8 +44,6 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 
 import static io.aeron.archive.codecs.RecordingSignal.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
@@ -57,7 +53,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ExtendRecordingTest
+class ExtendRecordingTest
 {
     private static final String MY_ALIAS = "my-log";
     private static final String MESSAGE_PREFIX = "Message-Prefix-";
@@ -89,18 +85,14 @@ public class ExtendRecordingTest
     private File archiveDir;
     private AeronArchive aeronArchive;
 
-    private final RecordingSignalConsumer recordingSignalConsumer = mock(RecordingSignalConsumer.class);
-    private final ArrayList<String> errors = new ArrayList<>();
-    private final ControlEventListener controlEventListener =
-        (controlSessionId, correlationId, relevantId, code, errorMessage) -> errors.add(errorMessage);
+    private final RecordingSignalConsumer mockRecordingSignalConsumer = mock(RecordingSignalConsumer.class);
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
-    public void before()
+    void before()
     {
-
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
         if (null == archiveDir)
@@ -139,21 +131,21 @@ public class ExtendRecordingTest
 
         aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
+                .recordingSignalConsumer(mockRecordingSignalConsumer)
                 .aeron(aeron));
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
     }
 
     @Test
     @InterruptAfter(10)
-    public void shouldExtendRecordingAndReplay()
+    void shouldExtendRecordingAndReplay()
     {
         final long controlSessionId = aeronArchive.controlSessionId();
-        final RecordingSignalAdapter recordingSignalAdapter;
         final int messageCount = 10;
         final long subscriptionIdOne;
         final long subscriptionIdTwo;
@@ -164,15 +156,9 @@ public class ExtendRecordingTest
         try (Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID);
             Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
-            recordingSignalAdapter = new RecordingSignalAdapter(
-                controlSessionId,
-                controlEventListener,
-                recordingSignalConsumer,
-                aeronArchive.controlResponsePoller().subscription(),
-                ArchiveSystemTests.FRAGMENT_LIMIT);
 
             subscriptionIdOne = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
-            ArchiveSystemTests.pollForSignal(recordingSignalAdapter);
+            pollForRecordingSignal(aeronArchive);
 
             try
             {
@@ -190,7 +176,7 @@ public class ExtendRecordingTest
             finally
             {
                 aeronArchive.stopRecording(subscriptionIdOne);
-                ArchiveSystemTests.pollForSignal(recordingSignalAdapter);
+                pollForRecordingSignal(aeronArchive);
             }
         }
 
@@ -212,7 +198,7 @@ public class ExtendRecordingTest
             Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDED_STREAM_ID))
         {
             subscriptionIdTwo = aeronArchive.extendRecording(recordingId, EXTEND_CHANNEL, RECORDED_STREAM_ID, LOCAL);
-            ArchiveSystemTests.pollForSignal(recordingSignalAdapter);
+            pollForRecordingSignal(aeronArchive);
 
             try
             {
@@ -229,21 +215,20 @@ public class ExtendRecordingTest
             finally
             {
                 aeronArchive.stopRecording(subscriptionIdTwo);
-                ArchiveSystemTests.pollForSignal(recordingSignalAdapter);
+                pollForRecordingSignal(aeronArchive);
             }
         }
 
         replay(messageCount, stopTwo, recordingId);
-        assertEquals(Collections.EMPTY_LIST, errors);
 
-        final InOrder inOrder = Mockito.inOrder(recordingSignalConsumer);
-        inOrder.verify(recordingSignalConsumer).onSignal(
+        final InOrder inOrder = Mockito.inOrder(mockRecordingSignalConsumer);
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(0L), eq(START));
-        inOrder.verify(recordingSignalConsumer).onSignal(
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(stopOne), eq(STOP));
-        inOrder.verify(recordingSignalConsumer).onSignal(
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopOne), eq(EXTEND));
-        inOrder.verify(recordingSignalConsumer).onSignal(
+        inOrder.verify(mockRecordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopTwo), eq(STOP));
     }
 
@@ -299,5 +284,13 @@ public class ExtendRecordingTest
         }
 
         assertEquals(startIndex + count, received.get());
+    }
+
+    void pollForRecordingSignal(final AeronArchive aeronArchive)
+    {
+        while (0 == aeronArchive.pollForRecordingSignals())
+        {
+            Tests.yield();
+        }
     }
 }

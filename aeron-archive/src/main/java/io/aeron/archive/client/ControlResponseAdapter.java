@@ -51,7 +51,7 @@ public final class ControlResponseAdapter
     {
         this(
             controlResponseListener,
-            AeronArchive.Configuration.defaultRecordingSignalConsumer(),
+            AeronArchive.Configuration.noOpRecordingSignalConsumer(),
             subscription,
             fragmentLimit);
     }

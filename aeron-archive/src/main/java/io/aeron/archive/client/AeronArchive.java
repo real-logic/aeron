@@ -2634,13 +2634,13 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * The default recording signal consumer to be used when none is specified.
+         * The default recording signal consumer to be used when none is specified which takes no action.
          *
-         * @return a default recording signal consumer.
+         * @return a default recording signal consumer which takes no action.
          */
-        public static RecordingSignalConsumer defaultRecordingSignalConsumer()
+        public static RecordingSignalConsumer noOpRecordingSignalConsumer()
         {
-            return (controlSessionId1, correlationId, recordingId, subscriptionId, position, signal) -> {};
+            return (controlSessionId, correlationId, recordingId, subscriptionId, position, signal) -> {};
         }
     }
 
@@ -2727,7 +2727,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (null == recordingSignalConsumer)
             {
-                recordingSignalConsumer = Configuration.defaultRecordingSignalConsumer();
+                recordingSignalConsumer = Configuration.noOpRecordingSignalConsumer();
             }
 
             if (null == lock)

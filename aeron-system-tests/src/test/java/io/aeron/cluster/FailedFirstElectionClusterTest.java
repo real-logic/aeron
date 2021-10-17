@@ -62,10 +62,10 @@ public class FailedFirstElectionClusterTest
             @Advice.This final Object thisObject)
         {
             final Election election = (Election)thisObject;
-            if (candidateId != election.memberId() && candidateTermId == 0)
+            if (candidateId != election.thisMemberId() && candidateTermId == 0)
             {
                 throw new ClusterException(
-                    "Forced failure: memberId=" + election.memberId() + ", candidateTermId=" + candidateTermId);
+                    "Forced failure: memberId=" + election.thisMemberId() + ", candidateTermId=" + candidateTermId);
             }
         }
     }
@@ -117,5 +117,6 @@ public class FailedFirstElectionClusterTest
         }
 
         cluster.assertRecordingLogsEqual();
+        cluster.validateRecordingLogWithReplay(2);
     }
 }

@@ -24,6 +24,8 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.NewLeadershipTermEventDecoder;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
@@ -81,8 +83,8 @@ public class TestCluster implements AutoCloseable
 
     public static final String DEFAULT_NODE_MAPPINGS =
         "node0,localhost,localhost|" +
-        "node1,localhost,localhost|" +
-        "node2,localhost,localhost|";
+            "node1,localhost,localhost|" +
+            "node2,localhost,localhost|";
 
     private final DataCollector dataCollector = new DataCollector();
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -1279,6 +1281,69 @@ public class TestCluster implements AutoCloseable
                     final ReflectionEquals matcher = new ReflectionEquals(a, "timestamp");
                     assertTrue(matcher.matches(b), "Mismatch (" + i + "): " + a + " != " + b);
                 }
+            }
+        }
+    }
+
+    public void validateRecordingLogWithReplay(int nodeId)
+    {
+        final TestNode node = node(nodeId);
+        final ConsensusModule.Context consensusModuleCtx = node.consensusModule().context();
+        final AeronArchive.Context clone = consensusModuleCtx.archiveContext().clone();
+        try (
+            AeronArchive aeronArchive = AeronArchive.connect(clone);
+            RecordingLog recordingLog = new RecordingLog(consensusModuleCtx.clusterDir()))
+        {
+            final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
+            assertNotNull(lastTerm);
+            final long recordingId = lastTerm.recordingId;
+
+            final long recordingPosition = aeronArchive.getRecordingPosition(recordingId);
+            final Subscription replay = aeronArchive.replay(
+                recordingId,
+                0,
+                recordingPosition,
+                "aeron:udp?endpoint=localhost:6666",
+                100001);
+
+            final MutableLong position = new MutableLong();
+
+            final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+            final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
+
+            while (position.get() < recordingPosition)
+            {
+                replay.poll(
+                    (buffer, offset, length, header) ->
+                    {
+                        messageHeaderDecoder.wrap(buffer, offset);
+
+                        if (NewLeadershipTermEventDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
+                        {
+                            newLeadershipTermEventDecoder.wrapAndApplyHeader(buffer, offset, messageHeaderDecoder);
+
+                            final RecordingLog.Entry termEntry = recordingLog.findTermEntry(
+                                newLeadershipTermEventDecoder.leadershipTermId());
+
+                            assertNotNull(termEntry);
+                            assertEquals(
+                                newLeadershipTermEventDecoder.termBaseLogPosition(), termEntry.termBaseLogPosition);
+
+                            if (0 < newLeadershipTermEventDecoder.leadershipTermId())
+                            {
+                                final RecordingLog.Entry previousTermEntry = recordingLog.findTermEntry(
+                                    newLeadershipTermEventDecoder.leadershipTermId() - 1);
+                                assertNotNull(previousTermEntry);
+                                assertEquals(
+                                    newLeadershipTermEventDecoder.termBaseLogPosition(),
+                                    previousTermEntry.logPosition,
+                                    previousTermEntry.toString());
+                            }
+                        }
+
+                        position.set(header.position());
+                    },
+                    10);
             }
         }
     }

@@ -73,7 +73,7 @@ class Election
     private LogReplication logReplication = null;
     private long replicationCommitPosition = 0;
     private long replicationCommitPositionDeadlineNs = 0;
-    private long replicationBaseTermLogPosition;
+    private long replicationTermBaseLogPosition;
 
     Election(
         final boolean isNodeStartup,
@@ -420,7 +420,7 @@ class Election
                             // Here we should have an open, but uncommitted term so the base position
                             // is already known.  We could look it up from the recording log only to not right
                             // it back again...
-                            replicationBaseTermLogPosition = NULL_VALUE;
+                            replicationTermBaseLogPosition = NULL_VALUE;
                             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
                         }
                         else if (appendPosition == nextTermBaseLogPosition)
@@ -429,7 +429,7 @@ class Election
                             {
                                 replicationLeadershipTermId = nextLeadershipTermId;
                                 replicationStopPosition = nextLogPosition;
-                                replicationBaseTermLogPosition = nextTermBaseLogPosition;
+                                replicationTermBaseLogPosition = nextTermBaseLogPosition;
                                 state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
                             }
                         }
@@ -777,7 +777,7 @@ class Election
             else
             {
                 updateRecordingLogForReplication(
-                    replicationLeadershipTermId, replicationBaseTermLogPosition, replicationStopPosition, nowNs);
+                    replicationLeadershipTermId, replicationTermBaseLogPosition, replicationStopPosition, nowNs);
                 state(CANVASS, nowNs);
             }
         }
@@ -793,7 +793,7 @@ class Election
                     appendPosition = logReplication.position();
                     cleanupLogReplication();
                     updateRecordingLogForReplication(
-                        replicationLeadershipTermId, replicationBaseTermLogPosition, replicationStopPosition, nowNs);
+                        replicationLeadershipTermId, replicationTermBaseLogPosition, replicationStopPosition, nowNs);
                     state(CANVASS, nowNs);
                     workCount++;
                 }
@@ -1286,11 +1286,11 @@ class Election
 
     private void updateRecordingLogForReplication(
         final long leadershipTermId,
-        final long baseTermLogPosition,
+        final long termBaseLogPosition,
         final long logPosition,
         final long nowNs)
     {
-        ensureRecordingLogCoherent(leadershipTermId, baseTermLogPosition, logPosition, nowNs);
+        ensureRecordingLogCoherent(leadershipTermId, termBaseLogPosition, logPosition, nowNs);
         logLeadershipTermId = leadershipTermId;
     }
 
@@ -1323,7 +1323,7 @@ class Election
         */
     }
 
-    int memberId()
+    int thisMemberId()
     {
         return thisMember.id();
     }

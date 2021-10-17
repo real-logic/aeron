@@ -2481,6 +2481,12 @@ public final class AeronArchive implements AutoCloseable
         public static final int CONTROL_MTU_LENGTH_DEFAULT = io.aeron.driver.Configuration.mtuLength();
 
         /**
+         * Default no operation {@link RecordingSignalConsumer} to be used when not set explicitly.
+         */
+        public static final RecordingSignalConsumer NO_OP_RECORDING_SIGNAL_CONSUMER =
+            (controlSessionId, correlationId, recordingId, subscriptionId, position, signal) -> {};
+
+        /**
          * The timeout in nanoseconds to wait for a message.
          *
          * @return timeout in nanoseconds to wait for a message.
@@ -2632,16 +2638,6 @@ public final class AeronArchive implements AutoCloseable
             final String propValue = System.getProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
             return null != propValue ? "true".equals(propValue) : RECORDING_EVENTS_ENABLED_DEFAULT;
         }
-
-        /**
-         * The default recording signal consumer to be used when none is specified which takes no action.
-         *
-         * @return a default recording signal consumer which takes no action.
-         */
-        public static RecordingSignalConsumer noOpRecordingSignalConsumer()
-        {
-            return (controlSessionId, correlationId, recordingId, subscriptionId, position, signal) -> {};
-        }
     }
 
     /**
@@ -2727,7 +2723,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (null == recordingSignalConsumer)
             {
-                recordingSignalConsumer = Configuration.noOpRecordingSignalConsumer();
+                recordingSignalConsumer = Configuration.NO_OP_RECORDING_SIGNAL_CONSUMER;
             }
 
             if (null == lock)

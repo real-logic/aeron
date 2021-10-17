@@ -1268,7 +1268,9 @@ public class TestCluster implements AutoCloseable
                 final List<RecordingLog.Entry> firstEntries = first.entries();
                 final List<RecordingLog.Entry> entries = recordingLog.entries();
 
-                assertEquals(firstEntries.size(), entries.size(), "length mismatch");
+                assertEquals(
+                    firstEntries.size(), entries.size(),
+                    () -> "length mismatch: \n[0]" + firstEntries + " != " + "\n[" + node.index() + "] " + entries);
                 for (int i = 0; i < firstEntries.size(); i++)
                 {
                     final RecordingLog.Entry a = firstEntries.get(i);

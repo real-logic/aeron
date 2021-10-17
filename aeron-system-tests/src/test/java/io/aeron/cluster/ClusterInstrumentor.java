@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.bytebuddy.agent.builder.AgentBuilder;
+import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
@@ -29,13 +30,15 @@ import java.lang.instrument.Instrumentation;
 
 public class ClusterInstrumentor
 {
+    private final ResettableClassFileTransformer resettableClassFileTransformer;
+    private final Instrumentation instrumentation;
+
     public ClusterInstrumentor(
         final Class<?> adviceClass,
         final String simpleClassName,
         final String methodName)
     {
-        final Instrumentation instrumentation = ByteBuddyAgent.install();
-        System.out.println(instrumentation);
+        instrumentation = ByteBuddyAgent.install();
 
         final AgentBuilder agentBuilder = new AgentBuilder.Default(new ByteBuddy()
             .with(TypeValidation.DISABLED))
@@ -43,7 +46,7 @@ public class ClusterInstrumentor
             .with(new AgentBuilderListener())
             .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION);
 
-        agentBuilder
+        resettableClassFileTransformer = agentBuilder
             .type(ElementMatchers.nameEndsWith(simpleClassName))
             .transform(
                 (builder, typeDescription, classLoader, module) ->
@@ -95,5 +98,10 @@ public class ClusterInstrumentor
             final boolean loaded)
         {
         }
+    }
+
+    public void reset()
+    {
+        resettableClassFileTransformer.reset(instrumentation, AgentBuilder.RedefinitionStrategy.RETRANSFORMATION);
     }
 }

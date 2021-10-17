@@ -28,7 +28,6 @@ import io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient;
 import io.aeron.test.*;
 import io.aeron.test.launcher.FileResolveUtil;
 import io.aeron.test.launcher.RemoteLaunchClient;
-import org.agrona.AsciiEncoding;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableReference;
@@ -495,11 +494,6 @@ public class ClusterNetworkTopologyTest
 
     private static boolean isVersionAfterJdk8()
     {
-        final String str = System.getProperty("java.specification.version");
-        final int version = str.startsWith("1.") ?
-            AsciiEncoding.parseIntAscii(str, 2, str.length() - 2) :
-            AsciiEncoding.parseIntAscii(str, 0, str.length());
-
-        return version > 8;
+        return Tests.jdkVersion() > 8;
     }
 }

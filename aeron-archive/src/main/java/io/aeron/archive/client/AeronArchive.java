@@ -2671,7 +2671,7 @@ public final class AeronArchive implements AutoCloseable
         private Aeron aeron;
         private ErrorHandler errorHandler;
         private CredentialsSupplier credentialsSupplier;
-        private RecordingSignalConsumer recordingSignalConsumer;
+        private RecordingSignalConsumer recordingSignalConsumer = Configuration.NO_OP_RECORDING_SIGNAL_CONSUMER;
         private boolean ownsAeronClient = false;
 
         /**
@@ -2719,11 +2719,6 @@ public final class AeronArchive implements AutoCloseable
             if (null == credentialsSupplier)
             {
                 credentialsSupplier = new NullCredentialsSupplier();
-            }
-
-            if (null == recordingSignalConsumer)
-            {
-                recordingSignalConsumer = Configuration.NO_OP_RECORDING_SIGNAL_CONSUMER;
             }
 
             if (null == lock)

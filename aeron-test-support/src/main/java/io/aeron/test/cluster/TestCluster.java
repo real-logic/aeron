@@ -83,8 +83,8 @@ public class TestCluster implements AutoCloseable
 
     public static final String DEFAULT_NODE_MAPPINGS =
         "node0,localhost,localhost|" +
-            "node1,localhost,localhost|" +
-            "node2,localhost,localhost|";
+        "node1,localhost,localhost|" +
+        "node2,localhost,localhost|";
 
     private final DataCollector dataCollector = new DataCollector();
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -1285,7 +1285,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    public void validateRecordingLogWithReplay(int nodeId)
+    public void validateRecordingLogWithReplay(final int nodeId)
     {
         final TestNode node = node(nodeId);
         final ConsensusModule.Context consensusModuleCtx = node.consensusModule().context();

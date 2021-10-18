@@ -2,11 +2,6 @@
 
 SOURCE_DIR="$(pwd)"
 
-echo 'ENV in the container'
-echo '--------------------'
-printenv
-echo '--------------------'
-
 # Install dev tools
 yum install --disableplugin=subscription-manager -y gcc gcc-c++ cmake make
 

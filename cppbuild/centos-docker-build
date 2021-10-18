@@ -8,9 +8,4 @@ fi
 
 SOURCE_DIR="$(pwd)"
 
-echo 'ENV on the host'
-echo '---------------'
-printenv
-echo '---------------'
-
 docker run --rm --shm-size=1G --network host --volume="${SOURCE_DIR}":/opt/aeron --volume="$(realpath ~/.gradle)":/root/.gradle -e "GCC_VERSION=${GCC_VERSION}" -w "/opt/aeron" centos:7 cppbuild/centos-docker-build-helper

@@ -656,8 +656,9 @@ inline static bool has_file_separator_at_end(const char *path)
 
 inline static const char *username()
 {
-    const char *username = getenv("USER");
 #if (_MSC_VER)
+    const char *username = getenv("USER");
+
     if (NULL == username)
     {
         username = getenv("USERNAME");
@@ -666,32 +667,23 @@ inline static const char *username()
              username = "default";
         }
     }
+
+    return username;
 #else
+    static char static_buffer[1024];
+    const char *username = getenv("USER");
+
     if (NULL == username)
     {
         uid_t uid = getuid(); // using uid instead of euid as that is what the JVM seems to do.
-
-        long int init_len = sysconf(_SC_GETPW_R_SIZE_MAX);
-        size_t length = -1 == init_len ? 16 * 1024 : init_len;
         struct passwd pw, *pw_result = NULL;
-        char *buffer = (char *)malloc(length);
 
-        if (buffer)
-        {
-            memset(buffer, 0, length);
-            errno = 0;
-            int e = getpwuid_r(uid, &pw, buffer, length, &pw_result);
-            username = (NULL != pw_result && 0 == e && 0 == errno) ? pw_result->pw_name : "default";
-
-            free(buffer);
-        }
-        else
-        {
-            username = "default";
-        }
+        int e = getpwuid_r(uid, &pw, static_buffer, sizeof(static_buffer), &pw_result);
+        username = (NULL != pw_result && 0 == e) ? pw_result->pw_name : "default";
     }
-#endif
+
     return username;
+#endif
 }
 
 int aeron_default_path(char *path, size_t path_length)

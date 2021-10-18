@@ -101,31 +101,35 @@ inline static std::string tmpDir()
 
 inline static std::string getUserName()
 {
-    std::string usernameStr = "default";
+#if (_MSC_VER)
     const char *username = ::getenv("USER");
 
     if (nullptr == username)
     {
-#if (_MSC_VER)
         username = ::getenv("USERNAME");
-        if (nullptr != username)
+        if (nullptr == username)
         {
-            usernameStr = "default";
+            username = "default";
         }
-#else
-        char buffer[4096] = {};
-        struct passwd pw = {}, *pw_result = nullptr;
-        uid_t uid = getuid(); // using uid instead of euid as that is what the JVM seems to do.
-
-        int e = ::getpwuid_r(uid, &pw, buffer, sizeof(buffer), &pw_result);
-        if (nullptr != pw_result && 0 == e)
-        {
-            usernameStr = pw_result->pw_name;
-        }
-#endif
     }
 
-    return usernameStr;
+    return { username };
+#else
+    char tmpBuffer[256];
+    const char *username = ::getenv("USER");
+
+    if (nullptr == username)
+    {
+        // using uid instead of euid as that is what the JVM seems to do.
+        uid_t uid = ::getuid();
+        struct passwd pw = {}, *pwResult = nullptr;
+
+        ::getpwuid_r(uid, &pw, tmpBuffer, sizeof(tmpBuffer), &pwResult);
+        username = (nullptr != pwResult) ? pwResult->pw_name : "default";
+    }
+
+    return { username };
+#endif
 }
 
 std::string Context::defaultAeronPath()

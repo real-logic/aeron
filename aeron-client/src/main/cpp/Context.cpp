@@ -123,6 +123,7 @@ inline static std::string getUserName()
 
         if (buffer)
         {
+            ::memset(buffer, 0, length);
             errno = 0;
             int e = ::getpwuid_r(uid, &pw, buffer, length, &pwResult);
             username = (nullptr != pwResult && 0 == e && 0 == errno) ? pwResult->pw_name : "default";

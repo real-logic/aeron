@@ -678,6 +678,7 @@ inline static const char *username()
 
         if (buffer)
         {
+            memset(buffer, 0, length);
             errno = 0;
             int e = getpwuid_r(uid, &pw, buffer, length, &pw_result);
             username = (NULL != pw_result && 0 == e && 0 == errno) ? pw_result->pw_name : "default";

@@ -669,18 +669,25 @@ inline static const char *username()
 #else
     if (NULL == username)
     {
-        // using uid instead of euid as that is what the JVM seems to do.
-        uid_t uid = getuid();
+        uid_t uid = getuid(); // using uid instead of euid as that is what the JVM seems to do.
 
         long int init_len = sysconf(_SC_GETPW_R_SIZE_MAX);
         size_t length = -1 == init_len ? 16 * 1024 : init_len;
         struct passwd pw, *pw_result = NULL;
         char *buffer = (char *)malloc(length);
 
-        int e = getpwuid_r(uid, &pw, buffer, length, &pw_result);
-        username = (NULL != pw_result && 0 == e) ? pw_result->pw_name : "default";
+        if (buffer)
+        {
+            errno = 0;
+            int e = getpwuid_r(uid, &pw, buffer, length, &pw_result);
+            username = (NULL != pw_result && 0 == e && 0 == errno) ? pw_result->pw_name : "default";
 
-        free(buffer);
+            free(buffer);
+        }
+        else
+        {
+            username = "default";
+        }
     }
 #endif
     return username;

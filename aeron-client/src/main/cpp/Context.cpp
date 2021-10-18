@@ -114,18 +114,25 @@ inline static std::string getUserName()
 #else
     if (nullptr == username)
     {
-        // using uid instead of euid as that is what the JVM seems to do.
-        uid_t uid = ::getuid();
+        uid_t uid = ::getuid(); // using uid instead of euid as that is what the JVM seems to do.
 
         long int initlen = sysconf(_SC_GETPW_R_SIZE_MAX);
         std::size_t length = -1 == initlen ? 16 * 1024 : initlen;
         struct passwd pw = {}, *pwResult = nullptr;
         char *buffer = (char *)malloc(length);
 
-        int e = ::getpwuid_r(uid, &pw, buffer, length, &pwResult);
-        username = (nullptr != pwResult && 0 == e) ? pwResult->pw_name : "default";
+        if (buffer)
+        {
+            errno = 0;
+            int e = ::getpwuid_r(uid, &pw, buffer, length, &pwResult);
+            username = (nullptr != pwResult && 0 == e && 0 == errno) ? pwResult->pw_name : "default";
 
-        free(buffer);
+            free(buffer);
+        }
+        else
+        {
+            username = "default";
+        }
     }
 #endif
     return { username };

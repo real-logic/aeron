@@ -407,13 +407,7 @@ public final class AeronArchive implements AutoCloseable
                     }
                     else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
                     {
-                        context.recordingSignalConsumer().onSignal(
-                            controlResponsePoller.controlSessionId(),
-                            controlResponsePoller.correlationId(),
-                            controlResponsePoller.recordingId(),
-                            controlResponsePoller.subscriptionId(),
-                            controlResponsePoller.position(),
-                            controlResponsePoller.recordingSignal());
+                        dispatchRecordingSignal();
                     }
                 }
             }
@@ -474,13 +468,7 @@ public final class AeronArchive implements AutoCloseable
                     }
                     else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
                     {
-                        context.recordingSignalConsumer().onSignal(
-                            controlResponsePoller.controlSessionId(),
-                            controlResponsePoller.correlationId(),
-                            controlResponsePoller.recordingId(),
-                            controlResponsePoller.subscriptionId(),
-                            controlResponsePoller.position(),
-                            controlResponsePoller.recordingSignal());
+                        dispatchRecordingSignal();
                     }
                 }
             }
@@ -526,14 +514,7 @@ public final class AeronArchive implements AutoCloseable
                     }
                     else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
                     {
-                        context.recordingSignalConsumer().onSignal(
-                            controlResponsePoller.controlSessionId(),
-                            controlResponsePoller.correlationId(),
-                            controlResponsePoller.recordingId(),
-                            controlResponsePoller.subscriptionId(),
-                            controlResponsePoller.position(),
-                            controlResponsePoller.recordingSignal());
-
+                        dispatchRecordingSignal();
                         return 1;
                     }
                 }
@@ -2081,6 +2062,13 @@ public final class AeronArchive implements AutoCloseable
 
             if (poller.isPollComplete())
             {
+                if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID &&
+                    controlResponsePoller.controlSessionId() == controlSessionId)
+                {
+                    dispatchRecordingSignal();
+                    continue;
+                }
+
                 break;
             }
 
@@ -2277,6 +2265,17 @@ public final class AeronArchive implements AutoCloseable
             checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);
             idleStrategy.idle();
         }
+    }
+
+    private void dispatchRecordingSignal()
+    {
+        context.recordingSignalConsumer().onSignal(
+            controlResponsePoller.controlSessionId(),
+            controlResponsePoller.correlationId(),
+            controlResponsePoller.recordingId(),
+            controlResponsePoller.subscriptionId(),
+            controlResponsePoller.position(),
+            controlResponsePoller.recordingSignal());
     }
 
     private void invokeAeronClient()

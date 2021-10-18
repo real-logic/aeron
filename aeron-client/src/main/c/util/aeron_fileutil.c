@@ -656,7 +656,6 @@ inline static bool has_file_separator_at_end(const char *path)
 
 inline static const char *username()
 {
-    static char static_buffer[256];
     const char *username = getenv("USER");
 #if (_MSC_VER)
     if (NULL == username)
@@ -672,10 +671,16 @@ inline static const char *username()
     {
         // using uid instead of euid as that is what the JVM seems to do.
         uid_t uid = getuid();
-        struct passwd pw, *pw_result = NULL;
 
-        getpwuid_r(uid, &pw, static_buffer, sizeof(static_buffer), &pw_result);
-        username = (NULL != pw_result) ? pw_result->pw_name : "default";
+        long int init_len = sysconf(_SC_GETPW_R_SIZE_MAX);
+        size_t length = -1 == init_len ? 16 * 1024 : init_len;
+        struct passwd pw, *pw_result = NULL;
+        char *buffer = (char *)malloc(length);
+
+        int e = getpwuid_r(uid, &pw, buffer, length, &pw_result);
+        username = (NULL != pw_result && 0 == e) ? pw_result->pw_name : "default";
+
+        free(buffer);
     }
 #endif
     return username;

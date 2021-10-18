@@ -101,8 +101,9 @@ inline static std::string tmpDir()
 
 inline static std::string getUserName()
 {
-    const char *username = ::getenv("USER");
 #if (_MSC_VER)
+    const char *username = ::getenv("USER");
+
     if (nullptr == username)
     {
         username = ::getenv("USERNAME");
@@ -111,31 +112,24 @@ inline static std::string getUserName()
             username = "default";
         }
     }
+
+    return { username };
 #else
+    char tmpBuffer[256];
+    const char *username = ::getenv("USER");
+
     if (nullptr == username)
     {
-        uid_t uid = ::getuid(); // using uid instead of euid as that is what the JVM seems to do.
-
-        long int initlen = sysconf(_SC_GETPW_R_SIZE_MAX);
-        std::size_t length = -1 == initlen ? 16 * 1024 : initlen;
+        // using uid instead of euid as that is what the JVM seems to do.
+        uid_t uid = ::getuid();
         struct passwd pw = {}, *pwResult = nullptr;
-        char *buffer = (char *)malloc(length);
 
-        if (buffer)
-        {
-            errno = 0;
-            int e = ::getpwuid_r(uid, &pw, buffer, length, &pwResult);
-            username = (nullptr != pwResult && 0 == e && 0 == errno) ? pwResult->pw_name : "default";
-
-            free(buffer);
-        }
-        else
-        {
-            username = "default";
-        }
+        ::getpwuid_r(uid, &pw, tmpBuffer, sizeof(tmpBuffer), &pwResult);
+        username = (nullptr != pwResult) ? pwResult->pw_name : "default";
     }
-#endif
+
     return { username };
+#endif
 }
 
 std::string Context::defaultAeronPath()

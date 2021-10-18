@@ -101,7 +101,6 @@ inline static std::string tmpDir()
 
 inline static std::string getUserName()
 {
-    char tmpBuffer[256];
     const char *username = ::getenv("USER");
 #if (_MSC_VER)
     if (nullptr == username)
@@ -118,12 +117,13 @@ inline static std::string getUserName()
         // using uid instead of euid as that is what the JVM seems to do.
         uid_t uid = ::getuid();
         struct passwd pw{}, *pwResult = nullptr;
+        char tmpBuffer[256] = {};
 
         ::getpwuid_r(uid, &pw, tmpBuffer, sizeof(tmpBuffer), &pwResult);
-        username = (nullptr != pwResult) ? pwResult->pw_name : "default";
+        username = nullptr != pwResult ? pwResult->pw_name : "default";
     }
 #endif
-    return {username};
+    return { username };
 }
 
 std::string Context::defaultAeronPath()

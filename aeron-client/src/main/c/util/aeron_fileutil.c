@@ -670,7 +670,7 @@ inline static const char *username()
 
     return username;
 #else
-    static char static_buffer[1024];
+    static char static_buffer[4096];
     const char *username = getenv("USER");
 
     if (NULL == username)

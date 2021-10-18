@@ -116,11 +116,16 @@ inline static std::string getUserName()
     {
         // using uid instead of euid as that is what the JVM seems to do.
         uid_t uid = ::getuid();
-        struct passwd pw{}, *pwResult = nullptr;
-        char tmpBuffer[256] = {};
 
-        ::getpwuid_r(uid, &pw, tmpBuffer, sizeof(tmpBuffer), &pwResult);
-        username = nullptr != pwResult ? pwResult->pw_name : "default";
+        long int initlen = sysconf(_SC_GETPW_R_SIZE_MAX);
+        std::size_t length = -1 == initlen ? 16 * 1024 : initlen;
+        struct passwd pw = {}, *pwResult = nullptr;
+        char *buffer = (char *)malloc(length);
+
+        int e = ::getpwuid_r(uid, &pw, buffer, length, &pwResult);
+        username = (nullptr != pwResult && 0 == e) ? pwResult->pw_name : "default";
+
+        free(buffer);
     }
 #endif
     return { username };

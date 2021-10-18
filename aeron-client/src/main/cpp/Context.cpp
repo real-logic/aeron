@@ -115,7 +115,7 @@ inline static std::string getUserName()
 
     return { username };
 #else
-    char buffer[4096] = {};
+    char buffer[256] = {};
     const char *username = ::getenv("USER");
 
     if (nullptr == username)
@@ -123,8 +123,8 @@ inline static std::string getUserName()
         uid_t uid = ::getuid(); // using uid instead of euid as that is what the JVM seems to do.
         struct passwd pw = {}, *pwResult = nullptr;
 
-        ::getpwuid_r(uid, &pw, buffer, sizeof(buffer), &pwResult);
-        username = (nullptr != pwResult) ? pwResult->pw_name : "default";
+        int e = ::getpwuid_r(uid, &pw, buffer, sizeof(buffer), &pwResult);
+        username = (nullptr != pwResult && 0 == e) ? pwResult->pw_name : "default";
     }
 
     return { username };

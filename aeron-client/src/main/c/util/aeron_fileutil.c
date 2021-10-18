@@ -670,7 +670,7 @@ inline static const char *username()
 
     return username;
 #else
-    static char static_buffer[4096];
+    static char static_buffer[256];
     const char *username = getenv("USER");
 
     if (NULL == username)
@@ -678,8 +678,8 @@ inline static const char *username()
         uid_t uid = getuid(); // using uid instead of euid as that is what the JVM seems to do.
         struct passwd pw, *pw_result = NULL;
 
-        getpwuid_r(uid, &pw, static_buffer, sizeof(static_buffer), &pw_result);
-        username = (NULL != pw_result) ? pw_result->pw_name : "default";
+        int e = getpwuid_r(uid, &pw, static_buffer, sizeof(static_buffer), &pw_result);
+        username = (NULL != pw_result && 0 == e) ? pw_result->pw_name : "default";
     }
 
     return username;

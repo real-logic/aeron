@@ -79,7 +79,10 @@ public final class RecordingDescriptorPoller
      */
     public int poll()
     {
-        isDispatchComplete = false;
+        if (isDispatchComplete)
+        {
+            isDispatchComplete = false;
+        }
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }

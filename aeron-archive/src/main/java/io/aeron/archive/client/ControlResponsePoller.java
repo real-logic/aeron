@@ -96,18 +96,21 @@ public final class ControlResponsePoller
      */
     public int poll()
     {
-        templateId = Aeron.NULL_VALUE;
-        controlSessionId = Aeron.NULL_VALUE;
-        correlationId = Aeron.NULL_VALUE;
-        relevantId = Aeron.NULL_VALUE;
-        recordingId = Aeron.NULL_VALUE;
-        subscriptionId = Aeron.NULL_VALUE;
-        position = Aeron.NULL_VALUE;
-        recordingSignal = null;
-        version = 0;
-        errorMessage = null;
-        encodedChallenge = null;
-        isPollComplete = false;
+        if (isPollComplete)
+        {
+            isPollComplete = false;
+            templateId = Aeron.NULL_VALUE;
+            controlSessionId = Aeron.NULL_VALUE;
+            correlationId = Aeron.NULL_VALUE;
+            relevantId = Aeron.NULL_VALUE;
+            recordingId = Aeron.NULL_VALUE;
+            subscriptionId = Aeron.NULL_VALUE;
+            position = Aeron.NULL_VALUE;
+            recordingSignal = null;
+            version = 0;
+            errorMessage = null;
+            encodedChallenge = null;
+        }
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }

@@ -97,16 +97,19 @@ public final class RecordingSignalPoller
      */
     public int poll()
     {
-        templateId = Aeron.NULL_VALUE;
-        correlationId = Aeron.NULL_VALUE;
-        relevantId = Aeron.NULL_VALUE;
-        version = 0;
-        errorMessage = null;
-        recordingId = Aeron.NULL_VALUE;
-        recordingSubscriptionId = Aeron.NULL_VALUE;
-        recordingPosition = Aeron.NULL_VALUE;
-        recordingSignal = null;
-        isPollComplete = false;
+        if (isPollComplete)
+        {
+            isPollComplete = false;
+            templateId = Aeron.NULL_VALUE;
+            correlationId = Aeron.NULL_VALUE;
+            relevantId = Aeron.NULL_VALUE;
+            version = 0;
+            errorMessage = null;
+            recordingId = Aeron.NULL_VALUE;
+            recordingSubscriptionId = Aeron.NULL_VALUE;
+            recordingPosition = Aeron.NULL_VALUE;
+            recordingSignal = null;
+        }
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }

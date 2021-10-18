@@ -186,16 +186,19 @@ public final class EgressPoller implements ControlledFragmentHandler
      */
     public int poll()
     {
-        clusterSessionId = Aeron.NULL_VALUE;
-        correlationId = Aeron.NULL_VALUE;
-        leadershipTermId = Aeron.NULL_VALUE;
-        leaderMemberId = Aeron.NULL_VALUE;
-        templateId = Aeron.NULL_VALUE;
-        version = 0;
-        eventCode = null;
-        detail = "";
-        encodedChallenge = null;
-        isPollComplete = false;
+        if (isPollComplete)
+        {
+            isPollComplete = false;
+            clusterSessionId = Aeron.NULL_VALUE;
+            correlationId = Aeron.NULL_VALUE;
+            leadershipTermId = Aeron.NULL_VALUE;
+            leaderMemberId = Aeron.NULL_VALUE;
+            templateId = Aeron.NULL_VALUE;
+            version = 0;
+            eventCode = null;
+            detail = "";
+            encodedChallenge = null;
+        }
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }

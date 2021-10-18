@@ -3,6 +3,11 @@
 SOURCE_DIR="$(pwd)"
 CMAKE_VERSION="3.6.1"
 
+echo 'ENV in the container'
+echo '--------------------'
+printenv
+echo '--------------------'
+
 # Install dev tools
 yum install -y centos-release-scl
 yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make

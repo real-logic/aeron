@@ -115,7 +115,7 @@ inline static std::string getUserName()
 
     return { username };
 #else
-    char buffer[256] = {};
+    char buffer[4096] = {};
     const char *username = ::getenv("USER");
 
     if (nullptr == username)

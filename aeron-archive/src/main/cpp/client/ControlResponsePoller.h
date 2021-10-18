@@ -49,20 +49,23 @@ public:
      */
     inline int poll()
     {
-        m_controlSessionId = -1;
-        m_correlationId = -1;
-        m_relevantId = -1;
-        m_version = 0;
-        m_codeValue = -1;
-        m_errorMessage = "";
-        m_pollComplete = false;
-        m_isCodeOk = false;
-        m_isCodeError = false;
-        m_isControlResponse = false;
-        m_wasChallenged = false;
-        delete[] m_encodedChallenge.first;
-        m_encodedChallenge.first = nullptr;
-        m_encodedChallenge.second = 0;
+        if (m_isPollComplete)
+        {
+            m_isPollComplete = false;
+            m_controlSessionId = -1;
+            m_correlationId = -1;
+            m_relevantId = -1;
+            m_version = 0;
+            m_codeValue = -1;
+            m_errorMessage = "";
+            m_isCodeOk = false;
+            m_isCodeError = false;
+            m_isControlResponse = false;
+            m_wasChallenged = false;
+            delete[] m_encodedChallenge.first;
+            m_encodedChallenge.first = nullptr;
+            m_encodedChallenge.second = 0;
+        }
 
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }
@@ -124,7 +127,7 @@ public:
      */
     inline bool isPollComplete() const
     {
-        return m_pollComplete;
+        return m_isPollComplete;
     }
 
     /**
@@ -201,7 +204,7 @@ private:
     std::int32_t m_version = 0;
     int m_codeValue = -1;
     std::string m_errorMessage;
-    bool m_pollComplete = false;
+    bool m_isPollComplete = false;
     bool m_isCodeOk = false;
     bool m_isCodeError = false;
     bool m_isControlResponse = false;

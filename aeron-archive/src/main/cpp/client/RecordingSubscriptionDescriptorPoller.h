@@ -57,7 +57,10 @@ public:
      */
     inline int poll()
     {
-        m_isDispatchComplete = false;
+        if (m_isDispatchComplete)
+        {
+            m_isDispatchComplete = false;
+        }
 
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }

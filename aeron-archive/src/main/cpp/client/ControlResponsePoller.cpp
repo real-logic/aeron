@@ -43,7 +43,7 @@ ControlResponsePoller::ControlResponsePoller(std::shared_ptr<Subscription> subsc
 ControlledPollAction ControlResponsePoller::onFragment(
     AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
-    if (m_pollComplete)
+    if (m_isPollComplete)
     {
         return ControlledPollAction::ABORT;
     }
@@ -84,7 +84,7 @@ ControlledPollAction ControlResponsePoller::onFragment(
         m_errorMessage = response.getErrorMessageAsString();
 
         m_isControlResponse = true;
-        m_pollComplete = true;
+        m_isPollComplete = true;
 
         return ControlledPollAction::BREAK;
     }
@@ -115,7 +115,7 @@ ControlledPollAction ControlResponsePoller::onFragment(
 
         m_isControlResponse = false;
         m_wasChallenged = true;
-        m_pollComplete = true;
+        m_isPollComplete = true;
 
         return ControlledPollAction::BREAK;
     }

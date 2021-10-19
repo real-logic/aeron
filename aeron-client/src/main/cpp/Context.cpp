@@ -88,10 +88,11 @@ inline static std::string tmpDir()
     return dir;
 #else
     std::string dir = "/tmp";
+    const char *tmpDir = ::getenv("TMPDIR");
 
-    if (::getenv("TMPDIR"))
+    if (nullptr != tmpDir)
     {
-        dir = ::getenv("TMPDIR");
+        dir = tmpDir;
     }
 
     return dir;

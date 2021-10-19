@@ -630,10 +630,11 @@ inline static const char *tmp_dir()
     return NULL;
 #else
     const char *dir = "/tmp";
+    const char *tmp_dir = getenv("TMPDIR");
 
-    if (getenv("TMPDIR"))
+    if (NULL != tmp_dir)
     {
-        dir = getenv("TMPDIR");
+        dir = tmp_dir;
     }
 
     return dir;

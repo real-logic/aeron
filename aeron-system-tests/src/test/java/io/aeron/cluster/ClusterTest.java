@@ -30,7 +30,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.zip.CRC32;
 
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
@@ -1153,10 +1152,7 @@ public class ClusterTest
         cluster.startStaticNode(originalLeader.index(), true);
         final TestNode lateJoiningNode = cluster.node(originalLeader.index());
 
-        while (lateJoiningNode.service().messageCount() < messageCount * 3)
-        {
-            Tests.yieldingIdle("Waiting for late joining follower to catch up");
-        }
+        cluster.awaitServiceMessageCount(lateJoiningNode, messageCount * 3);
     }
 
     @Test
@@ -1594,7 +1590,7 @@ public class ClusterTest
 
         final int messageCount = 10;
         final int numTerms = 3;
-        int totalMessage = 0;
+        int totalMessages = 0;
 
         int partialNode = Aeron.NULL_VALUE;
 
@@ -1604,8 +1600,8 @@ public class ClusterTest
 
             cluster.connectClient();
             cluster.sendMessages(messageCount);
-            totalMessage += messageCount;
-            cluster.awaitResponseMessageCount(totalMessage);
+            totalMessages += messageCount;
+            cluster.awaitResponseMessageCount(totalMessages);
 
             if (Aeron.NULL_VALUE == partialNode)
             {
@@ -1619,36 +1615,22 @@ public class ClusterTest
 
         final TestNode lateJoiningNode = cluster.startStaticNode(4, true);
 
-        while (lateJoiningNode.service().messageCount() < totalMessage)
-        {
-            Tests.yieldingIdle("Waiting for late joining follower to catch up");
-        }
+        cluster.awaitServiceMessageCount(lateJoiningNode, totalMessages);
 
         final TestNode node = cluster.startStaticNode(partialNode, false);
 
-        final int messages = totalMessage;
-        final Supplier<String> msg =
-            () -> "Waiting for partial follower to catch up: " + node.service().messageCount() + " of " + messages;
-        while (node.service().messageCount() < totalMessage)
-        {
-            Tests.yieldingIdle(msg);
-        }
+        cluster.awaitServiceMessageCount(node, totalMessages);
 
         cluster.awaitLeader();
 
         cluster.connectClient();
         cluster.sendMessages(messageCount);
-        totalMessage += messageCount;
-        cluster.awaitResponseMessageCount(totalMessage);
-
-        while (node.service().messageCount() < totalMessage)
-        {
-            Tests.yieldingIdle(msg);
-        }
+        totalMessages += messageCount;
+        cluster.awaitResponseMessageCount(totalMessages);
+        cluster.awaitServiceMessageCount(node, totalMessages);
 
         cluster.assertRecordingLogsEqual();
     }
-
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)
     {

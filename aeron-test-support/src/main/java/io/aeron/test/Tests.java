@@ -21,7 +21,6 @@ import io.aeron.Subscription;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
-import org.agrona.AsciiEncoding;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
@@ -666,19 +665,5 @@ public class Tests
         {
             LangUtil.rethrowUnchecked(ex);
         }
-    }
-
-    /**
-     * If the version string starts with '1.x.*', then version will be x.  If the version string starts with 'x.*' where
-     * x is any value other than 1 then the version will be x.
-     *
-     * @return Version of the JDK as an int.
-     */
-    public static int jdkVersion()
-    {
-        final String str = System.getProperty("java.specification.version");
-        return str.startsWith("1.") ?
-            AsciiEncoding.parseIntAscii(str, 2, str.length() - 2) :
-            AsciiEncoding.parseIntAscii(str, 0, str.length());
     }
 }

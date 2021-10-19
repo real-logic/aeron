@@ -17,14 +17,18 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.log.EventLogExtension;
-import io.aeron.test.*;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import net.bytebuddy.asm.Advice;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -71,11 +75,10 @@ public class FailedFirstElectionClusterTest
     }
 
     @Test
+    @EnabledForJreRange(min = JRE.JAVA_11)
     @InterruptAfter(60)
     public void shouldRecoverWhenFollowerIsMultipleTermsBehindFromEmptyLog()
     {
-        Assumptions.assumeTrue(11 <= Tests.jdkVersion());
-
         final int numNodes = 3;
         final int messageCount = 10;
         final int numTerms = 3;
@@ -85,7 +88,7 @@ public class FailedFirstElectionClusterTest
         systemTestWatcher.cluster(cluster);
         systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("Forced failure"));
 
-        int totalMessage = 0;
+        int totalMessages = 0;
 
         for (int i = 0; i < numTerms; i++)
         {
@@ -93,8 +96,8 @@ public class FailedFirstElectionClusterTest
 
             cluster.connectClient();
             cluster.sendMessages(messageCount);
-            totalMessage += messageCount;
-            cluster.awaitResponseMessageCount(totalMessage);
+            totalMessages += messageCount;
+            cluster.awaitResponseMessageCount(totalMessages);
 
             cluster.stopNode(oldLeader);
             cluster.startStaticNode(oldLeader.index(), false);
@@ -105,16 +108,10 @@ public class FailedFirstElectionClusterTest
 
         cluster.connectClient();
         cluster.sendMessages(messageCount);
-        totalMessage += messageCount;
-        cluster.awaitResponseMessageCount(totalMessage);
+        totalMessages += messageCount;
 
-        for (int i = 0; i < numNodes; i++)
-        {
-            while (cluster.node(i).service().messageCount() < totalMessage)
-            {
-                Tests.yieldingIdle("Waiting for late joining follower to catch up");
-            }
-        }
+        cluster.awaitResponseMessageCount(totalMessages);
+        cluster.awaitServicesMessageCount(totalMessages);
 
         cluster.assertRecordingLogsEqual();
         cluster.validateRecordingLogWithReplay(2);

@@ -17,7 +17,7 @@ RUN rpm --import http://repos.azulsystems.com/RPM-GPG-KEY-azulsystems && \
 ENV JAVA_HOME=/usr/lib/jvm/zulu-8 \
     BUILD_JAVA_HOME=/usr/lib/jvm/zulu-8 \
     BUILD_JAVA_VERSION=8 \
-    GRADLE_OPTS="-Dorg.gradle.daemon=false" \
+    GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail" \
     CC=gcc \
     CXX=g++
 

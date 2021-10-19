@@ -26,7 +26,7 @@ ENV PATH="$PATH:/opt/tools/cmake-${CMAKE_VERSION}-Linux-x86_64/bin" \
     JAVA_HOME=/usr/lib/jvm/zulu-8 \
     BUILD_JAVA_HOME=/usr/lib/jvm/zulu-8 \
     BUILD_JAVA_VERSION=8 \
-    GRADLE_OPTS="-Dorg.gradle.daemon=false" \
+    GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail" \
     GCC_VERSION=${GCC_VERSION}
 
 USER athena

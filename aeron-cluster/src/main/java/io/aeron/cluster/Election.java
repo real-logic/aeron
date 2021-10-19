@@ -418,7 +418,7 @@ class Election
                             replicationLeadershipTermId = logLeadershipTermId;
                             replicationStopPosition = nextTermBaseLogPosition;
                             // Here we should have an open, but uncommitted term so the base position
-                            // is already known.  We could look it up from the recording log only to not right
+                            // is already known. We could look it up from the recording log only to not right
                             // it back again...
                             replicationTermBaseLogPosition = NULL_VALUE;
                             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
@@ -1204,26 +1204,22 @@ class Election
         final long logPosition,
         final long nowNs)
     {
-        final RecordingLog recordingLog = ctx.recordingLog();
-        final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
         final long recordingId = consensusModuleAgent.logRecordingId();
-
         if (NULL_VALUE == recordingId)
         {
             if (0 == logPosition)
             {
                 return;
             }
-            else
-            {
-                throw new AgentTerminationException("log recording id not found");
-            }
+
+            throw new AgentTerminationException("log recording id not found");
         }
 
+        final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
+        final RecordingLog recordingLog = ctx.recordingLog();
         RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
         if (null == lastTerm)
         {
-            // Backfill empty log entries...
             for (long termId = 0; termId < leadershipTermId; termId++)
             {
                 recordingLog.appendTerm(recordingId, termId, 0, timestamp);
@@ -1238,7 +1234,7 @@ class Election
         }
         else if (lastTerm.leadershipTermId < leadershipTermId)
         {
-            if (Aeron.NULL_VALUE == lastTerm.logPosition)
+            if (NULL_VALUE == lastTerm.logPosition)
             {
                 if (NULL_VALUE == logTermBasePosition)
                 {
@@ -1255,7 +1251,6 @@ class Election
                 }
             }
 
-            // Backfill empty log entries...
             for (long termId = lastTerm.leadershipTermId + 1; termId < leadershipTermId; termId++)
             {
                 recordingLog.appendTerm(recordingId, termId, lastTerm.logPosition, timestamp);
@@ -1275,6 +1270,7 @@ class Election
                 recordingLog.commitLogPosition(leadershipTermId, logPosition);
             }
         }
+
         recordingLog.force(ctx.fileSyncLevel());
     }
 

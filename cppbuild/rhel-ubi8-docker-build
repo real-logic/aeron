@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-SOURCE_DIR="$(pwd)"
-
-docker run --rm --shm-size=1G --network host --volume="${SOURCE_DIR}":/opt/aeron --volume="$(realpath ~/.gradle)":/root/.gradle -w "/opt/aeron" registry.access.redhat.com/ubi8 cppbuild/rhel-ubi8-docker-build-helper

@@ -115,7 +115,7 @@ inline static std::string getUserName()
 
     return { username };
 #else
-    char buffer[4096] = {};
+    char buffer[16384] = {};
     const char *username = ::getenv("USER");
 
     if (nullptr == username)
@@ -124,7 +124,8 @@ inline static std::string getUserName()
         struct passwd pw = {}, *pwResult = nullptr;
 
         int e = ::getpwuid_r(uid, &pw, buffer, sizeof(buffer), &pwResult);
-        username = (nullptr != pwResult && 0 == e) ? pwResult->pw_name : "default";
+        username = (0 == e && nullptr != pwResult && nullptr != pwResult->pw_name && *(pwResult->pw_name )) ?
+            pwResult->pw_name : "default";
     }
 
     return { username };

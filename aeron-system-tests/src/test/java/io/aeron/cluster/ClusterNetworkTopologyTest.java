@@ -28,13 +28,13 @@ import io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient;
 import io.aeron.test.*;
 import io.aeron.test.launcher.FileResolveUtil;
 import io.aeron.test.launcher.RemoteLaunchClient;
-import org.agrona.AsciiEncoding;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,10 +54,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -494,11 +491,6 @@ public class ClusterNetworkTopologyTest
 
     private static boolean isVersionAfterJdk8()
     {
-        final String str = System.getProperty("java.specification.version");
-        final int version = str.startsWith("1.") ?
-            AsciiEncoding.parseIntAscii(str, 2, str.length() - 2) :
-            AsciiEncoding.parseIntAscii(str, 0, str.length());
-
-        return version > 8;
+        return EnumSet.range(JRE.JAVA_9, JRE.OTHER).contains(JRE.currentVersion());
     }
 }

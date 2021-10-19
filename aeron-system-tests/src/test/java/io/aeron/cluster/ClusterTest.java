@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.log.EventLogExtension;
@@ -1117,6 +1118,43 @@ public class ClusterTest
         }
     }
 
+
+    @Test
+    @InterruptAfter(40)
+    public void shouldRecoverWhenFollowerIsMultipleTermsBehindFromEmptyLog()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode originalLeader = cluster.awaitLeader();
+
+        final int messageCount = 10;
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
+
+        cluster.stopNode(originalLeader);
+        final TestNode newLeader = cluster.awaitLeader();
+        cluster.reconnectClient();
+
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount * 2);
+
+        cluster.stopNode(newLeader);
+        cluster.startStaticNode(newLeader.index(), false);
+        cluster.awaitLeader();
+        cluster.reconnectClient();
+
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount * 3);
+
+        cluster.startStaticNode(originalLeader.index(), true);
+        final TestNode lateJoiningNode = cluster.node(originalLeader.index());
+
+        cluster.awaitServiceMessageCount(lateJoiningNode, messageCount * 3);
+    }
+
     @Test
     @InterruptAfter(40)
     public void shouldRecoverWhenFollowerArrivesPartWayThroughTerm()
@@ -1540,6 +1578,58 @@ public class ClusterTest
             final TestNode node = cluster.node(i);
             cluster.awaitServiceState(node, finalServiceState);
         }
+    }
+
+    @Test
+    @InterruptAfter(40)
+    public void shouldRecoverWhenFollowersIsMultipleTermsBehindFromEmptyLogAndPartialLogWithoutCommittedLogEntry()
+    {
+        cluster = aCluster().withStaticNodes(5).start(4);
+
+        systemTestWatcher.cluster(cluster);
+
+        final int messageCount = 10;
+        final int numTerms = 3;
+        int totalMessages = 0;
+
+        int partialNode = Aeron.NULL_VALUE;
+
+        for (int i = 0; i < numTerms; i++)
+        {
+            final TestNode oldLeader = cluster.awaitLeader();
+
+            cluster.connectClient();
+            cluster.sendMessages(messageCount);
+            totalMessages += messageCount;
+            cluster.awaitResponseMessageCount(totalMessages);
+
+            if (Aeron.NULL_VALUE == partialNode)
+            {
+                partialNode = oldLeader.index() + 1 % 4;
+                cluster.stopNode(cluster.node(partialNode));
+            }
+            cluster.stopNode(oldLeader);
+            cluster.startStaticNode(oldLeader.index(), false);
+            cluster.awaitLeader();
+        }
+
+        final TestNode lateJoiningNode = cluster.startStaticNode(4, true);
+
+        cluster.awaitServiceMessageCount(lateJoiningNode, totalMessages);
+
+        final TestNode node = cluster.startStaticNode(partialNode, false);
+
+        cluster.awaitServiceMessageCount(node, totalMessages);
+
+        cluster.awaitLeader();
+
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        totalMessages += messageCount;
+        cluster.awaitResponseMessageCount(totalMessages);
+        cluster.awaitServiceMessageCount(node, totalMessages);
+
+        cluster.assertRecordingLogsEqual();
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)

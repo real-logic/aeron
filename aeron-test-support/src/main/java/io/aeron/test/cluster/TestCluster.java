@@ -24,6 +24,8 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.NewLeadershipTermEventDecoder;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
@@ -43,6 +45,7 @@ import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
+import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -1247,6 +1250,104 @@ public class TestCluster implements AutoCloseable
         return dataCollector;
     }
 
+    public void assertRecordingLogsEqual()
+    {
+        RecordingLog first = null;
+        for (final TestNode node : nodes)
+        {
+            if (null == node)
+            {
+                continue;
+            }
+
+            final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
+            if (null == first)
+            {
+                first = recordingLog;
+            }
+            else
+            {
+                final List<RecordingLog.Entry> firstEntries = first.entries();
+                final List<RecordingLog.Entry> entries = recordingLog.entries();
+
+                assertEquals(
+                    firstEntries.size(), entries.size(),
+                    () -> "length mismatch: \n[0]" + firstEntries + " != " + "\n[" + node.index() + "] " + entries);
+                for (int i = 0; i < firstEntries.size(); i++)
+                {
+                    final RecordingLog.Entry a = firstEntries.get(i);
+                    final RecordingLog.Entry b = entries.get(i);
+
+                    final ReflectionEquals matcher = new ReflectionEquals(a, "timestamp");
+                    assertTrue(matcher.matches(b), "Mismatch (" + i + "): " + a + " != " + b);
+                }
+            }
+        }
+    }
+
+    public void validateRecordingLogWithReplay(final int nodeId)
+    {
+        final TestNode node = node(nodeId);
+        final ConsensusModule.Context consensusModuleCtx = node.consensusModule().context();
+        final AeronArchive.Context clone = consensusModuleCtx.archiveContext().clone();
+        try (
+            AeronArchive aeronArchive = AeronArchive.connect(clone);
+            RecordingLog recordingLog = new RecordingLog(consensusModuleCtx.clusterDir()))
+        {
+            final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
+            assertNotNull(lastTerm);
+            final long recordingId = lastTerm.recordingId;
+
+            final long recordingPosition = aeronArchive.getRecordingPosition(recordingId);
+            final Subscription replay = aeronArchive.replay(
+                recordingId,
+                0,
+                recordingPosition,
+                "aeron:udp?endpoint=localhost:6666",
+                100001);
+
+            final MutableLong position = new MutableLong();
+
+            final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+            final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
+
+            while (position.get() < recordingPosition)
+            {
+                replay.poll(
+                    (buffer, offset, length, header) ->
+                    {
+                        messageHeaderDecoder.wrap(buffer, offset);
+
+                        if (NewLeadershipTermEventDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
+                        {
+                            newLeadershipTermEventDecoder.wrapAndApplyHeader(buffer, offset, messageHeaderDecoder);
+
+                            final RecordingLog.Entry termEntry = recordingLog.findTermEntry(
+                                newLeadershipTermEventDecoder.leadershipTermId());
+
+                            assertNotNull(termEntry);
+                            assertEquals(
+                                newLeadershipTermEventDecoder.termBaseLogPosition(), termEntry.termBaseLogPosition);
+
+                            if (0 < newLeadershipTermEventDecoder.leadershipTermId())
+                            {
+                                final RecordingLog.Entry previousTermEntry = recordingLog.findTermEntry(
+                                    newLeadershipTermEventDecoder.leadershipTermId() - 1);
+                                assertNotNull(previousTermEntry);
+                                assertEquals(
+                                    newLeadershipTermEventDecoder.termBaseLogPosition(),
+                                    previousTermEntry.logPosition,
+                                    previousTermEntry.toString());
+                            }
+                        }
+
+                        position.set(header.position());
+                    },
+                    10);
+            }
+        }
+    }
+
     public static class ServiceContext
     {
         public final Aeron.Context aeronCtx = new Aeron.Context();
@@ -1414,6 +1515,17 @@ public class TestCluster implements AutoCloseable
 
         public TestCluster start()
         {
+            return start(nodeCount);
+        }
+
+        public TestCluster start(final int toStart)
+        {
+            if (toStart > nodeCount)
+            {
+                throw new IllegalStateException(
+                    "Unable to start " + toStart + " nodes, only " + nodeCount + " available");
+            }
+
             final TestCluster testCluster = new TestCluster(
                 nodeCount,
                 dynamicNodeCount,
@@ -1424,7 +1536,7 @@ public class TestCluster implements AutoCloseable
             testCluster.ingressChannel(ingressChannel);
             testCluster.egressChannel(egressChannel);
 
-            for (int i = 0; i < testCluster.staticMemberCount; i++)
+            for (int i = 0; i < toStart; i++)
             {
                 testCluster.startStaticNode(i, true);
             }

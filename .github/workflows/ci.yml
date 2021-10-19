@@ -256,7 +256,7 @@ jobs:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
-        run: cppbuild/rhel-ubi8-docker-build
+        run: cppbuild/rhel-docker-build
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

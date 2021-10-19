@@ -77,7 +77,7 @@ bool Context::requestDriverTermination(
 inline static std::string tmpDir()
 {
 #if defined(_MSC_VER)
-    static char buff[MAX_PATH + 1];
+    char buff[MAX_PATH + 1];
     std::string dir;
 
     if (::GetTempPath(MAX_PATH, &buff[0]) > 0)
@@ -88,10 +88,11 @@ inline static std::string tmpDir()
     return dir;
 #else
     std::string dir = "/tmp";
+    const char *tmpDir = ::getenv("TMPDIR");
 
-    if (::getenv("TMPDIR"))
+    if (nullptr != tmpDir)
     {
-        dir = ::getenv("TMPDIR");
+        dir = tmpDir;
     }
 
     return dir;
@@ -115,7 +116,7 @@ inline static std::string getUserName()
 
     return { username };
 #else
-    char buffer[4096] = {};
+    char buffer[16384] = {};
     const char *username = ::getenv("USER");
 
     if (nullptr == username)
@@ -124,7 +125,8 @@ inline static std::string getUserName()
         struct passwd pw = {}, *pwResult = nullptr;
 
         int e = ::getpwuid_r(uid, &pw, buffer, sizeof(buffer), &pwResult);
-        username = (nullptr != pwResult && 0 == e) ? pwResult->pw_name : "default";
+        username = (0 == e && nullptr != pwResult && nullptr != pwResult->pw_name && *(pwResult->pw_name )) ?
+            pwResult->pw_name : "default";
     }
 
     return { username };

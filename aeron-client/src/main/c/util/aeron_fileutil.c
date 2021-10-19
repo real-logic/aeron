@@ -630,10 +630,11 @@ inline static const char *tmp_dir()
     return NULL;
 #else
     const char *dir = "/tmp";
+    const char *tmp_dir = getenv("TMPDIR");
 
-    if (getenv("TMPDIR"))
+    if (NULL != tmp_dir)
     {
-        dir = getenv("TMPDIR");
+        dir = tmp_dir;
     }
 
     return dir;
@@ -670,7 +671,7 @@ inline static const char *username()
 
     return username;
 #else
-    static char static_buffer[4096];
+    static char static_buffer[16384];
     const char *username = getenv("USER");
 
     if (NULL == username)
@@ -679,7 +680,8 @@ inline static const char *username()
         struct passwd pw, *pw_result = NULL;
 
         int e = getpwuid_r(uid, &pw, static_buffer, sizeof(static_buffer), &pw_result);
-        username = (NULL != pw_result && 0 == e) ? pw_result->pw_name : "default";
+        username = (0 == e && NULL != pw_result && NULL != pw_result->pw_name && '\0' != *(pw_result->pw_name)) ?
+            pw_result->pw_name : "default";
     }
 
     return username;

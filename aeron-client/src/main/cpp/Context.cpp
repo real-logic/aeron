@@ -77,7 +77,7 @@ bool Context::requestDriverTermination(
 inline static std::string tmpDir()
 {
 #if defined(_MSC_VER)
-    static char buff[MAX_PATH + 1];
+    char buff[MAX_PATH + 1];
     std::string dir;
 
     if (::GetTempPath(MAX_PATH, &buff[0]) > 0)

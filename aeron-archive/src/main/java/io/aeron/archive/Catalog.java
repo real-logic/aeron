@@ -199,9 +199,9 @@ final class Catalog implements AutoCloseable
                 final int version = catalogHeaderDecoder.version();
                 if (SemanticVersion.major(version) != ArchiveMarkFile.MAJOR_VERSION)
                 {
-                    throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
-                        ", archive is " +
-                        SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
+                    throw new ArchiveException(
+                        "incompatible catalog file version " + SemanticVersion.toString(version) +
+                        ", archive software is " + SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
                 }
 
                 alignment = catalogHeaderDecoder.alignment();
@@ -283,8 +283,9 @@ final class Catalog implements AutoCloseable
             {
                 if (SemanticVersion.major(version) != ArchiveMarkFile.MAJOR_VERSION)
                 {
-                    throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
-                        ", archive is " + SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
+                    throw new ArchiveException(
+                        "incompatible catalog file version " + SemanticVersion.toString(version) +
+                        ", archive software is " + SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
                 }
             }
             else

@@ -2475,6 +2475,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
                     if (image.isClosed())
                     {
+                        pollArchiveEvents();
                         throw new ClusterException("snapshot ended unexpectedly: " + image);
                     }
                 }

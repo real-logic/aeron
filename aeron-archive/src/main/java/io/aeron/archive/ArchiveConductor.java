@@ -2011,8 +2011,8 @@ abstract class ArchiveConductor
     {
         try
         {
-            final long usableSpace = ctx.archiveFileStore().getUsableSpace();
             final long threshold = ctx.lowStorageSpaceThreshold();
+            final long usableSpace = ctx.archiveFileStore().getUsableSpace();
 
             if (usableSpace <= threshold)
             {

@@ -771,12 +771,11 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             if (fragments == 0)
             {
+                archive.checkForErrorResponse();
                 if (image.isClosed())
                 {
                     throw new ClusterException("snapshot ended unexpectedly: " + image);
                 }
-
-                archive.checkForErrorResponse();
             }
 
             idle(fragments);

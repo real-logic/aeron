@@ -1261,13 +1261,11 @@ public class TestCluster implements AutoCloseable
                 }
                 else
                 {
-                    final List<RecordingLog.Entry> expectedEntries = firstEntries;
                     final List<RecordingLog.Entry> entries = recordingLog.entries();
-
                     assertEquals(
-                        firstEntries.size(), entries.size(),
-                        () -> "length mismatch: \n[0]" + expectedEntries + " != " + "\n[" + node
-                            .index() + "] " + entries);
+                        firstEntries.size(),
+                        entries.size(),
+                        "length mismatch: \n[0]" + firstEntries + " != " + "\n[" + node.index() + "] " + entries);
                     for (int i = 0; i < firstEntries.size(); i++)
                     {
                         final RecordingLog.Entry a = firstEntries.get(i);
@@ -1540,7 +1538,7 @@ public class TestCluster implements AutoCloseable
                     {
                         testCluster.startStaticNode(i, true);
                     }
-                    catch (RegistrationException e)
+                    catch (final RegistrationException e)
                     {
                         if (!invalidInitialResolutions.contains(i))
                         {
@@ -1549,7 +1547,7 @@ public class TestCluster implements AutoCloseable
                     }
                 }
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 CloseHelper.close(testCluster);
                 throw e;

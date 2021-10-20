@@ -1605,7 +1605,7 @@ public class ClusterTest
 
             if (Aeron.NULL_VALUE == partialNode)
             {
-                partialNode = oldLeader.index() + 1 % 4;
+                partialNode = (oldLeader.index() + 1) % 4;
                 cluster.stopNode(cluster.node(partialNode));
             }
             cluster.stopNode(oldLeader);

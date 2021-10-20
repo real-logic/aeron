@@ -303,14 +303,7 @@ public class TestCluster implements AutoCloseable
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .deleteDirOnStart(cleanStart);
 
-        try
-        {
-            nodes[index] = new TestNode(context, dataCollector);
-        }
-        catch (final RegistrationException ex)
-        {
-            nodes[index] = null;
-        }
+        nodes[index] = new TestNode(context, dataCollector);
 
         return nodes[index];
     }
@@ -1539,9 +1532,27 @@ public class TestCluster implements AutoCloseable
             testCluster.ingressChannel(ingressChannel);
             testCluster.egressChannel(egressChannel);
 
-            for (int i = 0; i < toStart; i++)
+            try
             {
-                testCluster.startStaticNode(i, true);
+                for (int i = 0; i < toStart; i++)
+                {
+                    try
+                    {
+                        testCluster.startStaticNode(i, true);
+                    }
+                    catch (RegistrationException e)
+                    {
+                        if (!invalidInitialResolutions.contains(i))
+                        {
+                            throw e;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                CloseHelper.close(testCluster);
+                throw e;
             }
 
             return testCluster;

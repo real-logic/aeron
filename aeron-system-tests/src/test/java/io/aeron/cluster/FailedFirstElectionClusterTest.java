@@ -114,6 +114,5 @@ public class FailedFirstElectionClusterTest
         cluster.awaitServicesMessageCount(totalMessages);
 
         cluster.assertRecordingLogsEqual();
-        cluster.validateRecordingLogWithReplay(2);
     }
 }

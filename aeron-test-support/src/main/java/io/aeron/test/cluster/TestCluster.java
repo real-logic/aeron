@@ -1252,7 +1252,7 @@ public class TestCluster implements AutoCloseable
 
     public void assertRecordingLogsEqual()
     {
-        RecordingLog first = null;
+        List<RecordingLog.Entry> firstEntries = null;
         for (final TestNode node : nodes)
         {
             if (null == node)
@@ -1260,26 +1260,29 @@ public class TestCluster implements AutoCloseable
                 continue;
             }
 
-            final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
-            if (null == first)
+            try (RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir()))
             {
-                first = recordingLog;
-            }
-            else
-            {
-                final List<RecordingLog.Entry> firstEntries = first.entries();
-                final List<RecordingLog.Entry> entries = recordingLog.entries();
-
-                assertEquals(
-                    firstEntries.size(), entries.size(),
-                    () -> "length mismatch: \n[0]" + firstEntries + " != " + "\n[" + node.index() + "] " + entries);
-                for (int i = 0; i < firstEntries.size(); i++)
+                if (null == firstEntries)
                 {
-                    final RecordingLog.Entry a = firstEntries.get(i);
-                    final RecordingLog.Entry b = entries.get(i);
+                    firstEntries = recordingLog.entries();
+                }
+                else
+                {
+                    final List<RecordingLog.Entry> expectedEntries = firstEntries;
+                    final List<RecordingLog.Entry> entries = recordingLog.entries();
 
-                    final ReflectionEquals matcher = new ReflectionEquals(a, "timestamp");
-                    assertTrue(matcher.matches(b), "Mismatch (" + i + "): " + a + " != " + b);
+                    assertEquals(
+                        firstEntries.size(), entries.size(),
+                        () -> "length mismatch: \n[0]" + expectedEntries + " != " + "\n[" + node
+                            .index() + "] " + entries);
+                    for (int i = 0; i < firstEntries.size(); i++)
+                    {
+                        final RecordingLog.Entry a = firstEntries.get(i);
+                        final RecordingLog.Entry b = entries.get(i);
+
+                        final ReflectionEquals matcher = new ReflectionEquals(a, "timestamp");
+                        assertTrue(matcher.matches(b), "Mismatch (" + i + "): " + a + " != " + b);
+                    }
                 }
             }
         }

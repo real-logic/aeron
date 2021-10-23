@@ -62,6 +62,7 @@ final class ArchiveEventDissector
     private static final StopAllReplaysRequestDecoder STOP_ALL_REPLAYS_REQUEST_DECODER =
         new StopAllReplaysRequestDecoder();
     private static final ReplicateRequestDecoder REPLICATE_REQUEST_DECODER = new ReplicateRequestDecoder();
+    private static final ReplicateRequest2Decoder REPLICATE_REQUEST2_DECODER = new ReplicateRequest2Decoder();
     private static final StopReplicationRequestDecoder STOP_REPLICATION_REQUEST_DECODER =
         new StopReplicationRequestDecoder();
     private static final StartPositionRequestDecoder START_POSITION_REQUEST_DECODER = new StartPositionRequestDecoder();
@@ -399,6 +400,15 @@ final class ArchiveEventDissector
                 appendPurgeRecording(builder);
                 break;
 
+            case CMD_IN_REPLICATE2:
+                REPLICATE_REQUEST2_DECODER.wrap(
+                    buffer,
+                    offset + relativeOffset,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendReplicate2(builder);
+                break;
+
             default:
                 builder.append(": unknown command");
         }
@@ -721,6 +731,27 @@ final class ArchiveEventDissector
 
         builder.append(" liveDestination=");
         REPLICATE_REQUEST_DECODER.getLiveDestination(builder);
+    }
+
+    private static void appendReplicate2(final StringBuilder builder)
+    {
+        builder.append(": controlSessionId=").append(REPLICATE_REQUEST2_DECODER.controlSessionId())
+            .append(" correlationId=").append(REPLICATE_REQUEST2_DECODER.correlationId())
+            .append(" srcRecordingId=").append(REPLICATE_REQUEST2_DECODER.srcRecordingId())
+            .append(" dstRecordingId=").append(REPLICATE_REQUEST2_DECODER.dstRecordingId())
+            .append(" stopPosition=").append(REPLICATE_REQUEST2_DECODER.stopPosition())
+            .append(" channelTagId=").append(REPLICATE_REQUEST2_DECODER.channelTagId())
+            .append(" subscriptionTagId=").append(REPLICATE_REQUEST2_DECODER.subscriptionTagId())
+            .append(" srcControlStreamId=").append(REPLICATE_REQUEST2_DECODER.srcControlStreamId())
+            .append(" srcControlChannel=");
+
+        REPLICATE_REQUEST2_DECODER.getSrcControlChannel(builder);
+
+        builder.append(" liveDestination=");
+        REPLICATE_REQUEST2_DECODER.getLiveDestination(builder);
+
+        builder.append(" replicationChannel=");
+        REPLICATE_REQUEST2_DECODER.getReplicationChannel(builder);
     }
 
     private static void appendStopReplication(final StringBuilder builder)

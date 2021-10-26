@@ -68,15 +68,15 @@ final class DriverEventDissector
         final int offset,
         final StringBuilder builder)
     {
-        int relativeOffset = dissectLogHeader(CONTEXT, eventCode, buffer, offset, builder);
+        int encodedLength = dissectLogHeader(CONTEXT, eventCode, buffer, offset, builder);
 
         builder.append(": ");
 
-        relativeOffset += dissectSocketAddress(buffer, offset + relativeOffset, builder);
+        encodedLength += dissectSocketAddress(buffer, offset + encodedLength, builder);
 
         builder.append(" ");
 
-        final int frameOffset = offset + relativeOffset;
+        final int frameOffset = offset + encodedLength;
         final int frameType = frameType(buffer, frameOffset);
         switch (frameType)
         {
@@ -120,53 +120,53 @@ final class DriverEventDissector
     static void dissectCommand(
         final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        final int relativeOffset = dissectLogHeader(CONTEXT, code, buffer, offset, builder);
+        final int encodedLength = dissectLogHeader(CONTEXT, code, buffer, offset, builder);
         builder.append(": ");
 
         switch (code)
         {
             case CMD_IN_ADD_PUBLICATION:
             case CMD_IN_ADD_EXCLUSIVE_PUBLICATION:
-                PUB_MSG.wrap(buffer, offset + relativeOffset);
+                PUB_MSG.wrap(buffer, offset + encodedLength);
                 dissectPublication(builder);
                 break;
 
             case CMD_IN_ADD_SUBSCRIPTION:
-                SUB_MSG.wrap(buffer, offset + relativeOffset);
+                SUB_MSG.wrap(buffer, offset + encodedLength);
                 dissectSubscription(builder);
                 break;
 
             case CMD_IN_REMOVE_PUBLICATION:
             case CMD_IN_REMOVE_SUBSCRIPTION:
             case CMD_IN_REMOVE_COUNTER:
-                REMOVE_MSG.wrap(buffer, offset + relativeOffset);
+                REMOVE_MSG.wrap(buffer, offset + encodedLength);
                 dissectRemoveEvent(builder);
                 break;
 
             case CMD_OUT_PUBLICATION_READY:
             case CMD_OUT_EXCLUSIVE_PUBLICATION_READY:
-                PUB_READY.wrap(buffer, offset + relativeOffset);
+                PUB_READY.wrap(buffer, offset + encodedLength);
                 dissectPublicationReady(builder);
                 break;
 
             case CMD_OUT_AVAILABLE_IMAGE:
-                IMAGE_READY.wrap(buffer, offset + relativeOffset);
+                IMAGE_READY.wrap(buffer, offset + encodedLength);
                 dissectImageReady(builder);
                 break;
 
             case CMD_OUT_ON_OPERATION_SUCCESS:
-                OPERATION_SUCCEEDED.wrap(buffer, offset + relativeOffset);
+                OPERATION_SUCCEEDED.wrap(buffer, offset + encodedLength);
                 dissectOperationSuccess(builder);
                 break;
 
             case CMD_IN_KEEPALIVE_CLIENT:
             case CMD_IN_CLIENT_CLOSE:
-                CORRELATED_MSG.wrap(buffer, offset + relativeOffset);
+                CORRELATED_MSG.wrap(buffer, offset + encodedLength);
                 dissectCorrelationEvent(builder);
                 break;
 
             case CMD_OUT_ON_UNAVAILABLE_IMAGE:
-                IMAGE_MSG.wrap(buffer, offset + relativeOffset);
+                IMAGE_MSG.wrap(buffer, offset + encodedLength);
                 dissectImage(builder);
                 break;
 
@@ -174,38 +174,38 @@ final class DriverEventDissector
             case CMD_IN_REMOVE_DESTINATION:
             case CMD_IN_ADD_RCV_DESTINATION:
             case CMD_IN_REMOVE_RCV_DESTINATION:
-                DESTINATION_MSG.wrap(buffer, offset + relativeOffset);
+                DESTINATION_MSG.wrap(buffer, offset + encodedLength);
                 dissectDestination(builder);
                 break;
 
             case CMD_OUT_ERROR:
-                ERROR_MSG.wrap(buffer, offset + relativeOffset);
+                ERROR_MSG.wrap(buffer, offset + encodedLength);
                 dissectError(builder);
                 break;
 
             case CMD_IN_ADD_COUNTER:
-                COUNTER_MSG.wrap(buffer, offset + relativeOffset);
+                COUNTER_MSG.wrap(buffer, offset + encodedLength);
                 dissectCounter(builder);
                 break;
 
             case CMD_OUT_SUBSCRIPTION_READY:
-                SUBSCRIPTION_READY.wrap(buffer, offset + relativeOffset);
+                SUBSCRIPTION_READY.wrap(buffer, offset + encodedLength);
                 dissectSubscriptionReady(builder);
                 break;
 
             case CMD_OUT_COUNTER_READY:
             case CMD_OUT_ON_UNAVAILABLE_COUNTER:
-                COUNTER_UPDATE.wrap(buffer, offset + relativeOffset);
+                COUNTER_UPDATE.wrap(buffer, offset + encodedLength);
                 dissectCounterUpdate(builder);
                 break;
 
             case CMD_OUT_ON_CLIENT_TIMEOUT:
-                CLIENT_TIMEOUT.wrap(buffer, offset + relativeOffset);
+                CLIENT_TIMEOUT.wrap(buffer, offset + encodedLength);
                 dissectClientTimeout(builder);
                 break;
 
             case CMD_IN_TERMINATE_DRIVER:
-                TERMINATE_DRIVER.wrap(buffer, offset + relativeOffset);
+                TERMINATE_DRIVER.wrap(buffer, offset + encodedLength);
                 dissectTerminateDriver(builder);
                 break;
 
@@ -218,8 +218,8 @@ final class DriverEventDissector
     static void dissectString(
         final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        final int relativeOffset = dissectLogHeader(CONTEXT, code, buffer, offset, builder);
-        builder.append(": ").append(buffer.getStringAscii(offset + relativeOffset, LITTLE_ENDIAN));
+        final int encodedLength = dissectLogHeader(CONTEXT, code, buffer, offset, builder);
+        builder.append(": ").append(buffer.getStringAscii(offset + encodedLength, LITTLE_ENDIAN));
     }
 
     static void dissectRemovePublicationCleanup(

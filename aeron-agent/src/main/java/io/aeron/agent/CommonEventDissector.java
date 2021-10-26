@@ -54,16 +54,16 @@ final class CommonEventDissector
         final int offset,
         final StringBuilder builder)
     {
-        int relativeOffset = 0;
+        int encodedLength = 0;
 
-        final int captureLength = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        final int captureLength = buffer.getInt(offset + encodedLength, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        final int bufferLength = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        final int bufferLength = buffer.getInt(offset + encodedLength, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        final long timestampNs = buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        final long timestampNs = buffer.getLong(offset + encodedLength, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
         builder
             .append('[')
@@ -78,32 +78,32 @@ final class CommonEventDissector
             .append(bufferLength)
             .append(']');
 
-        return relativeOffset;
+        return encodedLength;
     }
 
     static int dissectSocketAddress(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        int relativeOffset = 0;
-        final int port = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        int encodedLength = 0;
+        final int port = buffer.getInt(offset + encodedLength, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        relativeOffset += dissectInetAddress(buffer, offset + relativeOffset, builder);
+        encodedLength += dissectInetAddress(buffer, offset + encodedLength, builder);
 
         builder.append(':').append(port);
 
-        return relativeOffset;
+        return encodedLength;
     }
 
     static int dissectInetAddress(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        int relativeOffset = 0;
+        int encodedLength = 0;
 
-        final int addressLength = buffer.getInt(offset + relativeOffset);
-        relativeOffset += SIZE_OF_INT;
+        final int addressLength = buffer.getInt(offset + encodedLength);
+        encodedLength += SIZE_OF_INT;
 
         if (4 == addressLength)
         {
-            final int i = offset + relativeOffset;
+            final int i = offset + encodedLength;
             builder
                 .append(buffer.getByte(i) & 0xFF)
                 .append('.')
@@ -115,7 +115,7 @@ final class CommonEventDissector
         }
         else if (16 == addressLength)
         {
-            final int i = offset + relativeOffset;
+            final int i = offset + encodedLength;
             builder
                 .append('[')
                 .append(toHexString(((buffer.getByte(i) << 8) & 0xFF00) | buffer.getByte(i + 1) & 0xFF))
@@ -140,8 +140,8 @@ final class CommonEventDissector
             builder.append("unknown-address");
         }
 
-        relativeOffset += addressLength;
+        encodedLength += addressLength;
 
-        return relativeOffset;
+        return encodedLength;
     }
 }

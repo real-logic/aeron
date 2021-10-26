@@ -37,21 +37,12 @@ final class ArchiveEventEncoder
         final E to,
         final long id)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putLong(offset + relativeOffset, id, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, id, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putInt(offset + relativeOffset, captureLength - (SIZE_OF_LONG + SIZE_OF_INT), LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
-
-        final String fromName = null == from ? "null" : from.name();
-        final String toName = null == to ? "null" : to.name();
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, fromName);
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, STATE_SEPARATOR);
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, toName);
-
-        return relativeOffset;
+        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
     }
 
     static <E extends Enum<E>> int sessionStateChangeLength(final E from, final E to)
@@ -68,15 +59,15 @@ final class ArchiveEventEncoder
         final long recordingId,
         final String errorMessage)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putLong(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, sessionId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, recordingId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, recordingId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength - (SIZE_OF_INT * 2), errorMessage);
+        encodeTrailingString(encodingBuffer, offset + encodedLength, captureLength - (SIZE_OF_INT * 2), errorMessage);
     }
 
     static void encodeCatalogResize(
@@ -87,11 +78,11 @@ final class ArchiveEventEncoder
         final long catalogLength,
         final long newCatalogLength)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putLong(offset + relativeOffset, catalogLength, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, catalogLength, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, newCatalogLength, LITTLE_ENDIAN);
+        encodingBuffer.putLong(offset + encodedLength, newCatalogLength, LITTLE_ENDIAN);
     }
 }

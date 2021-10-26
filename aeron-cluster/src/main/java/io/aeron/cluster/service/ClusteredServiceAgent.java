@@ -785,7 +785,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
         {
             throw new ClusterException(
-                "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
+                "incompatible app version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " snapshot=" + SemanticVersion.toString(appVersion));
         }
 

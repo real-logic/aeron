@@ -15,7 +15,10 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.ChannelUriStringBuilder;
+import io.aeron.CommonContext;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
@@ -678,10 +681,28 @@ class Election
         return workCount;
     }
 
+    /**
+     * Leader log replication must wait until we have consensus on the leaders append position.  However,
+     * we want to be careful about updating the commit position as this will cause the clustered service to progress
+     * forward to early.
+     * @param nowNs Current time
+     * @return work done
+     */
     private int leaderLogReplication(final long nowNs)
     {
-        final int workCount = publishNewLeadershipTermOnInterval(nowNs);
-        state(LEADER_REPLAY, nowNs);
+        int workCount = 0;
+
+        thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
+        final long quorumPosition = consensusModuleAgent.queryQuorumPosition();
+
+        workCount += publishNewLeadershipTermOnInterval(nowNs);
+
+        if (quorumPosition >= appendPosition)
+        {
+            workCount++;
+            state(LEADER_REPLAY, nowNs);
+        }
+
         return workCount;
     }
 
@@ -1063,7 +1084,8 @@ class Election
     private int publishFollowerReplicationPosition(final long nowNs)
     {
         final long position = logReplication.position();
-        if (position > appendPosition && hasIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs()))
+        if (position > appendPosition ||
+            (position == appendPosition && hasIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs())))
         {
             if (consensusPublisher.appendPosition(
                 leaderMember.publication(), leadershipTermId, position, thisMember.id()))

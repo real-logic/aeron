@@ -2602,6 +2602,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return 0;
     }
 
+    long queryQuorumPosition()
+    {
+        return quorumPosition(activeMembers, rankedPositions);
+    }
+
     int updateLeaderPosition(final long nowNs, final long position)
     {
         thisMember.logPosition(position).timeOfLastAppendPositionNs(nowNs);

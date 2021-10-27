@@ -1139,7 +1139,7 @@ public class ElectionTest
     }
 
     @Test
-    void leaderShouldMoveToLogReplicationThenWaitForCommitPosition()
+    void leaderShouldMoveToLogReplicationThenMoveStraightToLeaderReplay()
     {
         final long leadershipTermId = 1;
         final long candidateTermId = leadershipTermId + 1;
@@ -1192,12 +1192,9 @@ public class ElectionTest
         clock.increment(2 * ctx.electionTimeoutNs());
         election.doWork(clock.nanoTime());
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_LOG_REPLICATION.code());
-
-        // Until the commit position moves to the leader's append position
-        // we stay in the same state and emit new leadership terms.
-        when(commitPositionCounter.getWeak()).thenReturn(followerLogPosition);
-        election.doWork(clock.increment(1));
         verifyNoMoreInteractions(electionStateCounter);
+
+        election.doWork(clock.increment(1));
         verify(consensusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
             leadershipTermId,
@@ -1213,24 +1210,6 @@ public class ElectionTest
             LOG_SESSION_ID,
             election.isLeaderStartup());
 
-        verify(consensusPublisher).newLeadershipTerm(
-            clusterMembers[2].publication(),
-            leadershipTermId,
-            candidateTermId,
-            leaderLogPosition,
-            NULL_POSITION,
-            candidateTermId,
-            leaderLogPosition,
-            leaderLogPosition,
-            RECORDING_ID,
-            clock.nanoTime(),
-            leaderId,
-            LOG_SESSION_ID,
-            election.isLeaderStartup());
-
-        // Begin replay once a quorum of followers have caught up.
-        when(commitPositionCounter.getWeak()).thenReturn(leaderLogPosition);
-        election.doWork(clock.increment(1));
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
     }
 

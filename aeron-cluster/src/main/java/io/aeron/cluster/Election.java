@@ -675,17 +675,8 @@ class Election
 
     private int leaderLogReplication(final long nowNs)
     {
-        int workCount = 0;
-
-        workCount += consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
-        workCount += publishNewLeadershipTermOnInterval(nowNs);
-
-        if (ctx.commitPositionCounter().getWeak() >= appendPosition)
-        {
-            workCount++;
-            state(LEADER_REPLAY, nowNs);
-        }
-
+        final int workCount = publishNewLeadershipTermOnInterval(nowNs);
+        state(LEADER_REPLAY, nowNs);
         return workCount;
     }
 
@@ -697,7 +688,6 @@ class Election
         {
             if (logPosition < appendPosition)
             {
-                ctx.commitPositionCounter().setOrdered(logPosition);
                 logReplay = consensusModuleAgent.newLogReplay(logPosition, appendPosition);
             }
             else

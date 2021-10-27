@@ -72,7 +72,7 @@ class Election
     private final ConsensusModuleAgent consensusModuleAgent;
     private LogReplication logReplication = null;
     private long replicationCommitPosition = 0;
-    private long replicationCommitPositionDeadlineNs = 0;
+    private long replicationDeadlineNs = 0;
     private long replicationTermBaseLogPosition;
 
     Election(
@@ -459,6 +459,11 @@ class Election
                 state(CANVASS, ctx.clusterClock().timeNanos());
             }
         }
+
+        if (state == FOLLOWER_LOG_REPLICATION && leaderMemberId == this.leaderMember.id())
+        {
+            replicationDeadlineNs = ctx.clusterClock().timeNanos() + ctx.leaderHeartbeatTimeoutNs();
+        }
     }
 
     void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
@@ -500,7 +505,7 @@ class Election
         else if (FOLLOWER_LOG_REPLICATION == state && leaderMemberId == leaderMember.id())
         {
             replicationCommitPosition = Math.max(replicationCommitPosition, logPosition);
-            replicationCommitPositionDeadlineNs = ctx.clusterClock().timeNanos() + ctx.leaderHeartbeatTimeoutNs();
+            replicationDeadlineNs = ctx.clusterClock().timeNanos() + ctx.leaderHeartbeatTimeoutNs();
         }
         else if (leadershipTermId > this.leadershipTermId && LEADER_READY == state)
         {
@@ -761,7 +766,7 @@ class Election
             {
                 logReplication = consensusModuleAgent.newLogReplication(
                     leaderMember.archiveEndpoint(), leaderRecordingId, replicationStopPosition, nowNs);
-                replicationCommitPositionDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
+                replicationDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
                 workCount++;
             }
             else
@@ -787,7 +792,7 @@ class Election
                     state(CANVASS, nowNs);
                     workCount++;
                 }
-                else if (nowNs >= replicationCommitPositionDeadlineNs)
+                else if (nowNs >= replicationDeadlineNs)
                 {
                     throw new TimeoutException("timeout awaiting commit position", AeronException.Category.WARN);
                 }
@@ -1180,7 +1185,7 @@ class Election
             logReplication = null;
         }
         replicationCommitPosition = 0;
-        replicationCommitPositionDeadlineNs = 0;
+        replicationDeadlineNs = 0;
     }
 
     private boolean isPassiveMember()

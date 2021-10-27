@@ -15,7 +15,10 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.ChannelUriStringBuilder;
+import io.aeron.CommonContext;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
@@ -1121,7 +1124,17 @@ class Election
     {
         if (newState != state)
         {
-            stateChange(state, newState, thisMember.id());
+            stateChange(
+                state,
+                newState,
+                thisMember.id(),
+                null != leaderMember ? leaderMember.id() : -1,
+                candidateTermId,
+                leadershipTermId,
+                logPosition,
+                logLeadershipTermId,
+                appendPosition,
+                catchupPosition);
 
             if (CANVASS == state)
             {
@@ -1305,11 +1318,21 @@ class Election
         return (nowNs - timeOfLastUpdateNs) >= intervalNs;
     }
 
-    void stateChange(final ElectionState oldState, final ElectionState newState, final int memberId)
+    void stateChange(
+        final ElectionState oldState,
+        final ElectionState newState,
+        final int memberId,
+        final int leaderId,
+        final long candidateTermId,
+        final long leadershipTermId,
+        final long logPosition,
+        final long logLeadershipTermId,
+        final long appendPosition,
+        final long catchupPosition)
     {
         /*
         System.out.println("Election: memberId=" + memberId + " " + oldState + " -> " + newState +
-            " leaderId=" + (null != leaderMember ? leaderMember.id() : -1) +
+            " leaderId=" + leaderId +
             " candidateTermId=" + candidateTermId +
             " leadershipTermId=" + leadershipTermId +
             " logPosition=" + logPosition +

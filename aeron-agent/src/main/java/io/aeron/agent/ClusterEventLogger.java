@@ -22,7 +22,8 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventEncoder.*;
-import static io.aeron.agent.CommonEventEncoder.*;
+import static io.aeron.agent.CommonEventEncoder.captureLength;
+import static io.aeron.agent.CommonEventEncoder.encodedLength;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 
 /**
@@ -138,6 +139,66 @@ public final class ClusterEventLogger
                     oldState,
                     newState,
                     memberId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log an election state change event for a cluster node.
+     *
+     * @param oldState            before the change.
+     * @param newState            after the change.
+     * @param memberId            on which the change has taken place.
+     * @param leaderId            of the cluster.
+     * @param candidateTermId     of the node.
+     * @param leadershipTermId    of the node.
+     * @param logPosition         of the node.
+     * @param logLeadershipTermId of the node.
+     * @param appendPosition      of the node.
+     * @param catchupPosition     of the node.
+     * @param <E>                 type representing the state change.
+     */
+    public <E extends Enum<E>> void logElectionStateChange(
+        final E oldState,
+        final E newState,
+        final int memberId,
+        final int leaderId,
+        final long candidateTermId,
+        final long leadershipTermId,
+        final long logPosition,
+        final long logLeadershipTermId,
+        final long appendPosition,
+        final long catchupPosition)
+    {
+        final int length = electionStateChangeLength(oldState, newState);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(ELECTION_STATE_CHANGE.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeElectionStateChange(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    oldState,
+                    newState,
+                    memberId,
+                    leaderId,
+                    candidateTermId,
+                    leadershipTermId,
+                    logPosition,
+                    logLeadershipTermId,
+                    appendPosition,
+                    catchupPosition);
             }
             finally
             {

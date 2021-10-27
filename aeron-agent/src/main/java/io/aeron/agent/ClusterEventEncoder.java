@@ -46,45 +46,45 @@ final class ClusterEventEncoder
         final int logSessionId,
         final boolean isStartup)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putLong(offset + relativeOffset, logLeadershipTermId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, logLeadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, nextLeadershipTermId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, nextLeadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, nextTermBaseLogPosition, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, nextTermBaseLogPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, nextLogPosition, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, nextLogPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, leadershipTermId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, leadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, termBaseLogPosition, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, termBaseLogPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, logPosition, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, logPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, leaderRecordingId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, leaderRecordingId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, timestamp, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, timestamp, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putInt(offset + relativeOffset, leaderMemberId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, leaderMemberId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, logSessionId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, logSessionId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, isStartup ? 1 : 0, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, isStartup ? 1 : 0, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        return relativeOffset;
+        return encodedLength;
     }
 
     static int newLeaderShipTermLength()
@@ -101,26 +101,67 @@ final class ClusterEventEncoder
         final E to,
         final int memberId)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putInt(offset + relativeOffset, memberId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, memberId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, captureLength - (SIZE_OF_INT * 2), LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
-
-        final String fromName = null == from ? "null" : from.name();
-        final String toName = null == to ? "null" : to.name();
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, fromName);
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, STATE_SEPARATOR);
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, toName);
-
-        return relativeOffset;
+        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
     }
 
     static <E extends Enum<E>> int stateChangeLength(final E from, final E to)
     {
         return stateTransitionStringLength(from, to) + SIZE_OF_INT;
+    }
+
+    static <E extends Enum<E>> int encodeElectionStateChange(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final E from,
+        final E to,
+        final int memberId,
+        final int leaderId,
+        final long candidateTermId,
+        final long leadershipTermId,
+        final long logPosition,
+        final long logLeadershipTermId,
+        final long appendPosition,
+        final long catchupPosition)
+    {
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putInt(offset + encodedLength, memberId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+
+        encodingBuffer.putInt(offset + encodedLength, leaderId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+
+        encodingBuffer.putLong(offset + encodedLength, candidateTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, leadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, logPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, logLeadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, appendPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, catchupPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
+    }
+
+    static <E extends Enum<E>> int electionStateChangeLength(final E from, final E to)
+    {
+        return (2 * SIZE_OF_INT) + (6 * SIZE_OF_LONG) + stateTransitionStringLength(from, to);
     }
 
     static int encodeCanvassPosition(
@@ -133,21 +174,21 @@ final class ClusterEventEncoder
         final long logPosition,
         final int followerMemberId)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putLong(offset + relativeOffset, logLeadershipTermId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, logLeadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, leadershipTermId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, leadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, logPosition, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, logPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putInt(offset + relativeOffset, followerMemberId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, followerMemberId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        return relativeOffset;
+        return encodedLength;
     }
 
     static int canvassPositionLength()
@@ -165,21 +206,21 @@ final class ClusterEventEncoder
         final long candidateTermId,
         final int candidateId)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putLong(offset + relativeOffset, logLeadershipTermId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, logLeadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, logPosition, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, logPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putLong(offset + relativeOffset, candidateTermId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, candidateTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putInt(offset + relativeOffset, candidateId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, candidateId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        return relativeOffset;
+        return encodedLength;
     }
 
     static int requestVoteLength()

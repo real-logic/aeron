@@ -57,7 +57,7 @@ final class CommonEventEncoder
             throw new IllegalArgumentException("invalid input: captureLength=" + captureLength + ", length=" + length);
         }
 
-        int relativeOffset = 0;
+        int encodedLength = 0;
         /*
          * Stream of values:
          * - capture buffer length (int)
@@ -66,22 +66,22 @@ final class CommonEventEncoder
          * - buffer (until end)
          */
 
-        encodingBuffer.putInt(offset + relativeOffset, captureLength, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, captureLength, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, length, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, length, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putLong(offset + relativeOffset, nanoClock.nanoTime(), LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, nanoClock.nanoTime(), LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        return relativeOffset;
+        return encodedLength;
     }
 
     static int encodeSocketAddress(
         final UnsafeBuffer encodingBuffer, final int offset, final InetSocketAddress address)
     {
-        int relativeOffset = 0;
+        int encodedLength = 0;
         /*
          * Stream of values:
          * - port (int) (unsigned short int)
@@ -89,23 +89,23 @@ final class CommonEventEncoder
          * - IP address (4 or 16 bytes)
          */
 
-        encodingBuffer.putInt(offset + relativeOffset, address.getPort(), LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, address.getPort(), LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
         final byte[] addressBytes = address.getAddress().getAddress();
-        encodingBuffer.putInt(offset + relativeOffset, addressBytes.length, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, addressBytes.length, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putBytes(offset + relativeOffset, addressBytes);
-        relativeOffset += addressBytes.length;
+        encodingBuffer.putBytes(offset + encodedLength, addressBytes);
+        encodedLength += addressBytes.length;
 
-        return relativeOffset;
+        return encodedLength;
     }
 
     static int encodeInetAddress(
         final UnsafeBuffer encodingBuffer, final int offset, final InetAddress address)
     {
-        int relativeOffset = 0;
+        int encodedLength = 0;
 
         if (null != address)
         {
@@ -115,19 +115,19 @@ final class CommonEventEncoder
              * - IP address (4 or 16 bytes)
              */
             final byte[] addressBytes = address.getAddress();
-            encodingBuffer.putInt(offset + relativeOffset, addressBytes.length, LITTLE_ENDIAN);
-            relativeOffset += SIZE_OF_INT;
+            encodingBuffer.putInt(offset + encodedLength, addressBytes.length, LITTLE_ENDIAN);
+            encodedLength += SIZE_OF_INT;
 
-            encodingBuffer.putBytes(offset + relativeOffset, addressBytes);
-            relativeOffset += addressBytes.length;
+            encodingBuffer.putBytes(offset + encodedLength, addressBytes);
+            encodedLength += addressBytes.length;
         }
         else
         {
             encodingBuffer.putInt(offset, 0);
-            relativeOffset += SIZE_OF_INT;
+            encodedLength += SIZE_OF_INT;
         }
 
-        return relativeOffset;
+        return encodedLength;
     }
 
     static int encodeTrailingString(
@@ -155,12 +155,33 @@ final class CommonEventEncoder
         final DirectBuffer srcBuffer,
         final int srcOffset)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        encodingBuffer.putBytes(offset + encodedLength, srcBuffer, srcOffset, captureLength);
+        return encodedLength + captureLength;
+    }
 
-        encodingBuffer.putBytes(offset + relativeOffset, srcBuffer, srcOffset, captureLength);
-        relativeOffset += captureLength;
+    static <E extends Enum<E>> int encodeTrailingStateChange(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int runningEncodedLength,
+        final int captureLength,
+        final E from,
+        final E to)
+    {
+        int encodedLength = runningEncodedLength;
+        encodingBuffer.putInt(
+            offset + encodedLength,
+            captureLength - (runningEncodedLength - LOG_HEADER_LENGTH + SIZE_OF_INT),
+            LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        return relativeOffset;
+        final String fromName = null == from ? "null" : from.name();
+        final String toName = null == to ? "null" : to.name();
+        encodedLength += encodingBuffer.putStringWithoutLengthAscii(offset + encodedLength, fromName);
+        encodedLength += encodingBuffer.putStringWithoutLengthAscii(offset + encodedLength, STATE_SEPARATOR);
+        encodedLength += encodingBuffer.putStringWithoutLengthAscii(offset + encodedLength, toName);
+
+        return encodedLength;
     }
 
     static int captureLength(final int length)

@@ -17,6 +17,8 @@ package io.aeron.agent;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
@@ -25,7 +27,8 @@ import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.internalEncodeLogHeader;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ClusterEventDissectorTest
@@ -59,16 +62,49 @@ class ClusterEventDissectorTest
             builder.toString());
     }
 
-    @Test
-    void dissectStateChange()
+    @ParameterizedTest
+    @EnumSource(value = ClusterEventCode.class, names = { "STATE_CHANGE", "ROLE_CHANGE" })
+    void dissectStateChange(final ClusterEventCode code)
     {
         internalEncodeLogHeader(buffer, 0, 100, 200, () -> -1_000_000_000);
         buffer.putInt(LOG_HEADER_LENGTH, 42, LITTLE_ENDIAN);
         buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT, "a -> b");
 
-        ClusterEventDissector.dissectStateChange(ELECTION_STATE_CHANGE, buffer, 0, builder);
+        ClusterEventDissector.dissectStateChange(code, buffer, 0, builder);
 
-        assertEquals("[-1.0] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: memberId=42 a -> b",
+        assertEquals("[-1.0] " + CONTEXT + ": " + code.name() + " [100/200]: memberId=42 a -> b",
+            builder.toString());
+    }
+
+    @Test
+    void dissectElectionStateChange()
+    {
+        final int offset = 10;
+        int writeIndex = offset;
+        writeIndex += internalEncodeLogHeader(buffer, offset, 100, 200, () -> 5_000_000_000L);
+        buffer.putInt(writeIndex, 86, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_INT;
+        buffer.putInt(writeIndex, 3, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_INT;
+        buffer.putLong(writeIndex, 101010, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 6, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 1024, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 2, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 1218, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 800, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putStringAscii(writeIndex, "old -> new");
+
+        ClusterEventDissector.dissectElectionStateChange(buffer, offset, builder);
+
+        assertEquals("[5.0] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: memberId=86" +
+            " old -> new leaderId=3 candidateTermId=101010 leadershipTermId=6 logPosition=1024 logLeadershipTermId=2" +
+            " appendPosition=1218 catchupPosition=800",
             builder.toString());
     }
 }

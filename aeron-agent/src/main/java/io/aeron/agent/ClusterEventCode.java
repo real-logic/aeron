@@ -19,6 +19,7 @@ import org.agrona.MutableDirectBuffer;
 
 import java.util.Arrays;
 
+import static io.aeron.agent.ClusterEventDissector.dissectElectionStateChange;
 import static io.aeron.agent.ClusterEventDissector.dissectNewLeadershipTerm;
 
 /**
@@ -29,7 +30,8 @@ public enum ClusterEventCode implements EventCode
     /**
      * State change events within a cluster election.
      */
-    ELECTION_STATE_CHANGE(1, ClusterEventDissector::dissectStateChange),
+    ELECTION_STATE_CHANGE(1,
+        (eventCode, buffer, offset, builder) -> dissectElectionStateChange(buffer, offset, builder)),
 
     /**
      * A new term of leadership is to begin for an elected cluster member.

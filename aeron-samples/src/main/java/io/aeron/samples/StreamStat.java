@@ -21,7 +21,6 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.PrintStream;
 import java.util.*;
 
-import static io.aeron.driver.status.PerImageIndicator.PER_IMAGE_TYPE_ID;
 import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 import static io.aeron.driver.status.PublisherPos.PUBLISHER_POS_TYPE_ID;
 import static io.aeron.driver.status.ReceiverPos.RECEIVER_POS_TYPE_ID;
@@ -77,7 +76,7 @@ public final class StreamStat
             (counterId, typeId, keyBuffer, label) ->
             {
                 if ((typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) ||
-                    typeId == SENDER_LIMIT_TYPE_ID || typeId == PER_IMAGE_TYPE_ID || typeId == PUBLISHER_POS_TYPE_ID)
+                    typeId == SENDER_LIMIT_TYPE_ID || typeId == PUBLISHER_POS_TYPE_ID)
                 {
                     final StreamCompositeKey key = new StreamCompositeKey(
                         keyBuffer.getInt(SESSION_ID_OFFSET),
@@ -173,7 +172,7 @@ public final class StreamStat
         /**
          * The stream id within a channel.
          *
-         * @return  stream id within a channel.
+         * @return stream id within a channel.
          */
         public int streamId()
         {

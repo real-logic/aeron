@@ -75,7 +75,11 @@ public final class RecordingSignalAdapter
      */
     public int poll()
     {
-        isDone = false;
+        if (isDone)
+        {
+            isDone = false;
+        }
+
         return subscription.controlledPoll(assembler, fragmentLimit);
     }
 

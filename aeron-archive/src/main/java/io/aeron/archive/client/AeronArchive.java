@@ -356,7 +356,11 @@ public final class AeronArchive implements AutoCloseable
         if (null == recordingDescriptorPoller)
         {
             recordingDescriptorPoller = new RecordingDescriptorPoller(
-                controlResponsePoller.subscription(), context.errorHandler(), controlSessionId, FRAGMENT_LIMIT);
+                controlResponsePoller.subscription(),
+                context.errorHandler(),
+                context.recordingSignalConsumer(),
+                controlSessionId,
+                FRAGMENT_LIMIT);
         }
 
         return recordingDescriptorPoller;
@@ -373,7 +377,11 @@ public final class AeronArchive implements AutoCloseable
         if (null == recordingSubscriptionDescriptorPoller)
         {
             recordingSubscriptionDescriptorPoller = new RecordingSubscriptionDescriptorPoller(
-                controlResponsePoller.subscription(), context.errorHandler(), controlSessionId, FRAGMENT_LIMIT);
+                controlResponsePoller.subscription(),
+                context.errorHandler(),
+                context.recordingSignalConsumer(),
+                controlSessionId,
+                FRAGMENT_LIMIT);
         }
 
         return recordingSubscriptionDescriptorPoller;

@@ -1193,9 +1193,9 @@ public class ElectionTest
         election.doWork(clock.nanoTime());
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_LOG_REPLICATION.code());
 
-        // Until the commit position moves to the leader's append position
+        // Until the quorum position moves to the leader's append position
         // we stay in the same state and emit new leadership terms.
-        when(commitPositionCounter.getWeak()).thenReturn(followerLogPosition);
+        when(consensusModuleAgent.queryQuorumPosition()).thenReturn(followerLogPosition);
         election.doWork(clock.increment(1));
         verifyNoMoreInteractions(electionStateCounter);
         verify(consensusPublisher).newLeadershipTerm(
@@ -1229,7 +1229,7 @@ public class ElectionTest
             election.isLeaderStartup());
 
         // Begin replay once a quorum of followers have caught up.
-        when(commitPositionCounter.getWeak()).thenReturn(leaderLogPosition);
+        when(consensusModuleAgent.queryQuorumPosition()).thenReturn(leaderLogPosition);
         election.doWork(clock.increment(1));
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
     }

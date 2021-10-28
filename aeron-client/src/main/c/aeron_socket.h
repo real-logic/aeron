@@ -91,8 +91,8 @@ void freeifaddrs(struct ifaddrs *ifa);
 typedef unsigned long int nfds_t;
 typedef SSIZE_T ssize_t;
 
-ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
-ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
+//ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
+//ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
 int poll(struct pollfd *fds, nfds_t nfds, int timeout);
 
 #else
@@ -110,5 +110,9 @@ int aeron_net_init();
 int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen);
 
 int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen);
+
+ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
+
+ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
 
 #endif //AERON_SOCKET_H

@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <errno.h>
 
 int aeron_net_init()
 {
@@ -54,6 +55,33 @@ void aeron_close_socket(aeron_socket_t socket)
 {
     close(socket);
 }
+
+ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
+{
+    ssize_t result = sendmsg(fd, msghdr, flags);
+
+    if (result < 0)
+    {
+        AERON_SET_ERR(errno, "failed sendmsg, fd: %d", fd);
+        return -1;
+    }
+
+    return result;
+}
+
+ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
+{
+    ssize_t result = sendmsg(fd, msghdr, flags);
+
+    if (result < 0)
+    {
+        AERON_SET_ERR(errno, "failed recvmsg, fd: %d", fd);
+        return -1;
+    }
+
+    return result;
+}
+
 
 #elif defined(AERON_COMPILER_MSVC)
 
@@ -266,7 +294,7 @@ void freeifaddrs(struct ifaddrs *current)
     }
 }
 
-ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
+ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
     DWORD size = 0;
     const int result = WSARecvFrom(
@@ -288,13 +316,14 @@ ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
+        AERON_SET_ERR(err, "failed WSARecvFrom fd: %d", fd);
         return -1;
     }
 
     return size;
 }
 
-ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
+ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
     DWORD size = 0;
     const int result = WSASendTo(
@@ -316,6 +345,7 @@ ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
+        AERON_SET_ERR(err, "failed WSASendTo, fd: %d", fd);
         return -1;
     }
 

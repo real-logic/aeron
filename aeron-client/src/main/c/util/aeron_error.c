@@ -26,9 +26,59 @@
 #include "command/aeron_control_protocol.h"
 
 #define AERON_ERR_TRAILER "...\n"
+#define AERON_ERR_DESCRIPTION_UNAVAILABLE "<Unable to get error description>";
 
-#if defined(AERON_COMPILER_MSVC)
+#if defined(AERON_COMPILER_GCC)
+
+const char *aeron_strerror_r(int errcode, char *buffer, size_t length)
+{
+    int result = strerror_r(errcode, buffer, length);
+    if (result < 0)
+    {
+        return AERON_ERR_DESCRIPTION_UNAVAILABLE;
+    }
+
+    return buffer;
+}
+
+#elif defined(AERON_COMPILER_MSVC)
 #include <windows.h>
+
+const char *aeron_strerror_r(int errcode, char *buffer, size_t length)
+{
+    DWORD result = FormatMessage(
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        errcode,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR)buffer,
+        length,
+        NULL);
+
+    if (0 == result)
+    {
+        return AERON_ERR_DESCRIPTION_UNAVAILABLE;
+    }
+    else
+    {
+        for (int i = (int)result; i > -1; i--)
+        {
+            if ('\0' == buffer[i] || isspace(buffer[i]))
+            {
+                buffer[i] = '\0';
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    return buffer;
+}
+
+#else
+#error Unsupported platform!
 #endif
 
 static AERON_INIT_ONCE error_is_initialized = AERON_INIT_ONCE_VALUE;
@@ -232,8 +282,21 @@ void aeron_err_set(int errcode, const char *function, const char *filename, int 
     aeron_set_errno(errcode);
     error_state->offset = 0;
 
-    const char *err_str = aeron_errcode() <= 0 ? aeron_error_code_str(-aeron_errcode()) : strerror(aeron_errcode());
-    aeron_err_printf(error_state, "(%d) %s\n", aeron_errcode(), err_str);
+    char err_buf[1024] = { 0 };
+    const char *system_err_message;
+    const int error_code = aeron_errcode();
+    if (error_code <= 0)
+    {
+        system_err_message = aeron_error_code_str(-error_code);
+    }
+    else
+    {
+        int length = 1024;
+        system_err_message = aeron_strerror_r(error_code, &err_buf[0], length);
+    }
+
+    const char *err_str = system_err_message;
+    aeron_err_printf(error_state, "(%d) %s\n", error_code, err_str);
     va_list args;
     va_start(args, format);
     aeron_err_update_entry(error_state, function, filename, line_number, format, args);

@@ -355,7 +355,7 @@ int aeron_udp_channel_transport_recvmmsg(
 
     for (size_t i = 0, length = vlen; i < length; i++)
     {
-        ssize_t result = recvmsg(transport->fd, &msgvec[i].msg_hdr, 0);
+        ssize_t result = aeron_recvmsg(transport->fd, &msgvec[i].msg_hdr, 0);
 
         if (result < 0)
         {
@@ -366,7 +366,7 @@ int aeron_udp_channel_transport_recvmmsg(
                 break;
             }
 
-            AERON_SET_ERR(err, "Failed to recvmmsg, fd: %d", transport->fd);
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 
@@ -414,10 +414,10 @@ int aeron_udp_channel_transport_sendmmsg(
 
     for (size_t i = 0, length = vlen; i < length; i++)
     {
-        ssize_t sendmsg_result = sendmsg(transport->fd, &msgvec[i].msg_hdr, 0);
+        ssize_t sendmsg_result = aeron_sendmsg(transport->fd, &msgvec[i].msg_hdr, 0);
         if (sendmsg_result < 0)
         {
-            AERON_SET_ERR(errno, "Failed to sendmsg, fd: %d", transport->fd);
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 
@@ -440,10 +440,10 @@ int aeron_udp_channel_transport_sendmsg(
     aeron_udp_channel_transport_t *transport,
     struct msghdr *message)
 {
-    ssize_t sendmsg_result = sendmsg(transport->fd, message, 0);
+    ssize_t sendmsg_result = aeron_sendmsg(transport->fd, message, 0);
     if (sendmsg_result < 0)
     {
-        AERON_SET_ERR(errno, "Failed to sendmsg, fd: %d", transport->fd);
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 

@@ -87,7 +87,10 @@ public:
      */
     inline int poll()
     {
-        m_isAbort = false;
+        if (m_isAbort)
+        {
+            m_isAbort = false;
+        }
 
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }

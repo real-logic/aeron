@@ -46,7 +46,6 @@ import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.ReplayMerge.LIVE_ADD_MAX_WINDOW;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static io.aeron.cluster.ClusterMember.quorumPosition;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
@@ -2602,15 +2601,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return 0;
     }
 
-    long queryQuorumPosition()
+    long quorumPosition()
     {
-        return quorumPosition(activeMembers, rankedPositions);
+        return ClusterMember.quorumPosition(activeMembers, rankedPositions);
     }
 
     int updateLeaderPosition(final long nowNs, final long position)
     {
         thisMember.logPosition(position).timeOfLastAppendPositionNs(nowNs);
-        final long commitPosition = min(quorumPosition(activeMembers, rankedPositions), position);
+        final long commitPosition = min(ClusterMember.quorumPosition(activeMembers, rankedPositions), position);
 
         if (commitPosition > this.commitPosition.getWeak() ||
             nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
@@ -2619,8 +2618,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             {
                 if (member.id() != memberId)
                 {
-                    consensusPublisher.commitPosition(
-                        member.publication(), leadershipTermId, commitPosition, memberId);
+                    consensusPublisher.commitPosition(member.publication(), leadershipTermId, commitPosition, memberId);
                 }
             }
 

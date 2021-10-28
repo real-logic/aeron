@@ -682,10 +682,11 @@ class Election
     }
 
     /**
-     * Leader log replication must wait until we have consensus on the leaders append position.  However,
+     * Leader log replication must wait until we have consensus on the leaders append position. However,
      * we want to be careful about updating the commit position as this will cause the clustered service to progress
      * forward to early.
-     * @param nowNs Current time
+     *
+     * @param nowNs current time
      * @return work done
      */
     private int leaderLogReplication(final long nowNs)
@@ -693,7 +694,7 @@ class Election
         int workCount = 0;
 
         thisMember.logPosition(appendPosition).timeOfLastAppendPositionNs(nowNs);
-        final long quorumPosition = consensusModuleAgent.queryQuorumPosition();
+        final long quorumPosition = consensusModuleAgent.quorumPosition();
 
         workCount += publishNewLeadershipTermOnInterval(nowNs);
 
@@ -756,7 +757,7 @@ class Election
         int workCount = consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
         workCount += publishNewLeadershipTermOnInterval(nowNs);
 
-        if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition, leadershipTermId))
+        if (ClusterMember.hasVotersAtPosition(clusterMembers, logPosition, leadershipTermId))
         {
             if (consensusModuleAgent.electionComplete())
             {
@@ -765,7 +766,7 @@ class Election
             }
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()) &&
-            ClusterMember.haveQuorumReachedPosition(clusterMembers, logPosition, leadershipTermId))
+            ClusterMember.hasQuorumAtPosition(clusterMembers, logPosition, leadershipTermId))
         {
             if (consensusModuleAgent.electionComplete())
             {

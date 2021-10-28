@@ -44,20 +44,20 @@ public final class ClusterMember
     private boolean hasTerminated;
     private int id;
     private long leadershipTermId = Aeron.NULL_VALUE;
-    private long logPosition = NULL_POSITION;
     private long candidateTermId = Aeron.NULL_VALUE;
     private long catchupReplaySessionId = Aeron.NULL_VALUE;
     private long catchupReplayCorrelationId = Aeron.NULL_VALUE;
     private long changeCorrelationId = Aeron.NULL_VALUE;
     private long removalPosition = NULL_POSITION;
+    private long logPosition = NULL_POSITION;
     private long timeOfLastAppendPositionNs = Aeron.NULL_VALUE;
+    private ExclusivePublication publication;
     private final String ingressEndpoint;
     private final String consensusEndpoint;
     private final String logEndpoint;
     private final String catchupEndpoint;
     private final String archiveEndpoint;
     private final String endpoints;
-    private ExclusivePublication publication;
     private Boolean vote = null;
 
     /**
@@ -848,14 +848,14 @@ public final class ClusterMember
     }
 
     /**
-     * Have the members of the cluster the voted reached the provided position in their log.
+     * Has the voting members of a cluster arrived at provided position in their log.
      *
      * @param clusterMembers   to check.
      * @param position         to compare the {@link #logPosition()} against.
      * @param leadershipTermId expected of the members.
      * @return true if all members have reached this position otherwise false.
      */
-    public static boolean haveVotersReachedPosition(
+    public static boolean hasVotersAtPosition(
         final ClusterMember[] clusterMembers, final long position, final long leadershipTermId)
     {
         for (final ClusterMember member : clusterMembers)
@@ -870,14 +870,14 @@ public final class ClusterMember
     }
 
     /**
-     * Have a quorum of members of the cluster reached the provided position in their log.
+     * Has a quorum of members of appended a position to their local log.
      *
      * @param clusterMembers   to check.
      * @param position         to compare the {@link #logPosition()} against.
      * @param leadershipTermId expected of the members.
      * @return true if a quorum of members reached this position otherwise false.
      */
-    public static boolean haveQuorumReachedPosition(
+    public static boolean hasQuorumAtPosition(
         final ClusterMember[] clusterMembers, final long position, final long leadershipTermId)
     {
         int votes = 0;

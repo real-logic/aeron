@@ -66,7 +66,7 @@ static std::string::size_type assert_substring(
     const std::string &value, const std::string &token, const std::string::size_type index)
 {
     auto new_index = value.find(token, index);
-    EXPECT_NE(new_index, std::string::npos);
+    EXPECT_NE(new_index, std::string::npos) << value;
 
     return new_index;
 }
@@ -120,6 +120,23 @@ TEST_F(ErrorTest, shouldReportZeroAsErrorForBackwardCompatibility)
     index = assert_substring(err_msg, "] this is the root error", index);
 
     EXPECT_LT(index, err_msg.length());
+}
+
+#include <windows.h>
+
+TEST_F(ErrorTest, windowTest)
+{
+    LPTSTR error_message;
+    DWORD num_chars = FormatMessage(
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+        NULL,
+        WSAEADDRNOTAVAIL,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR)&error_message,
+        0,
+        NULL);
+
+    std::cout << error_message << std::endl;
 }
 
 #define CALLS_PER_THREAD (1000)

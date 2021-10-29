@@ -190,9 +190,9 @@ int aeron_udp_channel_transport_init(
 
             if (bind(transport->fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
-                char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
-                aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
-                AERON_SET_ERR(errno, "multicast IPv4 bind(%s)", buffer);
+                char bind_addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
+                aeron_format_source_identity(bind_addr_str, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
+                AERON_SET_ERR(errno, "multicast IPv4 bind(%s)", bind_addr_str);
                 goto error;
             }
 
@@ -443,7 +443,9 @@ int aeron_udp_channel_transport_sendmsg(
     ssize_t sendmsg_result = aeron_sendmsg(transport->fd, message, 0);
     if (sendmsg_result < 0)
     {
-        AERON_APPEND_ERR("%s", "");
+        char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+        aeron_format_source_identity(addr, sizeof(addr), (struct sockaddr_storage *)message->msg_name);
+        AERON_APPEND_ERR("message->msg_name=%s", addr);
         return -1;
     }
 

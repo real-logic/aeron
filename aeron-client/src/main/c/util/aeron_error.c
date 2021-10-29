@@ -46,16 +46,9 @@ const char *aeron_strerror_r(int errcode, char *buffer, size_t length)
 
 const char *aeron_strerror_r(int errcode, char *buffer, size_t length)
 {
-    DWORD result = FormatMessage(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        errcode,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR)buffer,
-        length,
-        NULL);
+    errno_t result = strerror_s(buffer, length, errcode);
 
-    if (0 == result)
+    if (0 != result)
     {
         return AERON_ERR_DESCRIPTION_UNAVAILABLE;
     }

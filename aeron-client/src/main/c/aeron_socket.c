@@ -16,6 +16,7 @@
 
 #include "aeron_socket.h"
 #include "util/aeron_error.h"
+#include "command/aeron_control_protocol.h"
 
 #if defined(AERON_COMPILER_GCC)
 
@@ -88,10 +89,41 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 #if _WIN32_WINNT < 0x0600
 #error Unsupported windows version
 #endif
+#if UNICODE
+#error Unicode errors not supported
+#endif
+
 
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
 #include <stdio.h>
+
+LPTSTR aeron_wsa_alloc_error(int wsa_error_code)
+{
+    LPTSTR error_message;
+    DWORD num_chars = FormatMessage(
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+        NULL,
+        wsa_error_code,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR)&error_message,
+        0,
+        NULL);
+
+    for (int i = (int)num_chars; i > -1; i--)
+    {
+        if ('\0' == error_message[i] || isspace(error_message[i]))
+        {
+            error_message[i] = '\0';
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return error_message;
+}
 
 int aeron_net_init()
 {
@@ -105,7 +137,9 @@ int aeron_net_init()
 
         if (0 != err)
         {
-            AERON_SET_ERR(err, "WSAStartup error=%d\n", err);
+            LPTSTR wsaErrorMessage = aeron_wsa_alloc_error(err);
+            AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s (%d) %s", "WSAStartup(...)", err, wsaErrorMessage);
+            LocalFree(wsaErrorMessage);
             return -1;
         }
 
@@ -316,7 +350,9 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
-        AERON_SET_ERR(err, "failed WSARecvFrom fd: %d", fd);
+        LPTSTR wsaErrorMessage = aeron_wsa_alloc_error(err);
+        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s (%d) %s", "WSARecvFrom(...)", err, wsaErrorMessage);
+        LocalFree(wsaErrorMessage);
         return -1;
     }
 
@@ -345,7 +381,9 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
-        AERON_SET_ERR(err, "failed WSASendTo, fd: %d", fd);
+        LPTSTR wsaErrorMessage = aeron_wsa_alloc_error(err);
+        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s (%d) %s", "WSASendTo(...)", err, wsaErrorMessage);
+        LocalFree(wsaErrorMessage);
         return -1;
     }
 

@@ -2609,18 +2609,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     int updateLeaderPosition(final long nowNs, final long position)
     {
         thisMember.logPosition(position).timeOfLastAppendPositionNs(nowNs);
-        final long commitPosition = min(ClusterMember.quorumPosition(activeMembers, rankedPositions), position);
+        final long commitPosition = min(quorumPosition(), position);
 
         if (commitPosition > this.commitPosition.getWeak() ||
             nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
         {
-            for (final ClusterMember member : activeMembers)
-            {
-                if (member.id() != memberId)
-                {
-                    consensusPublisher.commitPosition(member.publication(), leadershipTermId, commitPosition, memberId);
-                }
-            }
+            sendCommitPosition(commitPosition);
 
             this.commitPosition.setOrdered(commitPosition);
             timeOfLastLogUpdateNs = nowNs;
@@ -2635,6 +2629,17 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         return 0;
+    }
+
+    void sendCommitPosition(final long commitPosition)
+    {
+        for (final ClusterMember member : activeMembers)
+        {
+            if (member.id() != memberId)
+            {
+                consensusPublisher.commitPosition(member.publication(), leadershipTermId, commitPosition, memberId);
+            }
+        }
     }
 
     LogReplication newLogReplication(

@@ -122,23 +122,6 @@ TEST_F(ErrorTest, shouldReportZeroAsErrorForBackwardCompatibility)
     EXPECT_LT(index, err_msg.length());
 }
 
-#include <windows.h>
-
-TEST_F(ErrorTest, windowTest)
-{
-    LPTSTR error_message;
-    DWORD num_chars = FormatMessage(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-        NULL,
-        WSAEADDRNOTAVAIL,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR)&error_message,
-        0,
-        NULL);
-
-    std::cout << error_message << std::endl;
-}
-
 #define CALLS_PER_THREAD (1000)
 #define NUM_THREADS (2)
 #define ITERATIONS (10)

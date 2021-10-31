@@ -2614,7 +2614,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         if (commitPosition > this.commitPosition.getWeak() ||
             nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
         {
-            sendCommitPosition(commitPosition);
+            publishCommitPosition(commitPosition);
 
             this.commitPosition.setOrdered(commitPosition);
             timeOfLastLogUpdateNs = nowNs;
@@ -2631,7 +2631,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return 0;
     }
 
-    void sendCommitPosition(final long commitPosition)
+    void publishCommitPosition(final long commitPosition)
     {
         for (final ClusterMember member : activeMembers)
         {

@@ -3935,9 +3935,6 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         (size_t)aeron_number_of_trailing_zeroes(command->term_length),
         command->initial_term_id);
 
-    const char *uri = endpoint->conductor_fields.udp_channel->original_uri;
-    size_t uri_length = endpoint->conductor_fields.udp_channel->uri_length;
-
     aeron_congestion_control_strategy_t *congestion_control = NULL;
     if (conductor->context->congestion_control_supplier_func(
         &congestion_control,
@@ -3954,6 +3951,10 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     {
         return;
     }
+
+    aeron_subscription_link_t subscription_link = conductor->network_subscriptions.array[0];
+    const char *uri = subscription_link.channel;
+    size_t uri_length = subscription_link.channel_length;
 
     aeron_position_t rcv_hwm_position;
     rcv_hwm_position.counter_id = aeron_counter_receiver_hwm_allocate(
@@ -3977,8 +3978,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     rcv_pos_position.value_addr = aeron_counters_manager_addr(
         &conductor->counters_manager, rcv_pos_position.counter_id);
 
-    bool is_reliable = conductor->network_subscriptions.array[0].is_reliable;
-    aeron_inferable_boolean_t group_subscription = conductor->network_subscriptions.array[0].group;
+    bool is_reliable = subscription_link.is_reliable;
+    aeron_inferable_boolean_t group_subscription = subscription_link.group;
     bool treat_as_multicast = AERON_INFER == group_subscription ?
         endpoint->conductor_fields.udp_channel->is_multicast : AERON_FORCE_TRUE == group_subscription;
     bool is_oldest_subscription_sparse = aeron_driver_conductor_is_oldest_subscription_sparse(

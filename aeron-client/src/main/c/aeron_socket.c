@@ -312,11 +312,7 @@ int aeron_getifaddrs(struct ifaddrs **ifap)
         }
     }
 
-    if (adapters_addresses) // TODO: is this required?
-    {
-        aeron_free(adapters_addresses);
-    }
-
+    aeron_free(adapters_addresses);
     *ifap = head;
 
     return 0;

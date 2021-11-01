@@ -86,7 +86,6 @@ struct ifaddrs
     void *ifa_data;
 };
 
-typedef unsigned long int nfds_t;
 typedef SSIZE_T ssize_t;
 
 #else

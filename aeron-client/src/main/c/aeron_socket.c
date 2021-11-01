@@ -79,7 +79,7 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
     if (result < 0)
     {
-        AERON_SET_ERR(errno, "failed sendmsg, fd: %d", fd);
+        AERON_SET_ERR(errno, "failed sendmsg(...), fd=%d", fd);
         return -1;
     }
 
@@ -92,7 +92,7 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
     if (result < 0)
     {
-        AERON_SET_ERR(errno, "failed recvmsg, fd: %d", fd);
+        AERON_SET_ERR(errno, "failed recvmsg(...), fd=%d", fd);
         return -1;
     }
 

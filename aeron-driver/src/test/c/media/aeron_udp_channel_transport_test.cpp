@@ -56,7 +56,7 @@ void test_revc_func(
 
 TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
 {
-    aeron_driver_context_t *driver_context = NULL;
+    aeron_driver_context_t *driver_context = nullptr;
     aeron_driver_context_init(&driver_context);
     aeron_udp_channel_transport_bindings_t *transport_bindings = aeron_udp_channel_transport_bindings_load_media(
         "default");
@@ -87,7 +87,6 @@ TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
         aeron_ip_addr_resolver("0.0.0.0", (struct sockaddr_storage*)&send_addr, AF_INET, IPPROTO_UDP));
     send_addr.sin_port = 6666;
 
-
     aeron_udp_channel_transport_t transport = {};
     ASSERT_NE(-1, transport_bindings->init_func(
         &transport,
@@ -103,11 +102,11 @@ TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
 
     const char *data = "Hello World";
 
-    struct iovec message;
+    struct iovec message = {};
     message.iov_base = static_cast<void *>(const_cast<char *>(data));
     message.iov_len = strlen(data);
 
-    struct msghdr header;
+    struct msghdr header = {};
     header.msg_name = static_cast<void *>(&send_addr);
     header.msg_namelen = sizeof(send_addr);
     header.msg_iov = &message;
@@ -116,6 +115,6 @@ TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
     header.msg_controllen = 1;
     header.msg_flags = 389475;
 
-    ASSERT_EQ(-1, transport_bindings->sendmsg_func(&data_paths, &transport, &header));
+    ASSERT_EQ(-1, transport_bindings->sendmsg_func(&data_paths, &transport, &header)) << aeron_errmsg();
 }
 

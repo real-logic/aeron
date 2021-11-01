@@ -231,9 +231,9 @@ public final class DriverConductor implements Agent
         final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        final UdpChannel subscriptionChannel = channelEndpoint.subscriptionUdpChannel();
-
         Configuration.validateMtuLength(senderMtuLength);
+
+        final UdpChannel subscriptionChannel = channelEndpoint.subscriptionUdpChannel();
         Configuration.validateInitialWindowLength(
             subscriptionChannel.receiverWindowLengthOrDefault(ctx.initialWindowLength()), senderMtuLength);
 
@@ -274,14 +274,13 @@ public final class DriverConductor implements Agent
                     ctx,
                     countersManager);
 
-                final String uri = subscriptionChannel.originalUriString();
+                final SubscriptionLink subscription = subscriberPositions.get(0).subscription();
+                final String uri = subscription.channel();
                 hwmPos = ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
                 rcvPos = ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
 
-                final UdpChannel destChannel = channelEndpoint.udpChannel();
-                final InferableBoolean groupSubscription = subscriberPositions.get(0).subscription().group();
-                final boolean treatAsMulticast = groupSubscription == INFER ?
-                    destChannel.isMulticast() : groupSubscription == FORCE_TRUE;
+                final boolean treatAsMulticast = subscription.group() == INFER ?
+                    channelEndpoint.udpChannel().isMulticast() : subscription.group() == FORCE_TRUE;
 
                 final PublicationImage image = new PublicationImage(
                     registrationId,

@@ -554,7 +554,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Remove a transport by index from the channel.
+     * Remove transport by index from the channel.
      *
      * @param transportIndex to be removed.
      */

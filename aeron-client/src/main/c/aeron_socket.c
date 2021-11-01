@@ -57,6 +57,22 @@ void aeron_close_socket(aeron_socket_t socket)
     close(socket);
 }
 
+int aeron_getifaddrs(struct ifaddrs **ifap)
+{
+    if (getifaddrs(ifap) < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed getifaddrs(...)");
+        return -1;
+    }
+
+    return 0;
+}
+
+void aeron_freeifaddrs(struct ifaddrs *ifa)
+{
+    freeifaddrs(ifa);
+}
+
 ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
     ssize_t result = sendmsg(fd, msghdr, flags);

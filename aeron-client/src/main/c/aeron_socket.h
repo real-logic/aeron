@@ -111,6 +111,10 @@ int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, so
 
 int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen);
 
+int aeron_getifaddrs(struct ifaddrs **ifap);
+
+void aeron_freeifaddrs(struct ifaddrs *ifa);
+
 ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
 
 ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);

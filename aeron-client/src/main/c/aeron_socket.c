@@ -428,9 +428,20 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
     return size;
 }
 
-int poll(struct pollfd *fds, nfds_t nfds, int timeout)
+int aeron_poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
-    return WSAPoll(fds, nfds, timeout);
+    if (WSAPoll(fds, nfds, timeout) < 0)
+    {
+        const int err = WSAGetLastError();
+
+        LPTSTR wsaErrorMessage = aeron_wsa_alloc_error(err);
+        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s (%d) %s", "WSAPoll(...)", err, wsaErrorMessage);
+        LocalFree(wsaErrorMessage);
+
+        return -1;
+    }
+
+    return 0;
 }
 
 aeron_socket_t aeron_socket(int domain, int type, int protocol)

@@ -88,8 +88,6 @@ struct ifaddrs
 typedef unsigned long int nfds_t;
 typedef SSIZE_T ssize_t;
 
-int poll(struct pollfd *fds, nfds_t nfds, int timeout);
-
 #else
 #error Unsupported platform!
 #endif
@@ -113,5 +111,7 @@ void aeron_freeifaddrs(struct ifaddrs *ifa);
 ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
 
 ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
+
+int aeron_poll(struct pollfd *fds, nfds_t nfds, int timeout);
 
 #endif //AERON_SOCKET_H

@@ -52,6 +52,7 @@ class Election
     private int logSessionId = CommonContext.NULL_SESSION_ID;
     private long timeOfLastStateChangeNs;
     private long timeOfLastUpdateNs;
+    private long timeOfLastCommitPositionUpdateNs;
     private final long initialTimeOfLastUpdateNs;
     private long nominationDeadlineNs;
     private long logPosition;
@@ -77,6 +78,7 @@ class Election
     private long replicationCommitPosition = 0;
     private long replicationDeadlineNs = 0;
     private long replicationTermBaseLogPosition;
+    private long lastPublishedCommitPosition;
 
     Election(
         final boolean isNodeStartup,
@@ -107,6 +109,7 @@ class Election
         final long nowNs = ctx.clusterClock().timeNanos();
         this.initialTimeOfLastUpdateNs = nowNs - TimeUnit.DAYS.toNanos(1);
         this.timeOfLastUpdateNs = initialTimeOfLastUpdateNs;
+        this.timeOfLastCommitPositionUpdateNs = initialTimeOfLastUpdateNs;
 
         Objects.requireNonNull(thisMember);
         ctx.electionStateCounter().setOrdered(INIT.code());
@@ -576,7 +579,7 @@ class Election
     {
         int workCount = 0;
 
-        if (hasIntervalExpired(nowNs, ctx.electionStatusIntervalNs()))
+        if (hasUpdateIntervalExpired(nowNs, ctx.electionStatusIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
             for (final ClusterMember member : clusterMembers)
@@ -697,6 +700,7 @@ class Election
         final long quorumPosition = consensusModuleAgent.quorumPosition();
 
         workCount += publishNewLeadershipTermOnInterval(nowNs);
+        workCount += publishCommitPositionOnInterval(quorumPosition, nowNs);
 
         if (quorumPosition >= appendPosition)
         {
@@ -739,6 +743,7 @@ class Election
         }
 
         workCount += publishNewLeadershipTermOnInterval(nowNs);
+        workCount += publishCommitPositionOnInterval(consensusModuleAgent.quorumPosition(), nowNs);
 
         return workCount;
     }
@@ -1030,10 +1035,27 @@ class Election
     {
         int workCount = 0;
 
-        if (hasIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs()))
+        if (hasUpdateIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs()))
         {
             timeOfLastUpdateNs = nowNs;
             publishNewLeadershipTerm(ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
+            workCount++;
+        }
+
+        return workCount;
+    }
+
+    private int publishCommitPositionOnInterval(final long quorumPosition, final long nowNs)
+    {
+        int workCount = 0;
+
+        if (lastPublishedCommitPosition < quorumPosition ||
+            (lastPublishedCommitPosition == quorumPosition &&
+            hasIntervalExpired(nowNs, timeOfLastCommitPositionUpdateNs, ctx.leaderHeartbeatIntervalNs())))
+        {
+            timeOfLastCommitPositionUpdateNs = nowNs;
+            lastPublishedCommitPosition = quorumPosition;
+            consensusModuleAgent.publishCommitPosition(quorumPosition);
             workCount++;
         }
 
@@ -1086,7 +1108,7 @@ class Election
     {
         final long position = logReplication.position();
         if (position > appendPosition ||
-            (position == appendPosition && hasIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs())))
+            (position == appendPosition && hasUpdateIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs())))
         {
             if (consensusPublisher.appendPosition(
                 leaderMember.publication(), leadershipTermId, position, thisMember.id()))
@@ -1185,6 +1207,7 @@ class Election
             ctx.electionStateCounter().setOrdered(newState.code());
             timeOfLastStateChangeNs = nowNs;
             timeOfLastUpdateNs = initialTimeOfLastUpdateNs;
+            timeOfLastCommitPositionUpdateNs = initialTimeOfLastUpdateNs;
         }
     }
 
@@ -1219,6 +1242,7 @@ class Election
         }
         replicationCommitPosition = 0;
         replicationDeadlineNs = 0;
+        lastPublishedCommitPosition = 0;
     }
 
     private boolean isPassiveMember()
@@ -1328,9 +1352,15 @@ class Election
         }
     }
 
-    private boolean hasIntervalExpired(final long nowNs, final long intervalNs)
+    private boolean hasUpdateIntervalExpired(final long nowNs, final long intervalNs)
     {
-        return (nowNs - timeOfLastUpdateNs) >= intervalNs;
+        return hasIntervalExpired(nowNs, timeOfLastUpdateNs, intervalNs);
+    }
+
+    private boolean hasIntervalExpired(
+        final long nowNs, final long previousTimestampForIntervalNs, final long intervalNs)
+    {
+        return (nowNs - previousTimestampForIntervalNs) >= intervalNs;
     }
 
     void stateChange(

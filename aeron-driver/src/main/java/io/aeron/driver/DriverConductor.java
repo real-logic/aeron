@@ -1458,26 +1458,23 @@ public final class DriverConductor implements Agent
 
     private void linkMatchingImages(final SubscriptionLink subscriptionLink)
     {
-        final long registrationId = subscriptionLink.registrationId();
-        final long clientId = subscriptionLink.aeronClient().clientId();
-        final int streamId = subscriptionLink.streamId();
-        final String channel = subscriptionLink.channel();
-
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
             final PublicationImage image = publicationImages.get(i);
             if (subscriptionLink.matches(image) && image.isAcceptingSubscriptions())
             {
+                final long registrationId = subscriptionLink.registrationId();
                 final long joinPosition = image.joinPosition();
                 final int sessionId = image.sessionId();
+                final int streamId = subscriptionLink.streamId();
                 final Position position = SubscriberPos.allocate(
                     tempBuffer,
                     countersManager,
-                    clientId,
+                    subscriptionLink.aeronClient().clientId(),
                     registrationId,
                     sessionId,
                     streamId,
-                    channel,
+                    subscriptionLink.channel(),
                     joinPosition);
 
                 position.setOrdered(joinPosition);

@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <poll.h>
 
 int aeron_net_init()
 {
@@ -100,6 +101,17 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
     return result;
 }
 
+int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
+{
+    int result = poll(fds, (nfds_t)nfds, timeout);
+
+    if (EAGAIN == result || EWOULDBLOCK == result)
+    {
+        result = 0;
+    }
+
+    return result;
+}
 
 #elif defined(AERON_COMPILER_MSVC)
 
@@ -428,9 +440,9 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
     return size;
 }
 
-int aeron_poll(struct pollfd *fds, nfds_t nfds, int timeout)
+int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
 {
-    if (WSAPoll(fds, nfds, timeout) < 0)
+    if (WSAPoll(fds, (ULONG)nfds, timeout) < 0)
     {
         const int err = WSAGetLastError();
 

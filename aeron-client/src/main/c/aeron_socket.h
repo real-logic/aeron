@@ -29,6 +29,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+#include <poll.h>
 
 typedef int aeron_socket_t;
 
@@ -112,6 +113,6 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
 
 ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
 
-int aeron_poll(struct pollfd *fds, nfds_t nfds, int timeout);
+int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout);
 
 #endif //AERON_SOCKET_H

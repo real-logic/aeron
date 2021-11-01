@@ -357,4 +357,59 @@ void aeron_error_dll_process_detach()
     error_key = TLS_OUT_OF_INDEXES;
 }
 
+void aeron_err_set_windows(int errcode, const char *function, const char *filename, int line_number, const char *format, ...)
+{
+    aeron_per_thread_error_t *error_state = get_required_error_state();
+
+    error_state->errcode = errcode;
+    error_state->offset = 0;
+
+    char err_buf[1024] = { 0 };
+    const char *system_err_message;
+    const int error_code = aeron_errcode();
+
+    if (error_code <= 0)
+    {
+        system_err_message = aeron_error_code_str(-error_code);
+    }
+    else
+    {
+        DWORD num_chars = FormatMessage(
+            FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            error_code,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            (LPTSTR)err_buf,
+            1024,
+            NULL);
+
+        if (0 == num_chars)
+        {
+            system_err_message = "<error text unavailable>";
+        }
+        else
+        {
+            for (int i = (int)num_chars; i > -1; i--)
+            {
+                if ('\0' == err_buf[i] || isspace(err_buf[i]))
+                {
+                    err_buf[i] = '\0';
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            system_err_message = err_buf;
+        }
+    }
+
+    aeron_err_printf(error_state, "(%d) %s\n", error_code, system_err_message);
+    va_list args;
+    va_start(args, format);
+    aeron_err_update_entry(error_state, function, filename, line_number, format, args);
+    va_end(args);
+}
+
 #endif

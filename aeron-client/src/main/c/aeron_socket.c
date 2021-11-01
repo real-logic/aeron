@@ -127,33 +127,6 @@ int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
 #include <iphlpapi.h>
 #include <stdio.h>
 
-LPTSTR aeron_wsa_alloc_error(int wsa_error_code)
-{
-    LPTSTR error_message;
-    DWORD num_chars = FormatMessage(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-        NULL,
-        wsa_error_code,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR)&error_message,
-        0,
-        NULL);
-
-    for (int i = (int)num_chars; i > -1; i--)
-    {
-        if ('\0' == error_message[i] || isspace(error_message[i]))
-        {
-            error_message[i] = '\0';
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    return error_message;
-}
-
 int aeron_net_init()
 {
     static int started = -1;
@@ -166,9 +139,7 @@ int aeron_net_init()
 
         if (0 != err)
         {
-            LPTSTR wsaErrorMessage = aeron_wsa_alloc_error(err);
-            AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s (%d) %s", "WSAStartup(...)", err, wsaErrorMessage);
-            LocalFree(wsaErrorMessage);
+            AERON_SET_ERR_WIN(err, "%s", "WSAStartup(...)");
             return -1;
         }
 
@@ -190,12 +161,6 @@ int set_socket_non_blocking(aeron_socket_t fd)
     return 0;
 }
 
-struct aeron_ifaddrs
-{
-    struct ifaddrs addrs;
-
-};
-
 int aeron_getifaddrs(struct ifaddrs **ifap)
 {
     DWORD max_tries = 2;
@@ -209,7 +174,7 @@ int aeron_getifaddrs(struct ifaddrs **ifap)
     {
         if (aeron_alloc((void **)&adapters_addresses, adapters_addresses_size) < 0)
         {
-            AERON_SET_ERR(ENOMEM, "%s", "unable to allocate IP_ADAPTER_ADDRESSES");
+            AERON_APPEND_ERR("%s", "unable to allocate IP_ADAPTER_ADDRESSES");
             return -1;
         }
 
@@ -236,10 +201,7 @@ int aeron_getifaddrs(struct ifaddrs **ifap)
         else
         {
             aeron_free(adapters_addresses);
-            LPTSTR wsaErrorMessage = aeron_wsa_alloc_error((int)result);
-            AERON_SET_ERR(
-                -AERON_ERROR_CODE_GENERIC_ERROR, "%s (%d) %s", "GetAdaptersAddresses(...)", result, wsaErrorMessage);
-            LocalFree(wsaErrorMessage);
+            AERON_SET_ERR_WIN(result, "%s", "GetAdaptersAddresses(...)");
             return -1;
         }
     }
@@ -267,7 +229,7 @@ int aeron_getifaddrs(struct ifaddrs **ifap)
 
             if (aeron_alloc((void **)&current, sizeof(struct ifaddrs) + supplemental_data_length) < 0)
             {
-                AERON_SET_ERR(ENOMEM, "%s", "unable to allocate ifaddrs");
+                AERON_APPEND_ERR("%s", "unable to allocate ifaddrs");
                 aeron_freeifaddrs(head);
                 aeron_free(adapters_addresses);
                 return -1;
@@ -350,7 +312,7 @@ int aeron_getifaddrs(struct ifaddrs **ifap)
         }
     }
 
-    if (adapters_addresses)
+    if (adapters_addresses) // TODO: is this required?
     {
         aeron_free(adapters_addresses);
     }
@@ -400,9 +362,7 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
-        LPTSTR wsaErrorMessage = aeron_wsa_alloc_error(err);
-        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s (%d) %s", "WSARecvFrom(...)", err, wsaErrorMessage);
-        LocalFree(wsaErrorMessage);
+        AERON_SET_ERR_WIN(err, "WSARecvFrom(...), fd=%d", fd);
         return -1;
     }
 
@@ -431,9 +391,7 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
-        LPTSTR wsaErrorMessage = aeron_wsa_alloc_error(err);
-        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s (%d) %s", "WSASendTo(...)", err, wsaErrorMessage);
-        LocalFree(wsaErrorMessage);
+        AERON_SET_ERR_WIN(err, "WSASendTo(...), fd=%d", fd);
         return -1;
     }
 
@@ -446,10 +404,7 @@ int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
     {
         const int err = WSAGetLastError();
 
-        LPTSTR wsaErrorMessage = aeron_wsa_alloc_error(err);
-        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s (%d) %s", "WSAPoll(...)", err, wsaErrorMessage);
-        LocalFree(wsaErrorMessage);
-
+        AERON_SET_ERR_WIN(err, "%s", "WSAPoll(...)");
         return -1;
     }
 

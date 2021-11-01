@@ -1223,7 +1223,8 @@ public final class DriverConductor implements Agent
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
     }
@@ -1236,17 +1237,18 @@ public final class DriverConductor implements Agent
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
     }
 
-    private void initPublicationMetadata(
+    private void initLogMetadata(
         final int sessionId,
         final int streamId,
         final int initialTermId,
+        final int mtuLength,
         final long registrationId,
-        final PublicationParams params,
         final RawLog rawLog)
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
@@ -1255,13 +1257,11 @@ public final class DriverConductor implements Agent
         storeDefaultFrameHeader(logMetaData, defaultDataHeader);
 
         initialTermId(logMetaData, initialTermId);
-        mtuLength(logMetaData, params.mtuLength);
+        mtuLength(logMetaData, mtuLength);
         termLength(logMetaData, rawLog.termLength());
         pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, registrationId);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
-
-        initialisePositionCounters(initialTermId, params, logMetaData);
     }
 
     private static void initialisePositionCounters(
@@ -1304,17 +1304,7 @@ public final class DriverConductor implements Agent
         final long correlationId)
     {
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
-        final UnsafeBuffer logMetaData = rawLog.metaData();
-
-        defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId);
-        storeDefaultFrameHeader(logMetaData, defaultDataHeader);
-
-        initialTermId(logMetaData, initialTermId);
-        mtuLength(logMetaData, senderMtuLength);
-        termLength(logMetaData, termBufferLength);
-        pageSize(logMetaData, ctx.filePageSize());
-        correlationId(logMetaData, correlationId);
-        endOfStreamPosition(logMetaData, Long.MAX_VALUE);
+        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, rawLog);
 
         return rawLog;
     }

@@ -38,6 +38,11 @@ import static io.aeron.driver.status.StreamCounter.*;
  */
 public final class StreamStat
 {
+    private static final Comparator<StreamCompositeKey> LINES_COMPARATOR =
+        Comparator.comparingLong(StreamCompositeKey::sessionId)
+        .thenComparingInt(StreamCompositeKey::streamId)
+        .thenComparing(StreamCompositeKey::channel);
+
     private final CountersReader counters;
 
     /**
@@ -70,7 +75,7 @@ public final class StreamStat
      */
     public Map<StreamCompositeKey, List<StreamPosition>> snapshot()
     {
-        final Map<StreamCompositeKey, List<StreamPosition>> streams = new HashMap<>();
+        final Map<StreamCompositeKey, List<StreamPosition>> streams = new TreeMap<>(LINES_COMPARATOR);
 
         counters.forEach(
             (counterId, typeId, keyBuffer, label) ->

@@ -117,4 +117,3 @@ TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
 
     ASSERT_EQ(-1, transport_bindings->sendmsg_func(&data_paths, &transport, &header)) << aeron_errmsg();
 }
-

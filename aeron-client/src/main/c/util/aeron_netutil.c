@@ -695,7 +695,7 @@ int aeron_netutil_get_so_buf_lengths(size_t *default_so_rcvbuf, size_t *default_
     aeron_socket_t fd = aeron_socket(PF_INET, SOCK_DGRAM, 0);
     if (fd < 0)
     {
-        AERON_SET_ERR(errno, "%s", "Failed to probe socket for buffer lengths");
+        AERON_SET_ERR(errno, "%s", "failed to probe socket for buffer lengths");
         goto done;
     }
 
@@ -703,13 +703,13 @@ int aeron_netutil_get_so_buf_lengths(size_t *default_so_rcvbuf, size_t *default_
 
     if (aeron_getsockopt(fd, SOL_SOCKET, SO_RCVBUF, default_so_rcvbuf, &optlen) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "Failed to get SO_RCVBUF option");
+        AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_RCVBUF option");
         goto done;
     }
 
     if (aeron_getsockopt(fd, SOL_SOCKET, SO_SNDBUF, default_so_sndbuf, &optlen) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "Failed to get SO_SNDBUF option");
+        AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_SNDBUF option");
         goto done;
     }
 

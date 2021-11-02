@@ -128,7 +128,7 @@ int aeron_udp_channel_transport_init(
 #if defined(SO_REUSEADDR)
         if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
         {
-            AERON_SET_ERR(errno, "%s", "setsockopt(SO_REUSEADDR)");
+            AERON_APPEND_ERR("failed to set SOL_SOCKET/SO_REUSEADDR option to: %d", reuse);
             goto error;
         }
 #endif
@@ -162,14 +162,19 @@ int aeron_udp_channel_transport_init(
 
             if (aeron_setsockopt(transport->fd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0)
             {
-                AERON_SET_ERR(errno, "%", "setsockopt(IPV6_JOIN_GROUP)");
+                char addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
+                inet_ntop(AF_INET6, &mreq.ipv6mr_multiaddr, addr_buf, sizeof(addr_buf));
+                AERON_APPEND_ERR(
+                    "failed to set IPPROTO_IPV6/IPV6_JOIN_GROUP option to: struct ipv6_mreq{.ipv6mr_multiaddr=%s, .ipv6mr_interface=%u}",
+                    addr_buf,
+                    mreq.ipv6mr_interface);
                 goto error;
             }
 
             if (aeron_setsockopt(
                 transport->fd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &multicast_if_index, sizeof(multicast_if_index)) < 0)
             {
-                AERON_SET_ERR(errno, "%", "setsockopt(IPV6_MULTICAST_IF)");
+                AERON_APPEND_ERR("failed to set IPPROTO_IPV6/IPV6_MULTICAST_IF option to: %u", multicast_if_index);
                 goto error;
             }
 
@@ -177,7 +182,8 @@ int aeron_udp_channel_transport_init(
             {
                 if (aeron_setsockopt(transport->fd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl, sizeof(ttl)) < 0)
                 {
-                    AERON_SET_ERR(errno, "%", "setsockopt(IPV6_MULTICAST_HOPS)");
+                    AERON_APPEND_ERR(
+                        "failed to set IPPROTO_IPV6/IPV6_MULTICAST_HOPS option to: %" PRIu8, ttl);
                     goto error;
                 }
             }
@@ -204,14 +210,24 @@ int aeron_udp_channel_transport_init(
 
             if (aeron_setsockopt(transport->fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
             {
-                AERON_SET_ERR(errno, "%", "setsockopt(IP_ADD_MEMBERSHIP)");
+                char addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
+                char intr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
+                inet_ntop(AF_INET, &mreq.imr_multiaddr, addr_buf, sizeof(addr_buf));
+                inet_ntop(AF_INET, &mreq.imr_interface, intr_buf, sizeof(intr_buf));
+                AERON_APPEND_ERR(
+                    "failed to set IPPROTO_IP/IP_ADD_MEMBERSHIP option to: struct ip_mreq{.imr_multiaddr=%s, .imr_interface=%s}",
+                    addr_buf,
+                    intr_buf);
+
                 goto error;
             }
 
             if (aeron_setsockopt(
                 transport->fd, IPPROTO_IP, IP_MULTICAST_IF, &interface_addr->sin_addr, sizeof(struct in_addr)) < 0)
             {
-                AERON_SET_ERR(errno, "%", "setsockopt(IP_MULTICAST_IF)");
+                char intr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
+                inet_ntop(AF_INET, &interface_addr->sin_addr, intr_buf, sizeof(intr_buf));
+                AERON_APPEND_ERR("failed to set IPPROTO_IP/IP_MULTICAST_IF option to: %s", intr_buf);
                 goto error;
             }
 
@@ -219,7 +235,8 @@ int aeron_udp_channel_transport_init(
             {
                 if (aeron_setsockopt(transport->fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0)
                 {
-                    AERON_SET_ERR(errno, "%", "setsockopt(IP_MULTICAST_TTL)");
+                    AERON_APPEND_ERR(
+                        "failed to set IPPROTO_IP/IP_MULTICAST_TTL option to: %" PRIu8, ttl);
                     goto error;
                 }
             }
@@ -230,7 +247,8 @@ int aeron_udp_channel_transport_init(
     {
         if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
-            AERON_SET_ERR(errno, "%", "setsockopt(SO_RCVBUF)");
+            AERON_APPEND_ERR(
+                "failed to set SOL_SOCKET/SO_RCVBUF option to: %" PRIu64, (uint64_t)socket_rcvbuf);
             goto error;
         }
     }
@@ -239,7 +257,8 @@ int aeron_udp_channel_transport_init(
     {
         if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
         {
-            AERON_SET_ERR(errno, "%", "setsockopt(SO_SNDBUF)");
+            AERON_APPEND_ERR(
+                "failed to set SOL_SOCKET/SO_SNDBUF option to: %" PRIu64, (uint64_t)socket_sndbuf);
             goto error;
         }
     }
@@ -458,7 +477,7 @@ int aeron_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *tra
 
     if (aeron_getsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, so_rcvbuf, &len) < 0)
     {
-        AERON_SET_ERR(errno, "Failed to get SO_RCVBUF for fd: %s", transport->fd);
+        AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_RCVBUF option");
         return -1;
     }
 

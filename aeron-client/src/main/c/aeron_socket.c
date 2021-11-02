@@ -358,7 +358,7 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
-        AERON_SET_ERR_WIN(err, "WSARecvFrom(...), fd=%d", fd);
+        AERON_SET_ERR_WIN(err, "WSARecvFrom(fd=%d,...)", fd);
         return -1;
     }
 
@@ -387,7 +387,7 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
-        AERON_SET_ERR_WIN(err, "WSASendTo(...), fd=%d", fd);
+        AERON_SET_ERR_WIN(err, "WSASendTo(fd=%d,...)", fd);
         return -1;
     }
 
@@ -420,19 +420,31 @@ void aeron_close_socket(aeron_socket_t socket)
     closesocket(socket);
 }
 
-#else
-#error Unsupported platform!
-#endif
-
 /* aeron_getsockopt and aeron_setsockopt ensure a consistent signature between platforms
  * (MSVC uses char * instead of void * for optval, which causes warnings)
  */
 int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen)
 {
-    return getsockopt(fd, level, optname, optval, optlen);
+    if (getsockopt(fd, level, optname, optval, optlen) < 0)
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "getsockopt(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return 0;
 }
 
 int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen)
 {
-    return setsockopt(fd, level, optname, optval, optlen);
+    if (setsockopt(fd, level, optname, optval, optlen) < 0)
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "setsockopt(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return 0;
 }
+
+#else
+#error Unsupported platform!
+#endif

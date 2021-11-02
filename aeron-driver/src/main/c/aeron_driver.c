@@ -338,7 +338,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     if ((probe_fd = aeron_socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "aeron_socket(AF_INET, SOCK_DGRAM, 0)");
+        AERON_APPEND_ERR("%s", "failed to probe socket for buffer lengths");
         goto cleanup;
     }
 

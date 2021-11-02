@@ -92,7 +92,7 @@ typedef SSIZE_T ssize_t;
 #error Unsupported platform!
 #endif
 
-int set_socket_non_blocking(aeron_socket_t fd);
+int aeron_set_socket_non_blocking(aeron_socket_t fd);
 
 aeron_socket_t aeron_socket(int domain, int type, int protocol);
 

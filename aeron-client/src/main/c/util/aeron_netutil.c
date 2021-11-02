@@ -695,7 +695,7 @@ int aeron_netutil_get_so_buf_lengths(size_t *default_so_rcvbuf, size_t *default_
     aeron_socket_t fd = aeron_socket(PF_INET, SOCK_DGRAM, 0);
     if (fd < 0)
     {
-        AERON_SET_ERR(errno, "%s", "failed to probe socket for buffer lengths");
+        AERON_APPEND_ERR("%s", "failed to probe socket for buffer lengths");
         goto done;
     }
 

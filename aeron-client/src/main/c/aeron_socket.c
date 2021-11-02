@@ -32,17 +32,19 @@ int aeron_net_init()
     return 0;
 }
 
-int set_socket_non_blocking(aeron_socket_t fd)
+int aeron_set_socket_non_blocking(aeron_socket_t fd)
 {
     int flags;
     if ((flags = fcntl(fd, F_GETFL, 0)) < 0)
     {
+        AERON_SET_ERR(errno, "failed to fcntl(fd=%d, cmd=F_GETFL, 0)", fd);
         return -1;
     }
 
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) < 0)
     {
+        AERON_SET_ERR(errno, "failed to fcntl(fd=%d, cmd=F_SETFL, %d)", fd, flags);
         return -1;
     }
 
@@ -51,7 +53,15 @@ int set_socket_non_blocking(aeron_socket_t fd)
 
 aeron_socket_t aeron_socket(int domain, int type, int protocol)
 {
-    return socket(domain, type, protocol);
+    int socket_fd = socket(domain, type, protocol);
+
+    if (socket_fd < 0)
+    {
+        AERON_SET_ERR(errno, "failed to socket(domain=%d, type=%d, protocol=%d)", domain, type, protocol);
+        return -1;
+    }
+
+    return socket_fd;
 }
 
 void aeron_close_socket(aeron_socket_t socket)
@@ -81,7 +91,7 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
     if (result < 0)
     {
-        AERON_SET_ERR(errno, "failed sendmsg(...), fd=%d", fd);
+        AERON_SET_ERR(errno, "failed sendmsg(fd=%d,...)", fd);
         return -1;
     }
 
@@ -94,7 +104,7 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
     if (result < 0)
     {
-        AERON_SET_ERR(errno, "failed recvmsg(...), fd=%d", fd);
+        AERON_SET_ERR(errno, "failed recvmsg(fd=%d,...)", fd);
         return -1;
     }
 
@@ -104,13 +114,42 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
 {
     int result = poll(fds, (nfds_t)nfds, timeout);
-
-    if (EAGAIN == result || EWOULDBLOCK == result)
+    if (result < 0)
     {
-        result = 0;
+        if (EAGAIN == errno || EWOULDBLOCK == errno)
+        {
+            result = 0;
+        }
+        else
+        {
+            AERON_SET_ERR(errno, "%s", "failed to poll(...)");
+            return -1;
+        }
     }
 
     return result;
+}
+
+int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen)
+{
+    if (getsockopt(fd, level, optname, optval, optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "getsockopt(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen)
+{
+    if (setsockopt(fd, level, optname, optval, optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "setsockopt(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return 0;
 }
 
 #elif defined(AERON_COMPILER_MSVC)
@@ -149,7 +188,7 @@ int aeron_net_init()
     return 0;
 }
 
-int set_socket_non_blocking(aeron_socket_t fd)
+int aeron_set_socket_non_blocking(aeron_socket_t fd)
 {
     u_long iMode = 1;
     int iResult = ioctlsocket(fd, FIONBIO, &iMode);
@@ -414,8 +453,14 @@ aeron_socket_t aeron_socket(int domain, int type, int protocol)
 {
     aeron_net_init();
     const SOCKET handle = socket(domain, type, protocol);
+    if (INVALID_SOCKET == handle)
+    {
+        AERON_SET_ERR_WIN(
+            WSAGetLastError(), "failed to socket(domain=%d, type=%d, protocol=%d)", domain, type, protocol);
+        return (aeron_socket_t)-1;
+    }
 
-    return (aeron_socket_t)(INVALID_SOCKET != handle ? handle : -1);
+    return (aeron_socket_t)handle;
 }
 
 void aeron_close_socket(aeron_socket_t socket)

@@ -104,6 +104,7 @@ int aeron_udp_channel_transport_init(
 
     if ((transport->fd = aeron_socket(bind_addr->ss_family, SOCK_DGRAM, 0)) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         goto error;
     }
 
@@ -272,7 +273,7 @@ int aeron_udp_channel_transport_init(
         }
     }
 
-    if (set_socket_non_blocking(transport->fd) < 0)
+    if (aeron_set_socket_non_blocking(transport->fd) < 0)
     {
         AERON_APPEND_ERR("%", "");
         goto error;

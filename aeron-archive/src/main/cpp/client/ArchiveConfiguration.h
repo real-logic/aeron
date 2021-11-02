@@ -543,7 +543,7 @@ private:
 
     CredentialsSupplier m_credentialsSupplier;
 
-    inline void applyDefaultParams(std::string &channel)
+    inline void applyDefaultParams(std::string &channel) const
     {
         std::shared_ptr<ChannelUri> uri = ChannelUri::parse(channel);
 
@@ -551,10 +551,12 @@ private:
         {
             uri->put(TERM_LENGTH_PARAM_NAME, std::to_string(m_controlTermBufferLength));
         }
+
         if (!uri->containsKey(MTU_LENGTH_PARAM_NAME))
         {
             uri->put(MTU_LENGTH_PARAM_NAME, std::to_string(m_controlMtuLength));
         }
+
         if (!uri->containsKey(SPARSE_PARAM_NAME))
         {
             uri->put(SPARSE_PARAM_NAME, m_controlTermBufferSparse ? "true" : "false");

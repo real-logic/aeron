@@ -153,8 +153,9 @@ int set_socket_non_blocking(aeron_socket_t fd)
 {
     u_long iMode = 1;
     int iResult = ioctlsocket(fd, FIONBIO, &iMode);
-    if (NO_ERROR != iResult)
+    if (iResult < 0)
     {
+        AERON_SET_ERR_WIN(WSAGetLastError(), "ioctlsocket(fd=%d,...)", fd);
         return -1;
     }
 

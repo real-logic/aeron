@@ -274,7 +274,7 @@ int aeron_udp_channel_transport_init(
 
     if (set_socket_non_blocking(transport->fd) < 0)
     {
-        AERON_SET_ERR(errno, "%", "set_socket_non_blocking");
+        AERON_APPEND_ERR("%", "");
         goto error;
     }
 

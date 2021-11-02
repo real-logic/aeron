@@ -31,7 +31,7 @@ namespace aeron { namespace archive { namespace client
  * @param recordingId      of the recording which transitioned.
  * @param subscriptionId   of the subscription which captured the recording.
  * @param position         of the recording at the time of transition.
- * @param signal           signal for operation the recording has undertaken.
+ * @param signal           for operation the recording has undertaken.
  */
 typedef std::function<void(
     std::int64_t controlSessionId,
@@ -51,7 +51,7 @@ public:
      * @param onRecordingSignal to which recording signals are dispatched.
      * @param subscription      to poll for new events.
      * @param controlSessionId  to filter on.
-     * @param fragmentLimit to apply for each polling operation.
+     * @param fragmentLimit     to apply for each polling operation.
      */
     RecordingSignalAdapter(
         const on_control_response_t &onResponse,

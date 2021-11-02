@@ -113,7 +113,7 @@ private:
                     BufferBuilder &builder = result->second;
                     const std::uint32_t limit = builder.limit();
 
-                    if (builder.limit() != DataFrameHeader::LENGTH)
+                    if (limit != DataFrameHeader::LENGTH)
                     {
                         builder.append(buffer, offset, length, header);
 

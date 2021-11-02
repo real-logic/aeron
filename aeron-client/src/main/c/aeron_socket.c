@@ -190,9 +190,9 @@ int aeron_net_init()
 
 int aeron_set_socket_non_blocking(aeron_socket_t fd)
 {
-    u_long iMode = 1;
-    int iResult = ioctlsocket(fd, FIONBIO, &iMode);
-    if (iResult < 0)
+    u_long mode = 1;
+    const int result = ioctlsocket(fd, FIONBIO, &mode);
+    if (SOCKET_ERROR == result)
     {
         AERON_SET_ERR_WIN(WSAGetLastError(), "ioctlsocket(fd=%d,...)", fd);
         return -1;
@@ -438,7 +438,7 @@ int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
 {
     int result = WSAPoll(fds, (ULONG)nfds, timeout);
 
-    if (result < 0)
+    if (SOCKET_ERROR == result)
     {
         const int err = WSAGetLastError();
 
@@ -473,7 +473,7 @@ void aeron_close_socket(aeron_socket_t socket)
  */
 int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen)
 {
-    if (getsockopt(fd, level, optname, optval, optlen) < 0)
+    if (SOCKET_ERROR == getsockopt(fd, level, optname, optval, optlen))
     {
         AERON_SET_ERR_WIN(GetLastError(), "getsockopt(fd=%d,...)", fd);
         return -1;
@@ -484,7 +484,7 @@ int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, so
 
 int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen)
 {
-    if (setsockopt(fd, level, optname, optval, optlen) < 0)
+    if (SOCKET_ERROR == setsockopt(fd, level, optname, optval, optlen))
     {
         AERON_SET_ERR_WIN(GetLastError(), "setsockopt(fd=%d,...)", fd);
         return -1;

@@ -38,7 +38,6 @@ typedef intptr_t pid_t;
 
 #include "ChannelUriStringBuilder.h"
 #include "client/AeronArchive.h"
-#include "client/RecordingEventsAdapter.h"
 #include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
 

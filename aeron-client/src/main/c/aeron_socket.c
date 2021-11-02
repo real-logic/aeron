@@ -396,7 +396,9 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
 int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
 {
-    if (WSAPoll(fds, (ULONG)nfds, timeout) < 0)
+    int result = WSAPoll(fds, (ULONG)nfds, timeout);
+
+    if (result < 0)
     {
         const int err = WSAGetLastError();
 
@@ -404,7 +406,7 @@ int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
         return -1;
     }
 
-    return 0;
+    return result;
 }
 
 aeron_socket_t aeron_socket(int domain, int type, int protocol)

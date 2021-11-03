@@ -250,13 +250,6 @@ int aeron_udp_transport_poller_poll(
 
         if (result < 0)
         {
-            int err = errno;
-
-            if (EINTR == err || EAGAIN == err)
-            {
-                return 0;
-            }
-
             AERON_APPEND_ERR("%s", "");
             return -1;
         }

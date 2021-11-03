@@ -100,10 +100,15 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
 ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
-    ssize_t result = sendmsg(fd, msghdr, flags);
+    ssize_t result = recvmsg(fd, msghdr, flags);
 
     if (result < 0)
     {
+        if (EINTR == errno || EAGAIN == errno || EWOULDBLOCK == errno)
+        {
+            return 0;
+        }
+
         AERON_SET_ERR(errno, "failed recvmsg(fd=%d,...)", fd);
         return -1;
     }
@@ -116,7 +121,7 @@ int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
     int result = poll(fds, (nfds_t)nfds, timeout);
     if (result < 0)
     {
-        if (EAGAIN == errno || EWOULDBLOCK == errno)
+        if (EAGAIN == errno || EWOULDBLOCK == errno || EINTR == errno)
         {
             result = 0;
         }

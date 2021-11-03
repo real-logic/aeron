@@ -379,13 +379,6 @@ int aeron_udp_channel_transport_recvmmsg(
 
         if (result < 0)
         {
-            int err = errno;
-
-            if (EINTR == err || EAGAIN == err)
-            {
-                break;
-            }
-
             AERON_APPEND_ERR("%s", "");
             return -1;
         }

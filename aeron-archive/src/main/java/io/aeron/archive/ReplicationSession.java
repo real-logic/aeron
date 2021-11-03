@@ -545,8 +545,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         int workCount = 0;
 
-        final boolean isEndOfStream = image.isEndOfStream();
         final boolean isClosed = image.isClosed();
+        final boolean isEndOfStream = image.isEndOfStream();
         final long position = image.position();
 
         if ((NULL_POSITION != srcStopPosition && position >= srcStopPosition) ||

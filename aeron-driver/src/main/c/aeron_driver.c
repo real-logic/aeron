@@ -338,7 +338,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     if ((probe_fd = aeron_socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "aeron_socket(AF_INET, SOCK_DGRAM, 0)");
+        AERON_APPEND_ERR("%s", "failed to probe socket for buffer lengths");
         goto cleanup;
     }
 
@@ -346,7 +346,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     socklen_t len = sizeof(default_sndbuf);
     if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF,...)");
+        AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_SNDBUF option");
         goto cleanup;
     }
 
@@ -354,7 +354,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     len = sizeof(default_rcvbuf);
     if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &default_rcvbuf, &len) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF,...)");
+        AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_RCVBUF option");
         goto cleanup;
     }
 
@@ -367,15 +367,14 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
         if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
         {
-            AERON_SET_ERR(
-                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, %" PRIu64 ")", (uint64_t)socket_sndbuf);
+            AERON_APPEND_ERR("failed to set SOL_SOCKET/SO_SNDBUF option to: %" PRIu64, (uint64_t)socket_sndbuf);
             goto cleanup;
         }
 
         len = sizeof(socket_sndbuf);
         if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, &len) < 0)
         {
-            AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF,...)");
+            AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_SNDBUF option");
             goto cleanup;
         }
 
@@ -398,15 +397,14 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
         if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
-            AERON_SET_ERR(
-                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, %" PRIu64 ")", (uint64_t)socket_rcvbuf);
+            AERON_APPEND_ERR("failed to set SOL_SOCKET/SO_RCVBUF option to: %" PRIu64, (uint64_t)socket_rcvbuf);
             goto cleanup;
         }
 
         len = sizeof(socket_rcvbuf);
         if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, &len) < 0)
         {
-            AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF,...)");
+            AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_RCVBUF option");
             goto cleanup;
         }
 

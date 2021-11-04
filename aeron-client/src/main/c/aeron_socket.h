@@ -29,6 +29,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+#include <poll.h>
 
 typedef int aeron_socket_t;
 
@@ -85,21 +86,13 @@ struct ifaddrs
     void *ifa_data;
 };
 
-int getifaddrs(struct ifaddrs **ifap);
-void freeifaddrs(struct ifaddrs *ifa);
-
-typedef unsigned long int nfds_t;
 typedef SSIZE_T ssize_t;
-
-ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
-ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
-int poll(struct pollfd *fds, nfds_t nfds, int timeout);
 
 #else
 #error Unsupported platform!
 #endif
 
-int set_socket_non_blocking(aeron_socket_t fd);
+int aeron_set_socket_non_blocking(aeron_socket_t fd);
 
 aeron_socket_t aeron_socket(int domain, int type, int protocol);
 
@@ -110,5 +103,15 @@ int aeron_net_init();
 int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen);
 
 int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen);
+
+int aeron_getifaddrs(struct ifaddrs **ifap);
+
+void aeron_freeifaddrs(struct ifaddrs *ifa);
+
+ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
+
+ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags);
+
+int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout);
 
 #endif //AERON_SOCKET_H

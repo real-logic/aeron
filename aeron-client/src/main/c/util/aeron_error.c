@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _POSIX_C_SOURCE 200112L
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -26,9 +30,52 @@
 #include "command/aeron_control_protocol.h"
 
 #define AERON_ERR_TRAILER "...\n"
+#define AERON_ERR_DESCRIPTION_UNAVAILABLE "<Unable to get error description>";
 
-#if defined(AERON_COMPILER_MSVC)
+#if defined(AERON_COMPILER_GCC)
+
+const char *aeron_strerror_r(int errcode, char *buffer, size_t length)
+{
+    int result = strerror_r(errcode, buffer, length);
+    if (result < 0)
+    {
+        return AERON_ERR_DESCRIPTION_UNAVAILABLE;
+    }
+
+    return buffer;
+}
+
+#elif defined(AERON_COMPILER_MSVC)
 #include <windows.h>
+
+const char *aeron_strerror_r(int errcode, char *buffer, size_t length)
+{
+    errno_t result = strerror_s(buffer, length, errcode);
+
+    if (0 != result)
+    {
+        return AERON_ERR_DESCRIPTION_UNAVAILABLE;
+    }
+    else
+    {
+        for (int i = (int)result; i > -1; i--)
+        {
+            if ('\0' == buffer[i] || isspace(buffer[i]))
+            {
+                buffer[i] = '\0';
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    return buffer;
+}
+
+#else
+#error Unsupported platform!
 #endif
 
 static AERON_INIT_ONCE error_is_initialized = AERON_INIT_ONCE_VALUE;
@@ -232,8 +279,21 @@ void aeron_err_set(int errcode, const char *function, const char *filename, int 
     aeron_set_errno(errcode);
     error_state->offset = 0;
 
-    const char *err_str = aeron_errcode() <= 0 ? aeron_error_code_str(-aeron_errcode()) : strerror(aeron_errcode());
-    aeron_err_printf(error_state, "(%d) %s\n", aeron_errcode(), err_str);
+    char err_buf[1024] = { 0 };
+    const char *system_err_message;
+    const int error_code = aeron_errcode();
+    if (error_code <= 0)
+    {
+        system_err_message = aeron_error_code_str(-error_code);
+    }
+    else
+    {
+        int length = 1024;
+        system_err_message = aeron_strerror_r(error_code, &err_buf[0], length);
+    }
+
+    const char *err_str = system_err_message;
+    aeron_err_printf(error_state, "(%d) %s\n", error_code, err_str);
     va_list args;
     va_start(args, format);
     aeron_err_update_entry(error_state, function, filename, line_number, format, args);
@@ -299,6 +359,61 @@ void aeron_error_dll_process_detach()
 
     aeron_thread_key_delete(error_key);
     error_key = TLS_OUT_OF_INDEXES;
+}
+
+void aeron_err_set_windows(int errcode, const char *function, const char *filename, int line_number, const char *format, ...)
+{
+    aeron_per_thread_error_t *error_state = get_required_error_state();
+
+    error_state->errcode = errcode;
+    error_state->offset = 0;
+
+    char err_buf[1024] = { 0 };
+    const char *system_err_message;
+    const int error_code = aeron_errcode();
+
+    if (error_code <= 0)
+    {
+        system_err_message = aeron_error_code_str(-error_code);
+    }
+    else
+    {
+        DWORD num_chars = FormatMessage(
+            FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            error_code,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            (LPTSTR)err_buf,
+            1024,
+            NULL);
+
+        if (0 == num_chars)
+        {
+            system_err_message = "<error text unavailable>";
+        }
+        else
+        {
+            for (int i = (int)num_chars; i > -1; i--)
+            {
+                if ('\0' == err_buf[i] || isspace(err_buf[i]))
+                {
+                    err_buf[i] = '\0';
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            system_err_message = err_buf;
+        }
+    }
+
+    aeron_err_printf(error_state, "(%d) %s\n", error_code, system_err_message);
+    va_list args;
+    va_start(args, format);
+    aeron_err_update_entry(error_state, function, filename, line_number, format, args);
+    va_end(args);
 }
 
 #endif

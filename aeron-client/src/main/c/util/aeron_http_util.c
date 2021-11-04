@@ -252,6 +252,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
     if ((sock = aeron_socket(parsed_url.address.ss_family, SOCK_STREAM, 0)) == -1)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -275,9 +276,9 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
         goto error;
     }
 
-    if (set_socket_non_blocking(sock) < 0)
+    if (aeron_set_socket_non_blocking(sock) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "http set_socket_non_blocking");
+        AERON_APPEND_ERR("%s", "");
         goto error;
     }
 

@@ -269,9 +269,9 @@ int aeron_interface_parse_and_resolve(const char *interface_str, struct sockaddr
         parsed_interface.host, parsed_interface.port, parsed_interface.prefix, sockaddr, prefixlen, AF_INET);
 }
 
-static aeron_getifaddrs_func_t aeron_getifaddrs_func = getifaddrs;
+static aeron_getifaddrs_func_t aeron_getifaddrs_func = aeron_getifaddrs;
 
-static aeron_freeifaddrs_func_t aeron_freeifaddrs_func = freeifaddrs;
+static aeron_freeifaddrs_func_t aeron_freeifaddrs_func = aeron_freeifaddrs;
 
 void aeron_set_getifaddrs(aeron_getifaddrs_func_t get_func, aeron_freeifaddrs_func_t free_func)
 {
@@ -284,11 +284,14 @@ int aeron_lookup_interfaces(aeron_ifaddr_func_t func, void *clientd)
     struct ifaddrs *ifaddrs = NULL;
     int result = -1;
 
-    if (aeron_getifaddrs_func(&ifaddrs) >= 0)
+    if (aeron_getifaddrs_func(&ifaddrs) < 0)
     {
-        result = aeron_lookup_interfaces_from_ifaddrs(func, clientd, ifaddrs);
-        aeron_freeifaddrs_func(ifaddrs);
+        AERON_APPEND_ERR("%s", "");
+        return result;
     }
+
+    result = aeron_lookup_interfaces_from_ifaddrs(func, clientd, ifaddrs);
+    aeron_freeifaddrs_func(ifaddrs);
 
     return result;
 }
@@ -320,11 +323,11 @@ uint32_t aeron_ipv4_netmask_from_prefixlen(size_t prefixlen)
 
     if (0 == prefixlen)
     {
-        value = ~(-1);
+        value = ~(UINT32_C(-1));
     }
     else
     {
-        value = ~(((uint32_t)1 << (32 - prefixlen)) - 1);
+        value = ~((UINT32_C(1) << (32 - prefixlen)) - 1);
     }
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
@@ -692,7 +695,7 @@ int aeron_netutil_get_so_buf_lengths(size_t *default_so_rcvbuf, size_t *default_
     aeron_socket_t fd = aeron_socket(PF_INET, SOCK_DGRAM, 0);
     if (fd < 0)
     {
-        AERON_SET_ERR(errno, "%s", "Failed to probe socket for buffer lengths");
+        AERON_APPEND_ERR("%s", "failed to probe socket for buffer lengths");
         goto done;
     }
 
@@ -700,13 +703,13 @@ int aeron_netutil_get_so_buf_lengths(size_t *default_so_rcvbuf, size_t *default_
 
     if (aeron_getsockopt(fd, SOL_SOCKET, SO_RCVBUF, default_so_rcvbuf, &optlen) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "Failed to get SO_RCVBUF option");
+        AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_RCVBUF option");
         goto done;
     }
 
     if (aeron_getsockopt(fd, SOL_SOCKET, SO_SNDBUF, default_so_sndbuf, &optlen) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "Failed to get SO_SNDBUF option");
+        AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_SNDBUF option");
         goto done;
     }
 

@@ -680,7 +680,14 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
         try
         {
-            logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
+            final Image image = awaitImage(activeLog.sessionId, logSubscription);
+            if (image.joinPosition() != logPosition)
+            {
+                throw new ClusterException("Cluster log must be contagious: " +
+                    "expectedPosition=" + logPosition + " joinPosition=" + image.joinPosition());
+            }
+
+            logAdapter.image(image);
             logAdapter.maxLogPosition(activeLog.maxLogPosition);
             logSubscription = null;
 

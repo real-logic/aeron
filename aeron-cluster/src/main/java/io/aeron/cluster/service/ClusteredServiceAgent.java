@@ -683,7 +683,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             final Image image = awaitImage(activeLog.sessionId, logSubscription);
             if (image.joinPosition() != logPosition)
             {
-                throw new ClusterException("Cluster log must be contagious: " +
+                throw new ClusterException("Cluster log must be contiguous: " +
                     "expectedPosition=" + logPosition + " joinPosition=" + image.joinPosition());
             }
 

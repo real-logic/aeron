@@ -38,6 +38,20 @@ class UdpChannelTransporTest : public testing::Test
 {
 public:
     UdpChannelTransporTest() = default;
+
+protected:
+    virtual void SetUp()
+    {
+        aeron_driver_context_init(&m_driverContext);
+    }
+
+
+    virtual void TearDown()
+    {
+        aeron_driver_context_close(m_driverContext);
+    }
+
+    aeron_driver_context_t *m_driverContext = nullptr;
 };
 
 void test_revc_func(
@@ -56,8 +70,6 @@ void test_revc_func(
 
 TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
 {
-    aeron_driver_context_t *driver_context = nullptr;
-    aeron_driver_context_init(&driver_context);
     aeron_udp_channel_transport_bindings_t *transport_bindings = aeron_udp_channel_transport_bindings_load_media(
         "default");
     aeron_udp_channel_data_paths_t data_paths = {};
@@ -69,7 +81,7 @@ TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
             nullptr,
             transport_bindings,
             test_revc_func,
-            driver_context,
+            m_driverContext,
             AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER));
 
     ASSERT_NE(nullptr, transport_bindings) << aeron_errmsg();
@@ -97,7 +109,7 @@ TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
         65536,
         65536,
         false,
-        driver_context,
+        m_driverContext,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER)) << aeron_errmsg();
 
     const char *data = "Hello World";

@@ -34,10 +34,10 @@ struct mmsghdr
 
 #define TEMP_URL_LEN (128)
 
-class UdpChannelTransporTest : public testing::Test
+class UdpChannelTransportTest : public testing::Test
 {
 public:
-    UdpChannelTransporTest() = default;
+    UdpChannelTransportTest() = default;
 
 protected:
     void SetUp() override
@@ -67,7 +67,7 @@ void test_revc_func(
 
 }
 
-TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
+TEST_F(UdpChannelTransportTest, shouldErrorWithInvalidSendAddress)
 {
     aeron_udp_channel_transport_bindings_t *transport_bindings = aeron_udp_channel_transport_bindings_load_media(
         "default");

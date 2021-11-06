@@ -276,11 +276,16 @@ public:
 
         if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())
         {
-            if (m_controlResponsePoller->controlSessionId() == m_controlSessionId &&
-                m_controlResponsePoller->isControlResponse() &&
-                m_controlResponsePoller->isCodeError())
+            if (m_controlResponsePoller->controlSessionId() == m_controlSessionId)
             {
-                return m_controlResponsePoller->errorMessage();
+                if (m_controlResponsePoller->isControlResponse() && m_controlResponsePoller->isCodeError())
+                {
+                    return m_controlResponsePoller->errorMessage();
+                }
+                else if (m_controlResponsePoller->isRecordingSignal())
+                {
+                    dispatchRecordingSignal();
+                }
             }
         }
 
@@ -314,29 +319,79 @@ public:
         }
         else if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())
         {
-            if (m_controlResponsePoller->controlSessionId() == m_controlSessionId &&
-                m_controlResponsePoller->isControlResponse() &&
-                m_controlResponsePoller->isCodeError())
+            if (m_controlResponsePoller->controlSessionId() == m_controlSessionId)
             {
-                if (m_ctx->errorHandler() != nullptr)
+                if (m_controlResponsePoller->isControlResponse() && m_controlResponsePoller->isCodeError())
                 {
-                    ArchiveException ex(
-                        static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
-                        m_controlResponsePoller->correlationId(),
-                        m_controlResponsePoller->errorMessage(),
-                        SOURCEINFO);
-                    m_ctx->errorHandler()(ex);
+                    if (m_ctx->errorHandler() != nullptr)
+                    {
+                        ArchiveException ex(
+                            static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                            m_controlResponsePoller->correlationId(),
+                            m_controlResponsePoller->errorMessage(),
+                            SOURCEINFO);
+                        m_ctx->errorHandler()(ex);
+                    }
+                    else
+                    {
+                        throw ArchiveException(
+                            static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                            m_controlResponsePoller->correlationId(),
+                            m_controlResponsePoller->errorMessage(),
+                            SOURCEINFO);
+                    }
                 }
-                else
+                else if (m_controlResponsePoller->isRecordingSignal())
                 {
-                    throw ArchiveException(
-                        static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
-                        m_controlResponsePoller->correlationId(),
-                        m_controlResponsePoller->errorMessage(),
-                        SOURCEINFO);
+                    dispatchRecordingSignal();
                 }
             }
         }
+    }
+
+    /**
+     * Poll for RecordingSignals and dispatch them to Context#recordingSignalConsumer.
+     *
+     * @return the number of RecordingSignals dispatched.
+     */
+    inline std::int32_t pollForRecordingSignals()
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+
+        if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())
+        {
+            if (m_controlResponsePoller->controlSessionId() == m_controlSessionId)
+            {
+                if (m_controlResponsePoller->isControlResponse() && m_controlResponsePoller->isCodeError())
+                {
+                    if (m_ctx->errorHandler() != nullptr)
+                    {
+                        ArchiveException ex(
+                            static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                            m_controlResponsePoller->correlationId(),
+                            m_controlResponsePoller->errorMessage(),
+                            SOURCEINFO);
+                        m_ctx->errorHandler()(ex);
+                    }
+                    else
+                    {
+                        throw ArchiveException(
+                            static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                            m_controlResponsePoller->correlationId(),
+                            m_controlResponsePoller->errorMessage(),
+                            SOURCEINFO);
+                    }
+                }
+                else if (m_controlResponsePoller->isRecordingSignal())
+                {
+                    dispatchRecordingSignal();
+                    return 1;
+                }
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -1737,6 +1792,16 @@ private:
         }
     }
 
+    inline void dispatchRecordingSignal() const
+    {
+        m_ctx->recordingSignalConsumer()(
+            m_controlResponsePoller->controlSessionId(),
+            m_controlResponsePoller->recordingId(),
+            m_controlResponsePoller->subscriptionId(),
+            m_controlResponsePoller->position(),
+            m_controlResponsePoller->recordingSignal());
+    }
+
     template<typename IdleStrategy>
     inline void pollNextResponse(std::int64_t correlationId, long long deadlineNs, ControlResponsePoller &poller)
     {
@@ -1748,6 +1813,13 @@ private:
 
             if (poller.isPollComplete())
             {
+                if (m_controlResponsePoller->isRecordingSignal() &&
+                    m_controlResponsePoller->controlSessionId() == m_controlSessionId)
+                {
+                    dispatchRecordingSignal();
+                    continue;
+                }
+
                 break;
             }
 

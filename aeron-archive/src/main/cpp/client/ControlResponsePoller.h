@@ -20,6 +20,7 @@
 
 #include "Aeron.h"
 #include "ControlledFragmentAssembler.h"
+#include "aeron_archive_client/RecordingSignal.h"
 
 namespace aeron { namespace archive { namespace client
 {
@@ -52,16 +53,21 @@ public:
         if (m_isPollComplete)
         {
             m_isPollComplete = false;
-            m_controlSessionId = -1;
-            m_correlationId = -1;
-            m_relevantId = -1;
+            m_controlSessionId = aeron::NULL_VALUE;
+            m_correlationId = aeron::NULL_VALUE;
+            m_relevantId = aeron::NULL_VALUE;
+            m_recordingId = aeron::NULL_VALUE;
+            m_subscriptionId = aeron::NULL_VALUE;
+            m_position = aeron::NULL_VALUE;
+            m_recordingSignal = RecordingSignal::NULL_VALUE;
             m_version = 0;
-            m_codeValue = -1;
+            m_codeValue = aeron::NULL_VALUE;
             m_errorMessage = "";
             m_isCodeOk = false;
             m_isCodeError = false;
             m_isControlResponse = false;
             m_wasChallenged = false;
+            m_isRecordingSignal = false;
             delete[] m_encodedChallenge.first;
             m_encodedChallenge.first = nullptr;
             m_encodedChallenge.second = 0;
@@ -101,6 +107,46 @@ public:
     }
 
     /**
+     * Recording id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     *
+     * @return recording id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     */
+    inline std::int64_t recordingId() const
+    {
+        return m_recordingId;
+    }
+
+    /**
+     * Subscription id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     *
+     * @return subscription id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     */
+    inline std::int64_t subscriptionId() const
+    {
+        return m_subscriptionId;
+    }
+
+    /**
+     * Position of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     *
+     * @return position id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     */
+    inline std::int64_t position() const
+    {
+        return m_position;
+    }
+
+    /**
+     * Signal of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     *
+     * @return signal id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     */
+    inline RecordingSignal::Value recordingSignal() const
+    {
+        return m_recordingSignal;
+    }
+
+    /**
      * Version response from the server in semantic version form.
      *
      * @return response from the server in semantic version form.
@@ -118,6 +164,16 @@ public:
     inline bool isControlResponse() const
     {
         return m_isControlResponse;
+    }
+
+    /**
+     * Was last received message a RecordingSignal?
+     *
+     * @return whether the last received message was a RecordingSignal.
+     */
+    inline bool isRecordingSignal() const
+    {
+        return m_isRecordingSignal;
     }
 
     /**
@@ -198,17 +254,23 @@ private:
     std::shared_ptr<Subscription> m_subscription;
     const int m_fragmentLimit;
 
-    std::int64_t m_controlSessionId = -1;
-    std::int64_t m_correlationId = -1;
-    std::int64_t m_relevantId = -1;
+    std::int64_t m_controlSessionId = aeron::NULL_VALUE;
+    std::int64_t m_correlationId = aeron::NULL_VALUE;
+    std::int64_t m_relevantId = aeron::NULL_VALUE;
+    std::int64_t m_recordingId = aeron::NULL_VALUE;
+    std::int64_t m_subscriptionId = aeron::NULL_VALUE;
+    std::int64_t m_position = aeron::NULL_VALUE;
+    RecordingSignal::Value m_recordingSignal = RecordingSignal::NULL_VALUE;
     std::int32_t m_version = 0;
     int m_codeValue = -1;
     std::string m_errorMessage;
+
     bool m_isPollComplete = false;
     bool m_isCodeOk = false;
     bool m_isCodeError = false;
     bool m_isControlResponse = false;
     bool m_wasChallenged = false;
+    bool m_isRecordingSignal = false;
     std::pair<const char *, std::uint32_t> m_encodedChallenge = { nullptr, 0 };
 };
 

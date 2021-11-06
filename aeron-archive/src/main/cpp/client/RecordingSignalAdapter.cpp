@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "RecordingSignalAdapter.h"
 #include "ArchiveException.h"
 #include "aeron_archive_client/MessageHeader.h"
 #include "aeron_archive_client/ControlResponse.h"
 #include "aeron_archive_client/RecordingSignalEvent.h"
+#include "RecordingSignalAdapter.h"
 
 using namespace aeron;
 using namespace aeron::archive::client;

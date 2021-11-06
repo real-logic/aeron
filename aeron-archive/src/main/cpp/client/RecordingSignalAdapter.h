@@ -18,27 +18,11 @@
 
 #include "Aeron.h"
 #include "ControlledFragmentAssembler.h"
+#include "ArchiveConfiguration.h"
 #include "ControlResponseAdapter.h"
-#include "aeron_archive_client/RecordingSignal.h"
 
 namespace aeron { namespace archive { namespace client
 {
-
-/**
- * An signal has been received from the Archive indicating an operation on a recording.
- *
- * @param controlSessionId of the originating session.
- * @param recordingId      of the recording which transitioned.
- * @param subscriptionId   of the subscription which captured the recording.
- * @param position         of the recording at the time of transition.
- * @param signal           for operation the recording has undertaken.
- */
-typedef std::function<void(
-    std::int64_t controlSessionId,
-    std::int64_t recordingId,
-    std::int64_t subscriptionId,
-    std::int64_t position,
-    RecordingSignal::Value signal)> on_recording_signal_t;
 
 class RecordingSignalAdapter
 {

@@ -18,6 +18,7 @@
 
 #include "Aeron.h"
 #include "ControlledFragmentAssembler.h"
+#include "ArchiveConfiguration.h"
 
 namespace aeron { namespace archive { namespace client
 {
@@ -47,6 +48,13 @@ public:
     RecordingSubscriptionDescriptorPoller(
         std::shared_ptr<Subscription> subscription,
         const exception_handler_t &errorHandler,
+        std::int64_t controlSessionId,
+        int fragmentLimit = 10);
+
+    RecordingSubscriptionDescriptorPoller(
+        std::shared_ptr<Subscription> subscription,
+        const exception_handler_t &errorHandler,
+        const on_recording_signal_t &recordingSignalConsumer,
         std::int64_t controlSessionId,
         int fragmentLimit = 10);
 
@@ -129,6 +137,7 @@ private:
     ControlledFragmentAssembler m_fragmentAssembler;
     controlled_poll_fragment_handler_t m_fragmentHandler;
     exception_handler_t m_errorHandler;
+    on_recording_signal_t m_onRecordingSignal = defaultRecordingSignalConsumer();
     recording_subscription_descriptor_consumer_t m_consumer = nullptr;
     std::shared_ptr<Subscription> m_subscription;
 

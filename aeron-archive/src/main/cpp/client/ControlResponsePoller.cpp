@@ -19,6 +19,7 @@
 #include "aeron_archive_client/MessageHeader.h"
 #include "aeron_archive_client/ControlResponse.h"
 #include "aeron_archive_client/Challenge.h"
+#include "aeron_archive_client/RecordingSignalEvent.h"
 
 using namespace aeron;
 using namespace aeron::archive::client;
@@ -62,63 +63,88 @@ ControlledPollAction ControlResponsePoller::onFragment(
             SOURCEINFO);
     }
 
-    const uint16_t templateId = msgHeader.templateId();
-    if (ControlResponse::sbeTemplateId() == templateId)
+    switch (msgHeader.templateId())
     {
-        ControlResponse response(
-            buffer.sbeData() + offset + MessageHeader::encodedLength(),
-            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-            msgHeader.blockLength(),
-            msgHeader.version());
+        case ControlResponse::SBE_TEMPLATE_ID:
+        {
+            ControlResponse response(
+                buffer.sbeData() + offset + MessageHeader::encodedLength(),
+                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+                msgHeader.blockLength(),
+                msgHeader.version());
 
-        m_controlSessionId = response.controlSessionId();
-        m_correlationId = response.correlationId();
-        m_relevantId = response.relevantId();
-        m_version = response.version();
+            m_controlSessionId = response.controlSessionId();
+            m_correlationId = response.correlationId();
+            m_relevantId = response.relevantId();
+            m_version = response.version();
 
-        ControlResponseCode::Value code = response.code();
-        m_codeValue = code;
-        m_isCodeError = ControlResponseCode::Value::ERROR == code;
-        m_isCodeOk = ControlResponseCode::Value::OK == code;
+            ControlResponseCode::Value code = response.code();
+            m_codeValue = code;
+            m_isCodeError = ControlResponseCode::Value::ERROR == code;
+            m_isCodeOk = ControlResponseCode::Value::OK == code;
 
-        m_errorMessage = response.getErrorMessageAsString();
+            m_errorMessage = response.getErrorMessageAsString();
 
-        m_isControlResponse = true;
-        m_isPollComplete = true;
+            m_isControlResponse = true;
+            m_isPollComplete = true;
 
-        return ControlledPollAction::BREAK;
+            return ControlledPollAction::BREAK;
+        }
+
+        case Challenge::SBE_TEMPLATE_ID:
+        {
+            Challenge challenge(
+                buffer.sbeData() + offset + MessageHeader::encodedLength(),
+                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+                msgHeader.blockLength(),
+                msgHeader.version());
+
+            m_controlSessionId = challenge.controlSessionId();
+            m_correlationId = challenge.correlationId();
+            m_relevantId = aeron::NULL_VALUE;
+            m_version = challenge.version();
+
+            m_codeValue = ControlResponseCode::NULL_VALUE;
+            m_isCodeError = false;
+            m_isCodeOk = false;
+            m_errorMessage = "";
+
+            const std::uint32_t encodedChallengeLength = challenge.encodedChallengeLength();
+            char *encodedBuffer = new char[encodedChallengeLength];
+            challenge.getEncodedChallenge(encodedBuffer, encodedChallengeLength);
+
+            m_encodedChallenge.first = encodedBuffer;
+            m_encodedChallenge.second = encodedChallengeLength;
+
+            m_isControlResponse = false;
+            m_wasChallenged = true;
+            m_isPollComplete = true;
+
+            return ControlledPollAction::BREAK;
+        }
+
+        case RecordingSignalEvent::SBE_TEMPLATE_ID:
+        {
+            RecordingSignalEvent recordingSignalEvent(
+                buffer.sbeData() + offset + MessageHeader::encodedLength(),
+                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+                msgHeader.blockLength(),
+                msgHeader.version());
+
+            m_controlSessionId = recordingSignalEvent.controlSessionId();
+            m_correlationId = recordingSignalEvent.correlationId();
+            m_recordingId = recordingSignalEvent.recordingId();
+            m_subscriptionId = recordingSignalEvent.subscriptionId();
+            m_position = recordingSignalEvent.position();
+            m_recordingSignal = recordingSignalEvent.signal();
+
+            m_isRecordingSignal = true;
+            m_isPollComplete = true;
+
+            return ControlledPollAction::BREAK;
+        }
     }
-    else if (Challenge::sbeTemplateId() == templateId)
-    {
-        Challenge response(
-            buffer.sbeData() + offset + MessageHeader::encodedLength(),
-            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-            msgHeader.blockLength(),
-            msgHeader.version());
 
-        m_controlSessionId = response.controlSessionId();
-        m_correlationId = response.correlationId();
-        m_relevantId = aeron::NULL_VALUE;
-        m_version = response.version();
-
-        m_codeValue = ControlResponseCode::NULL_VALUE;
-        m_isCodeError = false;
-        m_isCodeOk = false;
-        m_errorMessage = "";
-
-        const std::uint32_t encodedChallengeLength = response.encodedChallengeLength();
-        char *encodedBuffer = new char[encodedChallengeLength];
-        response.getEncodedChallenge(encodedBuffer, encodedChallengeLength);
-
-        m_encodedChallenge.first = encodedBuffer;
-        m_encodedChallenge.second = encodedChallengeLength;
-
-        m_isControlResponse = false;
-        m_wasChallenged = true;
-        m_isPollComplete = true;
-
-        return ControlledPollAction::BREAK;
-    }
 
     return ControlledPollAction::CONTINUE;
 }

@@ -19,6 +19,7 @@
 #include "Aeron.h"
 #include "ChannelUri.h"
 #include "util/MacroUtil.h"
+#include "aeron_archive_client/RecordingSignal.h"
 
 namespace aeron { namespace archive { namespace client
 {
@@ -96,6 +97,39 @@ struct CredentialsSupplier
     {
     }
 };
+
+/**
+ * A signal has been received from the Archive indicating an operation on a recording.
+ *
+ * @param controlSessionId of the originating session.
+ * @param recordingId      of the recording which transitioned.
+ * @param subscriptionId   of the subscription which captured the recording.
+ * @param position         of the recording at the time of transition.
+ * @param signal           for operation the recording has undertaken.
+ */
+typedef std::function<void(
+    std::int64_t controlSessionId,
+    std::int64_t recordingId,
+    std::int64_t subscriptionId,
+    std::int64_t position,
+    RecordingSignal::Value signal)> on_recording_signal_t;
+
+/**
+ * Default function for consuming recording signals which is an no-op.
+ *
+ * @return function for consuming recording signals which is an no-op.
+ */
+inline on_recording_signal_t defaultRecordingSignalConsumer()
+{
+    return
+        [&](std::int64_t controlSessionId,
+            std::int64_t recordingId,
+            std::int64_t subscriptionId,
+            std::int64_t position,
+            RecordingSignal::Value signal)
+        {
+        };
+}
 
 namespace Configuration
 {
@@ -496,6 +530,28 @@ public:
     }
 
     /**
+     * Get the consumer to which recording signals are dispatched when polling for control responses.
+     *
+     * @return the consumer to which recording signals are dispatched when polling for control responses.
+     */
+    inline on_recording_signal_t recordingSignalConsumer() const
+    {
+        return m_onRecordingSignal;
+    }
+
+    /**
+     * Set the consumer to which recording signals are dispatched when polling for control responses.
+     *
+     * @param recordingSignalConsumer to which recording signals are dispatched when polling for control responses.
+     * @return this for a fluent API.
+     */
+    inline this_t &recordingSignalConsumer(const on_recording_signal_t &recordingSignalConsumer)
+    {
+        m_onRecordingSignal = recordingSignalConsumer;
+        return *this;
+    }
+
+    /**
      * Get the credential supplier that will be called for generating encoded credentials.
      *
      * @return the credential supplier that will be called for generating encoded credentials.
@@ -540,6 +596,7 @@ private:
     bool m_ownsAeronClient = false;
 
     exception_handler_t m_errorHandler = nullptr;
+    on_recording_signal_t m_onRecordingSignal = defaultRecordingSignalConsumer();
 
     CredentialsSupplier m_credentialsSupplier;
 

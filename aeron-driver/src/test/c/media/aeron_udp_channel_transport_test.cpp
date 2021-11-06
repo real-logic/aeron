@@ -40,13 +40,12 @@ public:
     UdpChannelTransporTest() = default;
 
 protected:
-    virtual void SetUp()
+    void SetUp() override
     {
         aeron_driver_context_init(&m_driverContext);
     }
 
-
-    virtual void TearDown()
+    void TearDown() override
     {
         aeron_driver_context_close(m_driverContext);
     }
@@ -116,7 +115,7 @@ TEST_F(UdpChannelTransporTest, shouldErrorWithInvalidSendAddress)
 
     struct iovec message = {};
     message.iov_base = static_cast<void *>(const_cast<char *>(data));
-    message.iov_len = strlen(data);
+    message.iov_len = static_cast<unsigned int>(strlen(data));
 
     struct msghdr header = {};
     header.msg_name = static_cast<void *>(&send_addr);

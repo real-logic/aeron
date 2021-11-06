@@ -323,7 +323,7 @@ uint32_t aeron_ipv4_netmask_from_prefixlen(size_t prefixlen)
 
     if (0 == prefixlen)
     {
-        value = ~(UINT32_C(-1));
+        value = ~(-1);
     }
     else
     {

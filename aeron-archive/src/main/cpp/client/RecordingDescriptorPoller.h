@@ -16,9 +16,8 @@
 #ifndef AERON_RECORDING_DESCRIPTOR_POLLER_H
 #define AERON_RECORDING_DESCRIPTOR_POLLER_H
 
-#include "Aeron.h"
-#include "ControlledFragmentAssembler.h"
 #include "ArchiveConfiguration.h"
+#include "ControlledFragmentAssembler.h"
 
 namespace aeron { namespace archive { namespace client
 {

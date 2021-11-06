@@ -16,9 +16,8 @@
 #ifndef AERON_ARCHIVE_RECORDING_SIGNAL_ADAPTER_H
 #define AERON_ARCHIVE_RECORDING_SIGNAL_ADAPTER_H
 
-#include "Aeron.h"
-#include "ControlledFragmentAssembler.h"
 #include "ArchiveConfiguration.h"
+#include "ControlledFragmentAssembler.h"
 #include "ControlResponseAdapter.h"
 
 namespace aeron { namespace archive { namespace client

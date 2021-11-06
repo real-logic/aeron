@@ -16,10 +16,10 @@
 #ifndef AERON_ARCHIVE_CONFIGURATION_H
 #define AERON_ARCHIVE_CONFIGURATION_H
 
+#include "aeron_archive_client/RecordingSignal.h"
 #include "Aeron.h"
 #include "ChannelUri.h"
 #include "util/MacroUtil.h"
-#include "aeron_archive_client/RecordingSignal.h"
 
 namespace aeron { namespace archive { namespace client
 {

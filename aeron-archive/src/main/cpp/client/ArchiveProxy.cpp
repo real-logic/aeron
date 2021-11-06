@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "ArchiveException.h"
 #include "ArchiveConfiguration.h"
+#include "ArchiveException.h"
 #include "ArchiveProxy.h"
 #include "concurrent/YieldingIdleStrategy.h"
 #include "aeron_archive_client/BoundedReplayRequest.h"

@@ -136,7 +136,7 @@ ControlledPollAction ControlResponsePoller::onFragment(
             m_recordingId = recordingSignalEvent.recordingId();
             m_subscriptionId = recordingSignalEvent.subscriptionId();
             m_position = recordingSignalEvent.position();
-            m_recordingSignal = recordingSignalEvent.signal();
+            m_recordingSignalCode = recordingSignalEvent.signalRaw();
 
             m_isRecordingSignal = true;
             m_isPollComplete = true;

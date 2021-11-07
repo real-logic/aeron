@@ -16,7 +16,6 @@
 #ifndef AERON_ARCHIVE_CONFIGURATION_H
 #define AERON_ARCHIVE_CONFIGURATION_H
 
-#include "aeron_archive_client/RecordingSignal.h"
 #include "Aeron.h"
 #include "ChannelUri.h"
 #include "util/MacroUtil.h"
@@ -101,18 +100,21 @@ struct CredentialsSupplier
 /**
  * A signal has been received from the Archive indicating an operation on a recording.
  *
- * @param controlSessionId of the originating session.
- * @param recordingId      of the recording which transitioned.
- * @param subscriptionId   of the subscription which captured the recording.
- * @param position         of the recording at the time of transition.
- * @param signal           for operation the recording has undertaken.
+ * The raw code representing the recording operation can be converted using methods on the RecordingSignal enum
+ * generated for the SBE coded.
+ *
+ * @param controlSessionId    of the originating session.
+ * @param recordingId         of the recording which transitioned.
+ * @param subscriptionId      of the subscription which captured the recording.
+ * @param position            of the recording at the time of transition.
+ * @param recordingSignalCode raw code representing the operation the recording has undertaken.
  */
 typedef std::function<void(
     std::int64_t controlSessionId,
     std::int64_t recordingId,
     std::int64_t subscriptionId,
     std::int64_t position,
-    RecordingSignal::Value signal)> on_recording_signal_t;
+    std::int32_t recordingSignalCode)> on_recording_signal_t;
 
 /**
  * Default function for consuming recording signals which is an no-op.
@@ -126,7 +128,7 @@ inline on_recording_signal_t defaultRecordingSignalConsumer()
             std::int64_t recordingId,
             std::int64_t subscriptionId,
             std::int64_t position,
-            RecordingSignal::Value signal)
+            std::int32_t recordingSignalCode)
         {
         };
 }

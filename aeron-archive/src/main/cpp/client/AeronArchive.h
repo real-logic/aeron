@@ -1799,7 +1799,7 @@ private:
             m_controlResponsePoller->recordingId(),
             m_controlResponsePoller->subscriptionId(),
             m_controlResponsePoller->position(),
-            m_controlResponsePoller->recordingSignal());
+            m_controlResponsePoller->recordingSignalCode());
     }
 
     template<typename IdleStrategy>

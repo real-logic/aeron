@@ -104,7 +104,7 @@ ControlledPollAction RecordingSignalAdapter::onFragment(
                 recordingSignalEvent.recordingId(),
                 recordingSignalEvent.subscriptionId(),
                 recordingSignalEvent.position(),
-                recordingSignalEvent.signal());
+                recordingSignalEvent.signalRaw());
 
             m_isAbort = true;
             return ControlledPollAction::BREAK;

@@ -170,7 +170,7 @@ ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
                 recordingSignalEvent.recordingId(),
                 recordingSignalEvent.subscriptionId(),
                 recordingSignalEvent.position(),
-                recordingSignalEvent.signal());
+                recordingSignalEvent.signalRaw());
 
             break;
         }

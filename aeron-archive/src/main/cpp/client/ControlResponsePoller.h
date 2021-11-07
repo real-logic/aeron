@@ -20,7 +20,6 @@
 
 #include "Aeron.h"
 #include "ControlledFragmentAssembler.h"
-#include "aeron_archive_client/RecordingSignal.h"
 
 namespace aeron { namespace archive { namespace client
 {
@@ -59,7 +58,7 @@ public:
             m_recordingId = aeron::NULL_VALUE;
             m_subscriptionId = aeron::NULL_VALUE;
             m_position = aeron::NULL_VALUE;
-            m_recordingSignal = RecordingSignal::NULL_VALUE;
+            m_recordingSignalCode = INT32_MIN;
             m_version = 0;
             m_codeValue = aeron::NULL_VALUE;
             m_errorMessage = "";
@@ -137,13 +136,13 @@ public:
     }
 
     /**
-     * Signal of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     * Code of polled RecordingSignal or INT32_MIN if poll returned nothing.
      *
-     * @return signal id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     * @return code of polled RecordingSignal or INT32_MIN if poll returned nothing.
      */
-    inline RecordingSignal::Value recordingSignal() const
+    inline std::int32_t recordingSignalCode() const
     {
-        return m_recordingSignal;
+        return m_recordingSignalCode;
     }
 
     /**
@@ -260,7 +259,7 @@ private:
     std::int64_t m_recordingId = aeron::NULL_VALUE;
     std::int64_t m_subscriptionId = aeron::NULL_VALUE;
     std::int64_t m_position = aeron::NULL_VALUE;
-    RecordingSignal::Value m_recordingSignal = RecordingSignal::NULL_VALUE;
+    std::int32_t m_recordingSignalCode = INT32_MIN;
     std::int32_t m_version = 0;
     int m_codeValue = -1;
     std::string m_errorMessage;

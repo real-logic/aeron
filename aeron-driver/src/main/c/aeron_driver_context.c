@@ -981,6 +981,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
+    if ((_context->conductor_udp_channel_transport_bindings = aeron_udp_channel_transport_bindings_load_media(
+        AERON_CONFIG_GETENV_OR_DEFAULT(
+            AERON_CONDUCTOR_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_ENV_VAR,
+            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_DEFAULT))) == NULL)
+    {
+        return -1;
+    }
+
     if ((value = getenv(AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS_ENV_VAR)))
     {
         if ((_context->udp_channel_outgoing_interceptor_bindings = aeron_udp_channel_interceptor_bindings_load(

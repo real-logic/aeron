@@ -293,7 +293,7 @@ class Election
                     case LEADER_INIT:
                     case LEADER_READY:
                     case LEADER_REPLAY:
-                        publishNewLeadershipTerm(follower, logLeadershipTermId, ctx.clusterClock().timeNanos());
+                        publishNewLeadershipTerm(follower, logLeadershipTermId, ctx.clusterClock().time());
                         break;
                 }
             }

@@ -16,8 +16,8 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
+import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -1316,9 +1316,8 @@ public final class ClusterMember
         }
         catch (final RegistrationException ex)
         {
-            errorHandler.onError(new ClusterException(
-                "failed to add consensus publication for member: " + member.id + " - " + ex.getMessage(),
-                AeronException.Category.WARN));
+            errorHandler.onError(new ClusterEvent(
+                "failed to add consensus publication for member: " + member.id + " - " + ex.getMessage()));
         }
     }
 

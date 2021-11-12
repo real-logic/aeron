@@ -576,7 +576,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Default interval at which a member will send out status updates during election phases.
          */
-        public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(20);
+        public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
         /**
          * Interval at which a dynamic joining member will send add cluster member and snapshot recording

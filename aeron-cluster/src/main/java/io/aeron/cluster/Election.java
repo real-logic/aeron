@@ -586,6 +586,15 @@ class Election
             {
                 if (member.id() != thisMember.id())
                 {
+                    if (null == member.publication())
+                    {
+                        ClusterMember.tryAddPublication(
+                            member,
+                            ctx.consensusStreamId(),
+                            ctx.aeron(),
+                            ctx.countedErrorHandler());
+                    }
+
                     consensusPublisher.canvassPosition(
                         member.publication(), logLeadershipTermId, appendPosition, leadershipTermId, thisMember.id());
                 }

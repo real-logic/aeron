@@ -300,7 +300,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 this);
 
             election.doWork(clusterClock.timeNanos());
-
             state(ConsensusModule.State.ACTIVE);
         }
 
@@ -509,7 +508,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long leadershipTermId,
         final int followerMemberId)
     {
-        checkFollowerAndAddConsensusPublication(followerMemberId);
+        checkFollowerForConsensusPublication(followerMemberId);
 
         if (null != election)
         {
@@ -3181,7 +3180,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
     }
 
-    private void checkFollowerAndAddConsensusPublication(final int followerMemberId)
+    private void checkFollowerForConsensusPublication(final int followerMemberId)
     {
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
         if (null != follower && null == follower.publication())

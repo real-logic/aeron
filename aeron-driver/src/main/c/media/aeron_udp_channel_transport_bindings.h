@@ -129,7 +129,6 @@ struct aeron_udp_channel_transport_bindings_stct
     {
         const char *name;
         const char *type;
-        const aeron_udp_channel_transport_bindings_t *next_binding;
         const void *source_symbol;
     }
     meta_info;

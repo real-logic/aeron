@@ -116,8 +116,6 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
     cp.addOption(CommandOption(optFrags,    1, 1, "limit           Fragment Count Limit."));
 
-    signal(SIGINT, sigIntHandler);
-
     std::shared_ptr<std::thread> rateReporterThread;
     std::shared_ptr<std::thread> pollThread;
 
@@ -166,6 +164,9 @@ int main(int argc, char **argv)
             });
 
         Aeron aeron(context);
+        struct sigaction act;
+        act.sa_handler = sigIntHandler;
+        sigaction(SIGINT, &act, NULL);
 
         std::int64_t subscriptionId = aeron.addSubscription(settings.channel, settings.streamId);
         std::int64_t publicationId = aeron.addPublication(settings.channel, settings.streamId);

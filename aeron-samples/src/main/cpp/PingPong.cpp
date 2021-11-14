@@ -167,8 +167,6 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optFrags,          1, 1, "limit           Fragment Count Limit."));
     cp.addOption(CommandOption(optWarmupMessages, 1, 1, "number          Number of Messages for warmup."));
 
-    signal(SIGINT, sigIntHandler);
-
     std::shared_ptr<std::thread> pongThread;
 
     try
@@ -220,6 +218,9 @@ int main(int argc, char **argv)
         context.preTouchMappedMemory(true);
 
         std::shared_ptr<Aeron> aeron = Aeron::connect(context);
+        struct sigaction act;
+        act.sa_handler = sigIntHandler;
+        sigaction(SIGINT, &act, NULL);
 
         pongSubscriptionId = aeron->addSubscription(settings.pongChannel, settings.pongStreamId);
         pingPublicationId = aeron->addPublication(settings.pingChannel, settings.pingStreamId);

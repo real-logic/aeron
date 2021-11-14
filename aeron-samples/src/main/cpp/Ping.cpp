@@ -41,6 +41,14 @@ void sigIntHandler(int)
     running = false;
 }
 
+void checkInterrupt()
+{
+    if (!running)
+    {
+        throw std::runtime_error("Interrupted");
+    }
+}
+
 static const char optHelp           = 'h';
 static const char optPrefix         = 'p';
 static const char optPingChannel    = 'c';
@@ -107,6 +115,8 @@ void sendPingAndReceivePong(
 
         do
         {
+            checkInterrupt();
+
             // timestamps in the message are relative to this app, so just send the timestamp directly.
             steady_clock::time_point start = steady_clock::now();
             srcBuffer.putBytes(0, (std::uint8_t *)&start, sizeof(steady_clock::time_point));
@@ -115,6 +125,8 @@ void sendPingAndReceivePong(
 
         while (image.position() < position)
         {
+            checkInterrupt();
+
             int fragments = image.poll(fragmentHandler, settings.fragmentCountLimit);
             idleStrategy.idle(fragments);
         }
@@ -134,8 +146,6 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optLength,        1, 1, "length          Length of Messages."));
     cp.addOption(CommandOption(optFrags,         1, 1, "limit           Fragment Count Limit."));
     cp.addOption(CommandOption(optWarmupMessages,1, 1, "number          Number of Messages for warmup."));
-
-    signal(SIGINT, sigIntHandler);
 
     try
     {
@@ -188,6 +198,9 @@ int main(int argc, char **argv)
         context.preTouchMappedMemory(true);
 
         Aeron aeron(context);
+        struct sigaction act;
+        act.sa_handler = sigIntHandler;
+        sigaction(SIGINT, &act, NULL);
 
         subscriptionId = aeron.addSubscription(settings.pongChannel, settings.pongStreamId);
         publicationId = aeron.addExclusivePublication(settings.pingChannel, settings.pingStreamId);
@@ -195,6 +208,8 @@ int main(int argc, char **argv)
         std::shared_ptr<Subscription> pongSubscription = aeron.findSubscription(subscriptionId);
         while (!pongSubscription)
         {
+            checkInterrupt();
+
             std::this_thread::yield();
             pongSubscription = aeron.findSubscription(subscriptionId);
         }
@@ -202,12 +217,16 @@ int main(int argc, char **argv)
         std::shared_ptr<ExclusivePublication> pingPublication = aeron.findExclusivePublication(publicationId);
         while (!pingPublication)
         {
+            checkInterrupt();
+
             std::this_thread::yield();
             pingPublication = aeron.findExclusivePublication(publicationId);
         }
 
         while (countDown > 0)
         {
+            checkInterrupt();
+
             std::this_thread::yield();
         }
 
@@ -274,7 +293,7 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        std::cerr << "FAILED: " << e.what() << " : " << std::endl;
+        std::cerr << "FAILED: " << e.what() << std::endl;
         return -1;
     }
 

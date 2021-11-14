@@ -34,6 +34,15 @@ void sigIntHandler(int)
     running = false;
 }
 
+void checkInterrupt()
+{
+    if (!running)
+    {
+        throw std::runtime_error("Interrupted");
+    }
+}
+
+
 static const char optHelp         = 'h';
 static const char optPrefix       = 'p';
 static const char optPingChannel  = 'c';
@@ -84,8 +93,6 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optPongStreamId, 1, 1, "streamId        Pong Stream ID."));
     cp.addOption(CommandOption(optFrags,        1, 1, "limit           Fragment Count Limit."));
 
-    signal(SIGINT, sigIntHandler);
-
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
@@ -129,6 +136,9 @@ int main(int argc, char **argv)
         context.preTouchMappedMemory(true);
 
         Aeron aeron(context);
+        struct sigaction act;
+        act.sa_handler = sigIntHandler;
+        sigaction(SIGINT, &act, NULL);
 
         std::int64_t subscriptionId = aeron.addSubscription(settings.pingChannel, settings.pingStreamId);
         std::int64_t publicationId = aeron.addExclusivePublication(settings.pongChannel, settings.pongStreamId);
@@ -136,6 +146,8 @@ int main(int argc, char **argv)
         std::shared_ptr<Subscription> pingSubscription = aeron.findSubscription(subscriptionId);
         while (!pingSubscription)
         {
+            checkInterrupt();
+
             std::this_thread::yield();
             pingSubscription = aeron.findSubscription(subscriptionId);
         }
@@ -143,6 +155,8 @@ int main(int argc, char **argv)
         std::shared_ptr<ExclusivePublication> pongPublication = aeron.findExclusivePublication(publicationId);
         while (!pongPublication)
         {
+            checkInterrupt();
+
             std::this_thread::yield();
             pongPublication = aeron.findExclusivePublication(publicationId);
         }
@@ -189,7 +203,7 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        std::cerr << "FAILED: " << e.what() << " : " << std::endl;
+        std::cerr << "FAILED: " << e.what() << std::endl;
         return -1;
     }
 

@@ -630,7 +630,7 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    re_resolution_check_interval_ns=%" PRIu64, context->re_resolution_check_interval_ns);
 
     const aeron_udp_channel_transport_bindings_t *bindings = context->udp_channel_transport_bindings;
-    while (NULL != bindings)
+    if (NULL != bindings)
     {
         fprintf(
             fpout, "\n    udp_channel_transport_bindings.%s=%s,%p%s",
@@ -638,12 +638,10 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
             bindings->meta_info.name,
             bindings->meta_info.source_symbol,
             aeron_dlinfo(bindings->meta_info.source_symbol, buffer, sizeof(buffer)));
-
-        bindings = bindings->meta_info.next_binding;
     }
 
     const aeron_udp_channel_transport_bindings_t *conductor_bindings = context->conductor_udp_channel_transport_bindings;
-    while (NULL != conductor_bindings)
+    if (NULL != conductor_bindings)
     {
         fprintf(
             fpout, "\n    conductor_udp_channel_transport_bindings.%s=%s,%p%s",
@@ -651,8 +649,6 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
             conductor_bindings->meta_info.name,
             conductor_bindings->meta_info.source_symbol,
             aeron_dlinfo(conductor_bindings->meta_info.source_symbol, buffer, sizeof(buffer)));
-
-        conductor_bindings = conductor_bindings->meta_info.next_binding;
     }
 
     const aeron_udp_channel_interceptor_bindings_t *interceptor_bindings;

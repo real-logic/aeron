@@ -87,8 +87,6 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optChannel,  1, 1, "channel     Channel."));
     cp.addOption(CommandOption(optStreamId, 1, 1, "streamId    Stream ID."));
 
-    signal(SIGINT, sigIntHandler);
-
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
@@ -123,6 +121,9 @@ int main(int argc, char **argv)
             });
 
         std::shared_ptr<Aeron> aeron = Aeron::connect(context);
+        struct sigaction act;
+        act.sa_handler = sigIntHandler;
+        sigaction(SIGINT, &act, NULL);
 
         // add the subscription to start the process
         std::int64_t id = aeron->addSubscription(settings.channel, settings.streamId);

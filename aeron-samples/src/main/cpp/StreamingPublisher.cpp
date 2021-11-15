@@ -128,8 +128,6 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optLength,   1, 1, "length          Length of Messages."));
     cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
 
-    signal(SIGINT, sigIntHandler);
-
     std::shared_ptr<std::thread> rateReporterThread;
 
     try
@@ -156,7 +154,7 @@ int main(int argc, char **argv)
             });
 
         Aeron aeron(context);
-
+        signal(SIGINT, sigIntHandler);
         std::int64_t id = aeron.addPublication(settings.channel, settings.streamId);
         std::shared_ptr<Publication> publication = aeron.findPublication(id);
 

@@ -218,10 +218,7 @@ int main(int argc, char **argv)
         context.preTouchMappedMemory(true);
 
         std::shared_ptr<Aeron> aeron = Aeron::connect(context);
-        struct sigaction act;
-        act.sa_handler = sigIntHandler;
-        sigaction(SIGINT, &act, NULL);
-
+        signal(SIGINT, sigIntHandler);
         pongSubscriptionId = aeron->addSubscription(settings.pongChannel, settings.pongStreamId);
         pingPublicationId = aeron->addPublication(settings.pingChannel, settings.pingStreamId);
         pingSubscriptionId = aeron->addSubscription(settings.pingChannel, settings.pingStreamId);

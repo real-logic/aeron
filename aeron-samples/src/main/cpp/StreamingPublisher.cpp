@@ -154,10 +154,7 @@ int main(int argc, char **argv)
             });
 
         Aeron aeron(context);
-        struct sigaction act;
-        act.sa_handler = sigIntHandler;
-        sigaction(SIGINT, &act, NULL);
-
+        signal(SIGINT, sigIntHandler);
         std::int64_t id = aeron.addPublication(settings.channel, settings.streamId);
         std::shared_ptr<Publication> publication = aeron.findPublication(id);
 

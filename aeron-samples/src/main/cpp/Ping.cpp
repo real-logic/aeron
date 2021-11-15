@@ -198,10 +198,7 @@ int main(int argc, char **argv)
         context.preTouchMappedMemory(true);
 
         Aeron aeron(context);
-        struct sigaction act;
-        act.sa_handler = sigIntHandler;
-        sigaction(SIGINT, &act, NULL);
-
+        signal(SIGINT, sigIntHandler);
         subscriptionId = aeron.addSubscription(settings.pongChannel, settings.pongStreamId);
         publicationId = aeron.addExclusivePublication(settings.pingChannel, settings.pingStreamId);
 

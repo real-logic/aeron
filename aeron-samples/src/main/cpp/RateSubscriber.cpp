@@ -131,10 +131,7 @@ int main(int argc, char **argv)
             });
 
         Aeron aeron(context);
-        struct sigaction act;
-        act.sa_handler = sigIntHandler;
-        sigaction(SIGINT, &act, NULL);
-
+        signal(SIGINT, sigIntHandler);
         // add the subscription to start the process
         std::int64_t id = aeron.addSubscription(settings.channel, settings.streamId);
 

@@ -103,10 +103,7 @@ int main(int argc, char **argv)
             });
 
         std::shared_ptr<Aeron> aeron = Aeron::connect(context);
-        struct sigaction act;
-        act.sa_handler = sigIntHandler;
-        sigaction(SIGINT, &act, NULL);
-
+        signal(SIGINT, sigIntHandler);
         // add the publication to start the process
         std::int64_t id = aeron->addPublication(settings.channel, settings.streamId);
 

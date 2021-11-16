@@ -95,8 +95,6 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optStreamId, 1, 1, "streamId        Stream ID."));
     cp.addOption(CommandOption(optFrags,    1, 1, "limit           Fragment Count Limit."));
 
-    signal(SIGINT, sigIntHandler);
-
     std::shared_ptr<std::thread> rateReporterThread;
 
     try
@@ -133,7 +131,7 @@ int main(int argc, char **argv)
             });
 
         Aeron aeron(context);
-
+        signal(SIGINT, sigIntHandler);
         // add the subscription to start the process
         std::int64_t id = aeron.addSubscription(settings.channel, settings.streamId);
 

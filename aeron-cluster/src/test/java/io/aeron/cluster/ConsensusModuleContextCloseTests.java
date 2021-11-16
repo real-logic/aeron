@@ -48,13 +48,13 @@ class ConsensusModuleContextCloseTests
     private final Counter commitPosition = mock(Counter.class);
     private final InvalidNameException commitPositionException = new InvalidNameException();
     private final Counter clusterNodeRole = mock(Counter.class);
-    private final AssertionError clusterNodeRoleException = new AssertionError();
+    private final UnsupportedOperationException clusterNodeRoleException = new UnsupportedOperationException();
     private final Counter controlToggle = mock(Counter.class);
     private final IllegalArgumentException controlToggleException = new IllegalArgumentException();
     private final Counter snapshotCounter = mock(Counter.class);
     private final IndexOutOfBoundsException snapshotCounterException = new IndexOutOfBoundsException();
     private final Counter timedOutClientCounter = mock(Counter.class);
-    private final UnknownError timedOutClientCounterException = new UnknownError();
+    private final IllegalMonitorStateException timedOutClientCounterException = new IllegalMonitorStateException();
     private ConsensusModule.Context context;
 
     @BeforeEach

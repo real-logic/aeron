@@ -49,12 +49,12 @@ class AeronArchiveTest
 
         final Publication publication = mock(Publication.class);
         when(publication.isConnected()).thenReturn(true);
-        final IllegalAccessError publicationException = new IllegalAccessError("publication is closed");
+        final IllegalStateException publicationException = new IllegalStateException("publication is closed");
         doThrow(publicationException).when(publication).close();
 
         final Subscription subscription = mock(Subscription.class);
         when(controlResponsePoller.subscription()).thenReturn(subscription);
-        final NoClassDefFoundError subscriptionException = new NoClassDefFoundError("subscription");
+        final IndexOutOfBoundsException subscriptionException = new IndexOutOfBoundsException("subscription");
         doThrow(subscriptionException).when(subscription).close();
 
         when(archiveProxy.publication()).thenReturn(publication);
@@ -93,11 +93,11 @@ class AeronArchiveTest
 
         final Publication publication = mock(Publication.class);
         when(publication.isConnected()).thenReturn(true);
-        doThrow(new IllegalAccessError("publication is closed")).when(publication).close();
+        doThrow(new IllegalStateException("publication is closed")).when(publication).close();
 
         final Subscription subscription = mock(Subscription.class);
         when(controlResponsePoller.subscription()).thenReturn(subscription);
-        doThrow(new NoClassDefFoundError("subscription")).when(subscription).close();
+        doThrow(new IndexOutOfBoundsException("subscription")).when(subscription).close();
 
         when(archiveProxy.publication()).thenReturn(publication);
         final IndexOutOfBoundsException closeSessionException = new IndexOutOfBoundsException();

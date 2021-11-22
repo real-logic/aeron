@@ -47,7 +47,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.File;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static io.aeron.archive.ArchiveTests.awaitConnectedReply;
@@ -105,7 +104,6 @@ public class ArchiveTest
     private Thread replayConsumer = null;
     private Thread progressTracker = null;
 
-    private final AtomicLong correlationId = new AtomicLong(0);
     private volatile long recorded = 0;
     private volatile long totalRecordingLength;
     private volatile long startPosition;
@@ -371,7 +369,7 @@ public class ArchiveTest
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
         assertNull(trackerError);
 
-        final long requestCorrelationId = correlationId.getAndIncrement();
+        final long requestCorrelationId = client.nextCorrelationId();
         if (!archiveProxy.stopRecording(publishUri, PUBLISH_STREAM_ID, requestCorrelationId, controlSessionId))
         {
             throw new IllegalStateException("failed to send stop recording");
@@ -412,13 +410,13 @@ public class ArchiveTest
         Tests.awaitConnected(recordingEvents);
 
         controlResponse = client.addSubscription(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
-        final long connectCorrelationId = correlationId.getAndIncrement();
+        final long connectCorrelationId = client.nextCorrelationId();
         assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
 
         awaitConnectedReply(controlResponse, connectCorrelationId, (sessionId) -> controlSessionId = sessionId);
         verifyEmptyDescriptorList(archiveProxy);
 
-        final long startRecordingCorrelationId = correlationId.getAndIncrement();
+        final long startRecordingCorrelationId = client.nextCorrelationId();
         if (!archiveProxy.startRecording(
             publishUri,
             PUBLISH_STREAM_ID,
@@ -432,17 +430,17 @@ public class ArchiveTest
         ArchiveTests.awaitOk(controlResponse, startRecordingCorrelationId);
     }
 
-    private void verifyEmptyDescriptorList(final ArchiveProxy client)
+    private void verifyEmptyDescriptorList(final ArchiveProxy archiveProxy)
     {
-        final long requestCorrelationId = correlationId.getAndIncrement();
-        client.listRecordings(0, 100, requestCorrelationId, controlSessionId);
+        final long requestCorrelationId = client.nextCorrelationId();
+        archiveProxy.listRecordings(0, 100, requestCorrelationId, controlSessionId);
         ArchiveTests.awaitResponse(controlResponse, requestCorrelationId);
     }
 
     private void verifyDescriptorListOngoingArchive(
         final ArchiveProxy archiveProxy, final int publicationTermBufferLength)
     {
-        final long requestCorrelationId = correlationId.getAndIncrement();
+        final long requestCorrelationId = client.nextCorrelationId();
         archiveProxy.listRecording(recordingId, requestCorrelationId, controlSessionId);
         final MutableBoolean isDone = new MutableBoolean();
 
@@ -576,7 +574,7 @@ public class ArchiveTest
     {
         try (Subscription replay = client.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
         {
-            final long replayCorrelationId = correlationId.getAndIncrement();
+            final long replayCorrelationId = client.nextCorrelationId();
 
             if (!archiveProxy.replay(
                 recordingId,
@@ -750,7 +748,7 @@ public class ArchiveTest
 
                 try (Subscription replay = client.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
                 {
-                    final long replayCorrelationId = correlationId.getAndIncrement();
+                    final long replayCorrelationId = client.nextCorrelationId();
 
                     if (!archiveProxy.replay(
                         recordingId,

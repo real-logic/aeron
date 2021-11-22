@@ -1689,7 +1689,7 @@ abstract class ArchiveConductor
         if (image.joinPosition() != recordingSummary.stopPosition)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image joinPosition=" + image.joinPosition() + " != stopPosition=" + recordingSummary.stopPosition;
+                " image.joinPosition=" + image.joinPosition() + " != rec.stopPosition=" + recordingSummary.stopPosition;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveEvent(msg);
         }
@@ -1697,7 +1697,8 @@ abstract class ArchiveConductor
         if (image.initialTermId() != recordingSummary.initialTermId)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image initialTermId=" + image.initialTermId() + " != initialTermId=" + recordingSummary.initialTermId;
+                " image.initialTermId=" + image.initialTermId() +
+                " != rec.initialTermId=" + recordingSummary.initialTermId;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveEvent(msg);
         }
@@ -1705,8 +1706,8 @@ abstract class ArchiveConductor
         if (image.termBufferLength() != recordingSummary.termBufferLength)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image termBufferLength=" + image.termBufferLength() +
-                " != termBufferLength=" + recordingSummary.termBufferLength;
+                " image.termBufferLength=" + image.termBufferLength() +
+                " != rec.termBufferLength=" + recordingSummary.termBufferLength;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveEvent(msg);
         }
@@ -1714,7 +1715,7 @@ abstract class ArchiveConductor
         if (image.mtuLength() != recordingSummary.mtuLength)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image mtuLength=" + image.mtuLength() + " != mtuLength=" + recordingSummary.mtuLength;
+                " image.mtuLength=" + image.mtuLength() + " != rec.mtuLength=" + recordingSummary.mtuLength;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveEvent(msg);
         }

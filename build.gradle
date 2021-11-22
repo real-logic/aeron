@@ -137,7 +137,8 @@ allprojects {
         resolutionStrategy {
             failOnVersionConflict()
 
-            force "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
+            force "org.agrona:agrona:${agronaVersion}",
+                  "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
                   "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         }
     }

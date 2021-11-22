@@ -47,6 +47,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.File;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static io.aeron.archive.ArchiveTests.awaitConnectedReply;
@@ -96,19 +97,20 @@ public class ArchiveTest
     private int messageCount;
     private int[] messageLengths;
     private long totalDataLength;
-    private long totalRecordingLength;
-    private volatile long recorded = 0;
     private long requestedStartPosition;
-    private volatile long stopPosition = NULL_POSITION;
-    private Throwable trackerError;
 
     private Subscription controlResponse;
-    private long correlationId;
-    private long startPosition;
     private int requestedInitialTermId;
 
     private Thread replayConsumer = null;
     private Thread progressTracker = null;
+
+    private final AtomicLong correlationId = new AtomicLong(0);
+    private volatile long recorded = 0;
+    private volatile long totalRecordingLength;
+    private volatile long startPosition;
+    private volatile long stopPosition = NULL_POSITION;
+    private volatile Throwable trackerError;
 
     private void before(final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
@@ -369,7 +371,7 @@ public class ArchiveTest
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
         assertNull(trackerError);
 
-        final long requestCorrelationId = correlationId++;
+        final long requestCorrelationId = correlationId.getAndIncrement();
         if (!archiveProxy.stopRecording(publishUri, PUBLISH_STREAM_ID, requestCorrelationId, controlSessionId))
         {
             throw new IllegalStateException("failed to send stop recording");
@@ -410,13 +412,13 @@ public class ArchiveTest
         Tests.awaitConnected(recordingEvents);
 
         controlResponse = client.addSubscription(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
-        final long connectCorrelationId = correlationId++;
+        final long connectCorrelationId = correlationId.getAndIncrement();
         assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
 
         awaitConnectedReply(controlResponse, connectCorrelationId, (sessionId) -> controlSessionId = sessionId);
         verifyEmptyDescriptorList(archiveProxy);
 
-        final long startRecordingCorrelationId = correlationId++;
+        final long startRecordingCorrelationId = correlationId.getAndIncrement();
         if (!archiveProxy.startRecording(
             publishUri,
             PUBLISH_STREAM_ID,
@@ -432,7 +434,7 @@ public class ArchiveTest
 
     private void verifyEmptyDescriptorList(final ArchiveProxy client)
     {
-        final long requestCorrelationId = correlationId++;
+        final long requestCorrelationId = correlationId.getAndIncrement();
         client.listRecordings(0, 100, requestCorrelationId, controlSessionId);
         ArchiveTests.awaitResponse(controlResponse, requestCorrelationId);
     }
@@ -440,7 +442,7 @@ public class ArchiveTest
     private void verifyDescriptorListOngoingArchive(
         final ArchiveProxy archiveProxy, final int publicationTermBufferLength)
     {
-        final long requestCorrelationId = correlationId++;
+        final long requestCorrelationId = correlationId.getAndIncrement();
         archiveProxy.listRecording(recordingId, requestCorrelationId, controlSessionId);
         final MutableBoolean isDone = new MutableBoolean();
 
@@ -574,7 +576,7 @@ public class ArchiveTest
     {
         try (Subscription replay = client.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
         {
-            final long replayCorrelationId = correlationId++;
+            final long replayCorrelationId = correlationId.getAndIncrement();
 
             if (!archiveProxy.replay(
                 recordingId,
@@ -619,7 +621,7 @@ public class ArchiveTest
         final File archiveDir = archive.context().archiveDir();
         final Catalog catalog = archive.context().catalog();
         remaining = totalDataLength;
-        this.messageCount = 0;
+        messageCount = 0;
 
         while (catalog.stopPosition(recordingId) != stopPosition)
         {
@@ -655,7 +657,8 @@ public class ArchiveTest
     {
         if (!FrameDescriptor.isPaddingFrame(buffer, offset - HEADER_LENGTH))
         {
-            final int expectedLength = messageLengths[messageCount] - HEADER_LENGTH;
+            final int messageLength = messageLengths[messageCount];
+            final int expectedLength = messageLength - HEADER_LENGTH;
             if (length != expectedLength)
             {
                 fail("messageLength=" + length + " expected=" + expectedLength + " messageCount=" + messageCount);
@@ -664,23 +667,26 @@ public class ArchiveTest
             assertEquals(messageCount, buffer.getInt(offset));
             assertEquals((byte)'z', buffer.getByte(offset + 4));
 
-            remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
+            remaining -= BitUtil.align(messageLength, FrameDescriptor.FRAME_ALIGNMENT);
             messageCount++;
         }
     }
 
     private void validateFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        assertEquals(messageLengths[messageCount] - HEADER_LENGTH, length);
+        final int messageLength = messageLengths[messageCount];
+        assertEquals(messageLength - HEADER_LENGTH, length);
         assertEquals(messageCount, buffer.getInt(offset));
         assertEquals((byte)'z', buffer.getByte(offset + 4));
 
-        remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
+        remaining -= BitUtil.align(messageLength, FrameDescriptor.FRAME_ALIGNMENT);
         messageCount++;
     }
 
     private Thread trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch latch)
     {
+        recorded = 0;
+
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
@@ -698,9 +704,7 @@ public class ArchiveTest
             {
                 try
                 {
-                    recorded = 0;
-
-                    while (stopPosition == NULL_POSITION || recorded < totalRecordingLength)
+                    while (NULL_POSITION == stopPosition || recorded < totalRecordingLength)
                     {
                         if (recordingEventsAdapter.poll() == 0)
                         {
@@ -746,7 +750,7 @@ public class ArchiveTest
 
                 try (Subscription replay = client.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
                 {
-                    final long replayCorrelationId = correlationId++;
+                    final long replayCorrelationId = correlationId.getAndIncrement();
 
                     if (!archiveProxy.replay(
                         recordingId,

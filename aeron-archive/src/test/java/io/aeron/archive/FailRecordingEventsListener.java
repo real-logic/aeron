@@ -29,16 +29,17 @@ public class FailRecordingEventsListener implements RecordingEventsListener
         final String channel,
         final String sourceIdentity)
     {
-        fail();
+        fail("recordingId=" + recordingId + ", startPosition=" + startPosition + ", sessionId=" + sessionId +
+            ", streamId=" + streamId + ", channel=" + channel + ", sourceIdentity=" + sourceIdentity);
     }
 
     public void onProgress(final long recordingId, final long startPosition, final long position)
     {
-        fail();
+        fail("recordingId=" + recordingId + ", startPosition=" + startPosition + ", position=" + position);
     }
 
     public void onStop(final long recordingId, final long startPosition, final long stopPosition)
     {
-        fail();
+        fail("recordingId=" + recordingId + ", startPosition=" + startPosition + ", stopPosition=" + stopPosition);
     }
 }

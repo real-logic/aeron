@@ -268,7 +268,7 @@ public class TestCluster implements AutoCloseable
         context.aeronArchiveContext
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlResponseChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
             .aeronDirectoryName(aeronDirName);
 
         context.mediaDriverContext
@@ -323,7 +323,7 @@ public class TestCluster implements AutoCloseable
         context.aeronArchiveContext
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlResponseChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
             .aeronDirectoryName(aeronDirName);
 
         context.mediaDriverContext
@@ -378,7 +378,7 @@ public class TestCluster implements AutoCloseable
         context.aeronArchiveContext
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlResponseChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
             .aeronDirectoryName(aeronDirName);
 
         context.mediaDriverContext
@@ -427,7 +427,7 @@ public class TestCluster implements AutoCloseable
 
         context.aeronArchiveContext
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlResponseChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
             .aeronDirectoryName(aeronDirName);
 
         context.mediaDriverContext
@@ -487,7 +487,7 @@ public class TestCluster implements AutoCloseable
 
         context.aeronArchiveContext
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, backupNodeIndex))
-            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, backupNodeIndex))
+            .controlResponseChannel(ARCHIVE_CONTROL_RESPONSE_CHANNEL)
             .aeronDirectoryName(aeronDirName);
 
         context.mediaDriverContext

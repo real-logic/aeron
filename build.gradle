@@ -849,6 +849,9 @@ project(':aeron-all') {
             'Implementation-Version': aeronVersion,
             'Implementation-Vendor': 'Real Logic Limited',
             'Automatic-Module-Name': 'io.aeron.all')
+
+        relocate 'net.bytebuddy', 'io.aeron.shadow.net.bytebuddy'
+        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
 
     jar.finalizedBy shadowJar

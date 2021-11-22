@@ -149,11 +149,15 @@ public class BasicAuctionClusteredServiceNode
             .errorHandler(BasicAuctionClusteredServiceNode.errorHandler("Media Driver"));
         // end::media_driver[]
 
+        final AeronArchive.Context replicationArchiveContext = new AeronArchive.Context()
+            .controlResponseChannel("aeron:udp?endpoint=" + hostname + ":0");
+
         // tag::archive[]
         final Archive.Context archiveContext = new Archive.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, "archive"))
             .controlChannel(udpChannel(nodeId, hostname, ARCHIVE_CONTROL_PORT_OFFSET))
+            .archiveClientContext(replicationArchiveContext)
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);

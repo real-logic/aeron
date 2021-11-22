@@ -1849,8 +1849,7 @@ abstract class ArchiveConductor
 
         if (position > endPosition)
         {
-            final String msg =
-                "invalid detach: in use, newStartPosition=" + position + " upperBound=" + endPosition;
+            final String msg = "invalid detach: in use, newStartPosition=" + position + " upperBound=" + endPosition;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return false;
         }

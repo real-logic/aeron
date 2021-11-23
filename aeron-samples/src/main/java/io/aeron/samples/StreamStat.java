@@ -26,6 +26,8 @@ import static io.aeron.driver.status.PublisherPos.PUBLISHER_POS_TYPE_ID;
 import static io.aeron.driver.status.ReceiverPos.RECEIVER_POS_TYPE_ID;
 import static io.aeron.driver.status.SenderLimit.SENDER_LIMIT_TYPE_ID;
 import static io.aeron.driver.status.StreamCounter.*;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Tool for taking a snapshot of Aeron streams and relevant position counters.
@@ -83,10 +85,24 @@ public final class StreamStat
                 if ((typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) ||
                     typeId == SENDER_LIMIT_TYPE_ID || typeId == PUBLISHER_POS_TYPE_ID)
                 {
+                    final String channel;
+                    final int uriIndex = label.indexOf("aeron:");
+                    if (uriIndex >= 0)
+                    {
+                        channel = label.substring(uriIndex);
+                    }
+                    else
+                    {
+                        final int channelLength = Math.min(
+                            keyBuffer.getInt(CHANNEL_OFFSET, LITTLE_ENDIAN),
+                            MAX_CHANNEL_LENGTH);
+                        channel = keyBuffer.getStringWithoutLengthAscii(CHANNEL_OFFSET + SIZE_OF_INT, channelLength);
+                    }
+
                     final StreamCompositeKey key = new StreamCompositeKey(
                         keyBuffer.getInt(SESSION_ID_OFFSET),
                         keyBuffer.getInt(STREAM_ID_OFFSET),
-                        keyBuffer.getStringAscii(CHANNEL_OFFSET));
+                        channel);
 
                     final StreamPosition position = new StreamPosition(
                         keyBuffer.getLong(REGISTRATION_ID_OFFSET),

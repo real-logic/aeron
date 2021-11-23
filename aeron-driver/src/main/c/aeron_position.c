@@ -41,14 +41,11 @@ int32_t aeron_stream_counter_allocate(
             .registration_id = registration_id,
             .session_id = session_id,
             .stream_id = stream_id,
-            .channel_length = (int32_t)channel_length
         };
 
-    strncpy(layout.channel, channel, sizeof(layout.channel) - 1);
-    if (channel_length > sizeof(layout.channel) - 1)
-    {
-        layout.channel_length = sizeof(layout.channel) - 1;
-    }
+    size_t key_channel_length = channel_length > sizeof(layout.channel) ? sizeof(layout.channel) : channel_length;
+    layout.channel_length = sizeof(layout.channel);
+    memcpy(layout.channel, channel, key_channel_length);
 
     int32_t counter_id = aeron_counters_manager_allocate(
         counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
@@ -196,16 +193,11 @@ int32_t aeron_channel_endpoint_status_allocate(
 {
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
     int label_length = snprintf(label, sizeof(label), "%s: %.*s", name, (int)channel_length, channel);
-    aeron_channel_endpoint_status_key_layout_t layout =
-        {
-            .channel_length = (int32_t)channel_length
-        };
 
-    strncpy(layout.channel, channel, sizeof(layout.channel) - 1);
-    if (channel_length > sizeof(layout.channel) - 1)
-    {
-        layout.channel_length = sizeof(layout.channel) - 1;
-    }
+    aeron_channel_endpoint_status_key_layout_t layout;
+    size_t key_channel_length = channel_length > sizeof(layout.channel) ? sizeof(layout.channel) : channel_length;
+    layout.channel_length = sizeof(layout.channel);
+    memcpy(layout.channel, channel, key_channel_length);
 
     int32_t counter_id = aeron_counters_manager_allocate(
         counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);

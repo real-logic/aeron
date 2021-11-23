@@ -44,7 +44,7 @@ int32_t aeron_stream_counter_allocate(
         };
 
     size_t key_channel_length = channel_length > sizeof(layout.channel) ? sizeof(layout.channel) : channel_length;
-    layout.channel_length = sizeof(layout.channel);
+    layout.channel_length = (int32_t)key_channel_length;
     memcpy(layout.channel, channel, key_channel_length);
 
     int32_t counter_id = aeron_counters_manager_allocate(
@@ -196,7 +196,7 @@ int32_t aeron_channel_endpoint_status_allocate(
 
     aeron_channel_endpoint_status_key_layout_t layout;
     size_t key_channel_length = channel_length > sizeof(layout.channel) ? sizeof(layout.channel) : channel_length;
-    layout.channel_length = sizeof(layout.channel);
+    layout.channel_length = (int32_t)key_channel_length;
     memcpy(layout.channel, channel, key_channel_length);
 
     int32_t counter_id = aeron_counters_manager_allocate(

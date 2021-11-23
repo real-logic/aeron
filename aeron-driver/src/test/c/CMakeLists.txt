@@ -93,3 +93,4 @@ aeron_driver_test(congestion_control_test aeron_congestion_control_test.cpp)
 
 aeron_driver_test(network_publication_test aeron_network_publication_test.cpp)
 aeron_driver_test(timestamps_test aeron_timestamps_test.cpp)
+aeron_driver_test(position_test aeron_position_test.cpp)

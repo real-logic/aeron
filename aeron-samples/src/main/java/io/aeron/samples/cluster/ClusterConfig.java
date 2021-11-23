@@ -343,7 +343,18 @@ public final class ClusterConfig
         return sb.toString();
     }
 
-    static int calculatePort(final int nodeId, final int portBase, final int offset)
+    /**
+     * Calculates a port for use with a node based on a specific offset.  Can be used with the predefined offsets, e.g.
+     * {@link ClusterConfig#ARCHIVE_CONTROL_PORT_OFFSET} or with custom offsets.  For custom offsets select a value
+     * larger than largest predefined offsets.  A value larger than the largest predefined offset, but less than
+     * {@link ClusterConfig#PORTS_PER_NODE} is required.
+     *
+     * @param nodeId   The id for the member of the cluster.
+     * @param portBase The port base to be used.
+     * @param offset   The offset to add onto the port base
+     * @return a calculated port, which should be unique for the specified criteria.
+     */
+    public static int calculatePort(final int nodeId, final int portBase, final int offset)
     {
         return portBase + (nodeId * PORTS_PER_NODE) + offset;
     }

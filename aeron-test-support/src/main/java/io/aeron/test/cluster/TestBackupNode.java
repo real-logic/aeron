@@ -70,6 +70,10 @@ public class TestBackupNode implements AutoCloseable
             archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
             clusterBackup = ClusterBackup.launch(context.clusterBackupContext.aeronDirectoryName(aeronDirectoryName));
+
+            dataCollector.add(clusterBackup.context().clusterDir().toPath());
+            dataCollector.add(archive.context().archiveDir().toPath());
+            dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
         }
         catch (final RuntimeException ex)
         {

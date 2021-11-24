@@ -32,7 +32,10 @@ import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.*;
@@ -448,7 +451,7 @@ public final class DriverConductor implements Agent
         final ChannelUri channelUri = udpChannel.channelUri();
         final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, false);
         validateEndpointForPublication(udpChannel);
-        validateMtuForMaxMessage(params);
+        validateMtuForMaxMessage(params, channel);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(params, udpChannel, correlationId);
 
@@ -470,8 +473,9 @@ public final class DriverConductor implements Agent
         }
         else
         {
-            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId());
-            validateSpiesSimulateConnection(params, publication.spiesSimulateConnection());
+            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId(), publication.channel());
+            validateSpiesSimulateConnection(
+                params, publication.spiesSimulateConnection(), channel, publication.channel());
         }
 
         publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), publication));
@@ -1329,7 +1333,12 @@ public final class DriverConductor implements Agent
 
                 channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
 
-                validateMtuForSndbuf(params, channelEndpoint.socketSndbufLength(), ctx);
+                validateMtuForSndbuf(
+                    params,
+                    channelEndpoint.socketSndbufLength(),
+                    ctx,
+                    udpChannel.originalUriString(),
+                    channelEndpoint.originalUriString());
                 sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
                 senderProxy.registerSendChannelEndpoint(channelEndpoint);
             }
@@ -1342,17 +1351,24 @@ public final class DriverConductor implements Agent
         else
         {
             validateChannelSendTimestampOffset(udpChannel, channelEndpoint);
-            validateMtuForSndbuf(params, channelEndpoint.socketSndbufLength(), ctx);
+            validateMtuForSndbuf(
+                params,
+                channelEndpoint.socketSndbufLength(),
+                ctx,
+                udpChannel.originalUriString(),
+                channelEndpoint.originalUriString());
             validateChannelBufferLength(
                 SOCKET_RCVBUF_PARAM_NAME,
                 udpChannel.socketRcvbufLength(),
                 channelEndpoint.socketRcvbufLength(),
-                udpChannel.originalUriString());
+                udpChannel.originalUriString(),
+                channelEndpoint.originalUriString());
             validateChannelBufferLength(
                 SOCKET_SNDBUF_PARAM_NAME,
                 udpChannel.socketSndbufLength(),
                 channelEndpoint.socketSndbufLength(),
-                udpChannel.originalUriString());
+                udpChannel.originalUriString(),
+                channelEndpoint.originalUriString());
         }
 
         return channelEndpoint;
@@ -1366,7 +1382,9 @@ public final class DriverConductor implements Agent
         {
             throw new InvalidChannelException(
                 "option conflicts with existing subscription: " + CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME + "=" +
-                udpChannel.channelReceiveTimestampOffset());
+                udpChannel.channelReceiveTimestampOffset() +
+                " existingChannel=" + channelEndpoint.originalUriString() + " channel=" +
+                udpChannel.originalUriString());
         }
     }
 
@@ -1378,7 +1396,9 @@ public final class DriverConductor implements Agent
         {
             throw new InvalidChannelException(
                 "option conflicts with existing subscription: " + CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME + "=" +
-                udpChannel.channelReceiveTimestampOffset());
+                udpChannel.channelReceiveTimestampOffset() +
+                " existingChannel=" + channelEndpoint.originalUriString() + " channel=" +
+                udpChannel.originalUriString());
         }
     }
 
@@ -1432,13 +1452,17 @@ public final class DriverConductor implements Agent
                     if (params.isReliable != subscription.isReliable())
                     {
                         throw new InvalidChannelException(
-                            "option conflicts with existing subscription: reliable=" + params.isReliable);
+                            "option conflicts with existing subscription: reliable=" + params.isReliable +
+                            "existingChannel=" + channelEndpoint.originalUriString() + " channel=" +
+                            udpChannel.originalUriString());
                     }
 
                     if (params.isRejoin != subscription.isRejoin())
                     {
                         throw new InvalidChannelException(
-                            "option conflicts with existing subscription: rejoin=" + params.isRejoin);
+                            "option conflicts with existing subscription: rejoin=" + params.isRejoin +
+                            "existingChannel=" + channelEndpoint.originalUriString() + " channel=" +
+                            udpChannel.originalUriString());
                     }
                 }
             }
@@ -1581,12 +1605,14 @@ public final class DriverConductor implements Agent
                 SOCKET_RCVBUF_PARAM_NAME,
                 udpChannel.socketRcvbufLength(),
                 channelEndpoint.socketRcvbufLength(),
-                udpChannel.originalUriString());
+                udpChannel.originalUriString(),
+                channelEndpoint.originalUriString());
             validateChannelBufferLength(
                 SOCKET_SNDBUF_PARAM_NAME,
                 udpChannel.socketSndbufLength(),
                 channelEndpoint.socketSndbufLength(),
-                udpChannel.originalUriString());
+                udpChannel.originalUriString(),
+                channelEndpoint.originalUriString());
         }
 
         return channelEndpoint;
@@ -1662,12 +1688,12 @@ public final class DriverConductor implements Agent
                 checkForSessionClash(params.sessionId, streamId, IPC_MEDIA);
             }
 
-            validateMtuForMaxMessage(params);
+            validateMtuForMaxMessage(params, channel);
             publication = addIpcPublication(correlationId, clientId, streamId, channel, isExclusive, params);
         }
         else
         {
-            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId());
+            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId(), publication.channel());
         }
 
         return publication;
@@ -1940,14 +1966,18 @@ public final class DriverConductor implements Agent
     }
 
     private static void validateChannelBufferLength(
-        final String paramName, final int newLength, final int existingLength, final String channel)
+        final String paramName,
+        final int newLength,
+        final int existingLength,
+        final String channel,
+        final String existingChannel)
     {
         if (0 != newLength && newLength != existingLength)
         {
-            final String existingValue = 0 == existingLength ? "OS default" : Integer.toString(existingLength);
-
+            final Object existingValue = 0 == existingLength ? "OS default" : existingLength;
             throw new InvalidChannelException(
-                paramName + "=" + newLength + " does not match existing value of " + existingValue + " uri=" + channel);
+                paramName + "=" + newLength + " does not match existing value of " + existingValue +
+                ": existingChannel=" + existingChannel + " channel=" + channel);
         }
     }
 
@@ -1958,7 +1988,8 @@ public final class DriverConductor implements Agent
             udpChannel.hasExplicitEndpoint() &&
             0 == udpChannel.remoteData().getPort())
         {
-            throw new IllegalArgumentException(ENDPOINT_PARAM_NAME + " has port=0 for publication");
+            throw new IllegalArgumentException(ENDPOINT_PARAM_NAME + " has port=0 for publication: channel=" +
+                udpChannel.originalUriString());
         }
     }
 
@@ -1967,7 +1998,8 @@ public final class DriverConductor implements Agent
         if (udpChannel.hasExplicitControl() &&
             0 == udpChannel.localControl().getPort())
         {
-            throw new IllegalArgumentException(MDC_CONTROL_PARAM_NAME + " has port=0 for subscription");
+            throw new IllegalArgumentException(MDC_CONTROL_PARAM_NAME + " has port=0 for subscription: channel=" +
+                udpChannel.originalUriString());
         }
     }
 
@@ -1977,7 +2009,7 @@ public final class DriverConductor implements Agent
         {
             throw new InvalidChannelException(
                 "Media timestamps '" + MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME +
-                "' are not supported in the Java driver");
+                "' are not supported in the Java driver: channel=" + udpChannel.originalUriString());
         }
     }
 
@@ -1985,7 +2017,8 @@ public final class DriverConductor implements Agent
     {
         if (SPY_QUALIFIER.equals(uri.prefix()))
         {
-            throw new InvalidChannelException("Aeron spies are invalid as send destinations: " + destinationUri);
+            throw new InvalidChannelException("Aeron spies are invalid as send destinations: channel=" +
+                destinationUri);
         }
 
         for (final String invalidKey : INVALID_DESTINATION_KEYS)
@@ -1993,7 +2026,7 @@ public final class DriverConductor implements Agent
             if (uri.containsKey(invalidKey))
             {
                 throw new InvalidChannelException(
-                    "destinations must not contain the key: " + invalidKey + " uri=" + destinationUri);
+                    "destinations must not contain the key: " + invalidKey + " channel=" + destinationUri);
             }
         }
     }
@@ -2004,7 +2037,8 @@ public final class DriverConductor implements Agent
 
         if (null != endpoint && endpoint.endsWith(":0"))
         {
-            throw new InvalidChannelException(ENDPOINT_PARAM_NAME + " has port=0 for send destination");
+            throw new InvalidChannelException(ENDPOINT_PARAM_NAME + " has port=0 for send destination: channel=" +
+                destinationUri);
         }
     }
 }

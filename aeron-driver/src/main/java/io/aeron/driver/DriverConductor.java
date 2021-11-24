@@ -1382,7 +1382,7 @@ public final class DriverConductor implements Agent
         {
             throw new InvalidChannelException(
                 "option conflicts with existing subscription: " + CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME + "=" +
-                udpChannel.channelReceiveTimestampOffset() +
+                udpChannel.channelSendTimestampOffset() +
                 " existingChannel=" + channelEndpoint.originalUriString() + " channel=" +
                 udpChannel.originalUriString());
         }

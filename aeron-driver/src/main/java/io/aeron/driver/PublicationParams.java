@@ -255,23 +255,23 @@ final class PublicationParams
         final int channelSocketSndbufLength,
         final MediaDriver.Context ctx,
         final String channel,
-        final String endpointChannel)
+        final String existingChannel)
     {
         if (0 != channelSocketSndbufLength && params.mtuLength > channelSocketSndbufLength)
         {
             throw new IllegalStateException(
                 "MTU greater than SO_SNDBUF for channel: mtu=" + params.mtuLength +
-                    " so-sndbuf=" + channelSocketSndbufLength +
-                    (channel.equals(endpointChannel) ? "" : (" existingChannel=" + endpointChannel)) +
-                    " channel=" + channel);
+                " so-sndbuf=" + channelSocketSndbufLength +
+                (null == existingChannel ? "" : (" existingChannel=" + existingChannel)) +
+                " channel=" + channel);
         }
         else if (0 == channelSocketSndbufLength && params.mtuLength > ctx.osDefaultSocketSndbufLength())
         {
             throw new IllegalStateException(
                 "MTU greater than SO_SNDBUF for channel: mtu=" + params.mtuLength +
-                    " so-sndbuf=" + ctx.osDefaultSocketSndbufLength() + " (OS default)" +
-                    (channel.equals(endpointChannel) ? "" : (" existingChannel=" + endpointChannel)) +
-                    " channel=" + channel);
+                " so-sndbuf=" + ctx.osDefaultSocketSndbufLength() + " (OS default)" +
+                (null == existingChannel ? "" : (" existingChannel=" + existingChannel)) +
+                " channel=" + channel);
         }
     }
 

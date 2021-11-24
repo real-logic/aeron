@@ -1334,11 +1334,7 @@ public final class DriverConductor implements Agent
                 channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
 
                 validateMtuForSndbuf(
-                    params,
-                    channelEndpoint.socketSndbufLength(),
-                    ctx,
-                    udpChannel.originalUriString(),
-                    channelEndpoint.originalUriString());
+                    params, channelEndpoint.socketSndbufLength(), ctx, udpChannel.originalUriString(), null);
                 sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
                 senderProxy.registerSendChannelEndpoint(channelEndpoint);
             }
@@ -1587,7 +1583,7 @@ public final class DriverConductor implements Agent
                     channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
                 }
 
-                validateInitialWindowForRcvBuf(params, udpChannel, channelEndpoint.socketRcvbufLength(), ctx);
+                validateInitialWindowForRcvBuf(params, channel, channelEndpoint.socketRcvbufLength(), ctx, null);
 
                 receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
                 receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
@@ -1600,7 +1596,12 @@ public final class DriverConductor implements Agent
         }
         else
         {
-            validateInitialWindowForRcvBuf(params, udpChannel, channelEndpoint.socketRcvbufLength(), ctx);
+            validateInitialWindowForRcvBuf(
+                params,
+                udpChannel.originalUriString(),
+                channelEndpoint.socketRcvbufLength(),
+                ctx,
+                channelEndpoint.originalUriString());
             validateChannelBufferLength(
                 SOCKET_RCVBUF_PARAM_NAME,
                 udpChannel.socketRcvbufLength(),

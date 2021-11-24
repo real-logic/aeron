@@ -25,12 +25,15 @@ defaultTasks 'clean', 'build'
 
 static def getBuildJavaVersion() {
     def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
+
     if (buildJavaVersion.indexOf('.') > 0) {
         buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('.'))
     }
+
     if (buildJavaVersion.indexOf('-') > 0) {
         buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('-'))
     }
+
     Integer.parseInt(buildJavaVersion)
 }
 int buildJavaVersion = getBuildJavaVersion()

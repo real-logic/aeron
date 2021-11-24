@@ -67,7 +67,7 @@ final class SubscriptionParams
                 throw new IllegalArgumentException("params must be used as a complete set: " +
                     INITIAL_TERM_ID_PARAM_NAME + " " +
                     TERM_ID_PARAM_NAME + " " +
-                    TERM_OFFSET_PARAM_NAME);
+                    TERM_OFFSET_PARAM_NAME + " channel=" + channelUri);
             }
 
             params.initialTermId = Integer.parseInt(initialTermIdStr);
@@ -77,20 +77,22 @@ final class SubscriptionParams
             if (params.termOffset < 0 || params.termOffset > LogBufferDescriptor.TERM_MAX_LENGTH)
             {
                 throw new IllegalArgumentException(
-                    TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " out of range");
+                    TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " out of range: channel=" + channelUri);
             }
 
             if ((params.termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
             {
                 throw new IllegalArgumentException(
-                    TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be a multiple of FRAME_ALIGNMENT");
+                    TERM_OFFSET_PARAM_NAME + "=" + params.termOffset +
+                    " must be a multiple of FRAME_ALIGNMENT: channel=" + channelUri);
             }
 
             if (params.termId - params.initialTermId < 0)
             {
                 throw new IllegalStateException(
                     "difference greater than 2^31 - 1: " + INITIAL_TERM_ID_PARAM_NAME + "=" +
-                    params.initialTermId + " when " + TERM_ID_PARAM_NAME + "=" + params.termId);
+                    params.initialTermId + " when " + TERM_ID_PARAM_NAME + "=" + params.termId + " channel=" +
+                    channelUri);
             }
 
             params.hasJoinPosition = true;
@@ -119,22 +121,26 @@ final class SubscriptionParams
 
     static void validateInitialWindowForRcvBuf(
         final SubscriptionParams params,
-        final UdpChannel udpChannel,
+        final String channel,
         final int channelSocketRcvbufLength,
-        final MediaDriver.Context ctx)
+        final MediaDriver.Context ctx,
+        final String existingChannel)
     {
         if (0 != channelSocketRcvbufLength && params.initialWindowLength > channelSocketRcvbufLength)
         {
             throw new IllegalStateException(
                 "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
-                " so-rcvbuf=" + channelSocketRcvbufLength + " uri=" + udpChannel.originalUriString());
+                " so-rcvbuf=" + channelSocketRcvbufLength +
+                (null == existingChannel ? "" : (" existingChannel=" + existingChannel)) +
+                " channel=" + channel);
         }
         else if (0 == channelSocketRcvbufLength && params.initialWindowLength > ctx.osDefaultSocketRcvbufLength())
         {
             throw new IllegalStateException(
                 "Initial window greater than SO_RCVBUF for channel: rcv-wnd=" + params.initialWindowLength +
                 " so-rcvbuf=" + ctx.osDefaultSocketRcvbufLength() + " (OS default)" +
-                " uri=" + udpChannel.originalUriString());
+                (null == existingChannel ? "" : (" existingChannel=" + existingChannel)) +
+                " channel=" + channel);
         }
     }
 

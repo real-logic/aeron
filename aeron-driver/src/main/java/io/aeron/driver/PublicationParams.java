@@ -79,12 +79,14 @@ final class PublicationParams
             if (!isExclusive)
             {
                 throw new IllegalArgumentException("params: " + INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME +
-                    " " + TERM_OFFSET_PARAM_NAME + " are not supported for concurrent publications");
+                    " " + TERM_OFFSET_PARAM_NAME + " are not supported for concurrent publications: channel=" +
+                    channelUri);
             }
             if (count < 3)
             {
                 throw new IllegalArgumentException("params must be used as a complete set: " +
-                    INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
+                    INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME + " channel=" +
+                    channelUri);
             }
 
             params.initialTermId = Integer.parseInt(initialTermIdStr);
@@ -95,26 +97,29 @@ final class PublicationParams
             {
                 throw new IllegalArgumentException(
                     TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
-                    TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
+                    TERM_LENGTH_PARAM_NAME + "=" + params.termLength + ": channel=" + channelUri);
             }
 
             if (params.termOffset < 0 || params.termOffset > LogBufferDescriptor.TERM_MAX_LENGTH)
             {
                 throw new IllegalArgumentException(
-                    TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " out of range");
+                    TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " out of range: channel=" + channelUri);
             }
 
             if ((params.termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
             {
                 throw new IllegalArgumentException(
-                    TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be a multiple of FRAME_ALIGNMENT");
+                    TERM_OFFSET_PARAM_NAME + "=" + params.termOffset +
+                    " must be a multiple of FRAME_ALIGNMENT: channel=" +
+                    channelUri);
             }
 
             if (params.termId - params.initialTermId < 0)
             {
                 throw new IllegalStateException(
                     "difference greater than 2^31 - 1: " + INITIAL_TERM_ID_PARAM_NAME + "=" +
-                    params.initialTermId + " when " + TERM_ID_PARAM_NAME + "=" + params.termId);
+                    params.initialTermId + " when " + TERM_ID_PARAM_NAME + "=" + params.termId + " channel=" +
+                    channelUri);
             }
 
             params.hasPosition = true;
@@ -137,7 +142,7 @@ final class PublicationParams
         if (null != tagParam)
         {
             final long entityTag = Long.parseLong(tagParam);
-            validateEntityTag(entityTag, driverConductor);
+            validateEntityTag(entityTag, driverConductor, channelUri);
             this.entityTag = entityTag;
         }
     }
@@ -149,7 +154,7 @@ final class PublicationParams
         {
             final int termLength = (int)SystemUtil.parseSize(TERM_LENGTH_PARAM_NAME, termLengthParam);
             LogBufferDescriptor.checkTermLength(termLength);
-            validateTermLength(this, termLength);
+            validateTermLength(this, termLength, channelUri);
             this.termLength = termLength;
         }
     }
@@ -161,12 +166,12 @@ final class PublicationParams
         {
             final int mtuLength = (int)SystemUtil.parseSize(MTU_LENGTH_PARAM_NAME, mtuParam);
             Configuration.validateMtuLength(mtuLength);
-            validateMtuLength(this, mtuLength);
+            validateMtuLength(this, mtuLength, channelUri);
             this.mtuLength = mtuLength;
         }
     }
 
-    static void validateMtuForMaxMessage(final PublicationParams params)
+    static void validateMtuForMaxMessage(final PublicationParams params, final String channel)
     {
         final int termLength = params.termLength;
         final int maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
@@ -174,25 +179,30 @@ final class PublicationParams
         if (params.mtuLength > maxMessageLength)
         {
             throw new IllegalStateException("MTU greater than max message length for term length: mtu=" +
-                params.mtuLength + " maxMessageLength=" + maxMessageLength + " termLength=" + termLength);
+                params.mtuLength + " maxMessageLength=" + maxMessageLength + " termLength=" + termLength + " channel=" +
+                channel);
         }
     }
 
-    static void validateTermLength(final PublicationParams params, final int explicitTermLength)
+    static void validateTermLength(
+        final PublicationParams params, final int explicitTermLength, final ChannelUri channelUri)
     {
         if (params.isSessionIdTagged && explicitTermLength != params.termLength)
         {
             throw new IllegalArgumentException(
-                TERM_LENGTH_PARAM_NAME + "=" + explicitTermLength + " does not match session-id tag value");
+                TERM_LENGTH_PARAM_NAME + "=" + explicitTermLength + " does not match session-id tag value: channel=" +
+                channelUri);
         }
     }
 
-    static void validateMtuLength(final PublicationParams params, final int explicitMtuLength)
+    static void validateMtuLength(
+        final PublicationParams params, final int explicitMtuLength, final ChannelUri channelUri)
     {
         if (params.isSessionIdTagged && explicitMtuLength != params.mtuLength)
         {
             throw new IllegalArgumentException(
-                MTU_LENGTH_PARAM_NAME + "=" + explicitMtuLength + " does not match session-id tag value");
+                MTU_LENGTH_PARAM_NAME + "=" + explicitMtuLength + " does not match session-id tag value: channel=" +
+                    channelUri);
         }
     }
 
@@ -200,52 +210,68 @@ final class PublicationParams
         final ChannelUri channelUri,
         final PublicationParams params,
         final RawLog rawLog,
-        final int existingSessionId)
+        final int existingSessionId,
+        final String existingChannel)
     {
         final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
         if (channelUri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
         {
             throw new IllegalStateException("existing publication has different MTU length: existing=" +
-                mtuLength + " requested=" + params.mtuLength);
+                mtuLength + " requested=" + params.mtuLength + " existingChannel=" + existingChannel +
+                " channel=" + channelUri);
         }
 
         if (channelUri.containsKey(TERM_LENGTH_PARAM_NAME) && rawLog.termLength() != params.termLength)
         {
             throw new IllegalStateException("existing publication has different term length: existing=" +
-                rawLog.termLength() + " requested=" + params.termLength);
+                rawLog.termLength() + " requested=" + params.termLength + " existingChannel=" + existingChannel +
+                " channel=" + channelUri);
         }
 
         if (channelUri.containsKey(SESSION_ID_PARAM_NAME) && params.sessionId != existingSessionId)
         {
             throw new IllegalStateException("existing publication has different session id: existing=" +
-                existingSessionId + " requested=" + params.sessionId);
+                existingSessionId + " requested=" + params.sessionId + " existingChannel=" + existingChannel +
+                " channel=" + channelUri);
         }
     }
 
     static void validateSpiesSimulateConnection(
-        final PublicationParams params, final boolean existingSpiesSimulateConnection)
+        final PublicationParams params,
+        final boolean existingSpiesSimulateConnection,
+        final String channel,
+        final String existingChannel)
     {
         if (params.spiesSimulateConnection != existingSpiesSimulateConnection)
         {
             throw new IllegalStateException("existing publication has different spiesSimulateConnection: existing=" +
-                existingSpiesSimulateConnection + " requested=" + params.spiesSimulateConnection);
+                existingSpiesSimulateConnection + " requested=" + params.spiesSimulateConnection +
+                " existingChannel=" + existingChannel + " channel=" + channel);
         }
     }
 
     static void validateMtuForSndbuf(
-        final PublicationParams params, final int channelSocketSndbufLength, final MediaDriver.Context ctx)
+        final PublicationParams params,
+        final int channelSocketSndbufLength,
+        final MediaDriver.Context ctx,
+        final String channel,
+        final String existingChannel)
     {
         if (0 != channelSocketSndbufLength && params.mtuLength > channelSocketSndbufLength)
         {
             throw new IllegalStateException(
                 "MTU greater than SO_SNDBUF for channel: mtu=" + params.mtuLength +
-                " so-sndbuf=" + channelSocketSndbufLength);
+                " so-sndbuf=" + channelSocketSndbufLength +
+                (null == existingChannel ? "" : (" existingChannel=" + existingChannel)) +
+                " channel=" + channel);
         }
         else if (0 == channelSocketSndbufLength && params.mtuLength > ctx.osDefaultSocketSndbufLength())
         {
             throw new IllegalStateException(
                 "MTU greater than SO_SNDBUF for channel: mtu=" + params.mtuLength +
-                " so-sndbuf=" + ctx.osDefaultSocketSndbufLength() + " (OS default)");
+                " so-sndbuf=" + ctx.osDefaultSocketSndbufLength() + " (OS default)" +
+                (null == existingChannel ? "" : (" existingChannel=" + existingChannel)) +
+                " channel=" + channel);
         }
     }
 
@@ -272,7 +298,8 @@ final class PublicationParams
                 if (null == publication)
                 {
                     throw new IllegalArgumentException(
-                        SESSION_ID_PARAM_NAME + "=" + sessionIdStr + " must reference a network publication");
+                        SESSION_ID_PARAM_NAME + "=" + sessionIdStr + " must reference a network publication: channel=" +
+                        channelUri);
                 }
 
                 sessionId = publication.sessionId();
@@ -309,17 +336,25 @@ final class PublicationParams
         spiesSimulateConnection = null != sscStr ? "true".equals(sscStr) : ctx.spiesSimulateConnection();
     }
 
-    private static void validateEntityTag(final long entityTag, final DriverConductor driverConductor)
+    private static void validateEntityTag(
+        final long entityTag, final DriverConductor driverConductor, final ChannelUri channelUri)
     {
         if (INVALID_TAG == entityTag)
         {
-            throw new IllegalArgumentException(INVALID_TAG + " tag is reserved");
+            throw new IllegalArgumentException(INVALID_TAG + " tag is reserved: channel=" + channelUri);
         }
 
-        if (null != driverConductor.findNetworkPublicationByTag(entityTag) ||
-            null != driverConductor.findIpcPublicationByTag(entityTag))
+        final NetworkPublication networkPublication = driverConductor.findNetworkPublicationByTag(entityTag);
+        if (null != networkPublication)
         {
-            throw new IllegalArgumentException(entityTag + " entityTag already in use");
+            throw new IllegalArgumentException(entityTag + " entityTag already in use: existingChannel=" +
+                networkPublication.channel() + " channel=" + channelUri);
+        }
+        final IpcPublication ipcPublication = driverConductor.findIpcPublicationByTag(entityTag);
+        if (null != ipcPublication)
+        {
+            throw new IllegalArgumentException(entityTag + " entityTag already in use: existingChannel=" +
+                ipcPublication.channel() + " channel=" + channelUri);
         }
     }
 

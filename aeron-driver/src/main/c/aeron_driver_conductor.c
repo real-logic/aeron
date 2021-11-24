@@ -136,14 +136,28 @@ static bool aeron_driver_conductor_has_clashing_subscription(
             if (params->is_reliable != link->is_reliable)
             {
                 const char *value = params->is_reliable ? "true" : "false";
-                AERON_SET_ERR(EINVAL, "option conflicts with existing subscription: reliable=%s", value);
+                AERON_SET_ERR(
+                    EINVAL,
+                    "option conflicts with existing subscription: reliable=%s existingChannel=%.*s channel=%.*s",
+                    value,
+                    link->channel_length,
+                    link->channel,
+                    (int)endpoint->conductor_fields.udp_channel->uri_length,
+                    endpoint->conductor_fields.udp_channel->original_uri);
                 return true;
             }
 
             if (params->is_rejoin != link->is_rejoin)
             {
                 const char *value = params->is_rejoin ? "true" : "false";
-                AERON_SET_ERR(EINVAL, "option conflicts with existing subscription: rejoin=%s", value);
+                AERON_SET_ERR(
+                    EINVAL,
+                    "option conflicts with existing subscription: rejoin=%s existingChannel=%.*s channel=%.*s",
+                    value,
+                    link->channel_length,
+                    link->channel,
+                    (int)endpoint->conductor_fields.udp_channel->uri_length,
+                    endpoint->conductor_fields.udp_channel->original_uri);
                 return true;
             }
         }
@@ -161,10 +175,14 @@ static bool aeron_driver_conductor_receive_endpoint_has_clashing_timestamp_offse
     {
         AERON_SET_ERR(
             EINVAL,
-            "option conflicts with existing subscription: %s=%" PRId32 " %s",
+            "option conflicts with existing subscription: %s=%" PRId32 " %s existingChannel=%.*s channel=%.*s",
             AERON_URI_MEDIA_RCV_TIMESTAMP_OFFSET_KEY,
             channel->media_rcv_timestamp_offset,
-            aeron_driver_uri_get_offset_info(channel->media_rcv_timestamp_offset));
+            aeron_driver_uri_get_offset_info(channel->media_rcv_timestamp_offset),
+            (int)endpoint->conductor_fields.udp_channel->uri_length,
+            endpoint->conductor_fields.udp_channel->original_uri,
+            (int)channel->uri_length,
+            channel->original_uri);
         return true;
     }
 
@@ -172,10 +190,14 @@ static bool aeron_driver_conductor_receive_endpoint_has_clashing_timestamp_offse
     {
         AERON_SET_ERR(
             EINVAL,
-            "option conflicts with existing subscription: %s=%" PRId32 " %s",
+            "option conflicts with existing subscription: %s=%" PRId32 " %s existingChannel=%.*s channel=%.*s",
             AERON_URI_CHANNEL_RCV_TIMESTAMP_OFFSET_KEY,
             channel->channel_rcv_timestamp_offset,
-            aeron_driver_uri_get_offset_info(channel->channel_rcv_timestamp_offset));
+            aeron_driver_uri_get_offset_info(channel->channel_rcv_timestamp_offset),
+            (int)endpoint->conductor_fields.udp_channel->uri_length,
+            endpoint->conductor_fields.udp_channel->original_uri,
+            (int)channel->uri_length,
+            channel->original_uri);
         return true;
     }
 
@@ -191,10 +213,14 @@ static bool aeron_driver_conductor_send_endpoint_has_clashing_timestamp_offsets(
     {
         AERON_SET_ERR(
             EINVAL,
-            "option conflicts with existing subscription: %s=%" PRId32 " %s",
+            "option conflicts with existing subscription: %s=%" PRId32 " %s existingChannel=%.*s channel=%.*s",
             AERON_URI_CHANNEL_SND_TIMESTAMP_OFFSET_KEY,
             channel->channel_snd_timestamp_offset,
-            aeron_driver_uri_get_offset_info(channel->channel_snd_timestamp_offset));
+            aeron_driver_uri_get_offset_info(channel->channel_snd_timestamp_offset),
+            (int)endpoint->conductor_fields.udp_channel->uri_length,
+            endpoint->conductor_fields.udp_channel->original_uri,
+            (int)channel->uri_length,
+            channel->original_uri);
         return true;
     }
 
@@ -221,7 +247,7 @@ static int aeron_driver_conductor_validate_destination_uri_prefix(
     return 0;
 }
 
-static int aeron_driver_conductor_validate_send_destination_uri(aeron_uri_t *uri)
+static int aeron_driver_conductor_validate_send_destination_uri(aeron_uri_t *uri, size_t uri_length)
 {
     if (AERON_URI_UDP == uri->type && NULL != uri->params.udp.endpoint)
     {
@@ -231,7 +257,12 @@ static int aeron_driver_conductor_validate_send_destination_uri(aeron_uri_t *uri
         {
             if (0 == strcmp("0", parsed_address.port))
             {
-                AERON_SET_ERR(EINVAL, "%s has port=0 for send destination", AERON_UDP_CHANNEL_ENDPOINT_KEY);
+                AERON_SET_ERR(
+                    EINVAL,
+                    "%s has port=0 for send destination: channel=%.*s",
+                    AERON_UDP_CHANNEL_ENDPOINT_KEY,
+                    (int)uri_length,
+                    uri->mutable_uri);
                 return -1;
             }
         }
@@ -240,7 +271,7 @@ static int aeron_driver_conductor_validate_send_destination_uri(aeron_uri_t *uri
     return 0;
 }
 
-static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *uri)
+static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *uri, size_t uri_length)
 {
     aeron_uri_params_t *params = NULL;
     switch (uri->type)
@@ -254,7 +285,7 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
             break;
 
         case AERON_URI_UNKNOWN:
-            AERON_SET_ERR(EINVAL, "%s", "Unknown uri type");
+            AERON_SET_ERR(EINVAL, "unknown uri type: channel=%.*s", (int)uri_length, uri->mutable_uri);
             break;
     }
 
@@ -268,7 +299,12 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
         const char *param = AERON_DRIVER_CONDUCTOR_INVALID_DESTINATION_KEYS[i];
         if (NULL != aeron_uri_find_param_value(params, param))
         {
-            AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "Destinations must not contain the key: %s", param);
+            AERON_SET_ERR(
+                -AERON_ERROR_CODE_INVALID_CHANNEL,
+                "destinations must not contain the key: %s channel=%.*s",
+                param,
+                (int)uri_length,
+                uri->mutable_uri);
             return -1;
         }
     }
@@ -277,21 +313,39 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
 }
 
 static inline int aeron_driver_conductor_validate_channel_buffer_length(
-    const char *param_name, size_t new_length, size_t existing_length, aeron_udp_channel_t *channel)
+    const char *param_name,
+    size_t new_length,
+    size_t existing_length,
+    aeron_udp_channel_t *channel,
+    aeron_udp_channel_t *existing_channel)
 {
     if (0 != new_length && new_length != existing_length)
     {
-        const char *suffix = 0 == existing_length ? " (OS default)" : "";
-
-        AERON_SET_ERR(
-            EINVAL,
-            "%s=%" PRIu64 " does not match existing value of %" PRIu64 "%s uri=%.*s",
-            param_name,
-            (uint64_t)new_length,
-            (uint64_t)existing_length,
-            suffix,
-            (int)channel->uri_length,
-            channel->original_uri);
+        if (0 == existing_length)
+        {
+            AERON_SET_ERR(
+                EINVAL,
+                "%s=%" PRIu64 " does not match existing value of OS default: existingChannel=%.*s channel=%.*s",
+                param_name,
+                (uint64_t)new_length,
+                (int)existing_channel->uri_length,
+                existing_channel->original_uri,
+                (int)channel->uri_length,
+                channel->original_uri);
+        }
+        else
+        {
+            AERON_SET_ERR(
+                EINVAL,
+                "%s=%" PRIu64 " does not match existing value of %" PRIu64 ": existingChannel=%.*s channel=%.*s",
+                param_name,
+                (uint64_t)new_length,
+                (uint64_t)existing_length,
+                (int)existing_channel->uri_length,
+                existing_channel->original_uri,
+                (int)channel->uri_length,
+                channel->original_uri);
+        }
 
         return -1;
     }
@@ -306,7 +360,12 @@ static inline int aeron_driver_conductor_validate_endpoint_for_publication(aeron
         udp_channel->has_explicit_endpoint &&
         aeron_is_wildcard_port(&udp_channel->remote_data))
     {
-        AERON_SET_ERR(EINVAL, "%s has port=0 for publication", AERON_UDP_CHANNEL_ENDPOINT_KEY);
+        AERON_SET_ERR(
+            EINVAL,
+            "%s has port=0 for publication: channel=%.*s",
+            AERON_UDP_CHANNEL_ENDPOINT_KEY,
+            (int)udp_channel->uri_length,
+            udp_channel->original_uri);
         return -1;
     }
 
@@ -315,12 +374,15 @@ static inline int aeron_driver_conductor_validate_endpoint_for_publication(aeron
 
 static inline int aeron_driver_conductor_validate_control_for_subscription(aeron_udp_channel_t *udp_channel)
 {
-    if (!udp_channel->is_dynamic_control_mode &&
-        !udp_channel->is_manual_control_mode &&
-        udp_channel->has_explicit_control &&
+    if (udp_channel->has_explicit_control &&
         aeron_is_wildcard_port(&udp_channel->local_control))
     {
-        AERON_SET_ERR(EINVAL, "%s has port=0 for publication", AERON_UDP_CHANNEL_CONTROL_KEY);
+        AERON_SET_ERR(
+            EINVAL,
+            "%s has port=0 for subscription: channel=%.*s",
+            AERON_UDP_CHANNEL_CONTROL_KEY,
+            (int)udp_channel->uri_length,
+            udp_channel->original_uri);
         return -1;
     }
 
@@ -1672,7 +1734,11 @@ int aeron_driver_conductor_update_and_check_ats_status(
 {
     if (!context->ats_enabled && AERON_URI_ATS_STATUS_ENABLED == channel->ats_status)
     {
-        AERON_SET_ERR(EINVAL, "%s", "ATS is not enabled and thus ats=true not allowed");
+        AERON_SET_ERR(
+            EINVAL,
+            "ATS is not enabled and thus ats=true not allowed: channel=%.*s",
+            (int)channel->uri_length,
+            channel->original_uri);
         return -1;
     }
 
@@ -1684,7 +1750,13 @@ int aeron_driver_conductor_update_and_check_ats_status(
     {
         if (existing_channel->ats_status != channel->ats_status)
         {
-            AERON_SET_ERR(EINVAL, "%s", "ATS mismatch on existing channel");
+            AERON_SET_ERR(
+                EINVAL,
+                "ATS mismatch: existingChannel=%.*s channel=%.*s",
+                (int)existing_channel->uri_length,
+                existing_channel->original_uri,
+                (int)channel->uri_length,
+                channel->original_uri);
             return -1;
         }
     }
@@ -1702,7 +1774,14 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     {
         if (!aeron_udp_channel_is_wildcard(channel))
         {
-            AERON_SET_ERR(EINVAL, "matching tag %" PRId64 " already in use", channel->tag_id);
+            AERON_SET_ERR(
+                EINVAL,
+                "matching tag %" PRId64 "  has explicit endpoint or control: %.*s <> %.*s",
+                channel->tag_id,
+                (int)endpoint->conductor_fields.udp_channel->uri_length,
+                endpoint->conductor_fields.udp_channel->original_uri,
+                (int)channel->uri_length,
+                channel->original_uri);
             return NULL;
         }
     }
@@ -1714,7 +1793,10 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
             NULL == channel->uri.params.udp.endpoint)
         {
             AERON_SET_ERR(
-                EINVAL, "%s", "URI must have explicit control, endpoint, or be manual control-mode when original");
+                EINVAL,
+                "URI must have explicit control, endpoint, or be manual control-mode when original: channel=%.*s",
+                (int)channel->uri_length,
+                channel->original_uri);
             return NULL;
         }
 
@@ -1775,7 +1857,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
             AERON_URI_SOCKET_RCVBUF_KEY,
             channel->socket_rcvbuf_length,
             endpoint->conductor_fields.socket_rcvbuf,
-            channel) < 0)
+            channel,
+            endpoint->conductor_fields.udp_channel) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             return NULL;
@@ -1785,7 +1868,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
             AERON_URI_SOCKET_SNDBUF_KEY,
             channel->socket_sndbuf_length,
             endpoint->conductor_fields.socket_sndbuf,
-            channel) < 0)
+            channel,
+            endpoint->conductor_fields.udp_channel) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             return NULL;
@@ -1934,7 +2018,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
                 AERON_URI_SOCKET_SNDBUF_KEY,
                 socket_sndbuf,
                 socket_sndbuf_existing,
-                channel) < 0)
+                channel,
+                endpoint->conductor_fields.udp_channel) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
                 return NULL;
@@ -1944,7 +2029,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
                 AERON_URI_SOCKET_RCVBUF_KEY,
                 socket_rcvbuf,
                 socket_rcvbuf_existing,
-                channel) < 0)
+                channel,
+                endpoint->conductor_fields.udp_channel) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
                 return NULL;
@@ -3493,12 +3579,12 @@ int aeron_driver_conductor_on_add_send_destination(
 
         size_t uri_length = (size_t)command->channel_length;
         if (aeron_uri_parse(uri_length, command_uri, uri) < 0 ||
-            aeron_driver_conductor_validate_send_destination_uri(uri) < 0)
+            aeron_driver_conductor_validate_send_destination_uri(uri, uri_length) < 0)
         {
             goto error_cleanup;
         }
 
-        if (aeron_driver_conductor_validate_destination_uri_params(uri) < 0)
+        if (aeron_driver_conductor_validate_destination_uri_params(uri, uri_length) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             goto error_cleanup;
@@ -3673,7 +3759,7 @@ int aeron_driver_conductor_on_add_receive_destination(
         goto error_cleanup;
     }
 
-    if (aeron_driver_conductor_validate_destination_uri_params(&udp_channel->uri) < 0)
+    if (aeron_driver_conductor_validate_destination_uri_params(&udp_channel->uri, udp_channel->uri_length) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         goto error_cleanup;

@@ -1316,7 +1316,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         {
             aeron_operation_succeeded_t *command = (aeron_operation_succeeded_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "ON_OPERATION_SUCCEEDED %" PRId64, command->correlation_id);
+            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64, command->correlation_id);
             break;
         }
 
@@ -1326,11 +1326,8 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_publication_buffers_ready_t *command = (aeron_publication_buffers_ready_t *)message;
 
             const char *log_file_name = (const char *)message + sizeof(aeron_publication_buffers_ready_t);
-            const char *cmd_out_str = AERON_RESPONSE_ON_PUBLICATION_READY == cmd_id ?
-                "ON_PUBLICATION_READY" : "ON_EXCLUSIVE_PUBLICATION_READY";
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s %d:%d %d %d [%" PRId64 " %" PRId64 "]\n    \"%.*s\"",
-                cmd_out_str,
+            snprintf(buffer, sizeof(buffer) - 1, "%d:%d %d %d [%" PRId64 " %" PRId64 "]\n    \"%.*s\"",
                 command->session_id,
                 command->stream_id,
                 command->position_limit_counter_id,
@@ -1346,7 +1343,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         {
             aeron_subscription_ready_t *command = (aeron_subscription_ready_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "ON_SUBSCRIPTION_READY %" PRId64 " %d",
+            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " %d",
                 command->correlation_id,
                 command->channel_status_indicator_id);
             break;
@@ -1357,7 +1354,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_error_response_t *command = (aeron_error_response_t *)message;
 
             const char *error_message = (const char *)message + sizeof(aeron_error_response_t);
-            snprintf(buffer, sizeof(buffer) - 1, "ON_ERROR %" PRId64 "%d %.*s",
+            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 "%d %.*s",
                 command->offending_command_correlation_id,
                 command->error_code,
                 command->error_message_length,
@@ -1370,7 +1367,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_image_message_t *command = (aeron_image_message_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_image_message_t);
-            snprintf(buffer, sizeof(buffer) - 1, "ON_UNAVAILABLE_IMAGE %d %.*s [%" PRId64 "]",
+            snprintf(buffer, sizeof(buffer) - 1, "%d %.*s [%" PRId64 "]",
                 command->stream_id,
                 command->channel_length,
                 channel,
@@ -1395,7 +1392,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             snprintf(
                 buffer,
                 sizeof(buffer) - 1,
-                "ON_AVAILABLE_IMAGE %d:%d [%" PRId32 ":%" PRId64 "] \"%.*s\" [%" PRId64 "] \"%.*s\"",
+                "%d:%d [%" PRId32 ":%" PRId64 "] \"%.*s\" [%" PRId64 "] \"%.*s\"",
                 command->session_id,
                 command->stream_id,
                 command->subscriber_position_id,
@@ -1412,7 +1409,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         {
             aeron_counter_update_t *command = (aeron_counter_update_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "ON_COUNTER_READY %" PRId64 " %d",
+            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " %d",
                 command->correlation_id,
                 command->counter_id);
             break;
@@ -1422,7 +1419,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         {
             aeron_client_timeout_t *command = (aeron_client_timeout_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "ON_CLIENT_TIMEOUT %" PRId64, command->client_id);
+            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64, command->client_id);
             break;
         }
 

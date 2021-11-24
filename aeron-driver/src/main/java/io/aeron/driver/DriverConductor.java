@@ -465,7 +465,7 @@ public final class DriverConductor implements Agent
         {
             if (params.hasSessionId)
             {
-                checkForSessionClash(params.sessionId, streamId, udpChannel.canonicalForm());
+                checkForSessionClash(params.sessionId, streamId, udpChannel.canonicalForm(), channel);
             }
 
             publication = newNetworkPublication(
@@ -1685,7 +1685,7 @@ public final class DriverConductor implements Agent
         {
             if (params.hasSessionId)
             {
-                checkForSessionClash(params.sessionId, streamId, IPC_MEDIA);
+                checkForSessionClash(params.sessionId, streamId, IPC_MEDIA, channel);
             }
 
             validateMtuForMaxMessage(params, channel);
@@ -1812,12 +1812,13 @@ public final class DriverConductor implements Agent
         return ipcPublication;
     }
 
-    private void checkForSessionClash(final int sessionId, final int streamId, final String channel)
+    private void checkForSessionClash(
+        final int sessionId, final int streamId, final String channel, final String originalChannel)
     {
         if (activeSessionSet.contains(new SessionKey(sessionId, streamId, channel)))
         {
             throw new InvalidChannelException("existing publication has clashing sessionId=" + sessionId +
-                " for streamId=" + streamId + " channel=" + channel);
+                " for streamId=" + streamId + " channel=" + originalChannel);
         }
     }
 

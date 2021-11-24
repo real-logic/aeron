@@ -1419,7 +1419,7 @@ public final class DriverConductor implements Agent
                 !udpChannel.channelUri().containsKey(CommonContext.ENDPOINT_PARAM_NAME))
             {
                 throw new InvalidChannelException(
-                    "URI must have explicit control, endpoint, or be manual control-mode when original: " +
+                    "URI must have explicit control, endpoint, or be manual control-mode when original: channel=" +
                     udpChannel.originalUriString());
             }
         }

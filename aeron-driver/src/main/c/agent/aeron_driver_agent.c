@@ -1184,39 +1184,6 @@ const char *aeron_driver_agent_dissect_log_start(int64_t time_ns, int64_t time_m
     return buffer;
 }
 
-static const char *dissect_command_type_id(int64_t cmd_type_id)
-{
-    switch (cmd_type_id)
-    {
-        case AERON_COMMAND_ADD_PUBLICATION:
-            return "ADD_PUBLICATION";
-
-        case AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION:
-            return "ADD_EXCLUSIVE_PUBLICATION";
-
-        case AERON_COMMAND_REMOVE_PUBLICATION:
-            return "REMOVE_PUBLICATION";
-
-        case AERON_COMMAND_REMOVE_SUBSCRIPTION:
-            return "REMOVE_SUBSCRIPTION";
-
-        case AERON_COMMAND_REMOVE_COUNTER:
-            return "REMOVE_COUNTER";
-
-        case AERON_COMMAND_ADD_DESTINATION:
-            return "ADD_DESTINATION";
-
-        case AERON_COMMAND_REMOVE_DESTINATION:
-            return "REMOVE_DESTINATION";
-
-        case AERON_COMMAND_TERMINATE_DRIVER:
-            return "TERMINATE_DRIVER";
-
-        default:
-            return "unknown command";
-    }
-}
-
 static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t length)
 {
     static char buffer[4096];
@@ -1230,8 +1197,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_publication_command_t *command = (aeron_publication_command_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_publication_command_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%s %d %.*s [%" PRId64 ":%" PRId64 "]",
-                dissect_command_type_id(cmd_id),
+            snprintf(buffer, sizeof(buffer) - 1, "%d %.*s [%" PRId64 ":%" PRId64 "]",
                 command->stream_id,
                 command->channel_length,
                 channel,
@@ -1246,8 +1212,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
         {
             aeron_remove_command_t *command = (aeron_remove_command_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s %" PRId64 " [%" PRId64 ":%" PRId64 "]",
-                dissect_command_type_id(cmd_id),
+            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " [%" PRId64 ":%" PRId64 "]",
                 command->registration_id,
                 command->correlated.client_id,
                 command->correlated.correlation_id);
@@ -1260,7 +1225,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_subscription_command_t *command = (aeron_subscription_command_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_subscription_command_t);
-            snprintf(buffer, sizeof(buffer) - 1, "ADD_SUBSCRIPTION %d %.*s [%" PRId64 "][%" PRId64 ":%" PRId64 "]",
+            snprintf(buffer, sizeof(buffer) - 1, "%d %.*s [%" PRId64 "][%" PRId64 ":%" PRId64 "]",
                 command->stream_id,
                 command->channel_length,
                 channel,
@@ -1271,10 +1236,11 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
         }
 
         case AERON_COMMAND_CLIENT_KEEPALIVE:
+        case AERON_COMMAND_CLIENT_CLOSE:
         {
             aeron_correlated_command_t *command = (aeron_correlated_command_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "CLIENT_KEEPALIVE [%" PRId64 ":%" PRId64 "]",
+            snprintf(buffer, sizeof(buffer) - 1, "[%" PRId64 ":%" PRId64 "]",
                 command->client_id,
                 command->correlation_id);
             break;
@@ -1286,8 +1252,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_destination_command_t *command = (aeron_destination_command_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_destination_command_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%s %.*s %" PRId64 " [%" PRId64 ":%" PRId64 "]",
-                dissect_command_type_id(cmd_id),
+            snprintf(buffer, sizeof(buffer) - 1, "%.*s %" PRId64 " [%" PRId64 ":%" PRId64 "]",
                 command->channel_length,
                 channel,
                 command->registration_id,
@@ -1323,22 +1288,11 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             break;
         }
 
-        case AERON_COMMAND_CLIENT_CLOSE:
-        {
-            aeron_correlated_command_t *command = (aeron_correlated_command_t *)message;
-
-            snprintf(buffer, sizeof(buffer) - 1, "CLIENT_CLOSE [%" PRId64 ":%" PRId64 "]",
-                command->client_id,
-                command->correlation_id);
-            break;
-        }
-
         case AERON_COMMAND_TERMINATE_DRIVER:
         {
             aeron_terminate_driver_command_t *command = (aeron_terminate_driver_command_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s %" PRId64 " %d",
-                dissect_command_type_id(cmd_id),
+            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " %d",
                 command->correlated.client_id,
                 command->token_length);
             break;

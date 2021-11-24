@@ -1453,7 +1453,7 @@ public final class DriverConductor implements Agent
                     {
                         throw new InvalidChannelException(
                             "option conflicts with existing subscription: reliable=" + params.isReliable +
-                            "existingChannel=" + channelEndpoint.originalUriString() + " channel=" +
+                            " existingChannel=" + channelEndpoint.originalUriString() + " channel=" +
                             udpChannel.originalUriString());
                     }
 
@@ -1461,7 +1461,7 @@ public final class DriverConductor implements Agent
                     {
                         throw new InvalidChannelException(
                             "option conflicts with existing subscription: rejoin=" + params.isRejoin +
-                            "existingChannel=" + channelEndpoint.originalUriString() + " channel=" +
+                            " existingChannel=" + channelEndpoint.originalUriString() + " channel=" +
                             udpChannel.originalUriString());
                     }
                 }

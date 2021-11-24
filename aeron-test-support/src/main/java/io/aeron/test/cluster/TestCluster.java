@@ -1016,8 +1016,7 @@ public class TestCluster implements AutoCloseable
             Thread.yield();
             if (Thread.interrupted())
             {
-                final String message = "count=" + count + " awaiting=" + messageCount + " node=" + node;
-                throw new TimeoutException(message);
+                throw new TimeoutException("count=" + count + " awaiting=" + messageCount + " node=" + node);
             }
 
             if (service.hasReceivedUnexpectedMessage())

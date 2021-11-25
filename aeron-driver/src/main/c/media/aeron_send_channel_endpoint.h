@@ -50,7 +50,7 @@ typedef struct aeron_send_channel_endpoint_stct
     }
     conductor_fields;
 
-    bool has_sender_released;
+    volatile bool has_sender_released;
     aeron_udp_channel_transport_t transport;
     aeron_atomic_counter_t channel_status;
     aeron_atomic_counter_t local_sockaddr_indicator;
@@ -62,7 +62,7 @@ typedef struct aeron_send_channel_endpoint_stct
     struct sockaddr_storage current_data_addr;
     aeron_clock_cache_t *cached_clock;
     int64_t time_of_last_sm_ns;
-    uint8_t padding[AERON_CACHE_LINE_LENGTH];
+    uint8_t padding[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
 }
 aeron_send_channel_endpoint_t;
 

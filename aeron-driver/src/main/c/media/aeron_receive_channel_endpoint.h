@@ -67,7 +67,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_clock_cache_t *cached_clock;
 
     int64_t receiver_id;
-    bool has_receiver_released;
+    volatile bool has_receiver_released;
     struct
     {
         bool is_present;

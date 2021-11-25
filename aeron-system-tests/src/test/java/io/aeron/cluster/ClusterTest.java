@@ -165,8 +165,6 @@ public class ClusterTest
         assertFalse(cluster.node(0).service().wasSnapshotLoaded());
         assertFalse(cluster.node(1).service().wasSnapshotLoaded());
         assertFalse(cluster.node(2).service().wasSnapshotLoaded());
-
-        fail("Manual failure");
     }
 
     @Test

@@ -3298,7 +3298,7 @@ public final class AeronArchive implements AutoCloseable
                     archiveProxy = new ArchiveProxy(
                         publication,
                         ctx.idleStrategy(),
-                        ctx.aeron.context().nanoClock(),
+                        ctx.aeron().context().nanoClock(),
                         ctx.messageTimeoutNs(),
                         DEFAULT_RETRY_ATTEMPTS,
                         ctx.credentialsSupplier());

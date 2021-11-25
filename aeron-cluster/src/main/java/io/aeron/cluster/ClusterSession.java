@@ -160,18 +160,20 @@ final class ClusterSession
     {
         if (null == responsePublication)
         {
-            responsePublication = aeron.getPublication(responsePublicationId);
-
-            if (null != responsePublication)
+            if (!aeron.isCommandActive(responsePublicationId))
             {
-                responsePublicationId = Aeron.NULL_VALUE;
-                timeOfLastActivityNs = nowNs;
-                state(State.CONNECTING);
-            }
-            else if (!aeron.isCommandActive(responsePublicationId))
-            {
-                responsePublicationId = Aeron.NULL_VALUE;
-                state(State.INVALID);
+                responsePublication = aeron.getPublication(responsePublicationId);
+                if (null != responsePublication)
+                {
+                    responsePublicationId = Aeron.NULL_VALUE;
+                    timeOfLastActivityNs = nowNs;
+                    state(State.CONNECTING);
+                }
+                else
+                {
+                    responsePublicationId = Aeron.NULL_VALUE;
+                    state(State.INVALID);
+                }
             }
         }
 

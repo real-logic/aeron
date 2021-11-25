@@ -3305,12 +3305,6 @@ public final class AeronArchive implements AutoCloseable
 
                     step(1);
                 }
-                else if (!ctx.aeron().isCommandActive(correlationId))
-                {
-                    throw new ArchiveException("failed to add control request publication:" +
-                        " streamId=" + ctx.controlRequestStreamId() +
-                        " channel=" + ctx.controlRequestChannel());
-                }
             }
 
             if (1 == step)

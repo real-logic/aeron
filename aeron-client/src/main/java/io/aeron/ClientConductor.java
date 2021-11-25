@@ -531,10 +531,8 @@ final class ClientConductor implements Agent
 
             if (asyncCommandIdSet.contains(registrationId))
             {
-                return null;
+                service(NO_CORRELATION_ID);
             }
-
-            service(NO_CORRELATION_ID);
 
             return (ConcurrentPublication)resourceByRegIdMap.get(registrationId);
         }
@@ -554,10 +552,8 @@ final class ClientConductor implements Agent
 
             if (asyncCommandIdSet.contains(registrationId))
             {
-                return null;
+                service(NO_CORRELATION_ID);
             }
-
-            service(NO_CORRELATION_ID);
 
             return (ExclusivePublication)resourceByRegIdMap.get(registrationId);
         }
@@ -808,6 +804,11 @@ final class ClientConductor implements Agent
             }
 
             ensureActive();
+
+            if (asyncCommandIdSet.contains(correlationId))
+            {
+                service(NO_CORRELATION_ID);
+            }
 
             return asyncCommandIdSet.contains(correlationId);
         }

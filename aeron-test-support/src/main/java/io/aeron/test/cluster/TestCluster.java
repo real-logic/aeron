@@ -1240,11 +1240,10 @@ public class TestCluster implements AutoCloseable
 
     private static String nodeNameMappings(final IntHashSet invalidInitialResolutions)
     {
-        return String.format(
-            "node0,%s,localhost|node1,%s,localhost|node2,%s,localhost|",
-            invalidInitialResolutions.contains(0) ? "bad.invalid" : "localhost",
-            invalidInitialResolutions.contains(1) ? "bad.invalid" : "localhost",
-            invalidInitialResolutions.contains(2) ? "bad.invalid" : "localhost");
+        return
+            "node0," + (invalidInitialResolutions.contains(0) ? "bad.invalid" : "localhost") + ",localhost|" +
+            "node1," + (invalidInitialResolutions.contains(1) ? "bad.invalid" : "localhost") + ",localhost|" +
+            "node2," + (invalidInitialResolutions.contains(2) ? "bad.invalid" : "localhost") + ",localhost|";
     }
 
     public DataCollector dataCollector()

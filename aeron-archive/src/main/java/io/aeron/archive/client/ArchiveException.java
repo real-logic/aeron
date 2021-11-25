@@ -103,7 +103,7 @@ public class ArchiveException extends AeronException
     }
 
     /**
-     * ArchiveException exception of {@link io.aeron.exceptions.AeronException.Category#ERROR} and
+     * ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR} and
      * {@link #errorCode()} = {@link #GENERIC}, plus detail.
      *
      * @param message providing detail.

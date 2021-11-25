@@ -82,7 +82,9 @@ public enum DriverEventCode implements EventCode
     FLOW_CONTROL_RECEIVER_ADDED(48, DriverEventDissector::dissectFlowControlReceiver),
     FLOW_CONTROL_RECEIVER_REMOVED(49, DriverEventDissector::dissectFlowControlReceiver),
 
-    NAME_RESOLUTION_RESOLVE(50, DriverEventDissector::dissectResolve);
+    NAME_RESOLUTION_RESOLVE(50, DriverEventDissector::dissectResolve),
+
+    GENERIC_MESSAGE(51, DriverEventDissector::dissectString);
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 

@@ -28,7 +28,6 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
-import javax.management.Attribute;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -591,8 +590,9 @@ public class Tests
 
     /**
      * Start the collecting log of debug events for a test run.
+     * @param displayName
      */
-    public static void startLogCollecting()
+    public static void startLogCollecting(final String displayName)
     {
         try
         {
@@ -601,7 +601,8 @@ public class Tests
 
             try
             {
-                mBeanServer.setAttribute(loggingName, new Attribute("Collecting", true));
+                mBeanServer.invoke(
+                    loggingName, "startCollecting", new Object[]{ displayName }, new String[]{ "java.lang.String" });
             }
             catch (final InstanceNotFoundException ignore)
             {

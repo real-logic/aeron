@@ -16,6 +16,7 @@
 package io.aeron.agent;
 
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -40,13 +41,13 @@ final class CommonEventEncoder
     }
 
     static int encodeLogHeader(
-        final UnsafeBuffer encodingBuffer, final int offset, final int captureLength, final int length)
+        final MutableDirectBuffer encodingBuffer, final int offset, final int captureLength, final int length)
     {
         return internalEncodeLogHeader(encodingBuffer, offset, captureLength, length, SystemNanoClock.INSTANCE);
     }
 
     static int internalEncodeLogHeader(
-        final UnsafeBuffer encodingBuffer,
+        final MutableDirectBuffer encodingBuffer,
         final int offset,
         final int captureLength,
         final int length,

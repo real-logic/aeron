@@ -16,6 +16,7 @@
 package io.aeron.agent;
 
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetAddress;
@@ -91,7 +92,7 @@ final class DriverEventEncoder
         encodingBuffer.putBytes(offset + encodedLength, srcBuffer, srcOffset, bufferCaptureLength);
     }
 
-    static void encode(
+    public static void encode(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,

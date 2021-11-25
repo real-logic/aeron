@@ -18,8 +18,7 @@ package io.aeron;
 import io.aeron.exceptions.*;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.HeartbeatTimestamp;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
+import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.LongHashSet;
@@ -809,10 +808,9 @@ final class ClientConductor implements Agent
             if (asyncCommandIdSet.contains(correlationId))
             {
                 service(NO_CORRELATION_ID);
-                return true;
             }
 
-            return false;
+            return asyncCommandIdSet.contains(correlationId);
         }
         finally
         {

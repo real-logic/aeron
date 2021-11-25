@@ -16,7 +16,6 @@
 package io.aeron.agent;
 
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetAddress;

@@ -243,7 +243,7 @@ public:
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        return std::string(uri_buffer);
+        return { uri_buffer };
     }
 
     /**

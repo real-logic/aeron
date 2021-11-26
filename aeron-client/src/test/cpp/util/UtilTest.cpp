@@ -104,11 +104,6 @@ TEST(utilTests, numberOfTrailingZeroes)
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x00000001), 0);
 }
 
-void throwIllegalArgumentException()
-{
-    aeron::test::throwIllegalArgumentException();
-}
-
 TEST(utilTests, sourcedException)
 {
 #if defined(_MSC_VER)

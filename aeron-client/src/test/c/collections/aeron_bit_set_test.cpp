@@ -211,7 +211,7 @@ TEST_F(BitSetTest, shouldHandleOutOfRangeRequests)
     uint64_t bits[STATIC_ARRAY_LEN] = { 0 };
     aeron_bit_set_t bit_set = {};
     size_t bit_set_length = STATIC_ARRAY_LEN * 64;
-    bool result = 0;
+    bool result = false;
 
     EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
     EXPECT_EQ(aeron_bit_set_set(nullptr, 0, true), -EINVAL);

@@ -478,7 +478,7 @@ public:
             throw IllegalStateException(errMsg, SOURCEINFO);
         }
 
-        return std::string(path, 0, length);
+        return { path, 0, length };
     }
 
 private:

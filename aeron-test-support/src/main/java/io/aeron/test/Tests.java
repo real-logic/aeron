@@ -590,7 +590,8 @@ public class Tests
 
     /**
      * Start the collecting log of debug events for a test run.
-     * @param displayName
+     *
+     * @param displayName for the test the log is being collected for.
      */
     public static void startLogCollecting(final String displayName)
     {

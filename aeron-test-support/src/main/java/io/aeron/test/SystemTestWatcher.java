@@ -107,7 +107,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         assertEquals(0, errorCount(), "Errors observed in " + context.getDisplayName());
     }
 
-    public void afterEach(final ExtensionContext context) throws Exception
+    public void afterEach(final ExtensionContext context)
     {
         try
         {

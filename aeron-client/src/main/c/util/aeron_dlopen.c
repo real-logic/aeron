@@ -171,7 +171,13 @@ char *aeron_dlerror()
     return messageBuffer;
 }
 
-const char *aeron_dlinfo(void (*func)(void), char *buffer, size_t max_buffer_length)
+const char *aeron_dlinfo_func(void (*func)(void), char *buffer, size_t max_buffer_length)
+{
+    buffer[0] = '\0';
+    return buffer;
+}
+
+const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length)
 {
     buffer[0] = '\0';
     return buffer;

@@ -24,6 +24,8 @@
 #define AERON_COUNTER_NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID (16)
 
 #include "protocol/aeron_udp_protocol.h"
+#include "aeronmd.h"
+#include "aeron_name_resolver_cache.h"
 
 int aeron_driver_name_resolver_set_resolution_header(
     aeron_resolution_header_t *resolution_header,
@@ -40,5 +42,8 @@ int aeron_driver_name_resolver_set_resolution_header_from_sockaddr(
     struct sockaddr_storage *addr,
     const char *name,
     size_t name_length);
+
+int aeron_driver_name_resolver_supplier(
+    aeron_name_resolver_t *resolver, const char *args, aeron_driver_context_t *context);
 
 #endif //AERON_NAME_RESOLVER_DRIVER_H

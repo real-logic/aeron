@@ -27,6 +27,8 @@
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_strutil.h"
+#include "util/aeron_symbol_table.h"
+#include "aeron_udp_channel_transport_loss.h"
 #include "aeron_udp_channel_transport_bindings.h"
 #include "aeron_udp_channel_transport.h"
 #include "aeron_udp_transport_poller.h"
@@ -52,9 +54,30 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_defa
         }
     };
 
+aeron_symbol_table_obj_t aeron_udp_channel_transport_bindings_table[] =
+    {
+        {
+            "default",
+            "aeron_udp_channel_transport_bindings_default",
+            (void *)&aeron_udp_channel_transport_bindings_default
+        },
+        { NULL, NULL, NULL }
+    };
+
+aeron_symbol_table_func_t aeron_udp_channel_interceptor_table[] =
+    {
+        {
+            "loss",
+            "aeron_udp_channel_interceptor_loss_load",
+            (aeron_symbol_table_fptr_t)aeron_udp_channel_interceptor_loss_load
+        },
+        { NULL, NULL, NULL }
+    };
+
 aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_media(const char *bindings_name)
 {
-    aeron_udp_channel_transport_bindings_t *bindings = NULL;
+    aeron_udp_channel_transport_bindings_t *bindings = aeron_symbol_table_obj_load(
+        aeron_udp_channel_transport_bindings_table, bindings_name, "udp channel bindings");
 
     if (NULL == bindings_name)
     {
@@ -62,20 +85,7 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
         return NULL;
     }
 
-    if (strncmp(bindings_name, "default", sizeof("default")) == 0)
-    {
-        return aeron_udp_channel_transport_bindings_load_media("aeron_udp_channel_transport_bindings_default");
-    }
-    else
-    {
-        if ((bindings = (aeron_udp_channel_transport_bindings_t *)aeron_dlsym(RTLD_DEFAULT, bindings_name)) == NULL)
-        {
-            AERON_SET_ERR(
-                EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s", bindings_name, aeron_dlerror());
-            return NULL;
-        }
-        bindings->meta_info.source_symbol = bindings;
-    }
+    bindings->meta_info.source_symbol = bindings;
 
     return bindings;
 }
@@ -83,38 +93,8 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
 static aeron_udp_channel_interceptor_bindings_load_func_t *aeron_udp_channel_interceptor_bindings_load_interceptor(
     const char *interceptor_name)
 {
-    aeron_udp_channel_interceptor_bindings_load_func_t *load_interceptor = NULL;
-
-    if (NULL == interceptor_name)
-    {
-        return NULL;
-    }
-
-    if (strncmp(interceptor_name, "loss", sizeof("loss")) == 0)
-    {
-        return aeron_udp_channel_interceptor_bindings_load_interceptor("aeron_udp_channel_interceptor_loss_load");
-    }
-    else
-    {
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-        if ((load_interceptor = (aeron_udp_channel_interceptor_bindings_load_func_t *)aeron_dlsym(
-            RTLD_DEFAULT, interceptor_name)) == NULL)
-        {
-            AERON_SET_ERR(EINVAL,
-                "could not find interceptor bindings %s: dlsym - %s",
-                interceptor_name,
-                aeron_dlerror());
-            return NULL;
-        }
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
-    }
-
-    return load_interceptor;
+    return (aeron_udp_channel_interceptor_bindings_load_func_t *)aeron_symbol_table_func_load(
+        aeron_udp_channel_interceptor_table, interceptor_name, "interceptor bindings");
 }
 
 #define AERON_MAX_INTERCEPTORS_LEN (4094)
@@ -177,14 +157,7 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
             return NULL;
         }
 
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-        current_bindings->meta_info.source_symbol = (const void *)interceptor_load_func;
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
+        current_bindings->meta_info.source_symbol = (void (*)(void))interceptor_load_func;
     }
 
     return current_bindings;

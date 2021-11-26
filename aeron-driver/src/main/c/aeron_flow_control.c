@@ -23,29 +23,40 @@
 #include <errno.h>
 #include "media/aeron_udp_channel.h"
 #include "util/aeron_error.h"
-#include "util/aeron_dlopen.h"
 #include "util/aeron_parse_util.h"
+#include "util/aeron_symbol_table.h"
 #include "aeron_alloc.h"
 #include "aeron_flow_control.h"
 
+aeron_symbol_table_func_t aeron_flow_control_strategy_table[] =
+    {
+        {
+            AERON_UNICAST_MAX_FLOW_CONTROL_STRATEGY_NAME,
+            "aeron_unicast_flow_control_strategy_supplier",
+            (aeron_symbol_table_fptr_t)aeron_unicast_flow_control_strategy_supplier
+        },
+        {
+            AERON_MULTICAST_MAX_FLOW_CONTROL_STRATEGY_NAME,
+            "aeron_max_multicast_flow_control_strategy_supplier",
+            (aeron_symbol_table_fptr_t)aeron_max_multicast_flow_control_strategy_supplier
+        },
+        {
+            AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME,
+            "aeron_min_flow_control_strategy_supplier",
+            (aeron_symbol_table_fptr_t)aeron_min_flow_control_strategy_supplier
+        },
+        {
+            AERON_MULTICAST_TAGGED_FLOW_CONTROL_STRATEGY_NAME,
+            "aeron_tagged_flow_control_strategy_supplier",
+            (aeron_symbol_table_fptr_t)aeron_tagged_flow_control_strategy_supplier
+        },
+        { NULL, NULL, NULL }
+    };
+
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_load(const char *strategy_name)
 {
-    aeron_flow_control_strategy_supplier_func_t func = NULL;
-
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-    if ((func = (aeron_flow_control_strategy_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, strategy_name)) == NULL)
-    {
-        AERON_SET_ERR(EINVAL, "could not find flow control strategy %s: dlsym - %s", strategy_name, aeron_dlerror());
-        return NULL;
-    }
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
-
-    return func;
+    return (aeron_flow_control_strategy_supplier_func_t)aeron_symbol_table_func_load(
+        aeron_flow_control_strategy_table, strategy_name, "flow control");
 }
 
 bool aeron_flow_control_strategy_has_required_receivers_default(aeron_flow_control_strategy_t *strategy)

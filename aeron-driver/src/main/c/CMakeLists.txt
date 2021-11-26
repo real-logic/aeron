@@ -155,6 +155,7 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_parse_util.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_properties_util.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_strutil.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_symbol_table.c
     ${AERON_C_CLIENT_SOURCE_PATH}/uri/aeron_uri.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.c
@@ -224,6 +225,7 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_platform.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_properties_util.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_strutil.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_symbol_table.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_client.h
@@ -366,7 +368,7 @@ target_link_libraries(
 
 target_link_libraries(
     aeronmd
-    aeron_driver
+    aeron_driver_static
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}

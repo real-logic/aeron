@@ -31,7 +31,6 @@
 
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
-#include "util/aeron_dlopen.h"
 #include "aeron_alloc.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_windows.h"
@@ -1011,7 +1010,7 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
 
         incoming_bindings->meta_info.name = "logging";
         incoming_bindings->meta_info.type = "interceptor";
-        incoming_bindings->meta_info.source_symbol = "aeron_driver_agent_context_init";
+        incoming_bindings->meta_info.source_symbol = (void (*)(void))aeron_driver_agent_context_init;
         incoming_bindings->meta_info.next_interceptor_bindings = NULL;
 
         if (NULL == context->udp_channel_incoming_interceptor_bindings)
@@ -1056,7 +1055,7 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
 
         outgoing_bindings->meta_info.name = "logging";
         outgoing_bindings->meta_info.type = "interceptor";
-        outgoing_bindings->meta_info.source_symbol = "aeron_driver_agent_context_init";
+        outgoing_bindings->meta_info.source_symbol = (void (*)(void))aeron_driver_agent_context_init;
         outgoing_bindings->meta_info.next_interceptor_bindings = context->udp_channel_outgoing_interceptor_bindings;
 
         context->udp_channel_outgoing_interceptor_bindings = outgoing_bindings;

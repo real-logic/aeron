@@ -227,7 +227,7 @@ struct aeron_udp_channel_interceptor_bindings_stct
         const char *name;
         const char *type;
         const aeron_udp_channel_interceptor_bindings_t *next_interceptor_bindings;
-        const void *source_symbol;
+        void (*source_symbol)(void);
     }
     meta_info;
 };

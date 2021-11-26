@@ -228,7 +228,12 @@ struct metadata_test_stct
 };
 
 void func_should_store_metadata(
-    int32_t id, int32_t type_id, const uint8_t *key, size_t key_length, const uint8_t *label, size_t label_length, void *clientd)
+    int32_t id, int32_t type_id,
+    const uint8_t *key,
+    size_t key_length,
+    const uint8_t *label,
+    size_t label_length,
+    void *clientd)
 {
     auto *info = reinterpret_cast<struct metadata_test_stct *>(clientd);
     static size_t times_called = 0;

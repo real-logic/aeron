@@ -39,9 +39,7 @@ extern "C"
 class RetransmitHandlerTest : public testing::Test
 {
 public:
-    RetransmitHandlerTest()
-    {
-    }
+    RetransmitHandlerTest() = default;
 
     ~RetransmitHandlerTest() override
     {

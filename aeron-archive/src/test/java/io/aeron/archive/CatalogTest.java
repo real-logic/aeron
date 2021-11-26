@@ -561,9 +561,9 @@ class CatalogTest
         {
             final ArchiveException exception = assertThrows(
                 ArchiveException.class, () -> catalog.growCatalog(CAPACITY * 2, Integer.MAX_VALUE));
-            assertEquals(String.format(
-                "ERROR - recording is too big: total recording length is %d bytes, available space is %d bytes",
-                Integer.MAX_VALUE, CAPACITY * 2 - 800),
+            assertEquals(
+                "ERROR - recording is too big: total recording length is " + Integer.MAX_VALUE +
+                " bytes, available space is " + (CAPACITY * 2 - 800) + " bytes",
                 exception.getMessage());
         }
     }

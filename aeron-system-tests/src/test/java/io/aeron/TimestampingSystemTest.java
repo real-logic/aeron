@@ -74,7 +74,7 @@ class TimestampingSystemTest
     void shouldErrorOnMediaReceiveTimestampsInJavaDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
-        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("ERROR - Media timestamps"));
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("ERROR - Media timestamps"));
 
         try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
@@ -176,7 +176,7 @@ class TimestampingSystemTest
     @Test
     void shouldErrorIfSubscriptionConfigurationForTimestampsDoesNotMatch()
     {
-        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("option conflicts"));
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("option conflicts"));
 
         try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
@@ -194,7 +194,7 @@ class TimestampingSystemTest
     @Test
     void shouldErrorIfPublicationConfigurationForTimestampsDoesNotMatch()
     {
-        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("option conflicts"));
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("option conflicts"));
 
         try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))

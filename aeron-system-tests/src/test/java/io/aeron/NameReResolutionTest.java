@@ -70,9 +70,9 @@ class NameReResolutionTest
     private static final String SUBSCRIPTION_MDS_URI = "aeron:udp?control-mode=manual";
 
     private static final String STUB_LOOKUP_CONFIGURATION =
-        String.format("%s,%s,%s|", ENDPOINT_NAME, "127.0.0.1", "127.0.0.2") +
-        String.format("%s,%s,%s|", CONTROL_NAME, "127.0.0.1", "127.0.0.2") +
-        String.format("%s,%s,%s|", ENDPOINT_WITH_ERROR_NAME, "localhost", BAD_ADDRESS);
+        ENDPOINT_NAME + ",127.0.0.1,127.0.0.2|" +
+        CONTROL_NAME + ",127.0.0.1,127.0.0.2|" +
+        ENDPOINT_WITH_ERROR_NAME + ",localhost," + BAD_ADDRESS + "|";
 
     private static final int STREAM_ID = 1001;
 
@@ -425,7 +425,7 @@ class NameReResolutionTest
     @InterruptAfter(20)
     void shouldReportErrorOnReResolveFailure() throws IOException
     {
-        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("Unable to resolve host"));
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("Unable to resolve host"));
         buffer.putInt(0, 1);
 
         subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);

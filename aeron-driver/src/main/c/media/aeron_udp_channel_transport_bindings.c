@@ -241,14 +241,7 @@ int aeron_udp_channel_data_paths_init(
             return -1;
         }
 
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
         outgoing_transport_interceptor->interceptor_state = media_bindings;
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
 
         /* last interceptor calls sendmmsg_func/sendmsg_func from transport bindings */
         outgoing_transport_interceptor->outgoing_mmsg_func = aeron_udp_channel_outgoing_interceptor_mmsg_to_transport;
@@ -311,16 +304,18 @@ int aeron_udp_channel_data_paths_init(
             return -1;
         }
 
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-        incoming_transport_interceptor->interceptor_state = (void *)recv_func;
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
+        aeron_udp_channel_transport_recv_func_holder_t *recv_function_holder = NULL;
+        if (aeron_alloc(
+            (void **)&recv_function_holder, sizeof(aeron_udp_channel_transport_recv_func_holder_t)) < 0)
+        {
+            AERON_APPEND_ERR("%s", "Function holder for last incoming interceptor for UDP transport bindings");
+            return -1;
+        }
+        recv_function_holder->func = recv_func;
+
+        incoming_transport_interceptor->interceptor_state = recv_function_holder;
         incoming_transport_interceptor->incoming_func = aeron_udp_channel_incoming_interceptor_to_endpoint;
-        incoming_transport_interceptor->close_func = NULL;
+        incoming_transport_interceptor->close_func = aeron_udp_channel_transport_recv_func_holder_close;
         incoming_transport_interceptor->next_interceptor = NULL;
         last_incoming_interceptor->next_interceptor = incoming_transport_interceptor;
         data_paths->recv_func = aeron_udp_channel_incoming_interceptor_recv_func;

@@ -25,7 +25,7 @@
 #include "util/aeron_symbol_table.h"
 #include "aeron_termination_validator.h"
 
-aeron_symbol_table_func_t aeron_termination_validator_table[] =
+static const aeron_symbol_table_func_t aeron_termination_validator_table[] =
     {
         {
             "allow",
@@ -36,9 +36,11 @@ aeron_symbol_table_func_t aeron_termination_validator_table[] =
             "deny",
             "aeron_driver_termination_validator_default_deny",
             (aeron_symbol_table_fptr_t)aeron_driver_termination_validator_default_deny
-        },
-        { NULL, NULL, NULL }
+        }
     };
+
+static const size_t aeron_termination_validator_table_length =
+    sizeof(aeron_termination_validator_table) / sizeof(aeron_symbol_table_func_t);
 
 bool aeron_driver_termination_validator_default_allow(void *state, uint8_t *token_buffer, int32_t token_length)
 {
@@ -53,5 +55,8 @@ bool aeron_driver_termination_validator_default_deny(void *state, uint8_t *token
 aeron_driver_termination_validator_func_t aeron_driver_termination_validator_load(const char *validator_name)
 {
     return (aeron_driver_termination_validator_func_t)aeron_symbol_table_func_load(
-        aeron_termination_validator_table, validator_name, "terminate validator");
+        aeron_termination_validator_table,
+        aeron_termination_validator_table_length,
+        validator_name,
+        "terminate validator");
 }

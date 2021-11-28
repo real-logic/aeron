@@ -283,7 +283,7 @@ aeron_idle_strategy_t aeron_idle_strategy_backoff =
         aeron_idle_strategy_backoff_state_init_args
     };
 
-aeron_symbol_table_obj_t aeron_idle_strategy_table[] =
+static const aeron_symbol_table_obj_t aeron_idle_strategy_table[] =
     {
         { "sleeping", "aeron_idle_strategy_sleeping", &aeron_idle_strategy_sleeping },
         { "sleep-ns", "aeron_idle_strategy_sleeping", &aeron_idle_strategy_sleeping },
@@ -291,8 +291,10 @@ aeron_symbol_table_obj_t aeron_idle_strategy_table[] =
         { "spin", "aeron_idle_strategy_busy_spinning", &aeron_idle_strategy_busy_spinning },
         { "noop", "aeron_idle_strategy_noop", &aeron_idle_strategy_noop },
         { "backoff", "aeron_idle_strategy_backoff", &aeron_idle_strategy_backoff },
-        { NULL, NULL, NULL }
     };
+
+static const size_t aeron_idle_strategy_table_length =
+    sizeof(aeron_idle_strategy_table) / sizeof (aeron_symbol_table_obj_t);
 
 aeron_idle_strategy_func_t aeron_idle_strategy_load(
     const char *idle_strategy_name,
@@ -309,7 +311,7 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
     }
 
     aeron_idle_strategy_t *idle_strategy = aeron_symbol_table_obj_load(
-        aeron_idle_strategy_table, idle_strategy_name, "idle strategy");
+        aeron_idle_strategy_table, aeron_idle_strategy_table_length, idle_strategy_name, "idle strategy");
 
     if (NULL == idle_strategy)
     {

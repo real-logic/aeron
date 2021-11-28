@@ -32,7 +32,7 @@
 #include "aeron_driver_name_resolver.h"
 #include "aeron_csv_table_name_resolver.h"
 
-aeron_symbol_table_func_t aeron_name_resolver_table[] =
+static const aeron_symbol_table_func_t aeron_name_resolver_table[] =
     {
         {
             "default",
@@ -48,9 +48,11 @@ aeron_symbol_table_func_t aeron_name_resolver_table[] =
             "csv_table",
             "aeron_csv_table_name_resolver_supplier",
             (aeron_symbol_table_fptr_t)aeron_csv_table_name_resolver_supplier
-        },
-        { NULL, NULL, NULL }
+        }
     };
+
+static const size_t aeron_name_resolver_table_length =
+    sizeof(aeron_name_resolver_table) / sizeof(aeron_symbol_table_func_t);
 
 static void aeron_name_resolver_load_function_info(
     aeron_name_resolver_t *resolver,
@@ -203,7 +205,7 @@ exit:
 aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char *name)
 {
     return (aeron_name_resolver_supplier_func_t)aeron_symbol_table_func_load(
-        aeron_name_resolver_table, name, "name resolver");
+        aeron_name_resolver_table, aeron_name_resolver_table_length, name, "name resolver");
 }
 
 static void aeron_name_resolver_load_function_info(

@@ -30,12 +30,11 @@
 #include "aeron_symbol_table.h"
 
 
-static void* aeron_symbol_table_obj_scan(const aeron_symbol_table_obj_t *table, const char *symbol)
+static void* aeron_symbol_table_obj_scan(const aeron_symbol_table_obj_t *table, size_t table_size, const char *symbol)
 {
     void* result = NULL;
 
-    int i = 0;
-    do
+    for (size_t i = 0; i < table_size; i++)
     {
         const char *alias = table[i].alias;
         const char *name = table[i].name;
@@ -50,17 +49,27 @@ static void* aeron_symbol_table_obj_scan(const aeron_symbol_table_obj_t *table, 
             result = table[i].object;
             break;
         }
-
-        i++;
     }
-    while (true);
 
     return result;
 }
 
-void* aeron_symbol_table_obj_load(const aeron_symbol_table_obj_t *table, const char *name, const char *component_name)
+void* aeron_symbol_table_obj_load(
+    const aeron_symbol_table_obj_t *table, size_t table_length, const char *name, const char *component_name)
 {
-    void *obj = aeron_symbol_table_obj_scan(table, name);
+    if (NULL == name)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "name must not be null");
+        return NULL;
+    }
+
+    if (NULL == component_name)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "component_name must not be null");
+        return NULL;
+    }
+
+    void *obj = aeron_symbol_table_obj_scan(table, table_length, name);
     if (NULL == obj)
     {
         char copied_name[AERON_MAX_PATH] = { 0 };
@@ -109,6 +118,7 @@ static aeron_symbol_table_fptr_t aeron_symbol_table_func_scan(const aeron_symbol
 
 aeron_symbol_table_fptr_t aeron_symbol_table_func_load(
     const aeron_symbol_table_func_t *table,
+    size_t table_length,
     const char *name,
     const char *component_name)
 {

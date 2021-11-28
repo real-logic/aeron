@@ -49,14 +49,16 @@ aeron_symbol_table_func_t aeron_flow_control_strategy_table[] =
             AERON_MULTICAST_TAGGED_FLOW_CONTROL_STRATEGY_NAME,
             "aeron_tagged_flow_control_strategy_supplier",
             (aeron_symbol_table_fptr_t)aeron_tagged_flow_control_strategy_supplier
-        },
-        { NULL, NULL, NULL }
+        }
     };
+
+static const size_t aeron_flow_control_strategy_table_length =
+    sizeof(aeron_flow_control_strategy_table) / sizeof(aeron_symbol_table_func_t);
 
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_load(const char *strategy_name)
 {
     return (aeron_flow_control_strategy_supplier_func_t)aeron_symbol_table_func_load(
-        aeron_flow_control_strategy_table, strategy_name, "flow control");
+        aeron_flow_control_strategy_table, aeron_flow_control_strategy_table_length, strategy_name, "flow control");
 }
 
 bool aeron_flow_control_strategy_has_required_receivers_default(aeron_flow_control_strategy_t *strategy)

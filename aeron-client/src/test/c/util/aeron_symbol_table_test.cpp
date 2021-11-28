@@ -45,30 +45,38 @@ aeron_symbol_table_func_t test_function_table[]
     {
         { "foo", "foo_function", foo_function },
         { "bar", "bar_function", bar_function },
-        { NULL, NULL, NULL }
     };
+static const size_t test_func_table_length = sizeof(test_function_table) / sizeof(aeron_symbol_table_func_t);
 
 aeron_symbol_table_obj_t test_obj_table[]
     {
         { "foo", "foo_object", (void *)foo_object },
         { "bar", "bar_object", (void *)bar_object },
-        { NULL, NULL, NULL }
     };
+
+static const size_t test_obj_table_length = sizeof(test_obj_table) / sizeof(aeron_symbol_table_obj_t);
 
 TEST_F(SymbolTableTest, shouldFindObjects)
 {
-    EXPECT_EQ(foo_object, aeron_symbol_table_obj_load(test_obj_table, "foo", "object table"));
-    EXPECT_EQ(foo_object, aeron_symbol_table_obj_load(test_obj_table, "foo_object", "object table"));
-    EXPECT_EQ(bar_object, aeron_symbol_table_obj_load(test_obj_table, "bar", "object table"));
-    EXPECT_EQ(bar_object, aeron_symbol_table_obj_load(test_obj_table, "bar_object", "object table"));
-    EXPECT_EQ(nullptr, aeron_symbol_table_obj_load(test_obj_table, "baz", "object table"));
+    EXPECT_EQ(foo_object, aeron_symbol_table_obj_load(test_obj_table, test_obj_table_length, "foo", "object table"));
+    EXPECT_EQ(foo_object, aeron_symbol_table_obj_load(
+        test_obj_table, test_obj_table_length, "foo_object", "object table"));
+    EXPECT_EQ(bar_object, aeron_symbol_table_obj_load(test_obj_table, test_obj_table_length, "bar", "object table"));
+    EXPECT_EQ(bar_object, aeron_symbol_table_obj_load(
+        test_obj_table, test_obj_table_length, "bar_object", "object table"));
+    EXPECT_EQ(nullptr, aeron_symbol_table_obj_load(test_obj_table, test_obj_table_length, "baz", "object table"));
 }
 
 TEST_F(SymbolTableTest, shouldFindFunctionPointers)
 {
-    EXPECT_EQ(foo_function, aeron_symbol_table_func_load(test_function_table, "foo", "function table"));
-    EXPECT_EQ(foo_function, aeron_symbol_table_func_load(test_function_table, "foo_function", "function table"));
-    EXPECT_EQ(bar_function, aeron_symbol_table_func_load(test_function_table, "bar", "function table"));
-    EXPECT_EQ(bar_function, aeron_symbol_table_func_load(test_function_table, "bar_function", "function table"));
-    EXPECT_EQ(nullptr, aeron_symbol_table_func_load(test_function_table, "baz", "function table"));
+    EXPECT_EQ(foo_function, aeron_symbol_table_func_load(
+        test_function_table, test_func_table_length, "foo", "function table"));
+    EXPECT_EQ(foo_function, aeron_symbol_table_func_load(
+        test_function_table, test_func_table_length, "foo_function", "function table"));
+    EXPECT_EQ(bar_function, aeron_symbol_table_func_load(
+        test_function_table, test_func_table_length, "bar", "function table"));
+    EXPECT_EQ(bar_function, aeron_symbol_table_func_load(
+        test_function_table, test_func_table_length, "bar_function", "function table"));
+    EXPECT_EQ(nullptr, aeron_symbol_table_func_load(
+        test_function_table, test_func_table_length, "baz", "function table"));
 }

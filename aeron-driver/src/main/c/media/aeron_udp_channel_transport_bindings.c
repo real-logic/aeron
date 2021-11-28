@@ -54,30 +54,37 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_defa
         }
     };
 
-aeron_symbol_table_obj_t aeron_udp_channel_transport_bindings_table[] =
+static const aeron_symbol_table_obj_t aeron_udp_channel_transport_bindings_table[] =
     {
         {
             "default",
             "aeron_udp_channel_transport_bindings_default",
             (void *)&aeron_udp_channel_transport_bindings_default
         },
-        { NULL, NULL, NULL }
     };
 
-aeron_symbol_table_func_t aeron_udp_channel_interceptor_table[] =
+static const size_t aeron_udp_channel_transport_bindings_table_length =
+    sizeof(aeron_udp_channel_transport_bindings_table) / sizeof (aeron_symbol_table_obj_t);
+
+static const aeron_symbol_table_func_t aeron_udp_channel_interceptor_table[] =
     {
         {
             "loss",
             "aeron_udp_channel_interceptor_loss_load",
             (aeron_symbol_table_fptr_t)aeron_udp_channel_interceptor_loss_load
-        },
-        { NULL, NULL, NULL }
+        }
     };
+
+static const size_t aeron_udp_channel_interceptor_table_length =
+    sizeof(aeron_udp_channel_transport_bindings_table) / sizeof(aeron_symbol_table_func_t);
 
 aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_media(const char *bindings_name)
 {
     aeron_udp_channel_transport_bindings_t *bindings = aeron_symbol_table_obj_load(
-        aeron_udp_channel_transport_bindings_table, bindings_name, "udp channel bindings");
+        aeron_udp_channel_transport_bindings_table,
+        aeron_udp_channel_transport_bindings_table_length,
+        bindings_name,
+        "udp channel bindings");
 
     if (NULL == bindings_name)
     {
@@ -94,7 +101,10 @@ static aeron_udp_channel_interceptor_bindings_load_func_t *aeron_udp_channel_int
     const char *interceptor_name)
 {
     return (aeron_udp_channel_interceptor_bindings_load_func_t *)aeron_symbol_table_func_load(
-        aeron_udp_channel_interceptor_table, interceptor_name, "interceptor bindings");
+        aeron_udp_channel_interceptor_table,
+        aeron_udp_channel_interceptor_table_length,
+        interceptor_name,
+        "interceptor bindings");
 }
 
 #define AERON_MAX_INTERCEPTORS_LEN (4094)

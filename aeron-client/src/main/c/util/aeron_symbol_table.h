@@ -25,7 +25,8 @@ struct aeron_symbol_table_obj_stct
 };
 typedef struct aeron_symbol_table_obj_stct aeron_symbol_table_obj_t;
 
-void* aeron_symbol_table_obj_load(const aeron_symbol_table_obj_t *table, const char *name, const char *component_name);
+void* aeron_symbol_table_obj_load(
+    const aeron_symbol_table_obj_t *table, size_t table_length, const char *name, const char *component_name);
 
 typedef void (*aeron_symbol_table_fptr_t)(void);
 struct aeron_symbol_table_func_stct
@@ -38,6 +39,7 @@ typedef struct aeron_symbol_table_func_stct aeron_symbol_table_func_t;
 
 aeron_symbol_table_fptr_t aeron_symbol_table_func_load(
     const aeron_symbol_table_func_t *table,
+    size_t table_length,
     const char *name,
     const char *component_name);
 

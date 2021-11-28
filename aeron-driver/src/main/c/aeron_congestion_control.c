@@ -38,7 +38,7 @@
 #define AERON_CUBICCONGESTIONCONTROL_B (0.2)
 #define AERON_CUBICCONGESTIONCONTROL_RTT_TIMEOUT_MULTIPLE (4)
 
-aeron_symbol_table_func_t aeron_congestion_control_table[] =
+static const aeron_symbol_table_func_t aeron_congestion_control_table[] =
     {
         {
             "default",
@@ -55,14 +55,16 @@ aeron_symbol_table_func_t aeron_congestion_control_table[] =
             "aeron_cubic_congestion_control_strategy_supplier",
             (aeron_symbol_table_fptr_t)aeron_cubic_congestion_control_strategy_supplier
         },
-        { NULL, NULL, NULL }
     };
+
+static const size_t aeron_congestion_control_table_length =
+    sizeof(aeron_congestion_control_table) / sizeof(aeron_symbol_table_func_t);
 
 aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strategy_supplier_load(
     const char *strategy_name)
 {
     return (aeron_congestion_control_strategy_supplier_func_t)aeron_symbol_table_func_load(
-        aeron_congestion_control_table, strategy_name, "congestion control");
+        aeron_congestion_control_table, aeron_congestion_control_table_length, strategy_name, "congestion control");
 }
 
 struct aeron_static_window_congestion_control_strategy_state_stct

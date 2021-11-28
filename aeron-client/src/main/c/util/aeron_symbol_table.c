@@ -48,6 +48,7 @@ static void* aeron_symbol_table_obj_scan(const aeron_symbol_table_obj_t *table, 
         if (0 == strcmp(alias, symbol) || 0 == strcmp(name, symbol))
         {
             result = table[i].object;
+            break;
         }
 
         i++;
@@ -113,7 +114,13 @@ aeron_symbol_table_fptr_t aeron_symbol_table_func_load(
 {
     if (NULL == name)
     {
-        AERON_SET_ERR(EINVAL, "%s", "invalid name_resolver supplier function name");
+        AERON_SET_ERR(EINVAL, "%s", "name must not be null");
+        return NULL;
+    }
+
+    if (NULL == component_name)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "component_name must not be null");
         return NULL;
     }
 

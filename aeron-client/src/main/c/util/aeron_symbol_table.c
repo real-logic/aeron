@@ -36,8 +36,8 @@ static void* aeron_symbol_table_obj_scan(const aeron_symbol_table_obj_t *table, 
 
     for (size_t i = 0; i < table_size; i++)
     {
-        const char *alias = table[i].alias;
-        const char *name = table[i].name;
+        const char *alias = table[(int)i].alias;
+        const char *name = table[(int)i].name;
 
         if (NULL == alias || NULL == name)
         {
@@ -88,15 +88,15 @@ void* aeron_symbol_table_obj_load(
 }
 
 
-static aeron_symbol_table_fptr_t aeron_symbol_table_func_scan(const aeron_symbol_table_func_t *table, const char *symbol)
+static aeron_symbol_table_fptr_t aeron_symbol_table_func_scan(
+    const aeron_symbol_table_func_t *table, size_t table_length, const char *symbol)
 {
     aeron_symbol_table_fptr_t result = NULL;
 
-    int i = 0;
-    do
+    for (size_t i = 0; i < table_length; i++)
     {
-        const char *alias = table[i].alias;
-        const char *name = table[i].name;
+        const char *alias = table[(int)i].alias;
+        const char *name = table[(int)i].name;
 
         if (NULL == alias || NULL == name)
         {
@@ -108,10 +108,7 @@ static aeron_symbol_table_fptr_t aeron_symbol_table_func_scan(const aeron_symbol
             result = table[i].function;
             break;
         }
-
-        i++;
     }
-    while (true);
 
     return result;
 }
@@ -134,7 +131,7 @@ aeron_symbol_table_fptr_t aeron_symbol_table_func_load(
         return NULL;
     }
 
-    aeron_symbol_table_fptr_t func = aeron_symbol_table_func_scan(table, name);
+    aeron_symbol_table_fptr_t func = aeron_symbol_table_func_scan(table, table_length, name);
 
     if (NULL == func)
     {

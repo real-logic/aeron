@@ -40,6 +40,7 @@ void *aeron_dlsym(void *module, const char *name);
 void *aeron_dlopen(const char *filename);
 char *aeron_dlerror();
 const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length);
+const char *aeron_dlinfo_func(void (*func)(void), char *buffer, size_t max_buffer_length);
 
 #else
 #error Unsupported platform!

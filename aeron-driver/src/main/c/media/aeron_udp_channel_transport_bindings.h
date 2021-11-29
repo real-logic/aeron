@@ -270,11 +270,7 @@ struct aeron_udp_channel_transport_recv_func_holder_stct
 };
 typedef struct aeron_udp_channel_transport_recv_func_holder_stct aeron_udp_channel_transport_recv_func_holder_t;
 
-int aeron_udp_channel_transport_recv_func_holder_close(void *holder)
-{
-    aeron_free(holder);
-    return 0;
-}
+int aeron_udp_channel_transport_recv_func_holder_close(void *holder);
 
 inline int aeron_udp_channel_outgoing_interceptor_sendmmsg(
     aeron_udp_channel_data_paths_t *data_paths,

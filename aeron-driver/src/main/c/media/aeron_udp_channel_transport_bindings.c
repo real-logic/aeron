@@ -361,6 +361,12 @@ int aeron_udp_channel_data_paths_delete(aeron_udp_channel_data_paths_t *data_pat
     return 0;
 }
 
+int aeron_udp_channel_transport_recv_func_holder_close(void *holder)
+{
+    aeron_free(holder);
+    return 0;
+}
+
 extern int aeron_udp_channel_outgoing_interceptor_sendmmsg(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,

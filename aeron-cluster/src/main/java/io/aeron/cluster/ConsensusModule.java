@@ -2246,7 +2246,7 @@ public final class ConsensusModule implements AutoCloseable
          */
         public long sessionTimeoutNs()
         {
-            return sessionTimeoutNs;
+            return CommonContext.checkDebugTimeout(sessionTimeoutNs, TimeUnit.NANOSECONDS);
         }
 
         /**

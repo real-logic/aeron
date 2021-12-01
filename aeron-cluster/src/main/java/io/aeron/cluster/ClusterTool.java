@@ -280,7 +280,7 @@ public class ClusterTool
     public static void recoveryPlan(final PrintStream out, final File clusterDir, final int serviceCount)
     {
         try (AeronArchive archive = AeronArchive.connect();
-            RecordingLog recordingLog = new RecordingLog(clusterDir))
+            RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             out.println(recordingLog.createRecoveryPlan(archive, serviceCount, Aeron.NULL_VALUE));
         }
@@ -294,7 +294,7 @@ public class ClusterTool
      */
     public static void recordingLog(final PrintStream out, final File clusterDir)
     {
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             out.println(recordingLog);
         }
@@ -309,7 +309,7 @@ public class ClusterTool
     public static boolean sortRecordingLog(final File clusterDir)
     {
         final List<RecordingLog.Entry> entries;
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             entries = recordingLog.entries();
             if (isRecordingLogSorted(entries))
@@ -333,7 +333,7 @@ public class ClusterTool
     {
         int snapshotIndex = Aeron.NULL_VALUE;
         final List<RecordingLog.Entry> entries;
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             entries = recordingLog.entries();
             for (int i = entries.size() - 1; i >= 0; i--)
@@ -868,7 +868,7 @@ public class ClusterTool
      */
     public static boolean invalidateLatestSnapshot(final PrintStream out, final File clusterDir)
     {
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             final boolean result = recordingLog.invalidateLatestSnapshot();
             out.println(" invalidate latest snapshot: " + result);

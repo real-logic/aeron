@@ -31,9 +31,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.nio.file.OpenOption;
+import java.util.*;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -637,15 +636,23 @@ public final class RecordingLog implements AutoCloseable
      * Create a log that appends to an existing log or creates a new one.
      *
      * @param parentDir in which the log will be created.
+     * @param createNew create a new recording log if one does not exist.
      */
-    public RecordingLog(final File parentDir)
+    public RecordingLog(final File parentDir, final boolean createNew)
     {
         final File logFile = new File(parentDir, RECORDING_LOG_FILE_NAME);
         final boolean isNewFile = !logFile.exists();
+        final Set<OpenOption> openOptions = new HashSet<>();
+        openOptions.add(READ);
+        openOptions.add(WRITE);
+        if (createNew)
+        {
+            openOptions.add(CREATE);
+        }
 
         try
         {
-            fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE);
+            fileChannel = FileChannel.open(logFile.toPath(), openOptions);
 
             if (isNewFile)
             {

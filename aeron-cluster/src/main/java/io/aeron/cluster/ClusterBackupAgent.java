@@ -150,7 +150,7 @@ public final class ClusterBackupAgent implements Agent
      */
     public void onStart()
     {
-        recordingLog = new RecordingLog(ctx.clusterDir());
+        recordingLog = new RecordingLog(ctx.clusterDir(), true);
         backupArchive = AeronArchive.connect(ctx.archiveContext().clone());
         recordingSignalPoller = new RecordingSignalPoller(
             backupArchive.controlSessionId(), backupArchive.controlResponsePoller().subscription());

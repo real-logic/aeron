@@ -1197,7 +1197,7 @@ public class TestCluster implements AutoCloseable
         {
             if (null != node)
             {
-                try (RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir()))
+                try (RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir(), false))
                 {
                     assertTrue(recordingLog.invalidateLatestSnapshot());
                 }
@@ -1261,7 +1261,7 @@ public class TestCluster implements AutoCloseable
                 continue;
             }
 
-            try (RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir()))
+            try (RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir(), false))
             {
                 if (null == firstEntries)
                 {
@@ -1294,7 +1294,7 @@ public class TestCluster implements AutoCloseable
         final AeronArchive.Context clone = consensusModuleCtx.archiveContext().clone();
         try (
             AeronArchive aeronArchive = AeronArchive.connect(clone);
-            RecordingLog recordingLog = new RecordingLog(consensusModuleCtx.clusterDir()))
+            RecordingLog recordingLog = new RecordingLog(consensusModuleCtx.clusterDir(), false))
         {
             final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
             assertNotNull(lastTerm);

@@ -272,7 +272,7 @@ public class StartFromTruncatedRecordingLogTest
         deleteFile(new File(archiveDataDir, ArchiveMarkFile.FILENAME));
         deleteFile(new File(consensusModuleDataDir, ClusterMarkFile.FILENAME));
 
-        try (RecordingLog recordingLog = new RecordingLog(consensusModuleDataDir))
+        try (RecordingLog recordingLog = new RecordingLog(consensusModuleDataDir, false))
         {
             final RecordingLog.Entry lastTermEntry = recordingLog.findLastTerm();
             if (null == lastTermEntry)
@@ -280,7 +280,7 @@ public class StartFromTruncatedRecordingLogTest
                 throw new IllegalStateException("no term found in recording log");
             }
 
-            try (RecordingLog newRecordingLog = new RecordingLog(new File(baseDirName)))
+            try (RecordingLog newRecordingLog = new RecordingLog(new File(baseDirName), false))
             {
                 newRecordingLog.appendTerm(
                     lastTermEntry.recordingId,
@@ -299,7 +299,7 @@ public class StartFromTruncatedRecordingLogTest
             consensusModuleDataDir.toPath().resolve(RECORDING_LOG_FILE_NAME),
             StandardCopyOption.REPLACE_EXISTING);
 
-        try (RecordingLog copiedRecordingLog = new RecordingLog(consensusModuleDataDir))
+        try (RecordingLog copiedRecordingLog = new RecordingLog(consensusModuleDataDir, false))
         {
             final LongHashSet recordingIds = new LongHashSet();
             copiedRecordingLog.entries().stream().mapToLong((e) -> e.recordingId).forEach(recordingIds::add);

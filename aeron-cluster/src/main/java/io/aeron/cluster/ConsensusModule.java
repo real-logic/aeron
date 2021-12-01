@@ -1216,7 +1216,7 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == recordingLog)
             {
-                recordingLog = new RecordingLog(clusterDir);
+                recordingLog = new RecordingLog(clusterDir, true);
             }
 
             if (null == aeron)

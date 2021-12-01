@@ -169,7 +169,7 @@ class ClusterToolTest
     {
         final File clusterDir = emptyClusterDir.toFile();
         final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             recordingLog.appendTerm(21, 0, 100, 100);
             recordingLog.appendSnapshot(0, 0, 0, 0, 200, 0);
@@ -191,7 +191,7 @@ class ClusterToolTest
         final File clusterDir = emptyClusterDir.toFile();
         final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
         final List<RecordingLog.Entry> sortedEntries = new ArrayList<>();
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             recordingLog.appendTerm(21, 2, 100, 100);
             recordingLog.appendSnapshot(1, 2, 50, 60, 42, 89);
@@ -224,7 +224,7 @@ class ClusterToolTest
         assertTrue(result);
         assertFalse(Arrays.equals(originalBytes, Files.readAllBytes(logFile)));
         assertArrayEquals(new String[]{ RecordingLog.RECORDING_LOG_FILE_NAME }, clusterDir.list());
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             final List<RecordingLog.Entry> entries = recordingLog.entries();
             assertEquals(sortedEntries, entries);
@@ -238,7 +238,7 @@ class ClusterToolTest
         final File clusterDir = emptyClusterDir.toFile();
         final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
         final Path backupLogFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".bak");
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             recordingLog.appendTerm(1, 1, 0, 100);
             recordingLog.appendSnapshot(1, 1, 1000, 256, 300, 0);
@@ -286,7 +286,7 @@ class ClusterToolTest
 
         final File clusterDir = emptyClusterDir.toFile();
         final List<RecordingLog.Entry> truncatedEntries = new ArrayList<>();
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             recordingLog.appendTerm(1, 0, 0, 0);
             recordingLog.appendSnapshot(1, 3, 4000, 4000, 600, 2);
@@ -325,7 +325,7 @@ class ClusterToolTest
 
         truncateAction.accept(clusterDir);
 
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             assertEquals(truncatedEntries, recordingLog.entries());
         }

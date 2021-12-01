@@ -31,7 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -47,9 +47,9 @@ import static org.agrona.BitUtil.*;
  * The log is made up of entries of leadership terms or snapshots to roll up state as of a log position within a
  * leadership term.
  * <p>
- * The latest state is made up of the latest snapshot followed by any leadership term logs which follow. It is
- * possible that a snapshot is taken mid-term and therefore the latest state is the snapshot plus the log of messages
- * which got appended to the log after the snapshot was taken.
+ * The latest state is made up of the latest snapshot followed by any leadership log which follows. It is possible
+ * that a snapshot is taken midterm and therefore the latest state is the snapshot plus the log of messages which
+ * got appended to the log after the snapshot was taken.
  * <p>
  * Record layout as follows:
  * <pre>
@@ -213,6 +213,7 @@ public final class RecordingLog implements AutoCloseable
             {
                 return true;
             }
+
             if (o == null || getClass() != o.getClass())
             {
                 return false;
@@ -237,6 +238,7 @@ public final class RecordingLog implements AutoCloseable
         public int hashCode()
         {
             int result = (int)(recordingId ^ (recordingId >>> 32));
+
             result = 31 * result + (int)(leadershipTermId ^ (leadershipTermId >>> 32));
             result = 31 * result + (int)(termBaseLogPosition ^ (termBaseLogPosition >>> 32));
             result = 31 * result + (int)(logPosition ^ (logPosition >>> 32));
@@ -245,6 +247,7 @@ public final class RecordingLog implements AutoCloseable
             result = 31 * result + type;
             result = 31 * result + entryIndex;
             result = 31 * result + (isValid ? 1 : 0);
+
             return result;
         }
 
@@ -642,9 +645,8 @@ public final class RecordingLog implements AutoCloseable
     {
         final File logFile = new File(parentDir, RECORDING_LOG_FILE_NAME);
         final boolean isNewFile = !logFile.exists();
-        final Set<OpenOption> openOptions = new HashSet<>();
-        openOptions.add(READ);
-        openOptions.add(WRITE);
+        final EnumSet<StandardOpenOption> openOptions = EnumSet.of(READ, WRITE);
+
         if (createNew)
         {
             openOptions.add(CREATE);

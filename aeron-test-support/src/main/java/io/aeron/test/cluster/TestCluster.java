@@ -983,6 +983,12 @@ public class TestCluster implements AutoCloseable
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
     }
 
+    public void takeHotSnapshot(final TestNode leaderNode)
+    {
+        final AtomicCounter controlToggle = getControlToggle(leaderNode);
+        assertTrue(ClusterControl.ToggleState.HOT_SNAPSHOT.toggle(controlToggle));
+    }
+
     public void shutdownCluster(final TestNode leaderNode)
     {
         final AtomicCounter controlToggle = getControlToggle(leaderNode);

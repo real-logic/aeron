@@ -75,7 +75,12 @@ public class ClusterControl
         /**
          * Abort processing and terminate the cluster without taking a snapshot.
          */
-        ABORT(6);
+        ABORT(6),
+
+        /**
+         * Take a snapshot of cluster state on a single follower node.
+         */
+        HOT_SNAPSHOT(7);
 
         private final int code;
 

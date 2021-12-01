@@ -1258,9 +1258,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
     }
 
-    void onReplayClusterAction(final long leadershipTermId, final ClusterAction action)
+    void onReplayClusterAction(final long leadershipTermId, final ClusterAction action, final int memberId)
     {
-        if (leadershipTermId == this.leadershipTermId)
+        if (leadershipTermId == this.leadershipTermId && (NULL_VALUE == memberId || this.memberId == memberId))
         {
             if (ClusterAction.SUSPEND == action)
             {
@@ -2240,6 +2240,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 }
                 break;
 
+            case HOT_SNAPSHOT:
+                if (ConsensusModule.State.ACTIVE == state)
+                {
+                    appendAction(ClusterAction.SNAPSHOT, followerMemberIdForSnapshot());
+                    ClusterControl.ToggleState.reset(controlToggle);
+                }
+                break;
+
             case SHUTDOWN:
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT))
                 {
@@ -2274,9 +2282,20 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return 1;
     }
 
+    private int followerMemberIdForSnapshot()
+    {
+        // TODO: Should we use all members or just the active members...
+        return memberId + 1 <= activeMembers.length ? memberId + 1 : 0;
+    }
+
     private boolean appendAction(final ClusterAction action)
     {
-        return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action);
+        return appendAction(action, NULL_VALUE);
+    }
+
+    private boolean appendAction(final ClusterAction action, final int targetFollowerId)
+    {
+        return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action, targetFollowerId);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowNs)

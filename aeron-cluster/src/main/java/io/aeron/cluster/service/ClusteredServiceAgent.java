@@ -439,11 +439,15 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     }
 
     void onServiceAction(
-        final long leadershipTermId, final long logPosition, final long timestamp, final ClusterAction action)
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestamp,
+        final ClusterAction action,
+        final int targetMemberId)
     {
         this.logPosition = logPosition;
         clusterTime = timestamp;
-        executeAction(action, logPosition, leadershipTermId);
+        executeAction(action, logPosition, leadershipTermId, targetMemberId);
     }
 
     void onNewLeadershipTermEvent(
@@ -873,10 +877,16 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
     }
 
-    private void executeAction(final ClusterAction action, final long logPosition, final long leadershipTermId)
+    private void executeAction(
+        final ClusterAction action,
+        final long logPosition,
+        final long leadershipTermId,
+        final int targetMemberId)
     {
-        if (ClusterAction.SNAPSHOT == action)
+        if (ClusterAction.SNAPSHOT == action && (NULL_VALUE == targetMemberId || this.memberId == targetMemberId))
         {
+            System.out.println("Snapshotting");
+
             final long recordingId = onTakeSnapshot(logPosition, leadershipTermId);
             final long id = ackId++;
             idleStrategy.reset();

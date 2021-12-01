@@ -71,6 +71,7 @@ public final class DataCollector
      */
     public void add(final Path location)
     {
+        System.out.println("Collecting: " + location);
         locations.add(requireNonNull(location));
     }
 

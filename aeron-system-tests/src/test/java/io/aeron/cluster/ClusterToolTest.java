@@ -156,9 +156,9 @@ class ClusterToolTest
     void sortRecordingLogIsANoOpIfRecordLogIsEmpty(final @TempDir Path emptyClusterDir) throws IOException
     {
         final File clusterDir = emptyClusterDir.toFile();
+        //noinspection EmptyTryBlock
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
         {
-            // No-op
         }
 
         final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);

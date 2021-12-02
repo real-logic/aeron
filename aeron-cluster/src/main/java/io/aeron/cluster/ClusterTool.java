@@ -317,6 +317,10 @@ public class ClusterTool
                 return false;
             }
         }
+        catch (final RuntimeException ex)
+        {
+            return false;
+        }
 
         updateRecordingLog(clusterDir, entries);
 

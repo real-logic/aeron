@@ -280,7 +280,7 @@ public class StartFromTruncatedRecordingLogTest
                 throw new IllegalStateException("no term found in recording log");
             }
 
-            try (RecordingLog newRecordingLog = new RecordingLog(new File(baseDirName), false))
+            try (RecordingLog newRecordingLog = new RecordingLog(new File(baseDirName), true))
             {
                 newRecordingLog.appendTerm(
                     lastTermEntry.recordingId,

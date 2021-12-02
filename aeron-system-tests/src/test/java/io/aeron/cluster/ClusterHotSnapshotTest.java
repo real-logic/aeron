@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Counter;
 import io.aeron.log.EventLogExtension;
 import io.aeron.test.*;
 import io.aeron.test.cluster.TestCluster;
@@ -22,6 +23,8 @@ import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 
@@ -51,6 +54,48 @@ public class ClusterHotSnapshotTest
 //        Tests.sleep(1_000);
         cluster.takeHotSnapshot(leader);
         //        cluster.awaitSnapshotCount(1);
-        Tests.sleep(1_000);
+        Tests.sleep(2_000);
+
+        for (final TestNode follower : cluster.followers())
+        {
+            final Counter snapshotCounter = follower.consensusModule().context().snapshotCounter();
+            System.out.println(snapshotCounter.get());
+        }
+
+        cluster.awaitSnapshotCount(1);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    public void shouldStopFollowerAndRestartFollower2()
+    {
+        final CountDownLatch snapshotLatch = new CountDownLatch(1);
+
+        try
+        {
+
+            cluster = aCluster().withStaticNodes(3).start();
+            systemTestWatcher.cluster(cluster);
+
+            final TestNode leader = cluster.awaitLeader();
+
+            final int messageCount1 = 10;
+            final int messageCount2 = 1000;
+            cluster.connectClient();
+            cluster.sendMessages(messageCount1);
+            cluster.awaitResponseMessageCount(messageCount1);
+
+            cluster.setSnapshotLatch(snapshotLatch);
+
+            cluster.takeHotSnapshot(leader);
+            cluster.sendMessages(messageCount2);
+            cluster.awaitResponseMessageCount(messageCount1 + messageCount2);
+        }
+        finally
+        {
+            snapshotLatch.countDown();
+        }
+
+        cluster.awaitSnapshotCount(1);
     }
 }

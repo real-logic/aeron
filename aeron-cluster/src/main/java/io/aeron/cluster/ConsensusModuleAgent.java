@@ -140,6 +140,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private final ArrayList<RecordingLog.Snapshot> dynamicJoinSnapshots = new ArrayList<>();
+    private final SnapshotReplicator snapshotReplicator;
+
     private RecordingLog.RecoveryPlan recoveryPlan;
     private AeronArchive archive;
     private RecordingSignalPoller recordingSignalPoller;
@@ -181,6 +183,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         Arrays.fill(serviceClientIds, NULL_VALUE);
         this.serviceAckQueues = ServiceAck.newArrayOfQueues(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(activeMembers);
+        this.snapshotReplicator = new SnapshotReplicator(ctx, consensusPublisher);
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -835,7 +838,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void onSnapshotRecordingQuery(final long correlationId, final int requestMemberId)
     {
-        if (null == election && Cluster.Role.LEADER == role)
+        if (null == election)
         {
             final ClusterMember requester = clusterMemberByIdMap.get(requestMemberId);
             if (null != requester)
@@ -855,6 +858,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             dynamicJoin.onSnapshotRecordings(correlationId, decoder);
         }
+        decoder.sbeRewind();
+        snapshotReplicator.onSnapshotRecordings(correlationId, decoder, clusterClock.timeMillis());
     }
 
     void onJoinCluster(final long leadershipTermId, final int memberId)
@@ -2160,6 +2165,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 }
             }
         }
+        workCount += snapshotReplicator.doWork(nowMs, activeMembers, thisMember.id());
 
         return workCount;
     }
@@ -2243,8 +2249,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             case HOT_SNAPSHOT:
                 if (ConsensusModule.State.ACTIVE == state)
                 {
-                    appendAction(ClusterAction.SNAPSHOT, followerMemberIdForSnapshot());
-                    ClusterControl.ToggleState.reset(controlToggle);
+                    final int targetFollowerId = followerMemberIdForSnapshot();
+                    if (appendAction(ClusterAction.SNAPSHOT, targetFollowerId))
+                    {
+                        snapshotReplicator.setLatestSnapshot(targetFollowerId, logPublisher.position());
+                        ClusterControl.ToggleState.reset(controlToggle);
+                    }
                 }
                 break;
 
@@ -2285,7 +2295,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private int followerMemberIdForSnapshot()
     {
         // TODO: Should we use all members or just the active members...
-        return memberId + 1 <= activeMembers.length ? memberId + 1 : 0;
+        return memberId + 1 < activeMembers.length ? memberId + 1 : 0;
     }
 
     private boolean appendAction(final ClusterAction action)
@@ -2295,7 +2305,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     private boolean appendAction(final ClusterAction action, final int targetFollowerId)
     {
-        return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action, targetFollowerId);
+        return logPublisher.appendClusterAction(
+            leadershipTermId,
+            clusterClock.time(),
+            action,
+            targetFollowerId);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowNs)

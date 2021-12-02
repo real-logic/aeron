@@ -60,6 +60,7 @@ import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
@@ -120,6 +121,7 @@ public class TestCluster implements AutoCloseable
             final EventCode code,
             final String detail)
         {
+            System.out.println("Session event: " + code);
             if (EventCode.ERROR == code)
             {
                 throw new ClusterException(detail);
@@ -752,6 +754,12 @@ public class TestCluster implements AutoCloseable
 
             if (Publication.ADMIN_ACTION == result)
             {
+                continue;
+            }
+
+            if (Publication.BACK_PRESSURED == result)
+            {
+                System.out.println("Back Pressure");
                 continue;
             }
 
@@ -1479,6 +1487,17 @@ public class TestCluster implements AutoCloseable
                         position.set(header.position());
                     },
                     10);
+            }
+        }
+    }
+
+    public void setSnapshotLatch(final CountDownLatch snapshotLatch)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                node.service().setSnapshotLatch(snapshotLatch);
             }
         }
     }

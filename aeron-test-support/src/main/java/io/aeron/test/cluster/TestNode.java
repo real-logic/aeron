@@ -46,6 +46,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -325,6 +326,7 @@ public class TestNode implements AutoCloseable
         private volatile Cluster.Role roleChangedTo = null;
         private final AtomicInteger activeSessionCount = new AtomicInteger();
         private final AtomicInteger messageCount = new AtomicInteger();
+        private volatile CountDownLatch snapshotLatch = null;
 
         TestService index(final int index)
         {
@@ -471,6 +473,18 @@ public class TestNode implements AutoCloseable
 
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
+            if (null != snapshotLatch)
+            {
+                try
+                {
+                    snapshotLatch.await();
+                }
+                catch (final InterruptedException ex)
+                {
+                    throw new RuntimeException(ex);
+                }
+            }
+
             final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SNAPSHOT_MSG_LENGTH]);
             buffer.putInt(0, messageCount.get());
             buffer.putInt(SNAPSHOT_MSG_LENGTH - SIZE_OF_INT, messageCount.get());
@@ -502,6 +516,11 @@ public class TestNode implements AutoCloseable
         public void onRoleChange(final Cluster.Role newRole)
         {
             roleChangedTo = newRole;
+        }
+
+        public void setSnapshotLatch(final CountDownLatch snapshotLatch)
+        {
+            this.snapshotLatch = snapshotLatch;
         }
     }
 

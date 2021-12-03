@@ -767,10 +767,15 @@ public final class DriverConductor implements Agent
         validateTimestampConfiguration(udpChannel);
 
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
-
         checkForClashingSubscription(params, udpChannel, streamId);
+
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(
             params, udpChannel, registrationId);
+
+        final NetworkSubscriptionLink subscription = new NetworkSubscriptionLink(
+            registrationId, channelEndpoint, streamId, channel, getOrAddClient(clientId), params);
+
+        subscriptionLinks.add(subscription);
 
         if (params.hasSessionId)
         {
@@ -787,13 +792,7 @@ public final class DriverConductor implements Agent
             }
         }
 
-        final AeronClient client = getOrAddClient(clientId);
-        final NetworkSubscriptionLink subscription = new NetworkSubscriptionLink(
-            registrationId, channelEndpoint, streamId, channel, client, params);
-
-        subscriptionLinks.add(subscription);
         clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounter().id());
-
         linkMatchingImages(subscription);
     }
 
@@ -802,11 +801,11 @@ public final class DriverConductor implements Agent
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel), ctx);
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId, streamId, channel, getOrAddClient(clientId), params);
-        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 
         subscriptionLinks.add(subscriptionLink);
         clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
+        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
@@ -836,15 +835,14 @@ public final class DriverConductor implements Agent
     void onAddSpySubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
-        final AeronClient client = getOrAddClient(clientId);
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
-        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
-            registrationId, udpChannel, streamId, client, params);
+            registrationId, udpChannel, streamId, getOrAddClient(clientId), params);
 
         subscriptionLinks.add(subscriptionLink);
         clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
+        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
             final NetworkPublication publication = networkPublications.get(i);

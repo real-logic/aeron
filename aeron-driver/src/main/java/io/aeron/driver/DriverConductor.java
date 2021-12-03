@@ -805,30 +805,20 @@ public final class DriverConductor implements Agent
         subscriptionLinks.add(subscriptionLink);
         clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
-        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
             if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
             {
-                final Position subPos = linkIpcSubscription(publication, subscriptionLink);
-                subscriberPositions.add(new SubscriberPosition(subscriptionLink, publication, subPos));
+                clientProxy.onAvailableImage(
+                    publication.registrationId(),
+                    streamId,
+                    publication.sessionId(),
+                    registrationId,
+                    linkIpcSubscription(publication, subscriptionLink).id(),
+                    publication.rawLog().fileName(),
+                    CommonContext.IPC_CHANNEL);
             }
-        }
-
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
-        {
-            final SubscriberPosition subscriberPosition = subscriberPositions.get(i);
-            final IpcPublication publication = (IpcPublication)subscriberPosition.subscribable();
-
-            clientProxy.onAvailableImage(
-                publication.registrationId(),
-                streamId,
-                publication.sessionId(),
-                registrationId,
-                subscriberPosition.position().id(),
-                publication.rawLog().fileName(),
-                CommonContext.IPC_CHANNEL);
         }
     }
 
@@ -842,30 +832,20 @@ public final class DriverConductor implements Agent
         subscriptionLinks.add(subscriptionLink);
         clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
-        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
             final NetworkPublication publication = networkPublications.get(i);
             if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
             {
-                final Position subPos = linkSpy(publication, subscriptionLink);
-                subscriberPositions.add(new SubscriberPosition(subscriptionLink, publication, subPos));
+                clientProxy.onAvailableImage(
+                    publication.registrationId(),
+                    streamId,
+                    publication.sessionId(),
+                    registrationId,
+                    linkSpy(publication, subscriptionLink).id(),
+                    publication.rawLog().fileName(),
+                    CommonContext.IPC_CHANNEL);
             }
-        }
-
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
-        {
-            final SubscriberPosition subscriberPosition = subscriberPositions.get(i);
-            final NetworkPublication publication = (NetworkPublication)subscriberPosition.subscribable();
-
-            clientProxy.onAvailableImage(
-                publication.registrationId(),
-                streamId,
-                publication.sessionId(),
-                registrationId,
-                subscriberPosition.position().id(),
-                publication.rawLog().fileName(),
-                CommonContext.IPC_CHANNEL);
         }
     }
 
@@ -1205,8 +1185,8 @@ public final class DriverConductor implements Agent
             channelEndpoint.incRef();
             networkPublications.add(publication);
             senderProxy.newNetworkPublication(publication);
-            linkSpies(subscriptionLinks, publication);
             activeSessionSet.add(new SessionKey(sessionId, streamId, canonicalForm));
+            linkSpies(subscriptionLinks, publication);
 
             return publication;
         }

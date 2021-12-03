@@ -1011,16 +1011,27 @@ public class TestCluster implements AutoCloseable
 
     public void awaitSnapshotCount(final long value)
     {
+        final Supplier<String> message = () -> "Snapshot count " + value + " not reached, values: " +
+            Arrays.stream(nodes)
+            .mapToLong((n) -> null != n && !n.isClosed() ? n.consensusModule().context().snapshotCounter().get() : -1)
+            .mapToObj(Long::toString)
+            .collect(Collectors.joining(","));
+
         for (final TestNode node : nodes)
         {
             if (null != node && !node.isClosed())
             {
-                awaitSnapshotCount(node, value);
+                awaitSnapshotCount(node, value, message);
             }
         }
     }
 
     public void awaitSnapshotCount(final TestNode node, final long value)
+    {
+        awaitSnapshotCount(node, value, () -> "");
+    }
+
+    private void awaitSnapshotCount(final TestNode node, final long value, final Supplier<String> message)
     {
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
         final Supplier<String> msg =

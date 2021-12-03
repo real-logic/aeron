@@ -268,7 +268,8 @@ final class LogAdapter implements ControlledFragmentHandler
                 consensusModuleAgent.onReplayClusterAction(
                     clusterActionRequestDecoder.leadershipTermId(),
                     clusterActionRequestDecoder.action(),
-                    clusterActionRequestDecoder.memberId());
+                    clusterActionRequestDecoder.memberId(),
+                    header.position());
                 return Action.BREAK;
         }
 

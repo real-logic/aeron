@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Counter;
 import io.aeron.log.EventLogExtension;
 import io.aeron.test.*;
 import io.aeron.test.cluster.TestCluster;
@@ -35,45 +34,15 @@ public class ClusterHotSnapshotTest
     @RegisterExtension
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
-    private TestCluster cluster = null;
-
     @Test
     @InterruptAfter(10)
-    public void shouldStopFollowerAndRestartFollower()
-    {
-        cluster = aCluster().withStaticNodes(3).start();
-        systemTestWatcher.cluster(cluster);
-
-        final TestNode leader = cluster.awaitLeader();
-
-        final int messageCount = 10;
-        cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-
-//        Tests.sleep(1_000);
-        cluster.takeHotSnapshot(leader);
-        //        cluster.awaitSnapshotCount(1);
-        Tests.sleep(2_000);
-
-        for (final TestNode follower : cluster.followers())
-        {
-            final Counter snapshotCounter = follower.consensusModule().context().snapshotCounter();
-            System.out.println(snapshotCounter.get());
-        }
-
-        cluster.awaitSnapshotCount(1);
-    }
-
-    @Test
-    @InterruptAfter(10)
-    public void shouldStopFollowerAndRestartFollower2()
+    public void shouldTakeSnapshotWithoutServiceInterruption()
     {
         final CountDownLatch snapshotLatch = new CountDownLatch(1);
 
+        final TestCluster cluster;
         try
         {
-
             cluster = aCluster().withStaticNodes(3).start();
             systemTestWatcher.cluster(cluster);
 

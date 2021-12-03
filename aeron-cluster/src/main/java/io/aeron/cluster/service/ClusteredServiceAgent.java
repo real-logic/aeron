@@ -885,8 +885,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         if (ClusterAction.SNAPSHOT == action && (NULL_VALUE == targetMemberId || this.memberId == targetMemberId))
         {
-            System.out.println("Snapshotting");
-
             final long recordingId = onTakeSnapshot(logPosition, leadershipTermId);
             final long id = ackId++;
             idleStrategy.reset();

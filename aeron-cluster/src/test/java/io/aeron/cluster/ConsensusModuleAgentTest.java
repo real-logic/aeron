@@ -34,8 +34,6 @@ import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -496,14 +494,14 @@ public class ConsensusModuleAgentTest
         agent.role(Cluster.Role.FOLLOWER);
         assertEquals(ConsensusModule.State.ACTIVE.code(), stateValue.get());
 
-        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, ctx.clusterMemberId());
+        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, ctx.clusterMemberId(), 0);
         assertEquals(ConsensusModule.State.SNAPSHOT.code(), stateValue.get());
         agent.state(ConsensusModule.State.ACTIVE);
 
-        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, ctx.clusterMemberId() + 1);
+        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, ctx.clusterMemberId() + 1, 0);
         assertEquals(ConsensusModule.State.ACTIVE.code(), stateValue.get());
 
-        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, NULL_VALUE);
+        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, NULL_VALUE, 0);
         assertEquals(ConsensusModule.State.SNAPSHOT.code(), stateValue.get());
     }
 }

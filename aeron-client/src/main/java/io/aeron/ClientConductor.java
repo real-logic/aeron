@@ -300,7 +300,6 @@ final class ClientConductor implements Agent
             correlationId);
 
         resourceByRegIdMap.put(correlationId, publication);
-        asyncCommandIdSet.remove(correlationId);
     }
 
     void onNewExclusivePublication(
@@ -331,7 +330,6 @@ final class ClientConductor implements Agent
             correlationId);
 
         resourceByRegIdMap.put(correlationId, publication);
-        asyncCommandIdSet.remove(correlationId);
     }
 
     void onNewSubscription(final long correlationId, final int statusIndicatorId)

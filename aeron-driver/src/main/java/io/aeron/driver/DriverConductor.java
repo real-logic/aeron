@@ -461,6 +461,7 @@ public final class DriverConductor implements Agent
             publication = findPublication(networkPublications, streamId, channelEndpoint);
         }
 
+        ArrayList<SubscriberPosition> subscriberPositions = null;
         if (null == publication)
         {
             if (params.hasSessionId)
@@ -470,6 +471,8 @@ public final class DriverConductor implements Agent
 
             publication = newNetworkPublication(
                 correlationId, clientId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
+
+            subscriberPositions = linkSpies(subscriptionLinks, publication);
         }
         else
         {
@@ -489,6 +492,22 @@ public final class DriverConductor implements Agent
             publication.publisherLimitId(),
             channelEndpoint.statusIndicatorCounterId(),
             isExclusive);
+
+        if (null != subscriberPositions)
+        {
+            for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+            {
+                final SubscriberPosition subscriberPosition = subscriberPositions.get(i);
+                clientProxy.onAvailableImage(
+                    publication.registrationId(),
+                    publication.streamId(),
+                    publication.sessionId(),
+                    subscriberPosition.subscription().registrationId(),
+                    subscriberPosition.position().id(),
+                    publication.rawLog().fileName(),
+                    CommonContext.IPC_CHANNEL);
+            }
+        }
     }
 
     void cleanupSpies(final NetworkPublication publication)
@@ -1186,7 +1205,6 @@ public final class DriverConductor implements Agent
             networkPublications.add(publication);
             senderProxy.newNetworkPublication(publication);
             activeSessionSet.add(new SessionKey(sessionId, streamId, canonicalForm));
-            linkSpies(subscriptionLinks, publication);
 
             return publication;
         }
@@ -1848,23 +1866,22 @@ public final class DriverConductor implements Agent
         }
     }
 
-    private void linkSpies(final ArrayList<SubscriptionLink> links, final NetworkPublication publication)
+    private ArrayList<SubscriberPosition> linkSpies(
+        final ArrayList<SubscriptionLink> links, final NetworkPublication publication)
     {
+        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
+
         for (int i = 0, size = links.size(); i < size; i++)
         {
             final SubscriptionLink subscription = links.get(i);
             if (subscription.matches(publication) && !subscription.isLinked(publication))
             {
-                clientProxy.onAvailableImage(
-                    publication.registrationId(),
-                    publication.streamId(),
-                    publication.sessionId(),
-                    subscription.registrationId(),
-                    linkSpy(publication, subscription).id(),
-                    publication.rawLog().fileName(),
-                    CommonContext.IPC_CHANNEL);
+                subscriberPositions.add(
+                    new SubscriberPosition(subscription, publication, linkSpy(publication, subscription)));
             }
         }
+
+        return subscriberPositions;
     }
 
     private void trackTime(final long nowNs)

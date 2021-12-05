@@ -257,6 +257,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
+        snapshotReplicator.archive(archive);
         recordingSignalPoller = new RecordingSignalPoller(
             archive.controlSessionId(), archive.controlResponsePoller().subscription());
 
@@ -1963,6 +1964,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     {
                         election.handleError(clusterClock.timeNanos(), ex);
                     }
+
+                    snapshotReplicator.onArchiveControlError(poller.correlationId(), ex);
+                }
+                else if (ControlResponseDecoder.TEMPLATE_ID == templateId && poller.code() == ControlResponseCode.OK)
+                {
+                    snapshotReplicator.onArchiveControlResponse(poller.correlationId(), poller.relevantId());
                 }
                 else if (RecordingSignalEventDecoder.TEMPLATE_ID == templateId)
                 {
@@ -1984,6 +1991,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     {
                         dynamicJoin.onRecordingSignal(poller.correlationId(), recordingId, position, signal);
                     }
+
+                    snapshotReplicator.onRecordingSignal(poller.correlationId(), recordingId, position, signal);
                 }
             }
             else if (0 == workCount && !poller.subscription().isConnected())

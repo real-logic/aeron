@@ -17,10 +17,8 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ControlResponsePoller;
-import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingSignal;
-import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 
 import java.util.ArrayList;
@@ -33,7 +31,8 @@ class SnapshotReplicator
         IDLE,
         QUERY,
         REPLICATE,
-        COMPLETE
+        COMPLETE,
+        FAILED
     }
 
     private class ActiveReplication
@@ -44,6 +43,7 @@ class SnapshotReplicator
         private long replicationCorrelationId;
         private boolean isComplete = true;
         private long replicatedRecordingId;
+        private ArchiveException ex;
 
         private void reset(final RecordingLog.Snapshot snapshot, final ClusterMember snapshotMember)
         {
@@ -62,6 +62,16 @@ class SnapshotReplicator
                 return 0;
             }
 
+            if (null != ex)
+            {
+                if (Aeron.NULL_VALUE != replicationCorrelationId)
+                {
+                    archive.stopReplication(replicationCorrelationId);
+                }
+
+                return 0;
+            }
+
             final int workDone;
             if (Aeron.NULL_VALUE == requestCorrelationId)
             {
@@ -70,7 +80,7 @@ class SnapshotReplicator
             }
             else
             {
-                workDone = replicating();
+                workDone = 0;
             }
 
             return workDone;
@@ -95,52 +105,6 @@ class SnapshotReplicator
             return successfulOffer ? correlationId : Aeron.NULL_VALUE;
         }
 
-        private int replicating()
-        {
-            int workDone = 0;
-
-            final ControlResponsePoller controlResponsePoller = archive.controlResponsePoller();
-            while (0 != controlResponsePoller.poll())
-            {
-                if (archive.controlSessionId() == controlResponsePoller.controlSessionId())
-                {
-                    if (requestCorrelationId == controlResponsePoller.correlationId())
-                    {
-                        final ControlResponseCode code = controlResponsePoller.code();
-                        switch (code)
-                        {
-                            case OK:
-                                replicationCorrelationId = controlResponsePoller.relevantId();
-                                return 1;
-
-                            case ERROR:
-                                throw new ClusterException(controlResponsePoller.errorMessage());
-
-                            case RECORDING_UNKNOWN:
-                            case SUBSCRIPTION_UNKNOWN:
-                            case NULL_VAL:
-                                break;
-                        }
-
-                        workDone = 1;
-                    }
-                    else if (replicationCorrelationId == controlResponsePoller.correlationId() &&
-                        null != controlResponsePoller.recordingSignal())
-                    {
-                        if (RecordingSignal.STOP == controlResponsePoller.recordingSignal())
-                        {
-                            replicatedRecordingId = controlResponsePoller.recordingId();
-                            isComplete = true;
-                        }
-
-                        workDone = 1;
-                    }
-                }
-            }
-
-            return workDone;
-        }
-
         public boolean isComplete()
         {
             return isComplete;
@@ -155,9 +119,51 @@ class SnapshotReplicator
         {
             return replicatedRecordingId;
         }
+
+        public void onArchiveControlError(final long correlationId, final ArchiveException ex)
+        {
+            if (correlationId == requestCorrelationId || correlationId == replicationCorrelationId)
+            {
+                this.ex = ex;
+                this.isComplete = true;
+            }
+        }
+
+        public void onArchiveControlResponse(final long correlationId, final long relevantId)
+        {
+            if (correlationId == requestCorrelationId)
+            {
+                replicationCorrelationId = relevantId;
+            }
+        }
+
+        public void onRecordingSignal(
+            final long correlationId,
+            final long recordingId,
+            final long position,
+            final RecordingSignal signal)
+        {
+            if (correlationId == replicationCorrelationId)
+            {
+                switch (signal)
+                {
+                    case EXTEND:
+                        replicatedRecordingId = recordingId;
+                        break;
+
+                    case STOP:
+                        isComplete = true;
+                }
+            }
+        }
+
+        private ArchiveException exception()
+        {
+            return ex;
+        }
     }
 
-    private final AeronArchive archive;
+    private AeronArchive archive;
     private final ConsensusModule.Context ctx;
     private final ConsensusPublisher consensusPublisher;
     private final long queryTimeoutMs = 5_000;
@@ -175,7 +181,11 @@ class SnapshotReplicator
     {
         this.ctx = ctx;
         this.consensusPublisher = consensusPublisher;
-        this.archive = AeronArchive.connect(ctx.archiveContext().clone());
+    }
+
+    public void archive(final AeronArchive archive)
+    {
+        this.archive = archive;
     }
 
     void setLatestSnapshot(final ClusterMember snapshotMember, final long logPosition)
@@ -198,6 +208,7 @@ class SnapshotReplicator
                 return replicate(nowMs);
 
             case COMPLETE:
+            case FAILED:
                 snapshotsToRetrieve.clear();
                 snapshotsRetrieved.clear();
                 state = State.IDLE;
@@ -241,6 +252,13 @@ class SnapshotReplicator
     {
         if (activeReplication.isComplete())
         {
+            if (null != activeReplication.exception())
+            {
+                ctx.errorLog().record(activeReplication.exception());
+                state = State.FAILED;
+                return 1;
+            }
+
             final RecordingLog.Snapshot completeSnapshot = activeReplication.snapshot();
             if (null != completeSnapshot)
             {
@@ -309,5 +327,24 @@ class SnapshotReplicator
     List<RecordingLog.Snapshot> snapshotsRetrieved()
     {
         return snapshotsRetrieved;
+    }
+
+    void onArchiveControlError(final long correlationId, final ArchiveException ex)
+    {
+        activeReplication.onArchiveControlError(correlationId, ex);
+    }
+
+    void onArchiveControlResponse(final long correlationId, final long relevantId)
+    {
+        activeReplication.onArchiveControlResponse(correlationId, relevantId);
+    }
+
+    public void onRecordingSignal(
+        final long correlationId,
+        final long recordingId,
+        final long position,
+        final RecordingSignal signal)
+    {
+        activeReplication.onRecordingSignal(correlationId, recordingId, position, signal);
     }
 }

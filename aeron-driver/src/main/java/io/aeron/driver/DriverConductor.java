@@ -461,7 +461,7 @@ public final class DriverConductor implements Agent
             publication = findPublication(networkPublications, streamId, channelEndpoint);
         }
 
-        ArrayList<SubscriberPosition> subscriberPositions = null;
+        boolean isNewPublication = false;
         if (null == publication)
         {
             if (params.hasSessionId)
@@ -472,7 +472,7 @@ public final class DriverConductor implements Agent
             publication = newNetworkPublication(
                 correlationId, clientId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
 
-            subscriberPositions = linkSpies(subscriptionLinks, publication);
+            isNewPublication = true;
         }
         else
         {
@@ -493,20 +493,9 @@ public final class DriverConductor implements Agent
             channelEndpoint.statusIndicatorCounterId(),
             isExclusive);
 
-        if (null != subscriberPositions)
+        if (isNewPublication)
         {
-            for (int i = 0, size = subscriberPositions.size(); i < size; i++)
-            {
-                final SubscriberPosition subscriberPosition = subscriberPositions.get(i);
-                clientProxy.onAvailableImage(
-                    publication.registrationId(),
-                    publication.streamId(),
-                    publication.sessionId(),
-                    subscriberPosition.subscription().registrationId(),
-                    subscriberPosition.position().id(),
-                    publication.rawLog().fileName(),
-                    CommonContext.IPC_CHANNEL);
-            }
+            linkSpies(subscriptionLinks, publication);
         }
     }
 
@@ -663,34 +652,47 @@ public final class DriverConductor implements Agent
         final long clientId,
         final boolean isExclusive)
     {
-        final IpcPublication ipcPublication = getOrAddIpcPublication(
-            correlationId, clientId, streamId, channel, isExclusive);
-        publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), ipcPublication));
+        IpcPublication publication = null;
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+        final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, true);
 
-        final ArrayList<SubscriberPosition> subscriberPositions = linkIpcSubscriptions(ipcPublication);
+        if (!isExclusive)
+        {
+            publication = findSharedIpcPublication(ipcPublications, streamId);
+        }
+
+        boolean isNewPublication = false;
+        if (null == publication)
+        {
+            if (params.hasSessionId)
+            {
+                checkForSessionClash(params.sessionId, streamId, IPC_MEDIA, channel);
+            }
+
+            validateMtuForMaxMessage(params, channel);
+            publication = addIpcPublication(correlationId, clientId, streamId, channel, isExclusive, params);
+            isNewPublication = true;
+        }
+        else
+        {
+            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId(), publication.channel());
+        }
+
+        publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), publication));
 
         clientProxy.onPublicationReady(
             correlationId,
-            ipcPublication.registrationId(),
+            publication.registrationId(),
             streamId,
-            ipcPublication.sessionId(),
-            ipcPublication.rawLog().fileName(),
-            ipcPublication.publisherLimitId(),
+            publication.sessionId(),
+            publication.rawLog().fileName(),
+            publication.publisherLimitId(),
             ChannelEndpointStatus.NO_ID_ALLOCATED,
             isExclusive);
 
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        if (isNewPublication)
         {
-            final SubscriberPosition subscriberPosition = subscriberPositions.get(i);
-
-            clientProxy.onAvailableImage(
-                ipcPublication.registrationId(),
-                streamId,
-                ipcPublication.sessionId(),
-                subscriberPosition.subscription().registrationId,
-                subscriberPosition.position().id(),
-                ipcPublication.rawLog().fileName(),
-                CommonContext.IPC_CHANNEL);
+            linkIpcSubscriptions(publication);
         }
     }
 
@@ -1498,21 +1500,23 @@ public final class DriverConductor implements Agent
         }
     }
 
-    private ArrayList<SubscriberPosition> linkIpcSubscriptions(final IpcPublication publication)
+    private void linkIpcSubscriptions(final IpcPublication publication)
     {
-        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
-
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             final SubscriptionLink subscription = subscriptionLinks.get(i);
             if (subscription.matches(publication) && !subscription.isLinked(publication))
             {
-                final Position subPos = linkIpcSubscription(publication, subscription);
-                subscriberPositions.add(new SubscriberPosition(subscription, publication, subPos));
+                clientProxy.onAvailableImage(
+                    publication.registrationId(),
+                    publication.streamId(),
+                    publication.sessionId(),
+                    subscription.registrationId,
+                    linkIpcSubscription(publication, subscription).id(),
+                    publication.rawLog().fileName(),
+                    CommonContext.IPC_CHANNEL);
             }
         }
-
-        return subscriberPositions;
     }
 
     private Position linkIpcSubscription(final IpcPublication publication, final SubscriptionLink subscription)
@@ -1660,40 +1664,6 @@ public final class DriverConductor implements Agent
         }
 
         return client;
-    }
-
-    private IpcPublication getOrAddIpcPublication(
-        final long correlationId,
-        final long clientId,
-        final int streamId,
-        final String channel,
-        final boolean isExclusive)
-    {
-        IpcPublication publication = null;
-        final ChannelUri channelUri = ChannelUri.parse(channel);
-        final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, true);
-
-        if (!isExclusive)
-        {
-            publication = findSharedIpcPublication(ipcPublications, streamId);
-        }
-
-        if (null == publication)
-        {
-            if (params.hasSessionId)
-            {
-                checkForSessionClash(params.sessionId, streamId, IPC_MEDIA, channel);
-            }
-
-            validateMtuForMaxMessage(params, channel);
-            publication = addIpcPublication(correlationId, clientId, streamId, channel, isExclusive, params);
-        }
-        else
-        {
-            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId(), publication.channel());
-        }
-
-        return publication;
     }
 
     private IpcPublication addIpcPublication(
@@ -1866,22 +1836,23 @@ public final class DriverConductor implements Agent
         }
     }
 
-    private ArrayList<SubscriberPosition> linkSpies(
-        final ArrayList<SubscriptionLink> links, final NetworkPublication publication)
+    private void linkSpies(final ArrayList<SubscriptionLink> links, final NetworkPublication publication)
     {
-        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
-
         for (int i = 0, size = links.size(); i < size; i++)
         {
             final SubscriptionLink subscription = links.get(i);
             if (subscription.matches(publication) && !subscription.isLinked(publication))
             {
-                subscriberPositions.add(
-                    new SubscriberPosition(subscription, publication, linkSpy(publication, subscription)));
+                clientProxy.onAvailableImage(
+                    publication.registrationId(),
+                    publication.streamId(),
+                    publication.sessionId(),
+                    subscription.registrationId(),
+                    linkSpy(publication, subscription).id(),
+                    publication.rawLog().fileName(),
+                    CommonContext.IPC_CHANNEL);
             }
         }
-
-        return subscriberPositions;
     }
 
     private void trackTime(final long nowNs)

@@ -773,8 +773,9 @@ class Election
 
         if (ClusterMember.hasVotersAtPosition(clusterMembers, logPosition, leadershipTermId))
         {
-            if (consensusModuleAgent.electionComplete())
+            if (consensusModuleAgent.appendNewLeadershipTermEvent(nowNs))
             {
+                consensusModuleAgent.electionComplete(nowNs);
                 state(CLOSED, nowNs);
                 workCount++;
             }
@@ -782,8 +783,9 @@ class Election
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()) &&
             ClusterMember.hasQuorumAtPosition(clusterMembers, logPosition, leadershipTermId))
         {
-            if (consensusModuleAgent.electionComplete())
+            if (consensusModuleAgent.appendNewLeadershipTermEvent(nowNs))
             {
+                consensusModuleAgent.electionComplete(nowNs);
                 state(CLOSED, nowNs);
                 workCount++;
             }
@@ -1011,10 +1013,8 @@ class Election
             leaderMember.publication(), leadershipTermId, logPosition, thisMember.id()))
         {
             consensusModuleAgent.leadershipTermId(leadershipTermId);
-            if (consensusModuleAgent.electionComplete())
-            {
-                state(CLOSED, nowNs);
-            }
+            consensusModuleAgent.electionComplete(nowNs);
+            state(CLOSED, nowNs);
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
         {

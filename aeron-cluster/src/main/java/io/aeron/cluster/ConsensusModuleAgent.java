@@ -1569,25 +1569,25 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         logAdapter.disconnect(ctx.countedErrorHandler(), logPosition);
     }
 
-    boolean electionComplete()
+    boolean appendNewLeadershipTermEvent(final long nowNs)
+    {
+        return logPublisher.appendNewLeadershipTermEvent(
+            leadershipTermId,
+            clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS),
+            election.logPosition(),
+            memberId,
+            logPublisher.sessionId(),
+            clusterTimeUnit,
+            ctx.appVersion());
+    }
+
+    void electionComplete(final long nowNs)
     {
         final long logPosition = election.logPosition();
-        final long now = clusterClock.time();
-        final long nowNs = clusterTimeUnit.toNanos(now);
 
         if (Cluster.Role.LEADER == role)
         {
-            if (!logPublisher.isConnected() || !logPublisher.appendNewLeadershipTermEvent(
-                leadershipTermId,
-                now,
-                logPosition,
-                memberId,
-                logPublisher.sessionId(),
-                clusterTimeUnit,
-                ctx.appVersion()))
-            {
-                return false;
-            }
+            final long now = clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
 
             timeOfLastLogUpdateNs = nowNs - leaderHeartbeatIntervalNs;
             timerService.currentTime(now);
@@ -1608,8 +1608,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         election = null;
 
         connectIngress();
-
-        return true;
     }
 
     boolean dynamicJoinComplete(final long nowNs)

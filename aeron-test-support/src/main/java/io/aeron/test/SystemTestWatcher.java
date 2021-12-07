@@ -109,6 +109,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     public void afterEach(final ExtensionContext context)
     {
+        final boolean interrupted = Thread.interrupted();
         try
         {
             if (context.getExecutionException().isPresent())
@@ -125,6 +126,10 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         finally
         {
             deleteAllLocations();
+            if (interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -283,7 +288,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     private void reportAndTerminate(final ExtensionContext context)
     {
         Throwable error = null;
-        final boolean isInterrupted = Thread.interrupted();
 
         if (null != dataCollector)
         {
@@ -333,11 +337,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             {
                 error = t;
             }
-        }
-
-        if (isInterrupted)
-        {
-            Thread.currentThread().interrupt();
         }
 
         if (null != error)

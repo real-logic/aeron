@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ChannelUriStringBuilder;
-import io.aeron.CommonContext;
-import io.aeron.Image;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
@@ -1145,9 +1142,10 @@ class Election
 
     private Subscription addFollowerSubscription()
     {
+        final Aeron aeron = ctx.aeron();
         final String channel = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
-            .tags(ctx.aeron().nextCorrelationId() + "," + ctx.aeron().nextCorrelationId())
+            .tags(aeron.nextCorrelationId() + "," + aeron.nextCorrelationId())
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .sessionId(logSessionId)
             .group(Boolean.TRUE)
@@ -1155,7 +1153,7 @@ class Election
             .alias("log")
             .build();
 
-        return ctx.aeron().addSubscription(channel, ctx.logStreamId());
+        return aeron.addSubscription(channel, ctx.logStreamId());
     }
 
     private void state(final ElectionState newState, final long nowNs)

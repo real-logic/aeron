@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Path;
@@ -41,6 +42,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -112,9 +114,13 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         final boolean interrupted = Thread.interrupted();
         try
         {
-            if (context.getExecutionException().isPresent())
+            final Optional<Throwable> executionException = context.getExecutionException();
+            if (executionException.isPresent())
             {
-                reportAndTerminate(context);
+                final String test = context.getTestClass().map(Class::getName).orElse("unknown") + "-" +
+                    context.getTestMethod().map(Method::getName).orElse("unknown");
+                System.out.println("*** " + test + " failed, cause: " + executionException.get());
+                reportAndTerminate(test);
                 mediaDriverTestUtil.testFailed();
             }
             else
@@ -285,7 +291,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             encodedException);
     }
 
-    private void reportAndTerminate(final ExtensionContext context)
+    private void reportAndTerminate(final String test)
     {
         Throwable error = null;
 
@@ -293,7 +299,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         {
             try
             {
-                printCncErrors(dataCollector.cncFiles(), "Command `n Control Errors", CommonContext::errorLogBuffer);
+                printCncErrors(dataCollector.cncFiles(), CommonContext::errorLogBuffer);
                 printArchiveMarkFileErrors(dataCollector.archiveMarkFiles());
                 printClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), "Consensus Module Errors");
                 printClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), "Cluster Service Errors");
@@ -305,10 +311,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
             try
             {
-                final String testClass = context.getTestClass().orElseThrow(IllegalStateException::new).getName();
-                final String testMethod = context.getTestMethod().orElseThrow(IllegalStateException::new).getName();
-
-                dataCollector.dumpData(testClass, testMethod);
+                dataCollector.dumpData(test);
             }
             catch (final Exception t)
             {
@@ -347,7 +350,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private void printCncErrors(
         final List<Path> paths,
-        final String fileDescription,
         final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer)
     {
         for (final Path path : paths)
@@ -358,7 +360,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             {
                 final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
 
-                System.out.printf("%n%n%s file %s%n", fileDescription, cncFile);
+                System.out.printf("%n%n%s file %s%n", "Command `n Control Errors", cncFile);
                 final int distinctErrorCount = ErrorLogReader.read(buffer, this::printObservationCallback);
                 System.out.format("%d distinct errors observed.%n", distinctErrorCount);
             }

@@ -45,7 +45,7 @@ public interface TestMediaDriver extends AutoCloseable
     static TestMediaDriver launch(final MediaDriver.Context context, final DriverOutputConsumer driverOutputConsumer)
     {
         return shouldRunCMediaDriver() ?
-            CTestMediaDriver.launch(context, driverOutputConsumer) : JavaTestMediaDriver.launch(context);
+            CTestMediaDriver.launch(context, true, driverOutputConsumer) : JavaTestMediaDriver.launch(context);
     }
 
     static void enableLossGenerationOnReceive(
@@ -71,6 +71,8 @@ public interface TestMediaDriver extends AutoCloseable
     String aeronDirectoryName();
 
     void close();
+
+    void cleanup();
 
     AgentInvoker sharedAgentInvoker();
 

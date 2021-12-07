@@ -57,7 +57,7 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(buffer_t m_buffer, 16){};
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16) = {};
     MockAtomicBuffer m_mockBuffer;
     std::unique_ptr<BroadcastReceiver> m_broadcastReceiver{};
 };
@@ -70,7 +70,7 @@ TEST_F(BroadcastReceiverTest, shouldCalculateCapacityForBuffer)
 TEST_F(BroadcastReceiverTest, shouldThrowExceptionForCapacityThatIsNotPowerOfTwo)
 {
     typedef std::array<std::uint8_t, (777 + BroadcastBufferDescriptor::TRAILER_LENGTH)> non_power_of_two_buffer_t;
-    AERON_DECL_ALIGNED(non_power_of_two_buffer_t non_power_of_two_buffer, 16);
+    AERON_DECL_ALIGNED(non_power_of_two_buffer_t non_power_of_two_buffer, 16) = {};
     AtomicBuffer buffer(&non_power_of_two_buffer[0], non_power_of_two_buffer.size());
 
     ASSERT_THROW(

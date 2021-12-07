@@ -388,9 +388,9 @@ public final class Image
                 }
             }
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            errorHandler.onError(t);
+            errorHandler.onError(ex);
         }
         finally
         {
@@ -458,9 +458,9 @@ public final class Image
                 handler.onFragment(termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
             }
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            errorHandler.onError(t);
+            errorHandler.onError(ex);
         }
         finally
         {
@@ -549,9 +549,9 @@ public final class Image
                 }
             }
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            errorHandler.onError(t);
+            errorHandler.onError(ex);
         }
         finally
         {
@@ -648,9 +648,9 @@ public final class Image
                 }
             }
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            errorHandler.onError(t);
+            errorHandler.onError(ex);
         }
 
         return resultingPosition;
@@ -692,9 +692,9 @@ public final class Image
                 final int termId = termBuffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
                 handler.onBlock(termBuffer, offset, length, sessionId, termId);
             }
-            catch (final Throwable t)
+            catch (final Exception ex)
             {
-                errorHandler.onError(t);
+                errorHandler.onError(ex);
             }
             finally
             {
@@ -747,9 +747,9 @@ public final class Image
 
                 handler.onBlock(logBuffers.fileChannel(), fileOffset, termBuffer, offset, length, sessionId, termId);
             }
-            catch (final Throwable t)
+            catch (final Exception ex)
             {
-                errorHandler.onError(t);
+                errorHandler.onError(ex);
             }
             finally
             {

@@ -20,14 +20,14 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.DistinctErrorLogTestWatcher;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -40,32 +40,43 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class TimestampingSystemTest
+class TimestampingSystemTest
 {
-    public static final long SENTINEL_VALUE = -1L;
-    public static final String CHANNEL_WITH_MEDIA_TIMESTAMP =
+    private static final long SENTINEL_VALUE = -1L;
+    private static final String CHANNEL_WITH_MEDIA_TIMESTAMP =
         "aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=reserved";
-    public static final String CHANNEL_WITH_CHANNEL_TIMESTAMPS =
+    private static final String CHANNEL_WITH_CHANNEL_TIMESTAMPS =
         "aeron:udp?endpoint=localhost:0|channel-rcv-ts-offset=0|channel-snd-ts-offset=8";
 
     @RegisterExtension
-    public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
-    @RegisterExtension
-    public final DistinctErrorLogTestWatcher logWatcher = new DistinctErrorLogTestWatcher();
-
-    private MediaDriver.Context context()
+    private TestMediaDriver driver()
     {
         // TODO: temporary removal of SHARED to test
-        return new MediaDriver.Context().dirDeleteOnStart(true);
+        final MediaDriver.Context context = new MediaDriver.Context().dirDeleteOnStart(true);
+        try
+        {
+            return TestMediaDriver.launch(context, systemTestWatcher);
+        }
+        finally
+        {
+            systemTestWatcher.dataCollector().add(context.aeronDirectory());
+        }
+    }
+
+    @BeforeEach
+    void setUp()
+    {
     }
 
     @Test
     void shouldErrorOnMediaReceiveTimestampsInJavaDriver()
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("ERROR - Media timestamps"));
 
-        try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
+        try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             assertThrows(
@@ -83,7 +94,7 @@ public class TimestampingSystemTest
 
         final DirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
-        try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
+        try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription sub = aeron.addSubscription(CHANNEL_WITH_MEDIA_TIMESTAMP, 1000);
@@ -118,10 +129,7 @@ public class TimestampingSystemTest
     {
         final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
-        final MediaDriver.Context context = context();
-        final String aeronDirectoryName = context.aeronDirectoryName();
-
-        try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
+        try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription sub = aeron.addSubscription(CHANNEL_WITH_CHANNEL_TIMESTAMPS, 1000);
@@ -163,16 +171,14 @@ public class TimestampingSystemTest
             assertNotEquals(SENTINEL_VALUE, receiveTimestamp.longValue());
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
-        finally
-        {
-            logWatcher.captureErrors(aeronDirectoryName);
-        }
     }
 
     @Test
     void shouldErrorIfSubscriptionConfigurationForTimestampsDoesNotMatch()
     {
-        try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("option conflicts"));
+
+        try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             aeron.addSubscription("aeron:udp?endpoint=localhost:23436|channel-rcv-ts-offset=reserved", 1000);
@@ -188,7 +194,9 @@ public class TimestampingSystemTest
     @Test
     void shouldErrorIfPublicationConfigurationForTimestampsDoesNotMatch()
     {
-        try (TestMediaDriver driver = TestMediaDriver.launch(context(), watcher);
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("option conflicts"));
+
+        try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             aeron.addPublication("aeron:udp?endpoint=localhost:23436|channel-snd-ts-offset=reserved", 1000);
@@ -207,10 +215,7 @@ public class TimestampingSystemTest
     {
         final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
-        final MediaDriver.Context context = context();
-        final String aeronDirectoryName = context.aeronDirectoryName();
-
-        try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
+        try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Publication mdcPub = aeron.addPublication(
@@ -250,10 +255,6 @@ public class TimestampingSystemTest
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
-        finally
-        {
-            logWatcher.captureErrors(aeronDirectoryName);
-        }
     }
 
     @Test
@@ -262,10 +263,7 @@ public class TimestampingSystemTest
     {
         final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
-        final MediaDriver.Context context = context();
-        final String aeronDirectoryName = context.aeronDirectoryName();
-
-        try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
+        try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription mdsSub = aeron.addSubscription(
@@ -310,10 +308,6 @@ public class TimestampingSystemTest
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
-        finally
-        {
-            logWatcher.captureErrors(aeronDirectoryName);
-        }
     }
 
     @Test
@@ -322,10 +316,7 @@ public class TimestampingSystemTest
     {
         final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[64]);
 
-        final MediaDriver.Context context = context();
-        final String aeronDirectoryName = context.aeronDirectoryName();
-
-        try (TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
+        try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final Subscription mdsSub = aeron.addSubscription(
@@ -388,10 +379,6 @@ public class TimestampingSystemTest
             }
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
-        }
-        finally
-        {
-            logWatcher.captureErrors(aeronDirectoryName);
         }
     }
 }

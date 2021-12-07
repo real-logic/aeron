@@ -64,7 +64,7 @@ public final class RecoveryState
     public static final int RECOVERY_STATE_TYPE_ID = AeronCounters.CLUSTER_RECOVERY_STATE_TYPE_ID;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "Cluster recovery: leadershipTermId=";
 

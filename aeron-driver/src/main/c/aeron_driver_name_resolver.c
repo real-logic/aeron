@@ -275,7 +275,7 @@ int aeron_driver_name_resolver_init(
         }
     }
 
-    _driver_resolver->transport_bindings = context->udp_channel_transport_bindings;
+    _driver_resolver->transport_bindings = context->conductor_udp_channel_transport_bindings;
     if (aeron_udp_channel_data_paths_init(
         &_driver_resolver->data_paths,
         context->udp_channel_outgoing_interceptor_bindings,
@@ -377,8 +377,8 @@ int aeron_driver_name_resolver_init(
     return 0;
 
 error_cleanup:
-    context->udp_channel_transport_bindings->poller_close_func(&_driver_resolver->poller);
-    context->udp_channel_transport_bindings->close_func(&_driver_resolver->transport);
+    _driver_resolver->transport_bindings->poller_close_func(&_driver_resolver->poller);
+    _driver_resolver->transport_bindings->close_func(&_driver_resolver->transport);
     aeron_udp_channel_data_paths_delete(&_driver_resolver->data_paths);
     aeron_name_resolver_cache_close(&_driver_resolver->cache);
     aeron_free(_driver_resolver->saved_bootstrap_neighbor);

@@ -41,7 +41,7 @@ public class RateSubscriber
      *
      * @param args passed to the process.
      * @throws InterruptedException if the task is interrupted
-     * @throws ExecutionException if the result if the {@link Future} has an error.
+     * @throws ExecutionException if the {@link Future} has an error.
      */
     public static void main(final String[] args) throws InterruptedException, ExecutionException
     {

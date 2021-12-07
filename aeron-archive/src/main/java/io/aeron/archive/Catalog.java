@@ -52,7 +52,7 @@ import static org.agrona.BitUtil.*;
 
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
- * The format is simple, allocating a fixed 1KB record for each record descriptor. This allows offset
+ * The format is simple, allocating a fixed 1 KB record for each record descriptor. This allows offset
  * based look up of a descriptor in the file. The first record contains the catalog header.
  * <p>
  *
@@ -199,9 +199,9 @@ final class Catalog implements AutoCloseable
                 final int version = catalogHeaderDecoder.version();
                 if (SemanticVersion.major(version) != ArchiveMarkFile.MAJOR_VERSION)
                 {
-                    throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
-                        ", archive is " +
-                        SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
+                    throw new ArchiveException(
+                        "incompatible catalog file version " + SemanticVersion.toString(version) +
+                        ", archive software is " + SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
                 }
 
                 alignment = catalogHeaderDecoder.alignment();
@@ -221,10 +221,10 @@ final class Catalog implements AutoCloseable
             }
             firstRecordingDescriptorOffset = CatalogHeaderEncoder.BLOCK_LENGTH;
 
-            buildIndex();
+            buildIndex(true);
             refreshCatalog(true, checksum, buffer);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             close();
             throw ex;
@@ -258,8 +258,9 @@ final class Catalog implements AutoCloseable
         {
             MappedByteBuffer catalogMappedByteBuffer = null;
 
-            final StandardOpenOption[] openOptions = writable ?
-                new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
+            final StandardOpenOption[] openOptions =
+                writable ? new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
+
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), openOptions))
             {
                 capacity = max(channel.size(), catalogCapacity);
@@ -282,8 +283,9 @@ final class Catalog implements AutoCloseable
             {
                 if (SemanticVersion.major(version) != ArchiveMarkFile.MAJOR_VERSION)
                 {
-                    throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
-                        ", archive is " + SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
+                    throw new ArchiveException(
+                        "incompatible catalog file version " + SemanticVersion.toString(version) +
+                        ", archive software is " + SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
                 }
             }
             else
@@ -304,10 +306,10 @@ final class Catalog implements AutoCloseable
                 firstRecordingDescriptorOffset = DEFAULT_RECORD_LENGTH;
             }
 
-            buildIndex();
+            buildIndex(writable);
             refreshCatalog(false, null, null);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             close();
             throw ex;
@@ -780,7 +782,7 @@ final class Catalog implements AutoCloseable
             catalogChannel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE);
             mappedByteBuffer = catalogChannel.map(READ_WRITE, 0, newCapacity);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             close();
             LangUtil.rethrowUnchecked(ex);
@@ -852,7 +854,7 @@ final class Catalog implements AutoCloseable
         headerAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
     }
 
-    private void buildIndex()
+    private void buildIndex(final boolean writable)
     {
         int offset = firstRecordingDescriptorOffset;
         long recordingId = -1;
@@ -879,7 +881,7 @@ final class Catalog implements AutoCloseable
         {
             nextRecordingId = recordingId + 1;
         }
-        else if (nextRecordingId < recordingId + 1)
+        else if (writable && nextRecordingId < recordingId + 1)
         {
             throw new ArchiveException("invalid nextRecordingId: expected value greater or equal to " +
                 (recordingId + 1) + ", was " + nextRecordingId);

@@ -24,22 +24,22 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::fragment_handler_t fragmentHandler(RecordingEventsPoller &poller)
+static aeron::controlled_poll_fragment_handler_t controlHandler(RecordingEventsPoller &poller)
 {
     return
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
-            poller.onFragment(buffer, offset, length, header);
+            return poller.onFragment(buffer, offset, length, header);
         };
 }
 
 RecordingEventsPoller::RecordingEventsPoller(std::shared_ptr<aeron::Subscription> subscription) :
-    m_fragmentHandler(fragmentHandler(*this)),
+    m_fragmentHandler(controlHandler(*this)),
     m_subscription(std::move(subscription))
 {
 }
 
-void RecordingEventsPoller::onFragment(
+ControlledPollAction RecordingEventsPoller::onFragment(
     AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
     MessageHeader msgHeader(
@@ -47,7 +47,7 @@ void RecordingEventsPoller::onFragment(
         static_cast<std::uint64_t>(length),
         MessageHeader::sbeSchemaVersion());
 
-    const std::int16_t schemaId = msgHeader.schemaId();
+    const std::uint16_t schemaId = msgHeader.schemaId();
     if (schemaId != MessageHeader::sbeSchemaId())
     {
         throw ArchiveException(
@@ -70,7 +70,9 @@ void RecordingEventsPoller::onFragment(
         m_recordingStartPosition = event.startPosition();
         m_recordingPosition = m_recordingStartPosition;
         m_recordingStopPosition = aeron::NULL_VALUE;
-        m_pollComplete = true;
+        m_isPollComplete = true;
+
+        return ControlledPollAction::BREAK;
     }
     else if (RecordingProgress::sbeTemplateId() == templateId)
     {
@@ -85,7 +87,9 @@ void RecordingEventsPoller::onFragment(
         m_recordingStartPosition = event.startPosition();
         m_recordingPosition = event.position();
         m_recordingStopPosition = aeron::NULL_VALUE;
-        m_pollComplete = true;
+        m_isPollComplete = true;
+
+        return ControlledPollAction::BREAK;
     }
     else if (RecordingStopped::sbeTemplateId() == templateId)
     {
@@ -100,6 +104,10 @@ void RecordingEventsPoller::onFragment(
         m_recordingStartPosition = event.startPosition();
         m_recordingPosition = event.stopPosition();
         m_recordingStopPosition = m_recordingPosition;
-        m_pollComplete = true;
+        m_isPollComplete = true;
+
+        return ControlledPollAction::BREAK;
     }
+
+    return ControlledPollAction::CONTINUE;
 }

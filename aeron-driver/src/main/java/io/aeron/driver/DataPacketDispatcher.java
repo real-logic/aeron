@@ -229,7 +229,7 @@ public final class DataPacketDispatcher
     }
 
     /**
-     * Remove a previously added {@link PublicationImage} so packets are not longer dispatched to it.
+     * Remove a previously added {@link PublicationImage} so packets are no longer dispatched to it.
      *
      * @param image to which the packets are dispatched.
      */

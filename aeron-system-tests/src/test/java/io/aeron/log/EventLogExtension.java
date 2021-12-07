@@ -20,6 +20,8 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import java.lang.reflect.Method;
+
 /**
  * JUnit extension to start and reset the CollectingEventLogReaderAgent.
  */
@@ -30,7 +32,9 @@ public class EventLogExtension implements BeforeEachCallback, AfterEachCallback
      */
     public void beforeEach(final ExtensionContext context)
     {
-        Tests.startLogCollecting();
+        final String className = context.getTestClass().map(Class::getSimpleName).orElse("<UNKNOWN>");
+        final String methodName = context.getTestMethod().map(Method::getName).orElse(context.getDisplayName());
+        Tests.startLogCollecting("TEST: " + className + "." + methodName);
     }
 
     /**

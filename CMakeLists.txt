@@ -50,6 +50,10 @@ unset(STANDALONE_BUILD)
 
 include(ExternalProject)
 
+# CMAKE_OSX_ARCHITECTURES can be set to arm64 or x86_64 (or both) to make a specific architecture version. Requires
+# CMake 3.21. Must be set before project(), etc.
+#set(CMAKE_OSX_ARCHITECTURES x86_64)
+
 project("aeron" VERSION "${AERON_VERSION_FROM_FILE}")
 
 if (AERON_TESTS)
@@ -161,6 +165,10 @@ add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
 if (UNIX)
     add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter)
 
+    if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "11.0")
+        add_compile_options(-Wno-error=maybe-uninitialized)
+    endif ()
+
     if (C_WARNINGS_AS_ERRORS)
         add_compile_options($<$<COMPILE_LANGUAGE:C>:-Werror>)
     endif (C_WARNINGS_AS_ERRORS)
@@ -218,16 +226,24 @@ elseif (MSVC)
     if (CXX_WARNINGS_AS_ERRORS)
         add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
     endif (CXX_WARNINGS_AS_ERRORS)
+
+    if (SANITISE_BUILD)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi /D AERON_SANITIZE_ENABLED")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address /Zi /D AERON_SANITIZE_ENABLED")
+    endif (SANITISE_BUILD)
+
 endif ()
 
 
 ##########################################################
 # Project variables, etc.
 
-if (MSVC)
-    set(GRADLE_WRAPPER "gradlew.bat" CACHE INTERNAL "Location of the Gradle wrapper script")
-else ()
-    set(GRADLE_WRAPPER "./gradlew" CACHE INTERNAL "Location of the Gradle wrapper script")
+if (NOT DEFINED GRADLE_WRAPPER)
+    if (MSVC)
+        set(GRADLE_WRAPPER "gradlew.bat" CACHE INTERNAL "Location of the Gradle wrapper script")
+    else ()
+        set(GRADLE_WRAPPER "./gradlew" CACHE INTERNAL "Location of the Gradle wrapper script")
+    endif ()
 endif ()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/binaries")

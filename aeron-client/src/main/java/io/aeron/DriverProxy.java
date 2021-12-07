@@ -364,7 +364,7 @@ public final class DriverProxy
      * Add a new counter with a type id and label, the key will be blank.
      *
      * @param typeId for associating with the counter.
-     * @param label  that is human readable for the counter.
+     * @param label  that is human-readable for the counter.
      * @return the correlation id for the command.
      */
     public long addCounter(final int typeId, final String label)

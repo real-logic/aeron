@@ -19,7 +19,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <stdbool.h>
 
 #define AERON_MAX_PATH (384)
 

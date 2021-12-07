@@ -55,10 +55,13 @@ public:
      */
     inline int poll()
     {
-        m_eventType = EventType::UNKNOWN_EVENT;
-        m_pollComplete = false;
+        if (m_isPollComplete)
+        {
+            m_isPollComplete = false;
+            m_eventType = EventType::UNKNOWN_EVENT;
+        }
 
-        return m_subscription->poll(m_fragmentHandler, 1);
+        return m_subscription->controlledPoll(m_fragmentHandler, 1);
     }
 
     /**
@@ -66,9 +69,9 @@ public:
      *
      * @return true of the last polling action received a complete message?
      */
-    inline bool isPollComplete()
+    inline bool isPollComplete() const
     {
-        return m_pollComplete;
+        return m_isPollComplete;
     }
 
     /**
@@ -86,7 +89,7 @@ public:
      *
      * @return the recording id of the last received event.
      */
-    inline std::int64_t recordingId()
+    inline std::int64_t recordingId() const
     {
         return m_recordingId;
     }
@@ -96,7 +99,7 @@ public:
      *
      * @return the position the recording started at.
      */
-    inline std::int64_t recordingStartPosition()
+    inline std::int64_t recordingStartPosition() const
     {
         return m_recordingStartPosition;
     }
@@ -106,7 +109,7 @@ public:
      *
      * @return the current recording position.
      */
-    inline std::int64_t recordingPosition()
+    inline std::int64_t recordingPosition() const
     {
         return m_recordingPosition;
     }
@@ -116,15 +119,15 @@ public:
      *
      * @return the position the recording stopped at.
      */
-    inline std::int64_t recordingStopPosition()
+    inline std::int64_t recordingStopPosition() const
     {
         return m_recordingStopPosition;
     }
 
-    void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
+    ControlledPollAction onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
 
 private:
-    fragment_handler_t m_fragmentHandler;
+    controlled_poll_fragment_handler_t m_fragmentHandler;
     std::shared_ptr<Subscription> m_subscription;
 
     std::int64_t m_recordingId = -1;
@@ -132,7 +135,7 @@ private:
     std::int64_t m_recordingPosition = -1;
     std::int64_t m_recordingStopPosition = -1;
     EventType m_eventType = EventType::UNKNOWN_EVENT;
-    bool m_pollComplete = false;
+    bool m_isPollComplete = false;
 };
 
 }}}

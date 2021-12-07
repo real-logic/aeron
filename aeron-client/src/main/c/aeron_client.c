@@ -205,7 +205,7 @@ void aeron_print_counters_format(
     char buffer[AERON_MAX_PATH];
     aeron_print_counters_stream_out_t *out = (aeron_print_counters_stream_out_t *)clientd;
 
-    snprintf(buffer, AERON_MAX_PATH - 1, "%3" PRId32 ": %20" PRId64 " - %*s\r\n",
+    snprintf(buffer, AERON_MAX_PATH - 1, "%3" PRId32 ": %20" PRId64 " - %.*s\r\n",
         id, value, (int)label_length, label);
     out->stream_out(buffer);
 }
@@ -364,7 +364,7 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
         {
             AERON_SET_ERR(
                 -async->error_code,
-                "async_add_publication registration\n== Driver Error ==\n%*s",
+                "async_add_publication registration\n== Driver Error ==\n%.*s",
                 (int)async->error_message_length,
                 async->error_message);
             aeron_async_cmd_free(async);
@@ -432,7 +432,7 @@ int aeron_async_add_exclusive_publication_poll(
         {
             AERON_SET_ERR(
                 -async->error_code,
-                "async_add_exclusive_publication registration\n== Driver Error ==\n%*s",
+                "async_add_exclusive_publication registration\n== Driver Error ==\n%.*s",
                 (int)async->error_message_length,
                 async->error_message);
             aeron_async_cmd_free(async);
@@ -629,7 +629,7 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
         {
             AERON_SET_ERR(
                 -async->error_code,
-                "async_add_counter registration\n== Driver Error ==\n%*s",
+                "async_add_counter registration\n== Driver Error ==\n%.*s",
                 (int)async->error_message_length,
                 async->error_message);
             aeron_async_cmd_free(async);
@@ -694,7 +694,7 @@ static int aeron_async_destination_poll(aeron_async_destination_t *async)
         {
             AERON_SET_ERR(
                 -async->error_code,
-                "async_add_destination registration\n== Driver Error ==\n%*s",
+                "async_add_destination registration\n== Driver Error ==\n%.*s",
                 (int)async->error_message_length,
                 async->error_message);
             aeron_async_cmd_free(async);

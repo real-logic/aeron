@@ -16,8 +16,8 @@
 
 plugins {
     id 'java-library'
-    id 'com.github.johnrengelman.shadow' version '7.0.0' apply false
-    id 'biz.aQute.bnd.builder' version '5.3.0' apply false
+    id 'com.github.johnrengelman.shadow' version '7.1.0' apply false
+    id 'biz.aQute.bnd.builder' version '6.1.0' apply false
     id "com.github.ben-manes.versions" version "0.39.0"
 }
 
@@ -25,12 +25,15 @@ defaultTasks 'clean', 'build'
 
 static def getBuildJavaVersion() {
     def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
+
     if (buildJavaVersion.indexOf('.') > 0) {
         buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('.'))
     }
+
     if (buildJavaVersion.indexOf('-') > 0) {
         buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('-'))
     }
+
     Integer.parseInt(buildJavaVersion)
 }
 int buildJavaVersion = getBuildJavaVersion()
@@ -42,14 +45,14 @@ def toolchainLauncher = javaToolchains.launcherFor {
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '1.11.0'
-def agronaVersionRange = '[1.11,1.12[' // allow any patch release of 1.11.x
-def sbeVersion = '1.23.0'
-def checkstyleVersion = '8.39'
+def agronaVersion = '1.14.0'
+def agronaVersionRange = '[1.14,1.15[' // allow any patch release of 1.14.x
+def sbeVersion = '1.25.1'
+def checkstyleVersion = '9.2'
 def hamcrestVersion = '2.2'
-def junitVersion = '5.7.2'
-def mockitoVersion = '3.11.2'
-def byteBuddyVersion = '1.11.3'
+def junitVersion = '5.8.2'
+def mockitoVersion = '4.1.0'
+def byteBuddyVersion = '1.12.3'
 def hdrHistogramVersion = '2.1.12'
 
 ext {
@@ -137,7 +140,8 @@ allprojects {
         resolutionStrategy {
             failOnVersionConflict()
 
-            force "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
+            force "org.agrona:agrona:${agronaVersion}",
+                  "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
                   "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         }
     }
@@ -215,6 +219,8 @@ subprojects {
             'aeron.dir.delete.on.start': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false')
+
+        javaLauncher.set(toolchainLauncher)
     }
 
     task slowTest(type: Test, group: 'verification') {
@@ -251,7 +257,7 @@ subprojects {
         options.docEncoding = 'UTF-8'
         options.charSet = 'UTF-8'
         options.links("https://www.javadoc.io/doc/org.agrona/agrona/${agronaVersion}/")
-        if (buildJavaVersion >= 17) { // early access JavaDoc location is different
+        if (buildJavaVersion >= 18) { // early access JavaDoc location is different
             options.links("https://download.java.net/java/early_access/jdk${buildJavaVersion}/docs/api/")
         }
         else if (buildJavaVersion >= 11) {
@@ -803,7 +809,7 @@ project(':aeron-system-tests') {
         }
     }
 
-    test {
+    tasks.withType(Test) {
         systemProperty('java.net.preferIPv4Stack', 'true')
         systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
     }
@@ -847,6 +853,9 @@ project(':aeron-all') {
             'Implementation-Version': aeronVersion,
             'Implementation-Vendor': 'Real Logic Limited',
             'Automatic-Module-Name': 'io.aeron.all')
+
+        relocate 'net.bytebuddy', 'io.aeron.shadow.net.bytebuddy'
+        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
 
     jar.finalizedBy shadowJar
@@ -937,6 +946,6 @@ tasks.named("dependencyUpdates").configure {
 }
 
 wrapper {
-    gradleVersion = '7.1.1'
+    gradleVersion = '7.3.1'
     distributionType = 'ALL'
 }

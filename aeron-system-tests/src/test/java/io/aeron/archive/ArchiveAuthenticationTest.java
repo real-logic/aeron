@@ -26,14 +26,14 @@ import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.SessionProxy;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -72,15 +72,17 @@ public class ArchiveAuthenticationTest
     private final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+
+    @BeforeEach
+    void setUp()
+    {
+    }
 
     @AfterEach
     public void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
-
-        archive.context().deleteDirectory();
-        driver.context().deleteDirectory();
     }
 
     @Test
@@ -349,27 +351,34 @@ public class ArchiveAuthenticationTest
 
     private void launchArchivingMediaDriver(final AuthenticatorSupplier authenticatorSupplier)
     {
-        driver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
-                .spiesSimulateConnection(false)
-                .dirDeleteOnStart(true),
-            testWatcher);
+        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .spiesSimulateConnection(false)
+            .dirDeleteOnStart(true);
 
-        archive = Archive.launch(
-            new Archive.Context()
-                .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
-                .aeronDirectoryName(aeronDirectoryName)
-                .deleteArchiveOnStart(true)
-                .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
-                .errorHandler(Tests::onError)
-                .fileSyncLevel(0)
-                .authenticatorSupplier(authenticatorSupplier)
-                .threadingMode(ArchiveThreadingMode.SHARED));
+        final Archive.Context archiveCtx = new Archive.Context()
+            .catalogCapacity(CATALOG_CAPACITY)
+            .aeronDirectoryName(aeronDirectoryName)
+            .deleteArchiveOnStart(true)
+            .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
+            .fileSyncLevel(0)
+            .authenticatorSupplier(authenticatorSupplier)
+            .threadingMode(ArchiveThreadingMode.SHARED);
+
+        try
+        {
+            driver = TestMediaDriver.launch(mediaDriverCtx, systemTestWatcher);
+            archive = Archive.launch(archiveCtx);
+        }
+        finally
+        {
+            systemTestWatcher.dataCollector().add(mediaDriverCtx.aeronDirectory());
+            systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
+        }
     }
+
 
     private void createRecording()
     {

@@ -17,6 +17,7 @@
 #ifndef AERON_URI_H
 #define AERON_URI_H
 
+#include <stdbool.h>
 #include "aeron_common.h"
 
 typedef struct aeron_uri_param_stct

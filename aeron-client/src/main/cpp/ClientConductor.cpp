@@ -97,7 +97,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
     auto it = m_publicationByRegistrationId.find(registrationId);
     if (it == m_publicationByRegistrationId.end())
     {
-        return std::shared_ptr<Publication>();
+        return {};
     }
 
     PublicationStateDefn &state = it->second;
@@ -187,7 +187,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
     auto it = m_exclusivePublicationByRegistrationId.find(registrationId);
     if (it == m_exclusivePublicationByRegistrationId.end())
     {
-        return std::shared_ptr<ExclusivePublication>();
+        return {};
     }
 
     ExclusivePublicationStateDefn &state = it->second;
@@ -281,7 +281,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     auto it = m_subscriptionByRegistrationId.find(registrationId);
     if (it == m_subscriptionByRegistrationId.end())
     {
-        return std::shared_ptr<Subscription>();
+        return {};
     }
 
     SubscriptionStateDefn &state = it->second;
@@ -376,7 +376,7 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
     auto it = m_counterByRegistrationId.find(registrationId);
     if (it == m_counterByRegistrationId.end())
     {
-        return std::shared_ptr<Counter>();
+        return {};
     }
 
     CounterStateDefn &state = it->second;

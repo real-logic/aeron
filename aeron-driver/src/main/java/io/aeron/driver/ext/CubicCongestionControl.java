@@ -158,7 +158,7 @@ public class CubicCongestionControl implements CongestionControl
             lastLossTimestampNs = nanoClock.nanoTime();
             lastUpdateTimestampNs = lastLossTimestampNs;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             close();
             throw ex;

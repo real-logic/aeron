@@ -22,17 +22,17 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import io.aeron.test.driver.RedirectingNameResolver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +41,16 @@ import java.util.concurrent.atomic.AtomicLong;
 @ExtendWith(InterruptingTestCallback.class)
 public class MultiClusteredServicesTest
 {
+    @RegisterExtension
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+
     final AtomicLong serviceAMessageCount = new AtomicLong(0);
     final AtomicLong serviceBMessageCount = new AtomicLong(0);
+
+    @BeforeEach
+    void setUp()
+    {
+    }
 
     final class ServiceA extends TestNode.TestService
     {
@@ -92,14 +100,34 @@ public class MultiClusteredServicesTest
         serviceContexts.add(TestCluster.serviceContext(2, 0, nodeContexts.get(2), ServiceA::new));
         serviceContexts.add(TestCluster.serviceContext(2, 1, nodeContexts.get(2), ServiceB::new));
 
-        nodeContexts.forEach((context) -> clusteredMediaDrivers.add(ClusteredMediaDriver.launch(
-            context.mediaDriverCtx, context.archiveCtx, context.consensusModuleCtx)));
+        nodeContexts.forEach(
+            (context) ->
+            {
+                try
+                {
+                    clusteredMediaDrivers.add(ClusteredMediaDriver.launch(
+                        context.mediaDriverCtx, context.archiveCtx, context.consensusModuleCtx));
+                }
+                finally
+                {
+                    systemTestWatcher.dataCollector().add(context.mediaDriverCtx.aeronDirectory());
+                    systemTestWatcher.dataCollector().add(context.archiveCtx.archiveDir());
+                    systemTestWatcher.dataCollector().add(context.consensusModuleCtx.clusterDir());
+                }
+            });
 
         serviceContexts.forEach(
             (context) ->
             {
                 context.serviceContainerCtx.aeronDirectoryName(context.aeronCtx.aeronDirectoryName());
-                clusteredServiceContainers.add(ClusteredServiceContainer.launch(context.serviceContainerCtx));
+                try
+                {
+                    clusteredServiceContainers.add(ClusteredServiceContainer.launch(context.serviceContainerCtx));
+                }
+                finally
+                {
+                    systemTestWatcher.dataCollector().add(context.serviceContainerCtx.clusterDir());
+                }
             });
 
         final String aeronDirName = CommonContext.getAeronDirectoryName();
@@ -136,7 +164,6 @@ public class MultiClusteredServicesTest
             CloseHelper.closeAll(clusteredMediaDrivers);
 
             clientMediaDriver.context().deleteDirectory();
-            clusteredMediaDrivers.forEach((driver) -> driver.mediaDriver().context().deleteDirectory());
         }
     }
 }

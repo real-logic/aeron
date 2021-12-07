@@ -35,7 +35,7 @@ public final class ClusterCounters
     }
 
     /**
-     * Allocate a counter to represent the a component state within a cluster.
+     * Allocate a counter to represent component state within a cluster.
      *
      * @param aeron     to allocate the counter.
      * @param buffer    temporary storage to create label and metadata.

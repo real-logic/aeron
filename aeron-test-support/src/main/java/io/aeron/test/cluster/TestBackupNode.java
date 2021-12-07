@@ -19,23 +19,74 @@ import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ClusterBackup;
-import io.aeron.cluster.ClusterBackupMediaDriver;
 import io.aeron.cluster.ClusterTool;
 import io.aeron.driver.MediaDriver;
+import io.aeron.test.DataCollector;
+import io.aeron.test.driver.DriverOutputConsumer;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
+
+import java.io.File;
+import java.util.Map;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 public class TestBackupNode implements AutoCloseable
 {
-    private final ClusterBackupMediaDriver clusterBackupMediaDriver;
+    private final TestMediaDriver mediaDriver;
+    private final Archive archive;
+    private final ClusterBackup clusterBackup;
+    private final Context context;
     private boolean isClosed = false;
 
-    TestBackupNode(final Context context)
+    TestBackupNode(final Context context, final DataCollector dataCollector)
     {
-        clusterBackupMediaDriver = ClusterBackupMediaDriver.launch(
-            context.mediaDriverContext, context.archiveContext, context.clusterBackupContext);
+        this.context = context;
+        try
+        {
+            mediaDriver = TestMediaDriver.launch(
+                context.mediaDriverContext,
+                TestMediaDriver.shouldRunCMediaDriver() ? new DriverOutputConsumer()
+                {
+                    public void outputFiles(
+                        final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
+                    {
+                        dataCollector.add(stdoutFile.toPath());
+                        dataCollector.add(stderrFile.toPath());
+                    }
+
+                    public void exitCode(final String aeronDirectoryName, final int exitValue)
+                    {
+                    }
+
+                    public void environmentVariables(
+                        final String aeronDirectoryName, final Map<String, String> environment)
+                    {
+                    }
+                } : null);
+
+            final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
+            archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
+
+            clusterBackup = ClusterBackup.launch(context.clusterBackupContext.aeronDirectoryName(aeronDirectoryName));
+
+            dataCollector.add(clusterBackup.context().clusterDir().toPath());
+            dataCollector.add(archive.context().archiveDir().toPath());
+            dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
+        }
+        catch (final RuntimeException ex)
+        {
+            try
+            {
+                closeAndDelete();
+            }
+            catch (final Exception ex2)
+            {
+                ex.addSuppressed(ex2);
+            }
+            throw ex;
+        }
     }
 
     public void close()
@@ -43,22 +94,21 @@ public class TestBackupNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.close(clusterBackupMediaDriver);
+            CloseHelper.closeAll(clusterBackup, archive, mediaDriver);
         }
     }
 
     void closeAndDelete()
     {
-        if (!isClosed)
-        {
-            close();
-        }
+        close();
 
-        if (null != clusterBackupMediaDriver)
+        context.clusterBackupContext.deleteDirectory();
+        context.archiveContext.deleteDirectory();
+        context.mediaDriverContext.deleteDirectory();
+
+        if (null != mediaDriver)
         {
-            clusterBackupMediaDriver.clusterBackup().context().deleteDirectory();
-            clusterBackupMediaDriver.archive().context().deleteDirectory();
-            clusterBackupMediaDriver.mediaDriver().context().deleteDirectory();
+            mediaDriver.cleanup();
         }
     }
 
@@ -69,12 +119,12 @@ public class TestBackupNode implements AutoCloseable
 
     ClusterBackup.State backupState()
     {
-        return ClusterBackup.State.get(clusterBackupMediaDriver.clusterBackup().context().stateCounter());
+        return ClusterBackup.State.get(context.clusterBackupContext.stateCounter());
     }
 
     long liveLogPosition()
     {
-        final Counter counter = clusterBackupMediaDriver.clusterBackup().context().liveLogPositionCounter();
+        final Counter counter = context.clusterBackupContext.liveLogPositionCounter();
         if (counter.isClosed())
         {
             return NULL_POSITION;
@@ -85,20 +135,19 @@ public class TestBackupNode implements AutoCloseable
 
     public EpochClock epochClock()
     {
-        return clusterBackupMediaDriver.clusterBackup().context().epochClock();
+        return context.clusterBackupContext.epochClock();
     }
 
     public long nextBackupQueryDeadlineMs()
     {
-        return ClusterTool.nextBackupQueryDeadlineMs(clusterBackupMediaDriver.clusterBackup().context().clusterDir());
+        return ClusterTool.nextBackupQueryDeadlineMs(context.clusterBackupContext.clusterDir());
     }
 
     public boolean nextBackupQueryDeadlineMs(final long delayMs)
     {
-        final long nowMs = clusterBackupMediaDriver.mediaDriver().context().epochClock().time();
+        final long nowMs = epochClock().time();
 
-        return ClusterTool.nextBackupQueryDeadlineMs(
-            clusterBackupMediaDriver.clusterBackup().context().clusterDir(), nowMs + delayMs);
+        return ClusterTool.nextBackupQueryDeadlineMs(context.clusterBackupContext.clusterDir(), nowMs + delayMs);
     }
 
     static class Context

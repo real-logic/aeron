@@ -83,8 +83,6 @@ int main(int argc, char **argv)
     cp.addOption(CommandOption(optMessages, 1, 1, "number          Number of Messages."));
     cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
 
-    signal(SIGINT, sigIntHandler);
-
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
@@ -105,7 +103,7 @@ int main(int argc, char **argv)
             });
 
         std::shared_ptr<Aeron> aeron = Aeron::connect(context);
-
+        signal(SIGINT, sigIntHandler);
         // add the publication to start the process
         std::int64_t id = aeron->addPublication(settings.channel, settings.streamId);
 

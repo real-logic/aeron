@@ -90,11 +90,11 @@ public class ClusterBackupMediaDriver implements AutoCloseable
                 .spiesSimulateConnection(true));
 
             final int errorCounterId = SystemCounterDescriptor.ERRORS.id();
-            final AtomicCounter errorCounter = null == archiveCtx.errorCounter() ?
-                new AtomicCounter(driverCtx.countersValuesBuffer(), errorCounterId) : archiveCtx.errorCounter();
+            final AtomicCounter errorCounter = null != archiveCtx.errorCounter() ?
+                archiveCtx.errorCounter() : new AtomicCounter(driverCtx.countersValuesBuffer(), errorCounterId);
 
-            final ErrorHandler errorHandler = null == archiveCtx.errorHandler() ?
-                driverCtx.errorHandler() : archiveCtx.errorHandler();
+            final ErrorHandler errorHandler = null != archiveCtx.errorHandler() ?
+                archiveCtx.errorHandler() : driverCtx.errorHandler();
 
             archive = Archive.launch(archiveCtx
                 .aeronDirectoryName(driverCtx.aeronDirectoryName())
@@ -107,10 +107,10 @@ public class ClusterBackupMediaDriver implements AutoCloseable
 
             return new ClusterBackupMediaDriver(driver, archive, clusterBackup);
         }
-        catch (final Throwable throwable)
+        catch (final Exception ex)
         {
             CloseHelper.quietCloseAll(clusterBackup, archive, driver);
-            throw throwable;
+            throw ex;
         }
     }
 

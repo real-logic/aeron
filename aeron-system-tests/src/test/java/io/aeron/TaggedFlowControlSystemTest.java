@@ -21,11 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -49,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class TaggedFlowControlSystemTest
+class TaggedFlowControlSystemTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
     private static final int STREAM_ID = 1001;
@@ -80,7 +76,7 @@ public class TaggedFlowControlSystemTest
     private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private void launch()
     {
@@ -115,7 +111,7 @@ public class TaggedFlowControlSystemTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(clientB, clientA, driverB, driverA);
         IoUtil.delete(new File(ROOT_DIR), true);
@@ -155,7 +151,7 @@ public class TaggedFlowControlSystemTest
     @ParameterizedTest
     @MethodSource("strategyConfigurations")
     @InterruptAfter(10)
-    public void shouldSlowToTaggedWithMulticastFlowControlStrategy(
+    void shouldSlowToTaggedWithMulticastFlowControlStrategy(
         final FlowControlSupplier flowControlSupplier,
         final Long groupTag,
         final Long flowControlGroupTag,
@@ -240,7 +236,7 @@ public class TaggedFlowControlSystemTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRemoveDeadReceiver()
+    void shouldRemoveDeadReceiver()
     {
         final State state = new State();
         state.numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -294,21 +290,6 @@ public class TaggedFlowControlSystemTest
 
         verify(fragmentHandlerA, times(state.numMessagesToSend)).onFragment(
             any(DirectBuffer.class), anyInt(), eq(MESSAGE_LENGTH), any(Header.class));
-    }
-
-    private int pollWithTimeout(
-        final Subscription subscription,
-        final FragmentHandler fragmentHandler,
-        final int fragmentLimit,
-        final Supplier<String> message)
-    {
-        final int numFragments = subscription.poll(fragmentHandler, fragmentLimit);
-        if (0 == numFragments)
-        {
-            Tests.yieldingIdle(message);
-        }
-
-        return numFragments;
     }
 
     @SuppressWarnings("methodlength")
@@ -482,7 +463,7 @@ public class TaggedFlowControlSystemTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldHandleSenderLimitCorrectlyWithMinGroupSize()
+    void shouldHandleSenderLimitCorrectlyWithMinGroupSize()
     {
         final String publisherUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/1";
         final String groupSubscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|gtag=123";
@@ -511,5 +492,20 @@ public class TaggedFlowControlSystemTest
         {
             Tests.sleep(1);
         }
+    }
+
+    private int pollWithTimeout(
+        final Subscription subscription,
+        final FragmentHandler fragmentHandler,
+        final int fragmentLimit,
+        final Supplier<String> message)
+    {
+        final int numFragments = subscription.poll(fragmentHandler, fragmentLimit);
+        if (0 == numFragments)
+        {
+            Tests.yieldingIdle(message);
+        }
+
+        return numFragments;
     }
 }

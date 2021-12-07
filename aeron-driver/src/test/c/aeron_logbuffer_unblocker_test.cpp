@@ -41,14 +41,14 @@ public:
     }
 
 protected:
-    buffer_t m_term_buffer;
-    log_meta_data_buffer_t m_log_meta_data_buffer;
-    aeron_logbuffer_metadata_t *m_log_meta_data;
+    buffer_t m_term_buffer = {};
+    log_meta_data_buffer_t m_log_meta_data_buffer = {};
+    aeron_logbuffer_metadata_t *m_log_meta_data = nullptr;
 };
 
 TEST_F(TermUnblockerTest, shouldTakeNoActionWhenMessageIsComplete)
 {
-    aeron_frame_header_t *frame_header = (aeron_frame_header_t *)m_term_buffer.data();
+    auto *frame_header = (aeron_frame_header_t *)m_term_buffer.data();
 
     frame_header->frame_length = AERON_DATA_HEADER_LENGTH;
 
@@ -75,7 +75,7 @@ TEST_F(TermUnblockerTest, shouldTakeNoActionWhenNoUnblockedMessage)
 TEST_F(TermUnblockerTest, shouldPatchNonCommittedMessage)
 {
     int32_t message_length = AERON_DATA_HEADER_LENGTH * 4;
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_term_buffer.data();
+    auto *data_header = (aeron_data_header_t *)m_term_buffer.data();
 
     data_header->frame_header.frame_length = -message_length;
 
@@ -97,7 +97,7 @@ TEST_F(TermUnblockerTest, shouldPatchToEndOfPartition)
     int32_t term_offset = TERM_LENGTH - message_length;
     int32_t tail_offset = TERM_LENGTH;
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)(m_term_buffer.data() + term_offset);
+    auto *data_header = (aeron_data_header_t *)(m_term_buffer.data() + term_offset);
 
     EXPECT_EQ(
         aeron_term_unblocker_unblock(
@@ -180,11 +180,11 @@ public:
     }
 
 protected:
-    buffer_t m_term_buffers[AERON_LOGBUFFER_PARTITION_COUNT];
-    aeron_mapped_buffer_t m_mapped_buffers[AERON_LOGBUFFER_PARTITION_COUNT];
-    log_meta_data_buffer_t m_log_meta_data_buffer;
-    aeron_logbuffer_metadata_t *m_log_meta_data;
-    size_t m_position_bits_to_shift;
+    buffer_t m_term_buffers[AERON_LOGBUFFER_PARTITION_COUNT] = {};
+    aeron_mapped_buffer_t m_mapped_buffers[AERON_LOGBUFFER_PARTITION_COUNT] = {};
+    log_meta_data_buffer_t m_log_meta_data_buffer = {};
+    aeron_logbuffer_metadata_t *m_log_meta_data = nullptr;
+    size_t m_position_bits_to_shift = 0;
 };
 
 TEST_F(LogBufferUnblockerTest, shouldNotUnblockWhenPositionHasCompleteMessage)

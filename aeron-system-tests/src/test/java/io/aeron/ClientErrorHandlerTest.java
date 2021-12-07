@@ -34,8 +34,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -48,17 +48,17 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ClientErrorHandlerTest
+class ClientErrorHandlerTest
 {
     private static final int STREAM_ID = 1001;
     private static final String CHANNEL = "aeron:ipc";
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(10)
-    public void shouldHaveCorrectTermBufferLength()
+    void shouldHaveCorrectTermBufferLength()
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .errorHandler(Tests::onError)
@@ -115,7 +115,7 @@ public class ClientErrorHandlerTest
 
                 fail("Expected exception");
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 assertEquals(expectedException, ex);
             }

@@ -31,7 +31,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.lang.Math.min;
 
 /**
- * Command line utility for inspecting the data contents of a archive segment file.
+ * Command line utility for inspecting the data contents of an archive segment file.
  * <p>
  * Supports {@link LogInspector#AERON_LOG_DATA_FORMAT_PROP_NAME}
  */

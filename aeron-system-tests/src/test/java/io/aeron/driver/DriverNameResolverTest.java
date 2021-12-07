@@ -17,11 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.*;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableBoolean;
@@ -33,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Supplier;
@@ -53,7 +48,7 @@ public class DriverNameResolverTest
     private final Map<String, Aeron> clients = new TreeMap<>();
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @AfterEach
     public void after()
@@ -323,7 +318,7 @@ public class DriverNameResolverTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldFallbackToAnotherBootstrapNeighborIfOneBecomesUnavailable() throws IOException
+    public void shouldFallbackToAnotherBootstrapNeighborIfOneBecomesUnavailable()
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
 

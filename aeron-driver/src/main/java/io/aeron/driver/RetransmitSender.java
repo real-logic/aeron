@@ -22,7 +22,7 @@ package io.aeron.driver;
 public interface RetransmitSender
 {
     /**
-     * Called when a retransmit should be sent.
+     * Called when a retransmit frame should be sent.
      *
      * @param termId     for the NAK
      * @param termOffset for the NAK

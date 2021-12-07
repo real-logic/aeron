@@ -77,9 +77,9 @@ public class TermReader
                 }
             }
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            errorHandler.onError(t);
+            errorHandler.onError(ex);
         }
         finally
         {
@@ -138,9 +138,9 @@ public class TermReader
                 }
             }
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            errorHandler.onError(t);
+            errorHandler.onError(ex);
         }
 
         return pack(offset, fragmentsRead);

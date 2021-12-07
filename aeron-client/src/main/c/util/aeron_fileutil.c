@@ -221,6 +221,7 @@ int aeron_is_directory(const char *path)
 #include <sys/statvfs.h>
 #include <ftw.h>
 #include <stdio.h>
+#include <pwd.h>
 
 static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool pre_touch)
 {
@@ -629,10 +630,11 @@ inline static const char *tmp_dir()
     return NULL;
 #else
     const char *dir = "/tmp";
+    const char *tmp_dir = getenv("TMPDIR");
 
-    if (getenv("TMPDIR"))
+    if (NULL != tmp_dir)
     {
-        dir = getenv("TMPDIR");
+        dir = tmp_dir;
     }
 
     return dir;
@@ -655,8 +657,9 @@ inline static bool has_file_separator_at_end(const char *path)
 
 inline static const char *username()
 {
-    const char *username = getenv("USER");
 #if (_MSC_VER)
+    const char *username = getenv("USER");
+
     if (NULL == username)
     {
         username = getenv("USERNAME");
@@ -665,13 +668,24 @@ inline static const char *username()
              username = "default";
         }
     }
+
+    return username;
 #else
+    static char static_buffer[16384];
+    const char *username = getenv("USER");
+
     if (NULL == username)
     {
-        username = "default";
+        uid_t uid = getuid(); // using uid instead of euid as that is what the JVM seems to do.
+        struct passwd pw, *pw_result = NULL;
+
+        int e = getpwuid_r(uid, &pw, static_buffer, sizeof(static_buffer), &pw_result);
+        username = (0 == e && NULL != pw_result && NULL != pw_result->pw_name && '\0' != *(pw_result->pw_name)) ?
+            pw_result->pw_name : "default";
     }
-#endif
+
     return username;
+#endif
 }
 
 int aeron_default_path(char *path, size_t path_length)

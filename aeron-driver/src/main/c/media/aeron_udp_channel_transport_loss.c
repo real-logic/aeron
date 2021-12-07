@@ -95,8 +95,16 @@ void aeron_udp_channel_transport_loss_load_env()
     aeron_udp_channel_interceptor_loss_params_t *params;
     const char *args = AERON_CONFIG_GETENV_OR_DEFAULT(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS_ENV_VAR, "");
     char *args_dup = strdup(args);
+    if (NULL == args_dup)
+    {
+        AERON_SET_ERR(errno, "%s", "Duplicating args string");
+        return;
+    }
 
-    aeron_alloc((void **)&params, sizeof(aeron_udp_channel_interceptor_loss_params_t));
+    if (aeron_alloc((void **)&params, sizeof(aeron_udp_channel_interceptor_loss_params_t)) < 0)
+    {
+        return;
+    }
 
     if (aeron_udp_channel_interceptor_loss_parse_params(args_dup, params) >= 0)
     {
@@ -144,7 +152,8 @@ void aeron_udp_channel_interceptor_loss_incoming(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    struct timespec *media_timestamp)
 {
     if (!aeron_udp_channel_interceptor_loss_should_drop_frame(
         buffer, aeron_udp_channel_interceptor_loss_params->rate,
@@ -159,7 +168,8 @@ void aeron_udp_channel_interceptor_loss_incoming(
             destination_clientd,
             buffer,
             length,
-            addr);
+            addr,
+            media_timestamp);
     }
 }
 

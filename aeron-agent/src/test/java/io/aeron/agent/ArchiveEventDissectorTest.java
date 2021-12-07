@@ -554,6 +554,41 @@ class ArchiveEventDissectorTest
     }
 
     @Test
+    void controlRequestReplicate2()
+    {
+        internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);
+        final ReplicateRequest2Encoder requestEncoder = new ReplicateRequest2Encoder();
+        requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
+            .controlSessionId(2)
+            .correlationId(5)
+            .srcRecordingId(17)
+            .dstRecordingId(2048)
+            .stopPosition(4096)
+            .channelTagId(123)
+            .subscriptionTagId(321)
+            .srcControlStreamId(10)
+            .srcControlChannel("CTRL ch")
+            .liveDestination("live destination")
+            .replicationChannel("replication channel");
+
+        dissectControlRequest(CMD_IN_REPLICATE2, buffer, 0, builder);
+
+        assertEquals("[0.5] " + CONTEXT + ": " + CMD_IN_REPLICATE2.name() + " [1000/1000]:" +
+            " controlSessionId=2" +
+            " correlationId=5" +
+            " srcRecordingId=17" +
+            " dstRecordingId=2048" +
+            " stopPosition=4096" +
+            " channelTagId=123" +
+            " subscriptionTagId=321" +
+            " srcControlStreamId=10" +
+            " srcControlChannel=CTRL ch" +
+            " liveDestination=live destination" +
+            " replicationChannel=replication channel",
+            builder.toString());
+    }
+
+    @Test
     void controlRequestStopReplication()
     {
         internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);

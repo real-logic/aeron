@@ -16,7 +16,7 @@
 #ifndef AERON_RECORDING_DESCRIPTOR_POLLER_H
 #define AERON_RECORDING_DESCRIPTOR_POLLER_H
 
-#include "Aeron.h"
+#include "ArchiveConfiguration.h"
 #include "ControlledFragmentAssembler.h"
 
 namespace aeron { namespace archive { namespace client
@@ -69,6 +69,13 @@ public:
         std::int64_t controlSessionId,
         int fragmentLimit = 10);
 
+    RecordingDescriptorPoller(
+        std::shared_ptr<Subscription> subscription,
+        const exception_handler_t &errorHandler,
+        const on_recording_signal_t &recordingSignalConsumer,
+        std::int64_t controlSessionId,
+        int fragmentLimit = 10);
+
     /**
      * Poll for recording events.
      *
@@ -76,7 +83,10 @@ public:
      */
     inline int poll()
     {
-        m_isDispatchComplete = false;
+        if (m_isDispatchComplete)
+        {
+            m_isDispatchComplete = false;
+        }
 
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }
@@ -96,7 +106,7 @@ public:
      *
      * @return control session id for filtering responses.
      */
-    inline std::int64_t controlSessionId()
+    inline std::int64_t controlSessionId() const
     {
         return m_controlSessionId;
     }
@@ -106,7 +116,7 @@ public:
      *
      * @return true if the dispatch of descriptors complete?
      */
-    inline bool isDispatchComplete()
+    inline bool isDispatchComplete() const
     {
         return m_isDispatchComplete;
     }
@@ -116,7 +126,7 @@ public:
      *
      * @return the number of remaining records expected.
      */
-    inline std::int32_t remainingRecordCount()
+    inline std::int32_t remainingRecordCount() const
     {
         return m_remainingRecordCount;
     }
@@ -145,6 +155,7 @@ private:
     ControlledFragmentAssembler m_fragmentAssembler;
     controlled_poll_fragment_handler_t m_fragmentHandler;
     exception_handler_t m_errorHandler;
+    on_recording_signal_t m_onRecordingSignal = defaultRecordingSignalConsumer();
     recording_descriptor_consumer_t m_consumer = nullptr;
     std::shared_ptr<Subscription> m_subscription;
 

@@ -26,8 +26,8 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ChannelEndpointStatusTest
+class ChannelEndpointStatusTest
 {
     private static final String URI = "aeron:udp?endpoint=localhost:23456";
     private static final String URI_NO_CONFLICT = "aeron:udp?endpoint=localhost:23457";
@@ -97,10 +97,10 @@ public class ChannelEndpointStatusTest
         };
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @BeforeEach
-    public void before()
+    void before()
     {
         final String baseDirA = ROOT_DIR + "A";
         final String baseDirB = ROOT_DIR + "B";
@@ -139,7 +139,7 @@ public class ChannelEndpointStatusTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(clientC, clientB, clientA, driverB, driverA);
         IoUtil.delete(new File(ROOT_DIR), true);
@@ -147,14 +147,14 @@ public class ChannelEndpointStatusTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldErrorBadUri()
+    void shouldErrorBadUri()
     {
         assertThrows(RegistrationException.class, () -> clientA.addSubscription("bad uri", STREAM_ID));
     }
 
     @Test
     @InterruptAfter(10)
-    public void shouldBeAbleToQueryChannelStatusForSubscription()
+    void shouldBeAbleToQueryChannelStatusForSubscription()
     {
         final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
 
@@ -169,7 +169,7 @@ public class ChannelEndpointStatusTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldBeAbleToQueryChannelStatusForPublication()
+    void shouldBeAbleToQueryChannelStatusForPublication()
     {
         final Publication publication = clientA.addPublication(URI, STREAM_ID);
 
@@ -183,7 +183,7 @@ public class ChannelEndpointStatusTest
     }
 
     @Test
-    public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
+    void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("C Driver raises error on conductor");
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
@@ -212,7 +212,7 @@ public class ChannelEndpointStatusTest
     }
 
     @Test
-    public void shouldCatchErrorOnAddressAlreadyInUseForPublications()
+    void shouldCatchErrorOnAddressAlreadyInUseForPublications()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("C Driver raises error on conductor");
         final Publication publicationA = clientA.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
@@ -242,7 +242,7 @@ public class ChannelEndpointStatusTest
     }
 
     @Test
-    public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
+    void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("C Driver raises error on conductor");
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);

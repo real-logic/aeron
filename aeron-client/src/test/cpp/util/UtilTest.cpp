@@ -29,7 +29,7 @@ TEST(utilTests, scopeTest)
 {
     bool flag = false;
 
-    if (1)
+    if (true)
     {
         OnScopeExit onExit([&]()
         {
@@ -102,11 +102,6 @@ TEST(utilTests, numberOfTrailingZeroes)
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x0000FFFF), 0);
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0xFFFF0000), 16);
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x00000001), 0);
-}
-
-void throwIllegalArgumentException()
-{
-    aeron::test::throwIllegalArgumentException();
 }
 
 TEST(utilTests, sourcedException)

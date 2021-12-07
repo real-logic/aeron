@@ -38,6 +38,7 @@ extern "C"
 #define PUB_URI_ENDPOINT "127.0.0.1"
 #define PUB_URI_CONTROL "127.0.0.1:24326"
 #define URI_RESERVED "aeron:udp?endpoint=" PUB_URI_ENDPOINT ":0|control=" PUB_URI_CONTROL
+#define URI_PUB "aeron:udp?endpoint=" PUB_URI_ENDPOINT ":1024|control=" PUB_URI_CONTROL
 #define PUB_URI_IPV6 "aeron:udp?endpoint=[::1]:0"
 #define STREAM_ID (117)
 
@@ -59,7 +60,7 @@ public:
 
     static int awaitSubscriptionDestinationOrError(aeron_async_destination_t *async)
     {
-        do
+        while (true)
         {
             std::this_thread::yield();
             int result = aeron_subscription_async_destination_poll(async);
@@ -68,12 +69,11 @@ public:
                 return result;
             }
         }
-        while (true);
     }
 
 protected:
-    uint8_t m_buffers[NUM_BUFFERS][AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
-    aeron_iovec_t m_addrs[NUM_BUFFERS];
+    uint8_t m_buffers[NUM_BUFFERS][AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN] = {};
+    aeron_iovec_t m_addrs[NUM_BUFFERS] = {};
 };
 
 TEST_F(CLocalAddressesTest, shouldGetAddressForPublication)
@@ -84,7 +84,7 @@ TEST_F(CLocalAddressesTest, shouldGetAddressForPublication)
 
     ASSERT_TRUE(connect());
 
-    ASSERT_EQ(aeron_async_add_publication(&async, m_aeron, URI_RESERVED, STREAM_ID), 0);
+    ASSERT_EQ(aeron_async_add_publication(&async, m_aeron, URI_PUB, STREAM_ID), 0);
     ASSERT_TRUE((publication = awaitPublicationOrError(async))) << aeron_errmsg();
 
     ASSERT_EQ(1, aeron_publication_local_sockaddrs(publication, m_addrs, NUM_BUFFERS));
@@ -101,12 +101,12 @@ TEST_F(CLocalAddressesTest, shouldGetAddressForPublication)
 TEST_F(CLocalAddressesTest, shouldGetAddressForExclusivePublication)
 {
     std::atomic<bool> publicationClosedFlag(false);
-    aeron_async_add_exclusive_publication_t *async;
+    aeron_async_add_exclusive_publication_t *async = nullptr;
     aeron_exclusive_publication_t *publication;
 
     ASSERT_TRUE(connect());
 
-    ASSERT_EQ(aeron_async_add_exclusive_publication(&async, m_aeron, URI_RESERVED, STREAM_ID), 0);
+    ASSERT_EQ(aeron_async_add_exclusive_publication(&async, m_aeron, URI_PUB, STREAM_ID), 0);
     ASSERT_TRUE((publication = awaitExclusivePublicationOrError(async))) << aeron_errmsg();
 
     ASSERT_EQ(1, aeron_exclusive_publication_local_sockaddrs(publication, m_addrs, NUM_BUFFERS));
@@ -124,7 +124,7 @@ TEST_F(CLocalAddressesTest, shouldGetAddressForExclusivePublication)
 TEST_F(CLocalAddressesTest, shouldGetAddressForSubscription)
 {
     std::atomic<bool> subscriptionClosedFlag(false);
-    aeron_async_add_subscription_t *async;
+    aeron_async_add_subscription_t *async = nullptr;
     aeron_subscription_t *subscription;
 
     ASSERT_TRUE(connect());
@@ -140,7 +140,7 @@ TEST_F(CLocalAddressesTest, shouldGetAddressForSubscription)
     ASSERT_THAT(reinterpret_cast<char *>(m_buffers[0]), testing::ContainsRegex(RESOLVED_ADDRESS_PATTERN));
 
     std::string resolvedEndpointParam = "endpoint=" + std::string(reinterpret_cast<char *>(m_addrs[0].iov_base));
-    char uriWithResolvedEndpoint[1024];
+    char uriWithResolvedEndpoint[1024] = { 0 };
     aeron_subscription_try_resolve_channel_endpoint_port(
         subscription, uriWithResolvedEndpoint, sizeof(uriWithResolvedEndpoint));
 
@@ -157,7 +157,7 @@ TEST_F(CLocalAddressesTest, shouldGetAddressForSubscription)
 TEST_F(CLocalAddressesTest, shouldGetIPv6AddressForSubscription)
 {
     std::atomic<bool> subscriptionClosedFlag(false);
-    aeron_async_add_subscription_t *async;
+    aeron_async_add_subscription_t *async = nullptr;
     aeron_subscription_t *subscription;
 
     ASSERT_TRUE(connect());
@@ -173,7 +173,7 @@ TEST_F(CLocalAddressesTest, shouldGetIPv6AddressForSubscription)
     ASSERT_THAT(reinterpret_cast<char *>(m_buffers[0]), testing::ContainsRegex(RESOLVED_IPV6_ADDRESS_PATTERN));
 
     std::string resolvedEndpointParam = "endpoint=" + std::string(reinterpret_cast<char *>(m_addrs[0].iov_base));
-    char uriWithResolvedEndpoint[1024];
+    char uriWithResolvedEndpoint[1024] = { 0 };
     aeron_subscription_try_resolve_channel_endpoint_port(
         subscription, uriWithResolvedEndpoint, sizeof(uriWithResolvedEndpoint));
 
@@ -190,7 +190,7 @@ TEST_F(CLocalAddressesTest, shouldGetIPv6AddressForSubscription)
 TEST_F(CLocalAddressesTest, shouldGetOriginalAddressWhenNoWildcardSpecified)
 {
     std::atomic<bool> subscriptionClosedFlag(false);
-    aeron_async_add_subscription_t *async;
+    aeron_async_add_subscription_t *async = nullptr;
     aeron_subscription_t *subscription;
     const char *uri = "aeron:udp?endpoint=[::1]:12345";
 
@@ -200,7 +200,7 @@ TEST_F(CLocalAddressesTest, shouldGetOriginalAddressWhenNoWildcardSpecified)
         &async, m_aeron, uri, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
     ASSERT_TRUE((subscription = awaitSubscriptionOrError(async))) << aeron_errmsg();
 
-    char uriWithResolvedEndpoint[1024];
+    char uriWithResolvedEndpoint[1024] = { 0 };
 
     ASSERT_LT(0, aeron_subscription_try_resolve_channel_endpoint_port(
         subscription, uriWithResolvedEndpoint, sizeof(uriWithResolvedEndpoint)));
@@ -214,12 +214,11 @@ TEST_F(CLocalAddressesTest, shouldGetOriginalAddressWhenNoWildcardSpecified)
     }
 }
 
-
 TEST_F(CLocalAddressesTest, shouldGetAddressesForMultiDestinationSubscription)
 {
     std::atomic<bool> subscriptionClosedFlag(false);
-    aeron_async_add_subscription_t *async_sub;
-    aeron_async_destination_t *async_dest;
+    aeron_async_add_subscription_t *async_sub = nullptr;
+    aeron_async_destination_t *async_dest = nullptr;
     aeron_subscription_t *subscription;
 
     ASSERT_TRUE(connect());

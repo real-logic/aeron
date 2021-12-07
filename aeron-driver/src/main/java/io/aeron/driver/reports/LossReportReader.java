@@ -43,7 +43,7 @@ public final class LossReportReader
     public interface EntryConsumer
     {
         /**
-         * Accept an entry from the loss report so it can be consumed.
+         * Accept an entry from the loss report, so it can be consumed.
          *
          * @param observationCount          for the stream instance.
          * @param totalBytesLost            for the stream instance.

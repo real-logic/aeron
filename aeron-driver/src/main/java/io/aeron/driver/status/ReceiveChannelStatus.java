@@ -32,7 +32,7 @@ public class ReceiveChannelStatus
     public static final int RECEIVE_CHANNEL_STATUS_TYPE_ID = AeronCounters.DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "rcv-channel";
 

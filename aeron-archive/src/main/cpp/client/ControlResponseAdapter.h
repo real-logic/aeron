@@ -19,6 +19,7 @@
 #include "Aeron.h"
 #include "RecordingDescriptorPoller.h"
 #include "RecordingEventsAdapter.h"
+#include "FragmentAssembler.h"
 
 namespace aeron { namespace archive { namespace client
 {
@@ -88,6 +89,7 @@ public:
     void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header);
 
 private:
+    FragmentAssembler m_fragmentAssembler;
     fragment_handler_t m_fragmentHandler;
     std::shared_ptr<Subscription> m_subscription;
     on_control_response_t m_onResponse;

@@ -21,8 +21,8 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
@@ -50,7 +50,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ExclusivePublicationTest
+class ExclusivePublicationTest
 {
     private static List<String> channels()
     {
@@ -67,7 +67,7 @@ public class ExclusivePublicationTest
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[65 * 1024]);
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final MediaDriver.Context driverContext = new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -79,7 +79,7 @@ public class ExclusivePublicationTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -88,7 +88,7 @@ public class ExclusivePublicationTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldPublishFromIndependentExclusivePublications(final String channel)
+    void shouldPublishFromIndependentExclusivePublications(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
@@ -136,7 +136,7 @@ public class ExclusivePublicationTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldPublishFromConcurrentExclusivePublications(final String channel)
+    void shouldPublishFromConcurrentExclusivePublications(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
@@ -206,7 +206,7 @@ public class ExclusivePublicationTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldOfferTwoBuffersFromIndependentExclusivePublications(final String channel)
+    void shouldOfferTwoBuffersFromIndependentExclusivePublications(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
@@ -276,7 +276,7 @@ public class ExclusivePublicationTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldOfferTwoBuffersFromConcurrentExclusivePublications(final String channel)
+    void shouldOfferTwoBuffersFromConcurrentExclusivePublications(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);

@@ -29,9 +29,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
 import org.agrona.CloseHelper;
@@ -51,13 +49,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.aeron.cluster.ClusterTestConstants.CLUSTER_MEMBERS;
+import static io.aeron.cluster.ClusterTestConstants.INGRESS_ENDPOINTS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(InterruptingTestCallback.class)
+@ExtendWith({InterruptingTestCallback.class, HideStdErrExtension.class})
 public class ClusterNodeRestartTest
 {
     private static final long CATALOG_CAPACITY = 1024 * 1024;
@@ -383,6 +383,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(20)
+    @IgnoreStdErr
     public void shouldRestartServiceAfterShutdownWithInvalidatedSnapshot() throws InterruptedException
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
@@ -636,7 +637,8 @@ public class ClusterNodeRestartTest
     private void connectClient()
     {
         CloseHelper.close(aeronCluster);
-        aeronCluster = AeronCluster.connect();
+        aeronCluster = AeronCluster.connect(
+            new AeronCluster.Context().ingressChannel("aeron:udp").ingressEndpoints(INGRESS_ENDPOINTS));
     }
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)
@@ -657,6 +659,8 @@ public class ClusterNodeRestartTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .terminationHook(terminationLatch::countDown)
                 .deleteDirOnStart(initialLaunch)
+                .ingressChannel("aeron:udp")
+                .clusterMembers(CLUSTER_MEMBERS)
                 .replicationChannel("aeron:udp?endpoint=localhost:0"));
     }
 

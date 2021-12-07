@@ -25,8 +25,8 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -42,7 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class GapFillLossTest
+class GapFillLossTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:24325";
     private static final String UNRELIABLE_CHANNEL =
@@ -56,11 +56,11 @@ public class GapFillLossTest
     private static final AtomicLong FINAL_POSITION = new AtomicLong(Long.MAX_VALUE);
 
     @RegisterExtension
-    final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher watcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(10)
-    public void shouldGapFillWhenLossOccurs() throws Exception
+    void shouldGapFillWhenLossOccurs() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));
         srcBuffer.setMemory(0, MSG_LENGTH, (byte)7);

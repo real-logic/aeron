@@ -909,7 +909,7 @@ public:
      */
     static std::string version()
     {
-        return std::string(aeron_version_full());
+        return { aeron_version_full() };
     }
 
 

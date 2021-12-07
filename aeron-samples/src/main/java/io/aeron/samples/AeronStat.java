@@ -41,7 +41,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
 
 /**
  * Tool for printing out Aeron counters. A command-and-control (CnC) file is maintained by media driver
- * in shared memory. This application reads the the cnc file and prints the counters. Layout of the cnc file is
+ * in shared memory. This application reads the CnC file and prints the counters. Layout of the CnC file is
  * described in {@link CncFileDescriptor}.
  * <p>
  * This tool accepts filters on the command line, e.g. for connections only see example below:

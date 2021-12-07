@@ -22,8 +22,8 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -49,10 +49,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ChannelValidationTests
+class ChannelValidationTests
 {
     @RegisterExtension
-    public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher watcher = new SystemTestWatcher();
 
     private final MediaDriver.Context context = new MediaDriver.Context();
     {
@@ -75,7 +75,7 @@ public class ChannelValidationTests
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(closeables);
         CloseHelper.closeAll(aeron, driver);
@@ -413,6 +413,33 @@ public class ChannelValidationTests
             () -> subscription.addDestination("aeron:udp?endpoint=localhost:9999|" + parameter + "=4096"));
 
         assertThat(registrationException.getMessage(), containsString(parameter));
+    }
+
+    @Test
+    void shouldErrorOnPublicationWithWildcardEndpoint()
+    {
+        launch();
+
+        assertThrows(RegistrationException.class, () -> addPublication("aeron:udp?endpoint=localhost:0", 10001));
+    }
+
+    @Test
+    void shouldErrorOnPublicationAddDestinationWithWildcardEndpoint()
+    {
+        launch();
+
+        final Publication publication = addPublication("aeron:udp?control-mode=manual", 10001);
+        assertThrows(RegistrationException.class, () -> publication.addDestination("aeron:udp?endpoint=localhost:0"));
+    }
+
+    @Test
+    void shouldErrorOnSubscriptionWithWildcardControl()
+    {
+        launch();
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addSubscription("aeron:udp?control=localhost:0|endpoint=localhost:20000", 10001));
     }
 
     private Publication addPublication(final String channel, final int streamId)

@@ -17,26 +17,26 @@ package io.aeron.cluster;
 
 import com.sun.tools.attach.VirtualMachine;
 import com.sun.tools.attach.VirtualMachineDescriptor;
+import io.aeron.CommonContext;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.samples.cluster.ClusterConfig;
 import io.aeron.samples.cluster.EchoServiceNode;
 import io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
-import io.aeron.test.TopologyTest;
+import io.aeron.test.*;
 import io.aeron.test.launcher.FileResolveUtil;
 import io.aeron.test.launcher.RemoteLaunchClient;
-import org.agrona.AsciiEncoding;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -54,10 +54,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -74,6 +71,11 @@ public class ClusterNetworkTopologyTest
     private static final long CLUSTER_START_ELECTION_TIMEOUT_S = 10;
     private static final List<String> HOSTNAMES = Arrays.asList("10.42.0.10", "10.42.0.11", "10.42.0.12");
     private static final List<String> INTERNAL_HOSTNAMES = Arrays.asList("10.42.1.10", "10.42.1.11", "10.42.1.12");
+
+    @RegisterExtension
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+
+    private File baseDir;
 
     @BeforeEach
     void setUp()
@@ -96,10 +98,10 @@ public class ClusterNetworkTopologyTest
             },
             SECONDS.toNanos(10));
 
-        final File scriptDir = FileResolveUtil.resolveClusterScriptDir();
-        IoUtil.delete(new File(scriptDir, "node0"), true);
-        IoUtil.delete(new File(scriptDir, "node1"), true);
-        IoUtil.delete(new File(scriptDir, "node2"), true);
+        baseDir = FileResolveUtil.resolveClusterScriptDir();
+        IoUtil.delete(new File(baseDir, "node0"), true);
+        IoUtil.delete(new File(baseDir, "node1"), true);
+        IoUtil.delete(new File(baseDir, "node2"), true);
     }
 
     @Test
@@ -145,6 +147,7 @@ public class ClusterNetworkTopologyTest
     {
         assertNotNull(hostnames);
         assertEquals(3, hostnames.size());
+        setupDataCollection(3);
         final String ingressEndpoints = ingressChannel.contains("endpoint") ?
             null : BasicAuctionClusterClient.ingressEndpoints(hostnames);
 
@@ -173,6 +176,8 @@ public class ClusterNetworkTopologyTest
     {
         assertNotNull(hostnames);
         assertEquals(3, hostnames.size());
+        setupDataCollection(3);
+
         final String ingressEndpoints = ingressChannel.contains("endpoint") ?
             null : BasicAuctionClusterClient.ingressEndpoints(hostnames);
 
@@ -199,6 +204,24 @@ public class ClusterNetworkTopologyTest
 
             connectAndSendMessages(ingressChannel, ingressEndpoints, selector, 10);
         }
+    }
+
+    private void setupDataCollection(final int nodeCount)
+    {
+        for (int nodeId = 0; nodeId < nodeCount; nodeId++)
+        {
+            systemTestWatcher.dataCollector().add(
+                new File(CommonContext.getAeronDirectoryName() + "-" + nodeId + "-driver"));
+            systemTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.ARCHIVE_SUB_DIR));
+            systemTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), ClusterConfig.CLUSTER_SUB_DIR));
+            systemTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "event.log"));
+            systemTestWatcher.dataCollector().add(new File(clusterNodeDir(nodeId), "command.out"));
+        }
+    }
+
+    private File clusterNodeDir(final int nodeId)
+    {
+        return new File(baseDir, "aeron-cluster-" + nodeId);
     }
 
     private void launchNode(
@@ -420,6 +443,11 @@ public class ClusterNetworkTopologyTest
         final ArrayList<String> command = new ArrayList<>();
         command.add(FileResolveUtil.resolveJavaBinary().getAbsolutePath());
 
+        // Clean up and create the cluster node's base directory
+        final File clusterDir = clusterNodeDir(nodeId);
+        IoUtil.delete(clusterDir, false);
+        IoUtil.ensureDirectoryExists(clusterDir, "cluster base directory");
+
         if (isVersionAfterJdk8())
         {
             command.add("--add-opens");
@@ -434,6 +462,7 @@ public class ClusterNetworkTopologyTest
         command.add("-Daeron.dir.delete.on.start=true");
         command.add("-Daeron.event.cluster.log=all");
         command.add("-Daeron.event.cluster.log.disable=CANVASS_POSITION");
+        command.add("-Daeron.event.log.filename=" + new File(clusterDir, "event.log").getAbsolutePath());
         command.add("-Daeron.driver.resolver.name=node" + nodeId);
         command.add("-Daeron.cluster.startup.canvass.timeout=" + CLUSTER_START_ELECTION_TIMEOUT_S + "s");
 
@@ -454,6 +483,7 @@ public class ClusterNetworkTopologyTest
         }
 
         command.add("-Daeron.cluster.tutorial.nodeId=" + nodeId);
+        command.add("-Daeron.cluster.tutorial.baseDir=" + clusterDir);
         command.add(EchoServiceNode.class.getName());
 
         return command.toArray(new String[0]);
@@ -461,11 +491,6 @@ public class ClusterNetworkTopologyTest
 
     private static boolean isVersionAfterJdk8()
     {
-        final String str = System.getProperty("java.specification.version");
-        final int version = str.startsWith("1.") ?
-            AsciiEncoding.parseIntAscii(str, 2, str.length() - 2) :
-            AsciiEncoding.parseIntAscii(str, 0, str.length());
-
-        return version > 8;
+        return EnumSet.range(JRE.JAVA_9, JRE.OTHER).contains(JRE.currentVersion());
     }
 }

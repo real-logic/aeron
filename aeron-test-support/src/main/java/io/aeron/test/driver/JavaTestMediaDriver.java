@@ -16,6 +16,7 @@
 package io.aeron.test.driver;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ReceiveChannelEndpointSupplier;
 import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
 import io.aeron.driver.ext.DebugReceiveChannelEndpoint;
 import io.aeron.driver.ext.LossGenerator;
@@ -34,6 +35,10 @@ public final class JavaTestMediaDriver implements TestMediaDriver
     public void close()
     {
         mediaDriver.close();
+    }
+
+    public void cleanup()
+    {
     }
 
     public static JavaTestMediaDriver launch(final MediaDriver.Context context)
@@ -77,8 +82,13 @@ public final class JavaTestMediaDriver implements TestMediaDriver
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(rate, seed) :
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 
-        context.receiveChannelEndpointSupplier((udpChannel, dispatcher, statusIndicator, ctx) ->
-            new DebugReceiveChannelEndpoint(
-            udpChannel, dispatcher, statusIndicator, ctx, dataLossGenerator, controlLossGenerator));
+        final ReceiveChannelEndpointSupplier endpointSupplier =
+            (udpChannel, dispatcher, statusIndicator, ctx) ->
+            {
+                return new DebugReceiveChannelEndpoint(
+                    udpChannel, dispatcher, statusIndicator, ctx, dataLossGenerator, controlLossGenerator);
+            };
+
+        context.receiveChannelEndpointSupplier(endpointSupplier);
     }
 }

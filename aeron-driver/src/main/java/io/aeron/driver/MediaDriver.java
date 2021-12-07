@@ -32,7 +32,6 @@ import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.*;
@@ -190,7 +189,7 @@ public final class MediaDriver implements AutoCloseable
         {
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             CloseHelper.quietClose(ctx::close);
             throw ex;
@@ -201,7 +200,7 @@ public final class MediaDriver implements AutoCloseable
      * Launch an isolated MediaDriver embedded in the current process with a generated aeronDirectoryName that can be
      * retrieved by calling aeronDirectoryName.
      * <p>
-     * If the aeronDirectoryName is set as a system property to something different than
+     * If the aeronDirectoryName is set as a system property to something different from
      * {@link CommonContext#AERON_DIR_PROP_DEFAULT} then this set value will be used.
      *
      * @return the newly started MediaDriver.
@@ -216,7 +215,7 @@ public final class MediaDriver implements AutoCloseable
      * aeronDirectoryName (overwrites configured {@link Context#aeronDirectoryName()}) that can be retrieved by calling
      * aeronDirectoryName.
      * <p>
-     * If the aeronDirectoryName is set as a system property, or via context, to something different than
+     * If the aeronDirectoryName is set as a system property, or via context, to something different from
      * {@link CommonContext#AERON_DIR_PROP_DEFAULT} then this set value will be used.
      *
      * @param ctx containing the configuration options.
@@ -695,7 +694,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Should the driver print it's configuration on start to {@link System#out} at the end of {@link #conclude()}.
+         * Should the driver print its configuration on start to {@link System#out} at the end of {@link #conclude()}.
          *
          * @return true if the configuration should be printed on start.
          * @see Configuration#PRINT_CONFIGURATION_ON_START_PROP_NAME
@@ -706,7 +705,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Should the driver print it's configuration on start to {@link System#out} at the end of {@link #conclude()}.
+         * Should the driver print its configuration on start to {@link System#out} at the end of {@link #conclude()}.
          *
          * @param printConfigurationOnStart if the configuration should be printed on start.
          * @return this for a fluent API.
@@ -889,7 +888,7 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Length of the buffer for storing values by the {@link CountersManager}.
          *
-         * @return length of the of the buffer for storing values by the {@link CountersManager}.
+         * @return length of the buffer for storing values by the {@link CountersManager}.
          * @see Configuration#COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME
          */
         public int counterValuesBufferLength()
@@ -1106,7 +1105,7 @@ public final class MediaDriver implements AutoCloseable
          * The timeout for when an untethered subscription that is outside the window will participate
          * in local flow control.
          *
-         * @return timeout that a untethered subscription outside the window limit will participate in flow control.
+         * @return timeout that an untethered subscription outside the window limit will participate in flow control.
          * @see Configuration#UNTETHERED_WINDOW_LIMIT_TIMEOUT_PROP_NAME
          */
         public long untetheredWindowLimitTimeoutNs()
@@ -1118,7 +1117,7 @@ public final class MediaDriver implements AutoCloseable
          * The timeout for when an untethered subscription that is outside the window will participate
          * in local flow control.
          *
-         * @param timeoutNs that a untethered subscription outside the window limit will participate in flow control.
+         * @param timeoutNs that an untethered subscription outside the window limit will participate in flow control.
          * @return this for a fluent API.
          * @see Configuration#UNTETHERED_WINDOW_LIMIT_TIMEOUT_PROP_NAME
          */
@@ -1132,7 +1131,7 @@ public final class MediaDriver implements AutoCloseable
          * Timeout for when an untethered subscription is resting after not being able to keep up before it is allowed
          * to rejoin a stream.
          *
-         * @return timeout that a untethered subscription is resting before being allowed to rejoin a stream.
+         * @return timeout that an untethered subscription is resting before being allowed to rejoin a stream.
          * @see Configuration#UNTETHERED_RESTING_TIMEOUT_PROP_NAME
          */
         public long untetheredRestingTimeoutNs()
@@ -1144,7 +1143,7 @@ public final class MediaDriver implements AutoCloseable
          * Timeout for when an untethered subscription is resting after not being able to keep up before it is allowed
          * to rejoin a stream.
          *
-         * @param timeoutNs that a untethered subscription is resting before being allowed to rejoin a stream.
+         * @param timeoutNs that an untethered subscription is resting before being allowed to rejoin a stream.
          * @return this for a fluent API.
          * @see Configuration#UNTETHERED_RESTING_TIMEOUT_PROP_NAME
          */
@@ -1348,7 +1347,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Timeout in nanoseconds after which a publication will be unblocked if a offer is partially complete to allow
+         * Timeout in nanoseconds after which a publication will be unblocked if an offer is partially complete to allow
          * other publishers to make progress.
          * <p>
          * A publication can become blocked if the client crashes while publishing or if
@@ -1364,7 +1363,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Timeout in nanoseconds after which a publication will be unblocked if a offer is partially complete to allow
+         * Timeout in nanoseconds after which a publication will be unblocked if an offer is partially complete to allow
          * other publishers to make progress.
          * <p>
          * A publication can become blocked if the client crashes while publishing or if
@@ -1466,7 +1465,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Do subscriptions have a tether so they participates in local flow control when more than one.
+         * Do subscriptions have a tether, so they participate in local flow control when more than one.
          * <p>
          * The default can be overridden with a channel param.
          *
@@ -1480,7 +1479,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Do subscriptions have a tether so they participates in local flow control when more than one.
+         * Do subscriptions have a tether so, they participate in local flow control when more than one.
          * <p>
          * The default can be overridden with a channel param.
          *
@@ -1587,9 +1586,9 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Default length for a term buffer on a IPC publication.
+         * Default length for a term buffer on an IPC publication.
          *
-         * @return default length for a term buffer on a IPC publication.
+         * @return default length for a term buffer on an IPC publication.
          * @see Configuration#IPC_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public int ipcTermBufferLength()
@@ -1598,11 +1597,11 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Default length for a term buffer on a IPC publication.
+         * Default length for a term buffer on an IPC publication.
          * <p>
          * This can be overridden on publication by using channel URI params.
          *
-         * @param termBufferLength default length for a term buffer on a IPC publication.
+         * @param termBufferLength default length for a term buffer on an IPC publication.
          * @return this for a fluent API.
          * @see Configuration#IPC_TERM_BUFFER_LENGTH_PROP_NAME
          */
@@ -1637,9 +1636,9 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Default length for a term buffer window on a IPC publication.
+         * Default length for a term buffer window on an IPC publication.
          *
-         * @return default length for a term buffer window on a IPC publication.
+         * @return default length for a term buffer window on an IPC publication.
          * @see Configuration#IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
          */
         public int ipcPublicationTermWindowLength()
@@ -1648,9 +1647,9 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Default length for a term buffer window on a IPC publication.
+         * Default length for a term buffer window on an IPC publication.
          *
-         * @param termWindowLength default length for a term buffer window on a IPC publication.
+         * @param termWindowLength default length for a term buffer window on an IPC publication.
          * @return this for a fluent API.
          * @see Configuration#IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
          */
@@ -1796,7 +1795,7 @@ public final class MediaDriver implements AutoCloseable
          * MTU in bytes for datagrams sent over shared memory. Messages larger than this are fragmented.
          * <p>
          * Larger MTUs reduce fragmentation. If an IPC stream is recorded to be later sent over the network then
-         * then a large MTU may be an issue.
+         * a large MTU may be an issue.
          *
          * @return MTU in bytes for message fragments.
          * @see Configuration#IPC_MTU_LENGTH_PROP_NAME
@@ -1810,7 +1809,7 @@ public final class MediaDriver implements AutoCloseable
          * MTU in bytes for datagrams sent over shared memory. Messages larger than this are fragmented.
          * <p>
          * Larger MTUs reduce fragmentation. If an IPC stream is recorded to be later sent over the network then
-         * then a large MTU may be an issue.
+         * a large MTU may be an issue.
          *
          * @param ipcMtuLength in bytes for message fragments.
          * @return this for a fluent API.
@@ -2854,7 +2853,7 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Get the default group tag (gtag) to be used by the tagged flow control strategy.
          *
-         * @return group group tag value or null if not set.
+         * @return group tag value or null if not set.
          * @see Configuration#FLOW_CONTROL_GROUP_TAG_PROP_NAME
          */
         public long flowControlGroupTag()
@@ -3428,10 +3427,7 @@ public final class MediaDriver implements AutoCloseable
                     createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock, US_ASCII);
             }
 
-            if (null == errorHandler)
-            {
-                errorHandler = new LoggingErrorHandler(errorLog);
-            }
+            errorHandler = CommonContext.setupErrorHandler(this.errorHandler, errorLog);
 
             receiverProxy = new ReceiverProxy(
                 threadingMode, receiverCommandQueue, systemCounters.get(RECEIVER_PROXY_FAILS));
@@ -3563,7 +3559,11 @@ public final class MediaDriver implements AutoCloseable
                 "\n    isConcluded=" + isConcluded() +
                 "\n    isClosed=" + isClosed +
                 "\n    cncVersion=" + SemanticVersion.toString(CNC_VERSION) +
-                "\n    aeronDirectoryName=" + aeronDirectoryName() +
+                "\n    aeronDirectory=" + aeronDirectory() +
+                "\n    aeronDirectoryName='" + aeronDirectoryName() + '\'' +
+                "\n    cncFile=" + cncFile() +
+                "\n    countersMetaDataBuffer=" + countersMetaDataBuffer() +
+                "\n    countersValuesBuffer=" + countersValuesBuffer() +
                 "\n    driverTimeoutMs=" + driverTimeoutMs() +
                 "\n    printConfigurationOnStart=" + printConfigurationOnStart +
                 "\n    useWindowsHighResTimer=" + useWindowsHighResTimer +
@@ -3644,9 +3644,9 @@ public final class MediaDriver implements AutoCloseable
                 "\n    terminationValidator=" + terminationValidator +
                 "\n    terminationHook=" + terminationHook +
                 "\n    nameResolver=" + nameResolver +
-                "\n    resolverName=" + resolverName +
-                "\n    resolverInterface=" + resolverInterface +
-                "\n    resolverBootstrapNeighbor=" + resolverBootstrapNeighbor +
+                "\n    resolverName='" + resolverName + '\'' +
+                "\n    resolverInterface='" + resolverInterface + '\'' +
+                "\n    resolverBootstrapNeighbor='" + resolverBootstrapNeighbor + '\'' +
                 "\n    sendToStatusMessagePollRatio=" + sendToStatusMessagePollRatio +
                 "\n    unicastFeedbackDelayGenerator=" + unicastFeedbackDelayGenerator +
                 "\n    multicastFeedbackDelayGenerator=" + multicastFeedbackDelayGenerator +

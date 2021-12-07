@@ -42,6 +42,13 @@ public interface CollectingEventLogReaderAgentMBean
     void reset();
 
     /**
+     * Start collecting messages and used the specified name as a title to start logging.
+     *
+     * @param name Value to included as a message in the log to delinate events.
+     */
+    void startCollecting(String name);
+
+    /**
      * Output the collected logs to file.
      *
      * @param filename of file to write to.

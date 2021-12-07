@@ -216,7 +216,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
      */
     public String lookup(final String name, final String uriParamName, final boolean isReLookup)
     {
-        // here we would lookup advertised endpoints/control IP:port pairs by name. Currently, we just return delegate.
+        // here we would look up advertised endpoints/control IP:port pairs by name. Currently, we just return delegate.
         return delegateResolver.lookup(name, uriParamName, isReLookup);
     }
 
@@ -533,14 +533,14 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
     private InetSocketAddress resolveBootstrapNeighbor()
     {
-        Throwable t = null;
+        Exception t = null;
         for (final String neighbor : bootstrapNeighbors)
         {
             try
             {
                 return UdpNameResolutionTransport.getInetSocketAddress(neighbor, bootstrapNameResolver);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 if (null == t)
                 {

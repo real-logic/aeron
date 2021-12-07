@@ -31,7 +31,7 @@ public final class ImageRateReporter implements Runnable
      * Construct a reporter for a single image.
      *
      * @param messageLength of each message.
-     * @param running       flag to control reporter so it can be stopped running.
+     * @param running       flag to control reporter, so it can be stopped running.
      * @param subscriber    for the image.
      */
     public ImageRateReporter(final int messageLength, final AtomicBoolean running, final ImageRateSubscriber subscriber)

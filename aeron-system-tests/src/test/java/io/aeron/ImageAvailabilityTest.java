@@ -19,8 +19,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +37,7 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ImageAvailabilityTest
+class ImageAvailabilityTest
 {
     private static List<String> channels()
     {
@@ -50,7 +50,7 @@ public class ImageAvailabilityTest
     private static final int STREAM_ID = 1001;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -63,7 +63,7 @@ public class ImageAvailabilityTest
         .errorHandler(Tests::onError));
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -72,7 +72,7 @@ public class ImageAvailabilityTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldCallImageHandlers(final String channel)
+    void shouldCallImageHandlers(final String channel)
     {
         final AtomicInteger unavailableImageCount = new AtomicInteger();
         final AtomicInteger availableImageCount = new AtomicInteger();
@@ -124,7 +124,7 @@ public class ImageAvailabilityTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldCallImageHandlersWithPublisherOnDifferentClient(final String channel)
+    void shouldCallImageHandlersWithPublisherOnDifferentClient(final String channel)
     {
         final AtomicInteger unavailableImageCount = new AtomicInteger();
         final AtomicInteger availableImageCount = new AtomicInteger();

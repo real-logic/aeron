@@ -17,7 +17,7 @@
 #include "aeron_exclusive_term_appender.h"
 
 extern void aeron_exclusive_term_appender_put_raw_tail_ordered(
-    volatile int64_t *term_tail_counter, int32_t term_id, int32_t term_offset);
+    volatile int64_t *addr, int32_t term_id, int32_t term_offset);
 
 extern void aeron_exclusive_term_appender_header_write(
     aeron_mapped_buffer_t *term_buffer,

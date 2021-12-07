@@ -24,7 +24,7 @@ AeronArchive::AsyncConnect::AsyncConnect(
     std::shared_ptr<Aeron> aeron,
     std::int64_t subscriptionId,
     std::int64_t publicationId,
-    const long long deadlineNs) :
+    long long deadlineNs) :
     m_nanoClock(systemNanoClock),
     m_ctx(std::unique_ptr<Context_t>(new Context_t(context))),
     m_aeron(std::move(aeron)),
@@ -70,7 +70,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
     {
         if (!m_archiveProxy->publication()->isConnected())
         {
-            return std::shared_ptr<AeronArchive>();
+            return {};
         }
 
         m_step = 1;
@@ -81,7 +81,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         std::string controlResponseChannel = m_subscription->tryResolveChannelEndpointPort();
         if (controlResponseChannel.empty())
         {
-            return std::shared_ptr<AeronArchive>();
+            return {};
         }
 
         auto encodedCredentials = m_ctx->credentialsSupplier().m_encodedCredentials();
@@ -91,7 +91,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
             controlResponseChannel,m_ctx->controlResponseStreamId(), encodedCredentials, m_correlationId))
         {
             m_ctx->credentialsSupplier().m_onFree(encodedCredentials);
-            return std::shared_ptr<AeronArchive>();
+            return {};
         }
 
         m_ctx->credentialsSupplier().m_onFree(encodedCredentials);
@@ -102,7 +102,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
     {
         if (!m_subscription->isConnected())
         {
-            return std::shared_ptr<AeronArchive>();
+            return {};
         }
 
         m_step = 3;
@@ -113,7 +113,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         if (!m_archiveProxy->tryChallengeResponse(
             m_encodedCredentialsFromChallenge, m_correlationId, m_challengeControlSessionId))
         {
-            return std::shared_ptr<AeronArchive>();
+            return {};
         }
 
         m_ctx->credentialsSupplier().m_onFree(m_encodedCredentialsFromChallenge);
@@ -161,9 +161,11 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
                 m_archiveProxy->keepAlive(aeron::NULL_VALUE, sessionId);
 
                 std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
-                    new RecordingDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));
+                    new RecordingDescriptorPoller(
+                        m_subscription, m_ctx->errorHandler(), m_ctx->recordingSignalConsumer(), sessionId));
                 std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller(
-                    new RecordingSubscriptionDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));
+                    new RecordingSubscriptionDescriptorPoller(
+                        m_subscription, m_ctx->errorHandler(), m_ctx->recordingSignalConsumer(), sessionId));
 
                 return std::make_shared<AeronArchive>(
                     std::move(m_ctx),
@@ -177,7 +179,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         }
     }
 
-    return std::shared_ptr<AeronArchive>();
+    return {};
 }
 
 AeronArchive::AeronArchive(
@@ -224,5 +226,5 @@ std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArch
 
 std::string AeronArchive::version()
 {
-    return std::string("aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__);
+    return { "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__ };
 }

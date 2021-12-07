@@ -38,7 +38,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * <p>
  * The APIs used for tryClaim and offer are non-blocking.
  * <p>
- * <b>Note:</b> All methods are threadsafe with the exception of offer and tryClaim for the subclass
+ * <b>Note:</b> All methods are threadsafe except offer and tryClaim for the subclass
  * {@link ExclusivePublication}. In the case of {@link ConcurrentPublication} all methods are threadsafe.
  *
  * @see ConcurrentPublication

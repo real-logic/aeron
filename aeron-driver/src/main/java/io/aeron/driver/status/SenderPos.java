@@ -31,7 +31,7 @@ public class SenderPos
     public static final int SENDER_POSITION_TYPE_ID = AeronCounters.DRIVER_SENDER_POSITION_TYPE_ID;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "snd-pos";
 

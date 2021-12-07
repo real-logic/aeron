@@ -19,7 +19,7 @@ import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.AeronException;
 
 /**
- * A means to capture an Archive event of significance that does not require a stack trace so it can be lighter weight
+ * A means to capture an Archive event of significance that does not require a stack trace, so it can be lighter-weight
  * and take up less space in a {@link org.agrona.concurrent.errors.DistinctErrorLog}.
  */
 public class ArchiveEvent extends AeronEvent

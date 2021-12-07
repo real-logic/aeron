@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MultiSubscriberTest
+class MultiSubscriberTest
 {
     private static final String CHANNEL_1 = "aeron:udp?endpoint=localhost:24325|fruit=banana";
     private static final String CHANNEL_2 = "aeron:udp?endpoint=localhost:24325|fruit=apple";
@@ -48,7 +48,7 @@ public class MultiSubscriberTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -56,7 +56,7 @@ public class MultiSubscriberTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReceiveMessageOnSeparateSubscriptions()
+    void shouldReceiveMessageOnSeparateSubscriptions()
     {
         final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
         final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);

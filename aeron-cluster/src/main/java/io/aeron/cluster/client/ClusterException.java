@@ -23,7 +23,7 @@ import io.aeron.exceptions.AeronException;
 public class ClusterException extends AeronException
 {
     /**
-     * Default Cluster exception of {@link io.aeron.exceptions.AeronException.Category#ERROR}.
+     * Default Cluster exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      */
     public ClusterException()
     {

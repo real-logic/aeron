@@ -16,11 +16,13 @@
 package io.aeron.exceptions;
 
 /**
- * A means to capture an event of significance that does not require a stack trace so it can be lighter weight
+ * A means to capture an event of significance that does not require a stack trace, so it can be lighter-weight
  * and take up less space in a {@link org.agrona.concurrent.errors.DistinctErrorLog}.
  */
 public class AeronEvent extends AeronException
 {
+    private static final StackTraceElement[] EMPTY_STACK = new StackTraceElement[0];
+
     /**
      * Aeron event with provided message and {@link AeronException.Category#WARN}.
      *
@@ -28,7 +30,7 @@ public class AeronEvent extends AeronException
      */
     public AeronEvent(final String message)
     {
-        super(message, AeronException.Category.WARN);
+        super(message, null, false, false, AeronException.Category.WARN);
     }
 
     /**
@@ -39,7 +41,7 @@ public class AeronEvent extends AeronException
      */
     public AeronEvent(final String message, final AeronException.Category category)
     {
-        super(message, category);
+        super(message, null, false, false, category);
     }
 
     /**
@@ -53,5 +55,15 @@ public class AeronEvent extends AeronException
     public Throwable fillInStackTrace()
     {
         return this;
+    }
+
+    /**
+     * Overridden to avoid creating a clone of an empty stack.
+     *
+     * @return empty stack trace.
+     */
+    public StackTraceElement[] getStackTrace()
+    {
+        return EMPTY_STACK;
     }
 }

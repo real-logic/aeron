@@ -73,7 +73,7 @@ class SystemTests
         }
     }
 
-    public static void waitForErrorToOccur(
+    static void waitForErrorToOccur(
         final String aeronDirectoryName,
         final Matcher<String> matcher,
         final IdleStrategy retryIdle) throws IOException
@@ -138,12 +138,12 @@ class SystemTests
             encodedExceptions.add(encodedException);
         }
 
-        public void reset()
+        void reset()
         {
             encodedExceptions.clear();
         }
 
-        public boolean hasMatched()
+        boolean hasMatched()
         {
             return hasMatched;
         }

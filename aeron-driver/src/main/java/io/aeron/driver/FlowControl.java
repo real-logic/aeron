@@ -69,7 +69,7 @@ public interface FlowControl
      * Has the flow control strategy its required group of receivers to be considered connected? The
      * result of this feeds into the determination of if a publication is connected.
      *
-     * @return true if the required group of receivers are connected, otherwise false.
+     * @return true if the required group of receivers is connected, otherwise false.
      */
     boolean hasRequiredReceivers();
 }

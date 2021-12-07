@@ -70,8 +70,7 @@ int aeron_csv_table_name_resolver_resolve(
 
                 if (AERON_NAME_RESOLVER_CSV_DISABLE_RESOLUTION_OP == operation)
                 {
-                    AERON_SET_ERR(
-                        -AERON_ERROR_CODE_UNKNOWN_HOST, "Unable to resolve host=(%s): (forced)", hostname);
+                    AERON_SET_ERR(-AERON_ERROR_CODE_UNKNOWN_HOST, "Unable to resolve host=(%s): (forced)", hostname);
                     return -1;
                 }
                 else if (AERON_NAME_RESOLVER_CSV_USE_INITIAL_RESOLUTION_HOST_OP == operation)

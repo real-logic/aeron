@@ -21,8 +21,8 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -39,7 +39,7 @@ import java.nio.ByteBuffer;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MemoryOrderingTest
+class MemoryOrderingTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:24325";
     private static final int STREAM_ID = 1001;
@@ -53,7 +53,7 @@ public class MemoryOrderingTest
     private static volatile String failedMessage = null;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -65,7 +65,7 @@ public class MemoryOrderingTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -73,7 +73,7 @@ public class MemoryOrderingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
+    void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
@@ -124,7 +124,7 @@ public class MemoryOrderingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws Exception
+    void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws InterruptedException
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);

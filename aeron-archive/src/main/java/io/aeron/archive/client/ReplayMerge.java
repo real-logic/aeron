@@ -88,7 +88,7 @@ public final class ReplayMerge implements AutoCloseable
      *
      * @param subscription           to use for the replay and live stream. Must be a multi-destination subscription.
      * @param archive                to use for the replay.
-     * @param replayChannel          to as a template for the what the archive will use.
+     * @param replayChannel          to as a template for what the archive will use.
      * @param replayDestination      to send the replay to and the destination added by the {@link Subscription}.
      * @param liveDestination        for the live stream and the destination added by the {@link Subscription}.
      * @param recordingId            for the replay.
@@ -155,7 +155,7 @@ public final class ReplayMerge implements AutoCloseable
      *
      * @param subscription      to use for the replay and live stream. Must be a multi-destination subscription.
      * @param archive           to use for the replay.
-     * @param replayChannel     to use as a template for the what the archive will use.
+     * @param replayChannel     to use as a template for what the archive will use.
      * @param replayDestination to send the replay to and the destination added by the {@link Subscription}.
      * @param liveDestination   for the live stream and the destination added by the {@link Subscription}.
      * @param recordingId       for the replay.
@@ -184,7 +184,7 @@ public final class ReplayMerge implements AutoCloseable
 
     /**
      * Close and stop any active replay. Will remove the replay destination from the subscription.
-     * This operation Will NOT remove the live destination if it has been added so it can be used for live consumption.
+     * This operation Will NOT remove the live destination if it has been added, so it can be used for live consumption.
      */
     public void close()
     {

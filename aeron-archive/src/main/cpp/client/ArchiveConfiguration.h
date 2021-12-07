@@ -97,6 +97,42 @@ struct CredentialsSupplier
     }
 };
 
+/**
+ * A signal has been received from the Archive indicating an operation on a recording.
+ *
+ * The raw code representing the recording operation can be converted using methods on the RecordingSignal enum
+ * generated for the SBE coded.
+ *
+ * @param controlSessionId    of the originating session.
+ * @param recordingId         of the recording which transitioned.
+ * @param subscriptionId      of the subscription which captured the recording.
+ * @param position            of the recording at the time of transition.
+ * @param recordingSignalCode raw code representing the operation the recording has undertaken.
+ */
+typedef std::function<void(
+    std::int64_t controlSessionId,
+    std::int64_t recordingId,
+    std::int64_t subscriptionId,
+    std::int64_t position,
+    std::int32_t recordingSignalCode)> on_recording_signal_t;
+
+/**
+ * Default function for consuming recording signals which is an no-op.
+ *
+ * @return function for consuming recording signals which is an no-op.
+ */
+inline on_recording_signal_t defaultRecordingSignalConsumer()
+{
+    return
+        [&](std::int64_t controlSessionId,
+            std::int64_t recordingId,
+            std::int64_t subscriptionId,
+            std::int64_t position,
+            std::int32_t recordingSignalCode)
+        {
+        };
+}
+
 namespace Configuration
 {
 constexpr const std::uint8_t ARCHIVE_MAJOR_VERSION = 1;
@@ -496,6 +532,28 @@ public:
     }
 
     /**
+     * Get the consumer to which recording signals are dispatched when polling for control responses.
+     *
+     * @return the consumer to which recording signals are dispatched when polling for control responses.
+     */
+    inline on_recording_signal_t recordingSignalConsumer() const
+    {
+        return m_onRecordingSignal;
+    }
+
+    /**
+     * Set the consumer to which recording signals are dispatched when polling for control responses.
+     *
+     * @param recordingSignalConsumer to which recording signals are dispatched when polling for control responses.
+     * @return this for a fluent API.
+     */
+    inline this_t &recordingSignalConsumer(const on_recording_signal_t &recordingSignalConsumer)
+    {
+        m_onRecordingSignal = recordingSignalConsumer;
+        return *this;
+    }
+
+    /**
      * Get the credential supplier that will be called for generating encoded credentials.
      *
      * @return the credential supplier that will be called for generating encoded credentials.
@@ -540,10 +598,11 @@ private:
     bool m_ownsAeronClient = false;
 
     exception_handler_t m_errorHandler = nullptr;
+    on_recording_signal_t m_onRecordingSignal = defaultRecordingSignalConsumer();
 
     CredentialsSupplier m_credentialsSupplier;
 
-    inline void applyDefaultParams(std::string &channel)
+    inline void applyDefaultParams(std::string &channel) const
     {
         std::shared_ptr<ChannelUri> uri = ChannelUri::parse(channel);
 
@@ -551,10 +610,12 @@ private:
         {
             uri->put(TERM_LENGTH_PARAM_NAME, std::to_string(m_controlTermBufferLength));
         }
+
         if (!uri->containsKey(MTU_LENGTH_PARAM_NAME))
         {
             uri->put(MTU_LENGTH_PARAM_NAME, std::to_string(m_controlMtuLength));
         }
+
         if (!uri->containsKey(SPARSE_PARAM_NAME))
         {
             uri->put(SPARSE_PARAM_NAME, m_controlTermBufferSparse ? "true" : "false");

@@ -25,6 +25,7 @@ import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterNodeControlProperties;
 import io.aeron.cluster.service.ConsensusModuleProxy;
+import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
@@ -46,6 +47,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +56,9 @@ import java.util.function.Consumer;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.nio.file.StandardOpenOption.*;
+import static java.nio.file.StandardCopyOption.*;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
@@ -61,22 +66,23 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * Tool for control and investigating the state of a cluster node.
  * <pre>
  * Usage: ClusterTool &#60;cluster-dir&#62; &#60;command&#62; [options]
- *                    describe: prints out all descriptors in the file.
- *                         pid: prints PID of cluster component.
- *               recovery-plan: [service count] prints recovery plan of cluster component.
- *               recording-log: prints recording log of cluster component.
- *          sort-recording-log: re-arranges entries in the recording log to match the order in memory.
- *                      errors: prints Aeron and cluster component error logs.
- *                list-members: print leader memberId, active members list, and passive members list.
- *               remove-member: [memberId] requests removal of a member specified in memberId.
- *              remove-passive: [memberId] requests removal of passive member specified in memberId.
- *                backup-query: [delay] get time of next backup query or set time of next backup query.
- *  invalidate-latest-snapshot: Mark the latest snapshot as invalid so previous is loaded.
- *                    snapshot: Trigger a snapshot on the leader.
- *                     suspend: Suspend reading from the ingress channel.
- *                      resume: Resume reading from the ingress channel.
- *                    shutdown: Do an orderly stop of the cluster with a snapshot.
- *                       abort: Stop the cluster without a snapshot.
+ *                         describe: prints out all descriptors in the mark file.
+ *                              pid: prints PID of cluster component.
+ *                    recovery-plan: [service count] prints recovery plan of cluster component.
+ *                    recording-log: prints recording log of cluster component.
+ *               sort-recording-log: reorders entries in the recording log to match the order in memory.
+ * seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot.
+ *                           errors: prints Aeron and cluster component error logs.
+ *                     list-members: prints leader memberId, active members and passive members lists.
+ *                    remove-member: [memberId] requests removal of a member by memberId.
+ *                   remove-passive: [memberId] requests removal of a passive member by memberId.
+ *                     backup-query: [delay] get, or set, time of next backup query.
+ *       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.
+ *                         snapshot: triggers a snapshot on the leader.
+ *                          suspend: suspends appending to the log.
+ *                           resume: resumes reading from the log.
+ *                         shutdown: initiates an orderly stop of the cluster with a snapshot.
+ *                            abort: stops the cluster without a snapshot.
  * </pre>
  */
 public class ClusterTool
@@ -141,6 +147,10 @@ public class ClusterTool
 
             case "sort-recording-log":
                 sortRecordingLog(clusterDir);
+                break;
+
+            case "seed-recording-log-from-snapshot":
+                seedRecordingLogFromSnapshot(clusterDir);
                 break;
 
             case "errors":
@@ -270,7 +280,7 @@ public class ClusterTool
     public static void recoveryPlan(final PrintStream out, final File clusterDir, final int serviceCount)
     {
         try (AeronArchive archive = AeronArchive.connect();
-            RecordingLog recordingLog = new RecordingLog(clusterDir))
+            RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             out.println(recordingLog.createRecoveryPlan(archive, serviceCount, Aeron.NULL_VALUE));
         }
@@ -284,14 +294,14 @@ public class ClusterTool
      */
     public static void recordingLog(final PrintStream out, final File clusterDir)
     {
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             out.println(recordingLog);
         }
     }
 
     /**
-     * Print out the {@link RecordingLog} for the cluster.
+     * Re-order entries in thee {@link RecordingLog} file on disc if they are not in a proper order.
      *
      * @param clusterDir where the cluster is running.
      * @return {@code true} if file contents was changed or {@code false} if it was already in the correct order.
@@ -299,7 +309,7 @@ public class ClusterTool
     public static boolean sortRecordingLog(final File clusterDir)
     {
         final List<RecordingLog.Entry> entries;
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             entries = recordingLog.entries();
             if (isRecordingLogSorted(entries))
@@ -307,39 +317,87 @@ public class ClusterTool
                 return false;
             }
         }
-
-        final int size = entries.size();
-        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
-        final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
-        final File newLogFile = new File(clusterDir, RecordingLog.RECORDING_LOG_FILE_NAME + ".sorted");
-        try
+        catch (final RuntimeException ex)
         {
-            try (FileChannel fileChannel = FileChannel.open(newLogFile.toPath(), CREATE, READ, WRITE))
-            {
-                long position = 0;
-                for (int i = 0; i < size; i++)
-                {
-                    RecordingLog.writeEntryToBuffer(entries.get(0), buffer);
-                    byteBuffer.limit(RecordingLog.ENTRY_LENGTH).position(0);
+            return false;
+        }
 
-                    if (RecordingLog.ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
-                    {
-                        throw new ClusterException("failed to write recording");
-                    }
-                    position += RecordingLog.ENTRY_LENGTH;
+        updateRecordingLog(clusterDir, entries);
+
+        return true;
+    }
+
+    /**
+     * Create a new {@link RecordingLog} based on the latest valid snapshot whose term base and log positions are set
+     * to zero. The original recording log file is backed up as {@code recording.log.bak}.
+     *
+     * @param clusterDir where the cluster is running.
+     */
+    public static void seedRecordingLogFromSnapshot(final File clusterDir)
+    {
+        int snapshotIndex = Aeron.NULL_VALUE;
+        final List<RecordingLog.Entry> entries;
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
+        {
+            entries = recordingLog.entries();
+            for (int i = entries.size() - 1; i >= 0; i--)
+            {
+                final RecordingLog.Entry entry = entries.get(i);
+                if (RecordingLog.isValidSnapshot(entry) && ConsensusModule.Configuration.SERVICE_ID == entry.serviceId)
+                {
+                    snapshotIndex = i;
+                    break;
                 }
             }
+        }
 
-            final Path logFile = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
-            Files.delete(logFile);
-            Files.move(newLogFile.toPath(), logFile);
+        final Path recordingLogBackup = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".bak");
+        try
+        {
+            Files.copy(
+                clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME),
+                recordingLogBackup,
+                REPLACE_EXISTING, COPY_ATTRIBUTES);
         }
         catch (final IOException ex)
         {
             throw new UncheckedIOException(ex);
         }
 
-        return true;
+        if (Aeron.NULL_VALUE == snapshotIndex)
+        {
+            updateRecordingLog(clusterDir, Collections.emptyList());
+        }
+        else
+        {
+            final List<RecordingLog.Entry> truncatedEntries = new ArrayList<>();
+            int serviceId = ConsensusModule.Configuration.SERVICE_ID;
+            for (int i = snapshotIndex; i >= 0; i--)
+            {
+                final RecordingLog.Entry entry = entries.get(i);
+                if (RecordingLog.isValidSnapshot(entry) && entry.serviceId == serviceId)
+                {
+                    truncatedEntries.add(new RecordingLog.Entry(
+                        entry.recordingId,
+                        entry.leadershipTermId,
+                        0,
+                        0,
+                        entry.timestamp,
+                        entry.serviceId,
+                        entry.type,
+                        entry.isValid,
+                        NULL_VALUE));
+                    serviceId++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            Collections.reverse(truncatedEntries);
+
+            updateRecordingLog(clusterDir, truncatedEntries);
+        }
     }
 
     /**
@@ -814,7 +872,7 @@ public class ClusterTool
      */
     public static boolean invalidateLatestSnapshot(final PrintStream out, final File clusterDir)
     {
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             final boolean result = recordingLog.invalidateLatestSnapshot();
             out.println(" invalidate latest snapshot: " + result);
@@ -877,7 +935,7 @@ public class ClusterTool
     }
 
     /**
-     * Instruct the cluster to shutdown.
+     * Instruct the cluster to shut down.
      *
      * @param clusterDir where the consensus module is running.
      * @param out        to print the result of the operation.
@@ -1098,6 +1156,51 @@ public class ClusterTool
         return true;
     }
 
+    private static void updateRecordingLog(final File clusterDir, final List<RecordingLog.Entry> entries)
+    {
+        final Path recordingLog = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
+        try
+        {
+            if (entries.isEmpty())
+            {
+                Files.delete(recordingLog);
+            }
+            else
+            {
+                final Path newRecordingLog = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".tmp");
+                Files.deleteIfExists(newRecordingLog);
+                final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
+                final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
+                try (FileChannel fileChannel = FileChannel.open(newRecordingLog, CREATE_NEW, WRITE))
+                {
+                    long position = 0;
+                    for (final RecordingLog.Entry e : entries)
+                    {
+                        RecordingLog.writeEntryToBuffer(e, buffer);
+                        byteBuffer.limit(RecordingLog.ENTRY_LENGTH).position(0);
+
+                        if (RecordingLog.ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
+                        {
+                            throw new ClusterException("failed to write recording");
+                        }
+                        position += RecordingLog.ENTRY_LENGTH;
+                    }
+                }
+                finally
+                {
+                    BufferUtil.free(byteBuffer);
+                }
+
+                Files.delete(recordingLog);
+                Files.move(newRecordingLog, recordingLog);
+            }
+        }
+        catch (final IOException ex)
+        {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
     private static void exitWithErrorOnFailure(final boolean success)
     {
         if (!success)
@@ -1110,22 +1213,23 @@ public class ClusterTool
     {
         out.format(
             "Usage: <cluster-dir> <command> [options]%n" +
-            "                   describe: prints out all descriptors in the file%n" +
-            "                        pid: prints PID of cluster component%n" +
-            "              recovery-plan: [service count] prints recovery plan of cluster component%n" +
-            "              recording-log: prints recording log of cluster component%n" +
-            "         sort-recording-log: re-arranges entries in the recording log to match the order in memory%n" +
-            "                     errors: prints Aeron and cluster component error logs%n" +
-            "               list-members: print leader memberId, active members list, and passive members list%n" +
-            "              remove-member: [memberId] requests removal of a member specified in memberId%n" +
-            "             remove-passive: [memberId] requests removal of passive member specified in memberId%n" +
-            "               backup-query: [delay] get time of next backup query or set time of next backup query%n" +
-            " invalidate-latest-snapshot: Mark the latest snapshot as a invalid so previous is loaded%n" +
-            "                   snapshot: Trigger a snapshot on the leader%n" +
-            "                    suspend: Suspend reading from the ingress channel%n" +
-            "                     resume: Resume reading from the ingress channel%n" +
-            "                   shutdown: Do an orderly stop of the cluster with a snapshot%n" +
-            "                      abort: Stop the cluster without a snapshot.%n");
+            "                         describe: prints out all descriptors in the mark file.%n" +
+            "                              pid: prints PID of cluster component.%n" +
+            "                    recovery-plan: [service count] prints recovery plan of cluster component.%n" +
+            "                    recording-log: prints recording log of cluster component.%n" +
+            "               sort-recording-log: reorders entries in the recording log to match the order in memory.%n" +
+            " seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot.%n" +
+            "                           errors: prints Aeron and cluster component error logs.%n" +
+            "                     list-members: prints leader memberId, active members and passive members lists.%n" +
+            "                    remove-member: [memberId] requests removal of a member by memberId.%n" +
+            "                   remove-passive: [memberId] requests removal of a passive member by memberId.%n" +
+            "                     backup-query: [delay] get, or set, time of next backup query.%n" +
+            "       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.%n" +
+            "                         snapshot: triggers a snapshot on the leader.%n" +
+            "                          suspend: suspends appending to the log.%n" +
+            "                           resume: resumes appending to the log.%n" +
+            "                         shutdown: initiates an orderly stop of the cluster with a snapshot.%n" +
+            "                            abort: stops the cluster without a snapshot.%n");
         out.flush();
     }
 }

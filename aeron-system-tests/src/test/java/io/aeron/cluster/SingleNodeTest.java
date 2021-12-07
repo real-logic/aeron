@@ -16,16 +16,18 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
-import io.aeron.test.ClusterTestWatcher;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static io.aeron.Aeron.Configuration.PRE_TOUCH_MAPPED_MEMORY_PROP_NAME;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -33,21 +35,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class SingleNodeTest
 {
     @RegisterExtension
-    final ClusterTestWatcher clusterTestWatcher = new ClusterTestWatcher();
-
-    @AfterEach
-    void tearDown()
-    {
-        assertEquals(
-            0, clusterTestWatcher.errorCount(), "Errors observed in cluster test");
-    }
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(20)
     public void shouldStartCluster()
     {
         final TestCluster cluster = aCluster().withStaticNodes(1).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -55,22 +50,31 @@ public class SingleNodeTest
         assertEquals(Cluster.Role.LEADER, leader.role());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
     @InterruptAfter(20)
-    public void shouldSendMessagesToCluster()
+    public void shouldSendMessagesToCluster(final boolean preTouch)
     {
-        final TestCluster cluster = aCluster().withStaticNodes(1).start();
-        clusterTestWatcher.cluster(cluster);
+        System.setProperty(PRE_TOUCH_MAPPED_MEMORY_PROP_NAME, Boolean.toString(preTouch));
+        try
+        {
+            final TestCluster cluster = aCluster().withStaticNodes(1).start();
+            systemTestWatcher.cluster(cluster);
 
-        final TestNode leader = cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
 
-        assertEquals(0, leader.index());
-        assertEquals(Cluster.Role.LEADER, leader.role());
+            assertEquals(0, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
-        cluster.connectClient();
-        cluster.sendMessages(10);
-        cluster.awaitResponseMessageCount(10);
-        cluster.awaitServiceMessageCount(leader, 10);
+            cluster.connectClient();
+            cluster.sendMessages(10);
+            cluster.awaitResponseMessageCount(10);
+            cluster.awaitServiceMessageCount(leader, 10);
+        }
+        finally
+        {
+            System.clearProperty(PRE_TOUCH_MAPPED_MEMORY_PROP_NAME);
+        }
     }
 
     @Test
@@ -78,7 +82,7 @@ public class SingleNodeTest
     public void shouldReplayLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(1).start();
-        clusterTestWatcher.cluster(cluster);
+        systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
 

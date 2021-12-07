@@ -25,105 +25,125 @@ import io.aeron.cluster.ClusterMembership;
 import io.aeron.cluster.ClusterTool;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.ElectionState;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
+import io.aeron.test.driver.DriverOutputConsumer;
 import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
 import org.agrona.LangUtil;
+import org.agrona.collections.Hashing;
 import org.agrona.concurrent.AgentTerminationException;
-import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
-import java.nio.MappedByteBuffer;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.CRC32;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestNode implements AutoCloseable
 {
-    public static final String CLUSTER_ERROR_FILE = "cluster.err";
-    public static final int CLUSTER_ERROR_LOG_LENGTH = 1 << 20;
-
     private final Archive archive;
     private final ConsensusModule consensusModule;
-    private final ClusteredServiceContainer container;
-    private final TestService service;
+    private final ClusteredServiceContainer[] containers;
+    private final TestService[] services;
     private final Context context;
     private final TestMediaDriver mediaDriver;
     private boolean isClosed = false;
-    private final MappedByteBuffer clusterErrorMmap;
-    private final File clusterErrorFile;
 
     TestNode(final Context context, final DataCollector dataCollector)
     {
+        this.context = context;
+
         try
         {
-            mediaDriver = TestMediaDriver.launch(context.mediaDriverContext, null);
+            mediaDriver = TestMediaDriver.launch(
+                context.mediaDriverContext,
+                TestMediaDriver.shouldRunCMediaDriver() ? new DriverOutputConsumer()
+                {
+                    public void outputFiles(
+                        final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
+                    {
+                        dataCollector.add(stdoutFile.toPath());
+                        dataCollector.add(stderrFile.toPath());
+                    }
 
-            final File baseDir = context.archiveContext.archiveDir().getParentFile();
-            IoUtil.ensureDirectoryExists(baseDir, "cluster base directory");
-            clusterErrorFile = new File(baseDir, CLUSTER_ERROR_FILE);
+                    public void exitCode(final String aeronDirectoryName, final int exitValue)
+                    {
+                    }
 
-            if (clusterErrorFile.exists())
-            {
-                clusterErrorMmap = IoUtil.mapExistingFile(clusterErrorFile, "cluster error log file");
-            }
-            else
-            {
-                clusterErrorMmap = IoUtil.mapNewFile(clusterErrorFile, CLUSTER_ERROR_LOG_LENGTH);
-            }
+                    public void environmentVariables(
+                        final String aeronDirectoryName, final Map<String, String> environment)
+                    {
+                    }
+                } : null);
 
-            final LoggingErrorHandler clusterErrorHandler = new LoggingErrorHandler(
-                new DistinctErrorLog(new UnsafeBuffer(clusterErrorMmap), new SystemEpochClock()));
+            final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
+            archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
 
-            context.archiveContext.errorHandler(clusterErrorHandler);
-            context.consensusModuleContext.errorHandler(clusterErrorHandler);
-            context.serviceContainerContext.errorHandler(clusterErrorHandler);
+            services = context.services;
 
-            archive = Archive.launch(context.archiveContext.aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-
-            context.consensusModuleContext.terminationHook(ClusterTests.terminationHook(
+            context.consensusModuleContext
+                .serviceCount(services.length)
+                .aeronDirectoryName(aeronDirectoryName)
+                .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
 
-            consensusModule = ConsensusModule.launch(
-                context.consensusModuleContext.aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+            consensusModule = ConsensusModule.launch(context.consensusModuleContext);
 
-            container = ClusteredServiceContainer.launch(
-                context.serviceContainerContext
+            containers = new ClusteredServiceContainer[services.length];
+            final File baseDir = context.consensusModuleContext.clusterDir().getParentFile();
+            for (int i = 0; i < services.length; i++)
+            {
+                final File clusterDir = new File(baseDir, "service" + i);
+                final ClusteredServiceContainer.Context ctx = context.serviceContainerContext.clone();
+                ctx.aeronDirectoryName(aeronDirectoryName)
+                    .archiveContext(context.aeronArchiveContext.clone()
+                        .controlRequestChannel("aeron:ipc")
+                        .controlResponseChannel("aeron:ipc"))
                     .terminationHook(ClusterTests.terminationHook(
-                        context.isTerminationExpected, context.hasServiceTerminated)));
+                        context.isTerminationExpected, context.hasServiceTerminated[i]))
+                    .clusterDir(clusterDir)
+                    .clusteredService(services[i])
+                    .serviceId(i);
+                containers[i] = ClusteredServiceContainer.launch(ctx);
+                dataCollector.add(clusterDir.toPath());
+            }
 
-            service = context.service;
-            this.context = context;
-
-            dataCollector.add(baseDir.toPath());
-            dataCollector.add(container.context().clusterDir().toPath());
             dataCollector.add(consensusModule.context().clusterDir().toPath());
             dataCollector.add(archive.context().archiveDir().toPath());
             dataCollector.add(mediaDriver.context().aeronDirectory().toPath());
         }
         catch (final RuntimeException ex)
         {
-            closeAndDelete();
+            try
+            {
+                closeAndDelete();
+            }
+            catch (final Exception e)
+            {
+                ex.addSuppressed(e);
+            }
             throw ex;
         }
     }
@@ -145,12 +165,25 @@ public class TestNode implements AutoCloseable
 
     public ClusteredServiceContainer container()
     {
-        return container;
+        if (1 != containers.length)
+        {
+            throw new IllegalStateException("multiple containers in use");
+        }
+        return containers[0];
     }
 
     public TestService service()
     {
-        return service;
+        if (1 != services.length)
+        {
+            throw new IllegalStateException("multiple services in use");
+        }
+        return services[0];
+    }
+
+    public TestService[] services()
+    {
+        return services;
     }
 
     public void close()
@@ -158,8 +191,7 @@ public class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.closeAll(consensusModule, container, archive, mediaDriver);
-            IoUtil.unmap(clusterErrorMmap);
+            CloseHelper.closeAll(consensusModule, () -> CloseHelper.closeAll(containers), archive, mediaDriver);
         }
     }
 
@@ -169,70 +201,36 @@ public class TestNode implements AutoCloseable
 
         try
         {
-            if (!isClosed)
-            {
-                close();
-            }
+            CloseHelper.closeAll(
+                this,
+                () ->
+                {
+                    for (final ClusteredServiceContainer c : containers)
+                    {
+                        c.context().deleteDirectory();
+                    }
+                },
+                context.consensusModuleContext::deleteDirectory,
+                context.archiveContext::deleteDirectory,
+                context.mediaDriverContext::deleteDirectory,
+                this::cleanup);
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            error = t;
-        }
-
-        try
-        {
-            if (null != container)
-            {
-                container.context().deleteDirectory();
-            }
-        }
-        catch (final Throwable t)
-        {
-            if (error == null)
-            {
-                error = t;
-            }
-            else
-            {
-                error.addSuppressed(t);
-            }
-        }
-
-        try
-        {
-            if (null != consensusModule)
-            {
-                consensusModule.context().deleteDirectory();
-            }
-            if (null != archive)
-            {
-                archive.context().deleteDirectory();
-            }
-            if (null != mediaDriver)
-            {
-                mediaDriver.context().deleteDirectory();
-            }
-        }
-        catch (final Throwable t)
-        {
-            if (null == error)
-            {
-                error = t;
-            }
-            else
-            {
-                error.addSuppressed(t);
-            }
-        }
-
-        if (null != clusterErrorFile)
-        {
-            IoUtil.delete(clusterErrorFile, true);
+            error = ex;
         }
 
         if (null != error)
         {
             LangUtil.rethrowUnchecked(error);
+        }
+    }
+
+    void cleanup()
+    {
+        if (null != mediaDriver)
+        {
+            mediaDriver.cleanup();
         }
     }
 
@@ -302,7 +300,11 @@ public class TestNode implements AutoCloseable
 
     boolean hasServiceTerminated()
     {
-        return context.hasServiceTerminated.get();
+        if (1 != services.length)
+        {
+            throw new IllegalStateException("multiple services in use");
+        }
+        return context.hasServiceTerminated[0].get();
     }
 
     public boolean hasMemberTerminated()
@@ -312,7 +314,11 @@ public class TestNode implements AutoCloseable
 
     public int index()
     {
-        return service.index();
+        if (1 != services.length)
+        {
+            throw new IllegalStateException("multiple services in use");
+        }
+        return services[0].index();
     }
 
     CountersReader countersReader()
@@ -353,14 +359,27 @@ public class TestNode implements AutoCloseable
         return TestCluster.hostname(index());
     }
 
+    public boolean allSnapshotsLoaded()
+    {
+        for (final TestService service : services)
+        {
+            if (!service.wasSnapshotLoaded())
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static class TestService extends StubClusteredService
     {
         static final int SNAPSHOT_FRAGMENT_COUNT = 500;
         static final int SNAPSHOT_MSG_LENGTH = 1000;
 
+        volatile boolean wasSnapshotTaken = false;
+        volatile boolean wasSnapshotLoaded = false;
         private int index;
-        private volatile boolean wasSnapshotTaken = false;
-        private volatile boolean wasSnapshotLoaded = false;
         private volatile boolean hasReceivedUnexpectedMessage = false;
         private volatile Cluster.Role roleChangedTo = null;
         private final AtomicInteger activeSessionCount = new AtomicInteger();
@@ -545,6 +564,81 @@ public class TestNode implements AutoCloseable
         }
     }
 
+    public static class ChecksumService extends TestNode.TestService
+    {
+        private final BufferClaim bufferClaim = new BufferClaim();
+        private final CRC32 crc32 = new CRC32();
+        private long checksum;
+
+        public long checksum()
+        {
+            return checksum;
+        }
+
+        public void onStart(final Cluster cluster, final Image snapshotImage)
+        {
+            checksum = 0;
+            wasSnapshotLoaded = false;
+            this.cluster = cluster;
+            this.idleStrategy = cluster.idleStrategy();
+
+            if (null != snapshotImage)
+            {
+                final FragmentHandler handler =
+                    (buffer, offset, length, header) -> checksum = buffer.getLong(offset, LITTLE_ENDIAN);
+                while (true)
+                {
+                    final int fragments = snapshotImage.poll(handler, 1);
+
+                    if (snapshotImage.isClosed() || snapshotImage.isEndOfStream())
+                    {
+                        break;
+                    }
+
+                    idleStrategy.idle(fragments);
+                }
+                wasSnapshotLoaded = true;
+            }
+        }
+
+        public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
+        {
+            idleStrategy.reset();
+            while (true)
+            {
+                if (snapshotPublication.tryClaim(SIZE_OF_LONG, bufferClaim) > 0)
+                {
+                    bufferClaim.buffer().putLong(bufferClaim.offset(), checksum, LITTLE_ENDIAN);
+                    bufferClaim.commit();
+                    break;
+                }
+                idleStrategy.idle();
+            }
+            wasSnapshotTaken = true;
+        }
+
+        public void onSessionMessage(
+            final ClientSession session,
+            final long timestamp,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
+        {
+            final int payloadLength = length - SIZE_OF_INT;
+            final int msgChecksum = buffer.getInt(offset + payloadLength, LITTLE_ENDIAN);
+            crc32.reset();
+            crc32.update(buffer.byteArray(), offset, payloadLength);
+            final int computedChecksum = (int)crc32.getValue();
+            if (computedChecksum != msgChecksum)
+            {
+                throw new ClusterException("checksum mismatch");
+            }
+
+            checksum = Hashing.hash(checksum ^ msgChecksum);
+        }
+    }
+
     static class Context
     {
         final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
@@ -554,13 +648,18 @@ public class TestNode implements AutoCloseable
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context();
         final AtomicBoolean isTerminationExpected = new AtomicBoolean();
         final AtomicBoolean hasMemberTerminated = new AtomicBoolean();
-        final AtomicBoolean hasServiceTerminated = new AtomicBoolean();
-        final TestService service;
+        final AtomicBoolean[] hasServiceTerminated;
+        final TestService[] services;
 
-        Context(final TestService service, final String nodeMappings)
+        Context(final TestService[] services, final String nodeMappings)
         {
             mediaDriverContext.nameResolver(new RedirectingNameResolver(nodeMappings));
-            this.service = service;
+            this.services = services;
+            hasServiceTerminated = new AtomicBoolean[services.length];
+            for (int i = 0; i < services.length; i++)
+            {
+                hasServiceTerminated[i] = new AtomicBoolean();
+            }
         }
     }
 

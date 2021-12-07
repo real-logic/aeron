@@ -46,9 +46,9 @@ public:
 
 protected:
     buffer_t m_term_buffer;
-    log_meta_data_buffer_t m_log_meta_data_buffer;
-    uint8_t *m_buffer;
-    aeron_logbuffer_metadata_t *m_log_meta_data;
+    log_meta_data_buffer_t m_log_meta_data_buffer = {};
+    uint8_t *m_buffer = nullptr;
+    aeron_logbuffer_metadata_t *m_log_meta_data = nullptr;
 };
 
 TEST_F(TermGapFillerTest, shouldFillGapAtBeginningOfTerm)
@@ -58,7 +58,7 @@ TEST_F(TermGapFillerTest, shouldFillGapAtBeginningOfTerm)
 
     ASSERT_TRUE(aeron_term_gap_filler_try_fill_gap(m_log_meta_data, m_buffer, TERM_ID, gap_offset, gap_length));
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_buffer;
+    auto *data_header = (aeron_data_header_t *)m_buffer;
 
     EXPECT_EQ(data_header->frame_header.frame_length, gap_length);
     EXPECT_EQ(data_header->term_offset, gap_offset);
@@ -73,7 +73,7 @@ TEST_F(TermGapFillerTest, shouldNotOverwriteExistingFrame)
 {
     int32_t gap_offset = 0;
     int32_t gap_length = 64;
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_buffer;
+    auto *data_header = (aeron_data_header_t *)m_buffer;
 
     data_header->frame_header.frame_length = 32;
 
@@ -84,7 +84,7 @@ TEST_F(TermGapFillerTest, shouldFillGapAfterExistingFrame)
 {
     int32_t gap_offset = 128;
     int32_t gap_length = 64;
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_buffer;
+    auto *data_header = (aeron_data_header_t *)m_buffer;
 
     data_header->frame_header.frame_length = gap_offset;
     data_header->frame_header.flags = (AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG);
@@ -109,7 +109,7 @@ TEST_F(TermGapFillerTest, shouldFillGapBetweenExistingFrames)
 {
     int32_t gap_offset = 128;
     int32_t gap_length = 64;
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_buffer;
+    auto *data_header = (aeron_data_header_t *)m_buffer;
 
     data_header->frame_header.frame_length = gap_offset;
     data_header->frame_header.flags = (AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG);
@@ -144,7 +144,7 @@ TEST_F(TermGapFillerTest, shouldFillGapAtEndOfTerm)
 {
     int32_t gap_offset = (int32_t)m_term_buffer.size() - 64;
     int32_t gap_length = 64;
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_buffer;
+    auto *data_header = (aeron_data_header_t *)m_buffer;
 
     data_header->frame_header.frame_length = (int32_t)m_term_buffer.size() - gap_offset;
     data_header->frame_header.flags = (AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG);

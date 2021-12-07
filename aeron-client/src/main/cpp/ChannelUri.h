@@ -131,7 +131,7 @@ public:
             return it->second;
         }
 
-        return std::string();
+        return {};
     }
 
     inline std::string get(const std::string &key, const std::string &defaultValue)

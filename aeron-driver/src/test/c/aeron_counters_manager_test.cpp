@@ -89,7 +89,7 @@ TEST_F(CountersManagerTest, shouldNotIterateOverEmptyCounters)
 {
     ASSERT_EQ(counters_manager_init(), 0);
 
-    aeron_counters_reader_foreach_metadata(m_metadata.data(), m_metadata.size(), func_should_never_be_called, NULL);
+    aeron_counters_reader_foreach_metadata(m_metadata.data(), m_metadata.size(), func_should_never_be_called, nullptr);
 }
 
 TEST_F(CountersManagerTest, shouldEnsureAlignmentOfKeyLayout)
@@ -228,9 +228,14 @@ struct metadata_test_stct
 };
 
 void func_should_store_metadata(
-    int32_t id, int32_t type_id, const uint8_t *key, size_t key_length, const uint8_t *label, size_t label_length, void *clientd)
+    int32_t id, int32_t type_id,
+    const uint8_t *key,
+    size_t key_length,
+    const uint8_t *label,
+    size_t label_length,
+    void *clientd)
 {
-    struct metadata_test_stct *info = reinterpret_cast<struct metadata_test_stct *>(clientd);
+    auto *info = reinterpret_cast<struct metadata_test_stct *>(clientd);
     static size_t times_called = 0;
 
     ASSERT_LT(times_called, 2u);

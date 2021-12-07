@@ -20,8 +20,8 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -36,7 +36,7 @@ import static io.aeron.Publication.MAX_POSITION_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MaxPositionPublicationTest
+class MaxPositionPublicationTest
 {
     private static final int STREAM_ID = 1007;
     private static final int MESSAGE_LENGTH = 32;
@@ -44,7 +44,7 @@ public class MaxPositionPublicationTest
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -55,7 +55,7 @@ public class MaxPositionPublicationTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -63,7 +63,7 @@ public class MaxPositionPublicationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldPublishFromExclusivePublication()
+    void shouldPublishFromExclusivePublication()
     {
         final int initialTermId = -777;
         final int termLength = 64 * 1024;

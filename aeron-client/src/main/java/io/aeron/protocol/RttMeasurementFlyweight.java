@@ -66,7 +66,7 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
     private static final int RECEIVER_ID_FIELD_OFFSET = 32;
 
     /**
-     * Default constructor which can later be use to wrap a frame.
+     * Default constructor which can later be used to wrap a frame.
      */
     public RttMeasurementFlyweight()
     {

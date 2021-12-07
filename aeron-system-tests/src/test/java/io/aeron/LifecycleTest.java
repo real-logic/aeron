@@ -18,8 +18,8 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,14 +28,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class LifecycleTest
+class LifecycleTest
 {
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(10)
-    public void shouldStartAndStopInstantly()
+    void shouldStartAndStopInstantly()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
@@ -57,7 +57,7 @@ public class LifecycleTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldNotifyOfClientTimestampCounter()
+    void shouldNotifyOfClientTimestampCounter()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)

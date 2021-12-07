@@ -16,29 +16,12 @@
 #ifndef AERON_ARCHIVE_RECORDING_SIGNAL_ADAPTER_H
 #define AERON_ARCHIVE_RECORDING_SIGNAL_ADAPTER_H
 
-#include "Aeron.h"
+#include "ArchiveConfiguration.h"
 #include "ControlledFragmentAssembler.h"
 #include "ControlResponseAdapter.h"
-#include "aeron_archive_client/RecordingSignal.h"
 
 namespace aeron { namespace archive { namespace client
 {
-
-/**
- * An signal has been received from the Archive indicating an operation on a recording.
- *
- * @param controlSessionId of the originating session.
- * @param recordingId      of the recording which transitioned.
- * @param subscriptionId   of the subscription which captured the recording.
- * @param position         of the recording at the time of transition.
- * @param signal           signal for operation the recording has undertaken.
- */
-typedef std::function<void(
-    std::int64_t controlSessionId,
-    std::int64_t recordingId,
-    std::int64_t subscriptionId,
-    std::int64_t position,
-    RecordingSignal::Value signal)> on_recording_signal_t;
 
 class RecordingSignalAdapter
 {
@@ -51,7 +34,7 @@ public:
      * @param onRecordingSignal to which recording signals are dispatched.
      * @param subscription      to poll for new events.
      * @param controlSessionId  to filter on.
-     * @param fragmentLimit to apply for each polling operation.
+     * @param fragmentLimit     to apply for each polling operation.
      */
     RecordingSignalAdapter(
         const on_control_response_t &onResponse,
@@ -87,7 +70,10 @@ public:
      */
     inline int poll()
     {
-        m_isAbort = false;
+        if (m_isAbort)
+        {
+            m_isAbort = false;
+        }
 
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }

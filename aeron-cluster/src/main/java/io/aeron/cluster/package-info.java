@@ -15,21 +15,21 @@
  */
 
 /**
- * <b>Note:</b> Aeron Cluster is currently a preview feature, commercial support and training is available from
- * <a href="mailto:sales@real-logic.co.uk?subject=Aeron%20Cluster">sales@real-logic.co.uk</a>.
- * <p>
+ * Aeron Cluster provides support for fault-tolerant services as replicated state machines based on the
+ * <a href="https://raft.github.io/raft.pdf" target="_blank">Raft</a> consensus algorithm.
+ *
  * The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log. A number of
- * nodes will replicate and archive the log to achieve fault tolerance. Cluster services process the log and respond
- * to cluster clients.
+ * nodes will replicate and archive the log to achieve fault tolerance.
+ * {@link io.aeron.cluster.service.ClusteredService}s deterministically process the log and respond to cluster clients.
  * <p>
  * Aeron Cluster works on the concept of a strong leader using an adaptation of the
- * <a href="https://raft.github.io/raft.pdf" target="_blank">Raft</a> protocol. The leader sequences the log and is
+ * <a href="https://raft.github.io/raft.pdf" target="_blank">Raft</a> algorithm. The leader sequences the log and is
  * responsible for replicating it to other cluster members known as followers.
  * <p>
- * A number of components make up Aeron Cluster. Central is the Consensus Module which sequences the log and
- * coordinates consensus for the recording of the sequenced log to persistent storage, and the services consuming the
- * log across cluster members. Aeron Archive records the log to durable storage. Services consume the log once a
- * majority of the cluster members have safely recorded the log to durable storage.
+ * A number of components make up Aeron Cluster. Central is the {@link io.aeron.cluster.ConsensusModule} which sequences
+ * the log and coordinates consensus for the recording of the sequenced log to persistent storage, and the services
+ * consuming the log across cluster members. Aeron {@link io.aeron.archive.Archive} records the log to durable storage.
+ * Services consume the log once a majority of the cluster members have safely recorded the log to durable storage.
  * <p>
  * To enable fast recovery, the services and consensus module can take a snapshot of their state as of a given log
  * position thus enabling recovery by loading the most recent snapshot and replaying logs from that point forward.
@@ -53,12 +53,13 @@
  *     </li>
  * </ul>
  * <p>
- * The majority of cluster members determine consensus. Clusters should be 3 or 5 in population size. However, 2 node
- * clusters are supported whereby both members must agree the log and in the event of failure the remaining member must
- * be manually reconfigured as a single node cluster to progress.
+ * The majority of cluster members determine consensus. Clusters should typically be 3 or 5 in population size.
+ * However, 2 node clusters are supported whereby both members must agree the log and in the event of failure the
+ * remaining member must be manually reconfigured as a single node cluster to progress.
  *
  * <h2>Protocol</h2>
- * Messages are specified using SBE in
+ * Messages are specified using <a href="https://github.com/real-logic/simple-binary-encoding" target="_blank">SBE</a>
+ * in this schema
  * <a href="https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/aeron-cluster-codecs.xml"
  *    target="_blank">aeron-cluster-codecs.xml</a>
  */

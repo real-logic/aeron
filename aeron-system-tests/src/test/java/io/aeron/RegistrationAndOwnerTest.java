@@ -31,8 +31,8 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
-import io.aeron.test.*;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -42,16 +42,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static io.aeron.test.Tests.awaitConnected;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RegistrationAndOwnerTest
+class RegistrationAndOwnerTest
 {
     private static final int STREAM_ID = 1001;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @ParameterizedTest
     @ValueSource(strings = { "aeron:udp?endpoint=localhost:24325", "aeron:ipc" })
-    public void shouldHaveCorrectOwnershipOnEntities(final String channel)
+    void shouldHaveCorrectOwnershipOnEntities(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .errorHandler(Tests::onError)

@@ -651,7 +651,7 @@ class DriverEventDissectorTest
     }
 
     @Test
-    void dissectResolveNullAddress() throws UnknownHostException
+    void dissectResolveNullAddress()
     {
         final String resolver = "myResolver";
         final String hostname = "some-host";

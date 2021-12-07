@@ -103,7 +103,7 @@ public final class LossReport
     private final AtomicBuffer buffer;
 
     /**
-     * Create a loss report which wraps a buffer which is ideally memory mapped so it can
+     * Create a loss report which wraps a buffer which is ideally memory mapped, so it can
      * be read from another process.
      *
      * @param buffer to be wrapped.

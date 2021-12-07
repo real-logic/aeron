@@ -17,7 +17,8 @@ package io.aeron.agent;
 
 import net.bytebuddy.asm.Advice;
 
-import static io.aeron.agent.ClusterEventCode.*;
+import static io.aeron.agent.ClusterEventCode.ROLE_CHANGE;
+import static io.aeron.agent.ClusterEventCode.STATE_CHANGE;
 import static io.aeron.agent.ClusterEventLogger.LOGGER;
 
 class ClusterInterceptor
@@ -25,9 +26,29 @@ class ClusterInterceptor
     static class ElectionStateChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void stateChange(final E oldState, final E newState, final int memberId)
+        static <E extends Enum<E>> void stateChange(
+            final E oldState,
+            final E newState,
+            final int memberId,
+            final int leaderId,
+            final long candidateTermId,
+            final long leadershipTermId,
+            final long logPosition,
+            final long logLeadershipTermId,
+            final long appendPosition,
+            final long catchupPosition)
         {
-            LOGGER.logStateChange(ELECTION_STATE_CHANGE, oldState, newState, memberId);
+            LOGGER.logElectionStateChange(
+                oldState,
+                newState,
+                memberId,
+                leaderId,
+                candidateTermId,
+                leadershipTermId,
+                logPosition,
+                logLeadershipTermId,
+                appendPosition,
+                catchupPosition);
         }
     }
 

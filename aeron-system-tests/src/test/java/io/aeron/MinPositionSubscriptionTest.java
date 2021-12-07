@@ -20,8 +20,8 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -34,12 +34,12 @@ import static io.aeron.CommonContext.SPY_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MinPositionSubscriptionTest
+class MinPositionSubscriptionTest
 {
     private static final int STREAM_ID = 1001;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -52,7 +52,7 @@ public class MinPositionSubscriptionTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -60,7 +60,7 @@ public class MinPositionSubscriptionTest
 
     @InterruptAfter(10)
     @Test
-    public void shouldJoinAtSamePositionIpc()
+    void shouldJoinAtSamePositionIpc()
     {
         final String channel = "aeron:ipc";
         shouldJoinAtSamePosition(channel, channel);
@@ -68,7 +68,7 @@ public class MinPositionSubscriptionTest
 
     @InterruptAfter(10)
     @Test
-    public void shouldJoinAtSamePositionUdp()
+    void shouldJoinAtSamePositionUdp()
     {
         final String channel = "aeron:udp?endpoint=localhost:24325";
         shouldJoinAtSamePosition(channel, channel);
@@ -76,7 +76,7 @@ public class MinPositionSubscriptionTest
 
     @InterruptAfter(10)
     @Test
-    public void shouldJoinAtSamePositionUdpSpy()
+    void shouldJoinAtSamePositionUdpSpy()
     {
         final String channel = "aeron:udp?endpoint=localhost:24325";
         shouldJoinAtSamePosition(channel, SPY_PREFIX + channel);

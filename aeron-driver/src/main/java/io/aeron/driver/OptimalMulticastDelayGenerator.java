@@ -109,7 +109,7 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
     }
 
     /**
-     * Return uniform random value in the range 0..max
+     * Return uniform random value in the range 0 to max.
      *
      * @param max of the random range
      * @return random value

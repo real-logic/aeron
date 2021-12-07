@@ -236,14 +236,14 @@ public:
      */
     std::string tryResolveChannelEndpointPort() const
     {
-        char uri_buffer[AERON_MAX_PATH];
+        char uri_buffer[AERON_MAX_PATH] = { 0 };
 
         if (aeron_subscription_try_resolve_channel_endpoint_port(m_subscription, uri_buffer, sizeof(uri_buffer)) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        return std::string(uri_buffer);
+        return { uri_buffer };
     }
 
     /**
@@ -260,7 +260,7 @@ public:
      */
     std::string resolvedEndpoint() const
     {
-        char buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN];
+        char buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN] = { 0 };
 
         int result = aeron_subscription_resolved_endpoint(m_subscription, buffer, sizeof(buffer));
         if (result < 0)
@@ -575,8 +575,8 @@ private:
     AsyncAddSubscription *m_addSubscription = nullptr;
     aeron_subscription_constants_t m_constants = {};
     std::string m_channel;
-    std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;
-    std::recursive_mutex m_adminLock;
+    std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations = {};
+    std::recursive_mutex m_adminLock = {};
 
     static void copyToVector(aeron_image_t *image, void *clientd)
     {

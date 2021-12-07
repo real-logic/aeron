@@ -25,8 +25,8 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -57,7 +57,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class PubAndSubTest
+class PubAndSubTest
 {
     private static final String IPC_URI = "aeron:ipc";
 
@@ -70,7 +70,7 @@ public class PubAndSubTest
     }
 
     @RegisterExtension
-    public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher watcher = new SystemTestWatcher();
 
     private static final int STREAM_ID = 1001;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
@@ -103,7 +103,7 @@ public class PubAndSubTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(publishingClient, subscribingClient, driver);
         if (null != driver)
@@ -115,7 +115,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldReceivePublishedMessageViaPollFile(final String channel)
+    void shouldReceivePublishedMessageViaPollFile(final String channel)
     {
         launch(channel);
 
@@ -151,7 +151,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldContinueAfterBufferRollover(final String channel)
+    void shouldContinueAfterBufferRollover(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
@@ -182,7 +182,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
+    void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int termBufferLengthMinusPaddingHeader = termBufferLength - HEADER_LENGTH;
@@ -264,7 +264,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(20)
-    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws IOException
+    void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws IOException
     {
         assumeFalse(IPC_URI.equals(channel));
 
@@ -307,7 +307,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws IOException
+    void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws IOException
     {
         assumeFalse(IPC_URI.equals(channel));
 
@@ -355,7 +355,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldContinueAfterBufferRolloverBatched(final String channel)
+    void shouldContinueAfterBufferRolloverBatched(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numBatchesPerTerm = 4;
@@ -412,7 +412,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
+    void shouldContinueAfterBufferRolloverWithPadding(final String channel)
     {
         /*
          * 65536 bytes in the buffer
@@ -448,7 +448,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
+    void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
     {
         /*
          * 65536 bytes in the buffer
@@ -489,10 +489,10 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
+    void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
     {
         /*
-         * The subscriber will flow control before an entire term buffer. So, send until can't send no 'more.
+         * The subscriber will flow control before an entire term buffer. So, send until can't send anymore.
          * Then start up subscriber to drain.
          */
         final int termBufferLength = 64 * 1024;
@@ -554,7 +554,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
+    void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
@@ -601,7 +601,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldFragmentExactMessageLengthsCorrectly(final String channel)
+    void shouldFragmentExactMessageLengthsCorrectly(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numFragmentsPerMessage = 2;
@@ -649,7 +649,7 @@ public class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldNoticeDroppedSubscriber(final String channel)
+    void shouldNoticeDroppedSubscriber(final String channel)
     {
         launch(channel);
 

@@ -49,7 +49,7 @@ public class AeronException extends RuntimeException
     private final Category category;
 
     /**
-     * Default Aeron exception of {@link AeronException.Category#ERROR}.
+     * Default Aeron exception as {@link AeronException.Category#ERROR}.
      */
     public AeronException()
     {
@@ -138,7 +138,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Constructs a new Aeron exception with the a detail message, cause, suppression enabled or disabled,
+     * Constructs a new Aeron exception with a detail message, cause, suppression enabled or disabled,
      * and writable stack trace enabled or disabled, in the category {@link AeronException.Category#ERROR}.
      *
      * @param message            providing detail on the error.
@@ -154,7 +154,7 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * Constructs a new Aeron exception with the a detail message, cause, suppression enabled or disabled,
+     * Constructs a new Aeron exception with a detail message, cause, suppression enabled or disabled,
      * writable stack trace enabled or disabled, an {@link AeronException.Category}.
      *
      * @param message            providing detail on the error.
@@ -175,9 +175,9 @@ public class AeronException extends RuntimeException
     }
 
     /**
-     * {@link AeronException.Category} of exception for determining what follow up action can be taken.
+     * {@link AeronException.Category} of exception for determining what follow-up action can be taken.
      *
-     * @return {@link AeronException.Category} of exception for determining what follow up action can be taken.
+     * @return {@link AeronException.Category} of exception for determining what follow-up action can be taken.
      */
     public Category category()
     {

@@ -115,7 +115,7 @@ public class HeaderFlyweight extends UnsafeBuffer
     public static final int MIN_HEADER_LENGTH = TYPE_FIELD_OFFSET + SIZE_OF_SHORT;
 
     /**
-     * Default constructor which can later be use to wrap a frame.
+     * Default constructor which can later be used to wrap a frame.
      */
     public HeaderFlyweight()
     {
@@ -234,10 +234,10 @@ public class HeaderFlyweight extends UnsafeBuffer
     }
 
     /**
-     * Convert header flags to an array of chars to be human readable.
+     * Convert header flags to an array of chars to be human-readable.
      *
      * @param flags to be converted.
-     * @return header flags converted to an array of chars to be human readable.
+     * @return header flags converted to an array of chars to be human-readable.
      */
     public static char[] flagsToChars(final short flags)
     {
@@ -259,7 +259,7 @@ public class HeaderFlyweight extends UnsafeBuffer
     }
 
     /**
-     * Append header flags to an {@link Appendable} to be human readable.
+     * Append header flags to an {@link Appendable} to be human-readable.
      *
      * @param flags      to be converted.
      * @param appendable to append flags to.

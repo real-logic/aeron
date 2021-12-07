@@ -287,7 +287,7 @@ final class ClientConductor implements Agent
         final int statusIndicatorId,
         final String logFileName)
     {
-        final String stashedChannel = stashedChannelByRegistrationId.remove(registrationId);
+        final String stashedChannel = stashedChannelByRegistrationId.remove(correlationId);
         final ConcurrentPublication publication = new ConcurrentPublication(
             this,
             stashedChannel,
@@ -300,7 +300,6 @@ final class ClientConductor implements Agent
             correlationId);
 
         resourceByRegIdMap.put(correlationId, publication);
-        asyncCommandIdSet.remove(correlationId);
     }
 
     void onNewExclusivePublication(
@@ -318,7 +317,7 @@ final class ClientConductor implements Agent
                 "correlationId=" + correlationId + " registrationId=" + registrationId));
         }
 
-        final String stashedChannel = stashedChannelByRegistrationId.remove(registrationId);
+        final String stashedChannel = stashedChannelByRegistrationId.remove(correlationId);
         final ExclusivePublication publication = new ExclusivePublication(
             this,
             stashedChannel,
@@ -331,7 +330,6 @@ final class ClientConductor implements Agent
             correlationId);
 
         resourceByRegIdMap.put(correlationId, publication);
-        asyncCommandIdSet.remove(correlationId);
     }
 
     void onNewSubscription(final long correlationId, final int statusIndicatorId)
@@ -368,7 +366,7 @@ final class ClientConductor implements Agent
                 {
                     handler.onAvailableImage(image);
                 }
-                catch (final Throwable ex)
+                catch (final Exception ex)
                 {
                     handleError(ex);
                 }
@@ -531,10 +529,8 @@ final class ClientConductor implements Agent
 
             if (asyncCommandIdSet.contains(registrationId))
             {
-                return null;
+                service(NO_CORRELATION_ID);
             }
-
-            service(NO_CORRELATION_ID);
 
             return (ConcurrentPublication)resourceByRegIdMap.get(registrationId);
         }
@@ -554,10 +550,8 @@ final class ClientConductor implements Agent
 
             if (asyncCommandIdSet.contains(registrationId))
             {
-                return null;
+                service(NO_CORRELATION_ID);
             }
-
-            service(NO_CORRELATION_ID);
 
             return (ExclusivePublication)resourceByRegIdMap.get(registrationId);
         }
@@ -808,6 +802,11 @@ final class ClientConductor implements Agent
             }
 
             ensureActive();
+
+            if (asyncCommandIdSet.contains(correlationId))
+            {
+                service(NO_CORRELATION_ID);
+            }
 
             return asyncCommandIdSet.contains(correlationId);
         }
@@ -1222,7 +1221,7 @@ final class ClientConductor implements Agent
             }
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             if (driverEventsAdapter.isInvalid())
             {
@@ -1436,7 +1435,7 @@ final class ClientConductor implements Agent
                 }
                 handleError(ex);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 handleError(ex);
             }
@@ -1462,7 +1461,7 @@ final class ClientConductor implements Agent
             }
             handleError(ex);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             handleError(ex);
         }
@@ -1484,7 +1483,7 @@ final class ClientConductor implements Agent
         {
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             handleError(ex);
         }
@@ -1503,7 +1502,7 @@ final class ClientConductor implements Agent
             {
                 closeHandler.run();
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 handleError(ex);
             }

@@ -106,9 +106,9 @@ public final class AeronCluster implements AutoCloseable
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
 
             final long deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
-            final IdleStrategy idleStrategy = ctx.idleStrategy();
             asyncConnect = new AsyncConnect(ctx, subscription, deadlineNs);
             final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
+            final IdleStrategy idleStrategy = ctx.idleStrategy();
 
             AeronCluster aeronCluster;
             int step = asyncConnect.step();
@@ -320,7 +320,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Get the raw {@link Subscription} for receiving from the cluster.
      * <p>
-     * The can be wrapped with a {@link EgressAdapter} for dispatching events from the cluster.
+     * This can be wrapped with a {@link EgressAdapter} for dispatching events from the cluster.
      * {@link io.aeron.cluster.codecs.SessionMessageHeaderDecoder} should be used for raw access.
      *
      * @return the raw {@link Subscription} for receiving from the cluster.
@@ -828,7 +828,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Channel for sending messages to a cluster.
          */
-        public static final String INGRESS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9010";
+        public static final String INGRESS_CHANNEL_DEFAULT = null;
 
         /**
          * Stream id within a channel for sending messages to a cluster.
@@ -1283,8 +1283,8 @@ public final class AeronCluster implements AutoCloseable
 
         /**
          * Is ingress to the cluster exclusively from a single thread to this client? The client should not be used
-         * from another thread, e.g. a separate thread calling {@link AeronCluster#sendKeepAlive()} - which is a really
-         * bad design by the way!
+         * from another thread, e.g. a separate thread calling {@link AeronCluster#sendKeepAlive()} - which is awful
+         * design by the way!
          *
          * @param isIngressExclusive true if ingress to the cluster is exclusively from a single thread for this client?
          * @return this for a fluent API.
@@ -1440,6 +1440,33 @@ public final class AeronCluster implements AutoCloseable
                 CloseHelper.close(aeron);
             }
         }
+
+        /**
+         * {@inheritDoc}
+         */
+        public String toString()
+        {
+            return "AeronCluster.Context" +
+                "\n{" +
+                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    ownsAeronClient=" + ownsAeronClient +
+                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
+                "\n    aeron=" + aeron +
+                "\n    messageTimeoutNs=" + messageTimeoutNs +
+                "\n    ingressEndpoints='" + ingressEndpoints + '\'' +
+                "\n    ingressChannel='" + ingressChannel + '\'' +
+                "\n    ingressStreamId=" + ingressStreamId +
+                "\n    egressChannel='" + egressChannel + '\'' +
+                "\n    egressStreamId=" + egressStreamId +
+                "\n    idleStrategy=" + idleStrategy +
+                "\n    credentialsSupplier=" + credentialsSupplier +
+                "\n    isIngressExclusive=" + isIngressExclusive +
+                "\n    errorHandler=" + errorHandler +
+                "\n    isDirectAssemblers=" + isDirectAssemblers +
+                "\n    egressListener=" + egressListener +
+                "\n    controlledEgressListener=" + controlledEgressListener +
+                "\n}";
+        }
     }
 
     /**
@@ -1558,6 +1585,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 final TimeoutException ex = new TimeoutException(
                     "cluster connect timeout: step=" + step +
+                    " ingressChannel=" + ctx.ingressChannel() +
                     " ingressPublication=" + ingressPublication +
                     " egress.isConnected=" + egressSubscription.isConnected() +
                     " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort());

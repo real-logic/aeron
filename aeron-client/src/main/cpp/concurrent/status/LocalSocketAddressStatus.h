@@ -57,7 +57,7 @@ public:
                 if (CountersReader::RECORD_ALLOCATED == counterState)
                 {
                     std::uint8_t *keyPtr = countersReader.metaDataBuffer().buffer() +
-                        static_cast<std::size_t>(countersReader.metadataOffset(i)) +
+                        static_cast<std::size_t>(aeron::concurrent::CountersReader::metadataOffset(i)) +
                         static_cast<std::size_t>(CountersReader::KEY_OFFSET);
                     const AtomicBuffer keyBuffer(keyPtr, static_cast<std::size_t>(CountersReader::MAX_KEY_LENGTH));
 

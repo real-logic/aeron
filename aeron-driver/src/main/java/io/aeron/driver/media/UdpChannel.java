@@ -102,7 +102,7 @@ public final class UdpChannel
     }
 
     /**
-     * Parse channel URI and create a {@link UdpChannel} using the default name resolver..
+     * Parse channel URI and create a {@link UdpChannel} using the default name resolver.
      *
      * @param channelUriString to parse.
      * @return a new {@link UdpChannel} as the result of parsing.
@@ -582,7 +582,7 @@ public final class UdpChannel
     /**
      * Is the channel configured as multi-destination.
      *
-     * @return true if he channel configured as multi-destination.
+     * @return true if the channel configured as multi-destination.
      */
     public boolean isMultiDestination()
     {
@@ -674,13 +674,13 @@ public final class UdpChannel
         }
 
         throw new IllegalArgumentException(
-            "matching tag=" + tag + " has explicit endpoint or control - " + uriStr + " <> " + udpChannel.uriStr);
+            "matching tag=" + tag + " has explicit endpoint or control: " + uriStr + " <> " + udpChannel.uriStr);
     }
 
     /**
-     * Used for debugging to get a human readable description of the channel.
+     * Used for debugging to get a human-readable description of the channel.
      *
-     * @return a human readable description of the channel.
+     * @return a human-readable description of the channel.
      */
     public String description()
     {

@@ -20,8 +20,8 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableReference;
@@ -34,14 +34,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class TwoBufferOfferMessageTest
+class TwoBufferOfferMessageTest
 {
     private static final String CHANNEL = "aeron:ipc?term-length=64k";
     private static final int STREAM_ID = 1001;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final MediaDriver.Context driverContext = new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -53,7 +53,7 @@ public class TwoBufferOfferMessageTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -61,7 +61,7 @@ public class TwoBufferOfferMessageTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldTransferUnfragmentedTwoPartMessage()
+    void shouldTransferUnfragmentedTwoPartMessage()
     {
         final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[256]);
         final UnsafeBuffer bufferOne = new UnsafeBuffer(expectedBuffer, 0, 32);
@@ -97,7 +97,7 @@ public class TwoBufferOfferMessageTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldTransferFragmentedTwoPartMessage()
+    void shouldTransferFragmentedTwoPartMessage()
     {
         final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[32 + driver.context().mtuLength()]);
         final UnsafeBuffer bufferOne = new UnsafeBuffer(expectedBuffer, 0, 32);

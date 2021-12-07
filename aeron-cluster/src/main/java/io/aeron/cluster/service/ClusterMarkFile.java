@@ -22,17 +22,18 @@ import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.cluster.codecs.mark.VarAsciiEncodingEncoder;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.MarkFile;
+import org.agrona.SemanticVersion;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Consumer;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -112,7 +113,7 @@ public final class ClusterMarkFile implements AutoCloseable
             final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
                 buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
 
-            saveExistingErrors(file, existingErrorBuffer, System.err);
+            saveExistingErrors(file, existingErrorBuffer, type, System.err);
             existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
         }
         else
@@ -177,6 +178,31 @@ public final class ClusterMarkFile implements AutoCloseable
     }
 
     /**
+     * Determines if this path name matches the service mark file name pattern
+     *
+     * @param path       to examine
+     * @param attributes ignored, only needed for BiPredicate signature matching
+     * @return true if the name matches
+     */
+    public static boolean isServiceMarkFile(final Path path, final BasicFileAttributes attributes)
+    {
+        final String fileName = path.getFileName().toString();
+        return fileName.startsWith(SERVICE_FILENAME_PREFIX) && fileName.endsWith(FILE_EXTENSION);
+    }
+
+    /**
+     * Determines if this path name matches the consensus module file name pattern.
+     *
+     * @param path       to examine
+     * @param attributes ignored, only needed for BiPredicate signature matching
+     * @return true if the name matches
+     */
+    public static boolean isConsensusModuleMarkFile(final Path path, final BasicFileAttributes attributes)
+    {
+        return path.getFileName().toString().equals(FILENAME);
+    }
+
+    /**
      * {@inheritDoc}
      */
     public void close()
@@ -206,7 +232,7 @@ public final class ClusterMarkFile implements AutoCloseable
     }
 
     /**
-     * Record the fact that a node is aware of an election so it can survive a restart.
+     * Record the fact that a node is aware of an election, so it can survive a restart.
      *
      * @param candidateTermId to record that a vote has taken place.
      * @param fileSyncLevel   as defined by cluster file sync level.
@@ -221,7 +247,7 @@ public final class ClusterMarkFile implements AutoCloseable
     }
 
     /**
-     * Record the fact that a node is aware of an election so it can survive a restart.
+     * Record the fact that a node is aware of an election, so it can survive a restart.
      *
      * @param candidateTermId to record that a vote has taken place.
      * @param fileSyncLevel   as defined by cluster file sync level.
@@ -355,35 +381,16 @@ public final class ClusterMarkFile implements AutoCloseable
      *
      * @param markFile    which contains the error buffer.
      * @param errorBuffer which wraps the error log.
+     * @param type        type of the mark file being checked.
      * @param logger      to which the existing errors will be printed.
      */
-    public static void saveExistingErrors(final File markFile, final AtomicBuffer errorBuffer, final PrintStream logger)
+    public static void saveExistingErrors(
+        final File markFile,
+        final AtomicBuffer errorBuffer,
+        final ClusterComponentType type,
+        final PrintStream logger)
     {
-        try
-        {
-            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final int observations = CommonContext.printErrorLog(errorBuffer, new PrintStream(baos, false, "US-ASCII"));
-            if (observations > 0)
-            {
-                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
-                final String errorLogFilename =
-                    markFile.getParent() + '-' + dateFormat.format(new Date()) + "-error.log";
-
-                if (null != logger)
-                {
-                    logger.println("WARNING: existing errors saved to: " + errorLogFilename);
-                }
-
-                try (FileOutputStream out = new FileOutputStream(errorLogFilename))
-                {
-                    baos.writeTo(out);
-                }
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        CommonContext.saveExistingErrors(markFile, errorBuffer, logger, type.name());
     }
 
     /**

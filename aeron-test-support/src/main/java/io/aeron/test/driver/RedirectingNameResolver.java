@@ -68,7 +68,7 @@ public class RedirectingNameResolver implements NameResolver
             final AtomicCounter atomicCounter = countersManager.newCounter(
                 nameEntry.toString(),
                 NAME_ENTRY_COUNTER_TYPE_ID,
-                mutableDirectBuffer -> mutableDirectBuffer.putStringAscii(0, nameEntry.name));
+                (mutableDirectBuffer) -> mutableDirectBuffer.putStringAscii(0, nameEntry.name));
             nameEntry.counter(atomicCounter);
         }
     }
@@ -111,9 +111,7 @@ public class RedirectingNameResolver implements NameResolver
         final boolean counterFound = NULL_VALUE != nameCounterId.get();
         if (counterFound)
         {
-            final AtomicCounter nameCounter = new AtomicCounter(
-                counters.valuesBuffer(),
-                nameCounterId.get());
+            final AtomicCounter nameCounter = new AtomicCounter(counters.valuesBuffer(), nameCounterId.get());
 
             nameCounter.set(operationValue);
         }
@@ -128,10 +126,7 @@ public class RedirectingNameResolver implements NameResolver
         private final String reResolutionHost;
         private AtomicCounter counter;
 
-        NameEntry(
-            final String name,
-            final String initialResolutionHost,
-            final String reResolutionHost)
+        NameEntry(final String name, final String initialResolutionHost, final String reResolutionHost)
         {
             this.name = name;
             this.initialResolutionHost = initialResolutionHost;

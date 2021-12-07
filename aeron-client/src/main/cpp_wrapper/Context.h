@@ -478,11 +478,11 @@ public:
             throw IllegalStateException(errMsg, SOURCEINFO);
         }
 
-        return std::string(path, 0, length);
+        return { path, 0, length };
     }
 
 private:
-    aeron_context_t *m_context;
+    aeron_context_t *m_context = nullptr;
     on_available_image_t m_onAvailableImageHandler = defaultOnAvailableImageHandler;
     on_unavailable_image_t m_onUnavailableImageHandler = defaultOnUnavailableImageHandler;
     exception_handler_t m_exceptionHandler = defaultErrorHandler;

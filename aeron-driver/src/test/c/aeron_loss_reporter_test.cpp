@@ -53,7 +53,7 @@ public:
         const char *source,
         int32_t source_length)
     {
-        LossReporterTest *t = (LossReporterTest *)clientd;
+        auto *t = (LossReporterTest *)clientd;
 
         t->m_on_loss_entry(
             observation_count,
@@ -71,7 +71,7 @@ public:
 protected:
     buffer_t m_buffer = {};
     uint8_t *m_ptr = nullptr;
-    aeron_loss_reporter_t m_reporter;
+    aeron_loss_reporter_t m_reporter = {};
     std::function<void(int64_t, int64_t, int64_t, int64_t, int32_t, int32_t, const char *, int32_t, const char *, int32_t)>
         m_on_loss_entry;
 };
@@ -98,7 +98,7 @@ TEST_F(LossReporterTest, shouldCreateEntry)
 
     EXPECT_EQ(offset, 0);
 
-    aeron_loss_reporter_entry_t *entry = (aeron_loss_reporter_entry_t *)m_ptr;
+    auto *entry = (aeron_loss_reporter_entry_t *)m_ptr;
     EXPECT_EQ(entry->observation_count, 1);
     EXPECT_EQ(entry->total_bytes_lost, initial_bytes_lost);
     EXPECT_EQ(entry->first_observation_timestamp, timestamp_ms);
@@ -145,7 +145,7 @@ TEST_F(LossReporterTest, shouldUpdateEntry)
 
     aeron_loss_reporter_record_observation(&m_reporter, offset, additional_bytes_lost, latest_timestamp);
 
-    aeron_loss_reporter_entry_t *entry = (aeron_loss_reporter_entry_t *)m_ptr;
+    auto *entry = (aeron_loss_reporter_entry_t *)m_ptr;
     EXPECT_EQ(entry->observation_count, 2);
     EXPECT_EQ(entry->total_bytes_lost, initial_bytes_lost + additional_bytes_lost);
     EXPECT_EQ(entry->last_observation_timestamp, latest_timestamp);

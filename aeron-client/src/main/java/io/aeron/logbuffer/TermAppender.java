@@ -86,13 +86,13 @@ public final class TermAppender
     }
 
     /**
-     * Claim length of a the term buffer for writing in the message with zero copy semantics.
+     * Claim length of the term buffer for writing in the message with zero copy semantics.
      *
      * @param header       for writing the default header.
      * @param length       of the message to be written.
      * @param bufferClaim  to be updated with the claimed region.
      * @param activeTermId used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int claim(
         final HeaderWriter header,
@@ -127,7 +127,7 @@ public final class TermAppender
     }
 
     /**
-     * Append an unfragmented message to the the term buffer.
+     * Append an unfragmented message to the term buffer.
      *
      * @param header                for writing the default header.
      * @param bufferOne             containing the first part of the message.
@@ -138,7 +138,7 @@ public final class TermAppender
      * @param lengthTwo             of the second part of the message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}
      */
     public int appendUnfragmentedMessage(
         final HeaderWriter header,
@@ -187,7 +187,7 @@ public final class TermAppender
     }
 
     /**
-     * Append an unfragmented message to the the term buffer.
+     * Append an unfragmented message to the term buffer.
      *
      * @param header                for writing the default header.
      * @param buffer                containing the message.
@@ -195,7 +195,7 @@ public final class TermAppender
      * @param length                of the message in the source buffer.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}
      */
     public int appendUnfragmentedMessage(
         final HeaderWriter header,
@@ -240,14 +240,14 @@ public final class TermAppender
     }
 
     /**
-     * Append an unfragmented message to the the term buffer as a gathering of vectors.
+     * Append an unfragmented message to the term buffer as a gathering of vectors.
      *
      * @param header                for writing the default header.
      * @param vectors               to the buffers.
      * @param length                of the message as a sum of the vectors.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int appendUnfragmentedMessage(
         final HeaderWriter header,
@@ -297,7 +297,7 @@ public final class TermAppender
     }
 
     /**
-     * Append a fragmented message to the the term buffer.
+     * Append a fragmented message to the term buffer.
      * The message will be split up into fragments of MTU length minus header.
      *
      * @param header                for writing the default header.
@@ -307,7 +307,7 @@ public final class TermAppender
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise  {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise  {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final HeaderWriter header,
@@ -381,7 +381,7 @@ public final class TermAppender
     }
 
     /**
-     * Append a fragmented message to the the term buffer.
+     * Append a fragmented message to the term buffer.
      * The message will be split up into fragments of MTU length minus header.
      *
      * @param header                for writing the default header.
@@ -394,7 +394,7 @@ public final class TermAppender
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise  {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise  {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final HeaderWriter header,
@@ -495,7 +495,7 @@ public final class TermAppender
     }
 
     /**
-     * Append a fragmented message to the the term buffer.
+     * Append a fragmented message to the term buffer.
      * The message will be split up into fragments of MTU length minus header.
      *
      * @param header                for writing the default header.
@@ -504,7 +504,7 @@ public final class TermAppender
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final HeaderWriter header,

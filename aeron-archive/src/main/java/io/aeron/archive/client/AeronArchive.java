@@ -16,8 +16,7 @@
 package io.aeron.archive.client;
 
 import io.aeron.*;
-import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.TimeoutException;
@@ -128,7 +127,7 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Notify the archive that this control session is closed so it can promptly release resources then close the
+     * Notify the archive that this control session is closed, so it can promptly release resources then close the
      * local resources associated with the client.
      */
     public void close()
@@ -190,22 +189,19 @@ public final class AeronArchive implements AutoCloseable
             ctx.conclude();
 
             final Aeron aeron = ctx.aeron();
-            final long messageTimeoutNs = ctx.messageTimeoutNs();
-
             subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
             final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(subscription);
 
-            final long deadlineNs = aeron.context().nanoClock().nanoTime() + messageTimeoutNs;
             final ArchiveProxy archiveProxy = new ArchiveProxy(
                 publication,
                 ctx.idleStrategy(),
                 aeron.context().nanoClock(),
-                messageTimeoutNs,
+                ctx.messageTimeoutNs(),
                 DEFAULT_RETRY_ATTEMPTS,
                 ctx.credentialsSupplier());
 
-            asyncConnect = new AsyncConnect(ctx, controlResponsePoller, archiveProxy, deadlineNs);
+            asyncConnect = new AsyncConnect(ctx, controlResponsePoller, archiveProxy);
             final IdleStrategy idleStrategy = ctx.idleStrategy();
             final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
 
@@ -259,40 +255,19 @@ public final class AeronArchive implements AutoCloseable
      */
     public static AsyncConnect asyncConnect(final Context ctx)
     {
-        Subscription subscription = null;
-        Publication publication = null;
         try
         {
             ctx.conclude();
 
-            final Aeron aeron = ctx.aeron();
-            final long messageTimeoutNs = ctx.messageTimeoutNs();
-            final long deadlineNs = aeron.context().nanoClock().nanoTime() + messageTimeoutNs;
-
-            subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
-            final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(subscription);
-
-            publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
-            final ArchiveProxy archiveProxy = new ArchiveProxy(
-                publication,
-                ctx.idleStrategy(),
-                aeron.context().nanoClock(),
-                messageTimeoutNs,
-                DEFAULT_RETRY_ATTEMPTS,
-                ctx.credentialsSupplier());
-
-            return new AsyncConnect(ctx, controlResponsePoller, archiveProxy, deadlineNs);
+            return new AsyncConnect(ctx);
+        }
+        catch (final ConcurrentConcludeException ex)
+        {
+            throw ex;
         }
         catch (final Exception ex)
         {
-            if (!ctx.ownsAeronClient())
-            {
-                CloseHelper.quietClose(subscription);
-                CloseHelper.quietClose(publication);
-            }
-
             ctx.close();
-
             throw ex;
         }
     }
@@ -357,7 +332,11 @@ public final class AeronArchive implements AutoCloseable
         if (null == recordingDescriptorPoller)
         {
             recordingDescriptorPoller = new RecordingDescriptorPoller(
-                controlResponsePoller.subscription(), context.errorHandler(), controlSessionId, FRAGMENT_LIMIT);
+                controlResponsePoller.subscription(),
+                context.errorHandler(),
+                context.recordingSignalConsumer(),
+                controlSessionId,
+                FRAGMENT_LIMIT);
         }
 
         return recordingDescriptorPoller;
@@ -374,7 +353,11 @@ public final class AeronArchive implements AutoCloseable
         if (null == recordingSubscriptionDescriptorPoller)
         {
             recordingSubscriptionDescriptorPoller = new RecordingSubscriptionDescriptorPoller(
-                controlResponsePoller.subscription(), context.errorHandler(), controlSessionId, FRAGMENT_LIMIT);
+                controlResponsePoller.subscription(),
+                context.errorHandler(),
+                context.recordingSignalConsumer(),
+                controlSessionId,
+                FRAGMENT_LIMIT);
         }
 
         return recordingSubscriptionDescriptorPoller;
@@ -400,10 +383,16 @@ public final class AeronArchive implements AutoCloseable
 
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
-                if (controlResponsePoller.controlSessionId() == controlSessionId &&
-                    controlResponsePoller.code() == ControlResponseCode.ERROR)
+                if (controlResponsePoller.controlSessionId() == controlSessionId)
                 {
-                    return controlResponsePoller.errorMessage();
+                    if (controlResponsePoller.code() == ControlResponseCode.ERROR)
+                    {
+                        return controlResponsePoller.errorMessage();
+                    }
+                    else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
+                    {
+                        dispatchRecordingSignal();
+                    }
                 }
             }
 
@@ -443,24 +432,79 @@ public final class AeronArchive implements AutoCloseable
             }
             else if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
-                if (controlResponsePoller.controlSessionId() == controlSessionId &&
-                    controlResponsePoller.code() == ControlResponseCode.ERROR)
+                if (controlResponsePoller.controlSessionId() == controlSessionId)
                 {
-                    final ArchiveException ex = new ArchiveException(
-                        controlResponsePoller.errorMessage(),
-                        (int)controlResponsePoller.relevantId(),
-                        controlResponsePoller.correlationId());
+                    if (controlResponsePoller.code() == ControlResponseCode.ERROR)
+                    {
+                        final ArchiveException ex = new ArchiveException(
+                            controlResponsePoller.errorMessage(),
+                            (int)controlResponsePoller.relevantId(),
+                            controlResponsePoller.correlationId());
 
-                    if (null != context.errorHandler())
-                    {
-                        context.errorHandler().onError(ex);
+                        if (null != context.errorHandler())
+                        {
+                            context.errorHandler().onError(ex);
+                        }
+                        else
+                        {
+                            throw ex;
+                        }
                     }
-                    else
+                    else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
                     {
-                        throw ex;
+                        dispatchRecordingSignal();
                     }
                 }
             }
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Poll for {@link RecordingSignal}s for this session which will be dispatched to
+     * {@link Context#recordingSignalConsumer}.
+     *
+     * @return positive value if signals dispatched otherwise 0.
+     */
+    public int pollForRecordingSignals()
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+            {
+                if (controlResponsePoller.controlSessionId() == controlSessionId)
+                {
+                    if (controlResponsePoller.code() == ControlResponseCode.ERROR)
+                    {
+                        final ArchiveException ex = new ArchiveException(
+                            controlResponsePoller.errorMessage(),
+                            (int)controlResponsePoller.relevantId(),
+                            controlResponsePoller.correlationId());
+
+                        if (null != context.errorHandler())
+                        {
+                            context.errorHandler().onError(ex);
+                        }
+                        else
+                        {
+                            throw ex;
+                        }
+                    }
+                    else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
+                    {
+                        dispatchRecordingSignal();
+                        return 1;
+                    }
+                }
+            }
+
+            return 0;
         }
         finally
         {
@@ -547,7 +591,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Start recording a channel and stream pairing.
      * <p>
-     * Channels that include sessionId parameters are considered different than channels without sessionIds. If a
+     * Channels that include sessionId parameters are considered different from channels without sessionIds. If a
      * publication matches both a sessionId specific channel recording and a non-sessionId specific recording,
      * it will be recorded twice.
      *
@@ -583,7 +627,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Start recording a channel and stream pairing.
      * <p>
-     * Channels that include sessionId parameters are considered different than channels without sessionIds. If a
+     * Channels that include sessionId parameters are considered different from channels without sessionIds. If a
      * publication matches both a sessionId specific channel recording and a non-sessionId specific recording,
      * it will be recorded twice.
      *
@@ -592,7 +636,7 @@ public final class AeronArchive implements AutoCloseable
      * @param sourceLocation of the publication to be recorded.
      * @param autoStop       if the recording should be automatically stopped when complete.
      * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording. This can be
-     * passed to {@link #stopRecording(long)}. However if is autoStop is true then no need to stop the recording
+     * passed to {@link #stopRecording(long)}. However, if is autoStop is true then no need to stop the recording
      * unless you want to abort early.
      */
     public long startRecording(
@@ -675,7 +719,7 @@ public final class AeronArchive implements AutoCloseable
      * @param sourceLocation of the publication to be recorded.
      * @param autoStop       if the recording should be automatically stopped when complete.
      * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording. This can be
-     * passed to {@link #stopRecording(long)}. However if is autoStop is true then no need to stop the recording
+     * passed to {@link #stopRecording(long)}. However, if is autoStop is true then no need to stop the recording
      * unless you want to abort early.
      */
     public long extendRecording(
@@ -710,7 +754,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Stop recording for a channel and stream pairing.
      * <p>
-     * Channels that include sessionId parameters are considered different than channels without sessionIds. Stopping
+     * Channels that include sessionId parameters are considered different from channels without sessionIds. Stopping
      * a recording on a channel without a sessionId parameter will not stop the recording of any sessionId specific
      * recordings that use the same channel and streamId.
      *
@@ -743,7 +787,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Try to stop a recording for a channel and stream pairing.
      * <p>
-     * Channels that include sessionId parameters are considered different than channels without sessionIds. Stopping
+     * Channels that include sessionId parameters are considered different from channels without sessionIds. Stopping
      * a recording on a channel without a sessionId parameter will not stop the recording of any sessionId specific
      * recordings that use the same channel and streamId.
      *
@@ -2002,6 +2046,13 @@ public final class AeronArchive implements AutoCloseable
 
             if (poller.isPollComplete())
             {
+                if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID &&
+                    controlResponsePoller.controlSessionId() == controlSessionId)
+                {
+                    dispatchRecordingSignal();
+                    continue;
+                }
+
                 break;
             }
 
@@ -2198,6 +2249,17 @@ public final class AeronArchive implements AutoCloseable
             checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);
             idleStrategy.idle();
         }
+    }
+
+    private void dispatchRecordingSignal()
+    {
+        context.recordingSignalConsumer().onSignal(
+            controlResponsePoller.controlSessionId(),
+            controlResponsePoller.correlationId(),
+            controlResponsePoller.recordingId(),
+            controlResponsePoller.subscriptionId(),
+            controlResponsePoller.position(),
+            controlResponsePoller.recordingSignal());
     }
 
     private void invokeAeronClient()
@@ -2402,6 +2464,12 @@ public final class AeronArchive implements AutoCloseable
         public static final int CONTROL_MTU_LENGTH_DEFAULT = io.aeron.driver.Configuration.mtuLength();
 
         /**
+         * Default no operation {@link RecordingSignalConsumer} to be used when not set explicitly.
+         */
+        public static final RecordingSignalConsumer NO_OP_RECORDING_SIGNAL_CONSUMER =
+            (controlSessionId, correlationId, recordingId, subscriptionId, position, signal) -> {};
+
+        /**
          * The timeout in nanoseconds to wait for a message.
          *
          * @return timeout in nanoseconds to wait for a message.
@@ -2586,6 +2654,7 @@ public final class AeronArchive implements AutoCloseable
         private Aeron aeron;
         private ErrorHandler errorHandler;
         private CredentialsSupplier credentialsSupplier;
+        private RecordingSignalConsumer recordingSignalConsumer = Configuration.NO_OP_RECORDING_SIGNAL_CONSUMER;
         private boolean ownsAeronClient = false;
 
         /**
@@ -3049,6 +3118,28 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
+         * Set the {@link RecordingSignalConsumer} to will be called  when polling for responses from an Archive.
+         *
+         * @param recordingSignalConsumer to called with recording signal events.
+         * @return this for a fluent API.
+         */
+        public Context recordingSignalConsumer(final RecordingSignalConsumer recordingSignalConsumer)
+        {
+            this.recordingSignalConsumer = recordingSignalConsumer;
+            return this;
+        }
+
+        /**
+         * Set the {@link RecordingSignalConsumer} to will be called  when polling for responses from an Archive.
+         *
+         * @return a recording signal consumer.
+         */
+        public RecordingSignalConsumer recordingSignalConsumer()
+        {
+            return recordingSignalConsumer;
+        }
+
+        /**
          * Close the context and free applicable resources.
          * <p>
          * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
@@ -3059,6 +3150,34 @@ public final class AeronArchive implements AutoCloseable
             {
                 CloseHelper.close(aeron);
             }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public String toString()
+        {
+            return "AeronArchive.Context" +
+                "\n{" +
+                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    ownsAeronClient=" + ownsAeronClient +
+                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
+                "\n    aeron=" + aeron +
+                "\n    messageTimeoutNs=" + messageTimeoutNs +
+                "\n    recordingEventsChannel='" + recordingEventsChannel + '\'' +
+                "\n    recordingEventsStreamId=" + recordingEventsStreamId +
+                "\n    controlRequestChannel='" + controlRequestChannel + '\'' +
+                "\n    controlRequestStreamId=" + controlRequestStreamId +
+                "\n    controlResponseChannel='" + controlResponseChannel + '\'' +
+                "\n    controlResponseStreamId=" + controlResponseStreamId +
+                "\n    controlTermBufferSparse=" + controlTermBufferSparse +
+                "\n    controlTermBufferLength=" + controlTermBufferLength +
+                "\n    controlMtuLength=" + controlMtuLength +
+                "\n    idleStrategy=" + idleStrategy +
+                "\n    lock=" + lock +
+                "\n    errorHandler=" + errorHandler +
+                "\n    credentialsSupplier=" + credentialsSupplier +
+                "\n}";
         }
 
         private String applyDefaultParams(final String channel)
@@ -3083,31 +3202,44 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Allows for the async establishment of a archive session.
+     * Allows for the async establishment of an archive session.
      */
     public static final class AsyncConnect implements AutoCloseable
     {
         private final Context ctx;
         private final ControlResponsePoller controlResponsePoller;
-        private final ArchiveProxy archiveProxy;
         private final NanoClock nanoClock;
+        private ArchiveProxy archiveProxy;
         private final long deadlineNs;
         private long correlationId = Aeron.NULL_VALUE;
         private long challengeControlSessionId = Aeron.NULL_VALUE;
         private byte[] encodedCredentialsFromChallenge = null;
         private int step = 0;
 
+        AsyncConnect(final Context ctx)
+        {
+            this.ctx = ctx;
+
+            final Aeron aeron = ctx.aeron();
+            nanoClock = aeron.context().nanoClock();
+            controlResponsePoller = new ControlResponsePoller(
+                aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId()));
+
+            correlationId = aeron.asyncAddExclusivePublication(
+                ctx.controlRequestChannel(), ctx.controlRequestStreamId());
+            deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
+        }
+
         AsyncConnect(
-            final Context ctx,
-            final ControlResponsePoller controlResponsePoller,
-            final ArchiveProxy archiveProxy,
-            final long deadlineNs)
+            final Context ctx, final ControlResponsePoller controlResponsePoller, final ArchiveProxy archiveProxy)
         {
             this.ctx = ctx;
             this.controlResponsePoller = controlResponsePoller;
             this.archiveProxy = archiveProxy;
             this.nanoClock = ctx.aeron().context().nanoClock();
-            this.deadlineNs = deadlineNs;
+
+            deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
+            step = 1;
         }
 
         /**
@@ -3115,11 +3247,14 @@ public final class AeronArchive implements AutoCloseable
          */
         public void close()
         {
-            if (4 != step)
+            if (5 != step)
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
                 CloseHelper.close(errorHandler, controlResponsePoller.subscription());
-                CloseHelper.close(errorHandler, archiveProxy.publication());
+                if (null != archiveProxy)
+                {
+                    CloseHelper.close(errorHandler, archiveProxy.publication());
+                }
                 ctx.close();
             }
         }
@@ -3149,6 +3284,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @return a new {@link AeronArchive} if successfully connected otherwise null.
          */
+        @SuppressWarnings("MethodLength")
         public AeronArchive poll()
         {
             checkDeadline();
@@ -3156,15 +3292,32 @@ public final class AeronArchive implements AutoCloseable
 
             if (0 == step)
             {
+                final ExclusivePublication publication = ctx.aeron().getExclusivePublication(correlationId);
+                if (null != publication)
+                {
+                    archiveProxy = new ArchiveProxy(
+                        publication,
+                        ctx.idleStrategy(),
+                        ctx.aeron().context().nanoClock(),
+                        ctx.messageTimeoutNs(),
+                        DEFAULT_RETRY_ATTEMPTS,
+                        ctx.credentialsSupplier());
+
+                    step(1);
+                }
+            }
+
+            if (1 == step)
+            {
                 if (!archiveProxy.publication().isConnected())
                 {
                     return null;
                 }
 
-                step(1);
+                step(2);
             }
 
-            if (1 == step)
+            if (2 == step)
             {
                 final String responseChannel = controlResponsePoller.subscription().tryResolveChannelEndpointPort();
                 if (null == responseChannel)
@@ -3178,20 +3331,20 @@ public final class AeronArchive implements AutoCloseable
                     return null;
                 }
 
-                step(2);
+                step(3);
             }
 
-            if (2 == step)
+            if (3 == step)
             {
                 if (!controlResponsePoller.subscription().isConnected())
                 {
                     return null;
                 }
 
-                step(3);
+                step(4);
             }
 
-            if (5 == step)
+            if (6 == step)
             {
                 if (!archiveProxy.tryChallengeResponse(
                     encodedCredentialsFromChallenge, correlationId, challengeControlSessionId))
@@ -3199,7 +3352,7 @@ public final class AeronArchive implements AutoCloseable
                     return null;
                 }
 
-                step(6);
+                step(7);
             }
 
             controlResponsePoller.poll();
@@ -3215,7 +3368,7 @@ public final class AeronArchive implements AutoCloseable
                     correlationId = ctx.aeron().nextCorrelationId();
                     challengeControlSessionId = controlSessionId;
 
-                    step(5);
+                    step(6);
                 }
                 else
                 {
@@ -3237,7 +3390,7 @@ public final class AeronArchive implements AutoCloseable
                     archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE);
                     aeronArchive = new AeronArchive(ctx, controlResponsePoller, archiveProxy, controlSessionId);
 
-                    step(4);
+                    step(5);
                 }
             }
 
@@ -3255,9 +3408,9 @@ public final class AeronArchive implements AutoCloseable
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
                 throw new TimeoutException("Archive connect timeout: step=" + step +
-                    (step < 2 ?
-                    " publication.uri=" + archiveProxy.publication().channel() :
-                    " subscription.uri=" + controlResponsePoller.subscription().channel()));
+                    (step < 3 ?
+                    " publication.uri=" + ctx.controlRequestChannel() :
+                    " subscription.uri=" + ctx.controlResponseChannel()));
             }
 
             if (Thread.currentThread().isInterrupted())

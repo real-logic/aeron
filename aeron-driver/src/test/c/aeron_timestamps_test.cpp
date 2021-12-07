@@ -39,6 +39,12 @@ struct message_t
 
 class TimestampsTest : public CSystemTestBase, public testing::Test
 {
+public:
+    TimestampsTest() : CSystemTestBase(std::vector<std::pair<std::string, std::string>>{
+            { "AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", "loss" },
+            { "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", "rate=0" }
+        })
+    {}
 };
 
 int64_t null_reserved_value(void *clientd, uint8_t *buffer, size_t frame_length)
@@ -87,7 +93,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValue)
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t *)buffer;
+        auto *incoming = (message_t *)buffer;
         EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_1);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_2);
@@ -149,7 +155,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesAtOffset)
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t *)buffer;
+        auto *incoming = (message_t *)buffer;
         EXPECT_EQ(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_1);
         EXPECT_NE(AERON_NULL_VALUE, incoming->timestamp_2);
@@ -207,7 +213,7 @@ TEST_F(TimestampsTest, shouldNotPutTimestampInMessagesAtIfOffsetExceedsMessage)
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t *)buffer;
+        auto *incoming = (message_t *)buffer;
         EXPECT_EQ(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(0, incoming->timestamp_1);
         EXPECT_EQ(0, incoming->timestamp_2);
@@ -372,7 +378,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValueWithMergedMds)
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t *)buffer;
+        auto *incoming = (message_t *)buffer;
         EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_1);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_2);
@@ -485,7 +491,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValueWithNonMergedMds
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t *)buffer;
+        auto *incoming = (message_t *)buffer;
         EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_1);
         EXPECT_EQ(AERON_NULL_VALUE, incoming->timestamp_2);
@@ -558,7 +564,7 @@ TEST_F(TimestampsTest, shouldPutChannelSendAndReceivesTimestampsInMessagesAtOffs
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t*)buffer;
+        auto *incoming = (message_t*)buffer;
         EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_NE(AERON_NULL_VALUE, incoming->timestamp_1);
         EXPECT_NE(AERON_NULL_VALUE, incoming->timestamp_2);
@@ -636,7 +642,7 @@ TEST_F(TimestampsTest, shouldSendTimestampAllMessagesInReservedValueWithMdc)
     {
         aeron_header_values_t header_values;
         aeron_header_values(header, &header_values);
-        message_t *incoming = (message_t*)buffer;
+        auto *incoming = (message_t*)buffer;
         EXPECT_NE(AERON_NULL_VALUE, header_values.frame.reserved_value);
         EXPECT_STREQ(incoming->text, message.text);
         called++;

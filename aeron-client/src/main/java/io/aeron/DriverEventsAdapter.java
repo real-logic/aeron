@@ -141,7 +141,7 @@ class DriverEventsAdapter implements MessageHandler
                 publicationReady.wrap(buffer, index);
 
                 final long correlationId = publicationReady.correlationId();
-                if (correlationId == activeCorrelationId || asyncCommandIdSet.contains(correlationId))
+                if (correlationId == activeCorrelationId || asyncCommandIdSet.remove(correlationId))
                 {
                     receivedCorrelationId = correlationId;
                     conductor.onNewPublication(
@@ -197,7 +197,7 @@ class DriverEventsAdapter implements MessageHandler
                 publicationReady.wrap(buffer, index);
 
                 final long correlationId = publicationReady.correlationId();
-                if (correlationId == activeCorrelationId || asyncCommandIdSet.contains(correlationId))
+                if (correlationId == activeCorrelationId || asyncCommandIdSet.remove(correlationId))
                 {
                     receivedCorrelationId = correlationId;
                     conductor.onNewExclusivePublication(

@@ -153,7 +153,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      *
      * @param bytesToSend expected to be sent to the network.
      * @param ex          experienced.
-     * @param destination to which the send was addressed.
+     * @param destination to which the send operation was addressed.
      */
     public static void sendError(final int bytesToSend, final IOException ex, final InetSocketAddress destination)
     {

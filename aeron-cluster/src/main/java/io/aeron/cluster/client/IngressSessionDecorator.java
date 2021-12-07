@@ -93,7 +93,7 @@ public final class IngressSessionDecorator
      * <p>
      * This version of the method will set the timestamp value in the header to {@link Aeron#NULL_VALUE}.
      *
-     * @param publication to be offer to.
+     * @param publication to be offered to.
      * @param buffer      containing message.
      * @param offset      offset in the buffer at which the encoded message begins.
      * @param length      in bytes of the encoded message.

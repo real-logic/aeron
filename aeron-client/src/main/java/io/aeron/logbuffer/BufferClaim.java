@@ -54,7 +54,7 @@ public final class BufferClaim
     /**
      * The referenced buffer to be used.
      *
-     * @return the referenced buffer to be used..
+     * @return the referenced buffer to be used.
      */
     public MutableDirectBuffer buffer()
     {

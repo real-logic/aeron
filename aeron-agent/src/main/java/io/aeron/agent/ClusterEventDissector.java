@@ -17,6 +17,7 @@ package io.aeron.agent;
 
 import org.agrona.MutableDirectBuffer;
 
+import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
 import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -101,6 +102,42 @@ final class ClusterEventDissector
         builder.append(": memberId=").append(memberId);
         builder.append(' ');
         buffer.getStringAscii(absoluteOffset, builder);
+    }
+
+    static void dissectElectionStateChange(
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, ELECTION_STATE_CHANGE, buffer, absoluteOffset, builder);
+
+        final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final int leaderId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final long candidateTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long leadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long logPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long logLeadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long appendPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long catchupPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(": memberId=").append(memberId).append(' ');
+        buffer.getStringAscii(absoluteOffset, builder);
+        builder.append(" leaderId=").append(leaderId);
+        builder.append(" candidateTermId=").append(candidateTermId);
+        builder.append(" leadershipTermId=").append(leadershipTermId);
+        builder.append(" logPosition=").append(logPosition);
+        builder.append(" logLeadershipTermId=").append(logLeadershipTermId);
+        builder.append(" appendPosition=").append(appendPosition);
+        builder.append(" catchupPosition=").append(catchupPosition);
     }
 
     static void dissectCanvassPosition(

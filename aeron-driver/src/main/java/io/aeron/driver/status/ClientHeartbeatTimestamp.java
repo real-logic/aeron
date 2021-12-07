@@ -28,7 +28,7 @@ import org.agrona.concurrent.status.CountersManager;
 public class ClientHeartbeatTimestamp extends HeartbeatTimestamp
 {
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "client-heartbeat";
 

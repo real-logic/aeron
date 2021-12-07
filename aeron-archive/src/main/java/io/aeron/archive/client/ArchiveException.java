@@ -69,7 +69,7 @@ public class ArchiveException extends AeronException
     public static final int MAX_RECORDINGS = 8;
 
     /**
-     * The extend recording operation is not valid for the existing recording.
+     * The extend-recording operation is not valid for the existing recording.
      */
     public static final int INVALID_EXTENSION = 9;
 
@@ -92,7 +92,7 @@ public class ArchiveException extends AeronException
     private final long correlationId;
 
     /**
-     * Default ArchiveException exception of {@link io.aeron.exceptions.AeronException.Category#ERROR} and
+     * Default ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR} and
      * {@link #errorCode()} = {@link #GENERIC}.
      */
     public ArchiveException()
@@ -103,7 +103,7 @@ public class ArchiveException extends AeronException
     }
 
     /**
-     * ArchiveException exception of {@link io.aeron.exceptions.AeronException.Category#ERROR} and
+     * ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR} and
      * {@link #errorCode()} = {@link #GENERIC}, plus detail.
      *
      * @param message providing detail.
@@ -116,7 +116,7 @@ public class ArchiveException extends AeronException
     }
 
     /**
-     * ArchiveException exception of {@link io.aeron.exceptions.AeronException.Category#ERROR}, plus detail and
+     * ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}, plus detail and
      * error code.
      *
      * @param message   providing detail.
@@ -130,7 +130,7 @@ public class ArchiveException extends AeronException
     }
 
     /**
-     * ArchiveException exception of {@link io.aeron.exceptions.AeronException.Category#ERROR}, plus detail, cause,
+     * ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}, plus detail, cause,
      * and error code.
      *
      * @param message   providing detail.
@@ -145,7 +145,7 @@ public class ArchiveException extends AeronException
     }
 
     /**
-     * ArchiveException exception of {@link io.aeron.exceptions.AeronException.Category#ERROR}, plus detail, error code,
+     * ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}, plus detail, error code,
      * and correlation if of the control request.
      *
      * @param message       providing detail.

@@ -211,12 +211,12 @@ public final class Configuration
      * <p>
      * Buffer = Throughput * RTT
      * Buffer = (10 * 1000 * 1000 * 1000 / 8) * 0.0001 = 125000
-     * Round to 128KB
+     * Round to 128 KB
      */
     public static final int INITIAL_WINDOW_LENGTH_DEFAULT = 128 * 1024;
 
     /**
-     * Status message timeout in nanoseconds after which one will be sent when data flow does has not triggered one.
+     * Status message timeout in nanoseconds after which one will be sent when data flow has not triggered one.
      */
     public static final String STATUS_MESSAGE_TIMEOUT_PROP_NAME = "aeron.rcv.status.message.timeout";
 
@@ -435,7 +435,7 @@ public final class Configuration
      * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
      * <p>
      * Max length is 65,507 bytes as 65,535 minus 8 byte UDP header then minus 20 byte IP header.
-     * Then round down to nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} to give 65,504.
+     * Then round down to nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} giving 65,504.
      */
     public static final int MAX_UDP_PAYLOAD_LENGTH = 65504;
 
@@ -668,7 +668,7 @@ public final class Configuration
     public static final long FLOW_CONTROL_RECEIVER_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
-     * Property name for flow control timeout after which with no status messages the receiver is consider gone.
+     * Property name for flow control timeout after which with no status messages the receiver is considered gone.
      */
     public static final String FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME = "aeron.flow.control.receiver.timeout";
 
@@ -1038,9 +1038,9 @@ public final class Configuration
     }
 
     /**
-     * Flow control timeout after which with no status messages the receiver is consider gone.
+     * Flow control timeout after which with no status messages the receiver is considered gone.
      *
-     * @return flow control timeout after which with no status messages the receiver is consider gone.
+     * @return flow control timeout after which with no status messages the receiver is considered gone.
      * @see #FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME
      */
     public static long flowControlReceiverTimeoutNs()
@@ -1250,7 +1250,7 @@ public final class Configuration
     }
 
     /**
-     * Status message timeout in nanoseconds after which one will be sent when data flow does has not triggered one.
+     * Status message timeout in nanoseconds after which one will be sent when data flow has not triggered one.
      *
      * @return status message timeout in nanoseconds after which one will be sent.
      * @see #STATUS_MESSAGE_TIMEOUT_PROP_NAME
@@ -1377,7 +1377,7 @@ public final class Configuration
     }
 
     /**
-     * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}. This allow for CPU resource to be traded
+     * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}. This allows for CPU resource to be traded
      * against throughput and latency.
      *
      * @return {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}.
@@ -1732,21 +1732,6 @@ public final class Configuration
         {
             throw new ConfigurationException(
                 "mtuLength=" + mtuLength + " is not a multiple of FRAME_ALIGNMENT=" + FrameDescriptor.FRAME_ALIGNMENT);
-        }
-    }
-
-    /**
-     * Validate the publication linger timeout is an appropriate value.
-     *
-     * @param timeoutNs to be validated.
-     * @param driverLingerTimeoutNs set for the driver operation.
-     * @throws ConfigurationException if the values are not valid.
-     */
-    public static void validatePublicationLingerTimeoutNs(final long timeoutNs, final long driverLingerTimeoutNs)
-    {
-        if (timeoutNs < driverLingerTimeoutNs)
-        {
-            throw new ConfigurationException("linger=" + driverLingerTimeoutNs + " < timeoutNs =" + timeoutNs);
         }
     }
 

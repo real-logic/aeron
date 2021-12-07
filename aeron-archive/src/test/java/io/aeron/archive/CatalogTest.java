@@ -139,7 +139,7 @@ class CatalogTest
     }
 
     @Test
-    void shouldThrowArchiveExceprtionIfTooSmallNextRecordingIdInTheHeader() throws IOException
+    void shouldThrowArchiveExceptionIfNextRecordingIdIsSmallerThanTheActualLastRecordInTheCatalog() throws IOException
     {
         setNextRecordingId(recordingTwoId);
 
@@ -149,6 +149,31 @@ class CatalogTest
             "ERROR - invalid nextRecordingId: expected value greater or equal to " + (recordingThreeId + 1) +
             ", was " + recordingTwoId,
             exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowArchiveExceptionIfNextRecordingIdIsInvalidWriteableCatalog() throws IOException
+    {
+        setNextRecordingId(-1);
+
+        final ArchiveException exception = assertThrows(ArchiveException.class,
+            () -> new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, null));
+        assertEquals(
+            "ERROR - invalid nextRecordingId: expected value greater or equal to " + (recordingThreeId + 1) +
+            ", was -1",
+            exception.getMessage());
+    }
+
+    @Test
+    void shouldNotThrowArchiveExceptionWhenNextRecordingIdIsInvalidIfCatalogIsReadOnly()
+        throws IOException
+    {
+        setNextRecordingId(recordingTwoId);
+
+        try (Catalog catalog = new Catalog(archiveDir, clock))
+        {
+            assertEquals(recordingTwoId, catalog.nextRecordingId());
+        }
     }
 
     @Test
@@ -536,9 +561,9 @@ class CatalogTest
         {
             final ArchiveException exception = assertThrows(
                 ArchiveException.class, () -> catalog.growCatalog(CAPACITY * 2, Integer.MAX_VALUE));
-            assertEquals(String.format(
-                "ERROR - recording is too big: total recording length is %d bytes, available space is %d bytes",
-                Integer.MAX_VALUE, CAPACITY * 2 - 800),
+            assertEquals(
+                "ERROR - recording is too big: total recording length is " + Integer.MAX_VALUE +
+                " bytes, available space is " + (CAPACITY * 2 - 800) + " bytes",
                 exception.getMessage());
         }
     }

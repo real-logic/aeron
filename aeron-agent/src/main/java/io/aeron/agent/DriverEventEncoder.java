@@ -46,13 +46,13 @@ final class DriverEventEncoder
         final int srcOffset,
         final InetSocketAddress dstAddress)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        final int encodedSocketLength = encodeSocketAddress(encodingBuffer, offset + relativeOffset, dstAddress);
-        relativeOffset += encodedSocketLength;
+        final int encodedSocketLength = encodeSocketAddress(encodingBuffer, offset + encodedLength, dstAddress);
+        encodedLength += encodedSocketLength;
 
         final int bufferCaptureLength = captureLength - encodedSocketLength;
-        encodingBuffer.putBytes(offset + relativeOffset, srcBuffer, srcOffset, bufferCaptureLength);
+        encodingBuffer.putBytes(offset + encodedLength, srcBuffer, srcOffset, bufferCaptureLength);
     }
 
     static void encode(
@@ -64,13 +64,13 @@ final class DriverEventEncoder
         final int srcOffset,
         final InetSocketAddress dstAddress)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        final int encodedSocketLength = encodeSocketAddress(encodingBuffer, offset + relativeOffset, dstAddress);
-        relativeOffset += encodedSocketLength;
+        final int encodedSocketLength = encodeSocketAddress(encodingBuffer, offset + encodedLength, dstAddress);
+        encodedLength += encodedSocketLength;
 
         final int bufferCaptureLength = captureLength - encodedSocketLength;
-        encodingBuffer.putBytes(offset + relativeOffset, srcBuffer, srcOffset, bufferCaptureLength);
+        encodingBuffer.putBytes(offset + encodedLength, srcBuffer, srcOffset, bufferCaptureLength);
     }
 
     static void encode(
@@ -82,24 +82,24 @@ final class DriverEventEncoder
         final int srcOffset,
         final InetAddress dstAddress)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        final int encodedInetAddressLength = encodeInetAddress(encodingBuffer, offset + relativeOffset, dstAddress);
-        relativeOffset += encodedInetAddressLength;
+        final int encodedInetAddressLength = encodeInetAddress(encodingBuffer, offset + encodedLength, dstAddress);
+        encodedLength += encodedInetAddressLength;
 
         final int bufferCaptureLength = captureLength - encodedInetAddressLength;
-        encodingBuffer.putBytes(offset + relativeOffset, srcBuffer, srcOffset, bufferCaptureLength);
+        encodingBuffer.putBytes(offset + encodedLength, srcBuffer, srcOffset, bufferCaptureLength);
     }
 
-    static void encode(
+    public static void encode(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,
         final int length,
         final String value)
     {
-        final int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
-        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength, value);
+        final int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        encodeTrailingString(encodingBuffer, offset + encodedLength, captureLength, value);
     }
 
     static void encode(
@@ -109,8 +109,8 @@ final class DriverEventEncoder
         final int length,
         final InetSocketAddress address)
     {
-        final int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
-        encodeSocketAddress(encodingBuffer, offset + relativeOffset, address);
+        final int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        encodeSocketAddress(encodingBuffer, offset + encodedLength, address);
     }
 
     static void encodePublicationRemoval(
@@ -122,15 +122,15 @@ final class DriverEventEncoder
         final int sessionId,
         final int streamId)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putInt(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, sessionId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, streamId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT * 2, channel);
+        encodeTrailingString(encodingBuffer, offset + encodedLength, captureLength - SIZE_OF_INT * 2, channel);
     }
 
     static void encodeSubscriptionRemoval(
@@ -142,16 +142,16 @@ final class DriverEventEncoder
         final int streamId,
         final long id)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, streamId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putLong(offset + relativeOffset, id, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, id, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
         encodeTrailingString(
-            encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT - SIZE_OF_LONG, channel);
+            encodingBuffer, offset + encodedLength, captureLength - SIZE_OF_INT - SIZE_OF_LONG, channel);
     }
 
     static void encodeImageRemoval(
@@ -164,19 +164,19 @@ final class DriverEventEncoder
         final int streamId,
         final long id)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putInt(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, sessionId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, streamId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putLong(offset + relativeOffset, id, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, id, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
         encodeTrailingString(
-            encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT * 2 - SIZE_OF_LONG, channel);
+            encodingBuffer, offset + encodedLength, captureLength - SIZE_OF_INT * 2 - SIZE_OF_LONG, channel);
     }
 
     static <E extends Enum<E>> int untetheredSubscriptionStateChangeLength(final E from, final E to)
@@ -195,25 +195,18 @@ final class DriverEventEncoder
         final int streamId,
         final int sessionId)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putLong(offset + relativeOffset, subscriptionId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, subscriptionId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, streamId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, sessionId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, captureLength - (SIZE_OF_LONG + 3 * SIZE_OF_INT), LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
-
-        final String fromName = null == from ? "null" : from.name();
-        final String toName = null == to ? "null" : to.name();
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, fromName);
-        relativeOffset += encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, STATE_SEPARATOR);
-        encodingBuffer.putStringWithoutLengthAscii(offset + relativeOffset, toName);
+        encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
     }
 
     static void encodeFlowControlReceiver(
@@ -227,22 +220,22 @@ final class DriverEventEncoder
         final String channel,
         final int receiverCount)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putInt(offset + relativeOffset, receiverCount, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, receiverCount, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putLong(offset + relativeOffset, receiverId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, receiverId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
 
-        encodingBuffer.putInt(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, sessionId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, streamId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
 
         encodeTrailingString(
-            encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT * 3 - SIZE_OF_LONG, channel);
+            encodingBuffer, offset + encodedLength, captureLength - SIZE_OF_INT * 3 - SIZE_OF_LONG, channel);
     }
 
     static void encodeResolve(
@@ -254,11 +247,11 @@ final class DriverEventEncoder
         final String hostName,
         final InetAddress inetAddress)
     {
-        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
-        relativeOffset += encodeTrailingString(
-            encodingBuffer, offset + relativeOffset, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, resolverName);
-        relativeOffset += encodeTrailingString(
-            encodingBuffer, offset + relativeOffset, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, hostName);
-        encodeInetAddress(encodingBuffer, offset + relativeOffset, inetAddress);
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        encodedLength += encodeTrailingString(
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, resolverName);
+        encodedLength += encodeTrailingString(
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, hostName);
+        encodeInetAddress(encodingBuffer, offset + encodedLength, inetAddress);
     }
 }

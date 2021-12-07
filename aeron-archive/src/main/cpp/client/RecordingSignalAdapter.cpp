@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "RecordingSignalAdapter.h"
 #include "ArchiveException.h"
 #include "aeron_archive_client/MessageHeader.h"
 #include "aeron_archive_client/ControlResponse.h"
 #include "aeron_archive_client/RecordingSignalEvent.h"
+#include "RecordingSignalAdapter.h"
 
 using namespace aeron;
 using namespace aeron::archive::client;
@@ -61,7 +61,7 @@ ControlledPollAction RecordingSignalAdapter::onFragment(
         static_cast<std::uint64_t>(length),
         MessageHeader::sbeSchemaVersion());
 
-    const std::int16_t schemaId = msgHeader.schemaId();
+    const std::uint16_t schemaId = msgHeader.schemaId();
     if (schemaId != MessageHeader::sbeSchemaId())
     {
         throw ArchiveException(
@@ -104,7 +104,7 @@ ControlledPollAction RecordingSignalAdapter::onFragment(
                 recordingSignalEvent.recordingId(),
                 recordingSignalEvent.subscriptionId(),
                 recordingSignalEvent.position(),
-                recordingSignalEvent.signal());
+                recordingSignalEvent.signalRaw());
 
             m_isAbort = true;
             return ControlledPollAction::BREAK;

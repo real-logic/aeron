@@ -78,9 +78,9 @@ public final class ReadableCounter implements AutoCloseable
     }
 
     /**
-     * Return the registration Id for the counter.
+     * Return the registration id for the counter.
      *
-     * @return registration Id.
+     * @return registration id.
      */
     public long registrationId()
     {
@@ -88,9 +88,9 @@ public final class ReadableCounter implements AutoCloseable
     }
 
     /**
-     * Return the counter Id.
+     * Return the counter id.
      *
-     * @return counter Id.
+     * @return counter id.
      */
     public int counterId()
     {
@@ -153,7 +153,7 @@ public final class ReadableCounter implements AutoCloseable
     }
 
     /**
-     * Has this counters been closed and should no longer be used?
+     * Has this counter been closed and should it no longer be used?
      *
      * @return true if it has been closed otherwise false.
      */

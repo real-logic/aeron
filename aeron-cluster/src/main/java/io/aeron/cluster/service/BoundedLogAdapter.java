@@ -25,7 +25,7 @@ import org.agrona.*;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 
 /**
- * Adapter for reading a log with a upper bound applied beyond which the consumer cannot progress.
+ * Adapter for reading a log with an upper-bound applied beyond which the consumer cannot progress.
  */
 final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseable
 {

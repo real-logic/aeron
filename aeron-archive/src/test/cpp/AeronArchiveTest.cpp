@@ -14,6 +14,20 @@
  * limitations under the License.
  */
 
+#include <chrono>
+#include <thread>
+#include <iostream>
+#include <iosfwd>
+#include <vector>
+#include <cstring>
+
+#include <gtest/gtest.h>
+
+#include "client/AeronArchive.h"
+#include "client/RecordingPos.h"
+#include "client/ReplayMerge.h"
+#include "ChannelUriStringBuilder.h"
+
 #if defined(__linux__) || defined(Darwin)
 #include <unistd.h>
 #include <ftw.h>
@@ -26,21 +40,6 @@ typedef intptr_t pid_t;
 #else
 #error "must spawn Java archive per test"
 #endif
-
-#include <chrono>
-#include <thread>
-#include <iostream>
-#include <iosfwd>
-#include <vector>
-#include <cstring>
-
-#include <gtest/gtest.h>
-
-#include "ChannelUriStringBuilder.h"
-#include "client/AeronArchive.h"
-#include "client/RecordingEventsAdapter.h"
-#include "client/RecordingPos.h"
-#include "client/ReplayMerge.h"
 
 using namespace aeron;
 using namespace aeron::util;
@@ -123,6 +122,7 @@ public:
     {
         m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
 
+        std::string aeronDirArg = "-Daeron.dir=" + m_context.aeronDirectoryName();
         std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
         const char * const argv[] =
         {
@@ -150,6 +150,7 @@ public:
             "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
             "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
             archiveDirArg.c_str(),
+            aeronDirArg.c_str(),
             "-cp",
             m_aeronAllJar.c_str(),
             "io.aeron.archive.ArchivingMediaDriver",

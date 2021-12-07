@@ -101,7 +101,7 @@ public final class ArchiveProxy
      * @param publication         publication for sending control messages to an archive.
      * @param retryIdleStrategy   for what should happen between retry attempts at offering messages.
      * @param nanoClock           to be used for calculating checking deadlines.
-     * @param connectTimeoutNs    for for connection requests.
+     * @param connectTimeoutNs    for connection requests.
      * @param retryAttempts       for offering control messages before giving up.
      * @param credentialsSupplier for the AuthConnectRequest
      */
@@ -156,8 +156,8 @@ public final class ArchiveProxy
     }
 
     /**
-     * Try Connect to an archive on its control interface providing the response stream details. Only one attempt will
-     * be made to offer the request.
+     * Try and connect to an archive on its control interface providing the response stream details. Only one attempt
+     * will be made to offer the request.
      *
      * @param responseChannel  for the control message responses.
      * @param responseStreamId for the control message responses.
@@ -246,7 +246,7 @@ public final class ArchiveProxy
     }
 
     /**
-     * Try send a ChallengeResponse to an archive on its control interface providing the credentials. Only one
+     * Try and send a ChallengeResponse to an archive on its control interface providing the credentials. Only one
      * attempt will be made to offer the request.
      *
      * @param encodedCredentials to send.
@@ -631,7 +631,7 @@ public final class ArchiveProxy
     }
 
     /**
-     * Extend an existing, non-active, recorded stream for a the same channel and stream id.
+     * Extend an existing, non-active, recorded stream for the same channel and stream id.
      * <p>
      * The channel must be configured for the initial position from which it will be extended. This can be done
      * with {@link ChannelUriStringBuilder#initialPosition(long, int, int)}. The details required to initialise can
@@ -671,7 +671,7 @@ public final class ArchiveProxy
     }
 
     /**
-     * Extend an existing, non-active, recorded stream for a the same channel and stream id.
+     * Extend an existing, non-active, recorded stream for the same channel and stream id.
      * <p>
      * The channel must be configured for the initial position from which it will be extended. This can be done
      * with {@link ChannelUriStringBuilder#initialPosition(long, int, int)}. The details required to initialise can

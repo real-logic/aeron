@@ -204,7 +204,7 @@ public:
                 SOURCEINFO);
         }
 
-        return std::string(buffer, static_cast<std::size_t>(length));
+        return { buffer, static_cast<std::size_t>(length) };
     }
 
     inline static util::index_t counterOffset(std::int32_t counterId)

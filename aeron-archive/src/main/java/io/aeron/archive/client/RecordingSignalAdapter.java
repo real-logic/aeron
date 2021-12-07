@@ -46,11 +46,11 @@ public final class RecordingSignalAdapter
     /**
      * Create an adapter for a given subscription to an archive for recording events.
      *
-     * @param controlSessionId            to listen for associated asynchronous control events, such as errors.
-     * @param controlEventListener        listener for control events which may indicate an error on the session.
+     * @param controlSessionId        to listen for associated asynchronous control events, such as errors.
+     * @param controlEventListener    listener for control events which may indicate an error on the session.
      * @param recordingSignalConsumer consumer of recording transition events.
-     * @param subscription                to poll for new events.
-     * @param fragmentLimit               to apply for each polling operation.
+     * @param subscription            to poll for new events.
+     * @param fragmentLimit           to apply for each polling operation.
      */
     public RecordingSignalAdapter(
         final long controlSessionId,
@@ -75,7 +75,11 @@ public final class RecordingSignalAdapter
      */
     public int poll()
     {
-        isDone = false;
+        if (isDone)
+        {
+            isDone = false;
+        }
+
         return subscription.controlledPoll(assembler, fragmentLimit);
     }
 

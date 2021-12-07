@@ -385,3 +385,50 @@ TEST_P(PubSubTest, shouldExclusivePublicationTryClaimAndControlledPollSubscripti
 
     invoker.invoke();
 }
+
+// Useful to look at error stack when manually testing error conditions.
+TEST_F(PubSubTest, DISABLED_shouldError)
+{
+    buffer_t buf;
+    AtomicBuffer buffer(buf);
+    std::int32_t streamId = 982375;
+    std::int32_t termId = 23;
+    std::int32_t initialTermId = 3;
+    std::int32_t termOffset = 1024;
+    ChannelUriStringBuilder uriBuilder;
+    const std::string channel = setParameters("udp", "224.0.1.1:40456", uriBuilder)
+        .termId(termId)
+        .termOffset(termOffset)
+        .initialTermId(initialTermId)
+        .build();
+
+    Context ctx;
+    ctx.useConductorAgentInvoker(true);
+
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    std::int64_t subId = aeron->addSubscription(channel, streamId);
+    std::int64_t pubId = aeron->addExclusivePublication(channel, streamId);
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
+
+    {
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+        POLL_FOR_NON_NULL(pub, aeron->findExclusivePublication(pubId), invoker);
+        POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
+
+        std::string message = "hello world!";
+        buffer.putString(0, message);
+        POLL_FOR(0 < pub->offer(buffer), invoker);
+
+        POLL_FOR(0 < sub->poll(
+            [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+            {
+                EXPECT_EQ(message, buffer.getString(offset));
+                EXPECT_EQ(termId, header.termId());
+                EXPECT_EQ(termOffset, header.termOffset());
+                EXPECT_EQ(initialTermId, header.initialTermId());
+            },
+            1), invoker);
+    }
+
+    invoker.invoke();
+}

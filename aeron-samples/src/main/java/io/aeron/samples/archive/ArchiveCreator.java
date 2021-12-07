@@ -59,8 +59,8 @@ public class ArchiveCreator
     public static void main(final String[] args)
     {
         final String archiveDirName = Archive.Configuration.archiveDirName();
-        final File archiveDir = ARCHIVE_DIR_DEFAULT.equals(archiveDirName) ?
-            new File("archive") : new File(archiveDirName);
+        final File archiveDir =
+            ARCHIVE_DIR_DEFAULT.equals(archiveDirName) ? new File("archive") : new File(archiveDirName);
 
         final MediaDriver.Context driverContext = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_LENGTH)

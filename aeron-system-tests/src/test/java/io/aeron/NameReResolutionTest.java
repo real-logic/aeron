@@ -22,8 +22,6 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.*;
-import io.aeron.test.driver.DistinctErrorLogTestWatcher;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
@@ -44,11 +42,10 @@ import java.io.IOException;
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 import static io.aeron.test.driver.RedirectingNameResolver.*;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class NameReResolutionTest
+class NameReResolutionTest
 {
     private static final String ENDPOINT_NAME = "ReResTestEndpoint";
     private static final int ENDPOINT_PORT = 24326;
@@ -73,9 +70,9 @@ public class NameReResolutionTest
     private static final String SUBSCRIPTION_MDS_URI = "aeron:udp?control-mode=manual";
 
     private static final String STUB_LOOKUP_CONFIGURATION =
-        String.format("%s,%s,%s|", ENDPOINT_NAME, "127.0.0.1", "127.0.0.2") +
-        String.format("%s,%s,%s|", CONTROL_NAME, "127.0.0.1", "127.0.0.2") +
-        String.format("%s,%s,%s|", ENDPOINT_WITH_ERROR_NAME, "localhost", BAD_ADDRESS);
+        ENDPOINT_NAME + ",127.0.0.1,127.0.0.2|" +
+        CONTROL_NAME + ",127.0.0.1,127.0.0.2|" +
+        ENDPOINT_WITH_ERROR_NAME + ",localhost," + BAD_ADDRESS + "|";
 
     private static final int STREAM_ID = 1001;
 
@@ -85,20 +82,17 @@ public class NameReResolutionTest
     private Publication publication;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @RegisterExtension
-    public final DistinctErrorLogTestWatcher logWatcher = new DistinctErrorLogTestWatcher();
-
-    @RegisterExtension
-    public final InterruptingTestCallback testCallback = new InterruptingTestCallback();
+    final InterruptingTestCallback testCallback = new InterruptingTestCallback();
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private final FragmentHandler handler = mock(FragmentHandler.class);
     private CountersReader countersReader;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         assumeBindAddressAvailable("127.0.0.1");
         assumeBindAddressAvailable("127.0.0.2");
@@ -106,22 +100,27 @@ public class NameReResolutionTest
         final MediaDriver.Context context = new MediaDriver.Context()
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED)
             .nameResolver(new RedirectingNameResolver(STUB_LOOKUP_CONFIGURATION));
 
-        driver = TestMediaDriver.launch(context, testWatcher);
+        try
+        {
+            driver = TestMediaDriver.launch(context, systemTestWatcher);
+        }
+        finally
+        {
+            systemTestWatcher.dataCollector().add(context.aeronDirectory());
+        }
 
         client = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()));
         countersReader = client.countersReader();
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         if (null != client)
         {
-            logWatcher.captureErrors(client.context().aeronDirectoryName());
             CloseHelper.closeAll(client, driver);
         }
     }
@@ -129,7 +128,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReResolveEndpointOnNotConnected()
+    void shouldReResolveEndpointOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -191,7 +190,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReResolveMdcManualEndpointOnNotConnected()
+    void shouldReResolveMdcManualEndpointOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -254,7 +253,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldHandleMdcManualEndpointInitiallyUnresolved()
+    void shouldHandleMdcManualEndpointInitiallyUnresolved()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -300,7 +299,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReResolveMdcDynamicControlOnNotConnected()
+    void shouldReResolveMdcDynamicControlOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
         buffer.putInt(0, 1);
@@ -361,7 +360,7 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNotConnected()
+    void shouldReResolveMdcDynamicControlOnManualDestinationSubscriptionOnNotConnected()
     {
         final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
 
@@ -424,8 +423,9 @@ public class NameReResolutionTest
     @SlowTest
     @Test
     @InterruptAfter(20)
-    public void shouldReportErrorOnReResolveFailure() throws IOException
+    void shouldReportErrorOnReResolveFailure() throws IOException
     {
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("Unable to resolve host"));
         buffer.putInt(0, 1);
 
         subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);

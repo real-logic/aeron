@@ -60,7 +60,7 @@ public final class RecordingPos
     public static final long NULL_RECORDING_ID = Aeron.NULL_VALUE;
 
     /**
-     * Human readable name for the counter.
+     * Human-readable name for the counter.
      */
     public static final String NAME = "rec-pos";
 

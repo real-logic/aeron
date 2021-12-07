@@ -8,37 +8,55 @@ set "BUILD_CONFIG=Release"
 set "EXTRA_CMAKE_ARGS="
 set "AERON_SKIP_RMDIR="
 
-for %%o in (%*) do (
-    if "%%o"=="--help" (
-        echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--link-samples-client-shared] [--build-archive-api] [--skip-rmdir] [--slow-system-tests] [--no-system-tests] [--debug-build] [--help]
+:loop
+if not "%1"=="" (
+    if "%1"=="--help" (
+        echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--link-samples-client-shared] [--build-archive-api] [--skip-rmdir] [--slow-system-tests] [--no-system-tests] [--debug-build] [--sanitise-build]  [--gradle-wrapper path_to_gradle] [--help]
         exit /b
-    ) else if "%%o"=="--c-warnings-as-errors" (
+    ) else if "%1"=="--c-warnings-as-errors" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DC_WARNINGS_AS_ERRORS=ON"
-    ) else if "%%o"=="--cxx-warnings-as-errors" (
+        echo "Enabling warnings as errors for c"
+    ) else if "%1"=="--cxx-warnings-as-errors" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCXX_WARNINGS_AS_ERRORS=ON"
-    ) else if "%%o"=="--build-aeron-driver" (
+        echo "Enabling warnings as errors for c++"
+    ) else if "%1"=="--build-aeron-driver" (
         echo "Enabling building of Aeron driver is the default"
-    ) else if "%%o"=="--link-samples-client-shared" (
+    ) else if "%1"=="--link-samples-client-shared" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DLINK_SAMPLES_CLIENT_SHARED=ON"
-    ) else if "%%o"=="--build-archive-api" (
+    ) else if "%1"=="--build-archive-api" (
         echo "Enabling building of Aeron Archive API is the default"
-    ) else if "%%o"=="--skip-rmdir" (
+    ) else if "%1"=="--skip-rmdir" (
         set "AERON_SKIP_RMDIR=yes"
-    ) else if "%%o"=="--slow-system-tests" (
-        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON"
-        echo "Enabling slow system tests"
-    ) else if "%%o"=="--no-system-tests" (
+        echo "Disabling build directory removal"
+    ) else if "%1"=="--no-tests" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_TESTS=OFF"
+        echo "Disabling all tests"
+    ) else if "%1"=="--no-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SYSTEM_TESTS=OFF"
         echo "Disabling system tests"
-    ) else if "%%o"=="--debug-build" (
+    ) else if "%1"=="--slow-system-tests" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON"
+        echo "Enabling slow system tests"
+    ) else if "%1"=="--debug-build" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCMAKE_BUILD_TYPE=Debug"
         set "BUILD_DIR=%DIR%\Debug"
         set "BUILD_CONFIG=Debug"
+        echo "Enabling debug build"
+    ) else if "%1"=="--sanitise-build" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DSANITISE_BUILD=ON"
+        echo "Enabling sanitise build"
+    ) else if "%1"=="--gradle-wrapper" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DGRADLE_WRAPPER=%2"
+        echo "Setting -DGRADLE_WRAPPER=%2"
+        shift
     ) else (
         echo "Unknown option %%o"
         echo "Use --help for help"
         exit /b 1
     )
+
+    shift
+    goto :loop
 )
 
 call "%DIR%\vs-helper.cmd"

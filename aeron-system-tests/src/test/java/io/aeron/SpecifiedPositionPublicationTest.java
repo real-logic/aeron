@@ -19,7 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.ErrorHandler;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 class SpecifiedPositionPublicationTest
 {
     @RegisterExtension
-    final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @Test
     void shouldRejectSpecifiedPositionForConcurrentPublications()

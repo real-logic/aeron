@@ -28,7 +28,6 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
-import javax.management.Attribute;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -64,9 +63,9 @@ public class Tests
             field.setAccessible(true);
             field.set(instance, value);
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            LangUtil.rethrowUnchecked(t);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
@@ -267,7 +266,7 @@ public class Tests
     /**
      * Helper method to mock {@link AutoCloseable#close()} method to throw exception.
      *
-     * @param mock      to have it's method mocked
+     * @param mock      to have its method mocked
      * @param exception exception to be thrown
      * @throws Exception to make compiler happy
      */
@@ -528,6 +527,19 @@ public class Tests
     }
 
     /**
+     * Await a Publication having an available windows for sending by yielding and checking for thread interrupt.
+     *
+     * @param publication to await having an available window.
+     */
+    public static void awaitAvailableWindow(final Publication publication)
+    {
+        while (publication.availableWindow() <= 0)
+        {
+            Tests.yield();
+        }
+    }
+
+    /**
      * Await a Subscription being connected by yielding and checking for thread interrupt.
      *
      * @param subscription to await being connected.
@@ -578,8 +590,10 @@ public class Tests
 
     /**
      * Start the collecting log of debug events for a test run.
+     *
+     * @param displayName for the test the log is being collected for.
      */
-    public static void startLogCollecting()
+    public static void startLogCollecting(final String displayName)
     {
         try
         {
@@ -588,7 +602,8 @@ public class Tests
 
             try
             {
-                mBeanServer.setAttribute(loggingName, new Attribute("Collecting", true));
+                mBeanServer.invoke(
+                    loggingName, "startCollecting", new Object[]{ displayName }, new String[]{ "java.lang.String" });
             }
             catch (final InstanceNotFoundException ignore)
             {

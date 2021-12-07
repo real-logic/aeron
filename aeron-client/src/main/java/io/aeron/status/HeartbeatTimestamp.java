@@ -38,7 +38,7 @@ public class HeartbeatTimestamp
     public static final int HEARTBEAT_TYPE_ID = AeronCounters.DRIVER_HEARTBEAT_TYPE_ID;
 
     /**
-     * Offset in the key meta data for the registration id of the counter.
+     * Offset in the key metadata for the registration id of the counter.
      */
     public static final int REGISTRATION_ID_OFFSET = 0;
 
@@ -48,7 +48,7 @@ public class HeartbeatTimestamp
      * @param tempBuffer      to be used for labels and key.
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
-     * @param countersManager from which to allocated the underlying storage.
+     * @param countersManager from which the underlying storage is allocated.
      * @param registrationId  to be associated with the counter.
      * @return a new {@link AtomicCounter} for tracking the last heartbeat.
      */
@@ -71,7 +71,7 @@ public class HeartbeatTimestamp
      * @param tempBuffer      to be used for labels and key.
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
-     * @param countersManager from which to allocated the underlying storage.
+     * @param countersManager from which the underlying storage is allocated.
      * @param registrationId  to be associated with the counter.
      * @return the counter id to be used.
      */

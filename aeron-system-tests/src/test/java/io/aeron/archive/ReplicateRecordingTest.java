@@ -24,8 +24,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -83,7 +83,7 @@ public class ReplicateRecordingTest
     private AeronArchive dstAeronArchive;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
     public void before()
@@ -91,53 +91,58 @@ public class ReplicateRecordingTest
         final String srcAeronDirectoryName = generateRandomDirName();
         final String dstAeronDirectoryName = generateRandomDirName();
 
-        srcDriver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .aeronDirectoryName(srcAeronDirectoryName)
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
-                .spiesSimulateConnection(true)
-                .timerIntervalNs(TIMER_INTERVAL_NS)
-                .dirDeleteOnStart(true), testWatcher);
+        final MediaDriver.Context srcContext = new MediaDriver.Context()
+            .aeronDirectoryName(srcAeronDirectoryName)
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .spiesSimulateConnection(true)
+            .timerIntervalNs(TIMER_INTERVAL_NS)
+            .dirDeleteOnStart(true);
 
-        srcArchive = Archive.launch(
-            new Archive.Context()
-                .catalogCapacity(CATALOG_CAPACITY)
-                .aeronDirectoryName(srcAeronDirectoryName)
-                .controlChannel(SRC_CONTROL_REQUEST_CHANNEL)
-                .archiveClientContext(new AeronArchive.Context().controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL))
-                .recordingEventsEnabled(false)
-                .replicationChannel(SRC_REPLICATION_CHANNEL)
-                .deleteArchiveOnStart(true)
-                .archiveDir(new File(SystemUtil.tmpDirName(), "src-archive"))
-                .fileSyncLevel(0)
-                .errorHandler(Tests::onError)
-                .threadingMode(ArchiveThreadingMode.SHARED));
+        final Archive.Context srcArchiveCtx = new Archive.Context()
+            .catalogCapacity(CATALOG_CAPACITY)
+            .aeronDirectoryName(srcAeronDirectoryName)
+            .controlChannel(SRC_CONTROL_REQUEST_CHANNEL)
+            .archiveClientContext(new AeronArchive.Context().controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL))
+            .recordingEventsEnabled(false)
+            .replicationChannel(SRC_REPLICATION_CHANNEL)
+            .deleteArchiveOnStart(true)
+            .archiveDir(new File(SystemUtil.tmpDirName(), "src-archive"))
+            .fileSyncLevel(0)
+            .threadingMode(ArchiveThreadingMode.SHARED);
+        final MediaDriver.Context dstContext = new MediaDriver.Context()
+            .aeronDirectoryName(dstAeronDirectoryName)
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .spiesSimulateConnection(true)
+            .timerIntervalNs(TIMER_INTERVAL_NS)
+            .dirDeleteOnStart(true);
+        final Archive.Context dstArchiveCtx = new Archive.Context()
+            .catalogCapacity(CATALOG_CAPACITY)
+            .aeronDirectoryName(dstAeronDirectoryName)
+            .controlChannel(DST_CONTROL_REQUEST_CHANNEL)
+            .archiveClientContext(new AeronArchive.Context().controlResponseChannel(DST_CONTROL_RESPONSE_CHANNEL))
+            .recordingEventsEnabled(false)
+            .replicationChannel(DST_REPLICATION_CHANNEL)
+            .deleteArchiveOnStart(true)
+            .archiveDir(new File(SystemUtil.tmpDirName(), "dst-archive"))
+            .fileSyncLevel(0)
+            .threadingMode(ArchiveThreadingMode.SHARED);
 
-        dstDriver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .aeronDirectoryName(dstAeronDirectoryName)
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
-                .spiesSimulateConnection(true)
-                .timerIntervalNs(TIMER_INTERVAL_NS)
-                .dirDeleteOnStart(true), testWatcher);
-
-        dstArchive = Archive.launch(
-            new Archive.Context()
-                .catalogCapacity(CATALOG_CAPACITY)
-                .aeronDirectoryName(dstAeronDirectoryName)
-                .controlChannel(DST_CONTROL_REQUEST_CHANNEL)
-                .archiveClientContext(new AeronArchive.Context().controlResponseChannel(DST_CONTROL_RESPONSE_CHANNEL))
-                .recordingEventsEnabled(false)
-                .replicationChannel(DST_REPLICATION_CHANNEL)
-                .deleteArchiveOnStart(true)
-                .archiveDir(new File(SystemUtil.tmpDirName(), "dst-archive"))
-                .fileSyncLevel(0)
-                .errorHandler(Tests::onError)
-                .threadingMode(ArchiveThreadingMode.SHARED));
+        try
+        {
+            srcDriver = TestMediaDriver.launch(srcContext, systemTestWatcher);
+            srcArchive = Archive.launch(srcArchiveCtx);
+            dstDriver = TestMediaDriver.launch(dstContext, systemTestWatcher);
+            dstArchive = Archive.launch(dstArchiveCtx);
+        }
+        finally
+        {
+            systemTestWatcher.dataCollector().add(srcContext.aeronDirectory());
+            systemTestWatcher.dataCollector().add(dstContext.aeronDirectory());
+            systemTestWatcher.dataCollector().add(dstArchiveCtx.archiveDir());
+            systemTestWatcher.dataCollector().add(srcArchiveCtx.archiveDir());
+        }
 
         srcAeron = Aeron.connect(
             new Aeron.Context()
@@ -174,11 +179,6 @@ public class ReplicateRecordingTest
             dstArchive,
             dstDriver,
             srcDriver);
-
-        dstArchive.context().deleteDirectory();
-        dstDriver.context().deleteDirectory();
-        srcArchive.context().deleteDirectory();
-        srcDriver.context().deleteDirectory();
     }
 
     @Test

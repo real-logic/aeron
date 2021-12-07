@@ -45,7 +45,7 @@ protected:
         aeron_int64_counter_map_for_each(&m_map, Int64CounterMapTest::for_each, this);
     }
 
-    aeron_int64_counter_map_t m_map;
+    aeron_int64_counter_map_t m_map = {};
     std::function<void(int64_t, int64_t)> m_for_each;
 };
 

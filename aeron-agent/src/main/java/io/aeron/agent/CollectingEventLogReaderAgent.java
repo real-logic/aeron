@@ -26,6 +26,7 @@ import javax.management.*;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventLogReaderAgent.decodeLogEvent;
@@ -45,13 +46,15 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
 
     enum State
     {
-        COLLECTING, IGNORING, RESET
+        COLLECTING, IGNORING
     }
 
     private final ManyToOneRingBuffer ringBuffer = EventConfiguration.EVENT_RING_BUFFER;
     private final ExpandableArrayBuffer collectingBuffer = new ExpandableArrayBuffer();
     private final MessageHandler messageHandler = this::onMessage;
     private final Object mutex = new Object();
+    private final int infoMessageTypeId =
+        Arrays.stream(DriverEventCode.values()).mapToInt(DriverEventCode::id).min().orElse(0) - 1;
 
     private volatile State state = State.IGNORING;
     private int bufferPosition = 0;
@@ -105,12 +108,6 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
         {
             return;
         }
-        else if (state == State.RESET)
-        {
-            bufferPosition = 0;
-            state = State.IGNORING;
-            return;
-        }
 
         int position = bufferPosition;
 
@@ -135,6 +132,19 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
     /**
      * {@inheritDoc}
      */
+    public void startCollecting(final String name)
+    {
+        synchronized (mutex)
+        {
+            resetWritePosition();
+            writeLogStartMessage(name);
+            state = State.COLLECTING;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public boolean isCollecting()
     {
         return state == State.COLLECTING;
@@ -145,7 +155,11 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
      */
     public void reset()
     {
-        state = State.RESET;
+        synchronized (mutex)
+        {
+            state = State.IGNORING;
+            resetWritePosition();
+        }
     }
 
     /**
@@ -157,6 +171,19 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
         {
             doOutputToFile(filename);
         }
+    }
+
+    private void resetWritePosition()
+    {
+        bufferPosition = 0;
+    }
+
+    private void writeLogStartMessage(final String name)
+    {
+        collectingBuffer.putInt(bufferPosition, infoMessageTypeId);
+        bufferPosition += SIZE_OF_INT;
+        final int strLength = collectingBuffer.putStringAscii(bufferPosition, name);
+        bufferPosition += strLength;
     }
 
     private void doOutputToFile(final String filename)
@@ -173,17 +200,30 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
             {
                 final int msgTypeId = collectingBuffer.getInt(readingPosition);
                 readingPosition += SIZE_OF_INT;
-                final int length = collectingBuffer.getInt(readingPosition);
-                readingPosition += SIZE_OF_INT;
 
-                final int eventCodeTypeId = msgTypeId >> 16;
-                final int eventCodeId = msgTypeId & 0xFFFF;
+                if (infoMessageTypeId == msgTypeId)
+                {
+                    final int strLength = collectingBuffer.getInt(readingPosition);
+                    readingPosition += SIZE_OF_INT;
+                    final String message = collectingBuffer.getStringWithoutLengthAscii(readingPosition, strLength);
+                    readingPosition += strLength;
 
-                builder.setLength(0);
-                decodeLogEvent(collectingBuffer, readingPosition, eventCodeTypeId, eventCodeId, builder);
-                readingPosition += length;
+                    out.println(message);
+                }
+                else
+                {
+                    final int length = collectingBuffer.getInt(readingPosition);
+                    readingPosition += SIZE_OF_INT;
 
-                out.print(builder);
+                    final int eventCodeTypeId = msgTypeId >> 16;
+                    final int eventCodeId = msgTypeId & 0xFFFF;
+
+                    builder.setLength(0);
+                    decodeLogEvent(collectingBuffer, readingPosition, eventCodeTypeId, eventCodeId, builder);
+                    readingPosition += length;
+
+                    out.print(builder);
+                }
             }
 
             bufferPosition = 0;

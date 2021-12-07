@@ -93,19 +93,6 @@ public:
         }
     }
 
-    static aeron_controlled_fragment_handler_action_t controlled_fragment_handler(
-        void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
-    {
-        auto image = reinterpret_cast<CFragmentAssemblerTest *>(clientd);
-
-        if (image->m_controlled_handler)
-        {
-            return image->m_controlled_handler(buffer, length, header);
-        }
-
-        return AERON_ACTION_CONTINUE;
-    }
-
     template <typename F>
     void handle_fragment(F&& handler, size_t length)
     {

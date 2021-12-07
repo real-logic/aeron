@@ -25,7 +25,6 @@ import io.aeron.exceptions.ConfigurationException;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
@@ -77,7 +76,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             ctx.conclude();
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             if (null != ctx.markFile)
             {
@@ -670,10 +669,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 errorLog = new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII);
             }
 
-            if (null == errorHandler)
-            {
-                errorHandler = new LoggingErrorHandler(errorLog);
-            }
+            errorHandler = CommonContext.setupErrorHandler(this.errorHandler, errorLog);
 
             if (null == delegatingErrorHandler)
             {
@@ -1390,9 +1386,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The directory used for for the cluster directory.
+         * The directory used for the cluster directory.
          *
-         * @return directory for for the cluster directory.
+         * @return directory for the cluster directory.
          * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public File clusterDir()
@@ -1401,9 +1397,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         * Set the {@link ShutdownSignalBarrier} that can be used to shut down a clustered service.
          *
-         * @param barrier that can be used to shutdown a clustered service.
+         * @param barrier that can be used to shut down a clustered service.
          * @return this for a fluent API.
          */
         public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
@@ -1413,9 +1409,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         * Get the {@link ShutdownSignalBarrier} that can be used to shut down a clustered service.
          *
-         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         * @return the {@link ShutdownSignalBarrier} that can be used to shut down a clustered service.
          */
         public ShutdownSignalBarrier shutdownSignalBarrier()
         {
@@ -1581,6 +1577,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
             return "ClusteredServiceContainer.Context" +
                 "\n{" +
                 "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    ownsAeronClient=" + ownsAeronClient +
+                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
+                "\n    aeron=" + aeron +
+                "\n    archiveContext=" + archiveContext +
+                "\n    clusterDirectoryName='" + clusterDirectoryName + '\'' +
+                "\n    clusterDir=" + clusterDir +
                 "\n    appVersion=" + appVersion +
                 "\n    clusterId=" + clusterId +
                 "\n    serviceId=" + serviceId +
@@ -1604,17 +1606,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 "\n    delegatingErrorHandler=" + delegatingErrorHandler +
                 "\n    errorCounter=" + errorCounter +
                 "\n    countedErrorHandler=" + countedErrorHandler +
-                "\n    archiveContext=" + archiveContext +
-                "\n    clusterDirectoryName='" + clusterDirectoryName + '\'' +
-                "\n    clusterDir=" + clusterDir +
-                "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
-                "\n    aeron=" + aeron +
-                "\n    ownsAeronClient=" + ownsAeronClient +
                 "\n    clusteredService=" + clusteredService +
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
                 "\n    terminationHook=" + terminationHook +
                 "\n    markFile=" + markFile +
-                '}';
+                "\n}";
         }
     }
 }

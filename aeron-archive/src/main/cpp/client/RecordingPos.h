@@ -171,9 +171,11 @@ inline static std::string getSourceIdentity(CountersReader &countersReader, std:
 
         if (buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID)
         {
-            return std::string(
+            return
+            {
                 buffer.sbeData() + CountersReader::KEY_OFFSET + sizeof(RecordingPosKeyDefn),
-                static_cast<std::size_t>(key.sourceIdentityLength));
+                static_cast<std::size_t>(key.sourceIdentityLength)
+            };
         }
     }
 

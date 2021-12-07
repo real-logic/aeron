@@ -21,7 +21,7 @@ extern uint64_t aeron_array_hash(const uint8_t *arr, size_t length);
 extern size_t aeron_array_to_ptr_hash_map_hash_key(uint64_t key, size_t mask);
 
 extern bool aeron_array_to_ptr_hash_map_compare(
-    aeron_array_to_ptr_hash_map_key_t *key, const uint8_t *key_str, size_t key_str_len, uint64_t key_hash_code);
+    aeron_array_to_ptr_hash_map_key_t *key, const uint8_t *key_arr, size_t key_arr_len, uint64_t key_hash_code);
 
 extern int aeron_array_to_ptr_hash_map_init(
     aeron_array_to_ptr_hash_map_t *map, size_t initial_capacity, float load_factor);

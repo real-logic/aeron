@@ -285,7 +285,7 @@ int aeron_subscription_image_count(aeron_subscription_t *subscription)
 
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
 
-    return image_list->length;
+    return (int)image_list->length;
 }
 
 aeron_image_t *aeron_subscription_image_by_session_id(aeron_subscription_t *subscription, int32_t session_id)

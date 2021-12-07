@@ -236,6 +236,7 @@ typedef struct aeron_driver_context_stct
     void *termination_hook_state;
 
     aeron_udp_channel_transport_bindings_t *udp_channel_transport_bindings;
+    aeron_udp_channel_transport_bindings_t *conductor_udp_channel_transport_bindings;
     aeron_udp_channel_interceptor_bindings_t *udp_channel_outgoing_interceptor_bindings;
     aeron_udp_channel_interceptor_bindings_t *udp_channel_incoming_interceptor_bindings;
 

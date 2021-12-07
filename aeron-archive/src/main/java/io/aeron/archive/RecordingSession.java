@@ -202,7 +202,7 @@ class RecordingSession implements Session
         {
             recordingWriter.init();
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             errorMessage = ex.getClass().getName() + ": " + ex.getMessage();
             recordingWriter.close();
@@ -261,7 +261,7 @@ class RecordingSession implements Session
             errorCode = ex.errorCode();
             state(State.INACTIVE);
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             countedErrorHandler.onError(ex);
             errorMessage = ex.getClass().getName() + ": " + ex.getMessage();

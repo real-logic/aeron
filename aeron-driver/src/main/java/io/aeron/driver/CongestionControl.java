@@ -28,7 +28,7 @@ public interface CongestionControl extends AutoCloseable
     int FORCE_STATUS_MESSAGE_BIT = 0x1;
 
     /**
-     * Pack values into a long so they can be returned on the stack without allocation.
+     * Pack values into a long, so they can be returned on the stack without allocation.
      *
      * @param receiverWindowLength to go in the lower bits.
      * @param forceStatusMessage   to go in the higher bits.

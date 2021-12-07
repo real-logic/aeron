@@ -16,16 +16,20 @@
 package io.aeron.test;
 
 import io.aeron.CncFileDescriptor;
-import io.aeron.test.cluster.TestNode;
+import io.aeron.archive.ArchiveMarkFile;
+import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.junit.jupiter.api.TestInfo;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
+import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
@@ -74,7 +78,22 @@ public final class DataCollector
     }
 
     /**
-     * Copy data from all of the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
+     * Add a file/directory to be preserved.  Converting from a File to a Path if not null.
+     *
+     * @param location file or directory to preserve.
+     * @see #dumpData(TestInfo)
+     * @see #dumpData(String)
+     */
+    public void add(final File location)
+    {
+        if (null != location)
+        {
+            add(location.toPath());
+        }
+    }
+
+    /**
+     * Copy data from all the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
      * <ul>
      *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
      *     <li>{@code $testClass} is the fully qualified class name of the test class.</li>
@@ -93,14 +112,14 @@ public final class DataCollector
     }
 
     /**
-     * Copy data from all of the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
+     * Copy data from all the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
      * <ul>
      *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
      *     <li>{@code $testClass} is the fully qualified class name of the test class.</li>
      *     <li>{@code $testMethod} is the test method name.</li>
      * </ul>
      *
-     * @param testClass name of the test class from JUnit.
+     * @param testClass  name of the test class from JUnit.
      * @param testMethod name of the test method from JUnit.
      * @return {@code null} if no data was copied or an actual destination directory used.
      * @see #dumpData(String)
@@ -111,7 +130,7 @@ public final class DataCollector
     }
 
     /**
-     * Copy data from all of the added locations to the directory {@code $rootDir/$destinationDir}, where:
+     * Copy data from all the added locations to the directory {@code $rootDir/$destinationDir}, where:
      * <ul>
      *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
      *     <li>{@code $destinationDir} is the destination directory name.</li>
@@ -138,20 +157,79 @@ public final class DataCollector
         return copyData(destinationDir);
     }
 
+    /**
+     * Find all the driver cnc files
+     *
+     * @return list of paths to collected driver cnc files.
+     */
     public List<Path> cncFiles()
     {
-        return this.locations.stream()
-            .map(p -> p.resolve(CncFileDescriptor.CNC_FILE))
-            .filter(Files::exists)
+        return locations.stream()
+            .flatMap((path) -> DataCollector.find(path, CncFileDescriptor::isCncFile))
             .collect(toList());
     }
 
-    public List<Path> errorLogFiles()
+    /**
+     * Find all the clustered service mark files.
+     *
+     * @return list of paths to the clustered service mark files.
+     */
+    public List<Path> clusterServiceMarkFiles()
     {
-        return this.locations.stream()
-            .map(p -> p.resolve(TestNode.CLUSTER_ERROR_FILE))
-            .filter(Files::exists)
+        return locations.stream()
+            .flatMap((path) -> DataCollector.find(path, ClusterMarkFile::isServiceMarkFile))
             .collect(toList());
+    }
+
+    /**
+     * Find all the consensus module mark files.
+     *
+     * @return list of paths to the consensus module mark files
+     */
+    public List<Path> consensusModuleMarkFiles()
+    {
+        return locations.stream()
+            .flatMap((path) -> DataCollector.find(path, ClusterMarkFile::isConsensusModuleMarkFile))
+            .collect(toList());
+    }
+
+    /**
+     * Find all the archive mark files.
+     *
+     * @return list of paths to the archive mark files
+     */
+    public List<Path> archiveMarkFiles()
+    {
+        return locations.stream()
+            .flatMap((path) -> DataCollector.find(path, ArchiveMarkFile::isArchiveMarkFile))
+            .collect(toList());
+    }
+
+    /**
+     * Gets a collection of all registered locations.
+     *
+     * @return list of all locations.
+     */
+    public Collection<Path> allLocations()
+    {
+        return locations;
+    }
+
+    private static Stream<Path> find(final Path p, final BiPredicate<Path, BasicFileAttributes> matcher)
+    {
+        try
+        {
+            return Files.find(p, 1, matcher);
+        }
+        catch (final NoSuchFileException ignore)
+        {
+            return Stream.empty();
+            // File may have already been removed...
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     public String toString()
@@ -164,6 +242,7 @@ public final class DataCollector
 
     private Path copyData(final String destinationDir)
     {
+        final boolean isInterrupted = Thread.interrupted();
         final List<Path> locations = this.locations.stream().filter(Files::exists).collect(toList());
         if (locations.isEmpty())
         {
@@ -194,6 +273,13 @@ public final class DataCollector
         catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
+        }
+        finally
+        {
+            if (isInterrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
         }
         return null;
     }
@@ -349,5 +435,4 @@ public final class DataCollector
             Files.createDirectories(dst.getParent());
         }
     }
-
 }

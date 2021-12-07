@@ -49,7 +49,6 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_defa
             "default",
             "media",
             NULL,
-            NULL
         }
     };
 
@@ -75,7 +74,6 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
                 EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s", bindings_name, aeron_dlerror());
             return NULL;
         }
-        bindings->meta_info.next_binding = NULL; // Make sure it is not some random data.
         bindings->meta_info.source_symbol = bindings;
     }
 
@@ -429,7 +427,8 @@ extern void aeron_udp_channel_incoming_interceptor_to_endpoint(
     void *destination_clientd,
     uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr);
+    struct sockaddr_storage *addr,
+    struct timespec *media_timestamp);
 
 extern int aeron_udp_channel_interceptors_transport_notifications(
     aeron_udp_channel_data_paths_t *data_paths,

@@ -17,8 +17,8 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,20 +26,20 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TermBufferLengthTest
+class TermBufferLengthTest
 {
     private static final int TEST_TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH * 2;
     private static final int STREAM_ID = 1001;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @ParameterizedTest
     @ValueSource(strings = {
         "aeron:udp?endpoint=localhost:24325|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=" + TEST_TERM_LENGTH,
         "aeron:ipc?" + CommonContext.TERM_LENGTH_PARAM_NAME + "=" + TEST_TERM_LENGTH
     })
-    public void shouldHaveCorrectTermBufferLength(final String channel)
+    void shouldHaveCorrectTermBufferLength(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .errorHandler(Tests::onError)

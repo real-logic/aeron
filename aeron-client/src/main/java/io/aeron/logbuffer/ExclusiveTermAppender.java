@@ -72,14 +72,14 @@ public final class ExclusiveTermAppender
     }
 
     /**
-     * Claim length of a the term buffer for writing in the message with zero copy semantics.
+     * Claim length of a term buffer for writing in the message with zero copy semantics.
      *
      * @param termId      for the current term.
      * @param termOffset  in the term at which to append.
      * @param header      for writing the default header.
      * @param length      of the message to be written.
      * @param bufferClaim to be updated with the claimed region.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int claim(
         final int termId,
@@ -147,7 +147,7 @@ public final class ExclusiveTermAppender
     }
 
     /**
-     * Append an unfragmented message to the the term buffer.
+     * Append an unfragmented message to the term buffer.
      *
      * @param termId                for the current term.
      * @param termOffset            in the term at which to append.
@@ -156,7 +156,7 @@ public final class ExclusiveTermAppender
      * @param srcOffset             at which the message begins.
      * @param length                of the message in the source buffer.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int appendUnfragmentedMessage(
         final int termId,
@@ -197,7 +197,7 @@ public final class ExclusiveTermAppender
     }
 
     /**
-     * Append an unfragmented message to the the term buffer.
+     * Append an unfragmented message to the term buffer.
      *
      * @param termId                for the current term.
      * @param termOffset            in the term at which to append.
@@ -209,7 +209,7 @@ public final class ExclusiveTermAppender
      * @param offsetTwo             at which the second part of the message begins.
      * @param lengthTwo             of the second part of the message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int appendUnfragmentedMessage(
         final int termId,
@@ -254,7 +254,7 @@ public final class ExclusiveTermAppender
     }
 
     /**
-     * Append an unfragmented message to the the term buffer as a gathering of vectors.
+     * Append an unfragmented message to the term buffer as a gathering of vectors.
      *
      * @param termId                for the current term.
      * @param termOffset            in the term at which to append.
@@ -262,7 +262,7 @@ public final class ExclusiveTermAppender
      * @param vectors               to the buffers.
      * @param length                of the message as a sum of the vectors.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int appendUnfragmentedMessage(
         final int termId,
@@ -308,7 +308,7 @@ public final class ExclusiveTermAppender
     }
 
     /**
-     * Append a fragmented message to the the term buffer.
+     * Append a fragmented message to the term buffer.
      * The message will be split up into fragments of MTU length minus header.
      *
      * @param termId                for the current term.
@@ -319,7 +319,7 @@ public final class ExclusiveTermAppender
      * @param length                of the message in the source buffer.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final int termId,
@@ -389,7 +389,7 @@ public final class ExclusiveTermAppender
     }
 
     /**
-     * Append a fragmented message to the the term buffer.
+     * Append a fragmented message to the term buffer.
      * The message will be split up into fragments of MTU length minus header.
      *
      * @param termId                for the current term.
@@ -403,7 +403,7 @@ public final class ExclusiveTermAppender
      * @param lengthTwo             of the second part of the message.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final int termId,
@@ -501,7 +501,7 @@ public final class ExclusiveTermAppender
     }
 
     /**
-     * Append a fragmented message to the the term buffer.
+     * Append a fragmented message to the term buffer.
      * The message will be split up into fragments of MTU length minus header.
      *
      * @param termId                for the current term.
@@ -511,7 +511,7 @@ public final class ExclusiveTermAppender
      * @param length                of the message in the source buffer.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     * @return the resulting offset of the term after the append operation on success otherwise {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final int termId,

@@ -17,9 +17,9 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
-import io.aeron.test.driver.MediaDriverTestWatcher;
-import io.aeron.test.driver.TestMediaDriver;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableReference;
@@ -29,16 +29,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
-public class ReentrantClientTest
+class ReentrantClientTest
 {
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver mediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -46,14 +42,14 @@ public class ReentrantClientTest
         testWatcher);
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.close(mediaDriver);
         mediaDriver.context().deleteDirectory();
     }
 
     @Test
-    public void shouldThrowWhenReentering()
+    void shouldThrowWhenReentering()
     {
         final MutableReference<Throwable> expectedException = new MutableReference<>();
         final ErrorHandler errorHandler = expectedException::set;

@@ -111,11 +111,11 @@ public class BasicAuctionClusteredService implements ClusteredService
     // tag::takeSnapshot[]
     public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
     {
-        snapshotBuffer.putLong(CUSTOMER_ID_OFFSET, auction.getCurrentWinningCustomerId());    // <1>
-        snapshotBuffer.putLong(PRICE_OFFSET, auction.getBestPrice());
+        snapshotBuffer.putLong(SNAPSHOT_CUSTOMER_ID_OFFSET, auction.getCurrentWinningCustomerId());  // <1>
+        snapshotBuffer.putLong(SNAPSHOT_PRICE_OFFSET, auction.getBestPrice());
 
         idleStrategy.reset();
-        while (snapshotPublication.offer(snapshotBuffer, 0, SNAPSHOT_MESSAGE_LENGTH) < 0)     // <2>
+        while (snapshotPublication.offer(snapshotBuffer, 0, SNAPSHOT_MESSAGE_LENGTH) < 0)            // <2>
         {
             idleStrategy.idle();
         }

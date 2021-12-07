@@ -16,7 +16,7 @@
 package io.aeron.driver;
 
 /**
- * Tracks a aeron client interest registration in a {@link NetworkPublication} or {@link IpcPublication}.
+ * Tracks an Aeron client interest registration in a {@link NetworkPublication} or {@link IpcPublication}.
  */
 final class PublicationLink implements DriverManagedResource
 {

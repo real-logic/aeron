@@ -49,20 +49,28 @@ public:
      */
     inline int poll()
     {
-        m_controlSessionId = -1;
-        m_correlationId = -1;
-        m_relevantId = -1;
-        m_version = 0;
-        m_codeValue = -1;
-        m_errorMessage = "";
-        m_pollComplete = false;
-        m_isCodeOk = false;
-        m_isCodeError = false;
-        m_isControlResponse = false;
-        m_wasChallenged = false;
-        delete[] m_encodedChallenge.first;
-        m_encodedChallenge.first = nullptr;
-        m_encodedChallenge.second = 0;
+        if (m_isPollComplete)
+        {
+            m_isPollComplete = false;
+            m_controlSessionId = aeron::NULL_VALUE;
+            m_correlationId = aeron::NULL_VALUE;
+            m_relevantId = aeron::NULL_VALUE;
+            m_recordingId = aeron::NULL_VALUE;
+            m_subscriptionId = aeron::NULL_VALUE;
+            m_position = aeron::NULL_VALUE;
+            m_recordingSignalCode = INT32_MIN;
+            m_version = 0;
+            m_codeValue = aeron::NULL_VALUE;
+            m_errorMessage = "";
+            m_isCodeOk = false;
+            m_isCodeError = false;
+            m_isControlResponse = false;
+            m_wasChallenged = false;
+            m_isRecordingSignal = false;
+            delete[] m_encodedChallenge.first;
+            m_encodedChallenge.first = nullptr;
+            m_encodedChallenge.second = 0;
+        }
 
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }
@@ -72,7 +80,7 @@ public:
      *
      * @return control session id of the last polled message or Aeron#NULL_VALUE if poll returned nothing.
      */
-    inline std::int64_t controlSessionId()
+    inline std::int64_t controlSessionId() const
     {
         return m_controlSessionId;
     }
@@ -82,7 +90,7 @@ public:
      *
      * @return correlation id of the last polled message or Aeron#NULL_VALUE if poll returned nothing.
      */
-    inline std::int64_t correlationId()
+    inline std::int64_t correlationId() const
     {
         return m_correlationId;
     }
@@ -92,9 +100,49 @@ public:
      *
      * @return the relevant id returned with the response.
      */
-    inline std::int64_t relevantId()
+    inline std::int64_t relevantId() const
     {
         return m_relevantId;
+    }
+
+    /**
+     * Recording id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     *
+     * @return recording id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     */
+    inline std::int64_t recordingId() const
+    {
+        return m_recordingId;
+    }
+
+    /**
+     * Subscription id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     *
+     * @return subscription id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     */
+    inline std::int64_t subscriptionId() const
+    {
+        return m_subscriptionId;
+    }
+
+    /**
+     * Position of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     *
+     * @return position id of polled RecordingSignal or Aeron#NULL_VALUE if poll returned nothing.
+     */
+    inline std::int64_t position() const
+    {
+        return m_position;
+    }
+
+    /**
+     * Code of polled RecordingSignal or INT32_MIN if poll returned nothing.
+     *
+     * @return code of polled RecordingSignal or INT32_MIN if poll returned nothing.
+     */
+    inline std::int32_t recordingSignalCode() const
+    {
+        return m_recordingSignalCode;
     }
 
     /**
@@ -102,7 +150,7 @@ public:
      *
      * @return response from the server in semantic version form.
      */
-    inline std::int32_t version()
+    inline std::int32_t version() const
     {
         return m_version;
     }
@@ -112,9 +160,19 @@ public:
      *
      * @return whether the last received message was a Control Response.
      */
-    inline bool isControlResponse()
+    inline bool isControlResponse() const
     {
         return m_isControlResponse;
+    }
+
+    /**
+     * Was last received message a RecordingSignal?
+     *
+     * @return whether the last received message was a RecordingSignal.
+     */
+    inline bool isRecordingSignal() const
+    {
+        return m_isRecordingSignal;
     }
 
     /**
@@ -122,9 +180,9 @@ public:
      *
      * @return true if the last polling action received a complete message?
      */
-    inline bool isPollComplete()
+    inline bool isPollComplete() const
     {
-        return m_pollComplete;
+        return m_isPollComplete;
     }
 
     /**
@@ -142,7 +200,7 @@ public:
      *
      * @return whether the last received control response had a response code of OK?
      */
-    inline bool isCodeOk()
+    inline bool isCodeOk() const
     {
         return m_isCodeOk;
     }
@@ -152,7 +210,7 @@ public:
      *
      * @return whether the last received control response had a response code of ERROR?
      */
-    inline bool isCodeError()
+    inline bool isCodeError() const
     {
         return m_isCodeError;
     }
@@ -162,7 +220,7 @@ public:
      *
      * @return the response code value of the last response.
      */
-    inline int codeValue()
+    inline int codeValue() const
     {
         return m_codeValue;
     }
@@ -172,7 +230,7 @@ public:
      *
      * @return true if the last polling action received was a challenge message, false if not.
      */
-    inline bool wasChallenged()
+    inline bool wasChallenged() const
     {
         return m_wasChallenged;
     }
@@ -195,17 +253,23 @@ private:
     std::shared_ptr<Subscription> m_subscription;
     const int m_fragmentLimit;
 
-    std::int64_t m_controlSessionId = -1;
-    std::int64_t m_correlationId = -1;
-    std::int64_t m_relevantId = -1;
+    std::int64_t m_controlSessionId = aeron::NULL_VALUE;
+    std::int64_t m_correlationId = aeron::NULL_VALUE;
+    std::int64_t m_relevantId = aeron::NULL_VALUE;
+    std::int64_t m_recordingId = aeron::NULL_VALUE;
+    std::int64_t m_subscriptionId = aeron::NULL_VALUE;
+    std::int64_t m_position = aeron::NULL_VALUE;
+    std::int32_t m_recordingSignalCode = INT32_MIN;
     std::int32_t m_version = 0;
     int m_codeValue = -1;
-    std::string m_errorMessage = "";
-    bool m_pollComplete = false;
+    std::string m_errorMessage;
+
+    bool m_isPollComplete = false;
     bool m_isCodeOk = false;
     bool m_isCodeError = false;
     bool m_isControlResponse = false;
     bool m_wasChallenged = false;
+    bool m_isRecordingSignal = false;
     std::pair<const char *, std::uint32_t> m_encodedChallenge = { nullptr, 0 };
 };
 

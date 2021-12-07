@@ -221,7 +221,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                     break;
             }
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             state(State.DONE);
             error(ex.getMessage(), ArchiveException.GENERIC);
@@ -545,10 +545,13 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         int workCount = 0;
 
+        final boolean isClosed = image.isClosed();
+        final boolean isEndOfStream = image.isEndOfStream();
         final long position = image.position();
+
         if ((NULL_POSITION != srcStopPosition && position >= srcStopPosition) ||
             (NULL_POSITION != dstStopPosition && position >= dstStopPosition) ||
-            image.isEndOfStream() || image.isClosed())
+            isEndOfStream || isClosed)
         {
             if ((NULL_POSITION != srcStopPosition && position >= srcStopPosition))
             {

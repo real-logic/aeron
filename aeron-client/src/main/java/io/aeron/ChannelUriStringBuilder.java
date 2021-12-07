@@ -228,7 +228,7 @@ public final class ChannelUriStringBuilder
     /**
      * Set the prefix for taking an addition action such as spying on an outgoing publication with "aeron-spy".
      *
-     * @param prefix to be applied to the URI before the the scheme.
+     * @param prefix to be applied to the URI before the scheme.
      * @return this for a fluent API.
      * @see ChannelUri#SPY_QUALIFIER
      */
@@ -469,7 +469,7 @@ public final class ChannelUriStringBuilder
     /**
      * Set the subscription semantics for if loss is acceptable, or not, for a reliable message delivery.
      *
-     * @param isReliable false if loss can be be gap filled.
+     * @param isReliable false if loss can be gap-filled.
      * @return this for a fluent API.
      * @see CommonContext#RELIABLE_STREAM_PARAM_NAME
      */
@@ -910,7 +910,7 @@ public final class ChannelUriStringBuilder
      * @return the session id for a publication or restricted subscription.
      * @see CommonContext#SESSION_ID_PARAM_NAME
      * @deprecated this method will not correctly handle tagged sessionId values that are outside the range of
-     * a signed 32 bit number.  If this is called and a tagged value outside this range is currently held in this
+     * a signed 32-bit number.  If this is called and a tagged value outside this range is currently held in this
      * object, then the result will be the same as {@link Long#intValue()}.
      */
     @Deprecated
@@ -963,7 +963,7 @@ public final class ChannelUriStringBuilder
      * Get the time a network publication will linger in nanoseconds after being drained. This time is so that tail
      * loss can be recovered.
      *
-     * @return the linger time in nanoseconds a publication will wait around after being drained.
+     * @return the  time in nanoseconds a publication will linger after being drained.
      * @see CommonContext#LINGER_PARAM_NAME
      */
     public Long linger()
@@ -1248,7 +1248,7 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Set the alias for a URI. Alias's are not interpreted by Aeron and are to be used by the application.
+     * Set the alias for a URI. Aliases are not interpreted by Aeron and are to be used by the application.
      *
      * @param alias for the URI.
      * @return this for a fluent API.
@@ -1337,7 +1337,7 @@ public final class ChannelUriStringBuilder
      * specified in the MediaDriver.Context will be used instead.
      *
      * @param groupTag     receiver tag for this stream.
-     * @param minGroupSize group size required to allow publications for this channel to be move to connected status.
+     * @param minGroupSize group size required to allow publications for this channel to be moved to connected status.
      * @param timeout      timeout receivers, default is ns, but allows suffixing of time units (e.g. 5s).
      * @return this for fluent API.
      */
@@ -1373,7 +1373,7 @@ public final class ChannelUriStringBuilder
      * Set min flow control settings to be used on stream. All specified values may be null and the default
      * specified in the MediaDriver.Context will be used instead.
      *
-     * @param minGroupSize group size required to allow publications for this stream to be move to connected status.
+     * @param minGroupSize group size required to allow publications for this stream to be moved to connected status.
      * @param timeout      timeout receivers, default is ns, but allows suffixing of time units (e.g. 5s).
      * @return this for fluent API.
      */
@@ -1971,7 +1971,7 @@ public final class ChannelUriStringBuilder
 
         if (null != linger)
         {
-            sb.append(LINGER_PARAM_NAME).append('=').append(linger.intValue()).append('|');
+            sb.append(LINGER_PARAM_NAME).append('=').append(linger).append('|');
         }
 
         if (null != alias)

@@ -294,7 +294,7 @@ public final class ConcurrentPublication extends Publication
      *     }
      * }</pre>
      *
-     * @param length      of the range to claim, in bytes..
+     * @param length      of the range to claim, in bytes.
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.

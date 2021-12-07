@@ -129,7 +129,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 {
                     service.onTerminate(this);
                 }
-                catch (final Throwable ex)
+                catch (final Exception ex)
                 {
                     errorHandler.onError(ex);
                 }
@@ -680,7 +680,20 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
         try
         {
-            logAdapter.image(awaitImage(activeLog.sessionId, logSubscription));
+            final Image image = awaitImage(activeLog.sessionId, logSubscription);
+            if (image.joinPosition() != logPosition)
+            {
+                throw new ClusterException("Cluster log must be contiguous for joining image: " +
+                    "expectedPosition=" + logPosition + " joinPosition=" + image.joinPosition());
+            }
+
+            if (activeLog.logPosition != logPosition)
+            {
+                throw new ClusterException("Cluster log must be contiguous for active log event: " +
+                    "expectedPosition=" + logPosition + " eventPosition=" + activeLog.logPosition);
+            }
+
+            logAdapter.image(image);
             logAdapter.maxLogPosition(activeLog.maxLogPosition);
             logSubscription = null;
 
@@ -771,12 +784,11 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             if (fragments == 0)
             {
+                archive.checkForErrorResponse();
                 if (image.isClosed())
                 {
-                    throw new ClusterException("snapshot ended unexpectedly");
+                    throw new ClusterException("snapshot ended unexpectedly: " + image);
                 }
-
-                archive.checkForErrorResponse();
             }
 
             idle(fragments);
@@ -786,7 +798,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
         {
             throw new ClusterException(
-                "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
+                "incompatible app version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " snapshot=" + SemanticVersion.toString(appVersion));
         }
 
@@ -1012,9 +1024,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             ctx.terminationHook().run();
         }
-        catch (final Throwable t)
+        catch (final Exception ex)
         {
-            ctx.countedErrorHandler().onError(t);
+            ctx.countedErrorHandler().onError(ex);
         }
     }
 }

@@ -414,7 +414,7 @@ public final class NetworkPublication
     }
 
     /**
-     * Process a RTT (Round Trip Timing) message from a receiver.
+     * Process RTT (Round Trip Timing) message from a receiver.
      *
      * @param msg        flyweight over the network packet.
      * @param srcAddress that the RTT message has come from.

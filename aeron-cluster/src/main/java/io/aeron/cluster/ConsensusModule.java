@@ -28,7 +28,6 @@ import io.aeron.security.AuthenticatorSupplier;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -37,6 +36,8 @@ import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
@@ -45,6 +46,7 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.S
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 import static org.agrona.SystemUtil.*;
 
 /**
@@ -206,7 +208,7 @@ public final class ConsensusModule implements AutoCloseable
         {
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             if (null != ctx.markFile)
             {
@@ -354,7 +356,7 @@ public final class ConsensusModule implements AutoCloseable
         public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
 
         /**
-         * Channel for the clustered log. This channel can exist for a potentially log time given cluster operation
+         * Channel for the clustered log. This channel can exist for a potentially long time given cluster operation
          * so attention should be given to configuration such as term-length and mtu.
          */
         public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?term-length=64m";
@@ -525,12 +527,12 @@ public final class ConsensusModule implements AutoCloseable
         public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          */
         public static final String LEADER_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.leader.heartbeat.timeout";
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          */
         public static final long LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
@@ -574,7 +576,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Default interval at which a member will send out status updates during election phases.
          */
-        public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(20);
+        public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
         /**
          * Interval at which a dynamic joining member will send add cluster member and snapshot recording
@@ -655,6 +657,29 @@ public final class ConsensusModule implements AutoCloseable
          * Default file sync level of normal writes.
          */
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
+
+        /**
+         * {@link TimerServiceSupplier} to be used for creating the {@link TimerService} used by consensus module.
+         */
+        public static final String TIMER_SERVICE_SUPPLIER_PROP_NAME = "aeron.cluster.timer.service.supplier";
+
+        /**
+         * Name of the {@link TimerServiceSupplier} that creates {@link TimerService} based on the timer wheel
+         * implementation.
+         */
+        public static final String TIMER_SERVICE_SUPPLIER_WHEEL = "io.aeron.cluster.WheelTimerServiceSupplier";
+
+        /**
+         * Name of the {@link TimerServiceSupplier} that creates a sequence-preserving {@link TimerService} based
+         * on a priority heap implementation.
+         */
+        public static final String TIMER_SERVICE_SUPPLIER_PRIORITY_HEAP =
+            "io.aeron.cluster.PriorityHeapTimerServiceSupplier";
+
+        /**
+         * Default {@link TimerServiceSupplier}.
+         */
+        public static final String TIMER_SERVICE_SUPPLIER_DEFAULT = TIMER_SERVICE_SUPPLIER_WHEEL;
 
         /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
@@ -819,7 +844,7 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          *
          * @return timeout in nanoseconds to wait for heartbeat from a leader.
          * @see #LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
@@ -1005,6 +1030,17 @@ public final class ConsensusModule implements AutoCloseable
         {
             return Integer.getInteger(FILE_SYNC_LEVEL_PROP_NAME, FILE_SYNC_LEVEL_DEFAULT);
         }
+
+        /**
+         * The name of the {@link TimerServiceSupplier} to use for supplying the {@link TimerService}.
+         *
+         * @return {@link #TIMER_SERVICE_SUPPLIER_DEFAULT} or system property.
+         * {@link #TIMER_SERVICE_SUPPLIER_PROP_NAME} if set.
+         */
+        public static String timerServiceSupplier()
+        {
+            return System.getProperty(TIMER_SERVICE_SUPPLIER_PROP_NAME, TIMER_SERVICE_SUPPLIER_DEFAULT);
+        }
     }
 
     /**
@@ -1077,6 +1113,8 @@ public final class ConsensusModule implements AutoCloseable
         private ClusterClock clusterClock;
         private EpochClock epochClock;
         private Random random;
+        private TimerServiceSupplier timerServiceSupplier;
+        private Function<Context, LongConsumer> clusterTimeConsumerSupplier;
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -1154,6 +1192,11 @@ public final class ConsensusModule implements AutoCloseable
                 epochClock = SystemEpochClock.INSTANCE;
             }
 
+            if (null == clusterTimeConsumerSupplier)
+            {
+                clusterTimeConsumerSupplier = (ctx) -> (timestamp) -> {};
+            }
+
             if (null == markFile)
             {
                 markFile = new ClusterMarkFile(
@@ -1169,14 +1212,11 @@ public final class ConsensusModule implements AutoCloseable
                 errorLog = new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII);
             }
 
-            if (null == errorHandler)
-            {
-                errorHandler = new LoggingErrorHandler(errorLog);
-            }
+            errorHandler = CommonContext.setupErrorHandler(errorHandler, errorLog);
 
             if (null == recordingLog)
             {
-                recordingLog = new RecordingLog(clusterDir);
+                recordingLog = new RecordingLog(clusterDir, true);
             }
 
             if (null == aeron)
@@ -1198,6 +1238,11 @@ public final class ConsensusModule implements AutoCloseable
                     errorCounter = aeron.addCounter(
                         CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, "Cluster Errors - clusterId=" + clusterId);
                 }
+            }
+
+            if (null == ingressChannel)
+            {
+                throw new ClusterException("ingressChannel must be specified");
             }
 
             if (!(aeron.context().subscriberErrorHandler() instanceof RethrowingErrorHandler))
@@ -1280,6 +1325,11 @@ public final class ConsensusModule implements AutoCloseable
             if (null == idleStrategySupplier)
             {
                 idleStrategySupplier = ClusteredServiceContainer.Configuration.idleStrategySupplier(null);
+            }
+
+            if (null == timerServiceSupplier)
+            {
+                timerServiceSupplier = getTimerServiceSupplierFromSystemProperty();
             }
 
             if (null == archiveContext)
@@ -1407,9 +1457,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The directory used for for the consensus module directory.
+         * The directory used for the consensus module directory.
          *
-         * @return directory for for the consensus module directory.
+         * @return directory for the consensus module directory.
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public File clusterDir()
@@ -1581,8 +1631,8 @@ public final class ConsensusModule implements AutoCloseable
          * String representing the cluster members.
          * <p>
          * <code>
-         *     0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
-         *     1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
+         * 0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
+         * 1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
          * </code>
          * <p>
          * The ingress endpoints will be used as the endpoint substituted into the {@link #ingressChannel()}
@@ -2196,11 +2246,11 @@ public final class ConsensusModule implements AutoCloseable
          */
         public long sessionTimeoutNs()
         {
-            return sessionTimeoutNs;
+            return CommonContext.checkDebugTimeout(sessionTimeoutNs, TimeUnit.NANOSECONDS);
         }
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          *
          * @param heartbeatTimeoutNs to wait for heartbeat from a leader.
          * @return this for a fluent API.
@@ -2213,9 +2263,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member.
+         * Timeout for a leader if no heartbeat is received by another member.
          *
-         * @return the timeout for a leader if no heartbeat is received by an other member.
+         * @return the timeout for a leader if no heartbeat is received by another member.
          * @see Configuration#LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
          */
         public long leaderHeartbeatTimeoutNs()
@@ -2462,6 +2512,33 @@ public final class ConsensusModule implements AutoCloseable
         public EpochClock epochClock()
         {
             return epochClock;
+        }
+
+        /**
+         * Set the supplier of a consumer of timestamps which can be used for testing time progress in a cluster. The
+         * timestamp passed to the consumer is the timestamp of the last completed {@link Agent#doWork()} cycle by the
+         * consensus module {@link Agent}. The supplier will be called after the context is concluded and can be
+         * referenced during the construction of the consumer.
+         *
+         * @param clusterTimeConsumerSupplier to which the latest timestamp will be passed.
+         * @return this for a fluent API
+         */
+        public Context clusterTimeConsumerSupplier(final Function<Context, LongConsumer> clusterTimeConsumerSupplier)
+        {
+            this.clusterTimeConsumerSupplier = clusterTimeConsumerSupplier;
+            return this;
+        }
+
+        /**
+         * Get the supplier of a consumer of timestamps which can be used for testing time progress in a cluster. The
+         * timestamp passed to the consumer is the timestamp of the last completed {@link Agent#doWork()} cycle by the
+         * consensus module {@link Agent}.
+         *
+         * @return the consumer of timestamps for completed work cycles.
+         */
+        public Function<Context, LongConsumer> clusterTimeConsumerSupplier()
+        {
+            return clusterTimeConsumerSupplier;
         }
 
         /**
@@ -2817,9 +2894,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         * Set the {@link ShutdownSignalBarrier} that can be used to shut down a consensus module.
          *
-         * @param barrier that can be used to shutdown a consensus module.
+         * @param barrier that can be used to shut down a consensus module.
          * @return this for a fluent API.
          */
         public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
@@ -2829,9 +2906,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         * Get the {@link ShutdownSignalBarrier} that can be used to shut down a consensus module.
          *
-         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         * @return the {@link ShutdownSignalBarrier} that can be used to shut down a consensus module.
          */
         public ShutdownSignalBarrier shutdownSignalBarrier()
         {
@@ -2953,6 +3030,29 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Provides an {@link TimerService} supplier for the idle strategy for the agent duty cycle.
+         *
+         * @param timerServiceSupplier supplier for the idle strategy for the agent duty cycle.
+         * @return this for a fluent API.
+         */
+        public Context timerServiceSupplier(final TimerServiceSupplier timerServiceSupplier)
+        {
+            this.timerServiceSupplier = timerServiceSupplier;
+            return this;
+        }
+
+        /**
+         * Supplier of the {@link TimerService} instances.
+         *
+         * @return supplier of dynamically created {@link TimerService} instances.
+         * @see io.aeron.driver.Configuration#CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
+         */
+        public TimerServiceSupplier timerServiceSupplier()
+        {
+            return timerServiceSupplier;
+        }
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -3048,6 +3148,26 @@ public final class ConsensusModule implements AutoCloseable
             markFile.signalReady();
         }
 
+        private TimerServiceSupplier getTimerServiceSupplierFromSystemProperty()
+        {
+            final String timeServiceClassName = Configuration.timerServiceSupplier();
+            if (WheelTimerServiceSupplier.class.getName().equals(timeServiceClassName))
+            {
+                return new WheelTimerServiceSupplier(
+                    clusterClock.timeUnit(),
+                    0,
+                    findNextPositivePowerOfTwo(
+                        clusterClock.timeUnit().convert(wheelTickResolutionNs, TimeUnit.NANOSECONDS)),
+                    ticksPerWheel);
+            }
+            else if (PriorityHeapTimerServiceSupplier.class.getName().equals(timeServiceClassName))
+            {
+                return new PriorityHeapTimerServiceSupplier();
+            }
+
+            throw new ClusterException("invalid TimerServiceSupplier: " + timeServiceClassName);
+        }
+
         /**
          * {@inheritDoc}
          */
@@ -3094,6 +3214,7 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    maxConcurrentSessions=" + maxConcurrentSessions +
                 "\n    ticksPerWheel=" + ticksPerWheel +
                 "\n    wheelTickResolutionNs=" + wheelTickResolutionNs +
+                "\n    timerServiceSupplier=" + timerServiceSupplier +
                 "\n    sessionTimeoutNs=" + sessionTimeoutNs +
                 "\n    leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs +
                 "\n    leaderHeartbeatIntervalNs=" + leaderHeartbeatIntervalNs +
@@ -3125,7 +3246,7 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    logPublisher=" + logPublisher +
                 "\n    egressPublisher=" + egressPublisher +
                 "\n    isLogMdc=" + isLogMdc +
-                '}';
+                "\n}";
         }
     }
 

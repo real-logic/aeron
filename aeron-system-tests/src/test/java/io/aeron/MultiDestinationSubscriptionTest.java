@@ -22,11 +22,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -50,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MultiDestinationSubscriptionTest
+class MultiDestinationSubscriptionTest
 {
     private static final String UNICAST_ENDPOINT_A = "localhost:24325";
     private static final String UNICAST_ENDPOINT_B = "localhost:24326";
@@ -86,7 +82,7 @@ public class MultiDestinationSubscriptionTest
     private final FragmentHandler copyFragmentHandler = mock(FragmentHandler.class);
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private void launch(final ErrorHandler errorHandler)
     {
@@ -119,7 +115,7 @@ public class MultiDestinationSubscriptionTest
     }
 
     @AfterEach
-    public void closeEverything()
+    void closeEverything()
     {
         CloseHelper.closeAll(clientA, clientB, driverA, driverB);
         IoUtil.delete(new File(ROOT_DIR), true);
@@ -127,7 +123,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void subscriptionCloseShouldAlsoCloseMediaDriverPorts()
+    void subscriptionCloseShouldAlsoCloseMediaDriverPorts()
     {
         launch(Tests::onError);
 
@@ -150,7 +146,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     @InterruptAfter(10)
     @EnabledOnOs(OS.LINUX)
-    public void destinationShouldInheritSocketBufferLengthsFromSubscription()
+    void destinationShouldInheritSocketBufferLengthsFromSubscription()
     {
         launch(Tests::onError);
 
@@ -165,7 +161,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
+    void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
     {
         final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
         launch(mockErrorHandler);
@@ -180,7 +176,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSpinUpAndShutdownWithUnicast()
+    void shouldSpinUpAndShutdownWithUnicast()
     {
         launch(Tests::onError);
 
@@ -194,7 +190,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSpinUpAndShutdownWithMulticast()
+    void shouldSpinUpAndShutdownWithMulticast()
     {
         launch(Tests::onError);
 
@@ -210,7 +206,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldSpinUpAndShutdownWithDynamicMdc()
+    void shouldSpinUpAndShutdownWithDynamicMdc()
     {
         launch(Tests::onError);
 
@@ -224,7 +220,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSendToSingleDestinationSubscriptionWithUnicast()
+    void shouldSendToSingleDestinationSubscriptionWithUnicast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -253,7 +249,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     @InterruptAfter(10)
     @SlowTest
-    public void shouldAllowMultipleMdsSubscriptions()
+    void shouldAllowMultipleMdsSubscriptions()
     {
         final String unicastUri2 = "aeron:udp?endpoint=localhost:24326";
 
@@ -303,7 +299,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldFindMdsSubscriptionWithTags()
+    void shouldFindMdsSubscriptionWithTags()
     {
         launch(Tests::onError);
 
@@ -337,7 +333,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     @InterruptAfter(10)
     @SlowTest
-    public void shouldAllowMultipleMdsSubscriptionsWithTags()
+    void shouldAllowMultipleMdsSubscriptionsWithTags()
     {
         final String unicastUri2 = "aeron:udp?endpoint=localhost:24326";
 
@@ -397,7 +393,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSendToSingleDestinationMultipleSubscriptionsWithUnicast()
+    void shouldSendToSingleDestinationMultipleSubscriptionsWithUnicast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -439,7 +435,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSendToSingleDestinationSubscriptionWithMulticast()
+    void shouldSendToSingleDestinationSubscriptionWithMulticast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -467,7 +463,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldSendToSingleDestinationSubscriptionWithDynamicMdc()
+    void shouldSendToSingleDestinationSubscriptionWithDynamicMdc()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -495,7 +491,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSendToMultipleDestinationSubscriptionWithSameStream()
+    void shouldSendToMultipleDestinationSubscriptionWithSameStream()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final int numMessagesToSendForA = numMessagesToSend / 2;
@@ -570,7 +566,7 @@ public class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldMergeStreamsFromMultiplePublicationsWithSameParams()
+    void shouldMergeStreamsFromMultiplePublicationsWithSameParams()
     {
         final int numMessagesToSend = 30;
         final int numMessagesToSendForA = numMessagesToSend / 2;

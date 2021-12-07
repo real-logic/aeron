@@ -63,12 +63,12 @@ public class ControlProtocolEvents
     public static final int REMOVE_DESTINATION = 0x08;
 
     /**
-     * Add a Counter to the counters manager.
+     * Add a Counter to the counters-manager.
      */
     public static final int ADD_COUNTER = 0x09;
 
     /**
-     * Remove a Counter from the counters manager.
+     * Remove a Counter from the counters-manager.
      */
     public static final int REMOVE_COUNTER = 0x0A;
 

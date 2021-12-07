@@ -213,7 +213,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
             log_func(buffer);
 
             if (aeron_is_driver_active_with_cnc(
-                &cnc_mmap, context->driver_timeout_ms, aeron_epoch_clock(), log_func))
+                &cnc_mmap, (int64_t)context->driver_timeout_ms, aeron_epoch_clock(), log_func))
             {
                 aeron_unmap(&cnc_mmap);
                 return -1;
@@ -338,7 +338,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     if ((probe_fd = aeron_socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "aeron_socket(AF_INET, SOCK_DGRAM, 0)");
+        AERON_APPEND_ERR("%s", "failed to probe socket for buffer lengths");
         goto cleanup;
     }
 
@@ -346,7 +346,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     socklen_t len = sizeof(default_sndbuf);
     if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF,...)");
+        AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_SNDBUF option");
         goto cleanup;
     }
 
@@ -354,7 +354,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     len = sizeof(default_rcvbuf);
     if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &default_rcvbuf, &len) < 0)
     {
-        AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF,...)");
+        AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_RCVBUF option");
         goto cleanup;
     }
 
@@ -367,15 +367,14 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
         if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
         {
-            AERON_SET_ERR(
-                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, %" PRIu64 ")", (uint64_t)socket_sndbuf);
+            AERON_APPEND_ERR("failed to set SOL_SOCKET/SO_SNDBUF option to: %" PRIu64, (uint64_t)socket_sndbuf);
             goto cleanup;
         }
 
         len = sizeof(socket_sndbuf);
         if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, &len) < 0)
         {
-            AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF,...)");
+            AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_SNDBUF option");
             goto cleanup;
         }
 
@@ -398,15 +397,14 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
         if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
-            AERON_SET_ERR(
-                errno, "%s", "setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, %" PRIu64 ")", (uint64_t)socket_rcvbuf);
+            AERON_APPEND_ERR("failed to set SOL_SOCKET/SO_RCVBUF option to: %" PRIu64, (uint64_t)socket_rcvbuf);
             goto cleanup;
         }
 
         len = sizeof(socket_rcvbuf);
         if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, &len) < 0)
         {
-            AERON_SET_ERR(errno, "%s", "getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF,...)");
+            AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_RCVBUF option");
             goto cleanup;
         }
 
@@ -632,14 +630,25 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    re_resolution_check_interval_ns=%" PRIu64, context->re_resolution_check_interval_ns);
 
     const aeron_udp_channel_transport_bindings_t *bindings = context->udp_channel_transport_bindings;
-    while (NULL != bindings)
+    if (NULL != bindings)
     {
         fprintf(
             fpout, "\n    udp_channel_transport_bindings.%s=%s,%p%s",
-            bindings->meta_info.type, bindings->meta_info.name,
-            bindings->meta_info.source_symbol, aeron_dlinfo(bindings->meta_info.source_symbol, buffer, sizeof(buffer)));
+            bindings->meta_info.type,
+            bindings->meta_info.name,
+            bindings->meta_info.source_symbol,
+            aeron_dlinfo(bindings->meta_info.source_symbol, buffer, sizeof(buffer)));
+    }
 
-        bindings = bindings->meta_info.next_binding;
+    const aeron_udp_channel_transport_bindings_t *conductor_bindings = context->conductor_udp_channel_transport_bindings;
+    if (NULL != conductor_bindings)
+    {
+        fprintf(
+            fpout, "\n    conductor_udp_channel_transport_bindings.%s=%s,%p%s",
+            conductor_bindings->meta_info.type,
+            conductor_bindings->meta_info.name,
+            conductor_bindings->meta_info.source_symbol,
+            aeron_dlinfo(conductor_bindings->meta_info.source_symbol, buffer, sizeof(buffer)));
     }
 
     const aeron_udp_channel_interceptor_bindings_t *interceptor_bindings;
@@ -828,7 +837,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_feedback_delay_state_init(
         &_driver->context->unicast_delay_feedback_generator,
         aeron_loss_detector_nak_multicast_delay_generator,
-        _driver->context->nak_unicast_delay_ns,
+        (int64_t)_driver->context->nak_unicast_delay_ns,
         1,
         true) < 0)
     {
@@ -838,7 +847,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_feedback_delay_state_init(
         &_driver->context->multicast_delay_feedback_generator,
         aeron_loss_detector_nak_unicast_delay_generator,
-        _driver->context->nak_multicast_max_backoff_ns,
+        (int64_t)_driver->context->nak_multicast_max_backoff_ns,
         _driver->context->nak_multicast_group_size,
         false) < 0)
     {

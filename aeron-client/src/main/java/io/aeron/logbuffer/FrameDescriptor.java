@@ -200,7 +200,7 @@ public class FrameDescriptor
     }
 
     /**
-     * Read the type of of the frame from header.
+     * Read the type of the frame from header.
      *
      * @param buffer     containing the frame.
      * @param termOffset at which a frame begins.
@@ -224,7 +224,7 @@ public class FrameDescriptor
     }
 
     /**
-     * Read the type of of the frame from header.
+     * Read the type of the frame from header.
      *
      * @param buffer     containing the frame.
      * @param termOffset at which a frame begins.

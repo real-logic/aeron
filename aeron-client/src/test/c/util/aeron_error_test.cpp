@@ -63,10 +63,10 @@ int functionC()
 }
 
 static std::string::size_type assert_substring(
-    const std::string &value, const std::string token, const std::string::size_type index)
+    const std::string &value, const std::string &token, const std::string::size_type index)
 {
     auto new_index = value.find(token, index);
-    EXPECT_NE(new_index, std::string::npos);
+    EXPECT_NE(new_index, std::string::npos) << value;
 
     return new_index;
 }

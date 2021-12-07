@@ -23,6 +23,10 @@
         #define NOMINMAX
     #endif // !NOMINMAX
     #include <Windows.h>
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 #endif
 
 using namespace aeron;
@@ -73,7 +77,7 @@ bool Context::requestDriverTermination(
 inline static std::string tmpDir()
 {
 #if defined(_MSC_VER)
-    static char buff[MAX_PATH + 1];
+    char buff[MAX_PATH + 1];
     std::string dir;
 
     if (::GetTempPath(MAX_PATH, &buff[0]) > 0)
@@ -84,10 +88,11 @@ inline static std::string tmpDir()
     return dir;
 #else
     std::string dir = "/tmp";
+    const char *tmpDir = ::getenv("TMPDIR");
 
-    if (::getenv("TMPDIR"))
+    if (nullptr != tmpDir)
     {
-        dir = ::getenv("TMPDIR");
+        dir = tmpDir;
     }
 
     return dir;
@@ -97,8 +102,9 @@ inline static std::string tmpDir()
 
 inline static std::string getUserName()
 {
-    const char *username = ::getenv("USER");
 #if (_MSC_VER)
+    const char *username = ::getenv("USER");
+
     if (nullptr == username)
     {
         username = ::getenv("USERNAME");
@@ -107,13 +113,24 @@ inline static std::string getUserName()
             username = "default";
         }
     }
+
+    return { username };
 #else
+    char buffer[16384] = {};
+    const char *username = ::getenv("USER");
+
     if (nullptr == username)
     {
-        username = "default";
+        uid_t uid = ::getuid(); // using uid instead of euid as that is what the JVM seems to do.
+        struct passwd pw = {}, *pwResult = nullptr;
+
+        int e = ::getpwuid_r(uid, &pw, buffer, sizeof(buffer), &pwResult);
+        username = (0 == e && nullptr != pwResult && nullptr != pwResult->pw_name && *(pwResult->pw_name )) ?
+            pwResult->pw_name : "default";
     }
+
+    return { username };
 #endif
-    return username;
 }
 
 std::string Context::defaultAeronPath()

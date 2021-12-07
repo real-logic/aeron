@@ -49,11 +49,6 @@ final class SubscriberPosition
         return subscriptionLink;
     }
 
-    Subscribable subscribable()
-    {
-        return subscribable;
-    }
-
     void addLink(final PublicationImage image)
     {
         subscriptionLink.link(image, position);

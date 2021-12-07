@@ -246,18 +246,11 @@ int aeron_udp_transport_poller_poll(
 
 #elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
         struct pollfd *pollfds = (struct pollfd *)poller->bindings_clientd;
-        int result = poll(pollfds, (nfds_t)poller->transports.length, 0);
+        const int result = aeron_poll(pollfds, (unsigned long)poller->transports.length, 0);
 
         if (result < 0)
         {
-            int err = errno;
-
-            if (EINTR == err || EAGAIN == err)
-            {
-                return 0;
-            }
-
-            AERON_SET_ERR(errno, "%s", "poll");
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
         else if (0 == result)

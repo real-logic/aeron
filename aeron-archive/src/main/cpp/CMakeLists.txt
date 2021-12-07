@@ -70,11 +70,11 @@ SET(SOURCE
     client/ArchiveProxy.cpp
     client/ControlResponsePoller.cpp
     client/ControlResponseAdapter.cpp
+    client/RecordingSignalAdapter.cpp
     client/RecordingDescriptorPoller.cpp
     client/RecordingSubscriptionDescriptorPoller.cpp
     client/RecordingEventsPoller.cpp
     client/RecordingEventsAdapter.cpp
-    client/RecordingSignalAdapter.cpp
     client/AeronArchive.cpp
     client/ReplayMerge.cpp)
 

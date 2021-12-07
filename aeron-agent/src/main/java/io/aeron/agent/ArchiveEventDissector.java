@@ -62,6 +62,7 @@ final class ArchiveEventDissector
     private static final StopAllReplaysRequestDecoder STOP_ALL_REPLAYS_REQUEST_DECODER =
         new StopAllReplaysRequestDecoder();
     private static final ReplicateRequestDecoder REPLICATE_REQUEST_DECODER = new ReplicateRequestDecoder();
+    private static final ReplicateRequest2Decoder REPLICATE_REQUEST2_DECODER = new ReplicateRequest2Decoder();
     private static final StopReplicationRequestDecoder STOP_REPLICATION_REQUEST_DECODER =
         new StopReplicationRequestDecoder();
     private static final StartPositionRequestDecoder START_POSITION_REQUEST_DECODER = new StartPositionRequestDecoder();
@@ -95,17 +96,17 @@ final class ArchiveEventDissector
         final int offset,
         final StringBuilder builder)
     {
-        int relativeOffset = dissectLogHeader(CONTEXT, eventCode, buffer, offset, builder);
+        int encodedLength = dissectLogHeader(CONTEXT, eventCode, buffer, offset, builder);
 
-        HEADER_DECODER.wrap(buffer, offset + relativeOffset);
-        relativeOffset += MessageHeaderDecoder.ENCODED_LENGTH;
+        HEADER_DECODER.wrap(buffer, offset + encodedLength);
+        encodedLength += MessageHeaderDecoder.ENCODED_LENGTH;
 
         switch (eventCode)
         {
             case CMD_IN_CONNECT:
                 CONNECT_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendConnect(builder);
@@ -114,7 +115,7 @@ final class ArchiveEventDissector
             case CMD_IN_CLOSE_SESSION:
                 CLOSE_SESSION_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendCloseSession(builder);
@@ -123,7 +124,7 @@ final class ArchiveEventDissector
             case CMD_IN_START_RECORDING:
                 START_RECORDING_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStartRecording(builder);
@@ -132,7 +133,7 @@ final class ArchiveEventDissector
             case CMD_IN_STOP_RECORDING:
                 STOP_RECORDING_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStopRecording(builder);
@@ -141,7 +142,7 @@ final class ArchiveEventDissector
             case CMD_IN_REPLAY:
                 REPLAY_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendReplay(builder);
@@ -150,7 +151,7 @@ final class ArchiveEventDissector
             case CMD_IN_STOP_REPLAY:
                 STOP_REPLAY_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStopReplay(builder);
@@ -159,7 +160,7 @@ final class ArchiveEventDissector
             case CMD_IN_LIST_RECORDINGS:
                 LIST_RECORDINGS_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendListRecordings(builder);
@@ -168,7 +169,7 @@ final class ArchiveEventDissector
             case CMD_IN_LIST_RECORDINGS_FOR_URI:
                 LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendListRecordingsForUri(builder);
@@ -177,7 +178,7 @@ final class ArchiveEventDissector
             case CMD_IN_LIST_RECORDING:
                 LIST_RECORDING_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendListRecording(builder);
@@ -186,7 +187,7 @@ final class ArchiveEventDissector
             case CMD_IN_EXTEND_RECORDING:
                 EXTEND_RECORDING_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendExtendRecording(builder);
@@ -195,7 +196,7 @@ final class ArchiveEventDissector
             case CMD_IN_RECORDING_POSITION:
                 RECORDING_POSITION_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendRecordingPosition(builder);
@@ -204,7 +205,7 @@ final class ArchiveEventDissector
             case CMD_IN_TRUNCATE_RECORDING:
                 TRUNCATE_RECORDING_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendTruncateRecording(builder);
@@ -213,7 +214,7 @@ final class ArchiveEventDissector
             case CMD_IN_STOP_RECORDING_SUBSCRIPTION:
                 STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStopRecordingSubscription(builder);
@@ -222,7 +223,7 @@ final class ArchiveEventDissector
             case CMD_IN_STOP_POSITION:
                 STOP_POSITION_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStopPosition(builder);
@@ -231,7 +232,7 @@ final class ArchiveEventDissector
             case CMD_IN_FIND_LAST_MATCHING_RECORD:
                 FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendFindLastMatchingRecord(builder);
@@ -240,7 +241,7 @@ final class ArchiveEventDissector
             case CMD_IN_LIST_RECORDING_SUBSCRIPTIONS:
                 LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendListRecordingSubscriptions(builder);
@@ -249,7 +250,7 @@ final class ArchiveEventDissector
             case CMD_IN_START_BOUNDED_REPLAY:
                 BOUNDED_REPLAY_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStartBoundedReplay(builder);
@@ -258,7 +259,7 @@ final class ArchiveEventDissector
             case CMD_IN_STOP_ALL_REPLAYS:
                 STOP_ALL_REPLAYS_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStopAllReplays(builder);
@@ -267,7 +268,7 @@ final class ArchiveEventDissector
             case CMD_IN_REPLICATE:
                 REPLICATE_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendReplicate(builder);
@@ -276,7 +277,7 @@ final class ArchiveEventDissector
             case CMD_IN_STOP_REPLICATION:
                 STOP_REPLICATION_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStopReplication(builder);
@@ -285,7 +286,7 @@ final class ArchiveEventDissector
             case CMD_IN_START_POSITION:
                 START_POSITION_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStartPosition(builder);
@@ -294,7 +295,7 @@ final class ArchiveEventDissector
             case CMD_IN_DETACH_SEGMENTS:
                 DETACH_SEGMENTS_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendDetachSegments(builder);
@@ -303,7 +304,7 @@ final class ArchiveEventDissector
             case CMD_IN_DELETE_DETACHED_SEGMENTS:
                 DELETE_DETACHED_SEGMENTS_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendDeleteDetachedSegments(builder);
@@ -312,7 +313,7 @@ final class ArchiveEventDissector
             case CMD_IN_PURGE_SEGMENTS:
                 PURGE_SEGMENTS_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendPurgeSegments(builder);
@@ -321,7 +322,7 @@ final class ArchiveEventDissector
             case CMD_IN_ATTACH_SEGMENTS:
                 ATTACH_SEGMENTS_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendAttachSegments(builder);
@@ -330,7 +331,7 @@ final class ArchiveEventDissector
             case CMD_IN_MIGRATE_SEGMENTS:
                 MIGRATE_SEGMENTS_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendMigrateSegments(builder);
@@ -339,7 +340,7 @@ final class ArchiveEventDissector
             case CMD_IN_AUTH_CONNECT:
                 AUTH_CONNECT_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendAuthConnect(builder);
@@ -348,7 +349,7 @@ final class ArchiveEventDissector
             case CMD_IN_KEEP_ALIVE:
                 KEEP_ALIVE_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendKeepAlive(builder);
@@ -357,7 +358,7 @@ final class ArchiveEventDissector
             case CMD_IN_TAGGED_REPLICATE:
                 TAGGED_REPLICATE_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendTaggedReplicate(builder);
@@ -366,7 +367,7 @@ final class ArchiveEventDissector
             case CMD_IN_START_RECORDING2:
                 START_RECORDING_REQUEST2_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStartRecording2(builder);
@@ -375,7 +376,7 @@ final class ArchiveEventDissector
             case CMD_IN_EXTEND_RECORDING2:
                 EXTEND_RECORDING_REQUEST2_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendExtendRecording2(builder);
@@ -384,7 +385,7 @@ final class ArchiveEventDissector
             case CMD_IN_STOP_RECORDING_BY_IDENTITY:
                 STOP_RECORDING_BY_IDENTITY_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStopRecordingByIdentity(builder);
@@ -393,10 +394,19 @@ final class ArchiveEventDissector
             case CMD_IN_PURGE_RECORDING:
                 PURGE_RECORDING_REQUEST_DECODER.wrap(
                     buffer,
-                    offset + relativeOffset,
+                    offset + encodedLength,
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendPurgeRecording(builder);
+                break;
+
+            case CMD_IN_REPLICATE2:
+                REPLICATE_REQUEST2_DECODER.wrap(
+                    buffer,
+                    offset + encodedLength,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendReplicate2(builder);
                 break;
 
             default:
@@ -406,14 +416,14 @@ final class ArchiveEventDissector
 
     static void dissectControlResponse(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        int relativeOffset = dissectLogHeader(CONTEXT, CMD_OUT_RESPONSE, buffer, offset, builder);
+        int encodedLength = dissectLogHeader(CONTEXT, CMD_OUT_RESPONSE, buffer, offset, builder);
 
-        HEADER_DECODER.wrap(buffer, offset + relativeOffset);
-        relativeOffset += MessageHeaderDecoder.ENCODED_LENGTH;
+        HEADER_DECODER.wrap(buffer, offset + encodedLength);
+        encodedLength += MessageHeaderDecoder.ENCODED_LENGTH;
 
         CONTROL_RESPONSE_DECODER.wrap(
             buffer,
-            offset + relativeOffset,
+            offset + encodedLength,
             HEADER_DECODER.blockLength(),
             HEADER_DECODER.version());
 
@@ -721,6 +731,27 @@ final class ArchiveEventDissector
 
         builder.append(" liveDestination=");
         REPLICATE_REQUEST_DECODER.getLiveDestination(builder);
+    }
+
+    private static void appendReplicate2(final StringBuilder builder)
+    {
+        builder.append(": controlSessionId=").append(REPLICATE_REQUEST2_DECODER.controlSessionId())
+            .append(" correlationId=").append(REPLICATE_REQUEST2_DECODER.correlationId())
+            .append(" srcRecordingId=").append(REPLICATE_REQUEST2_DECODER.srcRecordingId())
+            .append(" dstRecordingId=").append(REPLICATE_REQUEST2_DECODER.dstRecordingId())
+            .append(" stopPosition=").append(REPLICATE_REQUEST2_DECODER.stopPosition())
+            .append(" channelTagId=").append(REPLICATE_REQUEST2_DECODER.channelTagId())
+            .append(" subscriptionTagId=").append(REPLICATE_REQUEST2_DECODER.subscriptionTagId())
+            .append(" srcControlStreamId=").append(REPLICATE_REQUEST2_DECODER.srcControlStreamId())
+            .append(" srcControlChannel=");
+
+        REPLICATE_REQUEST2_DECODER.getSrcControlChannel(builder);
+
+        builder.append(" liveDestination=");
+        REPLICATE_REQUEST2_DECODER.getLiveDestination(builder);
+
+        builder.append(" replicationChannel=");
+        REPLICATE_REQUEST2_DECODER.getReplicationChannel(builder);
     }
 
     private static void appendStopReplication(final StringBuilder builder)

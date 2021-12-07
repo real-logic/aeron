@@ -20,7 +20,9 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
-import io.aeron.cluster.service.*;
+import io.aeron.cluster.service.ClusterCounters;
+import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -29,7 +31,6 @@ import org.agrona.IoUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
@@ -200,7 +201,7 @@ public final class ClusterBackup implements AutoCloseable
         {
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             CloseHelper.quietClose(ctx::close);
             throw ex;
@@ -280,7 +281,7 @@ public final class ClusterBackup implements AutoCloseable
         public static final String CONSENSUS_CHANNEL_DEFAULT;
 
         /**
-         * Member endpoint used for the the catchup channel.
+         * Member endpoint used for the catchup channel.
          */
         public static final String CATCHUP_ENDPOINT_DEFAULT;
 
@@ -532,10 +533,7 @@ public final class ClusterBackup implements AutoCloseable
                 errorLog = new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII);
             }
 
-            if (null == errorHandler)
-            {
-                errorHandler = new LoggingErrorHandler(errorLog);
-            }
+            errorHandler = CommonContext.setupErrorHandler(errorHandler, errorLog);
 
             if (null == aeron)
             {
@@ -814,9 +812,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * The directory used for for the cluster directory.
+         * The directory used for the cluster directory.
          *
-         * @return directory for for the cluster directory.
+         * @return directory for the cluster directory.
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public File clusterDir()
@@ -1292,9 +1290,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * The endpoints representing cluster members of the cluster to attempt to contact to backup from.
+         * The endpoints representing cluster members of the cluster to attempt to a backup from.
          *
-         * @return members of the cluster to attempt to request to backup from.
+         * @return members of the cluster to attempt to request a backup from.
          */
         public String clusterConsensusEndpoints()
         {
@@ -1302,9 +1300,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         * Set the {@link ShutdownSignalBarrier} that can be used to shut down a consensus module.
          *
-         * @param barrier that can be used to shutdown a consensus module.
+         * @param barrier that can be used to shut down a consensus module.
          * @return this for a fluent API.
          */
         public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
@@ -1314,9 +1312,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown.
+         * Get the {@link ShutdownSignalBarrier} that can be used to shut down.
          *
-         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown.
+         * @return the {@link ShutdownSignalBarrier} that can be used to shut down.
          */
         public ShutdownSignalBarrier shutdownSignalBarrier()
         {
@@ -1605,7 +1603,7 @@ public final class ClusterBackup implements AutoCloseable
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
                 "\n    terminationHook=" + terminationHook +
                 "\n    eventsListener=" + eventsListener +
-                '}';
+                "\n}";
         }
 
         private void concludeMarkFile()

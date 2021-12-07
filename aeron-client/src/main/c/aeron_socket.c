@@ -16,29 +16,35 @@
 
 #include "aeron_socket.h"
 #include "util/aeron_error.h"
+#include "command/aeron_control_protocol.h"
+#include "aeron_alloc.h"
 
 #if defined(AERON_COMPILER_GCC)
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <errno.h>
+#include <poll.h>
 
 int aeron_net_init()
 {
     return 0;
 }
 
-int set_socket_non_blocking(aeron_socket_t fd)
+int aeron_set_socket_non_blocking(aeron_socket_t fd)
 {
     int flags;
     if ((flags = fcntl(fd, F_GETFL, 0)) < 0)
     {
+        AERON_SET_ERR(errno, "failed to fcntl(fd=%d, cmd=F_GETFL, 0)", fd);
         return -1;
     }
 
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) < 0)
     {
+        AERON_SET_ERR(errno, "failed to fcntl(fd=%d, cmd=F_SETFL, %d)", fd, flags);
         return -1;
     }
 
@@ -47,7 +53,15 @@ int set_socket_non_blocking(aeron_socket_t fd)
 
 aeron_socket_t aeron_socket(int domain, int type, int protocol)
 {
-    return socket(domain, type, protocol);
+    int socket_fd = socket(domain, type, protocol);
+
+    if (socket_fd < 0)
+    {
+        AERON_SET_ERR(errno, "failed to socket(domain=%d, type=%d, protocol=%d)", domain, type, protocol);
+        return -1;
+    }
+
+    return socket_fd;
 }
 
 void aeron_close_socket(aeron_socket_t socket)
@@ -55,11 +69,103 @@ void aeron_close_socket(aeron_socket_t socket)
     close(socket);
 }
 
+int aeron_getifaddrs(struct ifaddrs **ifap)
+{
+    if (getifaddrs(ifap) < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed getifaddrs(...)");
+        return -1;
+    }
+
+    return 0;
+}
+
+void aeron_freeifaddrs(struct ifaddrs *ifa)
+{
+    freeifaddrs(ifa);
+}
+
+ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
+{
+    ssize_t result = sendmsg(fd, msghdr, flags);
+
+    if (result < 0)
+    {
+        AERON_SET_ERR(errno, "failed sendmsg(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return result;
+}
+
+ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
+{
+    ssize_t result = recvmsg(fd, msghdr, flags);
+
+    if (result < 0)
+    {
+        if (EINTR == errno || EAGAIN == errno || EWOULDBLOCK == errno)
+        {
+            return 0;
+        }
+
+        AERON_SET_ERR(errno, "failed recvmsg(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return result;
+}
+
+int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
+{
+    int result = poll(fds, (nfds_t)nfds, timeout);
+    if (result < 0)
+    {
+        if (EAGAIN == errno || EWOULDBLOCK == errno || EINTR == errno)
+        {
+            result = 0;
+        }
+        else
+        {
+            AERON_SET_ERR(errno, "%s", "failed to poll(...)");
+            return -1;
+        }
+    }
+
+    return result;
+}
+
+int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen)
+{
+    if (getsockopt(fd, level, optname, optval, optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "getsockopt(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen)
+{
+    if (setsockopt(fd, level, optname, optval, optlen) < 0)
+    {
+        AERON_SET_ERR(errno, "setsockopt(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return 0;
+}
+
 #elif defined(AERON_COMPILER_MSVC)
 
 #if _WIN32_WINNT < 0x0600
 #error Unsupported windows version
 #endif
+#if UNICODE
+#error Unicode errors not supported
+#endif
+
 
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
@@ -77,7 +183,7 @@ int aeron_net_init()
 
         if (0 != err)
         {
-            AERON_SET_ERR(err, "WSAStartup error=%d\n", err);
+            AERON_SET_ERR_WIN(err, "%s", "WSAStartup(...)");
             return -1;
         }
 
@@ -87,32 +193,37 @@ int aeron_net_init()
     return 0;
 }
 
-int set_socket_non_blocking(aeron_socket_t fd)
+int aeron_set_socket_non_blocking(aeron_socket_t fd)
 {
-    u_long iMode = 1;
-    int iResult = ioctlsocket(fd, FIONBIO, &iMode);
-    if (NO_ERROR != iResult)
+    u_long mode = 1;
+    const int result = ioctlsocket(fd, FIONBIO, &mode);
+    if (SOCKET_ERROR == result)
     {
+        AERON_SET_ERR_WIN(WSAGetLastError(), "ioctlsocket(fd=%d,...)", fd);
         return -1;
     }
 
     return 0;
 }
 
-int getifaddrs(struct ifaddrs **ifap)
+int aeron_getifaddrs(struct ifaddrs **ifap)
 {
-    DWORD MAX_TRIES = 2;
-    DWORD dwSize = 10 * sizeof(IP_ADAPTER_ADDRESSES);
-    DWORD dwRet;
-    IP_ADAPTER_ADDRESSES *pAdapterAddresses = NULL;
+    DWORD max_tries = 2;
+    DWORD adapters_addresses_size = 10 * sizeof(IP_ADAPTER_ADDRESSES);
+    IP_ADAPTER_ADDRESSES *adapters_addresses = NULL;
 
     /* loop to handle interfaces coming online causing a buffer overflow
      * between first call to list buffer length and second call to enumerate.
      */
-    for (unsigned i = MAX_TRIES; i; i--)
+    for (unsigned i = max_tries; i; i--)
     {
-        pAdapterAddresses = (IP_ADAPTER_ADDRESSES *)malloc(dwSize);
-        dwRet = GetAdaptersAddresses(
+        if (aeron_alloc((void **)&adapters_addresses, adapters_addresses_size) < 0)
+        {
+            AERON_APPEND_ERR("%s", "unable to allocate IP_ADAPTER_ADDRESSES");
+            return -1;
+        }
+
+        DWORD result = GetAdaptersAddresses(
             AF_UNSPEC,
             GAA_FLAG_INCLUDE_PREFIX |
                 GAA_FLAG_SKIP_ANYCAST |
@@ -120,40 +231,36 @@ int getifaddrs(struct ifaddrs **ifap)
                 GAA_FLAG_SKIP_FRIENDLY_NAME |
                 GAA_FLAG_SKIP_MULTICAST,
             NULL,
-            pAdapterAddresses,
-            &dwSize);
+            adapters_addresses,
+            &adapters_addresses_size);
 
-        if (ERROR_BUFFER_OVERFLOW == dwRet)
+        if (ERROR_BUFFER_OVERFLOW == result)
         {
-            free(pAdapterAddresses);
-            pAdapterAddresses = NULL;
+            aeron_free(adapters_addresses);
+            adapters_addresses = NULL;
         }
-        else
+        else if (ERROR_SUCCESS == result)
         {
             break;
         }
-    }
-
-    if (ERROR_SUCCESS != dwRet)
-    {
-        if (pAdapterAddresses)
+        else
         {
-            free(pAdapterAddresses);
+            aeron_free(adapters_addresses);
+            AERON_SET_ERR_WIN(result, "%s", "GetAdaptersAddresses(...)");
+            return -1;
         }
-
-        return -1;
     }
 
-    struct ifaddrs *ifa = malloc(sizeof(struct ifaddrs));
-    struct ifaddrs *ift = NULL;
+    struct ifaddrs *head = NULL;
+    struct ifaddrs *tail = NULL;
 
     /* now populate list */
-    for (IP_ADAPTER_ADDRESSES *adapter = pAdapterAddresses; adapter; adapter = adapter->Next)
+    for (IP_ADAPTER_ADDRESSES *adapter = adapters_addresses; adapter; adapter = adapter->Next)
     {
-        int unicastIndex = 0;
+        int unicast_index = 0;
         for (IP_ADAPTER_UNICAST_ADDRESS *unicast = adapter->FirstUnicastAddress;
             unicast;
-            unicast = unicast->Next, ++unicastIndex)
+            unicast = unicast->Next, ++unicast_index)
         {
             /* ensure IP adapter */
             if (AF_INET != unicast->Address.lpSockaddr->sa_family &&
@@ -162,49 +269,61 @@ int getifaddrs(struct ifaddrs **ifap)
                 continue;
             }
 
-            /* Next */
-            if (NULL == ift)
+            struct ifaddrs *current = NULL;
+            DWORD supplemental_data_length = 2 * unicast->Address.iSockaddrLength + IF_NAMESIZE;
+
+            if (aeron_alloc((void **)&current, sizeof(struct ifaddrs) + supplemental_data_length) < 0)
             {
-                ift = ifa;
+                AERON_APPEND_ERR("%s", "unable to allocate ifaddrs");
+                aeron_freeifaddrs(head);
+                aeron_free(adapters_addresses);
+                return -1;
+            }
+
+            if (NULL == head)
+            {
+                head = current;
+                tail = head;
             }
             else
             {
-                ift->ifa_next = malloc(sizeof(struct ifaddrs));
-                ift = ift->ifa_next;
+                tail->ifa_next = current;
+                tail = current;
             }
-            memset(ift, 0, sizeof(struct ifaddrs));
+
+            uint8_t *supplemental_data = (uint8_t *)(current + 1);
+            current->ifa_addr = (struct sockaddr *)(supplemental_data);
+            current->ifa_netmask = (struct sockaddr *)(supplemental_data + unicast->Address.iSockaddrLength);
+            current->ifa_name = (char *)(supplemental_data + (2 * unicast->Address.iSockaddrLength));
 
             /* address */
-            ift->ifa_addr = malloc(unicast->Address.iSockaddrLength);
-            memcpy(ift->ifa_addr, unicast->Address.lpSockaddr, unicast->Address.iSockaddrLength);
+            memcpy(current->ifa_addr, unicast->Address.lpSockaddr, unicast->Address.iSockaddrLength);
 
             /* name */
-            ift->ifa_name = malloc(IF_NAMESIZE);
-            strncpy_s(ift->ifa_name, IF_NAMESIZE, adapter->AdapterName, _TRUNCATE);
+            strncpy_s(current->ifa_name, IF_NAMESIZE, adapter->AdapterName, _TRUNCATE);
 
             /* flags */
-            ift->ifa_flags = 0;
+            current->ifa_flags = 0;
             if (IfOperStatusUp == adapter->OperStatus)
             {
-                ift->ifa_flags |= IFF_UP;
+                current->ifa_flags |= IFF_UP;
             }
 
             if (IF_TYPE_SOFTWARE_LOOPBACK == adapter->IfType)
             {
-                ift->ifa_flags |= IFF_LOOPBACK;
+                current->ifa_flags |= IFF_LOOPBACK;
             }
 
             if (!(adapter->Flags & IP_ADAPTER_NO_MULTICAST))
             {
-                ift->ifa_flags |= IFF_MULTICAST;
+                current->ifa_flags |= IFF_MULTICAST;
             }
 
             /* netmask */
             ULONG prefixLength = unicast->OnLinkPrefixLength;
 
             /* map prefix to netmask */
-            ift->ifa_netmask = malloc(sizeof(struct sockaddr));
-            ift->ifa_netmask->sa_family = unicast->Address.lpSockaddr->sa_family;
+            current->ifa_netmask->sa_family = unicast->Address.lpSockaddr->sa_family;
 
             switch (unicast->Address.lpSockaddr->sa_family)
             {
@@ -216,7 +335,7 @@ int getifaddrs(struct ifaddrs **ifap)
 
                     ULONG Mask;
                     ConvertLengthToIpv4Mask(prefixLength, &Mask);
-                    ((struct sockaddr_in *)ift->ifa_netmask)->sin_addr.s_addr = htonl(Mask);
+                    ((struct sockaddr_in *)current->ifa_netmask)->sin_addr.s_addr = htonl(Mask);
                     break;
 
                 case AF_INET6:
@@ -227,7 +346,7 @@ int getifaddrs(struct ifaddrs **ifap)
 
                     for (LONG i = (LONG)prefixLength, j = 0; i > 0; i -= 8, ++j)
                     {
-                        ((struct sockaddr_in6 *)ift->ifa_netmask)->sin6_addr.s6_addr[j] = i >= 8 ?
+                        ((struct sockaddr_in6 *)current->ifa_netmask)->sin6_addr.s6_addr[j] = i >= 8 ?
                             0xff : (ULONG)((0xffU << (8 - i)) & 0xffU);
                     }
                     break;
@@ -238,24 +357,20 @@ int getifaddrs(struct ifaddrs **ifap)
         }
     }
 
-    if (pAdapterAddresses)
-    {
-        free(pAdapterAddresses);
-    }
+    aeron_free(adapters_addresses);
+    *ifap = head;
 
-    *ifap = ifa;
-
-    return TRUE;
+    return 0;
 }
 
-void freeifaddrs(struct ifaddrs *current)
+void aeron_freeifaddrs(struct ifaddrs *current)
 {
     if (NULL != current)
     {
         while (1)
         {
             struct ifaddrs *next = current->ifa_next;
-            free(current);
+            aeron_free(current);
             current = next;
 
             if (NULL == current)
@@ -266,7 +381,7 @@ void freeifaddrs(struct ifaddrs *current)
     }
 }
 
-ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
+ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
     DWORD size = 0;
     const int result = WSARecvFrom(
@@ -288,13 +403,14 @@ ssize_t recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
+        AERON_SET_ERR_WIN(err, "WSARecvFrom(fd=%d,...)", fd);
         return -1;
     }
 
     return size;
 }
 
-ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
+ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
     DWORD size = 0;
     const int result = WSASendTo(
@@ -316,23 +432,40 @@ ssize_t sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
             return 0;
         }
 
+        AERON_SET_ERR_WIN(err, "WSASendTo(fd=%d,...)", fd);
         return -1;
     }
 
     return size;
 }
 
-int poll(struct pollfd *fds, nfds_t nfds, int timeout)
+int aeron_poll(struct pollfd *fds, unsigned long nfds, int timeout)
 {
-    return WSAPoll(fds, nfds, timeout);
+    int result = WSAPoll(fds, (ULONG)nfds, timeout);
+
+    if (SOCKET_ERROR == result)
+    {
+        const int err = WSAGetLastError();
+
+        AERON_SET_ERR_WIN(err, "%s", "WSAPoll(...)");
+        return -1;
+    }
+
+    return result;
 }
 
 aeron_socket_t aeron_socket(int domain, int type, int protocol)
 {
     aeron_net_init();
     const SOCKET handle = socket(domain, type, protocol);
+    if (INVALID_SOCKET == handle)
+    {
+        AERON_SET_ERR_WIN(
+            WSAGetLastError(), "failed to socket(domain=%d, type=%d, protocol=%d)", domain, type, protocol);
+        return (aeron_socket_t)-1;
+    }
 
-    return (aeron_socket_t)(INVALID_SOCKET != handle ? handle : -1);
+    return (aeron_socket_t)handle;
 }
 
 void aeron_close_socket(aeron_socket_t socket)
@@ -340,19 +473,31 @@ void aeron_close_socket(aeron_socket_t socket)
     closesocket(socket);
 }
 
-#else
-#error Unsupported platform!
-#endif
-
 /* aeron_getsockopt and aeron_setsockopt ensure a consistent signature between platforms
  * (MSVC uses char * instead of void * for optval, which causes warnings)
  */
 int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen)
 {
-    return getsockopt(fd, level, optname, optval, optlen);
+    if (SOCKET_ERROR == getsockopt(fd, level, optname, optval, optlen))
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "getsockopt(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return 0;
 }
 
 int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optval, socklen_t optlen)
 {
-    return setsockopt(fd, level, optname, optval, optlen);
+    if (SOCKET_ERROR == setsockopt(fd, level, optname, optval, optlen))
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "setsockopt(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return 0;
 }
+
+#else
+#error Unsupported platform!
+#endif

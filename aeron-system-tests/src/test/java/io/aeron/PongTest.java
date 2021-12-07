@@ -21,10 +21,10 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.SlowTest;
-import io.aeron.test.driver.TestMediaDriver;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.*;
 
-public class PongTest
+class PongTest
 {
     private static final String PING_URI = "aeron:udp?endpoint=localhost:24325";
     private static final String PONG_URI = "aeron:udp?endpoint=localhost:24326";
@@ -59,10 +59,10 @@ public class PongTest
     private final FragmentHandler pongHandler = mock(FragmentHandler.class);
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @BeforeEach
-    public void before()
+    void before()
     {
         driver = TestMediaDriver.launch(
             new MediaDriver.Context()
@@ -82,14 +82,14 @@ public class PongTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(pongClient, pingClient, driver);
         driver.context().deleteDirectory();
     }
 
     @Test
-    public void playPingPong()
+    void playPingPong()
     {
         buffer.putInt(0, 1);
 
@@ -131,7 +131,7 @@ public class PongTest
 
     @SlowTest
     @Test
-    public void playPingPongWithRestart()
+    void playPingPongWithRestart()
     {
         buffer.putInt(0, 1);
 
@@ -214,8 +214,7 @@ public class PongTest
             any(Header.class));
     }
 
-    public void echoPingHandler(
-        final DirectBuffer buffer, final int offset, final int length, @SuppressWarnings("unused") final Header header)
+    void echoPingHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         while (pongPublication.offer(buffer, offset, length) < 0L)
         {

@@ -29,7 +29,8 @@ public class FailControlResponseListener implements ControlResponseListener
         final ControlResponseCode code,
         final String errorMessage)
     {
-        fail();
+        fail("controlSessionId=" + controlSessionId + ", correlationId=" + correlationId + ", relevantId=" +
+            relevantId + ", responseCode=" + code + ", errorMessage=" + errorMessage);
     }
 
     public void onRecordingDescriptor(
@@ -50,6 +51,21 @@ public class FailControlResponseListener implements ControlResponseListener
         final String originalChannel,
         final String sourceIdentity)
     {
-        fail();
+        fail("controlSessionId=" + controlSessionId +
+            ", correlationId=" + correlationId +
+            ", recordingId=" + recordingId +
+            ", startTimestamp=" + startTimestamp +
+            ", stopTimestamp=" + stopTimestamp +
+            ", startPosition=" + startPosition +
+            ", stopPosition=" + stopPosition +
+            ", initialTermId=" + initialTermId +
+            ", segmentFileLength=" + segmentFileLength +
+            ", termBufferLength=" + termBufferLength +
+            ", mtuLength=" + mtuLength +
+            ", sessionId=" + sessionId +
+            ", streamId=" + streamId +
+            ", strippedChannel=" + strippedChannel +
+            ", originalChannel=" + originalChannel +
+            ", sourceIdentity=" + sourceIdentity);
     }
 }

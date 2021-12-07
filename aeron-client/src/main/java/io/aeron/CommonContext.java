@@ -17,17 +17,18 @@ package io.aeron;
 
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.DriverTimeoutException;
-import org.agrona.BufferUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
-import org.agrona.SystemUtil;
+import org.agrona.*;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.ErrorConsumer;
 import org.agrona.concurrent.errors.ErrorLogReader;
+import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -103,7 +104,7 @@ public class CommonContext implements Cloneable
     public static final String DRIVER_TIMEOUT_PROP_NAME = "aeron.driver.timeout";
 
     /**
-     * Property name for the timeout to use in debug mode. By default this is not set and the configured
+     * Property name for the timeout to use in debug mode. By default, this is not set and the configured
      * timeouts will be used. Setting this value adjusts timeouts to make debugging easier.
      */
     public static final String DEBUG_TIMEOUT_PROP_NAME = "aeron.debug.timeout";
@@ -227,7 +228,7 @@ public class CommonContext implements Cloneable
     public static final String SESSION_ID_PARAM_NAME = "session-id";
 
     /**
-     * Key for the linger timeout for a publication to wait around after draining in nanoseconds.
+     * Key for timeout a publication to linger after draining in nanoseconds.
      */
     public static final String LINGER_PARAM_NAME = "linger";
 
@@ -275,7 +276,7 @@ public class CommonContext implements Cloneable
      * Parameter name for channel URI param to indicate if a Subscription represents a group member or individual
      * from the perspective of message reception. This can inform loss handling and similar semantics.
      * <p>
-     * When configuring an subscription for an MDC publication then should be added as this is effective multicast.
+     * When configuring a subscription for an MDC publication then should be added as this is effective multicast.
      *
      * @see CommonContext#MDC_CONTROL_MODE_PARAM_NAME
      * @see CommonContext#MDC_CONTROL_PARAM_NAME
@@ -524,8 +525,8 @@ public class CommonContext implements Cloneable
     /**
      * Create a new command and control file in the administration directory.
      *
-     * @return The newly created File.
      * @param aeronDirectoryName name of the aeronDirectory that containing the cnc file.
+     * @return The newly created File.
      */
     public static File newCncFile(final String aeronDirectoryName)
     {
@@ -533,10 +534,10 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Get the buffer containing the counter meta data. These counters are R/W for the driver, read only for all
+     * Get the buffer containing the counter metadata. These counters are R/W for the driver, read only for all
      * other users.
      *
-     * @return The buffer storing the counter meta data.
+     * @return The buffer storing the counter metadata.
      */
     public UnsafeBuffer countersMetaDataBuffer()
     {
@@ -544,9 +545,9 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Set the buffer containing the counter meta data. Testing/internal purposes only.
+     * Set the buffer containing the counter metadata. Testing/internal purposes only.
      *
-     * @param countersMetaDataBuffer The new counter meta data buffer.
+     * @param countersMetaDataBuffer The new counter metadata buffer.
      * @return this for a fluent API.
      */
     public CommonContext countersMetaDataBuffer(final UnsafeBuffer countersMetaDataBuffer)
@@ -610,12 +611,12 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Override the supplied timeout with the debug value if it has been set and we are in debug mode.
+     * Override the supplied timeout with the debug value if it has been set, and we are in debug mode.
      *
      * @param timeout  The timeout value currently in use.
      * @param timeUnit The units of the timeout value. Debug timeout is specified in ns, so will be converted to this
      *                 unit.
-     * @return The debug timeout if specified and we are being debugged or the supplied value if not. Will be in
+     * @return The debug timeout if specified, and we are being debugged or the supplied value if not. Will be in
      * timeUnit units.
      */
     public static long checkDebugTimeout(final long timeout, final TimeUnit timeUnit)
@@ -732,7 +733,7 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Is a media driver active in the current mapped CnC buffer? If the driver is mid start then it will wait for
+     * Is a media driver active in the current mapped CnC buffer? If the driver is starting then it will wait for
      * up to the driverTimeoutMs by checking for the cncVersion being set.
      *
      * @param driverTimeoutMs for the driver liveness check.
@@ -863,7 +864,7 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Print the contents of an error log to a {@link PrintStream} in human readable format.
+     * Print the contents of an error log to a {@link PrintStream} in human-readable format.
      *
      * @param errorBuffer to read errors from.
      * @param out         print the errors to.
@@ -892,6 +893,48 @@ public class CommonContext implements Cloneable
     }
 
     /**
+     * Save the existing errors from a {@link MarkFile} to a file in the same directory as the original {@link MarkFile}
+     * and optionally print location of such file to the supplied {@link PrintStream}.
+     *
+     * @param markFile        which contains the error buffer.
+     * @param errorBuffer     which wraps the error log.
+     * @param logger          to which the existing errors will be printed.
+     * @param errorFilePrefix to add to the generated error file.
+     */
+    public static void saveExistingErrors(
+        final File markFile,
+        final AtomicBuffer errorBuffer,
+        final PrintStream logger,
+        final String errorFilePrefix)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final int observations = printErrorLog(errorBuffer, new PrintStream(baos, false, "US-ASCII"));
+            if (observations > 0)
+            {
+                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
+                final File errorLogFile = new File(
+                    markFile.getParentFile(), errorFilePrefix + '-' + dateFormat.format(new Date()) + "-error.log");
+
+                if (null != logger)
+                {
+                    logger.println("WARNING: existing errors saved to: " + errorLogFile);
+                }
+
+                try (FileOutputStream out = new FileOutputStream(errorLogFile))
+                {
+                    baos.writeTo(out);
+                }
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    /**
      * Get an {@link AtomicBuffer} which wraps the error log in the CnC file.
      *
      * @param cncByteBuffer which contains the error log.
@@ -905,5 +948,29 @@ public class CommonContext implements Cloneable
         CncFileDescriptor.checkVersion(cncVersion);
 
         return CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
+    }
+
+    /**
+     * Wrap a user ErrorHandler so that error will continue to write to the errorLog.
+     *
+     * @param userErrorHandler the user specified ErrorHandler, can be null.
+     * @param errorLog         the configured errorLog, either the default or user supplied.
+     * @return an error handler that will delegate to both the userErrorHandler and the errorLog.
+     */
+    public static ErrorHandler setupErrorHandler(final ErrorHandler userErrorHandler, final DistinctErrorLog errorLog)
+    {
+        final LoggingErrorHandler loggingErrorHandler = new LoggingErrorHandler(errorLog);
+        if (null == userErrorHandler)
+        {
+            return loggingErrorHandler;
+        }
+        else
+        {
+            return (throwable) ->
+            {
+                loggingErrorHandler.onError(throwable);
+                userErrorHandler.onError(throwable);
+            };
+        }
     }
 }

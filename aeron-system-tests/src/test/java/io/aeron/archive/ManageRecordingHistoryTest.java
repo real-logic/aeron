@@ -28,8 +28,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -67,30 +66,36 @@ public class ManageRecordingHistoryTest
     private AeronArchive aeronArchive;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
     public void before()
     {
-        driver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .publicationTermBufferLength(TERM_LENGTH)
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Tests::onError)
-                .spiesSimulateConnection(true)
-                .dirDeleteOnStart(true),
-            testWatcher);
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .publicationTermBufferLength(TERM_LENGTH)
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .spiesSimulateConnection(true)
+            .dirDeleteOnStart(true);
 
-        archive = Archive.launch(
-            new Archive.Context()
-                .catalogCapacity(CATALOG_CAPACITY)
-                .segmentFileLength(SEGMENT_LENGTH)
-                .deleteArchiveOnStart(true)
-                .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
-                .fileSyncLevel(0)
-                .errorHandler(Tests::onError)
-                .threadingMode(ArchiveThreadingMode.SHARED));
+        final Archive.Context archiveCtx = new Archive.Context()
+            .catalogCapacity(CATALOG_CAPACITY)
+            .segmentFileLength(SEGMENT_LENGTH)
+            .deleteArchiveOnStart(true)
+            .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
+            .fileSyncLevel(0)
+            .threadingMode(ArchiveThreadingMode.SHARED);
+
+        try
+        {
+            driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
+            archive = Archive.launch(archiveCtx);
+        }
+        finally
+        {
+            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
+        }
 
         aeron = Aeron.connect();
 
@@ -103,9 +108,6 @@ public class ManageRecordingHistoryTest
     public void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
-
-        archive.context().deleteDirectory();
-        driver.context().deleteDirectory();
     }
 
     @Test

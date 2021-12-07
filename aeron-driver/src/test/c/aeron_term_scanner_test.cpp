@@ -32,16 +32,15 @@ class TermScannerTest : public testing::Test
 {
 public:
     TermScannerTest() :
-        m_ptr(m_buffer.data()),
-        m_padding(0)
+        m_ptr(m_buffer.data())
     {
         m_buffer.fill(0);
     }
 
 protected:
-    buffer_t m_buffer;
-    uint8_t *m_ptr;
-    size_t m_padding;
+    buffer_t m_buffer = {};
+    uint8_t *m_ptr = nullptr;
+    size_t m_padding = 0;
 };
 
 TEST_F(TermScannerTest, shouldReturnZeroOnEmptyLog)
@@ -54,7 +53,7 @@ TEST_F(TermScannerTest, shouldScanSingleMessage)
 {
     int32_t frame_length = AERON_DATA_HEADER_LENGTH + 1;
     size_t aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_ptr;
+    auto *data_header = (aeron_data_header_t *)m_ptr;
 
     data_header->frame_header.frame_length = (int32_t)aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
@@ -68,7 +67,7 @@ TEST_F(TermScannerTest, shouldFailToScanMessageLargerThanMaxLength)
     int32_t frame_length = AERON_DATA_HEADER_LENGTH + 1;
     size_t aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     size_t max_length = aligned_frame_length - 1;
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_ptr;
+    auto *data_header = (aeron_data_header_t *)m_ptr;
 
     data_header->frame_header.frame_length = (int32_t)aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
@@ -81,7 +80,7 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesThatFitInSingleMtu)
 {
     int32_t frame_length = AERON_DATA_HEADER_LENGTH + 100;
     size_t aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_ptr;
+    auto *data_header = (aeron_data_header_t *)m_ptr;
 
     data_header->frame_header.frame_length = (int32_t)aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
@@ -99,7 +98,7 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtMtuBoundary)
 {
     int32_t frame_two_length = AERON_ALIGN((AERON_DATA_HEADER_LENGTH + 1), AERON_LOGBUFFER_FRAME_ALIGNMENT);
     int32_t frame_one_length = MTU_LENGTH - frame_two_length;
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_ptr;
+    auto *data_header = (aeron_data_header_t *)m_ptr;
 
     data_header->frame_header.frame_length = frame_one_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
@@ -117,7 +116,7 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtSecondThatSpansMtu)
 {
     int32_t frame_two_length = AERON_ALIGN((AERON_DATA_HEADER_LENGTH + 2), AERON_LOGBUFFER_FRAME_ALIGNMENT);
     int32_t frame_one_length = MTU_LENGTH - (frame_two_length / 2);
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_ptr;
+    auto *data_header = (aeron_data_header_t *)m_ptr;
 
     data_header->frame_header.frame_length = frame_one_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
@@ -137,7 +136,7 @@ TEST_F(TermScannerTest, shouldScanLastFrameInBuffer)
 
     m_ptr += CAPACITY - aligned_frame_length;
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_ptr;
+    auto *data_header = (aeron_data_header_t *)m_ptr;
     data_header->frame_header.frame_length = aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
 
@@ -154,7 +153,7 @@ TEST_F(TermScannerTest, shouldScanLastMessageInBufferPlusPadding)
 
     m_ptr += offset;
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_ptr;
+    auto *data_header = (aeron_data_header_t *)m_ptr;
 
     data_header->frame_header.frame_length = aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
@@ -176,7 +175,7 @@ TEST_F(TermScannerTest, shouldScanLastMessageInBufferMinusPaddingLimitedByMtu)
 
     m_ptr += offset;
 
-    aeron_data_header_t *data_header = (aeron_data_header_t *)m_ptr;
+    auto *data_header = (aeron_data_header_t *)m_ptr;
 
     data_header->frame_header.frame_length = aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;

@@ -51,6 +51,7 @@ import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -133,6 +134,7 @@ public class ClusterLoggingAgentTest
             .clusterMemberId(0)
             .clusterMembers("0,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010")
             .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550")
+            .ingressChannel("aeron:udp?term-length=64k")
             .replicationChannel("aeron:udp?endpoint=localhost:0");
 
         final ClusteredService clusteredService = mock(ClusteredService.class);
@@ -187,13 +189,13 @@ public class ClusterLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            final int offset = LOG_HEADER_LENGTH + index + SIZE_OF_INT;
             final ClusterEventCode eventCode = fromEventCodeId(msgTypeId);
 
             switch (eventCode)
             {
                 case ROLE_CHANGE:
                 {
+                    final int offset = index + LOG_HEADER_LENGTH + SIZE_OF_INT;
                     final String roleChange = buffer.getStringAscii(offset);
                     if (roleChange.contains("LEADER"))
                     {
@@ -204,6 +206,7 @@ public class ClusterLoggingAgentTest
 
                 case STATE_CHANGE:
                 {
+                    final int offset = index + LOG_HEADER_LENGTH + SIZE_OF_INT;
                     final String stateChange = buffer.getStringAscii(offset);
                     if (stateChange.contains("ACTIVE"))
                     {
@@ -214,6 +217,7 @@ public class ClusterLoggingAgentTest
 
                 case ELECTION_STATE_CHANGE:
                 {
+                    final int offset = index + LOG_HEADER_LENGTH + 2 * SIZE_OF_INT + 6 * SIZE_OF_LONG;
                     final String stateChange = buffer.getStringAscii(offset);
                     if (stateChange.contains("CLOSED"))
                     {

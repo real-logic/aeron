@@ -21,10 +21,11 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.samples.archive.RecordingDescriptorCollector;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -54,7 +55,7 @@ public class ArchiveDeleteAndRestartTest
     public final TestWatcher randomSeedWatcher = ArchiveTests.newWatcher(seed);
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private TestMediaDriver driver;
     private Archive archive;
@@ -65,21 +66,19 @@ public class ArchiveDeleteAndRestartTest
     @BeforeEach
     public void before()
     {
+
         final Random rnd = new Random();
         rnd.setSeed(seed);
 
         final int termLength = 1 << (16 + rnd.nextInt(10)); // 1M to 8M
         final int segmentFileLength = termLength << rnd.nextInt(4);
 
-        driver = TestMediaDriver.launch(
-            new MediaDriver.Context()
-                .termBufferSparseFile(true)
-                .threadingMode(ThreadingMode.SHARED)
-                .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
-                .spiesSimulateConnection(true)
-                .errorHandler(Tests::onError)
-                .dirDeleteOnStart(true),
-            testWatcher);
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .spiesSimulateConnection(true)
+            .dirDeleteOnStart(true);
 
         archiveContext = new Archive.Context()
             .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
@@ -88,10 +87,18 @@ public class ArchiveDeleteAndRestartTest
             .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))
             .segmentFileLength(segmentFileLength)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .idleStrategySupplier(YieldingIdleStrategy::new)
-            .errorHandler(Tests::onError);
+            .idleStrategySupplier(YieldingIdleStrategy::new);
 
-        archive = Archive.launch(archiveContext.clone());
+        try
+        {
+            driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
+            archive = Archive.launch(archiveContext.clone());
+        }
+        finally
+        {
+            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+            systemTestWatcher.dataCollector().add(archiveContext.archiveDir());
+        }
         client = Aeron.connect();
     }
 
@@ -99,16 +106,6 @@ public class ArchiveDeleteAndRestartTest
     public void after()
     {
         CloseHelper.closeAll(client, archive, driver);
-
-        if (null != archive)
-        {
-            archive.context().deleteDirectory();
-        }
-
-        if (null != driver)
-        {
-            driver.context().deleteDirectory();
-        }
     }
 
     @InterruptAfter(10)
@@ -134,14 +131,14 @@ public class ArchiveDeleteAndRestartTest
         }
 
         final long position1 = recordedPublication1.position();
-        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector();
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
 
-        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector) < 1)
+        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector.reset()) < 1)
         {
             Tests.yieldingIdle("Didn't find recording");
         }
 
-        while (position1 != aeronArchive.getRecordingPosition(collector.descriptors.get(0).recordingId))
+        while (position1 != aeronArchive.getRecordingPosition(collector.descriptors().get(0).recordingId()))
         {
             Tests.yieldingIdle("Failed to record data");
         }
@@ -149,7 +146,7 @@ public class ArchiveDeleteAndRestartTest
         recordedPublication1.close();
         aeronArchive.stopRecording(subscriptionId);
 
-        while (position1 != aeronArchive.getStopPosition(collector.descriptors.get(0).recordingId))
+        while (position1 != aeronArchive.getStopPosition(collector.descriptors().get(0).recordingId()))
         {
             Tests.yieldingIdle("Failed to stop recording");
         }
@@ -172,12 +169,12 @@ public class ArchiveDeleteAndRestartTest
             }
         }
 
-        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector) < 1)
+        while (aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector.reset()) < 1)
         {
             Tests.yieldingIdle("Didn't find recording");
         }
 
-        collector.descriptors.clear();
-        assertEquals(1, aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector), collector.descriptors::toString);
+        assertEquals(
+            1, aeronArchive.listRecordings(0, Integer.MAX_VALUE, collector.reset()), collector.descriptors()::toString);
     }
 }

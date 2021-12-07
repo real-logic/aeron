@@ -34,6 +34,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongConsumer;
 
 import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
@@ -55,6 +56,7 @@ public class ConsensusModuleAgentTest
     private final ConcurrentPublication mockResponsePublication = mock(ConcurrentPublication.class);
     private final ExclusivePublication mockExclusivePublication = mock(ExclusivePublication.class);
     private final Counter mockTimedOutClientCounter = mock(Counter.class);
+    private final LongConsumer mockTimeConsumer = mock(LongConsumer.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .errorHandler(Tests::onError)
@@ -64,7 +66,9 @@ public class ConsensusModuleAgentTest
         .controlToggleCounter(mock(Counter.class))
         .clusterNodeRoleCounter(mock(Counter.class))
         .timedOutClientCounter(mockTimedOutClientCounter)
+        .clusterTimeConsumerSupplier((ctx) -> mockTimeConsumer)
         .idleStrategySupplier(NoOpIdleStrategy::new)
+        .timerServiceSupplier((clusterClock, timerHandler) -> mock(TimerService.class))
         .aeron(mockAeron)
         .clusterMemberId(0)
         .authenticatorSupplier(new DefaultAuthenticatorSupplier())
@@ -109,6 +113,7 @@ public class ConsensusModuleAgentTest
 
         clock.update(17, TimeUnit.MILLISECONDS);
         agent.doWork();
+        verify(mockTimeConsumer).accept(clock.time());
 
         verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), anyLong(), anyLong());
 
@@ -116,6 +121,7 @@ public class ConsensusModuleAgentTest
         agent.onSessionConnect(correlationIdTwo, 3, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_TWO, new byte[0]);
         clock.update(clock.time() + 10L, TimeUnit.MILLISECONDS);
         agent.doWork();
+        verify(mockTimeConsumer).accept(clock.time());
 
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq(SESSION_LIMIT_MSG));
@@ -142,6 +148,7 @@ public class ConsensusModuleAgentTest
         agent.doWork();
 
         verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), anyLong(), eq(startMs));
+        verify(mockTimeConsumer).accept(clock.time());
 
         final long timeMs = startMs + TimeUnit.NANOSECONDS.toMillis(ConsensusModule.Configuration.sessionTimeoutNs());
         clock.update(timeMs, TimeUnit.MILLISECONDS);
@@ -151,6 +158,7 @@ public class ConsensusModuleAgentTest
         clock.update(timeoutMs, TimeUnit.MILLISECONDS);
         agent.doWork();
 
+        verify(mockTimeConsumer).accept(clock.time());
         verify(mockTimedOutClientCounter).incrementOrdered();
         verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), anyLong(), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(

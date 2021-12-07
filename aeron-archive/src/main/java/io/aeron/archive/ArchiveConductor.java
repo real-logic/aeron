@@ -585,25 +585,16 @@ abstract class ArchiveConductor
         final byte[] channelFragment,
         final ControlSession controlSession)
     {
-        if (minRecordingId < 0 || minRecordingId >= catalog.nextRecordingId())
+        if (minRecordingId < 0)
         {
-            final String msg = "min recording id outside valid range [0, " +
-                max(0, catalog.nextRecordingId() - 1) + "]: " + minRecordingId;
+            final String msg = "minRecordingId=" + minRecordingId + " is < 0";
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
         }
         else
         {
             final long recordingId = catalog.findLast(minRecordingId, sessionId, streamId, channelFragment);
-            if (Catalog.NULL_RECORD_ID == recordingId)
-            {
-                final String msg = "recording was not found: minRecordingId=" + minRecordingId +
-                    ", sessionId=" + sessionId + ", streamId=" + streamId;
-                controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-            }
-            else
-            {
-                controlSession.sendOkResponse(correlationId, recordingId, controlResponseProxy);
-            }
+            // If not found, recordingId is -1, which matches client side specification.
+            controlSession.sendOkResponse(correlationId, recordingId, controlResponseProxy);
         }
     }
 
@@ -693,7 +684,7 @@ abstract class ArchiveConductor
             {
                 replayLimitCounter = new Counter(aeron.countersReader(), NULL_VALUE, limitCounterId);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 final String msg = "unable to create replay limit counter id= " + limitCounterId +
                     " because of: " + ex.getMessage();
@@ -1034,7 +1025,7 @@ abstract class ArchiveConductor
                     position,
                     RecordingSignal.STOP);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 errorHandler.onError(ex);
             }
@@ -1055,7 +1046,7 @@ abstract class ArchiveConductor
             {
                 session.sendPendingError(controlResponseProxy);
             }
-            catch (final Throwable ex)
+            catch (final Exception ex)
             {
                 errorHandler.onError(ex);
             }
@@ -1698,7 +1689,7 @@ abstract class ArchiveConductor
         if (image.joinPosition() != recordingSummary.stopPosition)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image joinPosition=" + image.joinPosition() + " != stopPosition=" + recordingSummary.stopPosition;
+                " image.joinPosition=" + image.joinPosition() + " != rec.stopPosition=" + recordingSummary.stopPosition;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveEvent(msg);
         }
@@ -1706,7 +1697,8 @@ abstract class ArchiveConductor
         if (image.initialTermId() != recordingSummary.initialTermId)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image initialTermId=" + image.initialTermId() + " != initialTermId=" + recordingSummary.initialTermId;
+                " image.initialTermId=" + image.initialTermId() +
+                " != rec.initialTermId=" + recordingSummary.initialTermId;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveEvent(msg);
         }
@@ -1714,8 +1706,8 @@ abstract class ArchiveConductor
         if (image.termBufferLength() != recordingSummary.termBufferLength)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image termBufferLength=" + image.termBufferLength() +
-                " != termBufferLength=" + recordingSummary.termBufferLength;
+                " image.termBufferLength=" + image.termBufferLength() +
+                " != rec.termBufferLength=" + recordingSummary.termBufferLength;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveEvent(msg);
         }
@@ -1723,7 +1715,7 @@ abstract class ArchiveConductor
         if (image.mtuLength() != recordingSummary.mtuLength)
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " image mtuLength=" + image.mtuLength() + " != mtuLength=" + recordingSummary.mtuLength;
+                " image.mtuLength=" + image.mtuLength() + " != rec.mtuLength=" + recordingSummary.mtuLength;
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveEvent(msg);
         }
@@ -1857,8 +1849,7 @@ abstract class ArchiveConductor
 
         if (position > endPosition)
         {
-            final String msg =
-                "invalid detach: in use, newStartPosition=" + position + " upperBound=" + endPosition;
+            final String msg = "invalid detach: in use, newStartPosition=" + position + " upperBound=" + endPosition;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return false;
         }
@@ -2020,8 +2011,8 @@ abstract class ArchiveConductor
     {
         try
         {
-            final long usableSpace = ctx.archiveFileStore().getUsableSpace();
             final long threshold = ctx.lowStorageSpaceThreshold();
+            final long usableSpace = ctx.archiveFileStore().getUsableSpace();
 
             if (usableSpace <= threshold)
             {

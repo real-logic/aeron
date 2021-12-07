@@ -98,7 +98,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public static final int DATA_OFFSET = HEADER_LENGTH;
 
     /**
-     * Default constructor which can later be use to wrap a frame.
+     * Default constructor which can later be used to wrap a frame.
      */
     public DataHeaderFlyweight()
     {

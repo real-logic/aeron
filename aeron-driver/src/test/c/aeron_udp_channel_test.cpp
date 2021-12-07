@@ -79,10 +79,8 @@ public:
 
     int parse_udp_channel(const char *uri)
     {
-        if (nullptr != m_channel)
-        {
-            aeron_udp_channel_delete(m_channel);
-        }
+        aeron_udp_channel_delete(m_channel);
+        m_channel = nullptr;
 
         return aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &m_channel, false);
     }
@@ -279,6 +277,16 @@ TEST_F(UdpChannelTest, shouldCanonicalizeIpv6ForUnicastWithMixedAddressTypes)
 
     ASSERT_EQ(parse_udp_channel("aeron:udp?endpoint=192.168.0.1:40456|interface=[::1]"), 0) << aeron_errmsg();
     EXPECT_STREQ(m_channel->canonical_form, "UDP-[::1]:0-192.168.0.1:40456");
+}
+
+TEST_F(UdpChannelTest, shouldNotDoubleFreeParsedUdpChannel)
+{
+    ASSERT_EQ(parse_udp_channel("aeron:udp?interface=127.0.0.1:40455|endpoint=224.0.1.1:40456"), 0) << aeron_errmsg();
+    ASSERT_NE(m_channel, nullptr);
+
+    ASSERT_EQ(parse_udp_channel("this should fail"), -1) << aeron_errmsg();
+    ASSERT_EQ(parse_udp_channel("and this as well"), -1) << aeron_errmsg();
+    ASSERT_EQ(m_channel, nullptr); // previous channel was removed
 }
 
 MATCHER_P(ReMatch, pattern, std::string("ReMatch(").append(pattern).append(")"))

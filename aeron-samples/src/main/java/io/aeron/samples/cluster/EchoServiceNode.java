@@ -57,6 +57,7 @@ public final class EchoServiceNode
             "aeron.cluster.tutorial.hostnames.internal", hostnamesStr);
         final List<String> hostnames = Arrays.asList(hostnamesStr.split(","));
         final List<String> internalHostnames = Arrays.asList(internalHostnamesStr.split(","));
+        final String baseDir = System.getProperty("aeron.cluster.tutorial.baseDir");
 
         final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
 
@@ -64,10 +65,14 @@ public final class EchoServiceNode
             nodeId, hostnames, internalHostnames, PORT_BASE, new EchoService());
 
         clusterConfig.mediaDriverContext().errorHandler(EchoServiceNode.errorHandler("Media Driver"));
-        clusterConfig.archiveContext().errorHandler(EchoServiceNode.errorHandler("Archive"));
-        clusterConfig.aeronArchiveContext().errorHandler(EchoServiceNode.errorHandler("Aeron Archive"));
-        clusterConfig.consensusModuleContext().errorHandler(errorHandler("Consensus Module"));
-        clusterConfig.clusteredServiceContext().errorHandler(errorHandler("Clustered Service"));
+        clusterConfig.archiveContext()
+            .errorHandler(EchoServiceNode.errorHandler("Archive"));
+        clusterConfig.aeronArchiveContext()
+            .errorHandler(EchoServiceNode.errorHandler("Aeron Archive"));
+        clusterConfig.consensusModuleContext()
+            .errorHandler(errorHandler("Consensus Module"));
+        clusterConfig.clusteredServiceContext()
+            .errorHandler(errorHandler("Clustered Service"));
 
         try (
             ClusteredMediaDriver clusteredMediaDriver = ClusteredMediaDriver.launch(

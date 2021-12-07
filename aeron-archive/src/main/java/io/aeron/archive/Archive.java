@@ -27,7 +27,6 @@ import io.aeron.security.AuthenticatorSupplier;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
@@ -72,8 +71,7 @@ public final class Archive implements AutoCloseable
             this.ctx = ctx;
 
             final ArchiveConductor conductor = DEDICATED == ctx.threadingMode() ?
-                new DedicatedModeArchiveConductor(ctx) :
-                new SharedModeArchiveConductor(ctx);
+                (new DedicatedModeArchiveConductor(ctx)) : (new SharedModeArchiveConductor(ctx));
 
             if (ArchiveThreadingMode.INVOKER == ctx.threadingMode())
             {
@@ -91,7 +89,7 @@ public final class Archive implements AutoCloseable
         {
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             CloseHelper.quietClose(ctx::close);
             throw ex;
@@ -470,7 +468,7 @@ public final class Archive implements AutoCloseable
         /**
          * The length of file to be used for storing recording segments that must be a power of 2.
          * <p>
-         * If the {@link Image#termBufferLength()} is greater then this will take priority.
+         * If the {@link Image#termBufferLength()} is greater than this will take priority.
          *
          * @return length of file to be used for storing recording segments.
          */
@@ -800,7 +798,7 @@ public final class Archive implements AutoCloseable
         private AuthenticatorSupplier authenticatorSupplier;
         private Counter controlSessionsCounter;
 
-        private int errorBufferLength = 0;
+        private int errorBufferLength;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
@@ -907,7 +905,7 @@ public final class Archive implements AutoCloseable
 
             if (null == markFile)
             {
-                if (0 == errorBufferLength && null == errorHandler)
+                if (0 == errorBufferLength)
                 {
                     errorBufferLength = Configuration.errorBufferLength();
                 }
@@ -915,11 +913,8 @@ public final class Archive implements AutoCloseable
                 markFile = new ArchiveMarkFile(this);
             }
 
-            if (null == errorHandler)
-            {
-                errorHandler = new LoggingErrorHandler(new DistinctErrorLog(
-                    markFile.errorBuffer(), epochClock, US_ASCII));
-            }
+            errorHandler = CommonContext.setupErrorHandler(
+                errorHandler, new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII));
 
             if (null == aeron)
             {
@@ -1106,7 +1101,7 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Set the the directory in which the Archive will store recordings and the {@link Catalog}.
+         * Set the directory in which the Archive will store recordings and the {@link Catalog}.
          *
          * @param archiveDir the directory in which the Archive will store recordings and the {@link Catalog}.
          * @return this for a fluent API.
@@ -2474,7 +2469,7 @@ public final class Archive implements AutoCloseable
                 "\n    dataBuffer=" + dataBuffer +
                 "\n    replayBuffer=" + replayBuffer +
                 "\n    recordChecksumBuffer=" + recordChecksumBuffer +
-                '}';
+                "\n}";
         }
     }
 
@@ -2491,7 +2486,7 @@ public final class Archive implements AutoCloseable
     }
 
     /**
-     * Get the {@link FileChannel} for the parent directory for the recordings and catalog so it can be sync'ed
+     * Get the {@link FileChannel} for the parent directory for the recordings and catalog, so it can be sync'ed
      * to storage when new files are created.
      *
      * @param directory     which will store the files created by the archive.

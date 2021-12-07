@@ -22,11 +22,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.CountingFragmentHandler;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -52,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MultiDestinationCastTest
+class MultiDestinationCastTest
 {
     private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325";
     private static final String SUB1_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325|group=true";
@@ -62,7 +58,6 @@ public class MultiDestinationCastTest
     private static final String PUB_MDC_MANUAL_URI = "aeron:udp?control-mode=manual";
     private static final String SUB1_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:24326|group=true";
     private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:24327|group=true";
-    private static final String SUB3_MDC_MANUAL_URI = CommonContext.SPY_PREFIX + PUB_MDC_MANUAL_URI;
 
     private static final int STREAM_ID = 1001;
 
@@ -90,7 +85,7 @@ public class MultiDestinationCastTest
     private final FragmentHandler fragmentHandlerC = mock(FragmentHandler.class, "fragmentHandlerC");
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private void launch(final ErrorHandler errorHandler)
     {
@@ -117,7 +112,7 @@ public class MultiDestinationCastTest
     }
 
     @AfterEach
-    public void closeEverything()
+    void closeEverything()
     {
         CloseHelper.closeAll(clientB, clientA, driverB, driverA);
         IoUtil.delete(new File(ROOT_DIR), true);
@@ -125,7 +120,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSpinUpAndShutdownWithDynamic()
+    void shouldSpinUpAndShutdownWithDynamic()
     {
         launch(Tests::onError);
 
@@ -142,7 +137,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSpinUpAndShutdownWithManual()
+    void shouldSpinUpAndShutdownWithManual()
     {
         launch(Tests::onError);
 
@@ -169,7 +164,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldSendToTwoPortsWithDynamic()
+    void shouldSendToTwoPortsWithDynamic()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -204,7 +199,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldSendToTwoPortsWithDynamicSingleDriver()
+    void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -239,7 +234,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSendToTwoPortsWithManualSingleDriver()
+    void shouldSendToTwoPortsWithManualSingleDriver()
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -274,7 +269,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
+    void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
     {
         final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
         launch(mockErrorHandler);
@@ -289,7 +284,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldManuallyRemovePortDuringActiveStream() throws InterruptedException
+    void shouldManuallyRemovePortDuringActiveStream() throws InterruptedException
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
@@ -327,8 +322,10 @@ public class MultiDestinationCastTest
             }
             else
             {
-                subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT);
-                Tests.yield();
+                if (0 == subscriptionB.poll(fragmentHandlerB, FRAGMENT_LIMIT))
+                {
+                    Tests.yield();
+                }
             }
 
             if (i == numMessageForSub2 - 1)
@@ -345,7 +342,7 @@ public class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldManuallyAddPortDuringActiveStream() throws InterruptedException
+    void shouldManuallyAddPortDuringActiveStream() throws InterruptedException
     {
         final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
@@ -444,7 +441,7 @@ public class MultiDestinationCastTest
                 totalFragments += numFragments;
             }
         }
-        while (totalFragments < 1 && ((nowNs - startNs) < TimeUnit.MILLISECONDS.toNanos(5000)));
+        while (totalFragments < 1 && ((nowNs - startNs) < TimeUnit.SECONDS.toNanos(10)));
     }
 
     private void verifyFragments(final FragmentHandler fragmentHandler, final int numMessagesToSend)

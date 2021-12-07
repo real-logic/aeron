@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#include "RecordingDescriptorPoller.h"
 #include "ArchiveException.h"
 #include "aeron_archive_client/MessageHeader.h"
 #include "aeron_archive_client/ControlResponse.h"
 #include "aeron_archive_client/RecordingDescriptor.h"
+#include "aeron_archive_client/RecordingSignalEvent.h"
+#include "RecordingDescriptorPoller.h"
 
 using namespace aeron;
 using namespace aeron::archive::client;
@@ -46,6 +47,22 @@ RecordingDescriptorPoller::RecordingDescriptorPoller(
 {
 }
 
+RecordingDescriptorPoller::RecordingDescriptorPoller(
+    std::shared_ptr<Subscription> subscription,
+    const exception_handler_t &errorHandler,
+    const on_recording_signal_t &recordingSignalConsumer,
+    std::int64_t controlSessionId,
+    int fragmentLimit) :
+    m_fragmentAssembler(controlHandler(*this)),
+    m_fragmentHandler(m_fragmentAssembler.handler()),
+    m_errorHandler(errorHandler),
+    m_onRecordingSignal(recordingSignalConsumer),
+    m_subscription(std::move(subscription)),
+    m_controlSessionId(controlSessionId),
+    m_fragmentLimit(fragmentLimit)
+{
+}
+
 ControlledPollAction RecordingDescriptorPoller::onFragment(
     AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
 {
@@ -59,7 +76,7 @@ ControlledPollAction RecordingDescriptorPoller::onFragment(
         static_cast<std::uint64_t>(length),
         MessageHeader::sbeSchemaVersion());
 
-    const std::int16_t schemaId = msgHeader.schemaId();
+    const std::uint16_t schemaId = msgHeader.schemaId();
     if (schemaId != MessageHeader::sbeSchemaId())
     {
         throw ArchiveException(
@@ -68,80 +85,105 @@ ControlledPollAction RecordingDescriptorPoller::onFragment(
             SOURCEINFO);
     }
 
-    const std::uint16_t templateId = msgHeader.templateId();
-    if (ControlResponse::sbeTemplateId() == templateId)
+    switch (msgHeader.templateId())
     {
-        ControlResponse response(
-            buffer.sbeData() + offset + MessageHeader::encodedLength(),
-            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-            msgHeader.blockLength(),
-            msgHeader.version());
-
-        if (response.controlSessionId() == m_controlSessionId)
+        case ControlResponse::SBE_TEMPLATE_ID:
         {
-            const ControlResponseCode::Value code = response.code();
-            const std::int64_t correlationId = response.correlationId();
+            ControlResponse response(
+                buffer.sbeData() + offset + MessageHeader::encodedLength(),
+                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+                msgHeader.blockLength(),
+                msgHeader.version());
 
-            if (ControlResponseCode::Value::RECORDING_UNKNOWN == code && correlationId == m_correlationId)
+            if (response.controlSessionId() == m_controlSessionId)
             {
-                m_isDispatchComplete = true;
-                return ControlledPollAction::BREAK;
+                const ControlResponseCode::Value code = response.code();
+                const std::int64_t correlationId = response.correlationId();
+
+                if (ControlResponseCode::Value::RECORDING_UNKNOWN == code && correlationId == m_correlationId)
+                {
+                    m_isDispatchComplete = true;
+                    return ControlledPollAction::BREAK;
+                }
+
+                if (ControlResponseCode::Value::ERROR == code)
+                {
+                    ArchiveException ex(
+                        static_cast<std::int32_t>(response.relevantId()),
+                        correlationId,
+                        "response for correlationId=" + std::to_string(m_correlationId) +
+                            ", error: " + response.errorMessage(),
+                        SOURCEINFO);
+
+                    if (correlationId == m_correlationId)
+                    {
+                        throw ArchiveException(ex);
+                    }
+                    else if (nullptr != m_errorHandler)
+                    {
+                        m_errorHandler(ex);
+                    }
+                }
             }
 
-            if (ControlResponseCode::Value::ERROR == code)
-            {
-                ArchiveException ex(
-                    static_cast<std::int32_t>(response.relevantId()),
-                    correlationId,
-                    "response for correlationId=" + std::to_string(m_correlationId) +
-                        ", error: " + response.errorMessage(),
-                    SOURCEINFO);
-
-                if (correlationId == m_correlationId)
-                {
-                    throw ArchiveException(ex);
-                }
-                else if (nullptr != m_errorHandler)
-                {
-                    m_errorHandler(ex);
-                }
-            }
+            break;
         }
-    }
-    else if (RecordingDescriptor::sbeTemplateId() == templateId)
-    {
-        RecordingDescriptor descriptor(
-            buffer.sbeData() + offset + MessageHeader::encodedLength(),
-            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
-            msgHeader.blockLength(),
-            msgHeader.version());
 
-        const std::int64_t correlationId = descriptor.correlationId();
-        if (descriptor.controlSessionId() == m_controlSessionId && correlationId == m_correlationId)
+        case RecordingDescriptor::SBE_TEMPLATE_ID:
         {
-            m_consumer(
-                m_controlSessionId,
-                correlationId,
-                descriptor.recordingId(),
-                descriptor.startTimestamp(),
-                descriptor.stopTimestamp(),
-                descriptor.startPosition(),
-                descriptor.stopPosition(),
-                descriptor.initialTermId(),
-                descriptor.segmentFileLength(),
-                descriptor.termBufferLength(),
-                descriptor.mtuLength(),
-                descriptor.sessionId(),
-                descriptor.streamId(),
-                descriptor.strippedChannel(),
-                descriptor.originalChannel(),
-                descriptor.sourceIdentity());
+            RecordingDescriptor descriptor(
+                buffer.sbeData() + offset + MessageHeader::encodedLength(),
+                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+                msgHeader.blockLength(),
+                msgHeader.version());
 
-            if (0 == --m_remainingRecordCount)
+            const std::int64_t correlationId = descriptor.correlationId();
+            if (descriptor.controlSessionId() == m_controlSessionId && correlationId == m_correlationId)
             {
-                m_isDispatchComplete = true;
-                return ControlledPollAction::BREAK;
+                m_consumer(
+                    m_controlSessionId,
+                    correlationId,
+                    descriptor.recordingId(),
+                    descriptor.startTimestamp(),
+                    descriptor.stopTimestamp(),
+                    descriptor.startPosition(),
+                    descriptor.stopPosition(),
+                    descriptor.initialTermId(),
+                    descriptor.segmentFileLength(),
+                    descriptor.termBufferLength(),
+                    descriptor.mtuLength(),
+                    descriptor.sessionId(),
+                    descriptor.streamId(),
+                    descriptor.strippedChannel(),
+                    descriptor.originalChannel(),
+                    descriptor.sourceIdentity());
+
+                if (0 == --m_remainingRecordCount)
+                {
+                    m_isDispatchComplete = true;
+                    return ControlledPollAction::BREAK;
+                }
             }
+
+            break;
+        }
+
+        case RecordingSignalEvent::SBE_TEMPLATE_ID:
+        {
+            RecordingSignalEvent recordingSignalEvent(
+                buffer.sbeData() + offset + MessageHeader::encodedLength(),
+                static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+                msgHeader.blockLength(),
+                msgHeader.version());
+
+            m_onRecordingSignal(
+                recordingSignalEvent.controlSessionId(),
+                recordingSignalEvent.recordingId(),
+                recordingSignalEvent.subscriptionId(),
+                recordingSignalEvent.position(),
+                recordingSignalEvent.signalRaw());
+
+            break;
         }
     }
 

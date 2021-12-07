@@ -102,7 +102,7 @@ public class Aeron implements AutoCloseable
         {
             throw ex;
         }
-        catch (final Throwable ex)
+        catch (final Exception ex)
         {
             CloseHelper.quietClose(ctx::close);
             throw ex;
@@ -594,7 +594,7 @@ public class Aeron implements AutoCloseable
         static final long KEEPALIVE_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(500);
 
         /**
-         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * Duration to wait while lingering an entity such as an {@link Image} before deleting underlying resources
          * such as memory mapped files.
          */
         public static final String RESOURCE_LINGER_DURATION_PROP_NAME = "aeron.client.resource.linger.duration";
@@ -619,7 +619,7 @@ public class Aeron implements AutoCloseable
         /**
          * Should memory-mapped files be pre-touched so that they are already faulted into a process.
          * <p>
-         * Pre-touching files can result in it taking it it taking longer for resources to become available in
+         * Pre-touching files can result in it taking longer for resources to become available in
          * return for avoiding later pauses due to page faults.
          */
         public static final String PRE_TOUCH_MAPPED_MEMORY_PROP_NAME = "aeron.pre.touch.mapped.memory";
@@ -654,10 +654,10 @@ public class Aeron implements AutoCloseable
             };
 
         /**
-         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * Duration to wait while lingering an entity such as an {@link Image} before deleting underlying resources
          * such as memory mapped files.
          *
-         * @return duration in nanoseconds to wait before deleting a expired resource.
+         * @return duration in nanoseconds to wait before deleting an expired resource.
          * @see #RESOURCE_LINGER_DURATION_PROP_NAME
          */
         public static long resourceLingerDurationNs()
@@ -666,10 +666,10 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * Duration to wait while lingering an entity such as an {@link Image} before deleting underlying resources
          * such as memory mapped files.
          *
-         * @return duration in nanoseconds to wait before deleting a expired resource.
+         * @return duration in nanoseconds to wait before deleting an expired resource.
          * @see #RESOURCE_LINGER_DURATION_PROP_NAME
          */
         public static long closeLingerDurationNs()
@@ -1124,7 +1124,7 @@ public class Aeron implements AutoCloseable
          * during the callback for poll operations such as {@link Subscription#poll(FragmentHandler, int)}.
          * <p>
          * The error handler can be reset after {@link Aeron#connect()} and the latest version will always be used
-         * so that the boot strapping process can be performed such as replacing the default one with a
+         * so that the boot-strapping process can be performed such as replacing the default one with a
          * {@link CountedErrorHandler}.
          *
          * @param errorHandler Method to handle objects of type Throwable.
@@ -1271,9 +1271,9 @@ public class Aeron implements AutoCloseable
         /**
          * Set a {@link Runnable} that is called when the client is closed by timeout or normal means.
          * <p>
-         * It is not safe to call any API functions from any threads after this hook is called. In addition any
-         * in flight calls may still cause faults. It is thus recommended to treat this as a hard error and
-         * terminate the process in this hook as soon as possible.
+         * It is not safe to call any API functions from any threads after this hook is called. In addition, any
+         * in flight calls may still cause faults. Thus treating this as a hard error and terminate the process in
+         * this hook as soon as possible is recommended.
          *
          * @param handler that is called when the client is closed.
          * @return this for a fluent API.
@@ -1362,10 +1362,10 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * Duration to wait while lingering an entity such as an {@link Image} before deleting underlying resources
          * such as memory mapped files.
          *
-         * @param resourceLingerDurationNs to wait before deleting a expired resource.
+         * @param resourceLingerDurationNs to wait before deleting an expired resource.
          * @return this for a fluent API.
          * @see Configuration#RESOURCE_LINGER_DURATION_PROP_NAME
          */
@@ -1376,10 +1376,10 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * Duration to wait while lingering an entity such as an {@link Image} before deleting underlying resources
          * such as memory mapped files.
          *
-         * @return duration in nanoseconds to wait before deleting a expired resource.
+         * @return duration in nanoseconds to wait before deleting an expired resource.
          * @see Configuration#RESOURCE_LINGER_DURATION_PROP_NAME
          */
         public long resourceLingerDurationNs()
@@ -1441,9 +1441,9 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * The thread factory to be use to construct the conductor thread
+         * The thread factory to be used to construct the conductor thread.
          *
-         * @return the specified thread factory or {@link Thread#Thread(Runnable)} if none is provided
+         * @return the specified thread factory or {@link Thread#Thread(Runnable)} if none is provided.
          */
         public ThreadFactory threadFactory()
         {
@@ -1458,6 +1458,50 @@ public class Aeron implements AutoCloseable
             BufferUtil.free(cncByteBuffer);
             this.cncByteBuffer = null;
             super.close();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public String toString()
+        {
+            return "Aeron.Context" +
+                "\n{" +
+                "\n    isConcluded=" + isConcluded() +
+                "\n    aeronDirectory=" + aeronDirectory() +
+                "\n    aeronDirectoryName='" + aeronDirectoryName() + '\'' +
+                "\n    cncFile=" + cncFile() +
+                "\n    countersMetaDataBuffer=" + countersMetaDataBuffer() +
+                "\n    countersValuesBuffer=" + countersValuesBuffer() +
+                "\n    driverTimeoutMs=" + driverTimeoutMs() +
+                "\n    clientId=" + clientId +
+                "\n    useConductorAgentInvoker=" + useConductorAgentInvoker +
+                "\n    preTouchMappedMemory=" + preTouchMappedMemory +
+                "\n    driverAgentInvoker=" + driverAgentInvoker +
+                "\n    clientLock=" + clientLock +
+                "\n    epochClock=" + epochClock +
+                "\n    nanoClock=" + nanoClock +
+                "\n    idleStrategy=" + idleStrategy +
+                "\n    awaitingIdleStrategy=" + awaitingIdleStrategy +
+                "\n    toClientBuffer=" + toClientBuffer +
+                "\n    toDriverBuffer=" + toDriverBuffer +
+                "\n    driverProxy=" + driverProxy +
+                "\n    cncByteBuffer=" + cncByteBuffer +
+                "\n    cncMetaDataBuffer=" + cncMetaDataBuffer +
+                "\n    logBuffersFactory=" + logBuffersFactory +
+                "\n    errorHandler=" + errorHandler +
+                "\n    subscriberErrorHandler=" + subscriberErrorHandler +
+                "\n    availableImageHandler=" + availableImageHandler +
+                "\n    unavailableImageHandler=" + unavailableImageHandler +
+                "\n    availableCounterHandler=" + availableCounterHandler +
+                "\n    unavailableCounterHandler=" + unavailableCounterHandler +
+                "\n    closeHandler=" + closeHandler +
+                "\n    keepAliveIntervalNs=" + keepAliveIntervalNs +
+                "\n    interServiceTimeoutNs=" + interServiceTimeoutNs +
+                "\n    resourceLingerDurationNs=" + resourceLingerDurationNs +
+                "\n    closeLingerDurationNs=" + closeLingerDurationNs +
+                "\n    threadFactory=" + threadFactory +
+                "\n}";
         }
 
         private void connectToDriver()

@@ -18,12 +18,12 @@ package io.aeron.security;
 import io.aeron.exceptions.AeronException;
 
 /**
- * Used to indicated a failed authentication attempt when connecting to a system.
+ * Used to indicate a failed authentication attempt when connecting to a system.
  */
 public class AuthenticationException extends AeronException
 {
     /**
-     * Default exception of {@link io.aeron.exceptions.AeronException.Category#ERROR}.
+     * Default exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      */
     public AuthenticationException()
     {
@@ -62,7 +62,7 @@ public class AuthenticationException extends AeronException
     }
 
     /**
-     * Constructs a new Authentication exception with the a detail message, cause, suppression enabled or disabled,
+     * Constructs a new Authentication exception with a detail message, cause, suppression enabled or disabled,
      * and writable stack trace enabled or disabled, in the category
      * {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      *

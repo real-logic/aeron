@@ -27,9 +27,9 @@ public interface RecordingSignalConsumer
      * Signal of operation taken on a recording.
      *
      * @param controlSessionId that initiated the operation.
-     * @param correlationId    that initiated the operation would could be the replication id.
+     * @param correlationId    that initiated the operation, could be the replication id.
      * @param recordingId      which has signalled.
-     * @param subscriptionId   of the Subscription associated with the recording.
+     * @param subscriptionId   of the {@link io.aeron.Subscription} associated with the recording.
      * @param position         of the recorded stream at the point of signal.
      * @param signal           type of the operation applied to the recording.
      */

@@ -248,7 +248,7 @@ public final class SingleNodeCluster implements AutoCloseable
     }
 
     /**
-     * Create an launch a new single node cluster.
+     * Create and launch a new single node cluster.
      *
      * @param externalService to run in the container.
      * @param isCleanStart    to indicate if a clean start should be made.

@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.test.driver;
+package io.aeron.test;
 
-import io.aeron.test.IgnoreStdErr;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.IoUtil;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,11 +27,11 @@ import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer, AfterTestExecutionCallback
+class MediaDriverTestUtil
 {
     private final Map<String, ProcessDetails> outputFilesByAeronDirectoryName = new LinkedHashMap<>();
 
-    public void testFailed(final ExtensionContext context, final Throwable cause)
+    public void testFailed()
     {
         dumpMediaDriverDiagnostics();
     }
@@ -81,7 +79,7 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
             });
     }
 
-    public void testSuccessful(final ExtensionContext context)
+    public void testSuccessful()
     {
         if (TestMediaDriver.shouldRunCMediaDriver())
         {

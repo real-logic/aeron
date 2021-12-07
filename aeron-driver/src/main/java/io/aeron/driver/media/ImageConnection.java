@@ -28,7 +28,7 @@ public final class ImageConnection
     public long timeOfLastActivityNs;
 
     /**
-     * Time of the last observed from from the source.
+     * Time of the last observed from the source.
      */
     public long timeOfLastFrameNs;
 

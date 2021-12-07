@@ -1289,4 +1289,4 @@ private:
 
 }}}
 
-#endif //AERON_ARCHIVE_PROXY_H
+#endif

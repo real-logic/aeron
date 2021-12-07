@@ -18,7 +18,7 @@ package io.aeron.exceptions;
 import io.aeron.*;
 
 /**
- * Caused when a error occurs during addition, modification, or release of client resources such as
+ * Caused when an error occurs during addition, modification, or release of client resources such as
  * {@link Publication}s, {@link Subscription}s, or {@link Counter}s.
  */
 public class RegistrationException extends AeronException
@@ -39,7 +39,7 @@ public class RegistrationException extends AeronException
     private final ErrorCode errorCode;
 
     /**
-     * Construct a exception to represent an error which occurred during registration of a resource such as a
+     * Construct an exception to represent an error which occurred during registration of a resource such as a
      * Publication, Subscription, or Counter.
      *
      * @param correlationId  of the command to register the resource.

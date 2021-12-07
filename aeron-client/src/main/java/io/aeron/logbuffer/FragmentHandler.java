@@ -33,7 +33,7 @@ public interface FragmentHandler
      * @param buffer containing the data.
      * @param offset at which the data begins.
      * @param length of the data in bytes.
-     * @param header representing the meta data for the data.
+     * @param header representing the metadata for the data.
      */
     void onFragment(DirectBuffer buffer, int offset, int length, Header header);
 }

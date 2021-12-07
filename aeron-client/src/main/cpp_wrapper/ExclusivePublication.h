@@ -372,7 +372,7 @@ public:
     inline std::int64_t offer(const concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length)
     {
         std::int64_t position = aeron_exclusive_publication_offer(
-            m_publication, buffer.buffer() + offset, static_cast<std::size_t>(length), NULL, NULL);
+            m_publication, buffer.buffer() + offset, static_cast<std::size_t>(length), nullptr, nullptr);
 
         if (AERON_PUBLICATION_ERROR == position)
         {

@@ -62,7 +62,7 @@ public interface ControlledFragmentHandler
      * @param buffer containing the data.
      * @param offset at which the data begins.
      * @param length of the data in bytes.
-     * @param header representing the meta data for the data.
+     * @param header representing the metadata for the data.
      * @return The action to be taken with regard to the stream position after the callback.
      */
     Action onFragment(DirectBuffer buffer, int offset, int length, Header header);

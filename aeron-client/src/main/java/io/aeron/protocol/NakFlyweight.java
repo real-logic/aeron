@@ -63,7 +63,7 @@ public class NakFlyweight extends HeaderFlyweight
     private static final int LENGTH_FIELD_OFFSET = 24;
 
     /**
-     * Default constructor which can later be use to wrap a frame.
+     * Default constructor which can later be used to wrap a frame.
      */
     public NakFlyweight()
     {

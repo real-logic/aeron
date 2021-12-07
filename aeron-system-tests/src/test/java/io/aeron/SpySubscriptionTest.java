@@ -21,8 +21,8 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
-import io.aeron.test.driver.MediaDriverTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class SpySubscriptionTest
+class SpySubscriptionTest
 {
     private static List<String> channels()
     {
@@ -62,7 +62,7 @@ public class SpySubscriptionTest
     private final FragmentHandler fragmentHandlerSub = (buffer1, offset, length, header) -> fragmentCountSub.value++;
 
     @RegisterExtension
-    public final MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -74,7 +74,7 @@ public class SpySubscriptionTest
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -83,7 +83,7 @@ public class SpySubscriptionTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldReceivePublishedMessage(final String channel)
+    void shouldReceivePublishedMessage(final String channel)
     {
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             Subscription spy = aeron.addSubscription(SPY_PREFIX + channel, STREAM_ID);
@@ -123,7 +123,7 @@ public class SpySubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldConnectToRecreatedChannelByTag()
+    void shouldConnectToRecreatedChannelByTag()
     {
         final long tag1 = aeron.nextCorrelationId();
         final String channelOne = new ChannelUriStringBuilder()

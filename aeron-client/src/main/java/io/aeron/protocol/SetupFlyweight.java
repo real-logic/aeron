@@ -75,7 +75,7 @@ public class SetupFlyweight extends HeaderFlyweight
     private static final int TTL_FIELD_OFFSET = 36;
 
     /**
-     * Default constructor which can later be use to wrap a frame.
+     * Default constructor which can later be used to wrap a frame.
      */
     public SetupFlyweight()
     {

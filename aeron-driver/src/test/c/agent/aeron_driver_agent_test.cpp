@@ -394,6 +394,21 @@ TEST_F(DriverAgentTest, shouldNotEnableAnyEventsIfInvalidMask)
     assert_all_events_disabled();
 }
 
+TEST_F(DriverAgentTest, shouldCleanUpProperlyIfParsingOfDisabledEventsFails)
+{
+    char disabled_events[129];
+    disabled_events[128] = '\0';
+    for (int i = 0, len = sizeof(disabled_events) - 1; i < len; i += 2)
+    {
+        disabled_events[i] = 'x';
+        disabled_events[i + 1] = ',';
+    }
+
+    EXPECT_FALSE(aeron_driver_agent_logging_events_init("all", disabled_events));
+
+    assert_all_events_disabled();
+}
+
 TEST_F(DriverAgentTest, shouldDissectLogHeader)
 {
     int64_t time_ns = 3274398573945794359LL;

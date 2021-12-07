@@ -27,6 +27,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
+import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.security.Authenticator;
@@ -1373,6 +1374,24 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 recoveryPlan.appendedLogPosition, recoveryPlan.log.initialTermId, recoveryPlan.log.termBufferLength);
             channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(recoveryPlan.log.mtuLength));
         }
+        else
+        {
+            if (!channelUri.containsKey(INITIAL_TERM_ID_PARAM_NAME))
+            {
+                channelUri.put(INITIAL_TERM_ID_PARAM_NAME, "0");
+            }
+
+            if (!channelUri.containsKey(TERM_ID_PARAM_NAME))
+            {
+                channelUri.put(TERM_ID_PARAM_NAME, "0");
+            }
+
+            if (!channelUri.containsKey(TERM_OFFSET_PARAM_NAME))
+            {
+                channelUri.put(TERM_OFFSET_PARAM_NAME, "0");
+            }
+        }
+
 
         final String channel = channelUri.toString();
         final ExclusivePublication publication = aeron.addExclusivePublication(channel, ctx.logStreamId());

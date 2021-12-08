@@ -109,7 +109,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     @SuppressWarnings("unused")
     public void showAllErrors()
     {
-        this.logFilter = s -> true;
+        this.logFilter = (s) -> true;
     }
 
     public void afterTestExecution(final ExtensionContext context)

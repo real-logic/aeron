@@ -21,6 +21,7 @@ import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
@@ -401,7 +402,10 @@ class Election
                 if (NULL_POSITION != nextTermBaseLogPosition && nextTermBaseLogPosition < appendPosition)
                 {
                     consensusModuleAgent.truncateLogEntry(logLeadershipTermId, nextTermBaseLogPosition);
-                    appendPosition = consensusModuleAgent.prepareForNewLeadership(nextTermBaseLogPosition);
+                    throw new AeronEvent(
+                        "Truncating Cluster Log - leadershipTermId=" + logLeadershipTermId +
+                            " oldPosition=" + logPosition + " newPosition=" + nextTermBaseLogPosition,
+                        AeronException.Category.WARN);
                 }
 
                 this.leaderMember = leader;

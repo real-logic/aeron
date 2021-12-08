@@ -103,6 +103,15 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         return this;
     }
 
+    /**
+     * Useful when debugging tests to get them to fail on warnings as well as errors.
+     */
+    @SuppressWarnings("unused")
+    public void showAllErrors()
+    {
+        this.logFilter = s -> true;
+    }
+
     public void afterTestExecution(final ExtensionContext context)
     {
         mediaDriverTestUtil.afterTestExecution(context);

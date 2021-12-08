@@ -32,6 +32,7 @@ import org.agrona.concurrent.errors.ErrorLogReader;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.opentest4j.TestAbortedException;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -124,7 +125,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         try
         {
             final Optional<Throwable> executionException = context.getExecutionException();
-            if (executionException.isPresent())
+            if (executionException.filter(t -> !(t instanceof TestAbortedException)).isPresent())
             {
                 final String test = context.getTestClass().map(Class::getName).orElse("unknown") + "-" +
                     context.getTestMethod().map(Method::getName).orElse("unknown");

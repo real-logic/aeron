@@ -40,7 +40,6 @@ class MediaDriverTestUtil
     {
         if (TestMediaDriver.shouldRunCMediaDriver())
         {
-            System.out.println("C Media Driver tests failed");
             outputFilesByAeronDirectoryName.forEach(
                 (aeronDirectoryName, files) ->
                 {

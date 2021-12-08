@@ -1375,20 +1375,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
         else
         {
-            if (!channelUri.containsKey(INITIAL_TERM_ID_PARAM_NAME))
-            {
-                channelUri.put(INITIAL_TERM_ID_PARAM_NAME, "0");
-            }
+            verifyNotPresent(channelUri, INITIAL_TERM_ID_PARAM_NAME);
+            verifyNotPresent(channelUri, TERM_ID_PARAM_NAME);
+            verifyNotPresent(channelUri, TERM_OFFSET_PARAM_NAME);
 
-            if (!channelUri.containsKey(TERM_ID_PARAM_NAME))
-            {
-                channelUri.put(TERM_ID_PARAM_NAME, "0");
-            }
-
-            if (!channelUri.containsKey(TERM_OFFSET_PARAM_NAME))
-            {
-                channelUri.put(TERM_OFFSET_PARAM_NAME, "0");
-            }
+            channelUri.put(INITIAL_TERM_ID_PARAM_NAME, "0");
+            channelUri.put(TERM_ID_PARAM_NAME, "0");
+            channelUri.put(TERM_OFFSET_PARAM_NAME, "0");
         }
 
 
@@ -3215,6 +3208,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         catch (final Exception ex)
         {
             ctx.countedErrorHandler().onError(ex);
+        }
+    }
+
+    private static void verifyNotPresent(final ChannelUri channelUri, final String paramName)
+    {
+        if (channelUri.containsKey(paramName))
+        {
+            throw new ClusterException("log channel should not contain: " + paramName, AeronException.Category.FATAL);
         }
     }
 

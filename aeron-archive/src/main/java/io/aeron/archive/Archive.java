@@ -24,6 +24,8 @@ import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
+import io.aeron.security.AuthorisationService;
+import io.aeron.security.AuthorisationServiceSupplier;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -403,7 +405,7 @@ public final class Archive implements AutoCloseable
         public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:0";
 
         /**
-         * Name of class to use as a supplier of {@link Authenticator} for the archive.
+         * Name of the system property for specifying a supplier of {@link Authenticator} for the archive.
          */
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.archive.authenticator.supplier";
 
@@ -412,6 +414,19 @@ public final class Archive implements AutoCloseable
          * a non-authenticating option.
          */
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.security.DefaultAuthenticatorSupplier";
+
+        /**
+         * Name of the system property for specifying a supplier of {@link AuthorisationService} for the archive.
+         */
+        public static final String AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME =
+            "aeron.archive.authorisation.service.supplier";
+
+        /**
+         * Default {@link AuthorisationServiceSupplier} that returns {@link AuthorisationService} that allows any
+         * command to be executed (i.e. {@link AuthorisationService#ALLOW_ALL}).
+         */
+        public static final AuthorisationServiceSupplier DEFAULT_AUTHORISATION_SERVICE_SUPPLIER =
+            () -> AuthorisationService.ALLOW_ALL;
 
         /**
          * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.
@@ -604,10 +619,9 @@ public final class Archive implements AutoCloseable
         /**
          * Maximum number of catalog entries to allocate for the catalog file.
          *
-         * @deprecated Use {@link #catalogCapacity()} instead.
-         *
          * @return the maximum number of catalog entries to support for the catalog file.
          * @see #catalogCapacity()
+         * @deprecated Use {@link #catalogCapacity()} instead.
          */
         @Deprecated
         public static long maxCatalogEntries()
@@ -708,6 +722,33 @@ public final class Archive implements AutoCloseable
         }
 
         /**
+         * The {@link AuthorisationServiceSupplier} specified in the
+         * {@link #AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME} system property or the
+         * {@link #DEFAULT_AUTHORISATION_SERVICE_SUPPLIER}.
+         *
+         * @return system property {@link #AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME} if set or
+         * {@link #DEFAULT_AUTHORISATION_SERVICE_SUPPLIER} otherwise.
+         */
+        public static AuthorisationServiceSupplier authorisationServiceSupplier()
+        {
+            final String supplierClassName = System.getProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME);
+            if (Strings.isEmpty(supplierClassName))
+            {
+                return DEFAULT_AUTHORISATION_SERVICE_SUPPLIER;
+            }
+
+            try
+            {
+                return (AuthorisationServiceSupplier)Class.forName(supplierClassName).getConstructor().newInstance();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+                return null;
+            }
+        }
+
+        /**
          * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
          * recording to compute checksums. Non-empty value means that checksum is enabled for recording.
          *
@@ -796,6 +837,7 @@ public final class Archive implements AutoCloseable
         private EpochClock epochClock;
         private NanoClock nanoClock;
         private AuthenticatorSupplier authenticatorSupplier;
+        private AuthorisationServiceSupplier authorisationServiceSupplier;
         private Counter controlSessionsCounter;
 
         private int errorBufferLength;
@@ -1007,6 +1049,11 @@ public final class Archive implements AutoCloseable
             if (null == authenticatorSupplier)
             {
                 authenticatorSupplier = Configuration.authenticatorSupplier();
+            }
+
+            if (null == authorisationServiceSupplier)
+            {
+                authorisationServiceSupplier = Configuration.authorisationServiceSupplier();
             }
 
             concludeRecordChecksum();
@@ -2215,12 +2262,11 @@ public final class Archive implements AutoCloseable
         /**
          * Maximum number of catalog entries for the Archive.
          *
-         * @deprecated This method was deprecated in favor of {@link #catalogCapacity(long)} which works with bytes
-         * rather than number of entries.
-         *
          * @param maxCatalogEntries for the archive.
          * @return this for a fluent API.
          * @see #catalogCapacity(long)
+         * @deprecated This method was deprecated in favor of {@link #catalogCapacity(long)} which works with bytes
+         * rather than number of entries.
          */
         @Deprecated
         public Context maxCatalogEntries(final long maxCatalogEntries)
@@ -2232,11 +2278,10 @@ public final class Archive implements AutoCloseable
         /**
          * Maximum number of catalog entries for the Archive.
          *
-         * @deprecated This method was deprecated in favor of {@link #catalogCapacity()} which returns capacity of
-         * the {@link Catalog} in bytes rather than in number of entries.
-         *
          * @return maximum number of catalog entries for the Archive.
          * @see #catalogCapacity()
+         * @deprecated This method was deprecated in favor of {@link #catalogCapacity()} which returns capacity of
+         * the {@link Catalog} in bytes rather than in number of entries.
          */
         @Deprecated
         public long maxCatalogEntries()
@@ -2287,6 +2332,28 @@ public final class Archive implements AutoCloseable
         public Context authenticatorSupplier(final AuthenticatorSupplier authenticatorSupplier)
         {
             this.authenticatorSupplier = authenticatorSupplier;
+            return this;
+        }
+
+        /**
+         * Get the {@link AuthorisationServiceSupplier} that should be used for the Archive.
+         *
+         * @return the {@link AuthorisationServiceSupplier} to be used for the Archive.
+         */
+        public AuthorisationServiceSupplier authorisationServiceSupplier()
+        {
+            return authorisationServiceSupplier;
+        }
+
+        /**
+         * Set the {@link AuthorisationServiceSupplier} that will be used for the Archive.
+         *
+         * @param authorisationServiceSupplier {@link AuthorisationServiceSupplier} to use for the Archive.
+         * @return this for a fluent API.
+         */
+        public Context authorisationServiceSupplier(final AuthorisationServiceSupplier authorisationServiceSupplier)
+        {
+            this.authorisationServiceSupplier = authorisationServiceSupplier;
             return this;
         }
 

@@ -26,6 +26,8 @@ import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
+import io.aeron.security.AuthorisationService;
+import io.aeron.security.AuthorisationServiceSupplier;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -592,7 +594,7 @@ public final class ConsensusModule implements AutoCloseable
         public static final long DYNAMIC_JOIN_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
-         * Name of class to use as a supplier of {@link Authenticator} for the cluster.
+         * Name of the system property for specifying a supplier of {@link Authenticator} for the cluster.
          */
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.authenticator.supplier";
 
@@ -601,6 +603,19 @@ public final class ConsensusModule implements AutoCloseable
          * a non-authenticating option.
          */
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.security.DefaultAuthenticatorSupplier";
+
+        /**
+         * Name of the system property for specifying a supplier of {@link AuthorisationService} for the cluster.
+         */
+        public static final String AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME =
+            "aeron.cluster.authorisation.service.supplier";
+
+        /**
+         * Default {@link AuthorisationServiceSupplier} that returns {@link AuthorisationService} that forbids all
+         * command from being executed (i.e. {@link AuthorisationService#DENY_ALL}).
+         */
+        public static final AuthorisationServiceSupplier DEFAULT_AUTHORISATION_SERVICE_SUPPLIER =
+            () -> AuthorisationService.DENY_ALL;
 
         /**
          * Size in bytes of the error buffer for the cluster.
@@ -966,6 +981,33 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * The {@link AuthorisationServiceSupplier} specified in the
+         * {@link #AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME} system property or the
+         * {@link #DEFAULT_AUTHORISATION_SERVICE_SUPPLIER}.
+         *
+         * @return system property {@link #AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME} if set or
+         * {@link #DEFAULT_AUTHORISATION_SERVICE_SUPPLIER} otherwise.
+         */
+        public static AuthorisationServiceSupplier authorisationServiceSupplier()
+        {
+            final String supplierClassName = System.getProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME);
+            if (Strings.isEmpty(supplierClassName))
+            {
+                return DEFAULT_AUTHORISATION_SERVICE_SUPPLIER;
+            }
+
+            try
+            {
+                return (AuthorisationServiceSupplier)Class.forName(supplierClassName).getConstructor().newInstance();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+                return null;
+            }
+        }
+
+        /**
          * The value {@link #CONSENSUS_CHANNEL_DEFAULT} or system property
          * {@link #CONSENSUS_CHANNEL_PROP_NAME} if set.
          *
@@ -1152,6 +1194,7 @@ public final class ConsensusModule implements AutoCloseable
 
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
+        private AuthorisationServiceSupplier authorisationServiceSupplier;
         private LogPublisher logPublisher;
         private EgressPublisher egressPublisher;
         private boolean isLogMdc;
@@ -1395,6 +1438,11 @@ public final class ConsensusModule implements AutoCloseable
             if (null == authenticatorSupplier)
             {
                 authenticatorSupplier = Configuration.authenticatorSupplier();
+            }
+
+            if (null == authorisationServiceSupplier)
+            {
+                authorisationServiceSupplier = Configuration.authorisationServiceSupplier();
             }
 
             if (null == random)
@@ -2934,6 +2982,28 @@ public final class ConsensusModule implements AutoCloseable
         public Context authenticatorSupplier(final AuthenticatorSupplier authenticatorSupplier)
         {
             this.authenticatorSupplier = authenticatorSupplier;
+            return this;
+        }
+
+        /**
+         * Get the {@link AuthorisationServiceSupplier} that should be used for the consensus module.
+         *
+         * @return the {@link AuthorisationServiceSupplier} to be used for the consensus module.
+         */
+        public AuthorisationServiceSupplier authorisationServiceSupplier()
+        {
+            return authorisationServiceSupplier;
+        }
+
+        /**
+         * Set the {@link AuthorisationServiceSupplier} that will be used for the consensus module.
+         *
+         * @param authorisationServiceSupplier {@link AuthorisationServiceSupplier} to use for the consensus module.
+         * @return this for a fluent API.
+         */
+        public Context authorisationServiceSupplier(final AuthorisationServiceSupplier authorisationServiceSupplier)
+        {
+            this.authorisationServiceSupplier = authorisationServiceSupplier;
             return this;
         }
 

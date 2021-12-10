@@ -1703,7 +1703,6 @@ public final class AeronCluster implements AutoCloseable
                     correlationId = Aeron.NULL_VALUE;
                     clusterSessionId = egressPoller.clusterSessionId();
                     prepareChallengeResponse(ctx.credentialsSupplier().onChallenge(egressPoller.encodedChallenge()));
-                    step(2);
                     return;
                 }
 

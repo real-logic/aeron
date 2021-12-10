@@ -35,7 +35,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableReference;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -49,11 +48,6 @@ public class MultiModuleSharedDriverTest
 {
     @RegisterExtension
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
-
-    @BeforeEach
-    void setUp()
-    {
-    }
 
     @SuppressWarnings("methodlength")
     @Test

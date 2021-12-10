@@ -683,6 +683,12 @@ public final class ConsensusModule implements AutoCloseable
         public static final String TIMER_SERVICE_SUPPLIER_DEFAULT = TIMER_SERVICE_SUPPLIER_WHEEL;
 
         /**
+         * Property name for the name returned from {@link Agent#roleName()} for the consensus module.
+         */
+        public static final String CLUSTER_CONSENSUS_MODULE_AGENT_ROLE_NAME_PROP_NAME =
+            "aeron.cluster.consensus.module.agent.role.name";
+
+        /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
          * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
          *
@@ -1042,6 +1048,17 @@ public final class ConsensusModule implements AutoCloseable
         {
             return System.getProperty(TIMER_SERVICE_SUPPLIER_PROP_NAME, TIMER_SERVICE_SUPPLIER_DEFAULT);
         }
+
+        /**
+         * The name to be used for the {@link Agent#roleName()} for the consensus module agent.
+         *
+         * @return name to be used for the {@link Agent#roleName()} for the consensus module agent.
+         * @see #CLUSTER_CONSENSUS_MODULE_AGENT_ROLE_NAME_PROP_NAME
+         */
+        public static String agentRoleName()
+        {
+            return System.getProperty(CLUSTER_CONSENSUS_MODULE_AGENT_ROLE_NAME_PROP_NAME);
+        }
     }
 
     /**
@@ -1109,6 +1126,7 @@ public final class ConsensusModule implements AutoCloseable
         private long dynamicJoinIntervalNs = Configuration.dynamicJoinIntervalNs();
         private long terminationTimeoutNs = Configuration.terminationTimeoutNs();
 
+        private String agentRoleName = Configuration.agentRoleName();
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private ClusterClock clusterClock;
@@ -2427,6 +2445,29 @@ public final class ConsensusModule implements AutoCloseable
         public long terminationTimeoutNs()
         {
             return terminationTimeoutNs;
+        }
+
+        /**
+         * Get the {@link Agent#roleName()} to be used for the consensus module agent. If {@code null} then one will
+         * be generated.
+         *
+         * @return the {@link Agent#roleName()} to be used for the consensus module agent.
+         */
+        public String agentRoleName()
+        {
+            return agentRoleName;
+        }
+
+        /**
+         * Set the {@link Agent#roleName()} to be used for the consensus module agent.
+         *
+         * @param agentRoleName to be used for the consensus module agent.
+         * @return this for a fluent API.
+         */
+        public Context agentRoleName(final String agentRoleName)
+        {
+            this.agentRoleName = agentRoleName;
+            return this;
         }
 
         /**

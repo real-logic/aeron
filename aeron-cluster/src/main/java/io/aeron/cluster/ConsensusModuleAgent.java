@@ -365,7 +365,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
      */
     public String roleName()
     {
-        return "consensus-module_" + ctx.clusterId() + "_" + memberId;
+        final String agentRoleName = ctx.agentRoleName();
+        return null != agentRoleName ? agentRoleName : "consensus-module_" + ctx.clusterId() + "_" + memberId;
     }
 
     void onSessionConnect(

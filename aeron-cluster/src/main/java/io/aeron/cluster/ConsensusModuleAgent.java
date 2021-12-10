@@ -1375,15 +1375,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
         else
         {
-            verifyNotPresent(channelUri, INITIAL_TERM_ID_PARAM_NAME);
-            verifyNotPresent(channelUri, TERM_ID_PARAM_NAME);
-            verifyNotPresent(channelUri, TERM_OFFSET_PARAM_NAME);
-
-            channelUri.put(INITIAL_TERM_ID_PARAM_NAME, "0");
-            channelUri.put(TERM_ID_PARAM_NAME, "0");
-            channelUri.put(TERM_OFFSET_PARAM_NAME, "0");
+            ensureConsistentInitialTermId(channelUri);
         }
-
 
         final String channel = channelUri.toString();
         final ExclusivePublication publication = aeron.addExclusivePublication(channel, ctx.logStreamId());
@@ -3189,6 +3182,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
     }
 
+    private void ensureConsistentInitialTermId(final ChannelUri channelUri)
+    {
+        channelUri.put(INITIAL_TERM_ID_PARAM_NAME, "0");
+        channelUri.put(TERM_ID_PARAM_NAME, "0");
+        channelUri.put(TERM_OFFSET_PARAM_NAME, "0");
+    }
+
     private void checkFollowerForConsensusPublication(final int followerMemberId)
     {
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
@@ -3208,14 +3208,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         catch (final Exception ex)
         {
             ctx.countedErrorHandler().onError(ex);
-        }
-    }
-
-    private static void verifyNotPresent(final ChannelUri channelUri, final String paramName)
-    {
-        if (channelUri.containsKey(paramName))
-        {
-            throw new ClusterException("log channel should not contain: " + paramName, AeronException.Category.FATAL);
         }
     }
 

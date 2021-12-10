@@ -23,6 +23,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import org.agrona.*;
@@ -40,7 +41,7 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
-import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
@@ -1166,6 +1167,8 @@ public final class ConsensusModule implements AutoCloseable
             {
                 throw new ConcurrentConcludeException();
             }
+
+            validateLogChannel();
 
             if (null == clusterDir)
             {
@@ -3166,6 +3169,22 @@ public final class ConsensusModule implements AutoCloseable
             }
 
             throw new ClusterException("invalid TimerServiceSupplier: " + timeServiceClassName);
+        }
+
+        private void validateLogChannel()
+        {
+            final ChannelUri logChannelUri = ChannelUri.parse(logChannel);
+            verifyNotPresent(logChannelUri, "logChannel", INITIAL_TERM_ID_PARAM_NAME);
+            verifyNotPresent(logChannelUri, "logChannel", TERM_ID_PARAM_NAME);
+            verifyNotPresent(logChannelUri, "logChannel", TERM_OFFSET_PARAM_NAME);
+        }
+
+        private static void verifyNotPresent(final ChannelUri channelUri, final String name, final String paramName)
+        {
+            if (channelUri.containsKey(paramName))
+            {
+                throw new ConfigurationException(name + " must not contain: " + paramName);
+            }
         }
 
         /**

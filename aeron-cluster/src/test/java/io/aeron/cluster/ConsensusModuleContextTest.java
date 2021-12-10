@@ -16,9 +16,11 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.ConfigurationException;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
@@ -139,5 +141,18 @@ class ConsensusModuleContextTest
         context.conclude();
 
         assertSame(supplier, context.timerServiceSupplier());
+    }
+
+    @Test
+    void rejectInvalidLogChannelParameters()
+    {
+        final String channelTermId = context.logChannel() + "|" + CommonContext.TERM_ID_PARAM_NAME + "=0";
+        final String channelInitialTermId =
+            context.logChannel() + "|" + CommonContext.INITIAL_TERM_ID_PARAM_NAME + "=0";
+        final String channelTermOffset = context.logChannel() + "|" + CommonContext.TERM_OFFSET_PARAM_NAME + "=0";
+
+        assertThrows(ConfigurationException.class, () -> context.clone().logChannel(channelTermId).conclude());
+        assertThrows(ConfigurationException.class, () -> context.clone().logChannel(channelInitialTermId).conclude());
+        assertThrows(ConfigurationException.class, () -> context.clone().logChannel(channelTermOffset).conclude());
     }
 }

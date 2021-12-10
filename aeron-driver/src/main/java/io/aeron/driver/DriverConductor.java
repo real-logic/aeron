@@ -553,7 +553,6 @@ public final class DriverConductor implements Agent
     void cleanupSubscriptionLink(final SubscriptionLink subscription)
     {
         final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
-
         if (null != channelEndpoint)
         {
             if (subscription.hasSessionId())
@@ -879,33 +878,7 @@ public final class DriverConductor implements Agent
         }
 
         subscription.close();
-        final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
-
-        if (null != channelEndpoint)
-        {
-            if (subscription.hasSessionId())
-            {
-                if (0 == channelEndpoint.decRefToStreamAndSession(subscription.streamId(), subscription.sessionId()))
-                {
-                    receiverProxy.removeSubscription(
-                        channelEndpoint, subscription.streamId(), subscription.sessionId());
-                }
-            }
-            else
-            {
-                if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
-                {
-                    receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
-                }
-            }
-
-            if (channelEndpoint.shouldBeClosed())
-            {
-                receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
-                receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                channelEndpoint.closeIndicators();
-            }
-        }
+        cleanupSubscriptionLink(subscription);
 
         clientProxy.operationSucceeded(correlationId);
     }
@@ -1369,8 +1342,7 @@ public final class DriverConductor implements Agent
     }
 
     private void validateChannelSendTimestampOffset(
-        final UdpChannel udpChannel,
-        final SendChannelEndpoint channelEndpoint)
+        final UdpChannel udpChannel, final SendChannelEndpoint channelEndpoint)
     {
         if (udpChannel.channelSendTimestampOffset() != channelEndpoint.udpChannel().channelSendTimestampOffset())
         {
@@ -1383,8 +1355,7 @@ public final class DriverConductor implements Agent
     }
 
     private void validateReceiveTimestampOffset(
-        final UdpChannel udpChannel,
-        final ReceiveChannelEndpoint channelEndpoint)
+        final UdpChannel udpChannel, final ReceiveChannelEndpoint channelEndpoint)
     {
         if (udpChannel.channelReceiveTimestampOffset() != channelEndpoint.udpChannel().channelReceiveTimestampOffset())
         {

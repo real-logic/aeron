@@ -20,6 +20,7 @@ import io.aeron.RethrowingErrorHandler;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -48,6 +49,12 @@ class ArchiveContextTests
             .aeron(aeron)
             .errorCounter(mock(AtomicCounter.class))
             .archiveDir(tempDir.resolve("archive-test").toFile());
+    }
+
+    @AfterEach
+    void afterEach()
+    {
+        context.close();
     }
 
     @Test

@@ -36,7 +36,7 @@ class AuthorisationServiceTest
         final ErrorHandler errorHandler = mock(ErrorHandler.class);
         final int commandTemplateId = ThreadLocalRandom.current().nextInt();
 
-        assertTrue(ALLOW_ALL.isAuthorised(commandTemplateId, encodedCredentials, errorHandler));
+        assertTrue(ALLOW_ALL.isAuthorised(commandTemplateId, encodedCredentials));
         verifyNoInteractions(errorHandler);
     }
 
@@ -47,7 +47,7 @@ class AuthorisationServiceTest
         final ErrorHandler errorHandler = mock(ErrorHandler.class);
         final int commandTemplateId = ThreadLocalRandom.current().nextInt();
 
-        assertFalse(DENY_ALL.isAuthorised(commandTemplateId, encodedCredentials, errorHandler));
+        assertFalse(DENY_ALL.isAuthorised(commandTemplateId, encodedCredentials));
         verifyNoInteractions(errorHandler);
     }
 }

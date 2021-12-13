@@ -23,7 +23,6 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
-import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
@@ -241,8 +240,7 @@ class ConsensusModuleContextTest
 
     static class TestAuthorisationService implements AuthorisationService
     {
-        public boolean isAuthorised(
-            final int commandTemplateId, final byte[] encodedCredentials, final ErrorHandler errorHandler)
+        public boolean isAuthorised(final int commandTemplateId, final byte[] encodedCredentials)
         {
             return false;
         }

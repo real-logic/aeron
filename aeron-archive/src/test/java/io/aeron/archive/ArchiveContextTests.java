@@ -19,7 +19,6 @@ import io.aeron.Aeron;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
-import org.agrona.ErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -132,8 +131,7 @@ class ArchiveContextTests
 
     static class TestAuthorisationService implements AuthorisationService
     {
-        public boolean isAuthorised(
-            final int commandTemplateId, final byte[] encodedCredentials, final ErrorHandler errorHandler)
+        public boolean isAuthorised(final int commandTemplateId, final byte[] encodedCredentials)
         {
             return false;
         }

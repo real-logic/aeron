@@ -15,8 +15,6 @@
  */
 package io.aeron.security;
 
-import org.agrona.ErrorHandler;
-
 /**
  * Interface for an authorisation service to handle authorisation checks of clients in a system.
  *
@@ -28,12 +26,12 @@ public interface AuthorisationService
     /**
      * An {@link AuthorisationService} instance that allows every command.
      */
-    AuthorisationService ALLOW_ALL = (commandTemplateId, encodedCredentials, errorHandler) -> true;
+    AuthorisationService ALLOW_ALL = (commandTemplateId, encodedCredentials) -> true;
 
     /**
      * An {@link AuthorisationService} instance that forbids all commands.
      */
-    AuthorisationService DENY_ALL = (commandTemplateId, encodedCredentials, errorHandler) -> false;
+    AuthorisationService DENY_ALL = (commandTemplateId, encodedCredentials) -> false;
 
     /**
      * Checks if the client with the specified credentials is allowed to perform an operation indicated by the
@@ -41,8 +39,7 @@ public interface AuthorisationService
      *
      * @param commandTemplateId  of the command being checked, i.e. an SBE message id.
      * @param encodedCredentials from the Challenge Response. Will not be {@code null}, but may be 0 length.
-     * @param errorHandler       to report errors if any.
      * @return {@code true} if the client is authorised to execute the command or {@code false} otherwise.
      */
-    boolean isAuthorised(int commandTemplateId, byte[] encodedCredentials, ErrorHandler errorHandler);
+    boolean isAuthorised(int commandTemplateId, byte[] encodedCredentials);
 }

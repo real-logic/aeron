@@ -465,7 +465,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             return;
         }
 
-        if (!authorisationService.isAuthorised(AdminRequestDecoder.TEMPLATE_ID, session.encodedPrincipal()))
+        if (!authorisationService.isAuthorised(
+            AdminRequestDecoder.TEMPLATE_ID, requestType, session.encodedPrincipal()))
         {
             egressPublisher.sendAdminResponse(
                 session,

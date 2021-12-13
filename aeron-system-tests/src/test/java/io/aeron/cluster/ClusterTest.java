@@ -1715,16 +1715,21 @@ public class ClusterTest
     @InterruptAfter(10)
     void shouldRejectAnInvalidAdminRequest()
     {
+        final AdminRequestType invalidRequestType = AdminRequestType.NULL_VAL;
         cluster = aCluster()
             .withStaticNodes(3)
-            .withAuthorisationServiceSupplier(() -> AuthorisationService.ALLOW_ALL)
+            .withAuthorisationServiceSupplier(() ->
+                (templateId, type, encodedCredentials) ->
+                {
+                    assertEquals(invalidRequestType, type);
+                    return true;
+                })
             .start();
         systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
 
         final long requestCorrelationId = System.nanoTime();
-        final AdminRequestType invalidRequestType = AdminRequestType.NULL_VAL;
         final MutableBoolean responseReceived = new MutableBoolean();
         cluster.egressListener(new EgressListener()
         {
@@ -1945,7 +1950,12 @@ public class ClusterTest
     {
         cluster = aCluster()
             .withStaticNodes(3)
-            .withAuthorisationServiceSupplier(() -> AuthorisationService.ALLOW_ALL)
+            .withAuthorisationServiceSupplier(() ->
+                (templateId, type, encodedCredentials) ->
+                {
+                    assertEquals(AdminRequestType.SNAPSHOT, type);
+                    return true;
+                })
             .start();
         systemTestWatcher.cluster(cluster);
 

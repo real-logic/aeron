@@ -388,14 +388,14 @@ public class DriverConductorTest
         receiveChannelEndpoint = captor.getValue();
 
         assertNotNull(receiveChannelEndpoint);
-        assertEquals(3, receiveChannelEndpoint.streamCount());
+        assertEquals(3, receiveChannelEndpoint.distinctSubscriptionCount());
 
         driverProxy.removeSubscription(id1);
         driverProxy.removeSubscription(id2);
 
         driverConductor.doWork();
 
-        assertEquals(1, receiveChannelEndpoint.streamCount());
+        assertEquals(1, receiveChannelEndpoint.distinctSubscriptionCount());
     }
 
     @Test
@@ -418,14 +418,14 @@ public class DriverConductorTest
         receiveChannelEndpoint = captor.getValue();
 
         assertNotNull(receiveChannelEndpoint);
-        assertEquals(3, receiveChannelEndpoint.streamCount());
+        assertEquals(3, receiveChannelEndpoint.distinctSubscriptionCount());
 
         driverProxy.removeSubscription(id2);
         driverProxy.removeSubscription(id3);
 
         driverConductor.doWork();
 
-        assertEquals(1, receiveChannelEndpoint.streamCount());
+        assertEquals(1, receiveChannelEndpoint.distinctSubscriptionCount());
 
         driverProxy.removeSubscription(id1);
 

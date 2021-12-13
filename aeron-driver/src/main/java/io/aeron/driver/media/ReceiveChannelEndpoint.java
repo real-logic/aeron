@@ -347,11 +347,11 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Total count of the streams.
+     * Total count of distinct subscriptions to streams.
      *
-     * @return total count of the streams.
+     * @return total count of distinct subscriptions to streams.
      */
-    public int streamCount()
+    public int distinctSubscriptionCount()
     {
         return refCountByStreamIdMap.size() + refCountByStreamIdAndSessionIdMap.size();
     }

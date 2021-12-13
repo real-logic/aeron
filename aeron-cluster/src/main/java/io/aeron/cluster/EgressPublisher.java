@@ -19,6 +19,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.ArrayUtil;
 
 import static io.aeron.cluster.ClusterSession.MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH;
 
@@ -135,15 +136,13 @@ class EgressPublisher
         final long correlationId,
         final AdminRequestType adminRequestType,
         final AdminResponseCode code,
-        final String message,
-        final byte[] payload)
+        final String message)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             AdminResponseEncoder.BLOCK_LENGTH +
             AdminResponseEncoder.messageHeaderLength() +
             message.length() +
-            AdminResponseEncoder.payloadHeaderLength() +
-            payload.length;
+            AdminResponseEncoder.payloadHeaderLength();
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -158,7 +157,7 @@ class EgressPublisher
                     .requestType(adminRequestType)
                     .code(code)
                     .message(message)
-                    .putPayload(payload, 0, payload.length);
+                    .putPayload(ArrayUtil.EMPTY_BYTE_ARRAY, 0, 0);
                 bufferClaim.commit();
 
                 return true;

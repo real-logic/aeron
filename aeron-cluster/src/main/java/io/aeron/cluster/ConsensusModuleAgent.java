@@ -460,8 +460,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 correlationId,
                 requestType,
                 AdminResponseCode.ERROR,
-                "Invalid leadership term: expected " + this.leadershipTermId + ", got " + leadershipTermId,
-                ArrayUtil.EMPTY_BYTE_ARRAY);
+                "Invalid leadership term: expected " + this.leadershipTermId + ", got " + leadershipTermId);
             return;
         }
 
@@ -473,8 +472,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 correlationId,
                 requestType,
                 AdminResponseCode.UNAUTHORISED_ACCESS,
-                "Execution of the " + requestType + " request was not authorised",
-                ArrayUtil.EMPTY_BYTE_ARRAY);
+                "Execution of the " + requestType + " request was not authorised");
             return;
         }
 
@@ -487,8 +485,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     correlationId,
                     requestType,
                     AdminResponseCode.OK,
-                    "",
-                    ArrayUtil.EMPTY_BYTE_ARRAY);
+                    "");
             }
             else
             {
@@ -497,8 +494,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     correlationId,
                     requestType,
                     AdminResponseCode.ERROR,
-                    "Failed to switch ClusterControl to the ToggleState.SNAPSHOT state",
-                    ArrayUtil.EMPTY_BYTE_ARRAY);
+                    "Failed to switch ClusterControl to the ToggleState.SNAPSHOT state");
             }
         }
         else
@@ -508,8 +504,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 correlationId,
                 requestType,
                 AdminResponseCode.ERROR,
-                "Unknown request type: " + requestType,
-                ArrayUtil.EMPTY_BYTE_ARRAY);
+                "Unknown request type: " + requestType);
         }
     }
 

@@ -25,6 +25,7 @@ import io.aeron.security.AuthenticationException;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.NullCredentialsSupplier;
 import org.agrona.*;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 
@@ -64,8 +65,6 @@ public final class AeronCluster implements AutoCloseable
     private final BufferClaim bufferClaim = new BufferClaim();
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
     private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
-    private final UnsafeBuffer keepaliveMsgBuffer;
-    private final ExpandableArrayBuffer adminRequestBuffer;
     private final MessageHeaderEncoder messageHeaderEncoder;
     private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
     private final SessionKeepAliveEncoder sessionKeepAliveEncoder = new SessionKeepAliveEncoder();
@@ -225,17 +224,6 @@ public final class AeronCluster implements AutoCloseable
             .wrapAndApplyHeader(headerBuffer, 0, messageHeaderEncoder)
             .clusterSessionId(clusterSessionId)
             .leadershipTermId(leadershipTermId);
-
-        keepaliveMsgBuffer = new UnsafeBuffer(new byte[
-            MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveEncoder.BLOCK_LENGTH]);
-
-        sessionKeepAliveEncoder
-            .wrapAndApplyHeader(keepaliveMsgBuffer, 0, messageHeaderEncoder)
-            .leadershipTermId(leadershipTermId)
-            .clusterSessionId(clusterSessionId);
-
-        adminRequestBuffer = new ExpandableArrayBuffer(
-            MessageHeaderEncoder.ENCODED_LENGTH + AdminRequestEncoder.BLOCK_LENGTH);
     }
 
     /**
@@ -421,11 +409,49 @@ public final class AeronCluster implements AutoCloseable
      */
     public boolean sendKeepAlive()
     {
-        return trySendIngressMessage(keepaliveMsgBuffer);
+        idleStrategy.reset();
+        int attempts = SEND_ATTEMPTS;
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveEncoder.BLOCK_LENGTH;
+
+        while (true)
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                sessionKeepAliveEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
+                    .clusterSessionId(clusterSessionId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            if (result == Publication.CLOSED)
+            {
+                throw new ClusterException("ingress publication is closed");
+            }
+
+            if (result == Publication.MAX_POSITION_EXCEEDED)
+            {
+                throw new ClusterException("max position exceeded");
+            }
+
+            if (--attempts <= 0)
+            {
+                break;
+            }
+
+            idleStrategy.idle();
+        }
+
+        return false;
     }
 
     /**
-     * Sends an admin request to initiate a snapshot action in the cluster. Such a request requires elevated privileges.
+     * Sends an admin request to initiate a snapshot action in the cluster. This request requires elevated privileges.
      *
      * @param correlationId for the request.
      * @return {@code true} if the request was sent or {@code false} otherwise.
@@ -434,14 +460,51 @@ public final class AeronCluster implements AutoCloseable
      */
     public boolean sendAdminRequestToTakeASnapshot(final long correlationId)
     {
-        adminRequestEncoder
-            .wrapAndApplyHeader(adminRequestBuffer, 0, messageHeaderEncoder)
-            .leadershipTermId(leadershipTermId)
-            .clusterSessionId(clusterSessionId)
-            .correlationId(correlationId)
-            .requestType(AdminRequestType.SNAPSHOT);
+        idleStrategy.reset();
+        int attempts = SEND_ATTEMPTS;
 
-        return trySendIngressMessage(adminRequestBuffer);
+        final int length =
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            AdminRequestEncoder.BLOCK_LENGTH +
+            AdminRequestEncoder.payloadHeaderLength();
+
+        while (true)
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                adminRequestEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
+                    .clusterSessionId(clusterSessionId)
+                    .correlationId(correlationId)
+                    .requestType(AdminRequestType.SNAPSHOT)
+                    .putPayload(ArrayUtil.EMPTY_BYTE_ARRAY, 0, 0);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            if (result == Publication.CLOSED)
+            {
+                throw new ClusterException("ingress publication is closed");
+            }
+
+            if (result == Publication.MAX_POSITION_EXCEEDED)
+            {
+                throw new ClusterException("max position exceeded");
+            }
+
+            if (--attempts <= 0)
+            {
+                break;
+            }
+
+            idleStrategy.idle();
+        }
+
+        return false;
     }
 
     /**
@@ -507,7 +570,6 @@ public final class AeronCluster implements AutoCloseable
         this.leadershipTermId = leadershipTermId;
         this.leaderMemberId = leaderMemberId;
         sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
-        sessionKeepAliveEncoder.leadershipTermId(leadershipTermId);
 
         if (ctx.ingressEndpoints() != null)
         {
@@ -568,40 +630,6 @@ public final class AeronCluster implements AutoCloseable
 
         CloseHelper.closeAll(endpointByIdMap.values());
         endpointByIdMap = map;
-    }
-
-    private boolean trySendIngressMessage(final DirectBuffer msgBuffer)
-    {
-        idleStrategy.reset();
-        int attempts = SEND_ATTEMPTS;
-
-        while (true)
-        {
-            final long result = publication.offer(msgBuffer, 0, msgBuffer.capacity(), null);
-            if (result > 0)
-            {
-                return true;
-            }
-
-            if (result == Publication.CLOSED)
-            {
-                throw new ClusterException("ingress publication is closed");
-            }
-
-            if (result == Publication.MAX_POSITION_EXCEEDED)
-            {
-                throw new ClusterException("max position exceeded");
-            }
-
-            if (--attempts <= 0)
-            {
-                break;
-            }
-
-            idleStrategy.idle();
-        }
-
-        return false;
     }
 
     @SuppressWarnings("MethodLength")

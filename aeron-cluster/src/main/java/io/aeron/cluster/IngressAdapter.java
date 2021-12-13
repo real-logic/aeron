@@ -34,6 +34,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final SessionKeepAliveDecoder sessionKeepAliveDecoder = new SessionKeepAliveDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
+    private final AdminRequestDecoder adminRequestDecoder = new AdminRequestDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final ConsensusModuleAgent consensusModuleAgent;
     private Subscription subscription;
@@ -159,6 +160,29 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     challengeResponseDecoder.correlationId(),
                     challengeResponseDecoder.clusterSessionId(),
                     credentials);
+                break;
+            }
+
+            case AdminRequestDecoder.TEMPLATE_ID:
+            {
+                adminRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final int payloadOffset = adminRequestDecoder.offset() +
+                    adminRequestDecoder.encodedLength() +
+                    AdminRequestDecoder.payloadHeaderLength();
+                consensusModuleAgent.onAdminRequest(
+                    adminRequestDecoder.leadershipTermId(),
+                    adminRequestDecoder.clusterSessionId(),
+                    adminRequestDecoder.correlationId(),
+                    adminRequestDecoder.requestType(),
+                    buffer,
+                    payloadOffset,
+                    adminRequestDecoder.payloadLength()
+                );
                 break;
             }
         }

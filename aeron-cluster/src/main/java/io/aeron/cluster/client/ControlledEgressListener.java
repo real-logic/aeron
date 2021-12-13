@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster.client;
 
+import io.aeron.cluster.codecs.AdminRequestType;
+import io.aeron.cluster.codecs.AdminResponseCode;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -76,6 +78,30 @@ public interface ControlledEgressListener
      * @param ingressEndpoints  for connecting to the cluster which can be updated due to dynamic membership.
      */
     default void onNewLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String ingressEndpoints)
+    {
+    }
+
+    /**
+     * Message returned in response to an admin request.
+     *
+     * @param clusterSessionId to which the response belongs.
+     * @param correlationId    of the admin request.
+     * @param requestType      of the admin request.
+     * @param code             describing the response.
+     * @param message          describing the response (e.g. error message).
+     * @param payload          delivered with the response, can be empty.
+     * @param payloadOffset    into the payload buffer.
+     * @param payloadLength    of the payload.
+     */
+    default void onAdminResponse(
+        long clusterSessionId,
+        long correlationId,
+        AdminRequestType requestType,
+        AdminResponseCode code,
+        String message,
+        DirectBuffer payload,
+        int payloadOffset,
+        int payloadLength)
     {
     }
 }

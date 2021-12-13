@@ -30,6 +30,7 @@ import io.aeron.cluster.service.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.security.Authenticator;
+import io.aeron.security.AuthorisationService;
 import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 import org.agrona.collections.*;
@@ -127,6 +128,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final ExpandableRingBuffer.MessageConsumer followerServiceSessionMessageSweeper =
         this::followerServiceSessionMessageSweeper;
     private final Authenticator authenticator;
+    private final AuthorisationService authorisationService;
     private final ClusterSessionProxy sessionProxy;
     private final Aeron aeron;
     private final ConsensusModule.Context ctx;
@@ -202,6 +204,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         serviceProxy = new ServiceProxy(aeron.addPublication(ctx.controlChannel(), ctx.serviceStreamId()));
 
         authenticator = ctx.authenticatorSupplier().get();
+        authorisationService = ctx.authorisationServiceSupplier().get();
     }
 
     /**
@@ -427,6 +430,85 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     session.close(ctx.countedErrorHandler());
                 }
             }
+        }
+    }
+
+    void onAdminRequest(
+        final long leadershipTermId,
+        final long clusterSessionId,
+        final long correlationId,
+        final AdminRequestType requestType,
+        final DirectBuffer requestPayload,
+        final int requestPayloadOffset,
+        final int requestPayloadLength)
+    {
+        if (Cluster.Role.LEADER != role)
+        {
+            return;
+        }
+
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null == session || session.state() != OPEN)
+        {
+            return;
+        }
+
+        if (leadershipTermId != this.leadershipTermId)
+        {
+            egressPublisher.sendAdminResponse(
+                session,
+                correlationId,
+                requestType,
+                AdminResponseCode.ERROR,
+                "Invalid leadership term: expected " + this.leadershipTermId + ", got " + leadershipTermId,
+                ArrayUtil.EMPTY_BYTE_ARRAY);
+            return;
+        }
+
+        if (!authorisationService.isAuthorised(AdminRequestDecoder.TEMPLATE_ID, session.encodedPrincipal()))
+        {
+            egressPublisher.sendAdminResponse(
+                session,
+                correlationId,
+                requestType,
+                AdminResponseCode.UNAUTHORISED_ACCESS,
+                "Execution of the " + requestType + " request was not authorised",
+                ArrayUtil.EMPTY_BYTE_ARRAY);
+            return;
+        }
+
+        if (AdminRequestType.SNAPSHOT == requestType)
+        {
+            if (ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle))
+            {
+                egressPublisher.sendAdminResponse(
+                    session,
+                    correlationId,
+                    requestType,
+                    AdminResponseCode.OK,
+                    "",
+                    ArrayUtil.EMPTY_BYTE_ARRAY);
+            }
+            else
+            {
+                egressPublisher.sendAdminResponse(
+                    session,
+                    correlationId,
+                    requestType,
+                    AdminResponseCode.ERROR,
+                    "Failed to switch ClusterControl to the ToggleState.SNAPSHOT state",
+                    ArrayUtil.EMPTY_BYTE_ARRAY);
+            }
+        }
+        else
+        {
+            egressPublisher.sendAdminResponse(
+                session,
+                correlationId,
+                requestType,
+                AdminResponseCode.ERROR,
+                "Unknown request type: " + requestType,
+                ArrayUtil.EMPTY_BYTE_ARRAY);
         }
     }
 

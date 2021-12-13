@@ -65,6 +65,7 @@ public final class AeronCluster implements AutoCloseable
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
     private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
     private final UnsafeBuffer keepaliveMsgBuffer;
+    private final ExpandableArrayBuffer adminRequestBuffer;
     private final MessageHeaderEncoder messageHeaderEncoder;
     private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
     private final SessionKeepAliveEncoder sessionKeepAliveEncoder = new SessionKeepAliveEncoder();
@@ -72,6 +73,8 @@ public final class AeronCluster implements AutoCloseable
     private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
+    private final AdminRequestEncoder adminRequestEncoder = new AdminRequestEncoder();
+    private final AdminResponseDecoder adminResponseDecoder = new AdminResponseDecoder();
     private final FragmentAssembler fragmentAssembler;
     private final EgressListener egressListener;
     private final ControlledFragmentAssembler controlledFragmentAssembler;
@@ -230,6 +233,9 @@ public final class AeronCluster implements AutoCloseable
             .wrapAndApplyHeader(keepaliveMsgBuffer, 0, messageHeaderEncoder)
             .leadershipTermId(leadershipTermId)
             .clusterSessionId(clusterSessionId);
+
+        adminRequestBuffer = new ExpandableArrayBuffer(
+            MessageHeaderEncoder.ENCODED_LENGTH + AdminRequestEncoder.BLOCK_LENGTH);
     }
 
     /**
@@ -415,36 +421,27 @@ public final class AeronCluster implements AutoCloseable
      */
     public boolean sendKeepAlive()
     {
-        idleStrategy.reset();
-        int attempts = SEND_ATTEMPTS;
+        return trySendIngressMessage(keepaliveMsgBuffer);
+    }
 
-        while (true)
-        {
-            final long result = publication.offer(keepaliveMsgBuffer, 0, keepaliveMsgBuffer.capacity(), null);
-            if (result > 0)
-            {
-                return true;
-            }
+    /**
+     * Sends an admin request to initiate a snapshot action in the cluster. Such a request requires elevated privileges.
+     *
+     * @param correlationId for the request.
+     * @return {@code true} if the request was sent or {@code false} otherwise.
+     * @see EgressListener#onAdminResponse(long, long, AdminRequestType, AdminResponseCode, String, DirectBuffer, int, int)
+     * @see ControlledEgressListener#onAdminResponse(long, long, AdminRequestType, AdminResponseCode, String, DirectBuffer, int, int)
+     */
+    public boolean sendAdminRequestToTakeASnapshot(final long correlationId)
+    {
+        adminRequestEncoder
+            .wrapAndApplyHeader(adminRequestBuffer, 0, messageHeaderEncoder)
+            .leadershipTermId(leadershipTermId)
+            .clusterSessionId(clusterSessionId)
+            .correlationId(correlationId)
+            .requestType(AdminRequestType.SNAPSHOT);
 
-            if (result == Publication.CLOSED)
-            {
-                throw new ClusterException("ingress publication is closed");
-            }
-
-            if (result == Publication.MAX_POSITION_EXCEEDED)
-            {
-                throw new ClusterException("max position exceeded");
-            }
-
-            if (--attempts <= 0)
-            {
-                break;
-            }
-
-            idleStrategy.idle();
-        }
-
-        return false;
+        return trySendIngressMessage(adminRequestBuffer);
     }
 
     /**
@@ -573,6 +570,41 @@ public final class AeronCluster implements AutoCloseable
         endpointByIdMap = map;
     }
 
+    private boolean trySendIngressMessage(final DirectBuffer msgBuffer)
+    {
+        idleStrategy.reset();
+        int attempts = SEND_ATTEMPTS;
+
+        while (true)
+        {
+            final long result = publication.offer(msgBuffer, 0, msgBuffer.capacity(), null);
+            if (result > 0)
+            {
+                return true;
+            }
+
+            if (result == Publication.CLOSED)
+            {
+                throw new ClusterException("ingress publication is closed");
+            }
+
+            if (result == Publication.MAX_POSITION_EXCEEDED)
+            {
+                throw new ClusterException("max position exceeded");
+            }
+
+            if (--attempts <= 0)
+            {
+                break;
+            }
+
+            idleStrategy.idle();
+        }
+
+        return false;
+    }
+
+    @SuppressWarnings("MethodLength")
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -642,8 +674,41 @@ public final class AeronCluster implements AutoCloseable
                     sessionEventDecoder.detail());
             }
         }
+        else if (AdminResponseDecoder.TEMPLATE_ID == templateId)
+        {
+            adminResponseDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            final long sessionId = adminResponseDecoder.clusterSessionId();
+            if (sessionId == clusterSessionId)
+            {
+                final long correlationId = adminResponseDecoder.correlationId();
+                final AdminRequestType requestType = adminResponseDecoder.requestType();
+                final AdminResponseCode code = adminResponseDecoder.code();
+                final String message = adminResponseDecoder.message();
+                final int payloadOffset = adminResponseDecoder.offset() +
+                    AdminResponseDecoder.BLOCK_LENGTH +
+                    AdminResponseDecoder.messageHeaderLength() +
+                    message.length() +
+                    AdminResponseDecoder.payloadHeaderLength();
+                final int payloadLength = adminResponseDecoder.payloadLength();
+                egressListener.onAdminResponse(
+                    sessionId,
+                    correlationId,
+                    requestType,
+                    code,
+                    message,
+                    buffer,
+                    payloadOffset,
+                    payloadLength);
+            }
+        }
     }
 
+    @SuppressWarnings("MethodLength")
     private ControlledFragmentHandler.Action onControlledFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
@@ -714,6 +779,38 @@ public final class AeronCluster implements AutoCloseable
                     sessionEventDecoder.leaderMemberId(),
                     code,
                     sessionEventDecoder.detail());
+            }
+        }
+        else if (AdminResponseDecoder.TEMPLATE_ID == templateId)
+        {
+            adminResponseDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            final long sessionId = adminResponseDecoder.clusterSessionId();
+            if (sessionId == clusterSessionId)
+            {
+                final long correlationId = adminResponseDecoder.correlationId();
+                final AdminRequestType requestType = adminResponseDecoder.requestType();
+                final AdminResponseCode code = adminResponseDecoder.code();
+                final String message = adminResponseDecoder.message();
+                final int payloadOffset = adminResponseDecoder.offset() +
+                    AdminResponseDecoder.BLOCK_LENGTH +
+                    AdminResponseDecoder.messageHeaderLength() +
+                    message.length() +
+                    AdminResponseDecoder.payloadHeaderLength();
+                final int payloadLength = adminResponseDecoder.payloadLength();
+                controlledEgressListener.onAdminResponse(
+                    sessionId,
+                    correlationId,
+                    requestType,
+                    code,
+                    message,
+                    buffer,
+                    payloadOffset,
+                    payloadLength);
             }
         }
 

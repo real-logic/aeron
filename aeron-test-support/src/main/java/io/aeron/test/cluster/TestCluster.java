@@ -22,6 +22,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.*;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.client.ControlledEgressListener;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
@@ -33,6 +34,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
+import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.RedirectingNameResolver;
@@ -88,7 +90,7 @@ public class TestCluster implements AutoCloseable
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final MutableLong responseCount = new MutableLong();
     private final MutableInteger newLeaderEvent = new MutableInteger();
-    private final EgressListener egressMessageListener = new EgressListener()
+    private EgressListener egressListener = new EgressListener()
     {
         public void onMessage(
             final long clusterSessionId,
@@ -133,6 +135,7 @@ public class TestCluster implements AutoCloseable
             newLeaderEvent.increment();
         }
     };
+    private ControlledEgressListener controlledEgressListener;
 
     private final TestNode[] nodes;
     private final String staticClusterMembers;
@@ -149,6 +152,7 @@ public class TestCluster implements AutoCloseable
     private String logChannel;
     private String ingressChannel;
     private String egressChannel;
+    private AuthorisationServiceSupplier authorisationServiceSupplier;
 
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
@@ -299,6 +303,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authorisationServiceSupplier(authorisationServiceSupplier)
             .deleteDirOnStart(cleanStart);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -354,6 +359,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authorisationServiceSupplier(authorisationServiceSupplier)
             .deleteDirOnStart(cleanStart);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -409,6 +415,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authorisationServiceSupplier(authorisationServiceSupplier)
             .deleteDirOnStart(false);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -522,6 +529,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authorisationServiceSupplier(authorisationServiceSupplier)
             .deleteDirOnStart(false);
 
         backupNode = null;
@@ -577,6 +585,21 @@ public class TestCluster implements AutoCloseable
         this.egressChannel = egressChannel;
     }
 
+    public void egressListener(final EgressListener egressListener)
+    {
+        this.egressListener = egressListener;
+    }
+
+    public void controlledEgressListener(final ControlledEgressListener controlledEgressListener)
+    {
+        this.controlledEgressListener = controlledEgressListener;
+    }
+
+    public void authorisationServiceSupplier(final AuthorisationServiceSupplier authorisationServiceSupplier)
+    {
+        this.authorisationServiceSupplier = authorisationServiceSupplier;
+    }
+
     public String staticClusterMembers()
     {
         return staticClusterMembers;
@@ -628,7 +651,8 @@ public class TestCluster implements AutoCloseable
         clientCtx
             .aeronDirectoryName(aeronDirName)
             .isIngressExclusive(true)
-            .egressListener(egressMessageListener)
+            .egressListener(egressListener)
+            .controlledEgressListener(controlledEgressListener)
             .ingressEndpoints(staticClusterMemberEndpoints);
 
         try
@@ -962,6 +986,19 @@ public class TestCluster implements AutoCloseable
             Tests.yield();
         }
     }
+
+    public long getSnapshotCount(final TestNode node)
+    {
+        final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
+
+        if (snapshotCounter.isClosed())
+        {
+            throw new IllegalStateException("counter is unexpectedly closed");
+        }
+
+        return snapshotCounter.get();
+    }
+
 
     public void awaitNodeTermination(final TestNode node)
     {
@@ -1458,6 +1495,7 @@ public class TestCluster implements AutoCloseable
         private String logChannel = LOG_CHANNEL;
         private String ingressChannel = INGRESS_CHANNEL;
         private String egressChannel = EGRESS_CHANNEL;
+        private AuthorisationServiceSupplier authorisationServiceSupplier;
         private IntFunction<TestNode.TestService[]> serviceSupplier =
             (i) -> new TestNode.TestService[]{ new TestNode.TestService().index(i) };
         private final IntHashSet invalidInitialResolutions = new IntHashSet();
@@ -1515,6 +1553,12 @@ public class TestCluster implements AutoCloseable
             return this;
         }
 
+        public Builder withAuthorisationServiceSupplier(final AuthorisationServiceSupplier authorisationServiceSupplier)
+        {
+            this.authorisationServiceSupplier = authorisationServiceSupplier;
+            return this;
+        }
+
         public TestCluster start()
         {
             return start(nodeCount);
@@ -1537,6 +1581,7 @@ public class TestCluster implements AutoCloseable
             testCluster.logChannel(logChannel);
             testCluster.ingressChannel(ingressChannel);
             testCluster.egressChannel(egressChannel);
+            testCluster.authorisationServiceSupplier(authorisationServiceSupplier);
 
             try
             {

@@ -21,6 +21,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
+import io.aeron.security.AuthorisationService;
 import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.status.ReadableCounter;
 import io.aeron.test.Tests;
@@ -72,6 +73,7 @@ public class ConsensusModuleAgentTest
         .aeron(mockAeron)
         .clusterMemberId(0)
         .authenticatorSupplier(new DefaultAuthenticatorSupplier())
+        .authorisationServiceSupplier(() -> AuthorisationService.DENY_ALL)
         .clusterMarkFile(mock(ClusterMarkFile.class))
         .archiveContext(new AeronArchive.Context())
         .logPublisher(mockLogPublisher)

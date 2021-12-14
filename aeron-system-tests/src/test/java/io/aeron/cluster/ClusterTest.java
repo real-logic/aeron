@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.zip.CRC32;
 
@@ -1653,45 +1654,11 @@ public class ClusterTest
         final List<TestNode> followers = cluster.followers();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean responseReceived = new MutableBoolean();
-        cluster.egressListener(new EgressListener()
-        {
-            public void onMessage(
-                final long clusterSessionId,
-                final long timestamp,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length,
-                final Header header)
-            {
-            }
-
-            public void onAdminResponse(
-                final long clusterSessionId,
-                final long correlationId,
-                final AdminRequestType requestType,
-                final AdminResponseCode code,
-                final String message,
-                final DirectBuffer payload,
-                final int payloadOffset,
-                final int payloadLength)
-            {
-                responseReceived.set(true);
-                assertEquals(requestCorrelationId, correlationId);
-                assertEquals(AdminRequestType.SNAPSHOT, requestType);
-                assertEquals(AdminResponseCode.UNAUTHORISED_ACCESS, code);
-                assertEquals("Execution of the " + requestType + " request was not authorised", message);
-                assertNotNull(payload);
-                final int minPayloadOffset =
-                    MessageHeaderEncoder.ENCODED_LENGTH +
-                    AdminResponseEncoder.BLOCK_LENGTH +
-                    AdminResponseEncoder.messageHeaderLength() +
-                    message.length() +
-                    AdminResponseEncoder.payloadHeaderLength();
-                assertTrue(payloadOffset > minPayloadOffset);
-                assertEquals(0, payloadLength);
-            }
-        });
+        final MutableBoolean responseReceived = injectAdminResponseEgressListener(
+            requestCorrelationId,
+            AdminRequestType.SNAPSHOT,
+            AdminResponseCode.UNAUTHORISED_ACCESS,
+            "Execution of the " + AdminRequestType.SNAPSHOT + " request was not authorised");
 
         final AeronCluster client = cluster.connectClient();
         while (!client.sendAdminRequestToTakeASnapshot(requestCorrelationId))
@@ -1725,11 +1692,13 @@ public class ClusterTest
     void shouldRejectAnInvalidAdminRequest()
     {
         final AdminRequestType invalidRequestType = AdminRequestType.NULL_VAL;
+        final AtomicBoolean authorisationServiceCalled = new AtomicBoolean();
         cluster = aCluster()
             .withStaticNodes(3)
             .withAuthorisationServiceSupplier(() ->
                 (templateId, type, encodedCredentials) ->
                 {
+                    authorisationServiceCalled.set(true);
                     assertEquals(invalidRequestType, type);
                     return true;
                 })
@@ -1739,45 +1708,11 @@ public class ClusterTest
         cluster.awaitLeader();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean responseReceived = new MutableBoolean();
-        cluster.egressListener(new EgressListener()
-        {
-            public void onMessage(
-                final long clusterSessionId,
-                final long timestamp,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length,
-                final Header header)
-            {
-            }
-
-            public void onAdminResponse(
-                final long clusterSessionId,
-                final long correlationId,
-                final AdminRequestType requestType,
-                final AdminResponseCode code,
-                final String message,
-                final DirectBuffer payload,
-                final int payloadOffset,
-                final int payloadLength)
-            {
-                responseReceived.set(true);
-                assertEquals(requestCorrelationId, correlationId);
-                assertEquals(invalidRequestType, requestType);
-                assertEquals(AdminResponseCode.ERROR, code);
-                assertEquals("Unknown request type: " + invalidRequestType, message);
-                assertNotNull(payload);
-                final int minPayloadOffset =
-                    MessageHeaderEncoder.ENCODED_LENGTH +
-                    AdminResponseEncoder.BLOCK_LENGTH +
-                    AdminResponseEncoder.messageHeaderLength() +
-                    message.length() +
-                    AdminResponseEncoder.payloadHeaderLength();
-                assertTrue(payloadOffset > minPayloadOffset);
-                assertEquals(0, payloadLength);
-            }
-        });
+        final MutableBoolean responseReceived = injectAdminResponseEgressListener(
+            requestCorrelationId,
+            invalidRequestType,
+            AdminResponseCode.ERROR,
+            "Unknown request type: " + invalidRequestType);
 
         final AeronCluster client = cluster.connectClient();
         final AdminRequestEncoder adminRequestEncoder = new AdminRequestEncoder()
@@ -1795,6 +1730,8 @@ public class ClusterTest
         {
             Tests.yield();
         }
+
+        Tests.await(authorisationServiceCalled::get);
 
         while (!responseReceived.get())
         {
@@ -1817,48 +1754,11 @@ public class ClusterTest
         final long expectedLeadershipTermId = client.leadershipTermId();
         final long invalidLeadershipTermId = expectedLeadershipTermId - 1000;
         final AdminRequestType requestType = AdminRequestType.NULL_VAL;
-        final MutableBoolean responseReceived = new MutableBoolean();
-        cluster.egressListener(new EgressListener()
-        {
-            public void onMessage(
-                final long clusterSessionId,
-                final long timestamp,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length,
-                final Header header)
-            {
-            }
-
-            public void onAdminResponse(
-                final long clusterSessionId,
-                final long correlationId,
-                final AdminRequestType requestType,
-                final AdminResponseCode code,
-                final String message,
-                final DirectBuffer payload,
-                final int payloadOffset,
-                final int payloadLength)
-            {
-                responseReceived.set(true);
-                assertEquals(requestCorrelationId, correlationId);
-                assertEquals(requestType, requestType);
-                assertEquals(AdminResponseCode.ERROR, code);
-                assertEquals(
-                    "Invalid leadership term: expected " + expectedLeadershipTermId + ", got " +
-                    invalidLeadershipTermId,
-                    message);
-                assertNotNull(payload);
-                final int minPayloadOffset =
-                    MessageHeaderEncoder.ENCODED_LENGTH +
-                    AdminResponseEncoder.BLOCK_LENGTH +
-                    AdminResponseEncoder.messageHeaderLength() +
-                    message.length() +
-                    AdminResponseEncoder.payloadHeaderLength();
-                assertTrue(payloadOffset > minPayloadOffset);
-                assertEquals(0, payloadLength);
-            }
-        });
+        final MutableBoolean responseReceived = injectAdminResponseEgressListener(
+            requestCorrelationId,
+            requestType,
+            AdminResponseCode.ERROR,
+            "Invalid leadership term: expected " + expectedLeadershipTermId + ", got " + invalidLeadershipTermId);
         client = cluster.connectClient();
 
         final AdminRequestEncoder adminRequestEncoder = new AdminRequestEncoder()
@@ -1897,45 +1797,8 @@ public class ClusterTest
         final TestNode leader = cluster.awaitLeader();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean responseReceived = new MutableBoolean();
-        cluster.egressListener(new EgressListener()
-        {
-            public void onMessage(
-                final long clusterSessionId,
-                final long timestamp,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length,
-                final Header header)
-            {
-            }
-
-            public void onAdminResponse(
-                final long clusterSessionId,
-                final long correlationId,
-                final AdminRequestType requestType,
-                final AdminResponseCode code,
-                final String message,
-                final DirectBuffer payload,
-                final int payloadOffset,
-                final int payloadLength)
-            {
-                responseReceived.set(true);
-                assertEquals(requestCorrelationId, correlationId);
-                assertEquals(AdminRequestType.SNAPSHOT, requestType);
-                assertEquals(AdminResponseCode.OK, code);
-                assertEquals("", message);
-                assertNotNull(payload);
-                final int minPayloadOffset =
-                    MessageHeaderEncoder.ENCODED_LENGTH +
-                    AdminResponseEncoder.BLOCK_LENGTH +
-                    AdminResponseEncoder.messageHeaderLength() +
-                    message.length() +
-                    AdminResponseEncoder.payloadHeaderLength();
-                assertTrue(payloadOffset > minPayloadOffset);
-                assertEquals(0, payloadLength);
-            }
-        });
+        final MutableBoolean responseReceived = injectAdminResponseEgressListener(
+            requestCorrelationId, AdminRequestType.SNAPSHOT, AdminResponseCode.OK, "");
 
         final AeronCluster client = cluster.connectClient();
         while (!client.sendAdminRequestToTakeASnapshot(requestCorrelationId))
@@ -1971,46 +1834,8 @@ public class ClusterTest
         final TestNode leader = cluster.awaitLeader();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean responseReceived = new MutableBoolean();
-        cluster.controlledEgressListener(new ControlledEgressListener()
-        {
-            public ControlledFragmentHandler.Action onMessage(
-                final long clusterSessionId,
-                final long timestamp,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length,
-                final Header header)
-            {
-                return ControlledFragmentHandler.Action.ABORT;
-            }
-
-            public void onAdminResponse(
-                final long clusterSessionId,
-                final long correlationId,
-                final AdminRequestType requestType,
-                final AdminResponseCode code,
-                final String message,
-                final DirectBuffer payload,
-                final int payloadOffset,
-                final int payloadLength)
-            {
-                responseReceived.set(true);
-                assertEquals(requestCorrelationId, correlationId);
-                assertEquals(AdminRequestType.SNAPSHOT, requestType);
-                assertEquals(AdminResponseCode.OK, code);
-                assertEquals("", message);
-                assertNotNull(payload);
-                final int minPayloadOffset =
-                    MessageHeaderEncoder.ENCODED_LENGTH +
-                    AdminResponseEncoder.BLOCK_LENGTH +
-                    AdminResponseEncoder.messageHeaderLength() +
-                    message.length() +
-                    AdminResponseEncoder.payloadHeaderLength();
-                assertTrue(payloadOffset > minPayloadOffset);
-                assertEquals(0, payloadLength);
-            }
-        });
+        final MutableBoolean responseReceived = injectAdminRequestControlledEgressListener(
+            requestCorrelationId, AdminRequestType.SNAPSHOT, AdminResponseCode.OK, "");
 
         final AeronCluster client = cluster.connectClient();
         while (!client.sendAdminRequestToTakeASnapshot(requestCorrelationId))
@@ -2047,5 +1872,102 @@ public class ClusterTest
 
         awaitElectionClosed(follower);
         assertEquals(FOLLOWER, follower.role());
+    }
+
+    private MutableBoolean injectAdminResponseEgressListener(
+        final long expectedCorrelationId,
+        final AdminRequestType expectedRequestType,
+        final AdminResponseCode expectedCode,
+        final String expectedMessage)
+    {
+        final MutableBoolean responseReceived = new MutableBoolean();
+        cluster.egressListener(new EgressListener()
+        {
+            public void onMessage(
+                final long clusterSessionId,
+                final long timestamp,
+                final DirectBuffer buffer,
+                final int offset,
+                final int length,
+                final Header header)
+            {
+            }
+
+            public void onAdminResponse(
+                final long clusterSessionId,
+                final long correlationId,
+                final AdminRequestType requestType,
+                final AdminResponseCode code,
+                final String message,
+                final DirectBuffer payload,
+                final int payloadOffset,
+                final int payloadLength)
+            {
+                responseReceived.set(true);
+                assertEquals(expectedCorrelationId, correlationId);
+                assertEquals(expectedRequestType, requestType);
+                assertEquals(expectedCode, code);
+                assertEquals(expectedMessage, message);
+                assertNotNull(payload);
+                final int minPayloadOffset =
+                    MessageHeaderEncoder.ENCODED_LENGTH +
+                    AdminResponseEncoder.BLOCK_LENGTH +
+                    AdminResponseEncoder.messageHeaderLength() +
+                    message.length() +
+                    AdminResponseEncoder.payloadHeaderLength();
+                assertTrue(payloadOffset > minPayloadOffset);
+                assertEquals(0, payloadLength);
+            }
+        });
+        return responseReceived;
+    }
+
+    private MutableBoolean injectAdminRequestControlledEgressListener(
+        final long expectedCorrelationId,
+        final AdminRequestType expectedRequestType,
+        final AdminResponseCode expectedCode,
+        final String expectedMessage)
+    {
+        final MutableBoolean responseReceived = new MutableBoolean();
+        cluster.controlledEgressListener(new ControlledEgressListener()
+        {
+            public ControlledFragmentHandler.Action onMessage(
+                final long clusterSessionId,
+                final long timestamp,
+                final DirectBuffer buffer,
+                final int offset,
+                final int length,
+                final Header header)
+            {
+                return ControlledFragmentHandler.Action.ABORT;
+            }
+
+            public void onAdminResponse(
+                final long clusterSessionId,
+                final long correlationId,
+                final AdminRequestType requestType,
+                final AdminResponseCode code,
+                final String message,
+                final DirectBuffer payload,
+                final int payloadOffset,
+                final int payloadLength)
+            {
+                responseReceived.set(true);
+                assertEquals(expectedCorrelationId, correlationId);
+                assertEquals(expectedRequestType, requestType);
+                assertEquals(expectedCode, code);
+                assertEquals(expectedMessage, message);
+                assertNotNull(payload);
+                final int minPayloadOffset =
+                    MessageHeaderEncoder.ENCODED_LENGTH +
+                    AdminResponseEncoder.BLOCK_LENGTH +
+                    AdminResponseEncoder.messageHeaderLength() +
+                    message.length() +
+                    AdminResponseEncoder.payloadHeaderLength();
+                assertTrue(payloadOffset > minPayloadOffset);
+                assertEquals(0, payloadLength);
+            }
+        });
+        return responseReceived;
     }
 }

@@ -715,7 +715,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 final long correlationId = adminResponseDecoder.correlationId();
                 final AdminRequestType requestType = adminResponseDecoder.requestType();
-                final AdminResponseCode code = adminResponseDecoder.code();
+                final AdminResponseCode responseCode = adminResponseDecoder.responseCode();
                 final String message = adminResponseDecoder.message();
                 final int payloadOffset = adminResponseDecoder.offset() +
                     AdminResponseDecoder.BLOCK_LENGTH +
@@ -727,7 +727,7 @@ public final class AeronCluster implements AutoCloseable
                     sessionId,
                     correlationId,
                     requestType,
-                    code,
+                    responseCode,
                     message,
                     buffer,
                     payloadOffset,
@@ -822,7 +822,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 final long correlationId = adminResponseDecoder.correlationId();
                 final AdminRequestType requestType = adminResponseDecoder.requestType();
-                final AdminResponseCode code = adminResponseDecoder.code();
+                final AdminResponseCode responseCode = adminResponseDecoder.responseCode();
                 final String message = adminResponseDecoder.message();
                 final int payloadOffset = adminResponseDecoder.offset() +
                     AdminResponseDecoder.BLOCK_LENGTH +
@@ -834,7 +834,7 @@ public final class AeronCluster implements AutoCloseable
                     sessionId,
                     correlationId,
                     requestType,
-                    code,
+                    responseCode,
                     message,
                     buffer,
                     payloadOffset,

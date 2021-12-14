@@ -400,7 +400,7 @@
                description="AdminRequest correlation id with which this response is associated."/>
         <field name="requestType"              id="3" type="AdminRequestType"
                description="A type of the admin request that was executed."/>
-        <field name="code"                     id="4" type="AdminResponseCode"
+        <field name="responseCode"             id="4" type="AdminResponseCode"
                description="A response code describing the result."/>
         <data name="message"                   id="5" type="varAsciiEncoding"
                description="A response message (e.g. an error message)."/>

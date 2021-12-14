@@ -1877,7 +1877,7 @@ public class ClusterTest
     private MutableBoolean injectAdminResponseEgressListener(
         final long expectedCorrelationId,
         final AdminRequestType expectedRequestType,
-        final AdminResponseCode expectedCode,
+        final AdminResponseCode expectedResponseCode,
         final String expectedMessage)
     {
         final MutableBoolean responseReceived = new MutableBoolean();
@@ -1897,7 +1897,7 @@ public class ClusterTest
                 final long clusterSessionId,
                 final long correlationId,
                 final AdminRequestType requestType,
-                final AdminResponseCode code,
+                final AdminResponseCode responseCode,
                 final String message,
                 final DirectBuffer payload,
                 final int payloadOffset,
@@ -1906,7 +1906,7 @@ public class ClusterTest
                 responseReceived.set(true);
                 assertEquals(expectedCorrelationId, correlationId);
                 assertEquals(expectedRequestType, requestType);
-                assertEquals(expectedCode, code);
+                assertEquals(expectedResponseCode, responseCode);
                 assertEquals(expectedMessage, message);
                 assertNotNull(payload);
                 final int minPayloadOffset =
@@ -1925,7 +1925,7 @@ public class ClusterTest
     private MutableBoolean injectAdminRequestControlledEgressListener(
         final long expectedCorrelationId,
         final AdminRequestType expectedRequestType,
-        final AdminResponseCode expectedCode,
+        final AdminResponseCode expectedResponseCode,
         final String expectedMessage)
     {
         final MutableBoolean responseReceived = new MutableBoolean();
@@ -1946,7 +1946,7 @@ public class ClusterTest
                 final long clusterSessionId,
                 final long correlationId,
                 final AdminRequestType requestType,
-                final AdminResponseCode code,
+                final AdminResponseCode responseCode,
                 final String message,
                 final DirectBuffer payload,
                 final int payloadOffset,
@@ -1955,7 +1955,7 @@ public class ClusterTest
                 responseReceived.set(true);
                 assertEquals(expectedCorrelationId, correlationId);
                 assertEquals(expectedRequestType, requestType);
-                assertEquals(expectedCode, code);
+                assertEquals(expectedResponseCode, responseCode);
                 assertEquals(expectedMessage, message);
                 assertNotNull(payload);
                 final int minPayloadOffset =

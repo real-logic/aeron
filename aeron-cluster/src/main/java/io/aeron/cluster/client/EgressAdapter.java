@@ -166,7 +166,7 @@ public final class EgressAdapter implements FragmentHandler
                 {
                     final long correlationId = adminResponseDecoder.correlationId();
                     final AdminRequestType requestType = adminResponseDecoder.requestType();
-                    final AdminResponseCode code = adminResponseDecoder.code();
+                    final AdminResponseCode responseCode = adminResponseDecoder.responseCode();
                     final String message = adminResponseDecoder.message();
                     final int payloadOffset = adminResponseDecoder.offset() +
                         AdminResponseDecoder.BLOCK_LENGTH +
@@ -178,7 +178,7 @@ public final class EgressAdapter implements FragmentHandler
                         sessionId,
                         correlationId,
                         requestType,
-                        code,
+                        responseCode,
                         message,
                         buffer,
                         payloadOffset,

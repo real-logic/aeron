@@ -57,7 +57,8 @@ class EgressAdapterTest
             .clusterSessionId(sessionId)
             .timestamp(timestamp);
 
-        final EgressListener egressListener = mock(EgressListener.class); final Header header = new Header(0, 0);
+        final EgressListener egressListener = mock(EgressListener.class);
+        final Header header = new Header(0, 0);
         final EgressAdapter adapter = new EgressAdapter(egressListener, sessionId, mock(Subscription.class), 3);
 
         adapter.onFragment(buffer, offset, sessionMessageHeaderEncoder.encodedLength(), header);
@@ -82,7 +83,8 @@ class EgressAdapterTest
             .clusterSessionId(sessionId)
             .timestamp(timestamp);
 
-        final EgressListener egressListener = mock(EgressListener.class); final Header header = new Header(0, 0);
+        final EgressListener egressListener = mock(EgressListener.class);
+        final Header header = new Header(0, 0);
         final EgressAdapter adapter = new EgressAdapter(egressListener, -19, mock(Subscription.class), 3);
 
         adapter.onFragment(buffer, offset, sessionMessageHeaderEncoder.encodedLength(), header);
@@ -111,7 +113,8 @@ class EgressAdapterTest
             .version(version)
             .detail(eventDetail);
 
-        final EgressListener egressListener = mock(EgressListener.class); final Header header = new Header(1, 3);
+        final EgressListener egressListener = mock(EgressListener.class);
+        final Header header = new Header(1, 3);
         final EgressAdapter adapter = new EgressAdapter(egressListener, clusterSessionId, mock(Subscription.class), 10);
 
         adapter.onFragment(buffer, offset, sessionEventEncoder.encodedLength(), header);
@@ -142,7 +145,8 @@ class EgressAdapterTest
             .version(version)
             .detail(eventDetail);
 
-        final EgressListener egressListener = mock(EgressListener.class); final Header header = new Header(0, 0);
+        final EgressListener egressListener = mock(EgressListener.class);
+        final Header header = new Header(0, 0);
         final EgressAdapter adapter = new EgressAdapter(
             egressListener, clusterSessionId + 1, mock(Subscription.class), 3);
 
@@ -166,7 +170,8 @@ class EgressAdapterTest
             .leaderMemberId(leaderMemberId)
             .ingressEndpoints(ingressEndpoints);
 
-        final EgressListener egressListener = mock(EgressListener.class); final Header header = new Header(1, 3);
+        final EgressListener egressListener = mock(EgressListener.class);
+        final Header header = new Header(1, 3);
         final EgressAdapter adapter = new EgressAdapter(egressListener, clusterSessionId, mock(Subscription.class), 10);
 
         adapter.onFragment(buffer, offset, newLeaderEventEncoder.encodedLength(), header);
@@ -190,7 +195,8 @@ class EgressAdapterTest
             .leaderMemberId(leaderMemberId)
             .ingressEndpoints(ingressEndpoints);
 
-        final EgressListener egressListener = mock(EgressListener.class); final Header header = new Header(1, 3);
+        final EgressListener egressListener = mock(EgressListener.class);
+        final Header header = new Header(1, 3);
         final EgressAdapter adapter = new EgressAdapter(egressListener, 0, mock(Subscription.class), 10);
 
         adapter.onFragment(buffer, offset, newLeaderEventEncoder.encodedLength(), header);
@@ -205,7 +211,7 @@ class EgressAdapterTest
         final long clusterSessionId = 18;
         final long correlationId = 3274239749237498239L;
         final AdminRequestType type = AdminRequestType.SNAPSHOT;
-        final AdminResponseCode code = AdminResponseCode.UNAUTHORISED_ACCESS;
+        final AdminResponseCode responseCode = AdminResponseCode.UNAUTHORISED_ACCESS;
         final String message = "Unauthorised access detected!";
         final byte[] payload = new byte[]{ 0x1, 0x2, 0x3 };
         adminResponseEncoder
@@ -213,11 +219,12 @@ class EgressAdapterTest
             .clusterSessionId(clusterSessionId)
             .correlationId(correlationId)
             .requestType(type)
-            .code(code)
+            .responseCode(responseCode)
             .message(message);
         adminResponseEncoder.putPayload(payload, 0, payload.length);
 
-        final EgressListener egressListener = mock(EgressListener.class); final Header header = new Header(1, 3);
+        final EgressListener egressListener = mock(EgressListener.class);
+        final Header header = new Header(1, 3);
         final EgressAdapter adapter = new EgressAdapter(egressListener, clusterSessionId, mock(Subscription.class), 10);
 
         adapter.onFragment(buffer, offset, adminResponseEncoder.encodedLength(), header);
@@ -226,7 +233,7 @@ class EgressAdapterTest
             clusterSessionId,
             correlationId,
             type,
-            code,
+            responseCode,
             message,
             buffer,
             offset + MessageHeaderEncoder.ENCODED_LENGTH + adminResponseEncoder.encodedLength() - payload.length,
@@ -241,14 +248,20 @@ class EgressAdapterTest
         final long clusterSessionId = 18;
         final long correlationId = 3274239749237498239L;
         final AdminRequestType type = AdminRequestType.SNAPSHOT;
-        final AdminResponseCode code = AdminResponseCode.UNAUTHORISED_ACCESS;
+        final AdminResponseCode responseCode = AdminResponseCode.OK;
         final String message = "Unauthorised access detected!";
         final byte[] payload = new byte[]{ 0x1, 0x2, 0x3 };
-        adminResponseEncoder.wrapAndApplyHeader(buffer, offset, messageHeaderEncoder).clusterSessionId(clusterSessionId)
-            .correlationId(correlationId).requestType(type).code(code).message(message);
+        adminResponseEncoder
+            .wrapAndApplyHeader(buffer, offset, messageHeaderEncoder)
+            .clusterSessionId(clusterSessionId)
+            .correlationId(correlationId)
+            .requestType(type)
+            .responseCode(responseCode)
+            .message(message);
         adminResponseEncoder.putPayload(payload, 0, payload.length);
 
-        final EgressListener egressListener = mock(EgressListener.class); final Header header = new Header(1, 3);
+        final EgressListener egressListener = mock(EgressListener.class);
+        final Header header = new Header(1, 3);
         final EgressAdapter adapter = new EgressAdapter(
             egressListener, -clusterSessionId, mock(Subscription.class), 10);
 

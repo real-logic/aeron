@@ -83,7 +83,7 @@ public interface EgressListener
      * @param clusterSessionId to which the response belongs.
      * @param correlationId    of the admin request.
      * @param requestType      of the admin request.
-     * @param code             describing the response.
+     * @param responseCode     describing the response.
      * @param message          describing the response (e.g. error message).
      * @param payload          delivered with the response, can be empty.
      * @param payloadOffset    into the payload buffer.
@@ -93,7 +93,7 @@ public interface EgressListener
         long clusterSessionId,
         long correlationId,
         AdminRequestType requestType,
-        AdminResponseCode code,
+        AdminResponseCode responseCode,
         String message,
         DirectBuffer payload,
         int payloadOffset,

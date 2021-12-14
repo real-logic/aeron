@@ -135,7 +135,7 @@ class EgressPublisher
         final ClusterSession session,
         final long correlationId,
         final AdminRequestType adminRequestType,
-        final AdminResponseCode code,
+        final AdminResponseCode responseCode,
         final String message)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
@@ -155,7 +155,7 @@ class EgressPublisher
                     .clusterSessionId(session.id())
                     .correlationId(correlationId)
                     .requestType(adminRequestType)
-                    .code(code)
+                    .responseCode(responseCode)
                     .message(message)
                     .putPayload(ArrayUtil.EMPTY_BYTE_ARRAY, 0, 0);
                 bufferClaim.commit();

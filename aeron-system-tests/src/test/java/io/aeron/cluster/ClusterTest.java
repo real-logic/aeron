@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.zip.CRC32;
 
@@ -1704,11 +1705,19 @@ public class ClusterTest
             Tests.yield();
         }
 
-        assertEquals(0, cluster.getSnapshotCount(leader));
-        for (final TestNode follower : followers)
+        long time = System.nanoTime();
+        final long deadline = time + TimeUnit.SECONDS.toNanos(2);
+        do
         {
-            assertEquals(0, cluster.getSnapshotCount(follower));
+            assertEquals(0, cluster.getSnapshotCount(leader));
+            for (final TestNode follower : followers)
+            {
+                assertEquals(0, cluster.getSnapshotCount(follower));
+            }
+            Tests.sleep(10);
+            time = System.nanoTime();
         }
+        while (time < deadline);
     }
 
     @Test

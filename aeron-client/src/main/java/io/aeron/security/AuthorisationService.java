@@ -37,12 +37,12 @@ public interface AuthorisationService
      * Checks if the client with the specified credentials is allowed to perform an operation indicated by the
      * given {@code templateId}.
      *
-     * @param templateId         of the command being checked, i.e. an SBE message id.
-     * @param type               optional type for the command being checked, may be {@code null}. For example for
-     *                           an admin request in the cluster it will contain {@code AdminRequestType} value which
-     *                           denotes the exact kind of the request.
-     * @param encodedCredentials from the Challenge Response. Will not be {@code null}, but may be 0 length.
+     * @param templateId       of the command being checked, i.e. an SBE message id.
+     * @param type             optional type for the command being checked, may be {@code null}. For example for
+     *                         an admin request in the cluster it will contain {@code AdminRequestType} value which
+     *                         denotes the exact kind of the request.
+     * @param encodedPrincipal that has passed authentication.
      * @return {@code true} if the client is authorised to execute the command or {@code false} otherwise.
      */
-    boolean isAuthorised(int templateId, Object type, byte[] encodedCredentials);
+    boolean isAuthorised(int templateId, Object type, byte[] encodedPrincipal);
 }

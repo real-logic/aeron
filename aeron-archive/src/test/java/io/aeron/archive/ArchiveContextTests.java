@@ -138,7 +138,7 @@ class ArchiveContextTests
 
     static class TestAuthorisationService implements AuthorisationService
     {
-        public boolean isAuthorised(final int templateId, final Object type, final byte[] encodedCredentials)
+        public boolean isAuthorised(final int templateId, final Object type, final byte[] encodedPrincipal)
         {
             return false;
         }

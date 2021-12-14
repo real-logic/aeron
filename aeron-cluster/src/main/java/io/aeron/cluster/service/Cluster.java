@@ -223,7 +223,7 @@ public interface Cluster
      * <p>
      * Callers of this method should loop until the method succeeds.
      *
-     * <pre>
+     * <pre>{@code
      * private Cluster cluster;
      * // Lines omitted...
      *
@@ -232,7 +232,7 @@ public interface Cluster
      * {
      *     cluster.idleStrategy().idle();
      * }
-     * </pre>
+     * }</pre>
      *
      * The cluster's idle strategy must be used in the body of the loop to allow for the clustered service to be
      * shutdown if required.
@@ -270,7 +270,7 @@ public interface Cluster
      * <p>
      * Callers of this method should loop until the method succeeds.
      *
-     * <pre>
+     * <pre>{@code
      * private Cluster cluster;
      * // Lines omitted...
      *
@@ -290,7 +290,7 @@ public interface Cluster
      *     cluster.idleStrategy.idle();
      * }
      * while (true);
-     * </pre>
+     * }</pre>
      *
      * The cluster's idle strategy must be used in the body of the loop to allow for the clustered service to be
      * shutdown if required.

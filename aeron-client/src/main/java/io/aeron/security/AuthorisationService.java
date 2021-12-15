@@ -26,12 +26,12 @@ public interface AuthorisationService
     /**
      * An {@link AuthorisationService} instance that allows every command.
      */
-    AuthorisationService ALLOW_ALL = (templateId, type, encodedCredentials) -> true;
+    AuthorisationService ALLOW_ALL = (templateId, type, encodedPrincipal) -> true;
 
     /**
      * An {@link AuthorisationService} instance that forbids all commands.
      */
-    AuthorisationService DENY_ALL = (templateId, type, encodedCredentials) -> false;
+    AuthorisationService DENY_ALL = (templateId, type, encodedPrincipal) -> false;
 
     /**
      * Checks if the client with the specified credentials is allowed to perform an operation indicated by the

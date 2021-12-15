@@ -163,6 +163,7 @@ class MultiDestinationSubscriptionTest
     @InterruptAfter(10)
     void addDestinationWithSpySubscription()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support Spy MDS destinations yet");
         launch(Tests::onError);
 
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
@@ -177,6 +178,7 @@ class MultiDestinationSubscriptionTest
     @InterruptAfter(10)
     void addDestinationWithIpcSubscription()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support IPC MDS destinations yet");
         launch(Tests::onError);
 
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);

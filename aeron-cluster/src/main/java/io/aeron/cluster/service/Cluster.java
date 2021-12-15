@@ -220,6 +220,22 @@ public interface Cluster
      * {@link ClusteredService#onSessionOpen(ClientSession, long)}, or
      * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
      * If applied to other events then they are not guaranteed to be reliable.
+     * <p>
+     * Callers of this method should loop until the method succeeds.
+     *
+     * <pre>{@code
+     * private Cluster cluster;
+     * // Lines omitted...
+     *
+     * cluster.idleStrategy().reset();
+     * while (!cluster.scheduleTimer(correlationId, deadline))
+     * {
+     *     cluster.idleStrategy().idle();
+     * }
+     * }</pre>
+     *
+     * The cluster's idle strategy must be used in the body of the loop to allow for the clustered service to be
+     * shutdown if required.
      *
      * @param correlationId to identify the timer when it expires. {@link Long#MAX_VALUE} not supported.
      * @param deadline      time after which the timer will fire. {@link Long#MAX_VALUE} not supported.
@@ -237,6 +253,9 @@ public interface Cluster
      * {@link ClusteredService#onSessionOpen(ClientSession, long)}, or
      * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
      * If applied to other events then they are not guaranteed to be reliable.
+     * <p>
+     * Callers of this method should loop until the method succeeds, see {@link
+     * io.aeron.cluster.service.Cluster#scheduleTimer(long, long)} for an example.
      *
      * @param correlationId for the timer provided when it was scheduled. {@link Long#MAX_VALUE} not supported.
      * @return true if the event to cancel request has been sent or false if back-pressure is applied.
@@ -248,6 +267,33 @@ public interface Cluster
      * Offer a message as ingress to the cluster for sequencing. This will happen efficiently over IPC to the
      * consensus module and have the cluster session of as the negative value of the
      * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME}.
+     * <p>
+     * Callers of this method should loop until the method succeeds.
+     *
+     * <pre>{@code
+     * private Cluster cluster;
+     * // Lines omitted...
+     *
+     * cluster.idleStrategy().reset();
+     * do
+     * {
+     *     final long position = cluster.offer(buffer, offset, length);
+     *     if (position > 0)
+     *     {
+     *         break;
+     *     }
+     *     else if (Publication.ADMIN_ACTION != position || Publication.BACK_PRESSURED != position)
+     *     {
+     *         throw new ClusterException("Internal offer failed: " + position);
+     *     }
+     *
+     *     cluster.idleStrategy.idle();
+     * }
+     * while (true);
+     * }</pre>
+     *
+     * The cluster's idle strategy must be used in the body of the loop to allow for the clustered service to be
+     * shutdown if required.
      *
      * @param buffer containing the message to be offered.
      * @param offset in the buffer at which the encoded message begins.
@@ -263,6 +309,9 @@ public interface Cluster
      * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME}.
      * <p>
      * The first vector must be left free to be filled in for the session message header.
+     * <p>
+     * Callers of this method should loop until the method succeeds, see
+     * {@link io.aeron.cluster.service.Cluster#offer(DirectBuffer, int, int)} for an example.
      *
      * @param vectors containing the message parts with the first left to be filled.
      * @return positive value if successful.
@@ -294,6 +343,9 @@ public interface Cluster
      *         }
      *     }
      * }</pre>
+     * <p>
+     * Callers of this method should loop until the method succeeds, see
+     * {@link io.aeron.cluster.service.Cluster#offer(DirectBuffer, int, int)} for an example.
      *
      * @param length      of the range to claim, in bytes.
      * @param bufferClaim to be populated if the claim succeeds.

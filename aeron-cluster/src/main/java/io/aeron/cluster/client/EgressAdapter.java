@@ -34,6 +34,7 @@ public final class EgressAdapter implements FragmentHandler
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
+    private final AdminResponseDecoder adminResponseDecoder = new AdminResponseDecoder();
     private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final EgressListener listener;
@@ -73,6 +74,7 @@ public final class EgressAdapter implements FragmentHandler
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("MethodLength")
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -148,6 +150,41 @@ public final class EgressAdapter implements FragmentHandler
                         newLeaderEventDecoder.leaderMemberId(),
                         newLeaderEventDecoder.ingressEndpoints());
                 }
+                break;
+            }
+
+            case AdminResponseDecoder.TEMPLATE_ID:
+            {
+                adminResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = adminResponseDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    final long correlationId = adminResponseDecoder.correlationId();
+                    final AdminRequestType requestType = adminResponseDecoder.requestType();
+                    final AdminResponseCode responseCode = adminResponseDecoder.responseCode();
+                    final String message = adminResponseDecoder.message();
+                    final int payloadOffset = adminResponseDecoder.offset() +
+                        AdminResponseDecoder.BLOCK_LENGTH +
+                        AdminResponseDecoder.messageHeaderLength() +
+                        message.length() +
+                        AdminResponseDecoder.payloadHeaderLength();
+                    final int payloadLength = adminResponseDecoder.payloadLength();
+                    listener.onAdminResponse(
+                        sessionId,
+                        correlationId,
+                        requestType,
+                        responseCode,
+                        message,
+                        buffer,
+                        payloadOffset,
+                        payloadLength);
+                }
+
                 break;
             }
         }

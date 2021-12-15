@@ -23,6 +23,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.ArrayUtil;
 
 class ConsensusAdapter implements FragmentHandler, AutoCloseable
 {
@@ -294,8 +295,17 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 final String responseChannel = backupQueryDecoder.responseChannel();
-                final byte[] credentials = new byte[backupQueryDecoder.encodedCredentialsLength()];
-                backupQueryDecoder.getEncodedCredentials(credentials, 0, credentials.length);
+                final int credentialsLength = backupQueryDecoder.encodedCredentialsLength();
+                final byte[] credentials;
+                if (credentialsLength > 0)
+                {
+                    credentials = new byte[credentialsLength];
+                    backupQueryDecoder.getEncodedCredentials(credentials, 0, credentials.length);
+                }
+                else
+                {
+                    credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
+                }
 
                 consensusModuleAgent.onBackupQuery(
                     backupQueryDecoder.correlationId(),

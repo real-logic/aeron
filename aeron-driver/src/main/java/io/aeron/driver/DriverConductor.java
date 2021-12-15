@@ -981,9 +981,8 @@ public final class DriverConductor implements Agent
 
         if (null == mdsSubscriptionLink)
         {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
         }
-        mdsSubscriptionLink.channelEndpoint().validateAllowsDestinationControl();
 
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId,
@@ -1020,9 +1019,8 @@ public final class DriverConductor implements Agent
 
         if (null == mdsSubscriptionLink)
         {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
         }
-        mdsSubscriptionLink.channelEndpoint().validateAllowsDestinationControl();
 
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
             registrationId, udpChannel, mdsSubscriptionLink.streamId(), mdsSubscriptionLink.aeronClient(), params);
@@ -1057,11 +1055,10 @@ public final class DriverConductor implements Agent
 
         if (null == mdsSubscriptionLink)
         {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
         }
 
         final ReceiveChannelEndpoint receiveChannelEndpoint = mdsSubscriptionLink.channelEndpoint();
-        receiveChannelEndpoint.validateAllowsDestinationControl();
 
         final AtomicCounter localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
             tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounter().id());
@@ -1089,7 +1086,7 @@ public final class DriverConductor implements Agent
         final long registrationId, final String destinationChannel, final long correlationId)
     {
         final SubscriptionLink subscription =
-            findSubscriptionLink(subscriptionLinks, registrationId, destinationChannel);
+            removeSubscriptionLink(subscriptionLinks, registrationId, destinationChannel);
 
         if (null == subscription)
         {
@@ -1849,7 +1846,7 @@ public final class DriverConductor implements Agent
         return subscriptionLink;
     }
 
-    private static SubscriptionLink findSubscriptionLink(
+    private static SubscriptionLink removeSubscriptionLink(
         final ArrayList<SubscriptionLink> subscriptionLinks, final long registrationId, final String channel)
     {
         SubscriptionLink subscriptionLink = null;
@@ -1860,6 +1857,7 @@ public final class DriverConductor implements Agent
             if (subscription.registrationId() == registrationId && subscription.channel().equals(channel))
             {
                 subscriptionLink = subscription;
+                fastUnorderedRemove(subscriptionLinks, i);
                 break;
             }
         }

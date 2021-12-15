@@ -17,7 +17,6 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -40,9 +39,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.File;
 import java.util.function.Supplier;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static io.aeron.ChannelUri.SPY_QUALIFIER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -54,6 +53,7 @@ class MultiDestinationSubscriptionTest
     private static final String PUB_UNICAST_URI = "aeron:udp?endpoint=localhost:24325";
     private static final String PUB_MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
     private static final String PUB_MDC_URI = "aeron:udp?control=localhost:24325|control-mode=dynamic";
+    private static final String PUB_IPC_URI = "aeron:ipc";
 
     private static final String SUB_URI = "aeron:udp?control-mode=manual";
     private static final String SUB_MDC_DESTINATION_URI = "aeron:udp?endpoint=localhost:24326|control=localhost:24325";
@@ -161,17 +161,30 @@ class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
-    void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
+    void addDestinationWithSpySubscription()
     {
-        final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
-        launch(mockErrorHandler);
+        launch(Tests::onError);
 
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(SPY_QUALIFIER + ":" + PUB_UNICAST_URI);
 
-        final RegistrationException registrationException = assertThrows(
-            RegistrationException.class, () -> subscription.addDestination("aeron-spy:" + SUB_MDC_DESTINATION_URI));
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
 
-        assertThat(registrationException.getMessage(), containsString("spies are invalid"));
+        Tests.awaitConnected(subscription);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void addDestinationWithIpcSubscription()
+    {
+        launch(Tests::onError);
+
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(PUB_IPC_URI);
+
+        publicationA = clientA.addPublication(PUB_IPC_URI, STREAM_ID);
+
+        Tests.awaitConnected(subscription);
     }
 
     @Test

@@ -75,7 +75,7 @@ public:
 
     inline this_t &prefix(const std::string &prefix)
     {
-        if (m_prefix && !m_prefix->empty() && !(m_prefix->compare(SPY_QUALIFIER)))
+        if (!prefix.empty() && prefix != SPY_QUALIFIER)
         {
             throw IllegalArgumentException("invalid prefix: " + prefix, SOURCEINFO);
         }
@@ -334,7 +334,7 @@ public:
 
     inline this_t &receiverWindowLength(std::nullptr_t)
     {
-        m_socketRcvbufLength.reset(nullptr);
+        m_receiverWindowLength.reset(nullptr);
         return *this;
     }
 

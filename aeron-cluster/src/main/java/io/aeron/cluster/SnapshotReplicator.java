@@ -19,10 +19,12 @@ import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 class SnapshotReplicator
 {
@@ -39,19 +41,19 @@ class SnapshotReplicator
     {
         private RecordingLog.Snapshot snapshot;
         private ClusterMember snapshotMember;
-        private long requestCorrelationId;
-        private long replicationCorrelationId;
+        private long correlationId;
+        private long replicationId;
         private boolean isComplete = true;
-        private long replicatedRecordingId;
+        private long destinationRecordingId;
         private ArchiveException ex;
 
         private void reset(final RecordingLog.Snapshot snapshot, final ClusterMember snapshotMember)
         {
             this.snapshot = snapshot;
             this.snapshotMember = snapshotMember;
-            this.requestCorrelationId = Aeron.NULL_VALUE;
-            this.replicationCorrelationId = Aeron.NULL_VALUE;
-            this.replicatedRecordingId = Aeron.NULL_VALUE;
+            this.correlationId = Aeron.NULL_VALUE;
+            this.replicationId = Aeron.NULL_VALUE;
+            this.destinationRecordingId = Aeron.NULL_VALUE;
             this.isComplete = null == snapshot;
         }
 
@@ -64,18 +66,18 @@ class SnapshotReplicator
 
             if (null != ex)
             {
-                if (Aeron.NULL_VALUE != replicationCorrelationId)
+                if (Aeron.NULL_VALUE != replicationId)
                 {
-                    archive.stopReplication(replicationCorrelationId);
+                    archive.stopReplication(replicationId);
                 }
 
                 return 0;
             }
 
             final int workDone;
-            if (Aeron.NULL_VALUE == requestCorrelationId)
+            if (Aeron.NULL_VALUE == correlationId)
             {
-                requestCorrelationId = startReplication();
+                correlationId = startReplication();
                 workDone = 1;
             }
             else
@@ -93,7 +95,7 @@ class SnapshotReplicator
             final long correlationId = ctx.aeron().nextCorrelationId();
             final boolean successfulOffer = archive.archiveProxy().replicate(
                 snapshot.recordingId,
-                Aeron.NULL_VALUE,
+                RecordingPos.NULL_RECORDING_ID,
                 AeronArchive.NULL_POSITION,
                 archive.context().controlRequestStreamId(),
                 srcArchiveChannel,
@@ -115,25 +117,25 @@ class SnapshotReplicator
             return snapshot;
         }
 
-        public long replicatedRecordingId()
+        public long destinationRecordingId()
         {
-            return replicatedRecordingId;
+            return destinationRecordingId;
         }
 
         public void onArchiveControlError(final long correlationId, final ArchiveException ex)
         {
-            if (correlationId == requestCorrelationId || correlationId == replicationCorrelationId)
+            if (correlationId == this.correlationId || correlationId == replicationId)
             {
                 this.ex = ex;
                 this.isComplete = true;
             }
         }
 
-        public void onArchiveControlResponse(final long correlationId, final long relevantId)
+        public void onArchiveControlResponse(final long correlationId, final long replicationId)
         {
-            if (correlationId == requestCorrelationId)
+            if (correlationId == this.correlationId)
             {
-                replicationCorrelationId = relevantId;
+                this.replicationId = replicationId;
             }
         }
 
@@ -143,15 +145,20 @@ class SnapshotReplicator
             final long position,
             final RecordingSignal signal)
         {
-            if (correlationId == replicationCorrelationId)
+            if (correlationId == replicationId)
             {
                 switch (signal)
                 {
                     case EXTEND:
-                        replicatedRecordingId = recordingId;
+                        destinationRecordingId = recordingId;
                         break;
 
                     case STOP:
+                        if (Aeron.NULL_VALUE == destinationRecordingId)
+                        {
+                            destinationRecordingId = recordingId;
+                        }
+
                         isComplete = true;
                 }
             }
@@ -166,9 +173,10 @@ class SnapshotReplicator
     private AeronArchive archive;
     private final ConsensusModule.Context ctx;
     private final ConsensusPublisher consensusPublisher;
-    private final long queryTimeoutMs = 5_000;
+    private final long queryTimeoutMs;
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
     private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>(4);
+    private int snapshotCursor = 0;
     private final ActiveReplication activeReplication = new ActiveReplication();
 
     private ClusterMember snapshotMember;
@@ -181,6 +189,7 @@ class SnapshotReplicator
     {
         this.ctx = ctx;
         this.consensusPublisher = consensusPublisher;
+        this.queryTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.dynamicJoinIntervalNs());
     }
 
     public void archive(final AeronArchive archive)
@@ -192,8 +201,11 @@ class SnapshotReplicator
     {
         this.snapshotMember = snapshotMember;
         this.logPosition = logPosition;
+
         snapshotsToRetrieve.clear();
         snapshotsRetrieved.clear();
+        snapshotCursor = 0;
+
         state = State.QUERY;
     }
 
@@ -205,12 +217,14 @@ class SnapshotReplicator
                 return query(nowMs, thisMember);
 
             case REPLICATE:
-                return replicate(nowMs);
+                return replicate();
 
             case COMPLETE:
             case FAILED:
                 snapshotsToRetrieve.clear();
                 snapshotsRetrieved.clear();
+                snapshotCursor = 0;
+
                 state = State.IDLE;
                 break;
 
@@ -228,7 +242,6 @@ class SnapshotReplicator
 
         if (null == snapshotMember || Aeron.NULL_VALUE == logPosition)
         {
-            // TODO: Log warning?
             state = State.IDLE;
             return 0;
         }
@@ -248,7 +261,7 @@ class SnapshotReplicator
         return workDone;
     }
 
-    private int replicate(final long nowMs)
+    private int replicate()
     {
         if (activeReplication.isComplete())
         {
@@ -263,19 +276,21 @@ class SnapshotReplicator
             if (null != completeSnapshot)
             {
                 snapshotsRetrieved.add(new RecordingLog.Snapshot(
-                    activeReplication.replicatedRecordingId(),
+                    activeReplication.destinationRecordingId(),
                     completeSnapshot.leadershipTermId,
                     completeSnapshot.termBaseLogPosition,
                     completeSnapshot.logPosition,
                     completeSnapshot.timestamp,
                     completeSnapshot.serviceId));
+
                 activeReplication.reset(null, null);
             }
 
-            if (!snapshotsToRetrieve.isEmpty())
+            if (snapshotCursor < snapshotsToRetrieve.size())
             {
-                final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.remove(snapshotsToRetrieve.size() - 1);
+                final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
                 activeReplication.reset(snapshot, snapshotMember);
+                snapshotCursor++;
             }
             else
             {
@@ -292,8 +307,11 @@ class SnapshotReplicator
         final SnapshotRecordingsDecoder decoder,
         final long nowMs)
     {
-        if (this.queryCorrelationId == correlationId)
+        if (this.queryCorrelationId == correlationId &&
+            validateSnapshotRecordings(decoder, logPosition, ctx.serviceCount()))
         {
+            decoder.sbeRewind();
+
             snapshotsToRetrieve.clear();
 
             final SnapshotRecordingsDecoder.SnapshotsDecoder snapshots = decoder.snapshots();
@@ -314,9 +332,38 @@ class SnapshotReplicator
                     state = State.REPLICATE;
                 }
             }
-            this.sendQueryDeadlineMs = nowMs + 100;
+            this.sendQueryDeadlineMs = nowMs + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
             this.queryCorrelationId = Aeron.NULL_VALUE;
         }
+    }
+
+    private boolean validateSnapshotRecordings(
+        final SnapshotRecordingsDecoder decoder,
+        final long logPosition,
+        final int serviceCount)
+    {
+        final SnapshotRecordingsDecoder.SnapshotsDecoder snapshots = decoder.snapshots();
+        int serviceSnapshotCount = 0;
+        int consensusModuleSnapshotCount = 0;
+
+        while (snapshots.hasNext())
+        {
+            snapshots.next();
+
+            if (logPosition == snapshots.logPosition())
+            {
+                if (0 <= snapshots.serviceId())
+                {
+                    serviceSnapshotCount++;
+                }
+                else if (ConsensusModule.Configuration.SERVICE_ID == snapshots.serviceId())
+                {
+                    consensusModuleSnapshotCount++;
+                }
+            }
+        }
+
+        return serviceCount == serviceSnapshotCount && 1 == consensusModuleSnapshotCount;
     }
 
     boolean isComplete()

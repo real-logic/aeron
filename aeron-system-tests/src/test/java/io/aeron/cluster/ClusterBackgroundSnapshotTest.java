@@ -29,7 +29,7 @@ import static io.aeron.test.cluster.TestCluster.aCluster;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
-public class ClusterHotSnapshotTest
+public class ClusterBackgroundSnapshotTest
 {
     @RegisterExtension
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
@@ -41,6 +41,9 @@ public class ClusterHotSnapshotTest
         final CountDownLatch snapshotLatch = new CountDownLatch(1);
 
         final TestCluster cluster;
+        final int messageCount1 = 10;
+        final int messageCount2 = 1000;
+
         try
         {
             cluster = aCluster().withStaticNodes(3).start();
@@ -48,15 +51,13 @@ public class ClusterHotSnapshotTest
 
             final TestNode leader = cluster.awaitLeader();
 
-            final int messageCount1 = 10;
-            final int messageCount2 = 1000;
             cluster.connectClient();
             cluster.sendMessages(messageCount1);
             cluster.awaitResponseMessageCount(messageCount1);
 
             cluster.setSnapshotLatch(snapshotLatch);
 
-            cluster.takeHotSnapshot(leader);
+            cluster.takeBackgroundSnapshot(leader);
             cluster.sendMessages(messageCount2);
             cluster.awaitResponseMessageCount(messageCount1 + messageCount2);
         }
@@ -66,5 +67,32 @@ public class ClusterHotSnapshotTest
         }
 
         cluster.awaitSnapshotCount(1);
+        cluster.awaitServicesMessageCount(messageCount1 + messageCount2);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    public void shouldInterleaveMultipleSnapshotsWithMessages()
+    {
+        final TestCluster cluster;
+        final int messageCount = 10;
+        final int snapshotCount = 2;
+
+        cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        cluster.connectClient();
+
+        for (int i = 0; i < snapshotCount; i++)
+        {
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponseMessageCount(messageCount * (i + 1));
+            cluster.awaitNeutralControlToggle(leader);
+            cluster.takeBackgroundSnapshot(leader);
+        }
+
+        cluster.awaitServicesMessageCount(snapshotCount * messageCount);
+        cluster.awaitSnapshotCount(snapshotCount);
     }
 }

@@ -431,7 +431,7 @@ public class ConsensusModuleAgentTest
         agent.role(Cluster.Role.LEADER);
         assertEquals(ConsensusModule.State.ACTIVE.code(), stateValue.get());
 
-        HOT_SNAPSHOT.toggle(mockControlToggle);
+        BACKGROUND_SNAPSHOT.toggle(mockControlToggle);
         clock.update(SLOW_TICK_INTERVAL_MS, TimeUnit.MILLISECONDS);
         MatcherAssert.assertThat(agent.doWork(), greaterThan(0));
 

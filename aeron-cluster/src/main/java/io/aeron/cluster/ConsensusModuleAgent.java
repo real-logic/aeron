@@ -2199,10 +2199,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     snapshot.logPosition,
                     snapshot.timestamp,
                     snapshot.serviceId);
+
+                ctx.snapshotCounter().increment();
             }
 
             recordingLog.force(ctx.fileSyncLevel());
-            ctx.snapshotCounter().increment();
         }
 
 
@@ -2285,7 +2286,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 }
                 break;
 
-            case HOT_SNAPSHOT:
+            case BACKGROUND_SNAPSHOT:
                 if (ConsensusModule.State.ACTIVE == state)
                 {
                     final ClusterMember snapshotMember = followerMemberForSnapshot();

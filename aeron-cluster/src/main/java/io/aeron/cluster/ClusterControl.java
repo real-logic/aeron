@@ -80,7 +80,7 @@ public class ClusterControl
         /**
          * Take a snapshot of cluster state on a single follower node.
          */
-        HOT_SNAPSHOT(7);
+        BACKGROUND_SNAPSHOT(7);
 
         private final int code;
 

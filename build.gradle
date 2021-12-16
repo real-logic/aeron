@@ -810,6 +810,11 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
         testImplementation project(path: ':aeron-cluster')
+        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+        testImplementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        // Avoid Javac warning about missing dependency from ByteBuddy
+        testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
+        testCompileOnly "com.google.code.findbugs:jsr305:${findbugsJsr305Version}"
         if (buildJavaVersion == 8) {
             def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
             testImplementation files(jdkHome.resolve("lib/tools.jar").toFile())

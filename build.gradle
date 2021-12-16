@@ -52,7 +52,9 @@ def checkstyleVersion = '9.2'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.8.2'
 def mockitoVersion = '4.1.0'
-def byteBuddyVersion = '1.12.3'
+def byteBuddyVersion = '1.12.4'
+def findbugsAnnotationsVersion = '3.0.1'
+def findbugsJsr305Version = '3.0.2'
 def hdrHistogramVersion = '2.1.12'
 
 ext {
@@ -660,6 +662,11 @@ project(':aeron-agent') {
         implementation aeronClusterProject
         implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         implementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+        // Avoid Javac warning about missing dependency from ByteBuddy
+        compileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
+        compileOnly "com.google.code.findbugs:jsr305:${findbugsJsr305Version}"
+        testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
+        testCompileOnly "com.google.code.findbugs:jsr305:${findbugsJsr305Version}"
         testImplementation project(':aeron-test-support')
     }
 

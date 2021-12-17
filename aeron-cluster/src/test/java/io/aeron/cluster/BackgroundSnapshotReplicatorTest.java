@@ -59,8 +59,12 @@ class BackgroundSnapshotReplicatorTest
         .errorLog(mockErrorLog);
     private final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
     private final StubNanoClock clock = new StubNanoClock(100, 10);
-
+    private final long logPositionForSnapshot = 298374234L;
     private final Random random = new Random();
+    private final ClusterMember thisMember = new ClusterMember(
+        1, "ingress:1000", "consensus:1001", "log:1002", "catchup:1003", "archive:1004", "endpoints...");
+    private final ClusterMember memberTakingSnapshot = new ClusterMember(
+        2, "ingress:2000", "consensus:2001", "log:2002", "catchup:2003", "archive:2004", "endpoints...");
 
     @BeforeEach
     void setUp()
@@ -73,6 +77,7 @@ class BackgroundSnapshotReplicatorTest
         recordingsEncoder.wrap(buffer, 0);
         recordingsDecoder.wrap(
             buffer, 0, SnapshotRecordingsDecoder.BLOCK_LENGTH, SnapshotRecordingsDecoder.SCHEMA_VERSION);
+        consensusModuleCtx.replicationChannel("aeron:udp?endpoint=archive:1004");
     }
 
     @ParameterizedTest
@@ -83,16 +88,8 @@ class BackgroundSnapshotReplicatorTest
         when(mockArchiveProxy.replicate(
             anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any(), anyLong(), anyLong())).thenReturn(true);
 
-        consensusModuleCtx.replicationChannel("aeron:udp?endpoint=archive:1004");
-
-        final long logPositionForSnapshot = 298374234L;
         final long controlSessionId = mockAeronArchive.controlSessionId();
         final List<TestSnapshotInfo> testSnapshots = createSnapshotInfo(2, logPositionForSnapshot);
-
-        final ClusterMember thisMember = new ClusterMember(
-            1, "ingress:1000", "consensus:1001", "log:1002", "catchup:1003", "archive:1004", "endpoints...");
-        final ClusterMember memberTakingSnapshot = new ClusterMember(
-            2, "ingress:2000", "consensus:2001", "log:2002", "catchup:2003", "archive:2004", "endpoints...");
 
         final BackgroundSnapshotReplicator snapshotReplicator = new BackgroundSnapshotReplicator(
             consensusModuleCtx, mockConsensusPublisher);
@@ -171,16 +168,8 @@ class BackgroundSnapshotReplicatorTest
         when(mockArchiveProxy.replicate(
             anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any(), anyLong(), anyLong())).thenReturn(true);
 
-        consensusModuleCtx.replicationChannel("aeron:udp?endpoint=archive:1004");
-
-        final long logPositionForSnapshot = 298374234L;
         final long controlSessionId = mockAeronArchive.controlSessionId();
         final List<TestSnapshotInfo> testSnapshots = createSnapshotInfo(2, logPositionForSnapshot);
-
-        final ClusterMember thisMember = new ClusterMember(
-            1, "ingress:1000", "consensus:1001", "log:1002", "catchup:1003", "archive:1004", "endpoints...");
-        final ClusterMember memberTakingSnapshot = new ClusterMember(
-            2, "ingress:2000", "consensus:2001", "log:2002", "catchup:2003", "archive:2004", "endpoints...");
 
         final BackgroundSnapshotReplicator snapshotReplicator = new BackgroundSnapshotReplicator(
             consensusModuleCtx, mockConsensusPublisher);
@@ -233,16 +222,7 @@ class BackgroundSnapshotReplicatorTest
         when(mockArchiveProxy.replicate(
             anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any(), anyLong(), anyLong())).thenReturn(true);
 
-        consensusModuleCtx.replicationChannel("aeron:udp?endpoint=archive:1004");
-
-        final long logPositionForSnapshot = 298374234L;
-        final long controlSessionId = mockAeronArchive.controlSessionId();
         final List<TestSnapshotInfo> testSnapshots = createSnapshotInfo(2, logPositionForSnapshot);
-
-        final ClusterMember thisMember = new ClusterMember(
-            1, "ingress:1000", "consensus:1001", "log:1002", "catchup:1003", "archive:1004", "endpoints...");
-        final ClusterMember memberTakingSnapshot = new ClusterMember(
-            2, "ingress:2000", "consensus:2001", "log:2002", "catchup:2003", "archive:2004", "endpoints...");
 
         final BackgroundSnapshotReplicator snapshotReplicator = new BackgroundSnapshotReplicator(
             consensusModuleCtx, mockConsensusPublisher);
@@ -275,6 +255,31 @@ class BackgroundSnapshotReplicatorTest
         snapshotReplicator.doWork(clock.nextTime(), thisMember);
 
         verify(mockArchiveProxy).replicate(
+            anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any(), anyLong(), anyLong());
+    }
+
+    @Test
+    @SuppressWarnings("checkstyle:methodlength")
+    void shouldNotRespondToSnapshotRecordingsMessageWhenIdle()
+    {
+        when(mockArchiveProxy.replicate(
+            anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any(), anyLong(), anyLong())).thenReturn(true);
+
+        final List<TestSnapshotInfo> testSnapshots = createSnapshotInfo(2, logPositionForSnapshot);
+
+        final BackgroundSnapshotReplicator snapshotReplicator = new BackgroundSnapshotReplicator(
+            consensusModuleCtx, mockConsensusPublisher);
+        snapshotReplicator.archive(mockAeronArchive);
+
+        recordingsEncoder.wrap(buffer, 0).correlationId(counter.get());
+        applyTestSnapshotsToEncoder(testSnapshots, recordingsEncoder);
+        recordingsEncoder.memberEndpoints(memberTakingSnapshot.endpoints());
+        snapshotReplicator.onSnapshotRecordings(counter.get(), recordingsDecoder.sbeRewind(), 2);
+
+        // Replicate first snapshot...
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
+
+        verify(mockArchiveProxy, never()).replicate(
             anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any(), anyLong(), anyLong());
     }
 

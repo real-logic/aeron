@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-class SnapshotReplicator
+class BackgroundSnapshotReplicator
 {
     enum State
     {
@@ -185,7 +185,7 @@ class SnapshotReplicator
     private long sendQueryDeadlineMs = 0;
     private State state = State.IDLE;
 
-    SnapshotReplicator(final ConsensusModule.Context ctx, final ConsensusPublisher consensusPublisher)
+    BackgroundSnapshotReplicator(final ConsensusModule.Context ctx, final ConsensusPublisher consensusPublisher)
     {
         this.ctx = ctx;
         this.consensusPublisher = consensusPublisher;

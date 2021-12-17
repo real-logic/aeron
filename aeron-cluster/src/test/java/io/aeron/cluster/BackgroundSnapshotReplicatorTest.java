@@ -26,7 +26,6 @@ import io.aeron.cluster.codecs.SnapshotRecordingsEncoder;
 import io.aeron.test.StubNanoClock;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-class SnapshotReplicatorTest
+class BackgroundSnapshotReplicatorTest
 {
     private final ConsensusPublisher mockConsensusPublisher = mock(ConsensusPublisher.class);
     private final Aeron mockAeron = mock(Aeron.class);
@@ -95,7 +94,7 @@ class SnapshotReplicatorTest
         final ClusterMember memberTakingSnapshot = new ClusterMember(
             2, "ingress:2000", "consensus:2001", "log:2002", "catchup:2003", "archive:2004", "endpoints...");
 
-        final SnapshotReplicator snapshotReplicator = new SnapshotReplicator(
+        final BackgroundSnapshotReplicator snapshotReplicator = new BackgroundSnapshotReplicator(
             consensusModuleCtx, mockConsensusPublisher);
         snapshotReplicator.archive(mockAeronArchive);
 
@@ -183,7 +182,7 @@ class SnapshotReplicatorTest
         final ClusterMember memberTakingSnapshot = new ClusterMember(
             2, "ingress:2000", "consensus:2001", "log:2002", "catchup:2003", "archive:2004", "endpoints...");
 
-        final SnapshotReplicator snapshotReplicator = new SnapshotReplicator(
+        final BackgroundSnapshotReplicator snapshotReplicator = new BackgroundSnapshotReplicator(
             consensusModuleCtx, mockConsensusPublisher);
         snapshotReplicator.archive(mockAeronArchive);
 
@@ -245,7 +244,7 @@ class SnapshotReplicatorTest
         final ClusterMember memberTakingSnapshot = new ClusterMember(
             2, "ingress:2000", "consensus:2001", "log:2002", "catchup:2003", "archive:2004", "endpoints...");
 
-        final SnapshotReplicator snapshotReplicator = new SnapshotReplicator(
+        final BackgroundSnapshotReplicator snapshotReplicator = new BackgroundSnapshotReplicator(
             consensusModuleCtx, mockConsensusPublisher);
         snapshotReplicator.archive(mockAeronArchive);
 

@@ -140,7 +140,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private final ArrayList<RecordingLog.Snapshot> dynamicJoinSnapshots = new ArrayList<>();
-    private final SnapshotReplicator snapshotReplicator;
+    private final BackgroundSnapshotReplicator snapshotReplicator;
 
     private RecordingLog.RecoveryPlan recoveryPlan;
     private AeronArchive archive;
@@ -183,7 +183,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         Arrays.fill(serviceClientIds, NULL_VALUE);
         this.serviceAckQueues = ServiceAck.newArrayOfQueues(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(activeMembers);
-        this.snapshotReplicator = new SnapshotReplicator(ctx, consensusPublisher);
+        this.snapshotReplicator = new BackgroundSnapshotReplicator(ctx, consensusPublisher);
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();

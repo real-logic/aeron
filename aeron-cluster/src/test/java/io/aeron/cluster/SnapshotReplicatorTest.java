@@ -23,8 +23,10 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 import io.aeron.cluster.codecs.SnapshotRecordingsEncoder;
+import io.aeron.test.StubNanoClock;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,6 +59,7 @@ class SnapshotReplicatorTest
         .aeron(mockAeron)
         .errorLog(mockErrorLog);
     private final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
+    private final StubNanoClock clock = new StubNanoClock(100, 10);
 
     private final Random random = new Random();
 
@@ -99,17 +102,17 @@ class SnapshotReplicatorTest
         snapshotReplicator.setLatestSnapshot(memberTakingSnapshot, logPositionForSnapshot);
 
         // Query
-        snapshotReplicator.doWork(1, thisMember);
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
         verify(mockConsensusPublisher).snapshotRecordingQuery(any(), anyLong(), eq(thisMember.id()));
 
-        recordingsEncoder.correlationId(counter.get());
+        recordingsEncoder.wrap(buffer, 0).correlationId(counter.get());
         applyTestSnapshotsToEncoder(testSnapshots, recordingsEncoder);
         recordingsEncoder.memberEndpoints(memberTakingSnapshot.endpoints());
 
-        snapshotReplicator.onSnapshotRecordings(counter.get(), recordingsDecoder, 2);
+        snapshotReplicator.onSnapshotRecordings(counter.get(), recordingsDecoder.sbeRewind(), 2);
 
         // Replicate first snapshot...
-        snapshotReplicator.doWork(3, thisMember);
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
 
         final ArgumentCaptor<Long> correlationIdCaptor = ArgumentCaptor.forClass(Long.TYPE);
 
@@ -133,7 +136,7 @@ class SnapshotReplicatorTest
         snapshotReplicator.onRecordingSignal(
             testSnapshots.get(0).replicationId, testSnapshots.get(0).dstRecordingId, 0, RecordingSignal.STOP);
 
-        snapshotReplicator.doWork(4, thisMember);
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
         assertFalse(snapshotReplicator.isComplete());
 
         verify(mockArchiveProxy).replicate(
@@ -156,7 +159,7 @@ class SnapshotReplicatorTest
         snapshotReplicator.onRecordingSignal(
             testSnapshots.get(1).replicationId, testSnapshots.get(1).dstRecordingId, 0, RecordingSignal.STOP);
 
-        snapshotReplicator.doWork(5, thisMember);
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
 
         assertTrue(snapshotReplicator.isComplete());
         final List<RecordingLog.Snapshot> snapshots = snapshotReplicator.snapshotsRetrieved();
@@ -187,17 +190,17 @@ class SnapshotReplicatorTest
         snapshotReplicator.setLatestSnapshot(memberTakingSnapshot, logPositionForSnapshot);
 
         // Query
-        snapshotReplicator.doWork(1, thisMember);
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
         verify(mockConsensusPublisher).snapshotRecordingQuery(any(), anyLong(), eq(thisMember.id()));
 
-        recordingsEncoder.correlationId(counter.get());
+        recordingsEncoder.wrap(buffer, 0).correlationId(counter.get());
         applyTestSnapshotsToEncoder(testSnapshots, recordingsEncoder);
         recordingsEncoder.memberEndpoints(memberTakingSnapshot.endpoints());
 
-        snapshotReplicator.onSnapshotRecordings(counter.get(), recordingsDecoder, 2);
+        snapshotReplicator.onSnapshotRecordings(counter.get(), recordingsDecoder.sbeRewind(), 2);
 
         // Replicate first snapshot...
-        snapshotReplicator.doWork(3, thisMember);
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
 
         final ArgumentCaptor<Long> correlationIdCaptor = ArgumentCaptor.forClass(Long.TYPE);
 
@@ -218,7 +221,7 @@ class SnapshotReplicatorTest
         snapshotReplicator.onArchiveControlError(replicationId1, failure);
 
         // Fail and cleanup
-        snapshotReplicator.doWork(4, thisMember);
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
 
         verify(mockErrorLog).record(failure);
         assertTrue(snapshotReplicator.snapshotsRetrieved().isEmpty());
@@ -249,71 +252,31 @@ class SnapshotReplicatorTest
         snapshotReplicator.setLatestSnapshot(memberTakingSnapshot, logPositionForSnapshot);
 
         // Query
-        snapshotReplicator.doWork(1, thisMember);
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
         verify(mockConsensusPublisher).snapshotRecordingQuery(any(), anyLong(), eq(thisMember.id()));
 
-        recordingsEncoder.correlationId(counter.get());
+        recordingsEncoder.wrap(buffer, 0).correlationId(counter.get());
         applyTestSnapshotsToEncoder(testSnapshots.subList(0, 1), recordingsEncoder);
         recordingsEncoder.memberEndpoints(memberTakingSnapshot.endpoints());
+        snapshotReplicator.onSnapshotRecordings(counter.get(), recordingsDecoder.sbeRewind(), 2);
 
-        snapshotReplicator.onSnapshotRecordings(counter.get(), recordingsDecoder, 2);
-
-        // Replicate first snapshot...
-        snapshotReplicator.doWork(3, thisMember);
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
 
         verify(mockArchiveProxy, never()).replicate(
             anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any(), anyLong(), anyLong());
 
-//        final ArgumentCaptor<Long> correlationIdCaptor = ArgumentCaptor.forClass(Long.TYPE);
-//
-//        verify(mockArchiveProxy).replicate(
-//            eq(testSnapshots.get(0).srcRecordingId),
-//            eq(RecordingPos.NULL_RECORDING_ID),
-//            eq(AeronArchive.NULL_POSITION),
-//            eq(aeronArchiveCtx.controlRequestStreamId()),
-//            contains("endpoint=" + memberTakingSnapshot.archiveEndpoint()),
-//            eq(null),
-//            eq(consensusModuleCtx.replicationChannel()),
-//            correlationIdCaptor.capture(),
-//            eq(controlSessionId));
-//
-//        snapshotReplicator.onArchiveControlResponse(correlationIdCaptor.getValue(), testSnapshots.get(0).replicationId);
-//        if (sendExtendSignal)
-//        {
-//            snapshotReplicator.onRecordingSignal(
-//                testSnapshots.get(0).replicationId, testSnapshots.get(0).dstRecordingId, 0, RecordingSignal.EXTEND);
-//        }
-//        snapshotReplicator.onRecordingSignal(
-//            testSnapshots.get(0).replicationId, testSnapshots.get(0).dstRecordingId, 0, RecordingSignal.STOP);
-//
-//        snapshotReplicator.doWork(4, thisMember);
-//        assertFalse(snapshotReplicator.isComplete());
-//
-//        verify(mockArchiveProxy).replicate(
-//            eq(testSnapshots.get(1).srcRecordingId),
-//            eq(RecordingPos.NULL_RECORDING_ID),
-//            eq(AeronArchive.NULL_POSITION),
-//            eq(aeronArchiveCtx.controlRequestStreamId()),
-//            contains("endpoint=" + memberTakingSnapshot.archiveEndpoint()),
-//            eq(null),
-//            eq(consensusModuleCtx.replicationChannel()),
-//            correlationIdCaptor.capture(),
-//            eq(controlSessionId));
-//
-//        snapshotReplicator.onArchiveControlResponse(correlationIdCaptor.getValue(), testSnapshots.get(1).replicationId);
-//        if (sendExtendSignal)
-//        {
-//            snapshotReplicator.onRecordingSignal(
-//                testSnapshots.get(1).replicationId, testSnapshots.get(1).dstRecordingId, 0, RecordingSignal.EXTEND);
-//        }
-//        snapshotReplicator.onRecordingSignal(
-//            testSnapshots.get(1).replicationId, testSnapshots.get(1).dstRecordingId, 0, RecordingSignal.STOP);
-//
-//        snapshotReplicator.doWork(5, thisMember);
-//
-//        assertTrue(snapshotReplicator.isComplete());
-//        final List<RecordingLog.Snapshot> snapshots = snapshotReplicator.snapshotsRetrieved();
-//        assertSnapshots(testSnapshots, snapshots);
+        snapshotReplicator.doWork(clock.nextTime(consensusModuleCtx.dynamicJoinIntervalNs()), thisMember);
+        verify(mockConsensusPublisher, times(2)).snapshotRecordingQuery(any(), anyLong(), eq(thisMember.id()));
+
+        recordingsEncoder.wrap(buffer, 0).correlationId(counter.get());
+        applyTestSnapshotsToEncoder(testSnapshots, recordingsEncoder);
+        recordingsEncoder.memberEndpoints(memberTakingSnapshot.endpoints());
+        snapshotReplicator.onSnapshotRecordings(counter.get(), recordingsDecoder.sbeRewind(), 2);
+
+        snapshotReplicator.doWork(clock.nextTime(), thisMember);
+
+        verify(mockArchiveProxy).replicate(
+            anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any(), anyLong(), anyLong());
     }
 
     private static void assertSnapshots(

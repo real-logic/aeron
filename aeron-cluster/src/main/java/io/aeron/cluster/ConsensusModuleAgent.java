@@ -30,6 +30,7 @@ import io.aeron.cluster.service.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.security.Authenticator;
+import io.aeron.security.AuthorisationService;
 import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 import org.agrona.collections.*;
@@ -127,6 +128,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final ExpandableRingBuffer.MessageConsumer followerServiceSessionMessageSweeper =
         this::followerServiceSessionMessageSweeper;
     private final Authenticator authenticator;
+    private final AuthorisationService authorisationService;
     private final ClusterSessionProxy sessionProxy;
     private final Aeron aeron;
     private final ConsensusModule.Context ctx;
@@ -202,6 +204,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         serviceProxy = new ServiceProxy(aeron.addPublication(ctx.controlChannel(), ctx.serviceStreamId()));
 
         authenticator = ctx.authenticatorSupplier().get();
+        authorisationService = ctx.authorisationServiceSupplier().get();
     }
 
     /**
@@ -365,7 +368,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
      */
     public String roleName()
     {
-        return "consensus-module_" + ctx.clusterId() + "_" + memberId;
+        final String agentRoleName = ctx.agentRoleName();
+        return null != agentRoleName ? agentRoleName : "consensus-module_" + ctx.clusterId() + "_" + memberId;
     }
 
     void onSessionConnect(
@@ -426,6 +430,81 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     session.close(ctx.countedErrorHandler());
                 }
             }
+        }
+    }
+
+    void onAdminRequest(
+        final long leadershipTermId,
+        final long clusterSessionId,
+        final long correlationId,
+        final AdminRequestType requestType,
+        final DirectBuffer requestPayload,
+        final int requestPayloadOffset,
+        final int requestPayloadLength)
+    {
+        if (Cluster.Role.LEADER != role)
+        {
+            return;
+        }
+
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null == session || session.state() != OPEN)
+        {
+            return;
+        }
+
+        if (leadershipTermId != this.leadershipTermId)
+        {
+            egressPublisher.sendAdminResponse(
+                session,
+                correlationId,
+                requestType,
+                AdminResponseCode.ERROR,
+                "Invalid leadership term: expected " + this.leadershipTermId + ", got " + leadershipTermId);
+            return;
+        }
+
+        if (!authorisationService.isAuthorised(
+            AdminRequestDecoder.TEMPLATE_ID, requestType, session.encodedPrincipal()))
+        {
+            egressPublisher.sendAdminResponse(
+                session,
+                correlationId,
+                requestType,
+                AdminResponseCode.UNAUTHORISED_ACCESS,
+                "Execution of the " + requestType + " request was not authorised");
+            return;
+        }
+
+        if (AdminRequestType.SNAPSHOT == requestType)
+        {
+            if (ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle))
+            {
+                egressPublisher.sendAdminResponse(
+                    session,
+                    correlationId,
+                    requestType,
+                    AdminResponseCode.OK,
+                    "");
+            }
+            else
+            {
+                egressPublisher.sendAdminResponse(
+                    session,
+                    correlationId,
+                    requestType,
+                    AdminResponseCode.ERROR,
+                    "Failed to switch ClusterControl to the ToggleState.SNAPSHOT state");
+            }
+        }
+        else
+        {
+            egressPublisher.sendAdminResponse(
+                session,
+                correlationId,
+                requestType,
+                AdminResponseCode.ERROR,
+                "Unknown request type: " + requestType);
         }
     }
 
@@ -1373,6 +1452,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 recoveryPlan.appendedLogPosition, recoveryPlan.log.initialTermId, recoveryPlan.log.termBufferLength);
             channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(recoveryPlan.log.mtuLength));
         }
+        else
+        {
+            ensureConsistentInitialTermId(channelUri);
+        }
 
         final String channel = channelUri.toString();
         final ExclusivePublication publication = aeron.addExclusivePublication(channel, ctx.logStreamId());
@@ -1569,25 +1652,25 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         logAdapter.disconnect(ctx.countedErrorHandler(), logPosition);
     }
 
-    boolean electionComplete()
+    boolean appendNewLeadershipTermEvent(final long nowNs)
+    {
+        return logPublisher.appendNewLeadershipTermEvent(
+            leadershipTermId,
+            clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS),
+            election.logPosition(),
+            memberId,
+            logPublisher.sessionId(),
+            clusterTimeUnit,
+            ctx.appVersion());
+    }
+
+    void electionComplete(final long nowNs)
     {
         final long logPosition = election.logPosition();
-        final long now = clusterClock.time();
-        final long nowNs = clusterTimeUnit.toNanos(now);
 
         if (Cluster.Role.LEADER == role)
         {
-            if (!logPublisher.isConnected() || !logPublisher.appendNewLeadershipTermEvent(
-                leadershipTermId,
-                now,
-                logPosition,
-                memberId,
-                logPublisher.sessionId(),
-                clusterTimeUnit,
-                ctx.appVersion()))
-            {
-                return false;
-            }
+            final long now = clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
 
             timeOfLastLogUpdateNs = nowNs - leaderHeartbeatIntervalNs;
             timerService.currentTime(now);
@@ -1608,8 +1691,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         election = null;
 
         connectIngress();
-
-        return true;
     }
 
     boolean dynamicJoinComplete(final long nowNs)
@@ -3178,6 +3259,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             ingressAdapter.connect(aeron.addSubscription(
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
+    }
+
+    private void ensureConsistentInitialTermId(final ChannelUri channelUri)
+    {
+        channelUri.put(INITIAL_TERM_ID_PARAM_NAME, "0");
+        channelUri.put(TERM_ID_PARAM_NAME, "0");
+        channelUri.put(TERM_OFFSET_PARAM_NAME, "0");
     }
 
     private void checkFollowerForConsensusPublication(final int followerMemberId)

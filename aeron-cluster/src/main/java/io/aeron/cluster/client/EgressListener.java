@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster.client;
 
+import io.aeron.cluster.codecs.AdminRequestType;
+import io.aeron.cluster.codecs.AdminResponseCode;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -69,9 +71,33 @@ public interface EgressListener
      * @param clusterSessionId to which the event belongs.
      * @param leadershipTermId for identifying the active term of leadership
      * @param leaderMemberId   identity of the active leader.
-     * @param ingressEndpoints  for connecting to the cluster which can be updated due to dynamic membership.
+     * @param ingressEndpoints for connecting to the cluster which can be updated due to dynamic membership.
      */
     default void onNewLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String ingressEndpoints)
+    {
+    }
+
+    /**
+     * Message returned in response to an admin request.
+     *
+     * @param clusterSessionId to which the response belongs.
+     * @param correlationId    of the admin request.
+     * @param requestType      of the admin request.
+     * @param responseCode     describing the response.
+     * @param message          describing the response (e.g. error message).
+     * @param payload          delivered with the response, can be empty.
+     * @param payloadOffset    into the payload buffer.
+     * @param payloadLength    of the payload.
+     */
+    default void onAdminResponse(
+        long clusterSessionId,
+        long correlationId,
+        AdminRequestType requestType,
+        AdminResponseCode responseCode,
+        String message,
+        DirectBuffer payload,
+        int payloadOffset,
+        int payloadLength)
     {
     }
 }

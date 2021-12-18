@@ -21,6 +21,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
+import io.aeron.security.AuthorisationService;
 import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.status.ReadableCounter;
 import io.aeron.test.Tests;
@@ -72,6 +73,7 @@ public class ConsensusModuleAgentTest
         .aeron(mockAeron)
         .clusterMemberId(0)
         .authenticatorSupplier(new DefaultAuthenticatorSupplier())
+        .authorisationServiceSupplier(() -> AuthorisationService.DENY_ALL)
         .clusterMarkFile(mock(ClusterMarkFile.class))
         .archiveContext(new AeronArchive.Context())
         .logPublisher(mockLogPublisher)
@@ -93,6 +95,29 @@ public class ConsensusModuleAgentTest
         when(mockAeron.addSubscription(anyString(), anyInt(), eq(null), any(UnavailableImageHandler.class)))
             .thenReturn(mock(Subscription.class));
         when(mockResponsePublication.isConnected()).thenReturn(TRUE);
+    }
+
+    @Test
+    public void shouldGenerateRoleNameWhenNotSet()
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        ctx.epochClock(clock).clusterClock(clock);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+        assertEquals("consensus-module_0_0", agent.roleName());
+    }
+
+    @Test
+    public void shouldUseAssignedRoleName()
+    {
+        final String expectedRoleName = "test-role-name";
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        ctx.agentRoleName(expectedRoleName)
+            .epochClock(clock)
+            .clusterClock(clock);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+        assertEquals(expectedRoleName, agent.roleName());
     }
 
     @Test

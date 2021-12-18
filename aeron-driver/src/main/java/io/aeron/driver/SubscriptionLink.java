@@ -180,6 +180,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return !hasSessionId || this.sessionId == sessionId;
     }
 
+    boolean supportsMds()
+    {
+        return false;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -295,6 +300,12 @@ class NetworkSubscriptionLink extends SubscriptionLink
             streamId == this.streamId &&
             isWildcardOrSessionIdMatch(sessionId);
     }
+
+    boolean supportsMds()
+    {
+        return channelEndpoint.hasDestinationControl();
+    }
+
 }
 
 class IpcSubscriptionLink extends SubscriptionLink

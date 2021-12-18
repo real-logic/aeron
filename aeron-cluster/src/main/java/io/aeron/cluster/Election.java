@@ -15,15 +15,13 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ChannelUriStringBuilder;
-import io.aeron.CommonContext;
-import io.aeron.Image;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
@@ -404,7 +402,10 @@ class Election
                 if (NULL_POSITION != nextTermBaseLogPosition && nextTermBaseLogPosition < appendPosition)
                 {
                     consensusModuleAgent.truncateLogEntry(logLeadershipTermId, nextTermBaseLogPosition);
-                    appendPosition = consensusModuleAgent.prepareForNewLeadership(nextTermBaseLogPosition);
+                    throw new AeronEvent(
+                        "Truncating Cluster Log - leadershipTermId=" + logLeadershipTermId +
+                            " oldPosition=" + logPosition + " newPosition=" + nextTermBaseLogPosition,
+                        AeronException.Category.WARN);
                 }
 
                 this.leaderMember = leader;
@@ -771,19 +772,13 @@ class Election
         int workCount = consensusModuleAgent.updateLeaderPosition(nowNs, appendPosition);
         workCount += publishNewLeadershipTermOnInterval(nowNs);
 
-        if (ClusterMember.hasVotersAtPosition(clusterMembers, logPosition, leadershipTermId))
+        if (ClusterMember.hasVotersAtPosition(clusterMembers, logPosition, leadershipTermId) ||
+            (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()) &&
+            ClusterMember.hasQuorumAtPosition(clusterMembers, logPosition, leadershipTermId)))
         {
-            if (consensusModuleAgent.electionComplete())
+            if (consensusModuleAgent.appendNewLeadershipTermEvent(nowNs))
             {
-                state(CLOSED, nowNs);
-                workCount++;
-            }
-        }
-        else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()) &&
-            ClusterMember.hasQuorumAtPosition(clusterMembers, logPosition, leadershipTermId))
-        {
-            if (consensusModuleAgent.electionComplete())
-            {
+                consensusModuleAgent.electionComplete(nowNs);
                 state(CLOSED, nowNs);
                 workCount++;
             }
@@ -1011,10 +1006,8 @@ class Election
             leaderMember.publication(), leadershipTermId, logPosition, thisMember.id()))
         {
             consensusModuleAgent.leadershipTermId(leadershipTermId);
-            if (consensusModuleAgent.electionComplete())
-            {
-                state(CLOSED, nowNs);
-            }
+            consensusModuleAgent.electionComplete(nowNs);
+            state(CLOSED, nowNs);
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
         {
@@ -1153,9 +1146,10 @@ class Election
 
     private Subscription addFollowerSubscription()
     {
+        final Aeron aeron = ctx.aeron();
         final String channel = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
-            .tags(ctx.aeron().nextCorrelationId() + "," + ctx.aeron().nextCorrelationId())
+            .tags(aeron.nextCorrelationId() + "," + aeron.nextCorrelationId())
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .sessionId(logSessionId)
             .group(Boolean.TRUE)
@@ -1163,7 +1157,7 @@ class Election
             .alias("log")
             .build();
 
-        return ctx.aeron().addSubscription(channel, ctx.logStreamId());
+        return aeron.addSubscription(channel, ctx.logStreamId());
     }
 
     private void state(final ElectionState newState, final long nowNs)

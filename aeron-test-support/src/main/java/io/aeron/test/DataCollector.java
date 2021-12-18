@@ -20,7 +20,6 @@ import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
-import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +45,6 @@ public final class DataCollector
 {
     static final String THREAD_DUMP_FILE_NAME = "thread_dump.txt";
     static final AtomicInteger UNIQUE_ID = new AtomicInteger(0);
-    private static final String SEPARATOR = "-";
     private final Path rootDir;
     private final Set<Path> locations = new LinkedHashSet<>();
 
@@ -69,7 +67,6 @@ public final class DataCollector
      * Add a file/directory to be preserved.
      *
      * @param location file or directory to preserve.
-     * @see #dumpData(TestInfo)
      * @see #dumpData(String)
      */
     public void add(final Path location)
@@ -81,7 +78,6 @@ public final class DataCollector
      * Add a file/directory to be preserved.  Converting from a File to a Path if not null.
      *
      * @param location file or directory to preserve.
-     * @see #dumpData(TestInfo)
      * @see #dumpData(String)
      */
     public void add(final File location)
@@ -90,43 +86,6 @@ public final class DataCollector
         {
             add(location.toPath());
         }
-    }
-
-    /**
-     * Copy data from all the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
-     * <ul>
-     *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
-     *     <li>{@code $testClass} is the fully qualified class name of the test class.</li>
-     *     <li>{@code $testMethod} is the test method name.</li>
-     * </ul>
-     *
-     * @param testInfo test info from JUnit.
-     * @return {@code null} if no data was copied or an actual destination directory used.
-     * @see #dumpData(String)
-     */
-    public Path dumpData(final TestInfo testInfo)
-    {
-        final String testClass = testInfo.getTestClass().orElseThrow(IllegalStateException::new).getName();
-        final String testMethod = testInfo.getTestMethod().orElseThrow(IllegalStateException::new).getName();
-        return copyData(testClass + SEPARATOR + testMethod);
-    }
-
-    /**
-     * Copy data from all the added locations to the directory {@code $rootDir/$testClass_$testMethod}, where:
-     * <ul>
-     *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
-     *     <li>{@code $testClass} is the fully qualified class name of the test class.</li>
-     *     <li>{@code $testMethod} is the test method name.</li>
-     * </ul>
-     *
-     * @param testClass  name of the test class from JUnit.
-     * @param testMethod name of the test method from JUnit.
-     * @return {@code null} if no data was copied or an actual destination directory used.
-     * @see #dumpData(String)
-     */
-    public Path dumpData(final String testClass, final String testMethod)
-    {
-        return copyData(testClass + SEPARATOR + testMethod);
     }
 
     /**
@@ -289,7 +248,7 @@ public final class DataCollector
         Path path = rootDir.resolve(name);
         while (Files.exists(path))
         {
-            path = rootDir.resolve(name + SEPARATOR + UNIQUE_ID.incrementAndGet());
+            path = rootDir.resolve(name + "-" + UNIQUE_ID.incrementAndGet());
         }
 
         return Files.createDirectories(path);

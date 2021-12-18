@@ -553,7 +553,6 @@ public final class DriverConductor implements Agent
     void cleanupSubscriptionLink(final SubscriptionLink subscription)
     {
         final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
-
         if (null != channelEndpoint)
         {
             if (subscription.hasSessionId())
@@ -872,39 +871,23 @@ public final class DriverConductor implements Agent
 
     void onRemoveSubscription(final long registrationId, final long correlationId)
     {
-        final SubscriptionLink subscription = removeSubscriptionLink(subscriptionLinks, registrationId);
-        if (null == subscription)
+        boolean isAnySubscriptionFound = false;
+        for (int lastIndex = subscriptionLinks.size() - 1, i = lastIndex; i >= 0; i--)
         {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
+            final SubscriptionLink subscription = subscriptionLinks.get(i);
+            if (subscription.registrationId() == registrationId)
+            {
+                fastUnorderedRemove(subscriptionLinks, i, lastIndex--);
+
+                subscription.close();
+                cleanupSubscriptionLink(subscription);
+                isAnySubscriptionFound = true;
+            }
         }
 
-        subscription.close();
-        final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
-
-        if (null != channelEndpoint)
+        if (!isAnySubscriptionFound)
         {
-            if (subscription.hasSessionId())
-            {
-                if (0 == channelEndpoint.decRefToStreamAndSession(subscription.streamId(), subscription.sessionId()))
-                {
-                    receiverProxy.removeSubscription(
-                        channelEndpoint, subscription.streamId(), subscription.sessionId());
-                }
-            }
-            else
-            {
-                if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
-                {
-                    receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
-                }
-            }
-
-            if (channelEndpoint.shouldBeClosed())
-            {
-                receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
-                receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                channelEndpoint.closeIndicators();
-            }
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
         }
 
         clientProxy.operationSucceeded(correlationId);
@@ -976,28 +959,106 @@ public final class DriverConductor implements Agent
 
     void onAddRcvDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
+        if (destinationChannel.startsWith(IPC_CHANNEL))
+        {
+            onAddRcvIpcDestination(registrationId, destinationChannel, correlationId);
+        }
+        else if (destinationChannel.startsWith(SPY_QUALIFIER))
+        {
+            onAddRcvSpyDestination(registrationId, destinationChannel, correlationId);
+        }
+        else
+        {
+            onAddRcvNetworkDestination(registrationId, destinationChannel, correlationId);
+        }
+    }
+
+    void onAddRcvIpcDestination(final long registrationId, final String destinationChannel, final long correlationId)
+    {
+        final SubscriptionParams params =
+            SubscriptionParams.getSubscriptionParams(ChannelUri.parse(destinationChannel), ctx);
+        final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
+
+        if (null == mdsSubscriptionLink)
+        {
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
+        }
+
+        final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
+            registrationId,
+            mdsSubscriptionLink.streamId(),
+            destinationChannel,
+            mdsSubscriptionLink.aeronClient(),
+            params);
+
+        subscriptionLinks.add(subscriptionLink);
+        clientProxy.operationSucceeded(correlationId);
+
+        for (int i = 0, size = ipcPublications.size(); i < size; i++)
+        {
+            final IpcPublication publication = ipcPublications.get(i);
+            if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
+            {
+                clientProxy.onAvailableImage(
+                    publication.registrationId(),
+                    mdsSubscriptionLink.streamId(),
+                    publication.sessionId(),
+                    registrationId,
+                    linkIpcSubscription(publication, subscriptionLink).id(),
+                    publication.rawLog().fileName(),
+                    CommonContext.IPC_CHANNEL);
+            }
+        }
+    }
+
+    void onAddRcvSpyDestination(final long registrationId, final String destinationChannel, final long correlationId)
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+        final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
+
+        if (null == mdsSubscriptionLink)
+        {
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
+        }
+
+        final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
+            registrationId, udpChannel, mdsSubscriptionLink.streamId(), mdsSubscriptionLink.aeronClient(), params);
+
+        subscriptionLinks.add(subscriptionLink);
+        clientProxy.operationSucceeded(correlationId);
+
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = networkPublications.get(i);
+            if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
+            {
+                clientProxy.onAvailableImage(
+                    publication.registrationId(),
+                    mdsSubscriptionLink.streamId(),
+                    publication.sessionId(),
+                    registrationId,
+                    linkSpy(publication, subscriptionLink).id(),
+                    publication.rawLog().fileName(),
+                    CommonContext.IPC_CHANNEL);
+            }
+        }
+    }
+
+    void onAddRcvNetworkDestination(
+        final long registrationId, final String destinationChannel, final long correlationId)
+    {
         final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver, true);
         validateDestinationUri(udpChannel.channelUri(), destinationChannel);
 
-        SubscriptionLink subscriptionLink = null;
+        final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
 
-        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        if (null == mdsSubscriptionLink)
         {
-            final SubscriptionLink link = subscriptionLinks.get(i);
-            if (registrationId == link.registrationId())
-            {
-                subscriptionLink = link;
-                break;
-            }
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
         }
 
-        if (null == subscriptionLink)
-        {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
-        }
-
-        final ReceiveChannelEndpoint receiveChannelEndpoint = subscriptionLink.channelEndpoint();
-        receiveChannelEndpoint.validateAllowsDestinationControl();
+        final ReceiveChannelEndpoint receiveChannelEndpoint = mdsSubscriptionLink.channelEndpoint();
 
         final AtomicCounter localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
             tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounter().id());
@@ -1010,6 +1071,35 @@ public final class DriverConductor implements Agent
     }
 
     void onRemoveRcvDestination(final long registrationId, final String destinationChannel, final long correlationId)
+    {
+        if (destinationChannel.startsWith(IPC_CHANNEL) || destinationChannel.startsWith(SPY_QUALIFIER))
+        {
+            onRemoveRcvIpcOrSpyDestination(registrationId, destinationChannel, correlationId);
+        }
+        else
+        {
+            onRemoveRcvNetworkDestination(registrationId, destinationChannel, correlationId);
+        }
+    }
+
+    void onRemoveRcvIpcOrSpyDestination(
+        final long registrationId, final String destinationChannel, final long correlationId)
+    {
+        final SubscriptionLink subscription =
+            removeSubscriptionLink(subscriptionLinks, registrationId, destinationChannel);
+
+        if (null == subscription)
+        {
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
+        }
+
+        subscription.close();
+        cleanupSubscriptionLink(subscription);
+        clientProxy.operationSucceeded(correlationId);
+    }
+
+    void onRemoveRcvNetworkDestination(
+        final long registrationId, final String destinationChannel, final long correlationId)
     {
         ReceiveChannelEndpoint receiveChannelEndpoint = null;
 
@@ -1369,8 +1459,7 @@ public final class DriverConductor implements Agent
     }
 
     private void validateChannelSendTimestampOffset(
-        final UdpChannel udpChannel,
-        final SendChannelEndpoint channelEndpoint)
+        final UdpChannel udpChannel, final SendChannelEndpoint channelEndpoint)
     {
         if (udpChannel.channelSendTimestampOffset() != channelEndpoint.udpChannel().channelSendTimestampOffset())
         {
@@ -1383,8 +1472,7 @@ public final class DriverConductor implements Agent
     }
 
     private void validateReceiveTimestampOffset(
-        final UdpChannel udpChannel,
-        final ReceiveChannelEndpoint channelEndpoint)
+        final UdpChannel udpChannel, final ReceiveChannelEndpoint channelEndpoint)
     {
         if (udpChannel.channelReceiveTimestampOffset() != channelEndpoint.udpChannel().channelReceiveTimestampOffset())
         {
@@ -1740,7 +1828,7 @@ public final class DriverConductor implements Agent
         return aeronClient;
     }
 
-    private static SubscriptionLink removeSubscriptionLink(
+    private static SubscriptionLink findMdsSubscriptionLink(
         final ArrayList<SubscriptionLink> subscriptionLinks, final long registrationId)
     {
         SubscriptionLink subscriptionLink = null;
@@ -1748,7 +1836,25 @@ public final class DriverConductor implements Agent
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             final SubscriptionLink subscription = subscriptionLinks.get(i);
-            if (subscription.registrationId() == registrationId)
+            if (subscription.registrationId() == registrationId && subscription.supportsMds())
+            {
+                subscriptionLink = subscription;
+                break;
+            }
+        }
+
+        return subscriptionLink;
+    }
+
+    private static SubscriptionLink removeSubscriptionLink(
+        final ArrayList<SubscriptionLink> subscriptionLinks, final long registrationId, final String channel)
+    {
+        SubscriptionLink subscriptionLink = null;
+
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        {
+            final SubscriptionLink subscription = subscriptionLinks.get(i);
+            if (subscription.registrationId() == registrationId && subscription.channel().equals(channel))
             {
                 subscriptionLink = subscription;
                 fastUnorderedRemove(subscriptionLinks, i);

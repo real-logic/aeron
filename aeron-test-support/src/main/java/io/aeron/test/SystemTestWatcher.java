@@ -32,8 +32,10 @@ import org.agrona.concurrent.errors.ErrorLogReader;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.opentest4j.TestAbortedException;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Path;
@@ -41,6 +43,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -101,6 +104,15 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         return this;
     }
 
+    /**
+     * Useful when debugging tests to get them to fail on warnings as well as errors.
+     */
+    @SuppressWarnings("unused")
+    public void showAllErrors()
+    {
+        this.logFilter = (s) -> true;
+    }
+
     public void afterTestExecution(final ExtensionContext context)
     {
         mediaDriverTestUtil.afterTestExecution(context);
@@ -109,11 +121,16 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     public void afterEach(final ExtensionContext context)
     {
+        final boolean interrupted = Thread.interrupted();
         try
         {
-            if (context.getExecutionException().isPresent())
+            final Optional<Throwable> executionException = context.getExecutionException();
+            if (executionException.filter(t -> !(t instanceof TestAbortedException)).isPresent())
             {
-                reportAndTerminate(context);
+                final String test = context.getTestClass().map(Class::getName).orElse("unknown") + "-" +
+                    context.getTestMethod().map(Method::getName).orElse("unknown");
+                System.out.println("*** " + test + " failed, cause: " + executionException.get());
+                reportAndTerminate(test);
                 mediaDriverTestUtil.testFailed();
             }
             else
@@ -125,6 +142,10 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         finally
         {
             deleteAllLocations();
+            if (interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -280,16 +301,15 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             encodedException);
     }
 
-    private void reportAndTerminate(final ExtensionContext context)
+    private void reportAndTerminate(final String test)
     {
         Throwable error = null;
-        final boolean isInterrupted = Thread.interrupted();
 
         if (null != dataCollector)
         {
             try
             {
-                printCncErrors(dataCollector.cncFiles(), "Command `n Control Errors", CommonContext::errorLogBuffer);
+                printCncErrors(dataCollector.cncFiles(), CommonContext::errorLogBuffer);
                 printArchiveMarkFileErrors(dataCollector.archiveMarkFiles());
                 printClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), "Consensus Module Errors");
                 printClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), "Cluster Service Errors");
@@ -301,10 +321,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
             try
             {
-                final String testClass = context.getTestClass().orElseThrow(IllegalStateException::new).getName();
-                final String testMethod = context.getTestMethod().orElseThrow(IllegalStateException::new).getName();
-
-                dataCollector.dumpData(testClass, testMethod);
+                dataCollector.dumpData(test);
             }
             catch (final Exception t)
             {
@@ -335,11 +352,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             }
         }
 
-        if (isInterrupted)
-        {
-            Thread.currentThread().interrupt();
-        }
-
         if (null != error)
         {
             LangUtil.rethrowUnchecked(error);
@@ -348,7 +360,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private void printCncErrors(
         final List<Path> paths,
-        final String fileDescription,
         final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer)
     {
         for (final Path path : paths)
@@ -359,7 +370,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             {
                 final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
 
-                System.out.printf("%n%n%s file %s%n", fileDescription, cncFile);
+                System.out.printf("%n%n%s file %s%n", "Command `n Control Errors", cncFile);
                 final int distinctErrorCount = ErrorLogReader.read(buffer, this::printObservationCallback);
                 System.out.format("%d distinct errors observed.%n", distinctErrorCount);
             }

@@ -16,9 +16,13 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.ConfigurationException;
+import io.aeron.security.AuthorisationService;
+import io.aeron.security.AuthorisationServiceSupplier;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
@@ -139,5 +143,106 @@ class ConsensusModuleContextTest
         context.conclude();
 
         assertSame(supplier, context.timerServiceSupplier());
+    }
+
+    @Test
+    void rejectInvalidLogChannelParameters()
+    {
+        final String channelTermId = context.logChannel() + "|" + CommonContext.TERM_ID_PARAM_NAME + "=0";
+        final String channelInitialTermId =
+            context.logChannel() + "|" + CommonContext.INITIAL_TERM_ID_PARAM_NAME + "=0";
+        final String channelTermOffset = context.logChannel() + "|" + CommonContext.TERM_OFFSET_PARAM_NAME + "=0";
+
+        assertThrows(ConfigurationException.class, () -> context.clone().logChannel(channelTermId).conclude());
+        assertThrows(ConfigurationException.class, () -> context.clone().logChannel(channelInitialTermId).conclude());
+        assertThrows(ConfigurationException.class, () -> context.clone().logChannel(channelTermOffset).conclude());
+    }
+
+
+    @Test
+    void defaultAuthorisationServiceSupplierReturnsADenyAllAuthorisationService()
+    {
+        assertSame(AuthorisationService.DENY_ALL, DEFAULT_AUTHORISATION_SERVICE_SUPPLIER.get());
+    }
+
+    @Test
+    void shouldUseDefaultAuthorisationServiceSupplierIfTheSystemPropertyIsNotSet()
+    {
+        assertNull(context.authorisationServiceSupplier());
+
+        context.conclude();
+
+        System.clearProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME);
+        assertSame(DEFAULT_AUTHORISATION_SERVICE_SUPPLIER, context.authorisationServiceSupplier());
+    }
+
+    @Test
+    void shouldUseDefaultAuthorisationServiceSupplierIfTheSystemPropertyIsSetToEmptyValue()
+    {
+        System.setProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME, "");
+        try
+        {
+            assertNull(context.authorisationServiceSupplier());
+
+            context.conclude();
+
+            assertSame(DEFAULT_AUTHORISATION_SERVICE_SUPPLIER, context.authorisationServiceSupplier());
+        }
+        finally
+        {
+            System.clearProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldInstantiateAuthorisationServiceSupplierBasedOnTheSystemProperty()
+    {
+        System.setProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME, TestAuthorisationSupplier.class.getName());
+        try
+        {
+            context.conclude();
+            final AuthorisationServiceSupplier supplier = context.authorisationServiceSupplier();
+            assertNotSame(DEFAULT_AUTHORISATION_SERVICE_SUPPLIER, supplier);
+            assertInstanceOf(TestAuthorisationSupplier.class, supplier);
+        }
+        finally
+        {
+            System.clearProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldUseProvidedAuthorisationServiceSupplierInstance()
+    {
+        final AuthorisationServiceSupplier providedSupplier = mock(AuthorisationServiceSupplier.class);
+        context.authorisationServiceSupplier(providedSupplier);
+        assertSame(providedSupplier, context.authorisationServiceSupplier());
+
+        System.setProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME, TestAuthorisationSupplier.class.getName());
+        try
+        {
+            context.conclude();
+            assertSame(providedSupplier, context.authorisationServiceSupplier());
+        }
+        finally
+        {
+            System.clearProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME);
+        }
+    }
+
+    public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier
+    {
+        public AuthorisationService get()
+        {
+            return new TestAuthorisationService();
+        }
+    }
+
+    static class TestAuthorisationService implements AuthorisationService
+    {
+        public boolean isAuthorised(final int templateId, final Object type, final byte[] encodedPrincipal)
+        {
+            return false;
+        }
     }
 }

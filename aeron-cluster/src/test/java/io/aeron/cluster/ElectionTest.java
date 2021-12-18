@@ -221,14 +221,14 @@ public class ElectionTest
         election.doWork(clock.nanoTime());
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_READY.code());
 
-        when(consensusModuleAgent.electionComplete()).thenReturn(true);
+        when(consensusModuleAgent.appendNewLeadershipTermEvent(anyLong())).thenReturn(true);
 
         clock.increment(1);
         election.onAppendPosition(candidateTermId, logPosition, clusterMembers[1].id());
         election.onAppendPosition(candidateTermId, logPosition, clusterMembers[2].id());
         election.doWork(clock.nanoTime());
         final InOrder inOrder = inOrder(consensusModuleAgent, electionStateCounter);
-        inOrder.verify(consensusModuleAgent).electionComplete();
+        inOrder.verify(consensusModuleAgent).electionComplete(anyLong());
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.CLOSED.code());
     }
 
@@ -289,13 +289,13 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_READY.code());
 
         when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
-        when(consensusModuleAgent.electionComplete()).thenReturn(true);
+        when(consensusModuleAgent.appendNewLeadershipTermEvent(anyLong())).thenReturn(true);
 
         election.doWork(++nowNs);
         final InOrder inOrder = inOrder(consensusPublisher, consensusModuleAgent, electionStateCounter);
         inOrder.verify(consensusPublisher).appendPosition(
             clusterMembers[candidateId].publication(), candidateTermId, logPosition, followerMember.id());
-        inOrder.verify(consensusModuleAgent).electionComplete();
+        inOrder.verify(consensusModuleAgent).electionComplete(anyLong());
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.CLOSED.code());
     }
 

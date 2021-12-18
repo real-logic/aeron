@@ -23,8 +23,11 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
+import io.aeron.security.AuthorisationService;
+import io.aeron.security.AuthorisationServiceSupplier;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -40,7 +43,7 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
-import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
@@ -591,7 +594,7 @@ public final class ConsensusModule implements AutoCloseable
         public static final long DYNAMIC_JOIN_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
-         * Name of class to use as a supplier of {@link Authenticator} for the cluster.
+         * Name of the system property for specifying a supplier of {@link Authenticator} for the cluster.
          */
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.authenticator.supplier";
 
@@ -600,6 +603,19 @@ public final class ConsensusModule implements AutoCloseable
          * a non-authenticating option.
          */
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.security.DefaultAuthenticatorSupplier";
+
+        /**
+         * Name of the system property for specifying a supplier of {@link AuthorisationService} for the cluster.
+         */
+        public static final String AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME =
+            "aeron.cluster.authorisation.service.supplier";
+
+        /**
+         * Default {@link AuthorisationServiceSupplier} that returns {@link AuthorisationService} that forbids all
+         * command from being executed (i.e. {@link AuthorisationService#DENY_ALL}).
+         */
+        public static final AuthorisationServiceSupplier DEFAULT_AUTHORISATION_SERVICE_SUPPLIER =
+            () -> AuthorisationService.DENY_ALL;
 
         /**
          * Size in bytes of the error buffer for the cluster.
@@ -680,6 +696,12 @@ public final class ConsensusModule implements AutoCloseable
          * Default {@link TimerServiceSupplier}.
          */
         public static final String TIMER_SERVICE_SUPPLIER_DEFAULT = TIMER_SERVICE_SUPPLIER_WHEEL;
+
+        /**
+         * Property name for the name returned from {@link Agent#roleName()} for the consensus module.
+         */
+        public static final String CLUSTER_CONSENSUS_MODULE_AGENT_ROLE_NAME_PROP_NAME =
+            "aeron.cluster.consensus.module.agent.role.name";
 
         /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
@@ -959,6 +981,33 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * The {@link AuthorisationServiceSupplier} specified in the
+         * {@link #AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME} system property or the
+         * {@link #DEFAULT_AUTHORISATION_SERVICE_SUPPLIER}.
+         *
+         * @return system property {@link #AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME} if set or
+         * {@link #DEFAULT_AUTHORISATION_SERVICE_SUPPLIER} otherwise.
+         */
+        public static AuthorisationServiceSupplier authorisationServiceSupplier()
+        {
+            final String supplierClassName = System.getProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME);
+            if (Strings.isEmpty(supplierClassName))
+            {
+                return DEFAULT_AUTHORISATION_SERVICE_SUPPLIER;
+            }
+
+            try
+            {
+                return (AuthorisationServiceSupplier)Class.forName(supplierClassName).getConstructor().newInstance();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+                return null;
+            }
+        }
+
+        /**
          * The value {@link #CONSENSUS_CHANNEL_DEFAULT} or system property
          * {@link #CONSENSUS_CHANNEL_PROP_NAME} if set.
          *
@@ -1041,6 +1090,17 @@ public final class ConsensusModule implements AutoCloseable
         {
             return System.getProperty(TIMER_SERVICE_SUPPLIER_PROP_NAME, TIMER_SERVICE_SUPPLIER_DEFAULT);
         }
+
+        /**
+         * The name to be used for the {@link Agent#roleName()} for the consensus module agent.
+         *
+         * @return name to be used for the {@link Agent#roleName()} for the consensus module agent.
+         * @see #CLUSTER_CONSENSUS_MODULE_AGENT_ROLE_NAME_PROP_NAME
+         */
+        public static String agentRoleName()
+        {
+            return System.getProperty(CLUSTER_CONSENSUS_MODULE_AGENT_ROLE_NAME_PROP_NAME);
+        }
     }
 
     /**
@@ -1108,6 +1168,7 @@ public final class ConsensusModule implements AutoCloseable
         private long dynamicJoinIntervalNs = Configuration.dynamicJoinIntervalNs();
         private long terminationTimeoutNs = Configuration.terminationTimeoutNs();
 
+        private String agentRoleName = Configuration.agentRoleName();
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private ClusterClock clusterClock;
@@ -1133,6 +1194,7 @@ public final class ConsensusModule implements AutoCloseable
 
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
+        private AuthorisationServiceSupplier authorisationServiceSupplier;
         private LogPublisher logPublisher;
         private EgressPublisher egressPublisher;
         private boolean isLogMdc;
@@ -1166,6 +1228,8 @@ public final class ConsensusModule implements AutoCloseable
             {
                 throw new ConcurrentConcludeException();
             }
+
+            validateLogChannel();
 
             if (null == clusterDir)
             {
@@ -1374,6 +1438,11 @@ public final class ConsensusModule implements AutoCloseable
             if (null == authenticatorSupplier)
             {
                 authenticatorSupplier = Configuration.authenticatorSupplier();
+            }
+
+            if (null == authorisationServiceSupplier)
+            {
+                authorisationServiceSupplier = Configuration.authorisationServiceSupplier();
             }
 
             if (null == random)
@@ -2427,6 +2496,29 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Get the {@link Agent#roleName()} to be used for the consensus module agent. If {@code null} then one will
+         * be generated.
+         *
+         * @return the {@link Agent#roleName()} to be used for the consensus module agent.
+         */
+        public String agentRoleName()
+        {
+            return agentRoleName;
+        }
+
+        /**
+         * Set the {@link Agent#roleName()} to be used for the consensus module agent.
+         *
+         * @param agentRoleName to be used for the consensus module agent.
+         * @return this for a fluent API.
+         */
+        public Context agentRoleName(final String agentRoleName)
+        {
+            this.agentRoleName = agentRoleName;
+            return this;
+        }
+
+        /**
          * Get the thread factory used for creating threads.
          *
          * @return thread factory used for creating threads.
@@ -2894,6 +2986,28 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Get the {@link AuthorisationServiceSupplier} that should be used for the consensus module.
+         *
+         * @return the {@link AuthorisationServiceSupplier} to be used for the consensus module.
+         */
+        public AuthorisationServiceSupplier authorisationServiceSupplier()
+        {
+            return authorisationServiceSupplier;
+        }
+
+        /**
+         * Set the {@link AuthorisationServiceSupplier} that will be used for the consensus module.
+         *
+         * @param authorisationServiceSupplier {@link AuthorisationServiceSupplier} to use for the consensus module.
+         * @return this for a fluent API.
+         */
+        public Context authorisationServiceSupplier(final AuthorisationServiceSupplier authorisationServiceSupplier)
+        {
+            this.authorisationServiceSupplier = authorisationServiceSupplier;
+            return this;
+        }
+
+        /**
          * Set the {@link ShutdownSignalBarrier} that can be used to shut down a consensus module.
          *
          * @param barrier that can be used to shut down a consensus module.
@@ -3166,6 +3280,22 @@ public final class ConsensusModule implements AutoCloseable
             }
 
             throw new ClusterException("invalid TimerServiceSupplier: " + timeServiceClassName);
+        }
+
+        private void validateLogChannel()
+        {
+            final ChannelUri logChannelUri = ChannelUri.parse(logChannel);
+            verifyNotPresent(logChannelUri, "logChannel", INITIAL_TERM_ID_PARAM_NAME);
+            verifyNotPresent(logChannelUri, "logChannel", TERM_ID_PARAM_NAME);
+            verifyNotPresent(logChannelUri, "logChannel", TERM_OFFSET_PARAM_NAME);
+        }
+
+        private static void verifyNotPresent(final ChannelUri channelUri, final String name, final String paramName)
+        {
+            if (channelUri.containsKey(paramName))
+            {
+                throw new ConfigurationException(name + " must not contain: " + paramName);
+            }
         }
 
         /**

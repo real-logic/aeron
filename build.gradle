@@ -16,7 +16,7 @@
 
 plugins {
     id 'java-library'
-    id 'com.github.johnrengelman.shadow' version '7.1.0' apply false
+    id 'com.github.johnrengelman.shadow' version '7.1.1' apply false
     id 'biz.aQute.bnd.builder' version '6.1.0' apply false
     id "com.github.ben-manes.versions" version "0.39.0"
 }
@@ -51,8 +51,8 @@ def sbeVersion = '1.25.1'
 def checkstyleVersion = '9.2'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.8.2'
-def mockitoVersion = '4.1.0'
-def byteBuddyVersion = '1.12.3'
+def mockitoVersion = '4.2.0'
+def byteBuddyVersion = '1.12.5'
 def hdrHistogramVersion = '2.1.12'
 
 ext {
@@ -803,6 +803,8 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
         testImplementation project(path: ':aeron-cluster')
+        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+        testImplementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         if (buildJavaVersion == 8) {
             def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
             testImplementation files(jdkHome.resolve("lib/tools.jar").toFile())
@@ -946,6 +948,6 @@ tasks.named("dependencyUpdates").configure {
 }
 
 wrapper {
-    gradleVersion = '7.3.1'
+    gradleVersion = '7.3.2'
     distributionType = 'ALL'
 }

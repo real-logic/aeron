@@ -19,6 +19,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.ArrayUtil;
 
 import static io.aeron.cluster.ClusterSession.MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH;
 
@@ -32,6 +33,7 @@ class EgressPublisher
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
     private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
     private final NewLeaderEventEncoder newLeaderEventEncoder = new NewLeaderEventEncoder();
+    private final AdminResponseEncoder adminResponseEncoder = new AdminResponseEncoder();
 
     boolean sendEvent(
         final ClusterSession session,
@@ -119,6 +121,43 @@ class EgressPublisher
                     .leaderMemberId(leaderMemberId)
                     .ingressEndpoints(ingressEndpoints);
 
+                bufferClaim.commit();
+
+                return true;
+            }
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean sendAdminResponse(
+        final ClusterSession session,
+        final long correlationId,
+        final AdminRequestType adminRequestType,
+        final AdminResponseCode responseCode,
+        final String message)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            AdminResponseEncoder.BLOCK_LENGTH +
+            AdminResponseEncoder.messageHeaderLength() +
+            message.length() +
+            AdminResponseEncoder.payloadHeaderLength();
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = session.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                adminResponseEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .clusterSessionId(session.id())
+                    .correlationId(correlationId)
+                    .requestType(adminRequestType)
+                    .responseCode(responseCode)
+                    .message(message)
+                    .putPayload(ArrayUtil.EMPTY_BYTE_ARRAY, 0, 0);
                 bufferClaim.commit();
 
                 return true;

@@ -158,7 +158,6 @@ class ConsensusModuleContextTest
         assertThrows(ConfigurationException.class, () -> context.clone().logChannel(channelTermOffset).conclude());
     }
 
-
     @Test
     void defaultAuthorisationServiceSupplierReturnsADenyAllAuthorisationService()
     {

@@ -902,13 +902,13 @@ public final class AeronCluster implements AutoCloseable
          * Minor version of the network protocol from client to consensus module. If these don't match then some
          * features may not be available.
          */
-        public static final int PROTOCOL_MINOR_VERSION = 1;
+        public static final int PROTOCOL_MINOR_VERSION = 2;
 
         /**
          * Patch version of the network protocol from client to consensus module. If these don't match then bug fixes
          * may not have been applied.
          */
-        public static final int PROTOCOL_PATCH_VERSION = 1;
+        public static final int PROTOCOL_PATCH_VERSION = 0;
 
         /**
          * Combined semantic version for the client to consensus module protocol.

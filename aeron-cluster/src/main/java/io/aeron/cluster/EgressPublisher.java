@@ -138,28 +138,23 @@ class EgressPublisher
         final AdminResponseCode responseCode,
         final String message)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            AdminResponseEncoder.BLOCK_LENGTH +
-            AdminResponseEncoder.messageHeaderLength() +
-            message.length() +
-            AdminResponseEncoder.payloadHeaderLength();
+        adminResponseEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .clusterSessionId(session.id())
+            .correlationId(correlationId)
+            .requestType(adminRequestType)
+            .responseCode(responseCode)
+            .message(message)
+            .putPayload(ArrayUtil.EMPTY_BYTE_ARRAY, 0, 0);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + adminResponseEncoder.encodedLength();
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = session.tryClaim(length, bufferClaim);
+            final long result = session.offer(buffer, 0, length);
             if (result > 0)
             {
-                adminResponseEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(session.id())
-                    .correlationId(correlationId)
-                    .requestType(adminRequestType)
-                    .responseCode(responseCode)
-                    .message(message)
-                    .putPayload(ArrayUtil.EMPTY_BYTE_ARRAY, 0, 0);
-                bufferClaim.commit();
-
                 return true;
             }
         }

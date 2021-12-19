@@ -307,7 +307,8 @@ class BackgroundSnapshotReplicator
         final SnapshotRecordingsDecoder decoder,
         final long nowMs)
     {
-        if (this.queryCorrelationId == correlationId &&
+        if (State.QUERY == this.state &&
+            this.queryCorrelationId == correlationId &&
             validateSnapshotRecordings(decoder, logPosition, ctx.serviceCount()))
         {
             decoder.sbeRewind();

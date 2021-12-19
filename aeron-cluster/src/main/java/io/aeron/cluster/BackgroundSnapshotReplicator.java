@@ -22,6 +22,7 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 
+import java.lang.reflect.Member;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -174,6 +175,7 @@ class BackgroundSnapshotReplicator
     private final ConsensusModule.Context ctx;
     private final ConsensusPublisher consensusPublisher;
     private final long queryTimeoutMs;
+    private final ClusterMember thisMember;
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
     private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>(4);
     private int snapshotCursor = 0;
@@ -189,11 +191,15 @@ class BackgroundSnapshotReplicator
     private long sendQueryDeadlineMs = 0;
     private State state = State.IDLE;
 
-    BackgroundSnapshotReplicator(final ConsensusModule.Context ctx, final ConsensusPublisher consensusPublisher)
+    BackgroundSnapshotReplicator(
+        final ConsensusModule.Context ctx,
+        final ConsensusPublisher consensusPublisher,
+        final ClusterMember thisMember)
     {
         this.ctx = ctx;
         this.consensusPublisher = consensusPublisher;
         this.queryTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.dynamicJoinIntervalNs());
+        this.thisMember = thisMember;
     }
 
     public void archive(final AeronArchive archive)
@@ -207,7 +213,7 @@ class BackgroundSnapshotReplicator
         this.nextSnapshotLogPosition = logPosition;
     }
 
-    int doWork(final long nowMs, final ClusterMember thisMember)
+    int doWork(final long nowMs)
     {
         switch (state)
         {

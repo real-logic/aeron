@@ -381,6 +381,10 @@ public class ConsensusModuleAgentTest
     public void shouldTriggerHotSnapshot()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        ctx.clusterMembers(
+            "0,localhost:1001,localhost:1002,localhost:1003,localhost:1004,localhost:1005|" +
+            "1,localhost:2001,localhost:2002,localhost:2003,localhost:2004,localhost:2005|" +
+            "2,localhost:3001,localhost:3002,localhost:3003,localhost:3004,localhost:3005|");
 
         final MutableLong stateValue = new MutableLong();
         final Counter mockState = mock(Counter.class);
@@ -437,7 +441,7 @@ public class ConsensusModuleAgentTest
 
         assertEquals(ConsensusModule.State.ACTIVE.code(), stateValue.get());
         verify(mockLogPublisher).appendClusterAction(
-            anyLong(), anyLong(), eq(ClusterAction.SNAPSHOT), eq(ctx.clusterMemberId() + 1));
+            anyLong(), anyLong(), eq(ClusterAction.SNAPSHOT), anyInt());
     }
 
     @Test

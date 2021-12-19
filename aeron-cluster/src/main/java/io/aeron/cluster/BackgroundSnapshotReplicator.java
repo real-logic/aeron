@@ -31,7 +31,7 @@ class BackgroundSnapshotReplicator
     enum State
     {
         IDLE,
-        QUERY,
+        AWAIT_QUERY,
         REPLICATE,
         COMPLETE,
         FAILED
@@ -179,8 +179,12 @@ class BackgroundSnapshotReplicator
     private int snapshotCursor = 0;
     private final ActiveReplication activeReplication = new ActiveReplication();
 
-    private ClusterMember snapshotMember;
-    private long logPosition = Aeron.NULL_VALUE;
+    private ClusterMember nextSnapshotMember = null;
+    private long nextSnapshotLogPosition = Aeron.NULL_VALUE;
+
+    private ClusterMember currentSnapshotMember = null;
+    private long currentSnapshotLogPosition = Aeron.NULL_VALUE;
+
     private long queryCorrelationId = Aeron.NULL_VALUE;
     private long sendQueryDeadlineMs = 0;
     private State state = State.IDLE;
@@ -199,21 +203,23 @@ class BackgroundSnapshotReplicator
 
     void setLatestSnapshot(final ClusterMember snapshotMember, final long logPosition)
     {
-        this.snapshotMember = snapshotMember;
-        this.logPosition = logPosition;
-
-        snapshotsToRetrieve.clear();
-        snapshotsRetrieved.clear();
-        snapshotCursor = 0;
-
-        state = State.QUERY;
+        this.nextSnapshotMember = snapshotMember;
+        this.nextSnapshotLogPosition = logPosition;
     }
 
     int doWork(final long nowMs, final ClusterMember thisMember)
     {
         switch (state)
         {
-            case QUERY:
+            case IDLE:
+                if (null != nextSnapshotMember && Aeron.NULL_VALUE != nextSnapshotLogPosition)
+                {
+                    state = State.AWAIT_QUERY;
+                    query(nowMs, thisMember);
+                }
+                break;
+
+            case AWAIT_QUERY:
                 return query(nowMs, thisMember);
 
             case REPLICATE:
@@ -224,11 +230,12 @@ class BackgroundSnapshotReplicator
                 snapshotsToRetrieve.clear();
                 snapshotsRetrieved.clear();
                 snapshotCursor = 0;
+                currentSnapshotMember = null;
+                currentSnapshotLogPosition = Aeron.NULL_VALUE;
 
                 state = State.IDLE;
                 break;
 
-            case IDLE:
             default:
                 break;
         }
@@ -240,17 +247,20 @@ class BackgroundSnapshotReplicator
     {
         int workDone = 0;
 
-        if (null == snapshotMember || Aeron.NULL_VALUE == logPosition)
-        {
-            state = State.IDLE;
-            return 0;
-        }
-
         if (sendQueryDeadlineMs <= nowMs)
         {
+            if (null != nextSnapshotMember && currentSnapshotLogPosition < nextSnapshotLogPosition)
+            {
+                currentSnapshotMember = nextSnapshotMember;
+                currentSnapshotLogPosition = nextSnapshotLogPosition;
+
+                nextSnapshotMember = null;
+                nextSnapshotLogPosition = Aeron.NULL_VALUE;
+            }
+
             queryCorrelationId = ctx.aeron().nextCorrelationId();
             consensusPublisher.snapshotRecordingQuery(
-                snapshotMember.publication(),
+                currentSnapshotMember.publication(),
                 queryCorrelationId,
                 thisMember.id());
 
@@ -289,7 +299,7 @@ class BackgroundSnapshotReplicator
             if (snapshotCursor < snapshotsToRetrieve.size())
             {
                 final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
-                activeReplication.reset(snapshot, snapshotMember);
+                activeReplication.reset(snapshot, currentSnapshotMember);
                 snapshotCursor++;
             }
             else
@@ -307,9 +317,9 @@ class BackgroundSnapshotReplicator
         final SnapshotRecordingsDecoder decoder,
         final long nowMs)
     {
-        if (State.QUERY == this.state &&
+        if (State.AWAIT_QUERY == this.state &&
             this.queryCorrelationId == correlationId &&
-            validateSnapshotRecordings(decoder, logPosition, ctx.serviceCount()))
+            validateSnapshotRecordings(decoder, currentSnapshotLogPosition, ctx.serviceCount()))
         {
             decoder.sbeRewind();
 
@@ -320,7 +330,7 @@ class BackgroundSnapshotReplicator
             {
                 snapshots.next();
 
-                if (logPosition == snapshots.logPosition())
+                if (currentSnapshotLogPosition == snapshots.logPosition())
                 {
                     snapshotsToRetrieve.add(new RecordingLog.Snapshot(
                         snapshots.recordingId(),
@@ -333,6 +343,7 @@ class BackgroundSnapshotReplicator
                     state = State.REPLICATE;
                 }
             }
+
             this.sendQueryDeadlineMs = nowMs + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
             this.queryCorrelationId = Aeron.NULL_VALUE;
         }

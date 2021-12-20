@@ -143,9 +143,9 @@ public:
             "-Daeron.perform.storage.checks=false",
             "-Daeron.term.buffer.length=64k",
             "-Daeron.threading.mode=SHARED",
-            "-Daeron.shared.idle.strategy=yield",
+            "-Daeron.shared.idle.strategy=backoff",
             "-Daeron.archive.threading.mode=SHARED",
-            "-Daeron.archive.idle.strategy=yield",
+            "-Daeron.archive.idle.strategy=backoff",
             "-Daeron.archive.recording.events.enabled=false",
             "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
             "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
@@ -243,7 +243,7 @@ public:
     {
         std::int64_t publicationId = aeron.addPublication(channel, streamId);
         std::shared_ptr<Publication> publication = aeron.findPublication(publicationId);
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::SleepingIdleStrategy idle(std::chrono::milliseconds(1));
         while (!publication)
         {
             idle.idle();
@@ -258,7 +258,7 @@ public:
     {
         std::int64_t subscriptionId = aeron.addSubscription(channel, streamId);
         std::shared_ptr<Subscription> subscription = aeron.findSubscription(subscriptionId);
-        aeron::concurrent::YieldingIdleStrategy idleStrategy;
+        aeron::concurrent::SleepingIdleStrategy idleStrategy(std::chrono::milliseconds(1));
         while (!subscription)
         {
             idleStrategy.idle();
@@ -283,7 +283,7 @@ public:
     static void offerMessages(Publication &publication, std::size_t messageCount, const std::string &messagePrefix)
     {
         BufferClaim bufferClaim;
-        aeron::concurrent::YieldingIdleStrategy idleStrategy;
+        aeron::concurrent::SleepingIdleStrategy idleStrategy(std::chrono::milliseconds(1));
 
         for (std::size_t i = 0; i < messageCount; i++)
         {
@@ -301,7 +301,7 @@ public:
     void consumeMessages(Subscription &subscription, std::size_t messageCount, const std::string &messagePrefix) const
     {
         std::size_t received = 0;
-        aeron::concurrent::YieldingIdleStrategy idleStrategy;
+        aeron::concurrent::SleepingIdleStrategy idleStrategy(std::chrono::milliseconds(1));
 
         fragment_handler_t handler =
             [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
@@ -334,7 +334,7 @@ public:
         std::size_t &messagesPublished,
         std::size_t &receivedMessageCount) const
     {
-        aeron::concurrent::YieldingIdleStrategy idleStrategy;
+        aeron::concurrent::SleepingIdleStrategy idleStrategy(std::chrono::milliseconds(1));
 
         for (std::size_t i = messagesPublished; i < totalMessageCount; i++)
         {
@@ -407,7 +407,7 @@ protected:
 TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
 {
     std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
-    aeron::concurrent::YieldingIdleStrategy idle;
+    aeron::concurrent::SleepingIdleStrategy idle(std::chrono::milliseconds(1));
     std::uint8_t previousStep = asyncConnect->step();
 
     std::shared_ptr<AeronArchive> aeronArchive = asyncConnect->poll();
@@ -466,7 +466,7 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::SleepingIdleStrategy idle(std::chrono::milliseconds(1));
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
             idle.idle();
@@ -541,7 +541,7 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplay)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::SleepingIdleStrategy idle(std::chrono::milliseconds(1));
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
             idle.idle();
@@ -597,7 +597,7 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::SleepingIdleStrategy idle(std::chrono::milliseconds(1));
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
             idle.idle();
@@ -678,7 +678,7 @@ TEST_F(AeronArchiveTest, shouldRecordAndCancelReplayEarly)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::SleepingIdleStrategy idle(std::chrono::milliseconds(1));
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
             idle.idle();
@@ -728,7 +728,7 @@ TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
 
         const std::int64_t currentPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::SleepingIdleStrategy idle(std::chrono::milliseconds(1));
         while (countersReader.getCounterValue(counterId) < currentPosition)
         {
             idle.idle();
@@ -869,7 +869,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     const std::size_t initialMessageCount = minMessagesPerTerm * 3;
     const std::size_t subsequentMessageCount = minMessagesPerTerm * 3;
     const std::size_t totalMessageCount = initialMessageCount + subsequentMessageCount;
-    aeron::concurrent::YieldingIdleStrategy idleStrategy;
+    aeron::concurrent::SleepingIdleStrategy idleStrategy(std::chrono::milliseconds(1));
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
     std::shared_ptr<Publication> publication = addPublication(
@@ -1075,7 +1075,7 @@ TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::SleepingIdleStrategy idle(std::chrono::milliseconds(1));
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
             idle.idle();
@@ -1153,7 +1153,7 @@ TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::SleepingIdleStrategy idle(std::chrono::milliseconds(1));
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
             idle.idle();

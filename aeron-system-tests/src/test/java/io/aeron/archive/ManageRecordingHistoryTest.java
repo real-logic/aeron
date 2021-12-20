@@ -44,6 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -363,16 +364,14 @@ public class ManageRecordingHistoryTest
     @InterruptAfter(10)
     public void shouldMigrateSegmentsForStreamJoinedAtTheBeginning() throws IOException
     {
-        final String messagePrefix = "Message-Prefix-";
         final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
-
         try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
             final int dstCounterId = awaitRecordingCounterId(counters, publication.sessionId());
             final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
 
-            offerToPosition(publication, messagePrefix, targetPosition);
+            offerToPosition(publication, "dst-message-", targetPosition);
             awaitPosition(counters, dstCounterId, publication.position());
             aeronArchive.stopRecording(publication);
 
@@ -395,7 +394,7 @@ public class ManageRecordingHistoryTest
                 final int srcCounterId = awaitRecordingCounterId(counters, migratePub.sessionId());
                 srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
 
-                offerToPosition(migratePub, messagePrefix, SEGMENT_LENGTH * 4 + TERM_LENGTH + FRAME_ALIGNMENT);
+                offerToPosition(migratePub, "src-message-", SEGMENT_LENGTH * 4 + TERM_LENGTH + FRAME_ALIGNMENT);
                 awaitPosition(counters, srcCounterId, migratePub.position());
                 aeronArchive.stopRecording(migratePub);
             }
@@ -410,6 +409,9 @@ public class ManageRecordingHistoryTest
                 Archive.segmentFileName(srcRecordingId, 0),
                 Archive.segmentFileName(srcRecordingId, SEGMENT_LENGTH)
             )), new HashSet<>(Arrays.asList(srcFiles)));
+            final Path srcFile =
+                new File(archiveDir, Archive.segmentFileName(srcRecordingId, migratePosition) + ".del").toPath();
+            Files.write(srcFile, new byte[]{ 0x1, 0x2, 0x3 }, StandardOpenOption.CREATE_NEW);
 
             final String dstPrefix = dstRecordingId + "-";
             String[] dstFiles = archiveDir.list((dir, name) -> name.startsWith(dstPrefix));
@@ -418,6 +420,10 @@ public class ManageRecordingHistoryTest
                 Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 2L),
                 Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 3L)
             )), new HashSet<>(Arrays.asList(dstFiles)));
+            final Path dstFile =
+                new File(archiveDir, Archive.segmentFileName(dstRecordingId, migratePosition)).toPath();
+            final byte[] dstBytes = Files.readAllBytes(dstFile);
+            assertEquals(SEGMENT_LENGTH, dstBytes.length);
 
             final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
             assertEquals(2L, migratedSegments);
@@ -435,6 +441,10 @@ public class ManageRecordingHistoryTest
                 Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 2L),
                 Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 3L)
             )), new HashSet<>(Arrays.asList(dstFiles)));
+
+            final byte[] migratedBytes = Files.readAllBytes(dstFile);
+            assertEquals(SEGMENT_LENGTH, migratedBytes.length);
+            assertArrayEquals(dstBytes, migratedBytes);
         }
     }
 
@@ -502,7 +512,7 @@ public class ManageRecordingHistoryTest
             final byte[] dstBytes = Files.readAllBytes(
                 new File(archiveDir, Archive.segmentFileName(dstRecordingId, segmentFileBasePosition)).toPath());
             assertEquals(SEGMENT_LENGTH, dstBytes.length);
-            assertNotEquals(dstBytes[0], srcBytes[0]);
+            assertFalse(Arrays.equals(srcBytes, dstBytes));
 
             final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
             assertEquals(2L, migratedSegments);

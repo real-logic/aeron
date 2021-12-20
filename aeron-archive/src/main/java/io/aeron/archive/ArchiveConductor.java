@@ -887,21 +887,11 @@ abstract class ArchiveConductor
                 files.addLast(segmentFileName(recordingId, p));
             }
 
-            if (!files.isEmpty())
+            if (addDeleteSegmentsSession(correlationId, recordingId, controlSession, files) < 0)
             {
-                if (addDeleteSegmentsSession(correlationId, recordingId, controlSession, files) < 0)
-                {
-                    return;
-                }
-                controlSession.sendOkResponse(correlationId, controlResponseProxy);
+                return;
             }
-            else
-            {
-                controlSession.sendOkResponse(correlationId, controlResponseProxy);
-                // TODO: Why truncate has a signal but others do not?
-                controlSession.attemptSignal(
-                    correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
-            }
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
     }
 

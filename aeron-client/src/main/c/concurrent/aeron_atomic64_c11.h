@@ -19,7 +19,13 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#ifndef __cplusplus
 #include <stdatomic.h>
+#else
+#include <atomic>
+#define _Atomic(X) std::atomic< X >
+using namespace std;
+#endif
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -54,14 +60,14 @@ while (false) \
 #define AERON_GET_AND_ADD_INT64(original, dst, value) \
 do \
 { \
-    original = atomic_fetch_add((_Atomic(int64_t) *)&dst, value); \
+    original = atomic_fetch_add((_Atomic(int64_t) *)&dst, (int64_t)value); \
 } \
 while (false) \
 
 #define AERON_GET_AND_ADD_INT32(original, dst, value) \
 do \
 { \
-    original = atomic_fetch_add((_Atomic(int32_t) *)&dst, value); \
+    original = atomic_fetch_add((_Atomic(int32_t) *)&dst, (int32_t)value); \
 } \
 while (false) \
 

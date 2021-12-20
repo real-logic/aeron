@@ -27,6 +27,7 @@
 #include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
 #include "ChannelUriStringBuilder.h"
+#include "concurrent/SleepingIdleStrategy.h"
 
 #if defined(__linux__) || defined(Darwin)
 #include <unistd.h>

@@ -759,7 +759,6 @@ public class TestCluster implements AutoCloseable
 
             if (Publication.BACK_PRESSURED == result)
             {
-                System.out.println("Back Pressure");
                 continue;
             }
 

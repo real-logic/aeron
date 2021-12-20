@@ -22,7 +22,6 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 
-import java.lang.reflect.Member;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;

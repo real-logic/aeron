@@ -55,6 +55,7 @@ final class ControlSession implements Session
     private long activityDeadlineMs;
     private Session activeListing = null;
     private ExclusivePublication controlPublication;
+    private byte[] encodedPrincipal;
     private final Aeron aeron;
     private final ArchiveConductor conductor;
     private final CachedEpochClock cachedEpochClock;
@@ -127,7 +128,7 @@ final class ControlSession implements Session
 
         CloseHelper.close(conductor.context().countedErrorHandler(), controlPublication);
 
-        demuxer.removeControlSession(this);
+        demuxer.removeControlSession(controlSessionId);
         if (!conductor.context().controlSessionsCounter().isClosed())
         {
             conductor.context().controlSessionsCounter().decrementOrdered();
@@ -186,6 +187,11 @@ final class ControlSession implements Session
         }
 
         return workCount;
+    }
+
+    byte[] encodedPrincipal()
+    {
+        return encodedPrincipal;
     }
 
     long correlationId()
@@ -648,8 +654,9 @@ final class ControlSession implements Session
         state(State.CHALLENGED);
     }
 
-    void authenticate(@SuppressWarnings("unused") final byte[] encodedPrincipal)
+    void authenticate(final byte[] encodedPrincipal)
     {
+        this.encodedPrincipal = encodedPrincipal;
         activityDeadlineMs = Aeron.NULL_VALUE;
         state(State.AUTHENTICATED);
     }

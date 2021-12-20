@@ -34,9 +34,10 @@ class AuthorisationServiceTest
     {
         final byte[] encodedCredentials = { 0x1, 0x2, 0x3 };
         final ErrorHandler errorHandler = mock(ErrorHandler.class);
-        final int templateId = ThreadLocalRandom.current().nextInt();
+        final int protocolId = 77;
+        final int actionId = ThreadLocalRandom.current().nextInt();
 
-        assertTrue(ALLOW_ALL.isAuthorised(templateId, null, encodedCredentials));
+        assertTrue(ALLOW_ALL.isAuthorised(protocolId, actionId, null, encodedCredentials));
         verifyNoInteractions(errorHandler);
     }
 
@@ -45,9 +46,10 @@ class AuthorisationServiceTest
     {
         final byte[] encodedCredentials = { 0x4, 0x5, 0x6 };
         final ErrorHandler errorHandler = mock(ErrorHandler.class);
-        final int templateId = ThreadLocalRandom.current().nextInt();
+        final int protocolId = 77;
+        final int actionId = ThreadLocalRandom.current().nextInt();
 
-        assertFalse(DENY_ALL.isAuthorised(templateId, null, encodedCredentials));
+        assertFalse(DENY_ALL.isAuthorised(protocolId, actionId, null, encodedCredentials));
         verifyNoInteractions(errorHandler);
     }
 }

@@ -88,6 +88,11 @@ public class ArchiveException extends AeronException
      */
     public static final int UNKNOWN_REPLICATION = 12;
 
+    /**
+     * The principle was not authorised to take the requested action.
+     */
+    public static final int UNAUTHORISED_ACTION = 13;
+
     private final int errorCode;
     private final long correlationId;
 

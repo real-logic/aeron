@@ -26,6 +26,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.security.Authenticator;
+import io.aeron.security.AuthorisationService;
 import org.agrona.*;
 import org.agrona.collections.*;
 import org.agrona.concurrent.*;
@@ -100,6 +101,7 @@ abstract class ArchiveConductor
     private final ArchiveMarkFile markFile;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Authenticator authenticator;
+    private final AuthorisationService authorisationService;
     private final ControlSessionProxy controlSessionProxy;
     final Archive.Context ctx;
     SessionWorker<RecordingSession> recorder;
@@ -135,6 +137,7 @@ abstract class ArchiveConductor
         markFile = ctx.archiveMarkFile();
         cachedEpochClock.update(epochClock.time());
         authenticator = ctx.authenticatorSupplier().get();
+        authorisationService = ctx.authorisationServiceSupplier().get();
         controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     }
 
@@ -146,7 +149,7 @@ abstract class ArchiveConductor
 
     public void onAvailableImage(final Image image)
     {
-        addSession(new ControlSessionDemuxer(decoders, image, this));
+        addSession(new ControlSessionDemuxer(decoders, image, this, authorisationService));
     }
 
     public void onUnavailableCounter(
@@ -280,6 +283,11 @@ abstract class ArchiveConductor
     Archive.Context context()
     {
         return ctx;
+    }
+
+    ControlResponseProxy controlResponseProxy()
+    {
+        return controlResponseProxy;
     }
 
     final int invokeAeronInvoker()

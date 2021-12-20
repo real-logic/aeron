@@ -1696,7 +1696,7 @@ public class ClusterTest
         cluster = aCluster()
             .withStaticNodes(3)
             .withAuthorisationServiceSupplier(() ->
-                (templateId, type, encodedPrincipal) ->
+                (protocolId, actionId, type, encodedPrincipal) ->
                 {
                     authorisationServiceCalled.set(true);
                     assertEquals(invalidRequestType, type);
@@ -1823,7 +1823,7 @@ public class ClusterTest
         cluster = aCluster()
             .withStaticNodes(3)
             .withAuthorisationServiceSupplier(() ->
-                (templateId, type, encodedPrincipal) ->
+                (protocolId, actionId, type, encodedPrincipal) ->
                 {
                     assertEquals(AdminRequestType.SNAPSHOT, type);
                     return true;

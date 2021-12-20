@@ -239,7 +239,8 @@ class ConsensusModuleContextTest
 
     static class TestAuthorisationService implements AuthorisationService
     {
-        public boolean isAuthorised(final int templateId, final Object type, final byte[] encodedPrincipal)
+        public boolean isAuthorised(
+            final int protocolId, final int actionId, final Object type, final byte[] encodedPrincipal)
         {
             return false;
         }

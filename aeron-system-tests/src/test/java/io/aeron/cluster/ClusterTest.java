@@ -1699,6 +1699,8 @@ public class ClusterTest
                 (protocolId, actionId, type, encodedPrincipal) ->
                 {
                     authorisationServiceCalled.set(true);
+                    assertEquals(MessageHeaderDecoder.SCHEMA_ID, protocolId);
+                    assertEquals(AdminRequestEncoder.TEMPLATE_ID, actionId);
                     assertEquals(invalidRequestType, type);
                     return true;
                 })
@@ -1825,6 +1827,8 @@ public class ClusterTest
             .withAuthorisationServiceSupplier(() ->
                 (protocolId, actionId, type, encodedPrincipal) ->
                 {
+                    assertEquals(MessageHeaderDecoder.SCHEMA_ID, protocolId);
+                    assertEquals(AdminRequestEncoder.TEMPLATE_ID, actionId);
                     assertEquals(AdminRequestType.SNAPSHOT, type);
                     return true;
                 })

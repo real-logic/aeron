@@ -29,6 +29,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableReference;
@@ -184,7 +185,7 @@ class ManageRecordingHistoryTest
             }
 
             final String fileNamePrefix = recordingId + "-";
-            String[] recordingFiles = archiveDir.list((dir, name) -> name.startsWith(fileNamePrefix));
+            final String[] recordingFiles = archiveDir.list((dir, name) -> name.startsWith(fileNamePrefix));
             assertThat(recordingFiles, arrayWithSize(14));
 
             final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
@@ -199,11 +200,19 @@ class ManageRecordingHistoryTest
 
             aeronArchive.stopRecording(publication);
 
-            recordingFiles = archiveDir.list((dir, name) -> name.startsWith(fileNamePrefix));
-            assertThat(recordingFiles, arrayContainingInAnyOrder(
-                Archive.segmentFileName(recordingId, SEGMENT_LENGTH * 13L),
-                Archive.segmentFileName(recordingId, SEGMENT_LENGTH * 12L),
-                Archive.segmentFileName(recordingId, SEGMENT_LENGTH * 11L)));
+            Tests.await(() ->
+            {
+                final String[] files = archiveDir.list((dir, name) -> name.startsWith(fileNamePrefix));
+                if (null != files && 3 == files.length)
+                {
+                    assertThat(files, arrayContainingInAnyOrder(
+                        Archive.segmentFileName(recordingId, SEGMENT_LENGTH * 13L),
+                        Archive.segmentFileName(recordingId, SEGMENT_LENGTH * 12L),
+                        Archive.segmentFileName(recordingId, SEGMENT_LENGTH * 11L)));
+                    return true;
+                }
+                return false;
+            });
         }
     }
 
@@ -289,7 +298,8 @@ class ManageRecordingHistoryTest
             aeronArchive.stopRecording(publication);
 
             final String prefix = recordingId + "-";
-            String[] files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
+            final File archiveDir = archive.context().archiveDir();
+            final String[] files = archiveDir.list((dir, name) -> name.startsWith(prefix));
             assertThat(files, arrayWithSize(4));
 
             final long startPosition = 0L;
@@ -303,11 +313,20 @@ class ManageRecordingHistoryTest
             assertEquals(2L, deletedSegments);
             assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
 
-            files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
-            assertThat(files, arrayContainingInAnyOrder(
-                Archive.segmentFileName(recordingId, segmentFileBasePosition),
-                Archive.segmentFileName(recordingId, segmentFileBasePosition + SEGMENT_LENGTH)
-            ));
+            Tests.await(() ->
+            {
+                final String[] updatedFiles = archiveDir.list((dir, name) -> name.startsWith(prefix));
+                if (null != updatedFiles && 2 == updatedFiles.length)
+                {
+                    assertThat(updatedFiles, arrayContainingInAnyOrder(
+                        Archive.segmentFileName(recordingId, segmentFileBasePosition),
+                        Archive.segmentFileName(recordingId, segmentFileBasePosition + SEGMENT_LENGTH)
+                    ));
+                    return true;
+                }
+                return false;
+            });
+
         }
     }
 
@@ -395,11 +414,19 @@ class ManageRecordingHistoryTest
 
             final File archiveDir = archive.context().archiveDir();
             final String srcPrefix = srcRecordingId + "-";
-            String[] srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
-            assertThat(srcFiles, arrayContainingInAnyOrder(
-                Archive.segmentFileName(srcRecordingId, 0),
-                Archive.segmentFileName(srcRecordingId, SEGMENT_LENGTH)
-            ));
+            Tests.await(() ->
+            {
+                final String[] srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
+                if (null != srcFiles && 2 == srcFiles.length)
+                {
+                    assertThat(srcFiles, arrayContainingInAnyOrder(
+                        Archive.segmentFileName(srcRecordingId, 0),
+                        Archive.segmentFileName(srcRecordingId, SEGMENT_LENGTH)
+                    ));
+                    return true;
+                }
+                return false;
+            });
             final Path srcFile =
                 new File(archiveDir, Archive.segmentFileName(srcRecordingId, migratePosition) + ".del").toPath();
             Files.write(srcFile, new byte[]{ 0x1, 0x2, 0x3 }, StandardOpenOption.CREATE_NEW);
@@ -419,8 +446,11 @@ class ManageRecordingHistoryTest
             assertEquals(2L, migratedSegments);
             assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
 
-            srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
-            assertThat(srcFiles, arrayWithSize(0));
+            Tests.await(() ->
+            {
+                final String[] srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
+                return null != srcFiles && 0 == srcFiles.length;
+            });
 
             dstFiles = archiveDir.list((dir, name) -> name.startsWith(dstPrefix));
             assertThat(dstFiles, arrayContainingInAnyOrder(
@@ -479,7 +509,7 @@ class ManageRecordingHistoryTest
 
             final File archiveDir = archive.context().archiveDir();
             final String srcPrefix = srcRecordingId + "-";
-            String[] srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
+            final String[] srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
             assertThat(srcFiles, arrayContainingInAnyOrder(
                 Archive.segmentFileName(srcRecordingId, SEGMENT_LENGTH),
                 Archive.segmentFileName(srcRecordingId, SEGMENT_LENGTH * 2L),
@@ -503,8 +533,11 @@ class ManageRecordingHistoryTest
             assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
             assertEquals(startPosition, aeronArchive.getStopPosition(srcRecordingId));
 
-            srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
-            assertThat(srcFiles, arrayWithSize(0));
+            Tests.await(() ->
+            {
+                final String[] files = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
+                return null != files && 0 == files.length;
+            });
 
             dstFiles = archiveDir.list((dir, name) -> name.startsWith(dstPrefix));
             assertThat(dstFiles, arrayContainingInAnyOrder(

@@ -31,7 +31,6 @@ import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
-import org.agrona.SystemUtil;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -39,12 +38,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class ManageRecordingHistoryTest
@@ -69,7 +74,7 @@ public class ManageRecordingHistoryTest
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
-    public void before()
+    public void before(@TempDir final Path tempDir)
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_LENGTH)
@@ -82,7 +87,7 @@ public class ManageRecordingHistoryTest
             .catalogCapacity(CATALOG_CAPACITY)
             .segmentFileLength(SEGMENT_LENGTH)
             .deleteArchiveOnStart(true)
-            .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
+            .archiveDir(tempDir.resolve("archive").toFile())
             .fileSyncLevel(0)
             .threadingMode(ArchiveThreadingMode.SHARED);
 
@@ -140,12 +145,12 @@ public class ManageRecordingHistoryTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldPurgeForLateJoinedStream()
+    public void shouldPurgeForLateJoinedStream() throws IOException
     {
         final String messagePrefix = "Message-Prefix-";
         final int initialTermId = 7;
-        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
-        final long startPosition = (TERM_LENGTH * 2L) + (FRAME_ALIGNMENT * 2L);
+        final long targetPosition = (SEGMENT_LENGTH * 13L) + 1;
+        final long startPosition = (SEGMENT_LENGTH * 10L) + 7 * FRAME_ALIGNMENT;
         uriBuilder.initialPosition(startPosition, initialTermId, TERM_LENGTH);
 
         try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
@@ -159,14 +164,49 @@ public class ManageRecordingHistoryTest
             offerToPosition(publication, messagePrefix, targetPosition);
             awaitPosition(counters, counterId, publication.position());
 
+            final File archiveDir = archive.context().archiveDir();
+            long position = 0;
+            boolean deleted = false;
+            while (position < startPosition - SEGMENT_LENGTH)
+            {
+                final String segmentFileName = Archive.segmentFileName(recordingId, position);
+                if (deleted)
+                {
+                    assertTrue(new File(archiveDir, segmentFileName + ".del").createNewFile());
+                }
+                else
+                {
+                    assertTrue(new File(archiveDir, segmentFileName).createNewFile());
+                }
+                deleted = !deleted;
+                position += SEGMENT_LENGTH;
+            }
+
+            final String fileNamePrefix = recordingId + "-";
+            String[] recordingFiles = archiveDir.list((dir, name) -> name.startsWith(fileNamePrefix));
+            assertNotNull(recordingFiles);
+            assertEquals(14, recordingFiles.length);
+
             final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
-                startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
+                startPosition,
+                startPosition + SEGMENT_LENGTH + TERM_LENGTH + FRAME_ALIGNMENT * 5,
+                TERM_LENGTH,
+                SEGMENT_LENGTH);
 
             final long purgeSegments = aeronArchive.purgeSegments(recordingId, segmentFileBasePosition);
-            assertEquals(2L, purgeSegments);
+            assertEquals(11L, purgeSegments);
             assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
 
             aeronArchive.stopRecording(publication);
+
+            recordingFiles = archiveDir.list((dir, name) -> name.startsWith(fileNamePrefix));
+            assertNotNull(recordingFiles);
+            assertEquals(
+                new HashSet<>(Arrays.asList(
+                Archive.segmentFileName(recordingId, SEGMENT_LENGTH * 13L),
+                Archive.segmentFileName(recordingId, SEGMENT_LENGTH * 12L),
+                Archive.segmentFileName(recordingId, SEGMENT_LENGTH * 11L))),
+                new HashSet<>(Arrays.asList(recordingFiles)));
         }
     }
 
@@ -236,7 +276,92 @@ public class ManageRecordingHistoryTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldMigrateSegmentsForStreamJoinedAtTheBeginning()
+    public void shouldDeleteDetachedFullSegments()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
+
+        try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
+        {
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offerToPosition(publication, messagePrefix, targetPosition);
+            awaitPosition(counters, counterId, publication.position());
+            aeronArchive.stopRecording(publication);
+
+            final String prefix = recordingId + "-";
+            String[] files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
+            assertNotNull(files);
+            assertEquals(4, files.length);
+
+            final long startPosition = 0L;
+            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
+
+            aeronArchive.detachSegments(recordingId, segmentFileBasePosition);
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+
+            final long deletedSegments = aeronArchive.deleteDetachedSegments(recordingId);
+            assertEquals(2L, deletedSegments);
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+
+            files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
+            assertNotNull(files);
+            assertEquals(new HashSet<>(Arrays.asList(
+                Archive.segmentFileName(recordingId, segmentFileBasePosition),
+                Archive.segmentFileName(recordingId, segmentFileBasePosition + SEGMENT_LENGTH)
+            )), new HashSet<>(Arrays.asList(files)));
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    public void shouldDeleteDetachedSegmentsWhenStartNotSegmentAligned()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int initialTermId = 7;
+        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
+        final long startPosition = (TERM_LENGTH * 2L) + (FRAME_ALIGNMENT * 2L);
+        uriBuilder.initialPosition(startPosition, initialTermId, TERM_LENGTH);
+
+        try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
+        {
+            assertEquals(startPosition, publication.position());
+
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offerToPosition(publication, messagePrefix, targetPosition);
+            awaitPosition(counters, counterId, publication.position());
+            aeronArchive.stopRecording(publication);
+
+            final String prefix = recordingId + "-";
+            String[] files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
+            assertNotNull(files);
+            assertEquals(3, files.length);
+
+            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
+
+            aeronArchive.detachSegments(recordingId, segmentFileBasePosition);
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+
+            final long deletedSegments = aeronArchive.deleteDetachedSegments(recordingId);
+            assertEquals(2L, deletedSegments);
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+
+            files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
+            assertArrayEquals(
+                new String[]{ Archive.segmentFileName(recordingId, segmentFileBasePosition) }, files);
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    public void shouldMigrateSegmentsForStreamJoinedAtTheBeginning() throws IOException
     {
         final String messagePrefix = "Message-Prefix-";
         final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
@@ -252,12 +377,12 @@ public class ManageRecordingHistoryTest
             aeronArchive.stopRecording(publication);
 
             final long startPosition = 0L;
-            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+            final long migratePosition = AeronArchive.segmentFileBasePosition(
                 startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
 
-            final long count = aeronArchive.purgeSegments(dstRecordingId, segmentFileBasePosition);
+            final long count = aeronArchive.purgeSegments(dstRecordingId, migratePosition);
             assertEquals(2L, count);
-            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(dstRecordingId));
+            assertEquals(migratePosition, aeronArchive.getStartPosition(dstRecordingId));
 
             final long srcRecordingId;
             final String migrateChannel = uriBuilder
@@ -270,23 +395,53 @@ public class ManageRecordingHistoryTest
                 final int srcCounterId = awaitRecordingCounterId(counters, migratePub.sessionId());
                 srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
 
-                offerToPosition(migratePub, messagePrefix, segmentFileBasePosition);
+                offerToPosition(migratePub, messagePrefix, SEGMENT_LENGTH * 4 + TERM_LENGTH + FRAME_ALIGNMENT);
                 awaitPosition(counters, srcCounterId, migratePub.position());
                 aeronArchive.stopRecording(migratePub);
             }
 
-            aeronArchive.truncateRecording(srcRecordingId, segmentFileBasePosition);
+            aeronArchive.truncateRecording(srcRecordingId, migratePosition);
+
+            final File archiveDir = archive.context().archiveDir();
+            final String srcPrefix = srcRecordingId + "-";
+            String[] srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
+            assertNotNull(srcFiles);
+            assertEquals(new HashSet<>(Arrays.asList(
+                Archive.segmentFileName(srcRecordingId, 0),
+                Archive.segmentFileName(srcRecordingId, SEGMENT_LENGTH)
+            )), new HashSet<>(Arrays.asList(srcFiles)));
+
+            final String dstPrefix = dstRecordingId + "-";
+            String[] dstFiles = archiveDir.list((dir, name) -> name.startsWith(dstPrefix));
+            assertNotNull(dstFiles);
+            assertEquals(new HashSet<>(Arrays.asList(
+                Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 2L),
+                Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 3L)
+            )), new HashSet<>(Arrays.asList(dstFiles)));
+
             final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
             assertEquals(2L, migratedSegments);
             assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
+
+            srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
+            assertNotNull(srcFiles);
+            assertEquals(0, srcFiles.length);
+
+            dstFiles = archiveDir.list((dir, name) -> name.startsWith(dstPrefix));
+            assertNotNull(dstFiles);
+            assertEquals(new HashSet<>(Arrays.asList(
+                Archive.segmentFileName(dstRecordingId, 0),
+                Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH),
+                Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 2L),
+                Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 3L)
+            )), new HashSet<>(Arrays.asList(dstFiles)));
         }
     }
 
     @Test
     @InterruptAfter(10)
-    public void shouldMigrateSegmentsForStreamNotSegmentAligned()
+    public void shouldMigrateSegmentsForStreamNotSegmentAligned() throws IOException
     {
-        final String messagePrefix = "Message-Prefix-";
         final int initialTermId = 7;
         final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
         final long startPosition = (TERM_LENGTH * 2L) + (FRAME_ALIGNMENT * 2L);
@@ -298,7 +453,7 @@ public class ManageRecordingHistoryTest
             final int dstCounterId = awaitRecordingCounterId(counters, publication.sessionId());
             final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
 
-            offerToPosition(publication, messagePrefix, targetPosition);
+            offerToPosition(publication, "dst-message-", targetPosition);
             awaitPosition(counters, dstCounterId, publication.position());
             aeronArchive.stopRecording(publication);
 
@@ -320,22 +475,62 @@ public class ManageRecordingHistoryTest
                 final int srcCounterId = awaitRecordingCounterId(counters, migratePub.sessionId());
                 srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
 
-                offerToPosition(migratePub, messagePrefix, segmentFileBasePosition);
+                offerToPosition(migratePub, "src-message-", segmentFileBasePosition);
                 awaitPosition(counters, srcCounterId, migratePub.position());
                 aeronArchive.stopRecording(migratePub);
             }
 
-            aeronArchive.truncateRecording(srcRecordingId, segmentFileBasePosition);
+            final File archiveDir = archive.context().archiveDir();
+            final String srcPrefix = srcRecordingId + "-";
+            String[] srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
+            assertNotNull(srcFiles);
+            assertEquals(new HashSet<>(Arrays.asList(
+                Archive.segmentFileName(srcRecordingId, SEGMENT_LENGTH),
+                Archive.segmentFileName(srcRecordingId, SEGMENT_LENGTH * 2L),
+                Archive.segmentFileName(srcRecordingId, SEGMENT_LENGTH * 3L)
+            )), new HashSet<>(Arrays.asList(srcFiles)));
+
+            final String dstPrefix = dstRecordingId + "-";
+            String[] dstFiles = archiveDir.list((dir, name) -> name.startsWith(dstPrefix));
+            assertNotNull(dstFiles);
+            assertArrayEquals(
+                new String[]{ Archive.segmentFileName(dstRecordingId, segmentFileBasePosition) }, dstFiles);
+
+            final byte[] srcBytes = Files.readAllBytes(
+                new File(archiveDir, Archive.segmentFileName(srcRecordingId, segmentFileBasePosition)).toPath());
+            assertEquals(SEGMENT_LENGTH, srcBytes.length);
+            final byte[] dstBytes = Files.readAllBytes(
+                new File(archiveDir, Archive.segmentFileName(dstRecordingId, segmentFileBasePosition)).toPath());
+            assertEquals(SEGMENT_LENGTH, dstBytes.length);
+            assertNotEquals(dstBytes[0], srcBytes[0]);
+
             final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
             assertEquals(2L, migratedSegments);
             assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
             assertEquals(startPosition, aeronArchive.getStopPosition(srcRecordingId));
+
+            srcFiles = archiveDir.list((dir, name) -> name.startsWith(srcPrefix));
+            assertNotNull(srcFiles);
+            assertEquals(0, srcFiles.length);
+
+            dstFiles = archiveDir.list((dir, name) -> name.startsWith(dstPrefix));
+            assertNotNull(dstFiles);
+            assertEquals(new HashSet<>(Arrays.asList(
+                Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH),
+                Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 2L),
+                Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 3L)
+            )), new HashSet<>(Arrays.asList(dstFiles)));
+
+            final byte[] migratedBytes = Files.readAllBytes(
+                new File(archiveDir, Archive.segmentFileName(dstRecordingId, segmentFileBasePosition)).toPath());
+            assertEquals(SEGMENT_LENGTH, migratedBytes.length);
+            assertArrayEquals(dstBytes, migratedBytes);
         }
     }
 
     @Test
     @InterruptAfter(10)
-    public void shouldPurgeRecording()
+    public void shouldPurgeRecording() throws IOException
     {
         final String messagePrefix = "Message-Prefix-";
         final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
@@ -369,8 +564,15 @@ public class ManageRecordingHistoryTest
             aeronArchive.stopRecording(publication);
             assertEquals(RecordingSignal.STOP, awaitSignal(signalRef, adapter));
 
+            final String prefix = newRecordingId + "-";
+            final File archiveDir = archive.context().archiveDir();
+            assertTrue(new File(archiveDir, prefix + (SEGMENT_LENGTH * 4L) + ".rec").createNewFile());
+            assertTrue(new File(archiveDir, prefix + (SEGMENT_LENGTH * 5L) + ".rec.del").createNewFile());
+
             aeronArchive.purgeRecording(newRecordingId);
             assertEquals(RecordingSignal.DELETE, awaitSignal(signalRef, adapter));
+
+            assertArrayEquals(new String[0], archiveDir.list(((dir, name) -> name.startsWith(prefix))));
         }
     }
 }

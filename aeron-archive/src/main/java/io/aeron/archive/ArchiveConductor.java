@@ -27,7 +27,10 @@ import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.security.Authenticator;
 import org.agrona.*;
-import org.agrona.collections.*;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2LongCounterMap;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -45,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.*;
+import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
@@ -64,6 +68,7 @@ abstract class ArchiveConductor
     private static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
+    private static final String DELETE_SUFFIX = ".del";
 
     private final long closeHandlerRegistrationId;
     private final long unavailableCounterHandlerRegistrationId;
@@ -882,15 +887,18 @@ abstract class ArchiveConductor
                 files.addLast(segmentFileName(recordingId, p));
             }
 
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
-
             if (!files.isEmpty())
             {
-                addSession(new DeleteSegmentsSession(
-                    recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy, errorHandler));
+                if (addDeleteSegmentsSession(correlationId, recordingId, controlSession, files) < 0)
+                {
+                    return;
+                }
+                controlSession.sendOkResponse(correlationId, controlResponseProxy);
             }
             else
             {
+                controlSession.sendOkResponse(correlationId, controlResponseProxy);
+                // TODO: Why truncate has a signal but others do not?
                 controlSession.attemptSignal(
                     correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
             }
@@ -906,7 +914,9 @@ abstract class ArchiveConductor
 
             if (catalog.invalidateRecording(recordingId))
             {
-                final String[] segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
+                final String prefix = recordingId + "-";
+                final String[] segmentFiles = archiveDir.list((dir, name) -> name.startsWith(prefix) &&
+                    (name.endsWith(RECORDING_SEGMENT_SUFFIX) || name.endsWith(DELETE_SUFFIX)));
                 if (null != segmentFiles)
                 {
                     for (final String segmentFile : segmentFiles)
@@ -916,19 +926,12 @@ abstract class ArchiveConductor
                 }
             }
 
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
-
-            if (!files.isEmpty())
+            if (addDeleteSegmentsSession(correlationId, recordingId, controlSession, files) < 0)
             {
-                addSession(new DeleteSegmentsSession(
-                    recordingId,
-                    correlationId,
-                    files,
-                    archiveDir,
-                    controlSession,
-                    controlResponseProxy,
-                    errorHandler));
+                return;
             }
+
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
     }
 
@@ -1152,11 +1155,10 @@ abstract class ArchiveConductor
             final ArrayDeque<String> files = new ArrayDeque<>();
             findDetachedSegments(recordingId, files);
 
-            final int count = files.size();
-            if (count > 0)
+            final int count = addDeleteSegmentsSession(correlationId, recordingId, controlSession, files);
+            if (count < 0)
             {
-                addSession(new DeleteSegmentsSession(
-                    recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy, errorHandler));
+                return;
             }
 
             controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
@@ -1177,14 +1179,13 @@ abstract class ArchiveConductor
             final ArrayDeque<String> files = new ArrayDeque<>();
             findDetachedSegments(recordingId, files);
 
-            final int count = files.size();
-            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
-
-            if (count > 0)
+            final int count = addDeleteSegmentsSession(correlationId, recordingId, controlSession, files);
+            if (count < 0)
             {
-                addSession(new DeleteSegmentsSession(
-                    recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy, errorHandler));
+                return;
             }
+
+            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
         }
     }
 
@@ -1296,21 +1297,14 @@ abstract class ArchiveConductor
                 position -= segmentLength;
             }
 
+            if (addDeleteSegmentsSession(correlationId, srcRecordingId, controlSession, files) < 0)
+            {
+                return;
+            }
+
             catalog.startPosition(dstRecordingId, startPosition);
             catalog.stopPosition(srcRecordingId, startPosition);
             controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
-
-            if (!files.isEmpty())
-            {
-                addSession(new DeleteSegmentsSession(
-                    srcRecordingId,
-                    correlationId,
-                    files,
-                    archiveDir,
-                    controlSession,
-                    controlResponseProxy,
-                    errorHandler));
-            }
         }
     }
 
@@ -1328,15 +1322,60 @@ abstract class ArchiveConductor
         while (filenamePosition >= 0)
         {
             final String segmentFileName = segmentFileName(recordingId, filenamePosition);
-            final File file = new File(archiveDir, segmentFileName);
-            if (!file.exists())
-            {
-                break;
-            }
-
             files.addFirst(segmentFileName);
             filenamePosition -= segmentFile;
         }
+    }
+
+    private int addDeleteSegmentsSession(
+        final long correlationId,
+        final long recordingId,
+        final ControlSession controlSession,
+        final ArrayDeque<String> files)
+    {
+        if (files.isEmpty())
+        {
+            return 0;
+        }
+
+        final ArrayDeque<File> deleteList = new ArrayDeque<>(files.size());
+        for (final String name : files)
+        {
+            final File file = new File(archiveDir, name);
+            if (file.exists())
+            {
+                if (!name.endsWith(DELETE_SUFFIX))
+                {
+                    final File toDelete = new File(archiveDir, name + DELETE_SUFFIX);
+                    if (!file.renameTo(toDelete))
+                    {
+                        final String msg = "failed to rename " + file + " to " + toDelete;
+                        controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+                        return -1;
+                    }
+                    deleteList.addLast(toDelete);
+                }
+                else
+                {
+                    deleteList.addLast(file);
+                }
+            }
+            else if (!name.endsWith(DELETE_SUFFIX))
+            {
+                final File toDelete = new File(archiveDir, name + DELETE_SUFFIX);
+                if (toDelete.exists())
+                {
+                    deleteList.addLast(toDelete);
+                }
+            }
+        }
+
+        final int count = deleteList.size();
+
+        addSession(new DeleteSegmentsSession(
+            recordingId, correlationId, deleteList, controlSession, controlResponseProxy, errorHandler));
+
+        return count;
     }
 
     private int findTermOffsetForStart(

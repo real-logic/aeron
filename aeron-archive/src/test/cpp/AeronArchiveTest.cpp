@@ -187,7 +187,7 @@ public:
             };
 
         m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
-        m_context.messageTimeoutNs(m_context.messageTimeoutNs() + m_context.messageTimeoutNs() / 2);
+        m_context.messageTimeoutNs(m_context.messageTimeoutNs() * 2);
 
         m_stream << currentTimeMillis() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
     }

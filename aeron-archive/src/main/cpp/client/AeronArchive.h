@@ -148,7 +148,7 @@ public:
     {
         std::shared_ptr<AsyncConnect> asyncConnect = AeronArchive::asyncConnect(context);
         std::shared_ptr<Aeron> aeron = context.aeron();
-        ConnectIdleStrategy idle;
+        ConnectIdleStrategy idleStrategy;
         std::uint8_t previousStep = asyncConnect->step();
 
         std::shared_ptr<AeronArchive> archive = asyncConnect->poll();
@@ -156,11 +156,11 @@ public:
         {
             if (asyncConnect->step() == previousStep)
             {
-                idle.idle();
+                idleStrategy.idle();
             }
             else
             {
-                idle.reset();
+                idleStrategy.reset();
                 previousStep = asyncConnect->step();
             }
 

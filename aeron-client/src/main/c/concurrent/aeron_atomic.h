@@ -22,7 +22,11 @@
 #if defined(AERON_COMPILER_GCC) && defined(AERON_CPU_X64)
     #include "concurrent/aeron_atomic64_gcc_x86_64.h"
 #elif defined(AERON_COMPILER_GCC) && defined(AERON_CPU_ARM)
+#if defined(__cplusplus) && !defined(_Atomic)
+    #include "concurrent/aeron_atomic64_cpp.h"
+#else
     #include "concurrent/aeron_atomic64_c11.h"
+#endif
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
     #include "concurrent/aeron_atomic64_msvc.h"
 #else

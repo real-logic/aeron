@@ -49,14 +49,14 @@ while (false) \
 #define AERON_GET_AND_ADD_INT64(original, dst, value) \
 do \
 { \
-    original = std::atomic_fetch_add((std::atomic<int64_t> *)&dst, value); \
+    original = std::atomic_fetch_add((std::atomic<int64_t> *)&dst, (int64_t)value); \
 } \
 while (false) \
 
 #define AERON_GET_AND_ADD_INT32(original, dst, value) \
 do \
 { \
-    original = std::atomic_fetch_add((std::atomic<int32_t> *)&dst, value); \
+    original = std::atomic_fetch_add((std::atomic<int32_t> *)&dst, (int32_t)value); \
 } \
 while (false) \
 

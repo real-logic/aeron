@@ -170,7 +170,7 @@ class ClusterToolTest
     }
 
     @Test
-    void sortRecordingLogIsANoOpIfRecordDoesNotExist(final @TempDir Path emptyClusterDir) throws IOException
+    void sortRecordingLogIsANoOpIfRecordDoesNotExist(final @TempDir Path emptyClusterDir)
     {
         final File clusterDir = emptyClusterDir.toFile();
         final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);

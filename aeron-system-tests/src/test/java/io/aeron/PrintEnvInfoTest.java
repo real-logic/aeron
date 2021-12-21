@@ -18,7 +18,7 @@ package io.aeron;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-class PrintEnvInfo
+class PrintEnvInfoTest
 {
     @Disabled
     @Test

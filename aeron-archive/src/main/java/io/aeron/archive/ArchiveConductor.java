@@ -895,11 +895,7 @@ abstract class ArchiveConductor
                 files.addLast(segmentFileName(recordingId, p));
             }
 
-            if (addDeleteSegmentsSession(correlationId, recordingId, controlSession, files) < 0)
-            {
-                return;
-            }
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+            deleteSegments(correlationId, recordingId, controlSession, files);
         }
     }
 
@@ -924,12 +920,7 @@ abstract class ArchiveConductor
                 }
             }
 
-            if (addDeleteSegmentsSession(correlationId, recordingId, controlSession, files) < 0)
-            {
-                return;
-            }
-
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+            deleteSegments(correlationId, recordingId, controlSession, files);
         }
     }
 
@@ -1152,14 +1143,7 @@ abstract class ArchiveConductor
         {
             final ArrayDeque<String> files = new ArrayDeque<>();
             findDetachedSegments(recordingId, files);
-
-            final int count = addDeleteSegmentsSession(correlationId, recordingId, controlSession, files);
-            if (count < 0)
-            {
-                return;
-            }
-
-            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
+            deleteSegments(correlationId, recordingId, controlSession, files);
         }
     }
 
@@ -1176,14 +1160,7 @@ abstract class ArchiveConductor
 
             final ArrayDeque<String> files = new ArrayDeque<>();
             findDetachedSegments(recordingId, files);
-
-            final int count = addDeleteSegmentsSession(correlationId, recordingId, controlSession, files);
-            if (count < 0)
-            {
-                return;
-            }
-
-            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
+            deleteSegments(correlationId, recordingId, controlSession, files);
         }
     }
 
@@ -1295,14 +1272,18 @@ abstract class ArchiveConductor
                 position -= segmentLength;
             }
 
-            if (addDeleteSegmentsSession(correlationId, srcRecordingId, controlSession, files) < 0)
+            if (addDeleteSegmentsSession(correlationId, srcRecordingId, controlSession, files) >= 0)
             {
-                return;
-            }
+                catalog.startPosition(dstRecordingId, startPosition);
+                catalog.stopPosition(srcRecordingId, startPosition);
+                controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
 
-            catalog.startPosition(dstRecordingId, startPosition);
-            catalog.stopPosition(srcRecordingId, startPosition);
-            controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
+                if (files.isEmpty())
+                {
+                    controlSession.attemptSignal(
+                        correlationId, srcRecordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
+                }
+            }
         }
     }
 
@@ -2064,5 +2045,24 @@ abstract class ArchiveConductor
         }
 
         return false;
+    }
+
+    private void deleteSegments(
+        final long correlationId,
+        final long recordingId,
+        final ControlSession controlSession,
+        final ArrayDeque<String> files)
+    {
+        final int count = addDeleteSegmentsSession(correlationId, recordingId, controlSession, files);
+        if (count >= 0)
+        {
+            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
+
+            if (0 == count)
+            {
+                controlSession.attemptSignal(
+                    correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
+            }
+        }
     }
 }

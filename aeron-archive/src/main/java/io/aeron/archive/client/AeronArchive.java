@@ -1435,8 +1435,9 @@ public final class AeronArchive implements AutoCloseable
      *
      * @param recordingId of the stopped recording to be truncated.
      * @param position    to which the recording will be truncated.
+     * @return count of deleted segment files.
      */
-    public void truncateRecording(final long recordingId, final long position)
+    public long truncateRecording(final long recordingId, final long position)
     {
         lock.lock();
         try
@@ -1451,7 +1452,7 @@ public final class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send truncate recording request");
             }
 
-            pollForResponse(lastCorrelationId);
+            return pollForResponse(lastCorrelationId);
         }
         finally
         {
@@ -1465,8 +1466,9 @@ public final class AeronArchive implements AutoCloseable
      * and delete the corresponding segment files. The space in the Catalog will be reclaimed upon compaction.
      *
      * @param recordingId of the stopped recording to be purged.
+     * @return count of deleted segment files.
      */
-    public void purgeRecording(final long recordingId)
+    public long purgeRecording(final long recordingId)
     {
         lock.lock();
         try
@@ -1481,7 +1483,7 @@ public final class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send invalidate recording request");
             }
 
-            pollForResponse(lastCorrelationId);
+            return pollForResponse(lastCorrelationId);
         }
         finally
         {

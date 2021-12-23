@@ -1238,10 +1238,11 @@ public:
      *
      * @param recordingId   of the stopped recording to be truncated.
      * @param position      to which the recording will be truncated.
+     * @return the count of segments deleted.
      * @tparam IdleStrategy to use for polling operations.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    inline void truncateRecording(std::int64_t recordingId, std::int64_t position)
+    inline std::int64_t truncateRecording(std::int64_t recordingId, std::int64_t position)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
@@ -1255,7 +1256,7 @@ public:
             throw ArchiveException("failed to send truncate recording request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**
@@ -1264,9 +1265,10 @@ public:
      *
      * @param recordingId   of the stopped recording to be purged.
      * @tparam IdleStrategy to use for polling operations.
+     * @return the count of segments deleted.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    inline void purgeRecording(std::int64_t recordingId)
+    inline std::int64_t purgeRecording(std::int64_t recordingId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
@@ -1279,7 +1281,7 @@ public:
             throw ArchiveException("failed to send purge recording request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
     }
 
     /**

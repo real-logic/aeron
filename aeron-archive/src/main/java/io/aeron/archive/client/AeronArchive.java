@@ -85,6 +85,7 @@ public final class AeronArchive implements AutoCloseable
     private final Lock lock;
     private final NanoClock nanoClock;
     private final AgentInvoker aeronClientInvoker;
+    private final AgentInvoker agentInvoker;
     private RecordingDescriptorPoller recordingDescriptorPoller;
     private RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller;
 
@@ -97,6 +98,7 @@ public final class AeronArchive implements AutoCloseable
         this.context = context;
         aeron = context.aeron();
         aeronClientInvoker = aeron.conductorAgentInvoker();
+        agentInvoker = context.agentInvoker();
         idleStrategy = context.idleStrategy();
         messageTimeoutNs = context.messageTimeoutNs();
         lock = context.lock();
@@ -2266,6 +2268,11 @@ public final class AeronArchive implements AutoCloseable
         {
             aeronClientInvoker.invoke();
         }
+
+        if (null != agentInvoker)
+        {
+            agentInvoker.invoke();
+        }
     }
 
     private void ensureOpen()
@@ -2653,6 +2660,7 @@ public final class AeronArchive implements AutoCloseable
         private ErrorHandler errorHandler;
         private CredentialsSupplier credentialsSupplier;
         private RecordingSignalConsumer recordingSignalConsumer = Configuration.NO_OP_RECORDING_SIGNAL_CONSUMER;
+        private AgentInvoker agentInvoker;
         private boolean ownsAeronClient = false;
 
         /**
@@ -3135,6 +3143,30 @@ public final class AeronArchive implements AutoCloseable
         public RecordingSignalConsumer recordingSignalConsumer()
         {
             return recordingSignalConsumer;
+        }
+
+        /**
+         * Set the {@link AgentInvoker} to be invoked in addition to any invoker in use by the Aeron instance.
+         * <p>
+         * Useful for when running on a low thread count scenario.
+         *
+         * @param agentInvoker to be invoked while awaiting a response in the client.
+         * @return this for a fluent API.
+         */
+        public Context agentInvoker(final AgentInvoker agentInvoker)
+        {
+            this.agentInvoker = agentInvoker;
+            return this;
+        }
+
+        /**
+         * Get the {@link AgentInvoker} that is used in addition to the any invoker in use by the Aeron instance.
+         *
+         * @return the {@link AgentInvoker} that is used.
+         */
+        public AgentInvoker agentInvoker()
+        {
+            return agentInvoker;
         }
 
         /**

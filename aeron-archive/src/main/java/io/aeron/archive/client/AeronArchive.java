@@ -206,15 +206,31 @@ public final class AeronArchive implements AutoCloseable
             asyncConnect = new AsyncConnect(ctx, controlResponsePoller, archiveProxy);
             final IdleStrategy idleStrategy = ctx.idleStrategy();
             final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
+            final AgentInvoker delegatingInvoker = ctx.agentInvoker();
+            int previousStep = asyncConnect.step();
 
             AeronArchive aeronArchive;
             while (null == (aeronArchive = asyncConnect.poll()))
             {
+                if (asyncConnect.step() == previousStep)
+                {
+                    idleStrategy.idle();
+                }
+                else
+                {
+                    idleStrategy.reset();
+                    previousStep = asyncConnect.step();
+                }
+
                 if (null != aeronClientInvoker)
                 {
                     aeronClientInvoker.invoke();
                 }
-                idleStrategy.idle();
+
+                if (null != delegatingInvoker)
+                {
+                    delegatingInvoker.invoke();
+                }
             }
 
             return aeronArchive;
@@ -2068,7 +2084,7 @@ public final class AeronArchive implements AutoCloseable
 
             checkDeadline(deadlineNs, "awaiting response", correlationId);
             idleStrategy.idle();
-            invokeAeronClient();
+            invokeInvokers();
         }
     }
 
@@ -2083,7 +2099,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (poller.controlSessionId() != controlSessionId)
             {
-                invokeAeronClient();
+                invokeInvokers();
                 continue;
             }
 
@@ -2127,7 +2143,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (poller.controlSessionId() != controlSessionId)
             {
-                invokeAeronClient();
+                invokeInvokers();
                 continue;
             }
 
@@ -2192,7 +2208,7 @@ public final class AeronArchive implements AutoCloseable
                 deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
             }
 
-            invokeAeronClient();
+            invokeInvokers();
 
             if (fragments > 0)
             {
@@ -2234,7 +2250,7 @@ public final class AeronArchive implements AutoCloseable
                 deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
             }
 
-            invokeAeronClient();
+            invokeInvokers();
 
             if (fragments > 0)
             {
@@ -2262,7 +2278,7 @@ public final class AeronArchive implements AutoCloseable
             controlResponsePoller.recordingSignal());
     }
 
-    private void invokeAeronClient()
+    private void invokeInvokers()
     {
         if (null != aeronClientInvoker)
         {

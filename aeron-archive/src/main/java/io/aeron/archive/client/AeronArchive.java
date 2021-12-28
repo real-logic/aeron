@@ -3124,7 +3124,7 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Set the {@link RecordingSignalConsumer} to will be called  when polling for responses from an Archive.
+         * Set the {@link RecordingSignalConsumer} to will be called when polling for responses from an Archive.
          *
          * @param recordingSignalConsumer to called with recording signal events.
          * @return this for a fluent API.
@@ -3136,7 +3136,7 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Set the {@link RecordingSignalConsumer} to will be called  when polling for responses from an Archive.
+         * Set the {@link RecordingSignalConsumer} to will be called when polling for responses from an Archive.
          *
          * @return a recording signal consumer.
          */

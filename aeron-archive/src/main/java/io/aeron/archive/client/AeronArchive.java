@@ -3146,7 +3146,7 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Set the {@link AgentInvoker} to be invoked in addition to any invoker in use by the Aeron instance.
+         * Set the {@link AgentInvoker} to be invoked in addition to any invoker used by the {@link #aeron()} instance.
          * <p>
          * Useful for when running on a low thread count scenario.
          *
@@ -3160,7 +3160,7 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Get the {@link AgentInvoker} that is used in addition to the any invoker in use by the Aeron instance.
+         * Get the {@link AgentInvoker} to be invoked in addition to any invoker used by the {@link #aeron()} instance.
          *
          * @return the {@link AgentInvoker} that is used.
          */

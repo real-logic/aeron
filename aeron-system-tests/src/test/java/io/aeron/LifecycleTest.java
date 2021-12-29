@@ -41,10 +41,10 @@ class LifecycleTest
             .dirDeleteOnStart(true)
             .errorHandler(Tests::onError);
 
-        try (TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher))
+        try (TestMediaDriver mediaDriver = TestMediaDriver.launch(driverCtx, testWatcher))
         {
             final Aeron.Context clientCtx = new Aeron.Context()
-                .aeronDirectoryName(driverCtx.aeronDirectoryName());
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName());
 
             final Aeron aeron = Aeron.connect(clientCtx);
             aeron.close();
@@ -63,13 +63,13 @@ class LifecycleTest
             .dirDeleteOnStart(true)
             .errorHandler(Tests::onError);
 
-        try (TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher))
+        try (TestMediaDriver mediaDriver = TestMediaDriver.launch(driverCtx, testWatcher))
         {
             final Aeron.Context clientCtxOne = new Aeron.Context()
-                .aeronDirectoryName(driverCtx.aeronDirectoryName());
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName());
 
             final Aeron.Context clientCtxTwo = new Aeron.Context()
-                .aeronDirectoryName(driverCtx.aeronDirectoryName());
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName());
 
             try (Aeron aeron = Aeron.connect(clientCtxOne))
             {

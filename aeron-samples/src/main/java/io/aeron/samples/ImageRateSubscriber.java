@@ -40,7 +40,8 @@ class ImageRateSubscriberValues extends ImageRateSubscriberLhsPadding
     {
         try
         {
-            TOTAL_BYTES_OFFSET = UNSAFE.objectFieldOffset(RateReporterValues.class.getDeclaredField("totalBytes"));
+            TOTAL_BYTES_OFFSET = UNSAFE.objectFieldOffset(
+                ImageRateSubscriberValues.class.getDeclaredField("totalBytes"));
         }
         catch (final Exception ex)
         {
@@ -132,6 +133,6 @@ public final class ImageRateSubscriber extends ImageRateSubscriberRhsPadding imp
 
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        UNSAFE.putOrderedLong(this, TOTAL_BYTES_OFFSET, totalBytes + length);
+        UNSAFE.putOrderedLong(this, ImageRateSubscriberValues.TOTAL_BYTES_OFFSET, totalBytes + length);
     }
 }

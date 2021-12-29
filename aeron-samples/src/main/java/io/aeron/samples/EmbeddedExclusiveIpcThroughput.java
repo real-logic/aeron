@@ -53,8 +53,8 @@ public class EmbeddedExclusiveIpcThroughput
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-            Aeron aeron = Aeron.connect();
+        try (MediaDriver mediaDriver = MediaDriver.launch(ctx);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {

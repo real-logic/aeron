@@ -46,9 +46,9 @@ public class TerminateDriverTest
 
         when(mockTerminationValidator.allowTermination(any(), any(), anyInt(), anyInt())).thenReturn(true);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx))
+        try (MediaDriver mediaDriver = MediaDriver.launch(ctx))
         {
-            assertTrue(CommonContext.requestDriverTermination(ctx.aeronDirectory(), null, 0, 0));
+            assertTrue(CommonContext.requestDriverTermination(mediaDriver.context().aeronDirectory(), null, 0, 0));
 
             while (!hasTerminated.get())
             {
@@ -75,9 +75,9 @@ public class TerminateDriverTest
                 return false;
             });
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx))
+        try (MediaDriver mediaDriver = MediaDriver.launch(ctx))
         {
-            assertTrue(CommonContext.requestDriverTermination(ctx.aeronDirectory(), null, 0, 0));
+            assertTrue(CommonContext.requestDriverTermination(mediaDriver.context().aeronDirectory(), null, 0, 0));
 
             while (!hasCalledTerminationValidator.get())
             {

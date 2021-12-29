@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ClientContextTest
 {
     @Test
+    @SuppressWarnings("try")
     void shouldPreventCreatingMultipleClientsWithTheSameContext()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()

@@ -78,8 +78,8 @@ public class EmbeddedPingPong
             .receiverIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .senderIdleStrategy(NoOpIdleStrategy.INSTANCE);
 
-        try (MediaDriver ignored = MediaDriver.launch(ctx);
-            Aeron aeron = Aeron.connect())
+        try (MediaDriver mediaDriver = MediaDriver.launch(ctx);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName())))
         {
             final Thread pongThread = startPong(aeron);
             pongThread.start();

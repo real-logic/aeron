@@ -58,6 +58,7 @@ class ClientErrorHandlerTest
 
     @Test
     @InterruptAfter(10)
+    @SuppressWarnings("try")
     void shouldHaveCorrectTermBufferLength()
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()

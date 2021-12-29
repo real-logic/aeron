@@ -48,6 +48,7 @@ public final class EchoServiceNode
      *
      * @param args passed to the process.
      */
+    @SuppressWarnings("try")
     public static void main(final String[] args)
     {
         final int nodeId = parseInt(System.getProperty("aeron.cluster.tutorial.nodeId"));
@@ -75,11 +76,11 @@ public final class EchoServiceNode
             .errorHandler(errorHandler("Clustered Service"));
 
         try (
-            ClusteredMediaDriver clusteredMediaDriver = ClusteredMediaDriver.launch(
+            ClusteredMediaDriver ignore = ClusteredMediaDriver.launch(
                 clusterConfig.mediaDriverContext(),
                 clusterConfig.archiveContext(),
                 clusterConfig.consensusModuleContext());
-            ClusteredServiceContainer container = ClusteredServiceContainer.launch(
+            ClusteredServiceContainer ignore2 = ClusteredServiceContainer.launch(
                 clusterConfig.clusteredServiceContext()))
         {
             System.out.println("[" + nodeId + "] Started Cluster Node on " + hostnames.get(nodeId) + "...");

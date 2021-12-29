@@ -82,6 +82,7 @@ class MinPositionSubscriptionTest
         shouldJoinAtSamePosition(channel, SPY_PREFIX + channel);
     }
 
+    @SuppressWarnings("try")
     private void shouldJoinAtSamePosition(final String publicationChannel, final String subscriptionChannel)
     {
         try (Subscription subscriptionOne = aeron.addSubscription(subscriptionChannel, STREAM_ID);

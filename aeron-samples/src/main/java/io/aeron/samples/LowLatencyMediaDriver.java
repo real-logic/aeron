@@ -34,6 +34,7 @@ public class LowLatencyMediaDriver
      *
      * @param args passed to the process which will be used for loading properties files.
      */
+    @SuppressWarnings("try")
     public static void main(final String[] args)
     {
         loadPropertiesFiles(args);

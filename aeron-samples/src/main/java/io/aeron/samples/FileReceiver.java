@@ -151,8 +151,8 @@ public class FileReceiver
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
-        try (MediaDriver ignore = MediaDriver.launch();
-            Aeron aeron = Aeron.connect();
+        try (MediaDriver mediaDriver = MediaDriver.launch();
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             System.out.println("Receiving from " + CHANNEL + " on stream id " + STREAM_ID);

@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("try")
 class AsyncResourceTest
 {
     private static final int STREAM_ID = 7777;

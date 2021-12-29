@@ -408,6 +408,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
+    @SuppressWarnings("try")
     public void purgeRecordingFailsIfThereAreActiveReplays()
     {
         final String messagePrefix = "Message-Prefix-";

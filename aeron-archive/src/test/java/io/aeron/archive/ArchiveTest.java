@@ -68,6 +68,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(InterruptingTestCallback.class)
+@SuppressWarnings("try")
 public class ArchiveTest
 {
     @Test

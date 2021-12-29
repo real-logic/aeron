@@ -50,6 +50,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
+@SuppressWarnings("try")
 class ExclusivePublicationTest
 {
     private static List<String> channels()

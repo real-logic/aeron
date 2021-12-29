@@ -58,8 +58,8 @@ class RegistrationAndOwnerTest
             .dirDeleteOnStart(true);
 
         try (
-            TestMediaDriver ignore = TestMediaDriver.launch(ctx, testWatcher);
-            Aeron aeron = Aeron.connect();
+            TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, testWatcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
             Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             Publication publication = aeron.addPublication(channel, STREAM_ID);
             Counter userCounter = aeron.addCounter(1002, "Test Counter"))

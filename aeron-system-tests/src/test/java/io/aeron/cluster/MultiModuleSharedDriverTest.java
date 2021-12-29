@@ -49,9 +49,9 @@ public class MultiModuleSharedDriverTest
     @RegisterExtension
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
-    @SuppressWarnings("methodlength")
     @Test
     @InterruptAfter(20)
+    @SuppressWarnings({ "try", "methodlength"})
     public void shouldSupportTwoSingleNodeClusters()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()

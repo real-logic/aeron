@@ -26,6 +26,7 @@ public class NetworkTestingUtil
      * @param address The address to attempt to bind to.
      * @return null if successful, error message otherwise.
      */
+    @SuppressWarnings("try")
     public static String isBindAddressAvailable(final String address)
     {
         try (ServerSocket ignored = new ServerSocket(0, 1024, InetAddress.getByName(address)))

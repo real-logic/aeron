@@ -83,6 +83,7 @@ public class ArchiveLoggingAgentTest
         testArchiveLogging(CMD_OUT_RESPONSE.name(), EnumSet.of(CMD_OUT_RESPONSE));
     }
 
+    @SuppressWarnings("try")
     private void testArchiveLogging(final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents)
     {
         before(enabledEvents, expectedEvents);

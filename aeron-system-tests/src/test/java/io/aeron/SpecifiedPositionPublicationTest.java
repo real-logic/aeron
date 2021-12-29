@@ -44,8 +44,8 @@ class SpecifiedPositionPublicationTest
             .threadingMode(ThreadingMode.SHARED);
 
         try (
-            TestMediaDriver ignore = TestMediaDriver.launch(context, testWatcher);
-            Aeron aeron = Aeron.connect())
+            TestMediaDriver mediaDriver = TestMediaDriver.launch(context, testWatcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName())))
         {
             final String channel = new ChannelUriStringBuilder()
                 .media("ipc")

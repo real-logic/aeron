@@ -79,8 +79,8 @@ class GapFillLossTest
 
         TestMediaDriver.enableLossGenerationOnReceive(ctx, 0.20, 0xcafebabeL, true, false);
 
-        try (TestMediaDriver ignore = TestMediaDriver.launch(ctx, watcher);
-            Aeron aeron = Aeron.connect();
+        try (TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, watcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
             Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID);
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {

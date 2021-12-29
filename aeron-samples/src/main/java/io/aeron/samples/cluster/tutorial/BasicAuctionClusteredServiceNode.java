@@ -125,6 +125,7 @@ public class BasicAuctionClusteredServiceNode
      *
      * @param args passed to the process.
      */
+    @SuppressWarnings("try")
     // tag::main[]
     public static void main(final String[] args)
     {

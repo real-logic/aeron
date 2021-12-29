@@ -40,6 +40,7 @@ public final class RemoteLaunchClient implements AutoCloseable
     {
         final RemoteLaunchClient remoteLaunchClient = new RemoteLaunchClient(host, port);
         remoteLaunchClient.init();
+
         return remoteLaunchClient;
     }
 
@@ -84,7 +85,7 @@ public final class RemoteLaunchClient implements AutoCloseable
         }
     }
 
-    public void close() throws Exception
+    public void close() throws IOException
     {
         clientChannel.close();
     }

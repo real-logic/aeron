@@ -75,8 +75,8 @@ public class EmbeddedDualExclusiveThroughput
         final String sourceUriOne = builder.controlEndpoint("localhost:20550").tags("1").build();
         final String sourceUriTwo = builder.controlEndpoint("localhost:20551").tags("2").build();
 
-        try (MediaDriver ignore = MediaDriver.launch();
-            Aeron aeron = Aeron.connect();
+        try (MediaDriver mediaDriver = MediaDriver.launch();
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, handler, null);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(sourceUriOne, STREAM_ID);
             ExclusivePublication publicationTwo = aeron.addExclusivePublication(sourceUriTwo, STREAM_ID))

@@ -139,7 +139,6 @@ class MultiDestinationSubscriptionTest
 
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
-
         subscription.addDestination(publicationChannelA);
     }
 
@@ -273,43 +272,41 @@ class MultiDestinationSubscriptionTest
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
         subscription.addDestination(PUB_UNICAST_URI);
 
-        try (Subscription subscriptionB = clientA.addSubscription(SUB_URI, STREAM_ID))
+        final Subscription subscriptionB = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscriptionB.addDestination(unicastUri2);
+
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+        publicationB = clientA.addPublication(unicastUri2, STREAM_ID);
+
+        while (publicationA.offer(buffer, 0, buffer.capacity()) < 0)
         {
-            subscriptionB.addDestination(unicastUri2);
-
-            publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
-            publicationB = clientA.addPublication(unicastUri2, STREAM_ID);
-
-            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0)
-            {
-                Tests.yield();
-            }
-
-            while (subscription.poll(fragmentHandler, 1) <= 0)
-            {
-                Tests.yield();
-            }
-
-            // Wait a bit to ensure a message doesn't arrive.
-            Tests.sleep(1000);
-
-            assertEquals(0, subscriptionB.poll(fragmentHandler, 1));
-
-            while (publicationB.offer(buffer, 0, buffer.capacity()) < 0)
-            {
-                Tests.yield();
-            }
-
-            while (subscriptionB.poll(fragmentHandler, 1) <= 0)
-            {
-                Tests.yield();
-            }
-
-            // Wait a bit to ensure a message doesn't arrive.
-            Tests.sleep(1000);
-
-            assertEquals(0, subscription.poll(fragmentHandler, 1));
+            Tests.yield();
         }
+
+        while (subscription.poll(fragmentHandler, 1) <= 0)
+        {
+            Tests.yield();
+        }
+
+        // Wait a bit to ensure a message doesn't arrive.
+        Tests.sleep(1000);
+
+        assertEquals(0, subscriptionB.poll(fragmentHandler, 1));
+
+        while (publicationB.offer(buffer, 0, buffer.capacity()) < 0)
+        {
+            Tests.yield();
+        }
+
+        while (subscriptionB.poll(fragmentHandler, 1) <= 0)
+        {
+            Tests.yield();
+        }
+
+        // Wait a bit to ensure a message doesn't arrive.
+        Tests.sleep(1000);
+
+        assertEquals(0, subscription.poll(fragmentHandler, 1));
     }
 
     @Test
@@ -328,20 +325,18 @@ class MultiDestinationSubscriptionTest
         subscription = clientA.addSubscription(taggedSubUri, STREAM_ID);
         subscription.addDestination(PUB_UNICAST_URI);
 
-        try (Subscription ignore = clientA.addSubscription(taggedSubUriIgnored, STREAM_ID);
-            Subscription subscriptionA1 = clientA.addSubscription(referringSubUri, STREAM_ID))
+        clientA.addSubscription(taggedSubUriIgnored, STREAM_ID);
+        final Subscription subscriptionA1 = clientA.addSubscription(referringSubUri, STREAM_ID);
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+
+        while (publicationA.offer(buffer, 0, buffer.capacity()) < 0)
         {
-            publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+            Tests.yield();
+        }
 
-            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0)
-            {
-                Tests.yield();
-            }
-
-            while (subscriptionA1.poll(fragmentHandler, 1) <= 0)
-            {
-                Tests.yield();
-            }
+        while (subscriptionA1.poll(fragmentHandler, 1) <= 0)
+        {
+            Tests.yield();
         }
     }
 

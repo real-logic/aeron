@@ -56,6 +56,7 @@ public class ArchiveCreator
      *
      * @param args passed to the process.
      */
+    @SuppressWarnings("try")
     public static void main(final String[] args)
     {
         final String archiveDirName = Archive.Configuration.archiveDirName();

@@ -56,12 +56,13 @@ class TestMediaDriverTest
 
         final MediaDriver.Context context = new MediaDriver.Context().dirDeleteOnStart(true).dirDeleteOnShutdown(false);
         assertEquals(CommonContext.getAeronDirectoryName(), context.aeronDirectoryName());
-        try (TestMediaDriver ignore = CTestMediaDriver.launch(context, false, null);
+        try (TestMediaDriver mediaDriver = CTestMediaDriver.launch(context, false, null);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName())))
         {
             final File aeronDirectory = aeron.context().aeronDirectory();
             assertNotNull(aeronDirectory);
             assertTrue(aeronDirectory.exists());
+            assertNotNull(mediaDriver);
         }
         finally
         {

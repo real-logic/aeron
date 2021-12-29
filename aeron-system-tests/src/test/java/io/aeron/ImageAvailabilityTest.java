@@ -72,6 +72,7 @@ class ImageAvailabilityTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
+    @SuppressWarnings("try")
     void shouldCallImageHandlers(final String channel)
     {
         final AtomicInteger unavailableImageCount = new AtomicInteger();
@@ -124,6 +125,7 @@ class ImageAvailabilityTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
+    @SuppressWarnings("try")
     void shouldCallImageHandlersWithPublisherOnDifferentClient(final String channel)
     {
         final AtomicInteger unavailableImageCount = new AtomicInteger();

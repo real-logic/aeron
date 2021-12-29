@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
 import static io.aeron.archive.Archive.segmentFileName;
@@ -68,7 +67,6 @@ class ReplaySession implements Session, AutoCloseable
     }
 
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ);
-    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
     private final long connectDeadlineMs;
     private final long correlationId;
@@ -569,7 +567,7 @@ class ReplaySession implements Session, AutoCloseable
             }
         }
 
-        fileChannel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES);
+        fileChannel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS);
     }
 
     static boolean notHeaderAligned(

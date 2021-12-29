@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
 import static io.aeron.archive.Archive.segmentFileName;
@@ -42,7 +41,6 @@ import static java.nio.file.StandardOpenOption.READ;
 class RecordingReader implements AutoCloseable
 {
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ);
-    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
     private final File archiveDir;
     private final long recordingId;
@@ -119,11 +117,6 @@ class RecordingReader implements AutoCloseable
     public void close()
     {
         closeRecordingSegment();
-    }
-
-    long recordingId()
-    {
-        return recordingId;
     }
 
     long replayPosition()
@@ -215,7 +208,7 @@ class RecordingReader implements AutoCloseable
             throw new IllegalArgumentException("failed to open recording segment file " + segmentFileName);
         }
 
-        try (FileChannel channel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
+        try (FileChannel channel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS))
         {
             mappedSegmentBuffer = channel.map(READ_ONLY, 0, segmentLength);
         }

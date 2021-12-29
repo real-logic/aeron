@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -68,7 +67,6 @@ abstract class ArchiveConductor
 {
     private static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
-    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
     private static final String DELETE_SUFFIX = ".del";
 
     private final long closeHandlerRegistrationId;
@@ -1192,7 +1190,7 @@ abstract class ArchiveConductor
                     return;
                 }
 
-                try (FileChannel fileChannel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
+                try (FileChannel fileChannel = FileChannel.open(file.toPath(), FILE_OPTIONS))
                 {
                     final int termCount = (int)(position >> bitsToShift);
                     final int termId = recordingSummary.initialTermId + termCount;
@@ -1980,7 +1978,7 @@ abstract class ArchiveConductor
         final int termLength,
         final File file)
     {
-        try (FileChannel channel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
+        try (FileChannel channel = FileChannel.open(file.toPath(), FILE_OPTIONS))
         {
             final int termOffset = (int)(position & (termLength - 1));
             final int termCount = (int)(position >> LogBufferDescriptor.positionBitsToShift(termLength));

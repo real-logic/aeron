@@ -28,7 +28,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -43,7 +42,6 @@ import static java.nio.file.StandardOpenOption.*;
 public final class LogBuffers implements AutoCloseable
 {
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE, SPARSE);
-    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
     private long lingerDeadlineNs = Long.MAX_VALUE;
     private int refCount;
@@ -67,7 +65,7 @@ public final class LogBuffers implements AutoCloseable
 
         try
         {
-            fileChannel = FileChannel.open(Paths.get(logFileName), FILE_OPTIONS, NO_ATTRIBUTES);
+            fileChannel = FileChannel.open(Paths.get(logFileName), FILE_OPTIONS);
             final long logLength = fileChannel.size();
 
             if (logLength < Integer.MAX_VALUE)

@@ -97,7 +97,7 @@ public class FileStoreLogFactory implements LogFactory
     }
 
     /**
-     * Create new {@link RawLog} in the publications directory for the supplied triplet.
+     * Create new {@link RawLog} in the publications' directory for the supplied triplet.
      *
      * @param correlationId    to use to distinguish this publication
      * @param termBufferLength length of each term

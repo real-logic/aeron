@@ -174,7 +174,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         this.recordingLog = ctx.recordingLog();
         this.serviceClientIds = new long[ctx.serviceCount()];
         Arrays.fill(serviceClientIds, NULL_VALUE);
-        this.serviceAckQueues = ServiceAck.newArray(ctx.serviceCount());
+        this.serviceAckQueues = ServiceAck.newArrayOfQueues(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(activeMembers);
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
@@ -266,8 +266,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 logRecordingId = recoveryPlan.log.recordingId;
             }
 
-            try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
+            try (Counter counter = addRecoveryStateCounter(recoveryPlan))
             {
+                assert null != counter;
+
                 if (!recoveryPlan.snapshots.isEmpty())
                 {
                     loadSnapshot(recoveryPlan.snapshots.get(0), archive);

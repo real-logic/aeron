@@ -21,6 +21,11 @@ package io.aeron.driver.buffer;
 public interface LogFactory extends AutoCloseable
 {
     /**
+     * {@inheritDoc}
+     */
+    void close();
+
+    /**
      * Create a new {@link RawLog} for a publication.
      *
      * @param correlationId    which is the original registration id for a publication.

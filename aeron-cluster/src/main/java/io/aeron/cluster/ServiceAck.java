@@ -83,9 +83,10 @@ final class ServiceAck
         }
     }
 
-    static ArrayDeque<ServiceAck>[] newArray(final int serviceCount)
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    static ArrayDeque<ServiceAck>[] newArrayOfQueues(final int serviceCount)
     {
-        @SuppressWarnings("unchecked") final ArrayDeque<ServiceAck>[] queues = new ArrayDeque[serviceCount];
+        final ArrayDeque<ServiceAck>[] queues = new ArrayDeque[serviceCount];
 
         for (int i = 0; i < serviceCount; i++)
         {

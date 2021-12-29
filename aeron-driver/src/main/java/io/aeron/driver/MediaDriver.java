@@ -90,14 +90,13 @@ public final class MediaDriver implements AutoCloseable
      *
      * @param args passed to the process.
      */
+    @SuppressWarnings("try")
     public static void main(final String[] args)
     {
         loadPropertiesFiles(args);
 
         final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-
-        ctx.terminationHook(barrier::signal);
+        final MediaDriver.Context ctx = new MediaDriver.Context().terminationHook(barrier::signal);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx))
         {

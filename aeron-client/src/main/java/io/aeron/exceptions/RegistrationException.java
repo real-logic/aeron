@@ -23,6 +23,8 @@ import io.aeron.*;
  */
 public class RegistrationException extends AeronException
 {
+    private static final long serialVersionUID = 9076689715024983035L;
+
     /**
      * The correlation id of the command to register the resource action.
      */

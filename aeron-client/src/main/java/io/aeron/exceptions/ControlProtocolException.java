@@ -22,6 +22,8 @@ import io.aeron.ErrorCode;
  */
 public class ControlProtocolException extends AeronException
 {
+    private static final long serialVersionUID = -6491010363479568113L;
+
     /**
      * The {@link ErrorCode} indicating more specific issue experienced by the media driver.
      */

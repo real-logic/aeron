@@ -22,6 +22,8 @@ import io.aeron.exceptions.AeronException;
  */
 public class UnknownSubscriptionException extends AeronException
 {
+    private static final long serialVersionUID = 8934006869519172332L;
+
     /**
      * Exception with provided message and {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      *

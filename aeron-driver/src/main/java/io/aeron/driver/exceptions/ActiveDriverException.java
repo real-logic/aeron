@@ -22,6 +22,8 @@ import io.aeron.exceptions.AeronException;
  */
 public class ActiveDriverException extends AeronException
 {
+    private static final long serialVersionUID = 2539364003811295552L;
+
     /**
      * Exception with provided message and {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      *

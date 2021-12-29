@@ -1576,6 +1576,7 @@ public class Aeron implements AutoCloseable
         }
     }
 
+    @SuppressWarnings("try")
     private static MappedByteBuffer waitForFileMapping(final File file, final EpochClock clock, final long deadlineMs)
     {
         while (true)

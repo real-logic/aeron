@@ -20,6 +20,8 @@ package io.aeron.exceptions;
  */
 public class AeronException extends RuntimeException
 {
+    private static final long serialVersionUID = -8399166154162189622L;
+
     /**
      * Category of {@link Exception}.
      */

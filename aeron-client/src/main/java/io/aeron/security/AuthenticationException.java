@@ -22,6 +22,8 @@ import io.aeron.exceptions.AeronException;
  */
 public class AuthenticationException extends AeronException
 {
+    private static final long serialVersionUID = -3205449285259494699L;
+
     /**
      * Default exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      */

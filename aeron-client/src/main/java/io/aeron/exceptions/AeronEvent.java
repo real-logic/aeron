@@ -22,6 +22,7 @@ package io.aeron.exceptions;
 public class AeronEvent extends AeronException
 {
     private static final StackTraceElement[] EMPTY_STACK = new StackTraceElement[0];
+    private static final long serialVersionUID = 2520658673245952222L;
 
     /**
      * Aeron event with provided message and {@link AeronException.Category#WARN}.

@@ -22,6 +22,8 @@ import io.aeron.exceptions.AeronException;
  */
 public class ClusterException extends AeronException
 {
+    private static final long serialVersionUID = -2688245045186545277L;
+
     /**
      * Default Cluster exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      */

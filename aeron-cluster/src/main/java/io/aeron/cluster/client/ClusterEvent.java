@@ -24,6 +24,8 @@ import io.aeron.exceptions.AeronException;
  */
 public class ClusterEvent extends AeronEvent
 {
+    private static final long serialVersionUID = -3787117048989508866L;
+
     /**
      * Cluster event with provided message and {@link io.aeron.exceptions.AeronException.Category#WARN}.
      *

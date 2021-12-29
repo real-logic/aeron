@@ -20,6 +20,8 @@ package io.aeron.exceptions;
  */
 public class DriverTimeoutException extends TimeoutException
 {
+    private static final long serialVersionUID = -334819963402642904L;
+
     /**
      * Construct the exception for driver timeout due to lack of heartbeat.
      *

@@ -60,7 +60,8 @@ public class LogBufferUnblocker
         {
             case UNBLOCKED_TO_END:
                 rotateLog(logMetaDataBuffer, blockedTermCount, termId);
-                // fall through
+                return true;
+
             case UNBLOCKED:
                 return true;
         }

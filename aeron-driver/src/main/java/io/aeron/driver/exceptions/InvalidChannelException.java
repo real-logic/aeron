@@ -23,6 +23,8 @@ import io.aeron.exceptions.ControlProtocolException;
  */
 public class InvalidChannelException extends ControlProtocolException
 {
+    private static final long serialVersionUID = 8395688431913848255L;
+
     /**
      * Exception with provided message and {@link io.aeron.exceptions.AeronException.Category#ERROR} and
      * {@link ErrorCode#INVALID_CHANNEL}.

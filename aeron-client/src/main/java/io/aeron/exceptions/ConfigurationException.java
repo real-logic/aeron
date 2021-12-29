@@ -20,6 +20,8 @@ package io.aeron.exceptions;
  */
 public class ConfigurationException extends AeronException
 {
+    private static final long serialVersionUID = 2545086690221965112L;
+
     /**
      * Construct an exception with detail for the configuration error.
      *

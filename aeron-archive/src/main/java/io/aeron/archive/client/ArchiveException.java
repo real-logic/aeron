@@ -93,6 +93,8 @@ public class ArchiveException extends AeronException
      */
     public static final int UNAUTHORISED_ACTION = 13;
 
+    private static final long serialVersionUID = 386758252787901080L;
+
     private final int errorCode;
     private final long correlationId;
 

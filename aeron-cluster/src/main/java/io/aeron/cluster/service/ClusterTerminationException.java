@@ -22,4 +22,5 @@ import org.agrona.concurrent.AgentTerminationException;
  */
 public class ClusterTerminationException extends AgentTerminationException
 {
+    private static final long serialVersionUID = -2705156056823180407L;
 }

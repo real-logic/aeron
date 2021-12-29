@@ -23,6 +23,8 @@ package io.aeron.exceptions;
  */
 public class ClientTimeoutException extends TimeoutException
 {
+    private static final long serialVersionUID = 4085394356371474876L;
+
     /**
      * Construct the client timeout exception with detail message.
      *

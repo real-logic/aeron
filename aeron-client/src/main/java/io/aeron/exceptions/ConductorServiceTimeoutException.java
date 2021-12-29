@@ -23,6 +23,8 @@ package io.aeron.exceptions;
  */
 public class ConductorServiceTimeoutException extends TimeoutException
 {
+    private static final long serialVersionUID = 4289404220974757441L;
+
     /**
      * Construct the exception for the service interval timeout with detailed message.
      *

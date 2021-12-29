@@ -24,6 +24,8 @@ import io.aeron.exceptions.AeronException;
  */
 public class ArchiveEvent extends AeronEvent
 {
+    private static final long serialVersionUID = 6814756736866124884L;
+
     /**
      * Archive event with provided message and {@link io.aeron.exceptions.AeronException.Category#WARN}.
      *

@@ -21,6 +21,8 @@ package io.aeron.exceptions;
  */
 public class ChannelEndpointException extends AeronException
 {
+    private static final long serialVersionUID = 6810249167217382358L;
+
     /**
      * Counter id for the status indicator of the channel.
      */

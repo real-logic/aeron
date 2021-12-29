@@ -20,6 +20,8 @@ package io.aeron.exceptions;
  */
 public class TimeoutException extends AeronException
 {
+    private static final long serialVersionUID = 339608646881678251L;
+
     /**
      * Default timeout exception as {@link AeronException.Category#ERROR}.
      */

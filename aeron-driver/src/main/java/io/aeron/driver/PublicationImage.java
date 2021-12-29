@@ -37,6 +37,7 @@ import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
@@ -87,33 +88,22 @@ class PublicationImagePadding3 extends PublicationImageReceiverFields
 }
 
 /**
- * State maintained for active sessionIds within a channel for receiver processing
+ * State maintained for active sessionIds within a channel for receiver processing.
  */
 public final class PublicationImage
     extends PublicationImagePadding3
     implements LossHandler, DriverManagedResource, Subscribable
 {
-    private static final long BEGIN_SM_CHANGE_OFFSET;
-    private static final long END_SM_CHANGE_OFFSET;
-
-    static
-    {
-        try
-        {
-            BEGIN_SM_CHANGE_OFFSET = UNSAFE.objectFieldOffset(
-                PublicationImage.class.getDeclaredField("beginSmChange"));
-            END_SM_CHANGE_OFFSET = UNSAFE.objectFieldOffset(PublicationImage.class.getDeclaredField("endSmChange"));
-        }
-        catch (final Exception ex)
-        {
-            throw new RuntimeException(ex);
-        }
-    }
-
     enum State
     {
         INIT, ACTIVE, DRAINING, LINGER, DONE
     }
+
+    private static final AtomicLongFieldUpdater<PublicationImage> BEGIN_SM_CHANGE_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(PublicationImage.class, "beginSmChange");
+
+    private static final AtomicLongFieldUpdater<PublicationImage> END_SM_CHANGE_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(PublicationImage.class, "endSmChange");
 
     private volatile long beginSmChange = Aeron.NULL_VALUE;
     private volatile long endSmChange = Aeron.NULL_VALUE;
@@ -889,11 +879,11 @@ public final class PublicationImage
     {
         final long changeNumber = beginSmChange + 1;
 
-        UNSAFE.putOrderedLong(this, BEGIN_SM_CHANGE_OFFSET, changeNumber);
+        BEGIN_SM_CHANGE_UPDATER.lazySet(this, changeNumber);
         UNSAFE.storeFence();
         nextSmPosition = smPosition;
         nextSmReceiverWindowLength = receiverWindowLength;
-        UNSAFE.putOrderedLong(this, END_SM_CHANGE_OFFSET, changeNumber);
+        END_SM_CHANGE_UPDATER.lazySet(this, changeNumber);
     }
 
     private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)

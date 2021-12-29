@@ -17,7 +17,6 @@ package io.aeron.driver;
 
 import io.aeron.CommonContext;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import java.util.IdentityHashMap;

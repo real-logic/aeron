@@ -27,6 +27,7 @@
 
 #include "util/aeron_dlopen.h"
 #include "util/aeron_error.h"
+#include "util/aeron_strutil.h"
 #include "aeron_symbol_table.h"
 
 
@@ -44,7 +45,8 @@ static void* aeron_symbol_table_obj_scan(const aeron_symbol_table_obj_t *table, 
             break;
         }
 
-        if (0 == strcmp(alias, symbol) || 0 == strcmp(name, symbol))
+        if (0 == strncmp(alias, symbol, AERON_SYMBOL_TABLE_NAME_MAX_LENGTH + 1) ||
+            0 == strncmp(name, symbol, AERON_SYMBOL_TABLE_NAME_MAX_LENGTH + 1))
         {
             result = table[i].object;
             break;
@@ -69,6 +71,12 @@ void* aeron_symbol_table_obj_load(
         return NULL;
     }
 
+    if (!aeron_str_length(name, AERON_SYMBOL_TABLE_NAME_MAX_LENGTH + 1, NULL))
+    {
+        AERON_SET_ERR(EINVAL, "name must not exceed %d characters", AERON_SYMBOL_TABLE_NAME_MAX_LENGTH);
+        return NULL;
+    }
+
     void *obj = aeron_symbol_table_obj_scan(table, table_length, name);
     if (NULL == obj)
     {
@@ -88,10 +96,10 @@ void* aeron_symbol_table_obj_load(
 }
 
 
-static aeron_symbol_table_fptr_t aeron_symbol_table_func_scan(
+static aeron_fptr_t aeron_symbol_table_func_scan(
     const aeron_symbol_table_func_t *table, size_t table_length, const char *symbol)
 {
-    aeron_symbol_table_fptr_t result = NULL;
+    aeron_fptr_t result = NULL;
 
     for (size_t i = 0; i < table_length; i++)
     {
@@ -103,7 +111,8 @@ static aeron_symbol_table_fptr_t aeron_symbol_table_func_scan(
             break;
         }
 
-        if (0 == strcmp(alias, symbol) || 0 == strcmp(name, symbol))
+        if (0 == strncmp(alias, symbol, AERON_SYMBOL_TABLE_NAME_MAX_LENGTH + 1) ||
+            0 == strncmp(name, symbol, AERON_SYMBOL_TABLE_NAME_MAX_LENGTH + 1))
         {
             result = table[i].function;
             break;
@@ -113,7 +122,7 @@ static aeron_symbol_table_fptr_t aeron_symbol_table_func_scan(
     return result;
 }
 
-aeron_symbol_table_fptr_t aeron_symbol_table_func_load(
+aeron_fptr_t aeron_symbol_table_func_load(
     const aeron_symbol_table_func_t *table,
     size_t table_length,
     const char *name,
@@ -131,7 +140,13 @@ aeron_symbol_table_fptr_t aeron_symbol_table_func_load(
         return NULL;
     }
 
-    aeron_symbol_table_fptr_t func = aeron_symbol_table_func_scan(table, table_length, name);
+    if (!aeron_str_length(name, AERON_SYMBOL_TABLE_NAME_MAX_LENGTH + 1, NULL))
+    {
+        AERON_SET_ERR(EINVAL, "name must not exceed %d characters", AERON_SYMBOL_TABLE_NAME_MAX_LENGTH);
+        return NULL;
+    }
+
+    aeron_fptr_t func = aeron_symbol_table_func_scan(table, table_length, name);
 
     if (NULL == func)
     {

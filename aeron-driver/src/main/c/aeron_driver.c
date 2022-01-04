@@ -543,44 +543,44 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    send_to_sm_poll_ratio=%" PRIu64, (uint64_t)context->send_to_sm_poll_ratio);
 
     fprintf(fpout, "\n    epoch_clock=%s",
-        aeron_dlinfo_func((void (*)(void))context->epoch_clock, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->epoch_clock, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    nano_clock=%s",
-        aeron_dlinfo_func((void (*)(void))context->nano_clock, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->nano_clock, buffer, sizeof(buffer)));
     /* cachedEpochClock */
     /* cachedNanoClock */
     fprintf(fpout, "\n    threading_mode=%d", context->threading_mode);
     fprintf(fpout, "\n    agent_on_start_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->agent_on_start_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->agent_on_start_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    agent_on_start_state=%p", context->agent_on_start_state);
     fprintf(fpout, "\n    conductor_idle_strategy_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->conductor_idle_strategy_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->conductor_idle_strategy_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    conductor_idle_strategy_init_args=%p%s",
         (void *)context->conductor_idle_strategy_init_args,
         context->conductor_idle_strategy_init_args ? context->conductor_idle_strategy_init_args : "");
     fprintf(fpout, "\n    sender_idle_strategy_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->sender_idle_strategy_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->sender_idle_strategy_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    sender_idle_strategy_init_args=%p%s",
         (void *)context->sender_idle_strategy_init_args,
         context->sender_idle_strategy_init_args ? context->sender_idle_strategy_init_args : "");
     fprintf(fpout, "\n    receiver_idle_strategy_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->receiver_idle_strategy_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->receiver_idle_strategy_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    receiver_idle_strategy_init_args=%p%s",
         (void *)context->receiver_idle_strategy_init_args,
         context->receiver_idle_strategy_init_args ? context->receiver_idle_strategy_init_args : "");
     fprintf(fpout, "\n    shared_network_idle_strategy_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->shared_network_idle_strategy_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->shared_network_idle_strategy_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    shared_network_idle_strategy_init_args=%p%s",
         (void *)context->shared_network_idle_strategy_init_args,
         context->shared_network_idle_strategy_init_args ? context->shared_network_idle_strategy_init_args : "");
     fprintf(fpout, "\n    shared_idle_strategy_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->shared_idle_strategy_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->shared_idle_strategy_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    shared_idle_strategy_init_args=%p%s",
         (void *)context->shared_idle_strategy_init_args,
         context->shared_idle_strategy_init_args ? context->shared_idle_strategy_init_args : "");
     fprintf(fpout, "\n    unicast_flow_control_supplier_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->unicast_flow_control_supplier_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->unicast_flow_control_supplier_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    multicast_flow_control_supplier_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->multicast_flow_control_supplier_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->multicast_flow_control_supplier_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    receiver_group_tag.is_present=%d",
         context->receiver_group_tag.is_present);
     fprintf(fpout, "\n    receiver_group_tag.value=%" PRId64, context->receiver_group_tag.value);
@@ -588,17 +588,17 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    flow_control.group_min_size=%" PRId32, context->flow_control.group_min_size);
     fprintf(fpout, "\n    flow_control_receiver_timeout_ns=%" PRIu64, context->flow_control.receiver_timeout_ns);
     fprintf(fpout, "\n    congestion_control_supplier_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->congestion_control_supplier_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->congestion_control_supplier_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    usable_fs_space_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->usable_fs_space_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->usable_fs_space_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    termination_validator_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->termination_validator_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->termination_validator_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    termination_validator_state=%p", context->termination_validator_state);
     fprintf(fpout, "\n    termination_hook_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->termination_hook_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->termination_hook_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    termination_hook_state=%p", context->termination_hook_state);
     fprintf(fpout, "\n    name_resolver_supplier_func=%s",
-        aeron_dlinfo_func((void (*)(void))context->name_resolver_supplier_func, buffer, sizeof(buffer)));
+        aeron_dlinfo_func((aeron_fptr_t)context->name_resolver_supplier_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    name_resolver_init_args=%s",
         (void *)context->name_resolver_init_args ? context->name_resolver_init_args : "");
     fprintf(fpout, "\n    resolver_name=%s",

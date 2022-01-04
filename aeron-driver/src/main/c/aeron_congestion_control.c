@@ -43,17 +43,17 @@ static const aeron_symbol_table_func_t aeron_congestion_control_table[] =
         {
             "default",
             "aeron_congestion_control_default_strategy_supplier",
-            (aeron_symbol_table_fptr_t)aeron_congestion_control_default_strategy_supplier
+            (aeron_fptr_t)aeron_congestion_control_default_strategy_supplier
         },
         {
             "static",
             "aeron_static_window_congestion_control_strategy_supplier",
-            (aeron_symbol_table_fptr_t)aeron_static_window_congestion_control_strategy_supplier
+            (aeron_fptr_t)aeron_static_window_congestion_control_strategy_supplier
         },
         {
             "cubic",
             "aeron_cubic_congestion_control_strategy_supplier",
-            (aeron_symbol_table_fptr_t)aeron_cubic_congestion_control_strategy_supplier
+            (aeron_fptr_t)aeron_cubic_congestion_control_strategy_supplier
         },
     };
 

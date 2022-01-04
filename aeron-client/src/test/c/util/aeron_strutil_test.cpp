@@ -136,3 +136,35 @@ TEST_F(StrUtilTest, shouldHandleNull)
 
     EXPECT_EQ(num_tokens, -EINVAL);
 }
+
+TEST_F(StrUtilTest, checkStringLength)
+{
+    size_t length_initial_value = 1;
+    const char str1[] = {'h', 'e', 'l', 'l', 'o', '\0'};
+    EXPECT_FALSE(aeron_str_length(str1, 5, nullptr));
+    EXPECT_TRUE(aeron_str_length(str1, 6, nullptr));
+
+    size_t length = length_initial_value;
+    EXPECT_FALSE(aeron_str_length(str1, 5, &length));
+    EXPECT_EQ(length_initial_value, length);
+
+    length = length_initial_value;
+    EXPECT_TRUE(aeron_str_length(str1, 6, &length));
+    EXPECT_EQ(5U, length);
+}
+
+TEST_F(StrUtilTest, checkStringLengthEmptyAndNull)
+{
+    size_t length_initial_value = 1;
+    const char* str1 = "";
+    EXPECT_TRUE(aeron_str_length(str1, 5, nullptr));
+    EXPECT_TRUE(aeron_str_length(nullptr, 5, nullptr));
+
+    size_t length = length_initial_value;
+    EXPECT_TRUE(aeron_str_length(str1, 5, &length));
+    EXPECT_EQ(0U, length);
+
+    length = length_initial_value;
+    EXPECT_TRUE(aeron_str_length(nullptr, 5, &length));
+    EXPECT_EQ(length_initial_value, length);
+}

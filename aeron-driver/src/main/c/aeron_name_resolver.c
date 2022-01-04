@@ -37,17 +37,17 @@ static const aeron_symbol_table_func_t aeron_name_resolver_table[] =
         {
             "default",
             "aeron_default_name_resolver_supplier",
-            (aeron_symbol_table_fptr_t)aeron_default_name_resolver_supplier
+            (aeron_fptr_t)aeron_default_name_resolver_supplier
         },
         {
             "driver",
             "aeron_driver_name_resolver_supplier",
-            (aeron_symbol_table_fptr_t)aeron_driver_name_resolver_supplier
+            (aeron_fptr_t)aeron_driver_name_resolver_supplier
         },
         {
             "csv_table",
             "aeron_csv_table_name_resolver_supplier",
-            (aeron_symbol_table_fptr_t)aeron_csv_table_name_resolver_supplier
+            (aeron_fptr_t)aeron_csv_table_name_resolver_supplier
         }
     };
 
@@ -215,6 +215,6 @@ static void aeron_name_resolver_load_function_info(
     char *resolve_name_buffer,
     size_t resolve_name_buffer_len)
 {
-    aeron_dlinfo_func((void (*)(void))resolver->lookup_func, lookup_name_buffer, lookup_name_buffer_len);
-    aeron_dlinfo_func((void (*)(void))resolver->resolve_func, resolve_name_buffer, resolve_name_buffer_len);
+    aeron_dlinfo_func((aeron_fptr_t)resolver->lookup_func, lookup_name_buffer, lookup_name_buffer_len);
+    aeron_dlinfo_func((aeron_fptr_t)resolver->resolve_func, resolve_name_buffer, resolve_name_buffer_len);
 }

@@ -17,6 +17,10 @@
 #ifndef AERON_SYMBOL_TABLE_H
 #define AERON_SYMBOL_TABLE_H
 
+#include "aeron_common.h"
+
+#define AERON_SYMBOL_TABLE_NAME_MAX_LENGTH (1023)
+
 struct aeron_symbol_table_obj_stct
 {
     const char *alias;
@@ -28,16 +32,15 @@ typedef struct aeron_symbol_table_obj_stct aeron_symbol_table_obj_t;
 void* aeron_symbol_table_obj_load(
     const aeron_symbol_table_obj_t *table, size_t table_length, const char *name, const char *component_name);
 
-typedef void (*aeron_symbol_table_fptr_t)(void);
 struct aeron_symbol_table_func_stct
 {
     const char *alias;
     const char *name;
-    aeron_symbol_table_fptr_t function;
+    aeron_fptr_t function;
 };
 typedef struct aeron_symbol_table_func_stct aeron_symbol_table_func_t;
 
-aeron_symbol_table_fptr_t aeron_symbol_table_func_load(
+aeron_fptr_t aeron_symbol_table_func_load(
     const aeron_symbol_table_func_t *table,
     size_t table_length,
     const char *name,

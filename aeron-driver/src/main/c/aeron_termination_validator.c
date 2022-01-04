@@ -30,12 +30,12 @@ static const aeron_symbol_table_func_t aeron_termination_validator_table[] =
         {
             "allow",
             "aeron_driver_termination_validator_default_allow",
-            (aeron_symbol_table_fptr_t)aeron_driver_termination_validator_default_allow
+            (aeron_fptr_t)aeron_driver_termination_validator_default_allow
         },
         {
             "deny",
             "aeron_driver_termination_validator_default_deny",
-            (aeron_symbol_table_fptr_t)aeron_driver_termination_validator_default_deny
+            (aeron_fptr_t)aeron_driver_termination_validator_default_deny
         }
     };
 

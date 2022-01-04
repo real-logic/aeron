@@ -71,7 +71,7 @@ static const aeron_symbol_table_func_t aeron_udp_channel_interceptor_table[] =
         {
             "loss",
             "aeron_udp_channel_interceptor_loss_load",
-            (aeron_symbol_table_fptr_t)aeron_udp_channel_interceptor_loss_load
+            (aeron_fptr_t)aeron_udp_channel_interceptor_loss_load
         }
     };
 
@@ -167,7 +167,7 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
             return NULL;
         }
 
-        current_bindings->meta_info.source_symbol = (void (*)(void))interceptor_load_func;
+        current_bindings->meta_info.source_symbol = (aeron_fptr_t)interceptor_load_func;
     }
 
     return current_bindings;

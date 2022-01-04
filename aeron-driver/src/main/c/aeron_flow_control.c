@@ -33,22 +33,22 @@ aeron_symbol_table_func_t aeron_flow_control_strategy_table[] =
         {
             AERON_UNICAST_MAX_FLOW_CONTROL_STRATEGY_NAME,
             "aeron_unicast_flow_control_strategy_supplier",
-            (aeron_symbol_table_fptr_t)aeron_unicast_flow_control_strategy_supplier
+            (aeron_fptr_t)aeron_unicast_flow_control_strategy_supplier
         },
         {
             AERON_MULTICAST_MAX_FLOW_CONTROL_STRATEGY_NAME,
             "aeron_max_multicast_flow_control_strategy_supplier",
-            (aeron_symbol_table_fptr_t)aeron_max_multicast_flow_control_strategy_supplier
+            (aeron_fptr_t)aeron_max_multicast_flow_control_strategy_supplier
         },
         {
             AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME,
             "aeron_min_flow_control_strategy_supplier",
-            (aeron_symbol_table_fptr_t)aeron_min_flow_control_strategy_supplier
+            (aeron_fptr_t)aeron_min_flow_control_strategy_supplier
         },
         {
             AERON_MULTICAST_TAGGED_FLOW_CONTROL_STRATEGY_NAME,
             "aeron_tagged_flow_control_strategy_supplier",
-            (aeron_symbol_table_fptr_t)aeron_tagged_flow_control_strategy_supplier
+            (aeron_fptr_t)aeron_tagged_flow_control_strategy_supplier
         }
     };
 

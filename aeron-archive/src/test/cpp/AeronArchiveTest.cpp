@@ -191,8 +191,8 @@ public:
 
         m_stream << currentTimeMillis() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
 
-        const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
-        std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
+        const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_10(10);
+        std::this_thread::sleep_for(IDLE_SLEEP_MS_10);
     }
 
     void TearDown() final

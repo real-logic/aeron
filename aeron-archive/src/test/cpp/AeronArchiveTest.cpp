@@ -142,10 +142,10 @@ public:
             "-Daeron.term.buffer.sparse.file=true",
             "-Daeron.perform.storage.checks=false",
             "-Daeron.term.buffer.length=64k",
+            "-Daeron.ipc.term.buffer.length=64k",
             "-Daeron.threading.mode=SHARED",
             "-Daeron.shared.idle.strategy=yield",
             "-Daeron.archive.threading.mode=SHARED",
-            "-Daeron.archive.idle.strategy=yield",
             "-Daeron.archive.recording.events.enabled=false",
             "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
             "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
@@ -191,8 +191,8 @@ public:
 
         m_stream << currentTimeMillis() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
 
-        const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_10(10);
-        std::this_thread::sleep_for(IDLE_SLEEP_MS_10);
+        const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
+        std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
     }
 
     void TearDown() final
@@ -395,7 +395,7 @@ protected:
     const std::string m_aeronAllJar = AERON_ALL_JAR;
     const std::string m_archiveDir = ARCHIVE_DIR;
 
-    const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333|term-length=64k";
+    const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333";
     const std::int32_t m_recordingStreamId = 33;
     const std::string m_replayChannel = "aeron:udp?endpoint=localhost:6666";
     const std::int32_t m_replayStreamId = 66;

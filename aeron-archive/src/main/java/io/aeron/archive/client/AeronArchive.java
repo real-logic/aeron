@@ -3433,7 +3433,11 @@ public final class AeronArchive implements AutoCloseable
                         throw new ArchiveException("unexpected response: code=" + code);
                     }
 
-                    archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE);
+                    if (!archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE))
+                    {
+                        throw new ArchiveException("failed to send keep alive after archive connect");
+                    }
+
                     aeronArchive = new AeronArchive(ctx, controlResponsePoller, archiveProxy, controlSessionId);
 
                     step(5);

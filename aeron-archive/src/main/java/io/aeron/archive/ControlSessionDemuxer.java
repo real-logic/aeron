@@ -19,7 +19,6 @@ import io.aeron.Aeron;
 import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveEvent;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
@@ -950,20 +949,23 @@ class ControlSessionDemuxer implements Session, FragmentHandler
         final long correlationId, final long controlSessionId, final int templateId)
     {
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
+        if (null == controlSession)
         {
-            throw new ArchiveEvent("control request for unknown controlSessionId=" + controlSessionId +
-                " from source=" + image.sourceIdentity());
+            conductor.logWarning("control request for unknown controlSessionId=" + controlSessionId +
+                " source=" + image.sourceIdentity());
         }
-
-        if (!authorisationService.isAuthorised(
+        else if (!authorisationService.isAuthorised(
             MessageHeaderDecoder.SCHEMA_ID, templateId, null, controlSession.encodedPrincipal()))
         {
+            conductor.logWarning("unauthorised archive action=" + templateId +
+                " controlSessionId=" + controlSessionId + " source=" + image.sourceIdentity());
+
             controlSession.attemptErrorResponse(
                 correlationId,
                 ArchiveException.UNAUTHORISED_ACTION,
                 "unauthorised action",
                 conductor.controlResponseProxy());
+
             return null;
         }
 

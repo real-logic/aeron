@@ -333,6 +333,11 @@ abstract class ArchiveConductor
         return catalog;
     }
 
+    void logWarning(final String message)
+    {
+        errorHandler.onError(new ArchiveEvent(message));
+    }
+
     ControlSession newControlSession(
         final long correlationId,
         final int streamId,

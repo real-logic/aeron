@@ -158,7 +158,10 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
                         SOURCEINFO);
                 }
 
-                m_archiveProxy->keepAlive(aeron::NULL_VALUE, sessionId);
+                if (!m_archiveProxy->keepAlive(aeron::NULL_VALUE, sessionId))
+                {
+                    throw ArchiveException("failed to send keep alive after archive connect",SOURCEINFO);
+                }
 
                 std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
                     new RecordingDescriptorPoller(

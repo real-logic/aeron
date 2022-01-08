@@ -550,13 +550,15 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplay)
         {
             idleStrategy.idle();
         }
-
-        EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
     }
 
     aeronArchive->stopRecording(subscriptionId);
 
-    EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), stopPosition);
+    aeron::concurrent::YieldingIdleStrategy idleStrategy;
+    while (aeronArchive->getStopPosition(recordingIdFromCounter) != stopPosition)
+    {
+        idleStrategy.idle();
+    }
 
     {
         const std::int64_t position = 0L;

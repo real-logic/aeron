@@ -501,7 +501,7 @@ public:
             throw ArchiveException("failed to send start recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::startRecording", m_lastCorrelationId);
     }
 
     /**
@@ -539,7 +539,7 @@ public:
             throw ArchiveException("failed to send start recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::startRecording", m_lastCorrelationId);
     }
 
     /**
@@ -577,7 +577,7 @@ public:
             throw ArchiveException("failed to send extend recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::extendRecording", m_lastCorrelationId);
     }
 
     /**
@@ -621,7 +621,7 @@ public:
             throw ArchiveException("failed to send extend recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::extendRecording", m_lastCorrelationId);
     }
 
     /**
@@ -649,7 +649,7 @@ public:
             throw ArchiveException("failed to send stop recording request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("AeronArchive::stopRecording", m_lastCorrelationId);
     }
 
     /**
@@ -678,7 +678,7 @@ public:
             throw ArchiveException("failed to send stop recording request", SOURCEINFO);
         }
 
-        return pollForResponseAllowingError<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponseAllowingError<IdleStrategy>("AeronArchive::tryStopRecording", m_lastCorrelationId);
     }
 
     /**
@@ -732,7 +732,7 @@ public:
             throw ArchiveException("failed to send stop recording request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("AeronArchive::stopRecording", m_lastCorrelationId);
     }
 
     /**
@@ -757,7 +757,7 @@ public:
             throw ArchiveException("failed to send stop recording request", SOURCEINFO);
         }
 
-        return pollForResponseAllowingError<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponseAllowingError<IdleStrategy>("AeronArchive::tryStopRecording", m_lastCorrelationId);
     }
 
     /**
@@ -782,7 +782,7 @@ public:
             throw ArchiveException("failed to send stop recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId) != 0;
+        return pollForResponse<IdleStrategy>("AeronArchive::tryStopRecordingByIdentity", m_lastCorrelationId) != 0;
     }
 
     /**
@@ -823,7 +823,7 @@ public:
             throw ArchiveException("failed to send replay request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::startReplay", m_lastCorrelationId);
     }
 
     /**
@@ -873,7 +873,7 @@ public:
             throw ArchiveException("failed to send bounded replay request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::startBoundedReplay", m_lastCorrelationId);
     }
 
     /**
@@ -896,7 +896,7 @@ public:
             throw ArchiveException("failed to send stop replay request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("AeronArchive::stopReplay", m_lastCorrelationId);
     }
 
     /**
@@ -919,7 +919,7 @@ public:
             throw ArchiveException("failed to send stop all replays request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("stopAllReplays::stopAllReplays", m_lastCorrelationId);
     }
 
     /**
@@ -956,7 +956,8 @@ public:
             throw ArchiveException("failed to send replay request", SOURCEINFO);
         }
 
-        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(m_lastCorrelationId));
+        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(
+            "AeronArchive::replay", m_lastCorrelationId));
         replayChannelUri->put(SESSION_ID_PARAM_NAME, std::to_string(replaySessionId));
 
         const std::int64_t subscriptionId = m_aeron->addSubscription(replayChannelUri->toString(), replayStreamId);
@@ -1010,7 +1011,8 @@ public:
             throw ArchiveException("failed to send replay request", SOURCEINFO);
         }
 
-        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(m_lastCorrelationId));
+        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(
+            "AeronArchive::replay", m_lastCorrelationId));
         replayChannelUri->put(SESSION_ID_PARAM_NAME, std::to_string(replaySessionId));
 
         const std::int64_t subscriptionId = m_aeron->addSubscription(
@@ -1055,7 +1057,8 @@ public:
             throw ArchiveException("failed to send list recordings request", SOURCEINFO);
         }
 
-        return pollForDescriptors<IdleStrategy>(m_lastCorrelationId, recordCount, consumer);
+        return pollForDescriptors<IdleStrategy>(
+            "AeronArchive::listRecordings", m_lastCorrelationId, recordCount, consumer);
     }
 
     /**
@@ -1093,7 +1096,8 @@ public:
             throw ArchiveException("failed to send list recordings request", SOURCEINFO);
         }
 
-        return pollForDescriptors<IdleStrategy>(m_lastCorrelationId, recordCount, consumer);
+        return pollForDescriptors<IdleStrategy>(
+            "AeronArchive::listRecordingsForUri", m_lastCorrelationId, recordCount, consumer);
     }
 
     /**
@@ -1121,7 +1125,8 @@ public:
             throw ArchiveException("failed to send list recording request", SOURCEINFO);
         }
 
-        return pollForDescriptors<IdleStrategy>(m_lastCorrelationId, 1, consumer);
+        return pollForDescriptors<IdleStrategy>(
+            "AeronArchive::listRecording", m_lastCorrelationId, 1, consumer);
     }
 
     /**
@@ -1147,7 +1152,7 @@ public:
             throw ArchiveException("failed to send get start position request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::getStartPosition", m_lastCorrelationId);
     }
 
     /**
@@ -1172,7 +1177,7 @@ public:
             throw ArchiveException("failed to send get recording position request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::getRecordingPosition", m_lastCorrelationId);
     }
 
     /**
@@ -1197,7 +1202,7 @@ public:
             throw ArchiveException("failed to send get stop position request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::getStopPosition", m_lastCorrelationId);
     }
 
     /**
@@ -1229,7 +1234,7 @@ public:
             throw ArchiveException("failed to send find last matching recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::findLastMatchingRecording", m_lastCorrelationId);
     }
 
     /**
@@ -1256,7 +1261,7 @@ public:
             throw ArchiveException("failed to send truncate recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::truncateRecording", m_lastCorrelationId);
     }
 
     /**
@@ -1281,7 +1286,7 @@ public:
             throw ArchiveException("failed to send purge recording request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::purgeRecording", m_lastCorrelationId);
     }
 
     /**
@@ -1327,7 +1332,8 @@ public:
             throw ArchiveException("failed to send list recording subscriptions request", SOURCEINFO);
         }
 
-        return pollForSubscriptionDescriptors<IdleStrategy>(m_lastCorrelationId, subscriptionCount, consumer);
+        return pollForSubscriptionDescriptors<IdleStrategy>(
+            "AeronArchive::listRecordingSubscriptions", m_lastCorrelationId, subscriptionCount, consumer);
     }
 
     /**
@@ -1376,7 +1382,7 @@ public:
             throw ArchiveException("failed to send replicate request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("AeronArchive::replicate", m_lastCorrelationId);
     }
 
     /**
@@ -1431,7 +1437,7 @@ public:
             throw ArchiveException("failed to send replicate request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("AeronArchive::replicate", m_lastCorrelationId);
     }
 
     /**
@@ -1486,7 +1492,7 @@ public:
             throw ArchiveException("failed to send tagged replicate request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("AeronArchive::taggedReplicate", m_lastCorrelationId);
     }
 
     /**
@@ -1547,7 +1553,7 @@ public:
             throw ArchiveException("failed to send tagged replicate request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("AeronArchive::taggedReplicate", m_lastCorrelationId);
     }
 
     /**
@@ -1570,7 +1576,7 @@ public:
             throw ArchiveException("failed to send stop replication request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("AeronArchive::stopReplication", m_lastCorrelationId);
     }
 
     /**
@@ -1593,7 +1599,7 @@ public:
             throw ArchiveException("failed to send stop replication request", SOURCEINFO);
         }
 
-        return pollForResponseAllowingError<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponseAllowingError<IdleStrategy>("AeronArchive::tryStopReplication", m_lastCorrelationId);
     }
 
     /**
@@ -1622,7 +1628,7 @@ public:
             throw ArchiveException("failed to send detach segments request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        pollForResponse<IdleStrategy>("AeronArchive::detachSegments", m_lastCorrelationId);
     }
 
     /**
@@ -1646,7 +1652,7 @@ public:
             throw ArchiveException("failed to send delete segments request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::deleteDetachedSegments", m_lastCorrelationId);
     }
 
     /**
@@ -1676,7 +1682,7 @@ public:
             throw ArchiveException("failed to send purge segments request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::purgeSegments", m_lastCorrelationId);
     }
 
     /**
@@ -1703,7 +1709,7 @@ public:
             throw ArchiveException("failed to send attach segments request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::attachSegments", m_lastCorrelationId);
     }
 
     /**
@@ -1735,7 +1741,7 @@ public:
             throw ArchiveException("failed to send migrate segments request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>(m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("migrateSegments::migrateSegments", m_lastCorrelationId);
     }
 
     /**
@@ -1778,11 +1784,22 @@ private:
         }
     }
 
-    inline void checkDeadline(long long deadlineNs, const std::string &errorMessage, std::int64_t correlationId)
+    inline void checkDeadline(
+        long long deadlineNs,
+        const char *operationName,
+        const char *errorMessage,
+        std::int64_t correlationId)
     {
         if ((deadlineNs - m_nanoClock()) < 0)
         {
-            throw TimeoutException(errorMessage + " - correlationId=" + std::to_string(correlationId), SOURCEINFO);
+            std::string msg(operationName);
+
+            msg += " ";
+            msg += errorMessage;
+            msg += " - correlationId=";
+            msg += std::to_string(correlationId);
+
+            throw TimeoutException(msg, SOURCEINFO);
         }
     }
 
@@ -1805,7 +1822,8 @@ private:
     }
 
     template<typename IdleStrategy>
-    inline void pollNextResponse(std::int64_t correlationId, long long deadlineNs, ControlResponsePoller &poller)
+    inline void pollNextResponse(
+        const char *operationName, std::int64_t correlationId, long long deadlineNs, ControlResponsePoller &poller)
     {
         IdleStrategy idle;
 
@@ -1835,20 +1853,20 @@ private:
                 throw ArchiveException("subscription to archive is not connected", SOURCEINFO);
             }
 
-            checkDeadline(deadlineNs, "awaiting response", correlationId);
+            checkDeadline(deadlineNs, operationName, "awaiting response", correlationId);
             idle.idle();
             invokeAeronClient();
         }
     }
 
     template<typename IdleStrategy>
-    inline std::int64_t pollForResponse(std::int64_t correlationId)
+    inline std::int64_t pollForResponse(const char *operationName, std::int64_t correlationId)
     {
         const long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
 
         while (true)
         {
-            pollNextResponse<IdleStrategy>(correlationId, deadlineNs, *m_controlResponsePoller);
+            pollNextResponse<IdleStrategy>(operationName, correlationId, deadlineNs, *m_controlResponsePoller);
 
             if (m_controlResponsePoller->controlSessionId() != controlSessionId())
             {
@@ -1893,13 +1911,13 @@ private:
     }
 
     template<typename IdleStrategy>
-    inline bool pollForResponseAllowingError(std::int64_t correlationId)
+    inline bool pollForResponseAllowingError(const char *operationName, std::int64_t correlationId)
     {
         const long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
 
         while (true)
         {
-            pollNextResponse<IdleStrategy>(correlationId, deadlineNs, *m_controlResponsePoller);
+            pollNextResponse<IdleStrategy>(operationName, correlationId, deadlineNs, *m_controlResponsePoller);
 
             if (m_controlResponsePoller->controlSessionId() != controlSessionId())
             {
@@ -1950,7 +1968,10 @@ private:
 
     template<typename IdleStrategy>
     std::int32_t pollForDescriptors(
-        std::int64_t correlationId, std::int32_t recordCount, const recording_descriptor_consumer_t &consumer)
+        const char *operationName,
+        std::int64_t correlationId,
+        std::int32_t recordCount,
+        const recording_descriptor_consumer_t &consumer)
     {
         std::int32_t existingRemainCount = recordCount;
         long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
@@ -1986,13 +2007,14 @@ private:
                 throw ArchiveException("response channel from archive is not connected", SOURCEINFO);
             }
 
-            checkDeadline(deadlineNs, "awaiting recording descriptors", correlationId);
+            checkDeadline(deadlineNs, operationName, "awaiting recording descriptors", correlationId);
             idle.idle();
         }
     }
 
     template<typename IdleStrategy>
     std::int32_t pollForSubscriptionDescriptors(
+        const char *operationName,
         std::int64_t correlationId,
         std::int32_t subscriptionCount,
         const recording_subscription_descriptor_consumer_t &consumer)
@@ -2032,7 +2054,7 @@ private:
                 throw ArchiveException("response channel from archive is not connected", SOURCEINFO);
             }
 
-            checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);
+            checkDeadline(deadlineNs, operationName, "awaiting subscription descriptors", correlationId);
             idle.idle();
         }
     }

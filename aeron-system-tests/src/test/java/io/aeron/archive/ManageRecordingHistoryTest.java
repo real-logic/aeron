@@ -353,7 +353,7 @@ class ManageRecordingHistoryTest
             aeronArchive.stopRecording(publication);
 
             final String prefix = recordingId + "-";
-            String[] files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
+            final String[] files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
             assertThat(files, arrayWithSize(3));
 
             final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
@@ -366,8 +366,21 @@ class ManageRecordingHistoryTest
             assertEquals(2L, deletedSegments);
             assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
 
-            files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
-            assertThat(files, arrayContaining(Archive.segmentFileName(recordingId, segmentFileBasePosition)));
+            Tests.await(
+                () ->
+                {
+                    final String[] updatedFiles = archive.context().archiveDir()
+                        .list((dir, name) -> name.startsWith(prefix));
+                    if (null != updatedFiles && 1 == updatedFiles.length)
+                    {
+                        assertThat(
+                            updatedFiles,
+                            arrayContaining(Archive.segmentFileName(recordingId, segmentFileBasePosition)));
+                        return true;
+                    }
+                    return false;
+                }
+            );
         }
     }
 

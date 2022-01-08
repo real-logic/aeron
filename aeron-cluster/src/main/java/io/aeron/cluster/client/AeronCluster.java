@@ -110,6 +110,7 @@ public final class AeronCluster implements AutoCloseable
             final long deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
             asyncConnect = new AsyncConnect(ctx, subscription, deadlineNs);
             final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
+            final AgentInvoker agentInvoker = ctx.agentInvoker();
             final IdleStrategy idleStrategy = ctx.idleStrategy();
 
             AeronCluster aeronCluster;
@@ -119,6 +120,11 @@ public final class AeronCluster implements AutoCloseable
                 if (null != aeronClientInvoker)
                 {
                     aeronClientInvoker.invoke();
+                }
+
+                if (null != agentInvoker)
+                {
+                    agentInvoker.invoke();
                 }
 
                 if (step != asyncConnect.step())
@@ -445,6 +451,7 @@ public final class AeronCluster implements AutoCloseable
             }
 
             idleStrategy.idle();
+            invokeInvokers();
         }
 
         return false;
@@ -502,6 +509,7 @@ public final class AeronCluster implements AutoCloseable
             }
 
             idleStrategy.idle();
+            invokeInvokers();
         }
 
         return false;
@@ -872,6 +880,20 @@ public final class AeronCluster implements AutoCloseable
             }
 
             idleStrategy.idle();
+            invokeInvokers();
+        }
+    }
+
+    private void invokeInvokers()
+    {
+        if (null != ctx.aeron().conductorAgentInvoker())
+        {
+            ctx.aeron().conductorAgentInvoker().invoke();
+        }
+
+        if (null != ctx.agentInvoker())
+        {
+            ctx.agentInvoker().invoke();
         }
     }
 
@@ -1087,6 +1109,7 @@ public final class AeronCluster implements AutoCloseable
         private boolean isDirectAssemblers = false;
         private EgressListener egressListener;
         private ControlledEgressListener controlledEgressListener;
+        private AgentInvoker agentInvoker;
 
         /**
          * Perform a shallow copy of the object.
@@ -1551,6 +1574,30 @@ public final class AeronCluster implements AutoCloseable
         public ControlledEgressListener controlledEgressListener()
         {
             return controlledEgressListener;
+        }
+
+        /**
+         * Set the {@link AgentInvoker} to be invoked in addition to any invoker used by the {@link #aeron()} instance.
+         * <p>
+         * Useful for when running on a low thread count scenario.
+         *
+         * @param agentInvoker to be invoked while awaiting a response in the client or when awaiting completion.
+         * @return this for a fluent API.
+         */
+        public Context agentInvoker(final AgentInvoker agentInvoker)
+        {
+            this.agentInvoker = agentInvoker;
+            return this;
+        }
+
+        /**
+         * Get the {@link AgentInvoker} to be invoked in addition to any invoker used by the {@link #aeron()} instance.
+         *
+         * @return the {@link AgentInvoker} that is used.
+         */
+        public AgentInvoker agentInvoker()
+        {
+            return agentInvoker;
         }
 
         /**

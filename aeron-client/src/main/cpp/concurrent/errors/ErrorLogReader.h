@@ -52,7 +52,7 @@ inline static int read(AtomicBuffer &buffer, const error_consumer_t &consumer, s
 
         if (lastObservationTimestamp >= sinceTimestamp)
         {
-            auto& entry = buffer.overlayStruct<ErrorLogDescriptor::ErrorLogEntryDefn>(offset);
+            auto &entry = buffer.overlayStruct<ErrorLogDescriptor::ErrorLogEntryDefn>(offset);
 
             ++entries;
 

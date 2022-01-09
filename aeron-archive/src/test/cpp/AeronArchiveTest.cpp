@@ -27,6 +27,7 @@
 #include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
 #include "ChannelUriStringBuilder.h"
+#include "CncFileReader.h"
 
 #if defined(__linux__) || defined(Darwin)
 #include <unistd.h>
@@ -205,6 +206,29 @@ public:
             const std::string cncFilename = m_context.aeron()->context().cncFileName();
             const std::string aeronPath = aeron::Context::defaultAeronPath();
             m_context.aeron(nullptr);
+
+            // Print counters and errors.  Perform within a scope to ensure it is destructed...
+            {
+                const CncFileReader reader = aeron::CncFileReader::mapExisting(aeronPath.c_str());
+                const CountersReader countersReader = reader.countersReader();
+                // Read the counters.
+                std::cout << countersReader.getCounterValue(1) << std::endl;
+
+                // Read the error log
+                reader.readErrorLog(
+                    [](
+                        std::int32_t observationCount,
+                        std::int64_t firstObservationTimestamp,
+                        std::int64_t lastObservationTimestamp,
+                        const std::string &encodedException)
+                    {
+                        std::printf(
+                            "***\n%d observations for:\n %s\n",
+                            observationCount,
+                            encodedException.c_str());
+                    },
+                    0);
+            }
 
             if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             {

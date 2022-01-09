@@ -38,6 +38,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUriStringBuilder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ClientConductor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/CncFileDescriptor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/CncFileReader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Context.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ControlledFragmentAssembler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Counter.h

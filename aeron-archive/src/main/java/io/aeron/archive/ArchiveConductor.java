@@ -142,14 +142,14 @@ abstract class ArchiveConductor
         unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this);
         closeHandlerRegistrationId = aeron.addCloseHandler(this::abort);
 
+        recordingEventsProxy = ctx.recordingEventsEnabled() ? new RecordingEventsProxy(
+            aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId())) : null;
+
         final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
         controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
         controlSubscription = aeron.addSubscription(controlChannelUri.toString(), ctx.controlStreamId(), this, null);
         localControlSubscription = aeron.addSubscription(
             ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
-
-        recordingEventsProxy = ctx.recordingEventsEnabled() ? new RecordingEventsProxy(
-            aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId())) : null;
     }
 
     public void onStart()

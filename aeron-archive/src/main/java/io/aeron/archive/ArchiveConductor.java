@@ -123,20 +123,6 @@ abstract class ArchiveConductor
         epochClock = ctx.epochClock();
         archiveDir = ctx.archiveDir();
         connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
-
-        unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this);
-        closeHandlerRegistrationId = aeron.addCloseHandler(this::abort);
-
-        final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
-        controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
-        controlSubscription = aeron.addSubscription(controlChannelUri.toString(), ctx.controlStreamId(), this, null);
-
-        localControlSubscription = aeron.addSubscription(
-            ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
-
-        recordingEventsProxy = ctx.recordingEventsEnabled() ? new RecordingEventsProxy(
-            aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId())) : null;
-
         catalog = ctx.catalog();
         markFile = ctx.archiveMarkFile();
         cachedEpochClock.update(epochClock.time());
@@ -152,6 +138,18 @@ abstract class ArchiveConductor
         {
             throw new ArchiveException("authorisation service cannot be null");
         }
+
+        unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this);
+        closeHandlerRegistrationId = aeron.addCloseHandler(this::abort);
+
+        final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
+        controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
+        controlSubscription = aeron.addSubscription(controlChannelUri.toString(), ctx.controlStreamId(), this, null);
+        localControlSubscription = aeron.addSubscription(
+            ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
+
+        recordingEventsProxy = ctx.recordingEventsEnabled() ? new RecordingEventsProxy(
+            aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId())) : null;
     }
 
     public void onStart()

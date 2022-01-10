@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveEvent;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
@@ -88,7 +89,6 @@ abstract class ArchiveConductor
         new Object2ObjectHashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
     private final Long2LongCounterMap subscriptionRefCountMap = new Long2LongCounterMap(0L);
 
@@ -105,7 +105,8 @@ abstract class ArchiveConductor
     private final RecordingEventsProxy recordingEventsProxy;
     private final Authenticator authenticator;
     private final AuthorisationService authorisationService;
-    private final ControlSessionProxy controlSessionProxy;
+    private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
+    private final ControlSessionProxy controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     final Archive.Context ctx;
     SessionWorker<RecordingSession> recorder;
     SessionWorker<ReplaySession> replayer;
@@ -139,9 +140,18 @@ abstract class ArchiveConductor
         catalog = ctx.catalog();
         markFile = ctx.archiveMarkFile();
         cachedEpochClock.update(epochClock.time());
+
         authenticator = ctx.authenticatorSupplier().get();
+        if (null == authenticator)
+        {
+            throw new ArchiveException("authenticator cannot be null");
+        }
+
         authorisationService = ctx.authorisationServiceSupplier().get();
-        controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
+        if (null == authorisationService)
+        {
+            throw new ArchiveException("authorisation service cannot be null");
+        }
     }
 
     public void onStart()

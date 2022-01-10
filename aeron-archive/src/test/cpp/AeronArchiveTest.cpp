@@ -207,28 +207,7 @@ public:
             const std::string aeronPath = aeron::Context::defaultAeronPath();
             m_context.aeron(nullptr);
 
-            // Print counters and errors.  Perform within a scope to ensure it is destructed...
-            {
-                const CncFileReader reader = aeron::CncFileReader::mapExisting(aeronPath.c_str());
-                const CountersReader countersReader = reader.countersReader();
-                // Read the counters.
-                std::cout << countersReader.getCounterValue(1) << std::endl;
-
-                // Read the error log
-                reader.readErrorLog(
-                    [](
-                        std::int32_t observationCount,
-                        std::int64_t firstObservationTimestamp,
-                        std::int64_t lastObservationTimestamp,
-                        const std::string &encodedException)
-                    {
-                        std::printf(
-                            "***\n%d observations for:\n %s\n",
-                            observationCount,
-                            encodedException.c_str());
-                    },
-                    0);
-            }
+            printErrors(aeronPath);
 
             if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             {
@@ -265,6 +244,25 @@ public:
                 }
             }
         }
+    }
+
+    void printErrors(const std::string &aeronPath)
+    {
+        const CncFileReader reader = aeron::CncFileReader::mapExisting(aeronPath.c_str());
+
+        int count = reader.readErrorLog(
+            [&](
+                std::int32_t observationCount,
+                std::int64_t firstObservationTimestamp,
+                std::int64_t lastObservationTimestamp,
+                const std::string &encodedException)
+            {
+                m_stream << "***\n" << observationCount
+                         << " observations for:\n " << encodedException.c_str() << std::endl;
+            },
+            0);
+
+        m_stream << std::endl << count << " distinct distinct errors observed." << std::endl;
     }
 
     static std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string &channel, std::int32_t streamId)

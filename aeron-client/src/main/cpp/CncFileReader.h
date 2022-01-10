@@ -34,19 +34,22 @@ public:
     static CncFileReader mapExisting(const char *baseDirectory)
     {
         const std::string cncFilename = baseDirectory + std::string(1, AERON_FILE_SEP) + CncFileDescriptor::CNC_FILE;
-        return CncFileReader(util::MemoryMappedFile::mapExistingReadOnly(cncFilename.c_str()));
+        return { util::MemoryMappedFile::mapExistingReadOnly(cncFilename.c_str()) };
     }
 
     CountersReader countersReader() const
     {
-        return CountersReader(
+        return
+        {
             CncFileDescriptor::createCounterMetadataBuffer(m_mmap),
-            CncFileDescriptor::createCounterValuesBuffer(m_mmap));
+            CncFileDescriptor::createCounterValuesBuffer(m_mmap)
+        };
     }
 
     int readErrorLog(const ErrorLogReader::error_consumer_t &consumer, std::int64_t sinceTimestamp) const
     {
         AtomicBuffer buffer = CncFileDescriptor::createErrorLogBuffer(m_mmap);
+
         return ErrorLogReader::read(buffer, consumer, sinceTimestamp);
     }
 

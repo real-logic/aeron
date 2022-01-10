@@ -262,7 +262,7 @@ public:
             },
             0);
 
-        m_stream << std::endl << count << " distinct errors observed." << std::endl;
+        m_stream << currentTimeMillis() << " [TearDown] " << count << " distinct errors observed." << std::endl;
     }
 
     static std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string &channel, std::int32_t streamId)

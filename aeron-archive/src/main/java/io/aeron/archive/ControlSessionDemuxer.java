@@ -949,24 +949,27 @@ class ControlSessionDemuxer implements Session, FragmentHandler
         final long correlationId, final long controlSessionId, final int templateId)
     {
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (null == controlSession)
+        if (null != controlSession)
+        {
+            final byte[] principal = controlSession.encodedPrincipal();
+            if (!authorisationService.isAuthorised(MessageHeaderDecoder.SCHEMA_ID, templateId, null, principal))
+            {
+                conductor.logWarning("unauthorised archive action=" + templateId +
+                    " controlSessionId=" + controlSessionId + " source=" + image.sourceIdentity());
+
+                controlSession.attemptErrorResponse(
+                    correlationId,
+                    ArchiveException.UNAUTHORISED_ACTION,
+                    "unauthorised action",
+                    conductor.controlResponseProxy());
+
+                return null;
+            }
+        }
+        else
         {
             conductor.logWarning("control request for unknown controlSessionId=" + controlSessionId +
                 " source=" + image.sourceIdentity());
-        }
-        else if (!authorisationService.isAuthorised(
-            MessageHeaderDecoder.SCHEMA_ID, templateId, null, controlSession.encodedPrincipal()))
-        {
-            conductor.logWarning("unauthorised archive action=" + templateId +
-                " controlSessionId=" + controlSessionId + " source=" + image.sourceIdentity());
-
-            controlSession.attemptErrorResponse(
-                correlationId,
-                ArchiveException.UNAUTHORISED_ACTION,
-                "unauthorised action",
-                conductor.controlResponseProxy());
-
-            return null;
         }
 
         return controlSession;

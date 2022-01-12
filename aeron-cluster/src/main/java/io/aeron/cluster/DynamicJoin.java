@@ -106,7 +106,7 @@ final class DynamicJoin
         return memberId;
     }
 
-    int doWork(final long nowNs)
+    int doWork(final long timestamp, final long nowNs)
     {
         int workCount = 0;
 
@@ -129,7 +129,7 @@ final class DynamicJoin
                 break;
 
             case JOIN_CLUSTER:
-                workCount += joinCluster(nowNs);
+                workCount += joinCluster(timestamp, nowNs);
                 break;
         }
 
@@ -348,14 +348,14 @@ final class DynamicJoin
         return workCount;
     }
 
-    private int joinCluster(final long nowNs)
+    private int joinCluster(final long timestamp, final long nowNs)
     {
         int workCount = 0;
         final long leadershipTermId = leaderSnapshots.isEmpty() ? NULL_VALUE : leaderSnapshots.get(0).leadershipTermId;
 
         if (consensusPublisher.joinCluster(consensusPublication, leadershipTermId, memberId))
         {
-            if (consensusModuleAgent.dynamicJoinComplete(nowNs))
+            if (consensusModuleAgent.dynamicJoinComplete(timestamp, nowNs))
             {
                 state(State.DONE);
                 close();

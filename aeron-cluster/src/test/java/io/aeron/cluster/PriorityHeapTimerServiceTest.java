@@ -17,12 +17,12 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.TimerService.TimerHandler;
 import io.aeron.cluster.TimerService.TimerSnapshotTaker;
+import org.agrona.collections.Long2LongHashMap;
+import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Set;
+import java.util.*;
 
 import static io.aeron.cluster.TimerService.POLL_LIMIT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -501,5 +501,118 @@ class PriorityHeapTimerServiceTest
         inOrder.verify(timerHandler).onTimerEvent(3);
         inOrder.verify(timerHandler).onTimerEvent(5);
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void manyRandomOperations()
+    {
+        final TestHarness testHarness = new TestHarness();
+        for (int i = 0; i < 10000; i++)
+        {
+            testHarness.doRandomOperation();
+        }
+    }
+
+    private static class TestHarness
+    {
+        final PriorityHeapTimerService timerService = new PriorityHeapTimerService(this::onTimerEvent);
+        final Long2LongHashMap timerDeadlines = new Long2LongHashMap(-1);
+        final Random random = new Random(1);
+        long nextCorrelationId = 1;
+        long time = 1000;
+
+        void doRandomOperation()
+        {
+            if (timerDeadlines.size() < 5)
+            {
+                scheduleTimer();
+            }
+            else if (timerDeadlines.size() > 20)
+            {
+                incrementTimeAndPoll();
+            }
+            else
+            {
+                switch (random.nextInt(5))
+                {
+                    case 0:
+                        incrementTimeAndPoll();
+                        break;
+                    case 1:
+                        cancelRandomTimer();
+                        break;
+                    case 2:
+                        rescheduleRandomTimer();
+                        break;
+                    default:
+                        scheduleTimer();
+                }
+            }
+            validateOrdering();
+        }
+
+        private void scheduleTimer()
+        {
+            final long correlationId = nextCorrelationId++;
+            final long deadline = (time + random.nextInt(20));
+            timerService.scheduleTimerForCorrelationId(correlationId, deadline);
+            timerDeadlines.put(correlationId, deadline);
+        }
+
+        private void cancelRandomTimer()
+        {
+            final long correlationId = randomScheduledCorrelationId();
+            assertNotEquals(-1, timerDeadlines.remove(correlationId));
+            assertTrue(timerService.cancelTimerByCorrelationId(correlationId));
+        }
+
+        private void rescheduleRandomTimer()
+        {
+            final long correlationId = randomScheduledCorrelationId();
+            final long newDeadline = (time + random.nextInt(20));
+            timerService.scheduleTimerForCorrelationId(correlationId, newDeadline);
+            assertNotEquals(-1, timerDeadlines.put(correlationId, newDeadline));
+        }
+
+        private long randomScheduledCorrelationId()
+        {
+            final Long2LongHashMap.KeyIterator itr = timerDeadlines.keySet().iterator();
+            for (int i = random.nextInt(timerDeadlines.size()); i > 0; i--)
+            {
+                itr.nextValue();
+            }
+            return itr.nextValue();
+        }
+
+        private void incrementTimeAndPoll()
+        {
+            time += random.nextInt(2);
+            timerService.poll(time);
+        }
+
+        private boolean onTimerEvent(final long correlationId)
+        {
+            final long deadline = timerDeadlines.remove(correlationId);
+            assertTrue(deadline >= 1000 && deadline <= time,
+                () -> "correlationId=" + correlationId + " deadline=" + deadline);
+            return true;
+        }
+
+        private void validateOrdering()
+        {
+            final MutableInteger nextIndex = new MutableInteger();
+            final ArrayList<PriorityHeapTimerService.Timer> entries = new ArrayList<>(timerDeadlines.size());
+            timerService.forEach(timer ->
+            {
+                assertEquals(nextIndex.value++, timer.index);
+                entries.add(timer);
+                if (timer.index > 0)
+                {
+                    final PriorityHeapTimerService.Timer parent = entries.get((timer.index - 1) / 2);
+                    assertTrue(parent.deadline <= timer.deadline, () -> "parent=" + parent + "\n child=" + timer);
+                }
+            });
+            assertEquals(timerDeadlines.size(), entries.size());
+        }
     }
 }

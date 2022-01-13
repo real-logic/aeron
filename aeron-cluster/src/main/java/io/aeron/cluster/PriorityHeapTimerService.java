@@ -159,6 +159,10 @@ final class PriorityHeapTimerService implements TimerService
         if (lastIndex != removedTimer.index)
         {
             shiftDown(timers, lastIndex, removedTimer.index, lastTimer);
+            if (timers[removedTimer.index] == lastTimer)
+            {
+                shiftUp(timers, removedTimer.index, lastTimer);
+            }
         }
 
         addToFreeList(removedTimer);

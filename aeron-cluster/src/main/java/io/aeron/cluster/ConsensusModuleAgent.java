@@ -101,9 +101,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final ClusterClock clusterClock;
     private final LongConsumer clusterTimeConsumer;
     private final TimeUnit clusterTimeUnit;
+    private final TimerService timerService;
     private final Counter moduleState;
     private final Counter controlToggle;
-    private final TimerService timerService;
     private final ConsensusModuleAdapter consensusModuleAdapter;
     private final ServiceProxy serviceProxy;
     private final IngressAdapter ingressAdapter;
@@ -154,8 +154,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         this.ctx = ctx;
         this.aeron = ctx.aeron();
         this.clusterClock = ctx.clusterClock();
-        this.clusterTimeConsumer = ctx.clusterTimeConsumerSupplier().apply(ctx);
         this.clusterTimeUnit = clusterClock.timeUnit();
+        this.clusterTimeConsumer = ctx.clusterTimeConsumerSupplier().apply(ctx);
+        this.timerService = ctx.timerServiceSupplier().newInstance(clusterTimeUnit, this);
         this.sessionTimeoutNs = ctx.sessionTimeoutNs();
         this.leaderHeartbeatIntervalNs = ctx.leaderHeartbeatIntervalNs();
         this.leaderHeartbeatTimeoutNs = ctx.leaderHeartbeatTimeoutNs();
@@ -165,7 +166,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         this.controlToggle = ctx.controlToggleCounter();
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
-        this.timerService = ctx.timerServiceSupplier().newInstance(ctx.clusterClock().timeUnit(), this);
         this.activeMembers = ClusterMember.parse(ctx.clusterMembers());
         this.sessionProxy = new ClusterSessionProxy(egressPublisher);
         this.memberId = ctx.clusterMemberId();

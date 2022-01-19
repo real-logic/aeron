@@ -122,7 +122,7 @@ int aeron_network_publication_create(
     if (params->has_position)
     {
         int64_t term_id = params->term_id;
-        int32_t term_count = params->term_id - initial_term_id;
+        int32_t term_count = aeron_sub_wrap_i32(params->term_id, initial_term_id);
         size_t active_index = aeron_logbuffer_index_by_term_count(term_count);
 
         _pub->log_meta_data->term_tail_counters[active_index] =

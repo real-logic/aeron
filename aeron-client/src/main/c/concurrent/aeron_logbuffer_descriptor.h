@@ -115,15 +115,13 @@ inline int64_t aeron_logbuffer_compute_position(
 inline int64_t aeron_logbuffer_compute_term_begin_position(
     int32_t active_term_id, size_t position_bits_to_shift, int32_t initial_term_id)
 {
-    int64_t term_count = active_term_id - initial_term_id;
-
-    return (term_count << position_bits_to_shift);
+    return aeron_logbuffer_compute_position(active_term_id, 0, position_bits_to_shift, initial_term_id);
 }
 
 inline int32_t aeron_logbuffer_compute_term_id_from_position(
     int64_t position, size_t position_bits_to_shift, int32_t initial_term_id)
 {
-    return (int32_t)(position >> position_bits_to_shift) + initial_term_id;
+    return aeron_add_wrap_i32((int32_t)(position >> position_bits_to_shift), initial_term_id);
 }
 
 inline int32_t aeron_logbuffer_compute_term_offset_from_position(int64_t position, size_t position_bits_to_shift)

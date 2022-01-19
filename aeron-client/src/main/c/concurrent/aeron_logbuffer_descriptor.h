@@ -21,6 +21,7 @@
 #include <string.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_bitutil.h"
+#include "util/aeron_math.h"
 #include "concurrent/aeron_atomic.h"
 
 #define AERON_LOGBUFFER_PARTITION_COUNT (3)
@@ -107,8 +108,7 @@ inline size_t aeron_logbuffer_index_by_term_count(int64_t term_count)
 inline int64_t aeron_logbuffer_compute_position(
     int32_t active_term_id, int32_t term_offset, size_t position_bits_to_shift, int32_t initial_term_id)
 {
-    int64_t term_count = active_term_id - initial_term_id;
-
+    int64_t term_count = aeron_sub_wrap_i32(active_term_id, initial_term_id);
     return (term_count << position_bits_to_shift) + term_offset;
 }
 

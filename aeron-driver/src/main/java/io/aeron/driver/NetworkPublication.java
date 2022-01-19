@@ -202,8 +202,8 @@ public final class NetworkPublication
         this.spiesSimulateConnection = params.spiesSimulateConnection;
         this.signalEos = params.signalEos;
         this.isExclusive = isExclusive;
-        this.startingTermId = params.termId;
-        this.startingTermOffset = params.termOffset;
+        this.startingTermId = params.hasPosition ? params.termId : initialTermId;
+        this.startingTermOffset = params.hasPosition ? params.termOffset : 0;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();

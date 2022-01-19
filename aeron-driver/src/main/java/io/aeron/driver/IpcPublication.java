@@ -102,8 +102,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         this.isExclusive = isExclusive;
         this.termBuffers = rawLog.termBuffers();
         this.initialTermId = LogBufferDescriptor.initialTermId(rawLog.metaData());
-        this.startingTermId = params.termId;
-        this.startingTermOffset = params.termOffset;
+        this.startingTermId = params.hasPosition ? params.termId : initialTermId;
+        this.startingTermOffset = params.hasPosition ? params.termOffset : 0;
         this.errorHandler = ctx.errorHandler();
 
         final int termLength = rawLog.termLength();

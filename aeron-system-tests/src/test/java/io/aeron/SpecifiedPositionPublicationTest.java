@@ -195,4 +195,44 @@ class SpecifiedPositionPublicationTest
             context.deleteDirectory();
         }
     }
+
+    @InterruptAfter(5)
+    @ParameterizedTest
+    @CsvSource({
+        CommonContext.IPC_CHANNEL,
+        "aeron:udp?endpoint=localhost:24325"
+    })
+    void shouldValidateSpecifiedPositionForConcurrentPublicationsInitiallyUnspecified(final String initialUri)
+    {
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .ipcPublicationTermWindowLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+            .threadingMode(ThreadingMode.SHARED);
+
+        final int streamId = 1001;
+
+        try (
+            TestMediaDriver mediaDriver = TestMediaDriver.launch(context, testWatcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+            Subscription subscription = aeron.addSubscription(initialUri, streamId);
+            Publication publication = aeron.addPublication(initialUri, streamId))
+        {
+            Tests.awaitConnected(subscription);
+            Tests.awaitConnected(publication);
+
+            final String channel = new ChannelUriStringBuilder(initialUri)
+                .initialPosition(publication.position(), publication.initialTermId(), publication.termBufferLength())
+                .build();
+
+            try (Publication publication2 = aeron.addPublication(channel, streamId))
+            {
+                assertEquals(publication.position(), publication2.position());
+                assertEquals(publication.initialTermId(), publication2.initialTermId());
+            }
+        }
+        finally
+        {
+            context.deleteDirectory();
+        }
+    }
 }

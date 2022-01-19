@@ -66,7 +66,8 @@ public class UntetheredSubscriptionTest
             publisherLimit,
             rawLog,
             TERM_WINDOW_LENGTH,
-            true);
+            true,
+            new PublicationParams());
     }
 
     @Test

@@ -21,8 +21,6 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -143,14 +141,4 @@ public class ArchiveTests
         Tests.await(() -> controlResponseAdapter.poll() != 0, TIMEOUT_NS);
     }
 
-    public static TestWatcher newWatcher(final long seed)
-    {
-        return new TestWatcher()
-        {
-            public void testFailed(final ExtensionContext context, final Throwable cause)
-            {
-                System.err.println(context.getDisplayName() + " failed with random seed: " + seed);
-            }
-        };
-    }
 }

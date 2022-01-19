@@ -27,6 +27,8 @@ import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
@@ -667,5 +669,16 @@ public class Tests
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    public static TestWatcher seedWatcher(final long seed)
+    {
+        return new TestWatcher()
+        {
+            public void testFailed(final ExtensionContext context, final Throwable cause)
+            {
+                System.err.println(context.getDisplayName() + " failed with random seed: " + seed);
+            }
+        };
     }
 }

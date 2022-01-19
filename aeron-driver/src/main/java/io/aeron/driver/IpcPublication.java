@@ -59,6 +59,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     private final int termWindowLength;
     private final int positionBitsToShift;
     private final int initialTermId;
+    private final int startingTermId;
+    private final int startingTermOffset;
     private final ErrorHandler errorHandler;
     private long tripLimit;
     private long consumerPosition;
@@ -89,7 +91,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final Position publisherLimit,
         final RawLog rawLog,
         final int termWindowLength,
-        final boolean isExclusive)
+        final boolean isExclusive,
+        final PublicationParams params)
     {
         this.registrationId = registrationId;
         this.channel = channel;
@@ -98,7 +101,9 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         this.streamId = streamId;
         this.isExclusive = isExclusive;
         this.termBuffers = rawLog.termBuffers();
-        this.initialTermId = initialTermId(rawLog.metaData());
+        this.initialTermId = LogBufferDescriptor.initialTermId(rawLog.metaData());
+        this.startingTermId = params.termId;
+        this.startingTermOffset = params.termOffset;
         this.errorHandler = ctx.errorHandler();
 
         final int termLength = rawLog.termLength();
@@ -164,6 +169,21 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     boolean isExclusive()
     {
         return isExclusive;
+    }
+
+    int initialTermId()
+    {
+        return initialTermId;
+    }
+
+    int startingTermId()
+    {
+        return startingTermId;
+    }
+
+    int startingTermOffset()
+    {
+        return startingTermOffset;
     }
 
     RawLog rawLog()

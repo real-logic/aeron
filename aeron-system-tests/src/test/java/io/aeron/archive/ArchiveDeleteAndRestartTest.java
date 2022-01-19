@@ -52,7 +52,7 @@ public class ArchiveDeleteAndRestartTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    public final TestWatcher randomSeedWatcher = ArchiveTests.newWatcher(seed);
+    public final TestWatcher randomSeedWatcher = Tests.seedWatcher(seed);
 
     @RegisterExtension
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();

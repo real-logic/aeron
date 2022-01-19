@@ -163,6 +163,8 @@ int aeron_ipc_publication_create(
     _pub->pub_pos_position.counter_id = pub_pos_position->counter_id;
     _pub->pub_pos_position.value_addr = pub_pos_position->value_addr;
     _pub->initial_term_id = initial_term_id;
+    _pub->starting_term_id = params->has_position ? params->term_id : initial_term_id;
+    _pub->starting_term_offset = params->has_position ? params->term_offset : 0;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
     _pub->term_window_length = (int64_t)aeron_producer_window_length(
         context->ipc_publication_window_length, params->term_length);

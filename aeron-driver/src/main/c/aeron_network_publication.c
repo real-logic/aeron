@@ -195,6 +195,8 @@ int aeron_network_publication_create(
     _pub->snd_bpe_counter.value_addr = snd_bpe_counter->value_addr;
     _pub->tag = params->entity_tag;
     _pub->initial_term_id = initial_term_id;
+    _pub->starting_term_id = params->has_position ? params->term_id : initial_term_id;
+    _pub->starting_term_offset = params->has_position ? params->term_offset : 0;
     _pub->term_buffer_length = _pub->log_meta_data->term_length;
     _pub->term_length_mask = (int32_t)params->term_length - 1;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);

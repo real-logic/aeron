@@ -429,10 +429,7 @@ static void aeron_receive_channel_endpoint_apply_timestamps(
     uint8_t *buffer,
     size_t length)
 {
-    aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
-
-    if (AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
-        !aeron_publication_image_is_heartbeat(buffer, length))
+    if (!aeron_publication_image_is_heartbeat(buffer, length))
     {
         if (NULL != media_receive_timestamp)
         {

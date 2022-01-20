@@ -83,6 +83,7 @@ int aeron_logbuffer_check_page_size(uint64_t page_size)
     return 0;
 }
 
+extern int64_t aeron_logbuffer_compute_term_count(int32_t term_id, int32_t initial_term_id);
 extern uint64_t aeron_logbuffer_compute_log_length(uint64_t term_length, uint64_t page_size);
 extern int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length);
 extern int32_t aeron_logbuffer_term_id(int64_t raw_tail);

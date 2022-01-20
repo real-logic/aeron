@@ -149,7 +149,8 @@ int aeron_network_publication_create(
         _pub->log_meta_data->active_term_count = 0;
     }
 
-    int64_t now_ns = aeron_clock_cached_nano_time(context->sender_cached_clock);
+    // Called from conductor thread...
+    int64_t now_ns = aeron_clock_cached_nano_time(context->cached_clock);
 
     _pub->log_meta_data->initial_term_id = initial_term_id;
     _pub->log_meta_data->mtu_length = (int32_t)params->mtu_length;
@@ -164,6 +165,7 @@ int aeron_network_publication_create(
 
     _pub->endpoint = endpoint;
     _pub->flow_control = flow_control_strategy;
+    // Will be called from sender thread.
     _pub->cached_clock = context->sender_cached_clock;
     _pub->conductor_fields.subscribable.array = NULL;
     _pub->conductor_fields.subscribable.length = 0;

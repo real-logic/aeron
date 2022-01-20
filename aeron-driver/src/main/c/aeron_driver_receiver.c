@@ -574,7 +574,7 @@ int aeron_driver_receiver_add_pending_setup(
     entry->destination = destination;
     entry->session_id = session_id;
     entry->stream_id = stream_id;
-    entry->time_of_status_message_ns = aeron_clock_cached_nano_time(receiver->context->cached_clock);
+    entry->time_of_status_message_ns = aeron_clock_cached_nano_time(receiver->context->receiver_cached_clock);
     entry->is_periodic = false;
     if (NULL != control_addr)
     {

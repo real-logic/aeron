@@ -82,7 +82,7 @@ void aeron_exclusive_publication_force_close(aeron_exclusive_publication_t *publ
 inline void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_t *publication)
 {
     const int32_t next_term_id = publication->term_id + 1;
-    const int32_t next_term_count = next_term_id - publication->initial_term_id;
+    const int32_t next_term_count = aeron_logbuffer_compute_term_count(next_term_id, publication->initial_term_id);
     const size_t next_index = aeron_logbuffer_index_by_term(publication->initial_term_id, next_term_id);
 
     publication->active_partition_index = next_index;

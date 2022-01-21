@@ -1563,9 +1563,14 @@ public final class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder initialPosition(final long position, final int initialTermId, final int termLength)
     {
-        if (position < 0 || 0 != (position & (FRAME_ALIGNMENT - 1)))
+        if (position < 0)
         {
-            throw new IllegalArgumentException("invalid position: " + position);
+            throw new IllegalArgumentException("invalid position=" + position + " < 0");
+        }
+        if (0 != (position & (FRAME_ALIGNMENT - 1)))
+        {
+            throw new IllegalArgumentException(
+                "invalid position=" + position + " does not have frame alignment=" + FRAME_ALIGNMENT);
         }
 
         final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);

@@ -85,7 +85,9 @@ typedef struct aeron_network_publication_stct
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;
+    int32_t starting_term_id;
     int32_t term_length_mask;
+    size_t starting_term_offset;
     size_t log_file_name_length;
     size_t position_bits_to_shift;
     size_t mtu_length;

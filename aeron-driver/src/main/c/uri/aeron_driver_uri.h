@@ -27,7 +27,9 @@ typedef struct aeron_driver_uri_publication_params_stct
     bool is_sparse;
     bool signal_eos;
     bool spies_simulate_connection;
+    bool has_mtu_length;
     size_t mtu_length;
+    bool has_term_length;
     size_t term_length;
     size_t term_offset;
     int32_t initial_term_id;

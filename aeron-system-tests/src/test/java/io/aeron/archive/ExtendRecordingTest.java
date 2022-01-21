@@ -37,9 +37,10 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -141,9 +142,15 @@ class ExtendRecordingTest
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
     }
 
-    @Test
+    private interface PublicationFactory
+    {
+        Publication create(Aeron aeron, String uri, int streamId);
+    }
+
     @InterruptAfter(10)
-    void shouldExtendRecordingAndReplay()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldExtendRecordingAndReplay(final boolean exclusive)
     {
         final long controlSessionId = aeronArchive.controlSessionId();
         final int messageCount = 10;
@@ -153,7 +160,10 @@ class ExtendRecordingTest
         final long stopTwo;
         final long recordingId;
 
-        try (Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+        final PublicationFactory publicationFactory =
+            exclusive ? Aeron::addExclusivePublication : Aeron::addPublication;
+
+        try (Publication publication = publicationFactory.create(aeron, RECORDED_CHANNEL, RECORDED_STREAM_ID);
             Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
 
@@ -195,7 +205,7 @@ class ExtendRecordingTest
             .build();
 
         try (Subscription subscription = Tests.reAddSubscription(aeron, EXTEND_CHANNEL, RECORDED_STREAM_ID);
-            Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDED_STREAM_ID))
+            Publication publication = publicationFactory.create(aeron, publicationExtendChannel, RECORDED_STREAM_ID))
         {
             subscriptionIdTwo = aeronArchive.extendRecording(recordingId, EXTEND_CHANNEL, RECORDED_STREAM_ID, LOCAL);
             pollForRecordingSignal(aeronArchive);

@@ -42,6 +42,7 @@ int aeron_uri_get_term_length_param(aeron_uri_params_t *uri_params, aeron_driver
         }
 
         params->term_length = value;
+        params->has_term_length = true;
     }
 
     return 0;
@@ -67,6 +68,7 @@ int aeron_uri_get_mtu_length_param(aeron_uri_params_t *uri_params, aeron_driver_
         }
 
         params->mtu_length = value;
+        params->has_mtu_length = true;
     }
 
     return 0;
@@ -158,7 +160,9 @@ int aeron_diver_uri_publication_params(
 
     params->linger_timeout_ns = context->publication_linger_timeout_ns;
     params->term_length = AERON_URI_IPC == uri->type ? context->ipc_term_buffer_length : context->term_buffer_length;
+    params->has_term_length = false;
     params->mtu_length = AERON_URI_IPC == uri->type ? context->ipc_mtu_length : context->mtu_length;
+    params->has_mtu_length = false;
     params->initial_term_id = 0;
     params->term_offset = 0;
     params->term_id = 0;
@@ -235,16 +239,6 @@ int aeron_diver_uri_publication_params(
     {
         char *end_ptr = NULL;
 
-        if (!is_exclusive)
-        {
-            AERON_SET_ERR(
-                EINVAL,
-                "params: %s %s %s are not supported for concurrent publications",
-                AERON_URI_INITIAL_TERM_ID_KEY,
-                AERON_URI_TERM_ID_KEY,
-                AERON_URI_TERM_OFFSET_KEY);
-            return -1;
-        }
         if (count < 3)
         {
             AERON_SET_ERR(

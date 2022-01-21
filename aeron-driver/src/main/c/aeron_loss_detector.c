@@ -60,7 +60,7 @@ int32_t aeron_loss_detector_scan(
         const int32_t rebuild_term_count = (int32_t)(rebuild_position >> position_bits_to_shift);
         const int32_t hwm_term_count = (int32_t)(hwm_position >> position_bits_to_shift);
 
-        const int32_t rebuild_term_id = initial_term_id + rebuild_term_count;
+        const int32_t rebuild_term_id = aeron_add_wrap_i32(initial_term_id, rebuild_term_count);
         const int32_t hwm_term_offset = (int32_t)(hwm_position & term_length_mask);
         const int32_t limit_offset = rebuild_term_count == hwm_term_count ?
             hwm_term_offset : (int32_t)(term_length_mask + 1);

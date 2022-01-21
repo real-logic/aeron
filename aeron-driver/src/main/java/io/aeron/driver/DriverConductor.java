@@ -476,7 +476,16 @@ public final class DriverConductor implements Agent
         }
         else
         {
-            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId(), publication.channel());
+            confirmMatch(
+                channelUri,
+                params,
+                publication.rawLog(),
+                publication.sessionId(),
+                publication.channel(),
+                publication.initialTermId(),
+                publication.startingTermId(),
+                publication.startingTermOffset());
+
             validateSpiesSimulateConnection(
                 params, publication.spiesSimulateConnection(), channel, publication.channel());
         }
@@ -674,7 +683,15 @@ public final class DriverConductor implements Agent
         }
         else
         {
-            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId(), publication.channel());
+            confirmMatch(
+                channelUri,
+                params,
+                publication.rawLog(),
+                publication.sessionId(),
+                publication.channel(),
+                publication.initialTermId(),
+                publication.startingTermId(),
+                publication.startingTermOffset());
         }
 
         publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), publication));
@@ -1797,7 +1814,8 @@ public final class DriverConductor implements Agent
                 publisherLimit,
                 rawLog,
                 Configuration.producerWindowLength(params.termLength, ctx.ipcPublicationTermWindowLength()),
-                isExclusive);
+                isExclusive,
+                params);
 
             ipcPublications.add(publication);
             activeSessionSet.add(new SessionKey(sessionId, streamId, IPC_MEDIA));

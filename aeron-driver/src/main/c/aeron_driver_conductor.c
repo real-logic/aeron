@@ -729,36 +729,72 @@ static int aeron_driver_conductor_speculate_next_session_id(
 int aeron_confirm_publication_match(
     const aeron_driver_uri_publication_params_t *params,
     const int32_t existing_session_id,
-    const aeron_logbuffer_metadata_t *logbuffer_metadata)
+    const aeron_logbuffer_metadata_t *logbuffer_metadata,
+    const int32_t existing_initial_term_id,
+    const int32_t existing_term_id,
+    const size_t existing_term_offset)
 {
     if (params->has_session_id && params->session_id != existing_session_id)
     {
         AERON_SET_ERR(
             EINVAL,
-            "existing publication has different session id: existing=%" PRId32 " requested=%" PRId32,
-            existing_session_id, params->session_id);
+            "existing publication has different '%s': existing=%" PRId32 " requested=%" PRId32,
+            AERON_URI_SESSION_ID_KEY, existing_session_id, params->session_id);
 
         return -1;
     }
 
-    if (params->mtu_length != (size_t)logbuffer_metadata->mtu_length)
+    if (params->has_mtu_length && params->mtu_length != (size_t)logbuffer_metadata->mtu_length)
     {
         AERON_SET_ERR(
             EINVAL,
-            "existing publication has different MTU length: existing=%" PRId32 " requested=%" PRIu64,
-            logbuffer_metadata->mtu_length, (uint64_t)params->mtu_length);
+            "existing publication has different '%s': existing=%" PRId32 " requested=%" PRIu64,
+            AERON_URI_MTU_LENGTH_KEY, logbuffer_metadata->mtu_length, (uint64_t)params->mtu_length);
 
         return -1;
     }
 
-    if (params->term_length != (size_t)logbuffer_metadata->term_length)
+    if (params->has_term_length && params->term_length != (size_t)logbuffer_metadata->term_length)
     {
         AERON_SET_ERR(
             EINVAL,
-            "existing publication has different term length: existing=%" PRId32 " requested=%" PRIu64,
-            logbuffer_metadata->term_length, (uint64_t)params->term_length);
+            "existing publication has different '%s': existing=%" PRId32 " requested=%" PRIu64,
+            AERON_URI_TERM_LENGTH_KEY, logbuffer_metadata->term_length, (uint64_t)params->term_length);
 
         return -1;
+    }
+
+    if (params->has_position)
+    {
+        if (params->initial_term_id != existing_initial_term_id)
+        {
+            AERON_SET_ERR(
+                EINVAL,
+                "existing publication has different '%s': existing=%" PRId32 " requested=%" PRId32,
+                AERON_URI_INITIAL_TERM_ID_KEY, existing_initial_term_id, params->initial_term_id);
+
+            return -1;
+        }
+
+        if (params->term_id != existing_term_id)
+        {
+            AERON_SET_ERR(
+                EINVAL,
+                "existing publication has different '%s': existing=%" PRId32 " requested=%" PRId32,
+                AERON_URI_TERM_ID_KEY, existing_term_id, params->term_id);
+
+            return -1;
+        }
+
+        if (params->term_offset != existing_term_offset)
+        {
+            AERON_SET_ERR(
+                EINVAL,
+                "existing publication has different '%s': existing=%" PRId64 " requested=%" PRIu64,
+                AERON_URI_TERM_OFFSET_KEY, (uint64_t)existing_term_offset, (uint64_t)params->term_offset);
+
+            return -1;
+        }
     }
 
     return 0;
@@ -1371,7 +1407,13 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
     if (!is_exclusive && NULL != publication)
     {
-        if (aeron_confirm_publication_match(params, publication->session_id, publication->log_meta_data) < 0)
+        if (aeron_confirm_publication_match(
+            params,
+            publication->session_id,
+            publication->log_meta_data,
+            publication->initial_term_id,
+            publication->starting_term_id,
+            publication->starting_term_offset) < 0)
         {
             return NULL;
         }
@@ -1547,7 +1589,13 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             return NULL;
         }
 
-        if (0 != aeron_confirm_publication_match(params, publication->session_id, publication->log_meta_data))
+        if (0 != aeron_confirm_publication_match(
+            params,
+            publication->session_id,
+            publication->log_meta_data,
+            publication->initial_term_id,
+            publication->starting_term_id,
+            publication->starting_term_offset))
         {
             return NULL;
         }

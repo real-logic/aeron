@@ -33,4 +33,6 @@ uint8_t aeron_semantic_version_minor(int32_t version);
 
 uint8_t aeron_semantic_version_patch(int32_t version);
 
+typedef void (*aeron_fptr_t)(void);
+
 #endif //AERON_COMMON_H

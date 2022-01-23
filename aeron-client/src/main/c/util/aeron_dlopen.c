@@ -45,6 +45,19 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
     return buffer;
 }
 
+const char *aeron_dlinfo_func(void (*func)(void), char *buffer, size_t max_buffer_length)
+{
+#if defined(AERON_COMPILER_GCC)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+    void *addr = (void *)func;
+#if defined(AERON_COMPILER_GCC)
+#pragma GCC diagnostic pop
+#endif
+    return aeron_dlinfo(addr, buffer, max_buffer_length);
+}
+
 #elif defined(AERON_COMPILER_MSVC)
 
 #include "concurrent/aeron_counters_manager.h"
@@ -156,6 +169,12 @@ char *aeron_dlerror()
     // Leak
 
     return messageBuffer;
+}
+
+const char *aeron_dlinfo_func(void (*func)(void), char *buffer, size_t max_buffer_length)
+{
+    buffer[0] = '\0';
+    return buffer;
 }
 
 const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length)

@@ -28,7 +28,8 @@
 #define aeron_dlopen(x) dlopen(x, RTLD_LAZY | RTLD_GLOBAL)
 #define aeron_dlerror dlerror
 
-const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length);
+const char *aeron_dlinfo(const void *, char *buffer, size_t max_buffer_length);
+const char *aeron_dlinfo_func(void (*func)(void), char *buffer, size_t max_buffer_length);
 
 #elif defined(AERON_COMPILER_MSVC)
 
@@ -39,6 +40,7 @@ void *aeron_dlsym(void *module, const char *name);
 void *aeron_dlopen(const char *filename);
 char *aeron_dlerror();
 const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length);
+const char *aeron_dlinfo_func(void (*func)(void), char *buffer, size_t max_buffer_length);
 
 #else
 #error Unsupported platform!

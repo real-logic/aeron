@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 void aeron_format_date(char *str, size_t count, int64_t timestamp);
 
@@ -77,5 +78,41 @@ AERON_EXPORT extern int optind;
 
 int getopt(int argc, char *const argv[], const char *opt_string);
 #endif
+
+/**
+ * Checks that the string length is strictly less than the specified bound.
+ *
+ * @param str           String to be compared.
+ * @param length_bound  Limit to the length of the string being checked.
+ * @param length        Out parameter for the actual length of the string (if non-null and less than length_bound).
+ *                      NULL values for this parameter are permitted.  If str is NULL this value is unmodified.  If
+ *                      the function returns false, the value is also unmodified.
+ * @return              true if less than the specified bound, NULL is always true.
+ */
+inline bool aeron_str_length(const char *str, size_t length_bound, size_t *length)
+{
+    if (NULL == str)
+    {
+        return true;
+    }
+
+    size_t i = 0;
+    bool result = false;
+    for (; i < length_bound; i++)
+    {
+        if ('\0' == str[i])
+        {
+            result = true;
+            break;
+        }
+    }
+
+    if (result && NULL != length)
+    {
+        *length = i;
+    }
+
+    return result;
+}
 
 #endif //AERON_STRUTIL_H

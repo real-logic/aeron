@@ -27,7 +27,32 @@
 #include "util/aeron_netutil.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_strutil.h"
+#include "util/aeron_symbol_table.h"
 #include "aeron_name_resolver.h"
+#include "aeron_driver_name_resolver.h"
+#include "aeron_csv_table_name_resolver.h"
+
+static const aeron_symbol_table_func_t aeron_name_resolver_table[] =
+    {
+        {
+            "default",
+            "aeron_default_name_resolver_supplier",
+            (aeron_fptr_t)aeron_default_name_resolver_supplier
+        },
+        {
+            "driver",
+            "aeron_driver_name_resolver_supplier",
+            (aeron_fptr_t)aeron_driver_name_resolver_supplier
+        },
+        {
+            "csv_table",
+            "aeron_csv_table_name_resolver_supplier",
+            (aeron_fptr_t)aeron_csv_table_name_resolver_supplier
+        }
+    };
+
+static const size_t aeron_name_resolver_table_length =
+    sizeof(aeron_name_resolver_table) / sizeof(aeron_symbol_table_func_t);
 
 static void aeron_name_resolver_load_function_info(
     aeron_name_resolver_t *resolver,
@@ -179,43 +204,8 @@ exit:
 
 aeron_name_resolver_supplier_func_t aeron_name_resolver_supplier_load(const char *name)
 {
-    aeron_name_resolver_supplier_func_t supplier_func;
-
-    if (NULL == name)
-    {
-        AERON_SET_ERR(EINVAL, "%s", "invalid name_resolver supplier function name");
-        return NULL;
-    }
-
-    if (0 == strncmp(name, AERON_NAME_RESOLVER_SUPPLIER_DEFAULT, sizeof(AERON_NAME_RESOLVER_SUPPLIER_DEFAULT)))
-    {
-        supplier_func = aeron_default_name_resolver_supplier;
-    }
-    else if (0 == strncmp(name, AERON_NAME_RESOLVER_CSV_TABLE, sizeof(AERON_NAME_RESOLVER_CSV_TABLE)))
-    {
-        supplier_func = aeron_name_resolver_supplier_load("aeron_csv_table_name_resolver_supplier");
-    }
-    else if (0 == strncmp(name, AERON_NAME_RESOLVER_DRIVER, sizeof(AERON_NAME_RESOLVER_DRIVER)))
-    {
-        supplier_func = aeron_name_resolver_supplier_load("aeron_driver_name_resolver_supplier");
-    }
-    else
-    {
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-        if ((supplier_func = (aeron_name_resolver_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
-        {
-            AERON_SET_ERR(
-                EINVAL, "could not find name resolver %s: dlsym - %s", name, aeron_dlerror());
-        }
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
-    }
-
-    return supplier_func;
+    return (aeron_name_resolver_supplier_func_t)aeron_symbol_table_func_load(
+        aeron_name_resolver_table, aeron_name_resolver_table_length, name, "name resolver");
 }
 
 static void aeron_name_resolver_load_function_info(
@@ -225,13 +215,6 @@ static void aeron_name_resolver_load_function_info(
     char *resolve_name_buffer,
     size_t resolve_name_buffer_len)
 {
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-    aeron_dlinfo((const void *)resolver->lookup_func, lookup_name_buffer, lookup_name_buffer_len);
-    aeron_dlinfo((const void *)resolver->resolve_func, resolve_name_buffer, resolve_name_buffer_len);
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
+    aeron_dlinfo_func((aeron_fptr_t)resolver->lookup_func, lookup_name_buffer, lookup_name_buffer_len);
+    aeron_dlinfo_func((aeron_fptr_t)resolver->resolve_func, resolve_name_buffer, resolve_name_buffer_len);
 }

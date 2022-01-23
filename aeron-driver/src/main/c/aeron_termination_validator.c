@@ -22,8 +22,25 @@
 #include <errno.h>
 #include <string.h>
 #include "util/aeron_error.h"
-#include "util/aeron_dlopen.h"
+#include "util/aeron_symbol_table.h"
 #include "aeron_termination_validator.h"
+
+static const aeron_symbol_table_func_t aeron_termination_validator_table[] =
+    {
+        {
+            "allow",
+            "aeron_driver_termination_validator_default_allow",
+            (aeron_fptr_t)aeron_driver_termination_validator_default_allow
+        },
+        {
+            "deny",
+            "aeron_driver_termination_validator_default_deny",
+            (aeron_fptr_t)aeron_driver_termination_validator_default_deny
+        }
+    };
+
+static const size_t aeron_termination_validator_table_length =
+    sizeof(aeron_termination_validator_table) / sizeof(aeron_symbol_table_func_t);
 
 bool aeron_driver_termination_validator_default_allow(void *state, uint8_t *token_buffer, int32_t token_length)
 {
@@ -37,32 +54,9 @@ bool aeron_driver_termination_validator_default_deny(void *state, uint8_t *token
 
 aeron_driver_termination_validator_func_t aeron_driver_termination_validator_load(const char *validator_name)
 {
-    aeron_driver_termination_validator_func_t func = NULL;
-
-    if (strncmp(validator_name, "allow", sizeof("allow")) == 0)
-    {
-        return aeron_driver_termination_validator_load("aeron_driver_termination_validator_default_allow");
-    }
-    else if (strncmp(validator_name, "deny", sizeof("deny")) == 0)
-    {
-        return aeron_driver_termination_validator_load("aeron_driver_termination_validator_default_deny");
-    }
-    else
-    {
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-        if ((func = (aeron_driver_termination_validator_func_t)aeron_dlsym(RTLD_DEFAULT, validator_name)) == NULL)
-        {
-            AERON_SET_ERR(
-                EINVAL, "could not find termination validator %s: dlsym - %s", validator_name, aeron_dlerror());
-            return NULL;
-        }
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
-    }
-
-    return func;
+    return (aeron_driver_termination_validator_func_t)aeron_symbol_table_func_load(
+        aeron_termination_validator_table,
+        aeron_termination_validator_table_length,
+        validator_name,
+        "terminate validator");
 }

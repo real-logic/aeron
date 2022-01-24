@@ -361,7 +361,8 @@ int send_then_recv(aeron_ping_pong_config_t *config, int send_fd, int recv_fd, l
 
 int main(int argc, char **argv)
 {
-    aeron_ping_pong_config_t config = { 0 };
+    aeron_ping_pong_config_t config;
+    memset(&config, 0, sizeof(config));
     aeron_ping_pong_parse_config(argc, argv, &config);
     struct sockaddr_in *send_addr = config.is_server ? (struct sockaddr_in *)&config.pong_host : (struct sockaddr_in *)&config.ping_host;
     struct sockaddr_in *recv_addr = config.is_server ? (struct sockaddr_in *)&config.ping_host : (struct sockaddr_in *)&config.pong_host;

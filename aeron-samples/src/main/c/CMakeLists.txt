@@ -44,11 +44,10 @@ add_executable(streaming_publisher streaming_publisher.c ${HEADERS} ${SOURCES})
 add_executable(streaming_exclusive_publisher streaming_exclusive_publisher.c ${HEADERS} ${SOURCES})
 add_executable(cpong cpong.c ${HEADERS} ${SOURCES})
 add_executable(cping cping.c ${HEADERS} ${SOURCES})
-add_executable(ping_pong_raw_sendto raw/aeron_ping_pong_raw.h raw/ping_pong_raw_sendto.c)
-target_link_libraries(ping_pong_raw_sendto ${HDRHISTOGRAM_LIBS} m)
 
-add_executable(ping_pong_raw_sendmsg raw/aeron_ping_pong_raw.h raw/ping_pong_raw_sendmsg.c)
-target_link_libraries(ping_pong_raw_sendmsg ${HDRHISTOGRAM_LIBS} m)
+add_executable(ping_pong_raw raw/ping_pong_raw.c)
+target_link_libraries(ping_pong_raw ${HDRHISTOGRAM_LIBS} m)
+add_dependencies(ping_pong_raw hdr_histogram)
 
 target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})

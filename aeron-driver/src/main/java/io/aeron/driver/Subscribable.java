@@ -23,6 +23,13 @@ import org.agrona.concurrent.status.ReadablePosition;
 public interface Subscribable
 {
     /**
+     * Registration Id that is in use by the subscribable.
+     *
+     * @return registration Id for subscribable.
+     */
+    long subscribableRegistrationId();
+
+    /**
      * Add a subscriber and its position used for tracking consumption.
      *
      * @param subscriptionLink   for identifying the subscriber.

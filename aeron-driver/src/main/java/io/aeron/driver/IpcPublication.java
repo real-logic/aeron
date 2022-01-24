@@ -156,6 +156,14 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         return streamId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public long subscribableRegistrationId()
+    {
+        return registrationId;
+    }
+
     long registrationId()
     {
         return registrationId;

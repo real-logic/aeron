@@ -190,6 +190,40 @@ class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
+    void addDestinationWithSpySubscriptionThenDisconnectOnPublicationClose()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support Spy MDS destinations yet");
+        launch(Tests::onError);
+
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(SPY_QUALIFIER + ":" + PUB_UNICAST_URI);
+
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+
+        Tests.awaitConnected(subscription);
+        CloseHelper.close(publicationA);
+        Tests.awaitConnections(subscription, 0);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void addDestinationWithSpySubscriptionThenRemoveDestination()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support Spy MDS destinations yet");
+        launch(Tests::onError);
+
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(SPY_QUALIFIER + ":" + PUB_UNICAST_URI);
+
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+
+        Tests.awaitConnected(subscription);
+        subscription.removeDestination(SPY_QUALIFIER + ":" + PUB_UNICAST_URI);
+        Tests.awaitConnections(subscription, 0);
+    }
+
+    @Test
+    @InterruptAfter(10)
     void addDestinationWithIpcSubscriptionBeforeAddPublication()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support IPC MDS destinations yet");
@@ -216,6 +250,40 @@ class MultiDestinationSubscriptionTest
         subscription.addDestination(PUB_IPC_URI);
 
         Tests.awaitConnected(subscription);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void addDestinationWithIpcSubscriptionThenDisconnectOnPublicationClose()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support IPC MDS destinations yet");
+        launch(Tests::onError);
+
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(PUB_IPC_URI);
+
+        publicationA = clientA.addPublication(PUB_IPC_URI, STREAM_ID);
+
+        Tests.awaitConnected(subscription);
+        CloseHelper.close(publicationA);
+        Tests.awaitConnections(subscription, 0);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void addDestinationWithIpcSubscriptionThenRemoveDestination()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support IPC MDS destinations yet");
+        launch(Tests::onError);
+
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(PUB_IPC_URI);
+
+        publicationA = clientA.addPublication(PUB_IPC_URI, STREAM_ID);
+
+        Tests.awaitConnected(subscription);
+        subscription.removeDestination((PUB_IPC_URI));
+        Tests.awaitConnections(subscription, 0);
     }
 
     @Test

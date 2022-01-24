@@ -329,6 +329,14 @@ public final class NetworkPublication
     /**
      * {@inheritDoc}
      */
+    public long subscribableRegistrationId()
+    {
+        return registrationId;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void addSubscriber(
         final SubscriptionLink subscriptionLink, final ReadablePosition position, final long nowNs)
     {

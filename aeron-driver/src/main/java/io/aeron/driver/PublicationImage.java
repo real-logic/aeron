@@ -310,6 +310,14 @@ public final class PublicationImage
     /**
      * {@inheritDoc}
      */
+    public long subscribableRegistrationId()
+    {
+        return correlationId;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void addSubscriber(
         final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition, final long nowNs)
     {

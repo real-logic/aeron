@@ -1113,6 +1113,7 @@ public final class DriverConductor implements Agent
         subscription.close();
         cleanupSubscriptionLink(subscription);
         clientProxy.operationSucceeded(correlationId);
+        subscription.notifyUnavailableImages(this);
     }
 
     void onRemoveRcvNetworkDestination(

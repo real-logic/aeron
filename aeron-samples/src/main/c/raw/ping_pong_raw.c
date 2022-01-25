@@ -125,7 +125,7 @@ int aeron_ping_pong_raw_sendmsg(
     void *buffer,
     size_t buffer_len)
 {
-    struct msghdr send_msghdr = { 0 };
+    struct msghdr send_msghdr;
     struct iovec send_iov = { 0 };
     send_msghdr.msg_iov = &send_iov;
     send_iov.iov_base = buffer;
@@ -153,7 +153,7 @@ int aeron_ping_pong_raw_sendmmsg(
     void *buffer,
     size_t buffer_len)
 {
-    struct mmsghdr send_msghdr = { 0 };
+    struct mmsghdr send_msghdr;
     struct iovec send_iov = { 0 };
     send_msghdr.msg_hdr.msg_iov = &send_iov;
     send_iov.iov_base = buffer;
@@ -163,6 +163,8 @@ int aeron_ping_pong_raw_sendmmsg(
     send_msghdr.msg_hdr.msg_name = (void *)addr;
     send_msghdr.msg_hdr.msg_namelen = addr_len;
     send_msghdr.msg_hdr.msg_iovlen = 1;
+    send_msghdr.msg_hdr.msg_controllen = 0;
+    send_msghdr.msg_hdr.msg_control = NULL;
 
     int sendmsg_result = sendmmsg(send_fd, &send_msghdr, 1, 0);
     if (sendmsg_result < 0)
@@ -238,7 +240,7 @@ int aeron_ping_pong_raw_recvmmsg(
     void *buffer,
     size_t buffer_len)
 {
-    struct mmsghdr mmsghdr = { 0 };
+    struct mmsghdr mmsghdr;
     struct iovec iov = { 0 };
     iov.iov_base = buffer;
     iov.iov_len = buffer_len;
@@ -246,6 +248,8 @@ int aeron_ping_pong_raw_recvmmsg(
     mmsghdr.msg_hdr.msg_iovlen = 1;
     mmsghdr.msg_hdr.msg_name = addr;
     mmsghdr.msg_hdr.msg_namelen = addr_len;
+    mmsghdr.msg_hdr.msg_controllen = 0;
+    mmsghdr.msg_hdr.msg_control = NULL;
     mmsghdr.msg_len = 0;
     struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
 
@@ -447,12 +451,6 @@ int aeron_ping_pong_raw_set_socket_non_blocking(int fd)
 int recv_then_send(aeron_ping_pong_config_t *config, int send_fd, int recv_fd)
 {
     int8_t buf[64 * 1024];
-    struct msghdr msghdr = { 0 };
-    struct iovec iov = { 0 };
-    iov.iov_base = buf;
-    iov.iov_len = sizeof(buf);
-    msghdr.msg_iov = &iov;
-    msghdr.msg_iovlen = 1;
     struct sockaddr_in addr = { 0 };
     socklen_t addr_len = sizeof(addr);
 
@@ -469,7 +467,7 @@ int recv_then_send(aeron_ping_pong_config_t *config, int send_fd, int recv_fd)
                 send_fd,
                 (const struct sockaddr *)&config->pong_host,
                 sizeof(struct sockaddr_in),
-                msghdr.msg_iov->iov_base,
+                buf,
                 recvmsg_result) < 0)
             {
                 return -1;

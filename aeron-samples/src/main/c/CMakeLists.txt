@@ -45,7 +45,7 @@ add_executable(streaming_exclusive_publisher streaming_exclusive_publisher.c ${H
 add_executable(cpong cpong.c ${HEADERS} ${SOURCES})
 add_executable(cping cping.c ${HEADERS} ${SOURCES})
 
-if (NOT "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     add_executable(ping_pong_raw raw/ping_pong_raw.c)
     target_link_libraries(ping_pong_raw ${HDRHISTOGRAM_LIBS} m)
     add_dependencies(ping_pong_raw hdr_histogram)

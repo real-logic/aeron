@@ -32,6 +32,16 @@ extern "C"
 
 class CSystemTest : public CSystemTestBase, public testing::TestWithParam<std::tuple<const char *>>
 {
+protected:
+    CSystemTest() : CSystemTestBase(
+        std::vector<std::pair<std::string, std::string>>
+            {
+                { "AERON_RECEIVER_NUM_BUFFERS", "17" },
+                { "AERON_SENDER_NUM_BUFFERS", "17" },
+                { "AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND", "17" }
+            })
+    {
+    }
 };
 
 INSTANTIATE_TEST_SUITE_P(

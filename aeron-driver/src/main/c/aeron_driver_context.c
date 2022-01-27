@@ -328,6 +328,9 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT (1000)
 #define AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT (1 * 1000 * 1000 * INT64_C(1000))
 #define AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_NS_DEFAULT (1 * 1000 * 1000 * INT64_C(1000))
+#define AERON_RECEIVER_NUM_BUFFERS_DEFAULT UINT32_C(2)
+#define AERON_SENDER_NUM_BUFFERS_DEFAULT UINT32_C(2)
+#define AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT UINT32_C(2)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -469,6 +472,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->name_resolver_init_args = NULL;
     _context->re_resolution_check_interval_ns = AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT;
     _context->conductor_cycle_threshold_ns = AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_NS_DEFAULT;
+    _context->receiver_num_buffers = AERON_RECEIVER_NUM_BUFFERS_DEFAULT;
+    _context->sender_num_buffers = AERON_SENDER_NUM_BUFFERS_DEFAULT;
+    _context->network_publication_max_messages_per_send = AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
 
     char *value = NULL;
 
@@ -852,6 +858,27 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         _context->conductor_cycle_threshold_ns,
         0,
         UINT64_C(60) * 60 * 1000 * 1000 * 1000);
+
+    _context->receiver_num_buffers = aeron_config_parse_uint32(
+        AERON_RECEIVER_NUM_BUFFERS_ENV_VAR,
+        getenv(AERON_RECEIVER_NUM_BUFFERS_ENV_VAR),
+        _context->receiver_num_buffers,
+        1,
+        AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS);
+
+    _context->sender_num_buffers = aeron_config_parse_uint32(
+        AERON_SENDER_NUM_BUFFERS_ENV_VAR,
+        getenv(AERON_SENDER_NUM_BUFFERS_ENV_VAR),
+        _context->sender_num_buffers,
+        1,
+        AERON_DRIVER_SENDER_NUM_RECV_BUFFERS);
+
+    _context->network_publication_max_messages_per_send = aeron_config_parse_uint32(
+        AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND_ENV_VAR,
+        getenv(AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND_ENV_VAR),
+        _context->network_publication_max_messages_per_send,
+        1,
+        AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
@@ -2569,3 +2596,63 @@ int aeron_driver_context_bindings_clientd_find(aeron_driver_context_t *context, 
 
     return -1;
 }
+
+static uint32_t aeron_driver_context_clamp_value(uint32_t value, uint32_t min, uint32_t max)
+{
+    uint32_t clamped_value;
+    clamped_value = value > AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS ? AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS : value;
+    clamped_value = clamped_value < 1 ? 1 : clamped_value;
+    return clamped_value;
+}
+
+int aeron_driver_context_set_receiver_num_buffers(aeron_driver_context_t *context, uint32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->receiver_num_buffers = aeron_driver_context_clamp_value(value, 1, AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS);
+
+    return 0;
+}
+
+uint32_t aeron_driver_context_get_receiver_num_buffers(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->receiver_num_buffers : AERON_RECEIVER_NUM_BUFFERS_DEFAULT;
+}
+
+int aeron_driver_context_set_sender_num_buffers(aeron_driver_context_t *context, uint32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->sender_num_buffers = aeron_driver_context_clamp_value(value, 1, AERON_DRIVER_SENDER_NUM_RECV_BUFFERS);
+
+    return 0;
+}
+
+uint32_t aeron_driver_context_get_sender_num_buffers(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->sender_num_buffers : AERON_SENDER_NUM_BUFFERS_DEFAULT;
+}
+
+int aeron_driver_context_set_network_publication_max_messages_per_send(aeron_driver_context_t *context, uint32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->network_publication_max_messages_per_send = aeron_driver_context_clamp_value(
+        value, 1, AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND);
+    return 0;
+}
+
+uint32_t aeron_driver_context_get_network_publication_max_messages_per_send(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->network_publication_max_messages_per_send : AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
+}
+

@@ -48,9 +48,9 @@ typedef struct aeron_driver_receiver_stct
 {
     aeron_driver_receiver_proxy_t receiver_proxy;
     aeron_udp_transport_poller_t poller;
-
     struct aeron_driver_receiver_buffers_stct
     {
+        size_t num_buffers;
         uint8_t *buffers[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
         struct iovec iov[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
         struct sockaddr_storage addrs[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];

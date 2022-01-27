@@ -1888,19 +1888,21 @@ abstract class ArchiveConductor
         {
             final long replayPos = replaySession.segmentFileBasePosition();
             if (recordingId == replaySession.recordingId() && position > replayPos &&
-                (minReplaySession == null || replayPos < minReplaySession.segmentFileBasePosition()))
+                (null == minReplaySession || replayPos < minReplaySession.segmentFileBasePosition()))
             {
                 minReplaySession = replaySession;
             }
         }
 
-        if (minReplaySession != null)
+        if (null != minReplaySession)
         {
-            final String msg = "invalid detach: replay in progress, newStartPosition=" + position +
+            final String msg = "invalid detach: replay in progress - " +
+                " state=" + minReplaySession.state() +
+                " newStartPosition=" + position +
                 " upperBound=" + minReplaySession.segmentFileBasePosition() +
-                " channel=" + minReplaySession.replayChannel() +
+                " sessionId=" + (int)minReplaySession.sessionId() +
                 " streamId=" + minReplaySession.replayStreamId() +
-                " state=" + minReplaySession.state();
+                " channel=" + minReplaySession.replayChannel();
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return false;
         }

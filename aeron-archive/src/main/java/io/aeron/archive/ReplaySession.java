@@ -253,6 +253,16 @@ class ReplaySession implements Session, AutoCloseable
         return state;
     }
 
+    String replayChannel()
+    {
+        return publication.channel();
+    }
+
+    int replayStreamId()
+    {
+        return publication.streamId();
+    }
+
     long segmentFileBasePosition()
     {
         return segmentFileBasePosition;

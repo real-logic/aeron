@@ -1883,19 +1883,24 @@ abstract class ArchiveConductor
             return false;
         }
 
-        long replayBasePosition = Long.MAX_VALUE;
+        ReplaySession minReplaySession = null;
         for (final ReplaySession replaySession : replaySessionByIdMap.values())
         {
-            if (replaySession.recordingId() == recordingId)
+            final long replayPos = replaySession.segmentFileBasePosition();
+            if (recordingId == replaySession.recordingId() && position > replayPos &&
+                (minReplaySession == null || replayPos < minReplaySession.segmentFileBasePosition()))
             {
-                replayBasePosition = min(replayBasePosition, replaySession.segmentFileBasePosition());
+                minReplaySession = replaySession;
             }
         }
 
-        if (position > replayBasePosition)
+        if (minReplaySession != null)
         {
             final String msg = "invalid detach: replay in progress, newStartPosition=" + position +
-                " upperBound=" + replayBasePosition;
+                " upperBound=" + minReplaySession.segmentFileBasePosition() +
+                " channel=" + minReplaySession.replayChannel() +
+                " streamId=" + minReplaySession.replayStreamId() +
+                " state=" + minReplaySession.state();
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return false;
         }

@@ -21,6 +21,7 @@ import static io.aeron.cluster.ClusterMember.quorumPosition;
 import static io.aeron.cluster.ClusterMember.quorumThreshold;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ClusterMemberTest
 {
@@ -77,5 +78,33 @@ public class ClusterMemberTest
             final long quorumPosition = quorumPosition(members, rankedPositions);
             assertThat("Test: " + i, quorumPosition, is(quorumPositions[i]));
         }
+    }
+
+    @Test
+    void parseShouldIgnoreEscapedPipe()
+    {
+        final ClusterMember[] parsedMembers = ClusterMember.parse(
+            "0,ingressEndpoint\\|interface=ingressEndpoint-interface," +
+                "consensusEndpoint\\|interface=consensusEndpoint-interface\\|mtu=2048," +
+                "logEndpoint\\|interface=logEndpoint-interface,catchupEndpoint\\|interface=catchupEndpoint-interface," +
+                "archiveEndpoint\\|interface=archiveEndpoint-interface|" +
+                "1,ingressEndpoint1,consensusEndpoint1,logEndpoint1\\|interface=logEndpoint1-interface," +
+                "catchupEndpoint1,archiveEndpoint1\\|interface=archiveEndpoint1-interface|");
+
+        final ClusterMember member0 = parsedMembers[0];
+        assertEquals(0, member0.id());
+        assertEquals("ingressEndpoint|interface=ingressEndpoint-interface", member0.ingressEndpoint());
+        assertEquals("consensusEndpoint|interface=consensusEndpoint-interface|mtu=2048", member0.consensusEndpoint());
+        assertEquals("logEndpoint|interface=logEndpoint-interface", member0.logEndpoint());
+        assertEquals("catchupEndpoint|interface=catchupEndpoint-interface", member0.catchupEndpoint());
+        assertEquals("archiveEndpoint|interface=archiveEndpoint-interface", member0.archiveEndpoint());
+
+        final ClusterMember member1 = parsedMembers[1];
+        assertEquals(1, member1.id());
+        assertEquals("ingressEndpoint1", member1.ingressEndpoint());
+        assertEquals("consensusEndpoint1", member1.consensusEndpoint());
+        assertEquals("logEndpoint1|interface=logEndpoint1-interface", member1.logEndpoint());
+        assertEquals("catchupEndpoint1", member1.catchupEndpoint());
+        assertEquals("archiveEndpoint1|interface=archiveEndpoint1-interface", member1.archiveEndpoint());
     }
 }

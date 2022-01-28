@@ -25,6 +25,7 @@ import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
@@ -36,6 +37,9 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  */
 public final class ClusterMember
 {
+    private static final Pattern MEMBERS_SPLIT_REGEX = Pattern.compile("(?<!\\\\)\\|");
+    private static final Pattern ESCAPED_PIPE = Pattern.compile("\\|", Pattern.LITERAL);
+
     static final ClusterMember[] EMPTY_MEMBERS = new ClusterMember[0];
 
     private boolean isBallotSent;
@@ -538,13 +542,13 @@ public final class ClusterMember
             return ClusterMember.EMPTY_MEMBERS;
         }
 
-        final String[] memberValues = value.split("\\|");
+        final String[] memberValues = MEMBERS_SPLIT_REGEX.split(value);
         final int length = memberValues.length;
         final ClusterMember[] members = new ClusterMember[length];
 
         for (int i = 0; i < length; i++)
         {
-            final String idAndEndpoints = memberValues[i];
+            final String idAndEndpoints = ESCAPED_PIPE.matcher(memberValues[i]).replaceAll("|");
             final String[] memberAttributes = idAndEndpoints.split(",");
             if (memberAttributes.length != 6)
             {

@@ -68,7 +68,7 @@ do \
     size_t partition = (size_t)(active_term_count % AERON_LOGBUFFER_PARTITION_COUNT); \
     AERON_GET_VOLATILE(d, (m)->term_tail_counters[partition]); \
 } \
-while(false)
+while (false)
 
 int aeron_logbuffer_check_term_length(uint64_t term_length);
 int aeron_logbuffer_check_page_size(uint64_t page_size);

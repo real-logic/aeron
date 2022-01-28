@@ -219,7 +219,7 @@ inline int32_t aeron_term_appender_append_unfragmented_messagev(
             term_buffer, (int32_t)term_offset, frame_length, term_id, session_id, stream_id);
 
         aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
-        int32_t offset = (int32_t)term_offset + AERON_DATA_HEADER_LENGTH;
+        int32_t offset = (int32_t)(term_offset + AERON_DATA_HEADER_LENGTH);
         size_t i = 0;
 
         for (int32_t ending_offset = offset + (int32_t)length;
@@ -372,7 +372,7 @@ inline int32_t aeron_term_appender_append_fragmented_messagev(
                 term_buffer, frame_offset, frame_length, term_id, session_id, stream_id);
 
             int32_t bytes_written = 0;
-            int32_t payload_offset = frame_offset + AERON_DATA_HEADER_LENGTH;
+            int32_t payload_offset = (int32_t)(frame_offset + AERON_DATA_HEADER_LENGTH);
 
             do
             {

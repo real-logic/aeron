@@ -39,7 +39,7 @@ typedef std::function<void(
     concurrent::AtomicBuffer &buffer,
     util::index_t offset,
     util::index_t length,
-    Header& header)> fragment_handler_t;
+    Header &header)> fragment_handler_t;
 
 
 namespace TermReader {
@@ -55,7 +55,7 @@ inline void read(
     ReadOutcome &outcome,
     AtomicBuffer &termBuffer,
     std::int32_t termOffset,
-    F&& handler,
+    F &&handler,
     int fragmentsLimit,
     Header &header,
     const util::exception_handler_t &exceptionHandler)

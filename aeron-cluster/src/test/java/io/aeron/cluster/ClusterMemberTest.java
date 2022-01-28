@@ -81,15 +81,15 @@ public class ClusterMemberTest
     }
 
     @Test
-    void parseShouldIgnoreEscapedPipe()
+    void parseShouldAllowExtraParametersAttachedToAnEndpoint()
     {
         final ClusterMember[] parsedMembers = ClusterMember.parse(
-            "0,ingressEndpoint\\|interface=ingressEndpoint-interface," +
-                "consensusEndpoint\\|interface=consensusEndpoint-interface\\|mtu=2048," +
-                "logEndpoint\\|interface=logEndpoint-interface,catchupEndpoint\\|interface=catchupEndpoint-interface," +
-                "archiveEndpoint\\|interface=archiveEndpoint-interface|" +
-                "1,ingressEndpoint1,consensusEndpoint1,logEndpoint1\\|interface=logEndpoint1-interface," +
-                "catchupEndpoint1,archiveEndpoint1\\|interface=archiveEndpoint1-interface|");
+            "0,ingressEndpoint@interface=ingressEndpoint-interface," +
+                "consensusEndpoint@interface=consensusEndpoint-interface@mtu=2048," +
+                "logEndpoint@interface=logEndpoint-interface,catchupEndpoint@interface=catchupEndpoint-interface," +
+                "archiveEndpoint@interface=archiveEndpoint-interface|" +
+                "1,ingressEndpoint1,consensusEndpoint1,logEndpoint1@interface=logEndpoint1-interface," +
+                "catchupEndpoint1,archiveEndpoint1@interface=archiveEndpoint1-interface@term-length=16k|");
 
         final ClusterMember member0 = parsedMembers[0];
         assertEquals(0, member0.id());
@@ -98,6 +98,10 @@ public class ClusterMemberTest
         assertEquals("logEndpoint|interface=logEndpoint-interface", member0.logEndpoint());
         assertEquals("catchupEndpoint|interface=catchupEndpoint-interface", member0.catchupEndpoint());
         assertEquals("archiveEndpoint|interface=archiveEndpoint-interface", member0.archiveEndpoint());
+        assertEquals("ingressEndpoint|interface=ingressEndpoint-interface," +
+            "consensusEndpoint|interface=consensusEndpoint-interface|mtu=2048," +
+            "logEndpoint|interface=logEndpoint-interface,catchupEndpoint|interface=catchupEndpoint-interface," +
+            "archiveEndpoint|interface=archiveEndpoint-interface", member0.endpoints());
 
         final ClusterMember member1 = parsedMembers[1];
         assertEquals(1, member1.id());
@@ -105,6 +109,10 @@ public class ClusterMemberTest
         assertEquals("consensusEndpoint1", member1.consensusEndpoint());
         assertEquals("logEndpoint1|interface=logEndpoint1-interface", member1.logEndpoint());
         assertEquals("catchupEndpoint1", member1.catchupEndpoint());
-        assertEquals("archiveEndpoint1|interface=archiveEndpoint1-interface", member1.archiveEndpoint());
+        assertEquals("archiveEndpoint1|interface=archiveEndpoint1-interface|term-length=16k",
+            member1.archiveEndpoint());
+        assertEquals("ingressEndpoint1,consensusEndpoint1,logEndpoint1|interface=logEndpoint1-interface," +
+            "catchupEndpoint1,archiveEndpoint1|interface=archiveEndpoint1-interface|term-length=16k",
+            member1.endpoints());
     }
 }

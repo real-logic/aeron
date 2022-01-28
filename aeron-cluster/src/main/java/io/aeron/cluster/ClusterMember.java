@@ -37,8 +37,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  */
 public final class ClusterMember
 {
-    private static final Pattern MEMBERS_SPLIT_REGEX = Pattern.compile("(?<!\\\\)\\|");
-    private static final Pattern ESCAPED_PIPE = Pattern.compile("\\|", Pattern.LITERAL);
+    private static final Pattern MEMBERS_SPLIT_REGEX = Pattern.compile("\\|");
 
     static final ClusterMember[] EMPTY_MEMBERS = new ClusterMember[0];
 
@@ -548,20 +547,14 @@ public final class ClusterMember
 
         for (int i = 0; i < length; i++)
         {
-            final String idAndEndpoints = ESCAPED_PIPE.matcher(memberValues[i]).replaceAll("|");
+            final String idAndEndpoints = memberValues[i].replace('@', '|');
             final String[] memberAttributes = idAndEndpoints.split(",");
             if (memberAttributes.length != 6)
             {
                 throw new ClusterException("invalid member value: " + idAndEndpoints + " within: " + value);
             }
 
-            final String endpoints = String.join(
-                ",",
-                memberAttributes[1],
-                memberAttributes[2],
-                memberAttributes[3],
-                memberAttributes[4],
-                memberAttributes[5]);
+            final String endpoints = idAndEndpoints.substring(idAndEndpoints.indexOf(',') + 1);
 
             members[i] = new ClusterMember(
                 Integer.parseInt(memberAttributes[0]),

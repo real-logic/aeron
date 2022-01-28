@@ -40,7 +40,7 @@ public:
             throw IOException(std::string("failed to open existing file cnc file in: ") + baseDirectory, SOURCEINFO);
         }
 
-        return CncFileReader(aeron_cnc);
+        return { aeron_cnc };
     }
 
     CountersReader countersReader() const
@@ -51,7 +51,7 @@ public:
     int readErrorLog(const ErrorLogReader::error_consumer_t &consumer, std::int64_t sinceTimestamp) const
     {
         void *clientd = const_cast<void *>(reinterpret_cast<const void *>(&consumer));
-        return aeron_cnc_error_log_read(m_aeron_cnc, errorCallback, clientd, sinceTimestamp);
+        return (int)aeron_cnc_error_log_read(m_aeron_cnc, errorCallback, clientd, sinceTimestamp);
     }
 
     ~CncFileReader()

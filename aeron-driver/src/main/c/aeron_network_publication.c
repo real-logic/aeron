@@ -203,6 +203,7 @@ int aeron_network_publication_create(
     _pub->term_length_mask = (int32_t)params->term_length - 1;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
     _pub->mtu_length = params->mtu_length;
+    _pub->max_messages_per_send = context->network_publication_max_messages_per_send;
     _pub->term_window_length = (int64_t)aeron_producer_window_length(
         context->publication_window_length, params->term_length);
     _pub->linger_timeout_ns = (int64_t)params->linger_timeout_ns;
@@ -381,13 +382,14 @@ int aeron_network_publication_send_data(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos, int32_t term_offset)
 {
     const size_t term_length = (size_t)publication->term_length_mask + 1;
+    const size_t max_vlen = publication->max_messages_per_send;
     int result = 0, vlen = 0, bytes_sent = 0;
     int32_t available_window = (int32_t)(aeron_counter_get(publication->snd_lmt_position.value_addr) - snd_pos);
     int64_t highest_pos = snd_pos;
     struct iovec iov[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
     struct mmsghdr mmsghdr[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
 
-    for (size_t i = 0; i < AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND && available_window > 0; i++)
+    for (size_t i = 0; i < max_vlen && available_window > 0; i++)
     {
         size_t scan_limit = (size_t)available_window < publication->mtu_length ?
             (size_t)available_window : publication->mtu_length;

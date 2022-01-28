@@ -44,7 +44,8 @@ int aeron_driver_receiver_init(
         return -1;
     }
 
-    for (size_t i = 0; i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
+    receiver->recv_buffers.num_buffers = context->receiver_num_buffers;
+    for (size_t i = 0; i < receiver->recv_buffers.num_buffers; i++)
     {
         size_t offset = 0;
         if (aeron_alloc_aligned(
@@ -126,13 +127,14 @@ int aeron_driver_receiver_do_work(void *clientd)
     struct mmsghdr mmsghdr[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
 
+    const size_t vlen = receiver->recv_buffers.num_buffers;
     int64_t now_ns = receiver->context->nano_clock();
     aeron_clock_update_cached_nano_time(receiver->context->receiver_cached_clock, now_ns);
 
     int work_count = (int)aeron_spsc_concurrent_array_queue_drain(
         receiver->receiver_proxy.command_queue, aeron_driver_receiver_on_command, receiver, AERON_COMMAND_DRAIN_LIMIT);
 
-    for (size_t i = 0; i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
+    for (size_t i = 0; i < vlen; i++)
     {
         mmsghdr[i].msg_hdr.msg_name = &receiver->recv_buffers.addrs[i];
         mmsghdr[i].msg_hdr.msg_namelen = sizeof(receiver->recv_buffers.addrs[i]);
@@ -148,7 +150,7 @@ int aeron_driver_receiver_do_work(void *clientd)
     int poll_result = receiver->poller_poll_func(
         &receiver->poller,
         mmsghdr,
-        AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS,
+        vlen,
         &bytes_received,
         receiver->data_paths.recv_func,
         receiver->recvmmsg_func,

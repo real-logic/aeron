@@ -34,11 +34,11 @@
 #define AERON_COMMAND_QUEUE_CAPACITY (128)
 #define AERON_COMMAND_DRAIN_LIMIT (2)
 
-#define AERON_DRIVER_SENDER_NUM_RECV_BUFFERS (2)
+#define AERON_DRIVER_SENDER_NUM_RECV_BUFFERS (16)
 
-#define AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND (2)
+#define AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND (16)
 
-#define AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS (2)
+#define AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS (16)
 #define AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
 
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
@@ -129,7 +129,9 @@ typedef struct aeron_driver_context_stct
     int32_t publication_reserved_session_id_low;            /* aeron.publication.reserved.session.id.low = -1 */
     int32_t publication_reserved_session_id_high;           /* aeron.publication.reserved.session.id.high = 1000 */
     uint8_t multicast_ttl;                                  /* aeron.socket.multicast.ttl = 0 */
-
+    uint32_t receiver_num_buffers;                          /* aeron.receiver.num.buffers = 2 */
+    uint32_t sender_num_buffers;                            /* aeron.sender.num.buffers = 2 */
+    uint32_t network_publication_max_messages_per_send;     /* aeron.network.publication.max.messages.per.send = 2 */
     struct                                                  /* aeron.receiver.receiver.tag = <unset> */
     {
         bool is_present;

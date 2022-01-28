@@ -318,7 +318,7 @@ int aeron_udp_channel_transport_recvmmsg(
 
     if (transport->timestamp_flags)
     {
-        for (int i = 0; i < (int)vlen && i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
+        for (int i = 0; i < (int)vlen; i++)
         {
             msgvec[i].msg_hdr.msg_control = (void *)buf[i];
             msgvec[i].msg_hdr.msg_controllen = CMSG_LEN(sizeof(buf[i]));

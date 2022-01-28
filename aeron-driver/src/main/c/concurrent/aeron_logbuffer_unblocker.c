@@ -32,8 +32,8 @@ bool aeron_logbuffer_unblocker_unblock(
 
     const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
     const int32_t tail_offset = aeron_logbuffer_term_offset(raw_tail, (int32_t)term_length);
-    const int32_t blocked_offset =
-        aeron_logbuffer_compute_term_offset_from_position(blocked_position, position_bits_to_shift);
+    const int32_t blocked_offset = aeron_logbuffer_compute_term_offset_from_position(
+        blocked_position, position_bits_to_shift);
 
     if (active_term_count == (blocked_term_count - 1) && 0 == blocked_offset)
     {
@@ -52,7 +52,8 @@ bool aeron_logbuffer_unblocker_unblock(
     {
         case AERON_TERM_UNBLOCKER_STATUS_UNBLOCKED_TO_END:
             aeron_logbuffer_rotate_log(log_meta_data, blocked_term_count, term_id);
-            /* fall through */
+            return true;
+
         case AERON_TERM_UNBLOCKER_STATUS_UNBLOCKED:
             return true;
 

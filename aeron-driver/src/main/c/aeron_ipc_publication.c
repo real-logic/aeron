@@ -100,29 +100,29 @@ int aeron_ipc_publication_create(
 
     if (params->has_position)
     {
-        int64_t term_id = params->term_id;
+        int32_t term_id = params->term_id;
         int32_t term_count = aeron_logbuffer_compute_term_count(params->term_id, initial_term_id);
         size_t active_index = aeron_logbuffer_index_by_term_count(term_count);
 
         _pub->log_meta_data->term_tail_counters[active_index] =
-            (term_id * ((int64_t)1 << 32)) | params->term_offset;
+            (term_id * (INT64_C(1) << 32)) + (int64_t)params->term_offset;
 
         for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
         {
-            int64_t expected_term_id = (term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
+            int32_t expected_term_id = (term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
             active_index = (active_index + 1) % AERON_LOGBUFFER_PARTITION_COUNT;
-            _pub->log_meta_data->term_tail_counters[active_index] = expected_term_id * ((int64_t)1 << 32);
+            _pub->log_meta_data->term_tail_counters[active_index] = expected_term_id * (INT64_C(1) << 32);
         }
 
         _pub->log_meta_data->active_term_count = term_count;
     }
     else
     {
-        _pub->log_meta_data->term_tail_counters[0] = initial_term_id * ((int64_t)1 << 32);
+        _pub->log_meta_data->term_tail_counters[0] = initial_term_id * (INT64_C(1) << 32);
         for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
         {
-            int64_t expected_term_id = (initial_term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
-            _pub->log_meta_data->term_tail_counters[i] = expected_term_id * ((int64_t)1 << 32);
+            int32_t expected_term_id = (initial_term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
+            _pub->log_meta_data->term_tail_counters[i] = expected_term_id * (INT64_C(1) << 32);
         }
 
         _pub->log_meta_data->active_term_count = 0;

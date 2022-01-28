@@ -45,10 +45,10 @@ typedef struct aeron_driver_sender_stct
 
     struct aeron_driver_sender_buffers_stct
     {
-        size_t num_buffers;
-        uint8_t *buffers[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
-        struct iovec iov[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
-        struct sockaddr_storage addrs[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
+        size_t vector_capacity;
+        uint8_t *buffers[AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX];
+        struct iovec iov[AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX];
+        struct sockaddr_storage addrs[AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX];
     }
     recv_buffers;
 

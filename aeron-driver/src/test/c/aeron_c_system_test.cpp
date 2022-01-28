@@ -36,9 +36,9 @@ protected:
     CSystemTest() : CSystemTestBase(
         std::vector<std::pair<std::string, std::string>>
             {
-                { "AERON_RECEIVER_NUM_BUFFERS", "17" },
-                { "AERON_SENDER_NUM_BUFFERS", "17" },
-                { "AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND", "17" }
+                { AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR, "17" },
+                { AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR, "17" },
+                { AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND_ENV_VAR, "17" }
             })
     {
     }

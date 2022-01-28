@@ -313,7 +313,7 @@ int aeron_udp_channel_transport_recvmmsg(
     struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
     struct timespec *media_rcv_timestamp = NULL;
     AERON_DECL_ALIGNED(
-        char buf[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS][CMSG_SPACE(sizeof(struct timespec))],
+        char buf[AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX][CMSG_SPACE(sizeof(struct timespec))],
         sizeof(struct cmsghdr));
 
     if (transport->timestamp_flags)

@@ -31,95 +31,96 @@ static const uint32_t MAX_VALUE = UINT32_C(16);
 class DriverContextConfigTest : public testing::Test
 {
 protected:
-    virtual void TearDown()
+    void TearDown() override
     {
-        aeron_env_unset(AERON_RECEIVER_NUM_BUFFERS_ENV_VAR);
+        aeron_env_unset(AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR);
+        aeron_env_unset(AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR);
     }
 };
 
-TEST_F(DriverContextConfigTest, shouldValidateReciverNumBuffers)
+TEST_F(DriverContextConfigTest, shouldValidateReceiverIoVectorCapacity)
 {
     aeron_driver_context_t *context;
 
     EXPECT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
-    aeron_driver_context_set_receiver_num_buffers(context, 0);
-    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
-    aeron_driver_context_set_receiver_num_buffers(context, 2);
-    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
-    aeron_driver_context_set_receiver_num_buffers(context, 16);
-    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
-    aeron_driver_context_set_receiver_num_buffers(context, 17);
-    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
+    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
+    aeron_driver_context_set_receiver_io_vector_capacity(context, 0);
+    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
+    aeron_driver_context_set_receiver_io_vector_capacity(context, 2);
+    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
+    aeron_driver_context_set_receiver_io_vector_capacity(context, 16);
+    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
+    aeron_driver_context_set_receiver_io_vector_capacity(context, 17);
+    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
 
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_RECEIVER_NUM_BUFFERS_ENV_VAR, "-1");
+    aeron_env_set(AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR, "-1");
     EXPECT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
+    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_RECEIVER_NUM_BUFFERS_ENV_VAR, "0");
+    aeron_env_set(AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR, "0");
     EXPECT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
+    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_RECEIVER_NUM_BUFFERS_ENV_VAR, "17");
+    aeron_env_set(AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR, "17");
     EXPECT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
+    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_RECEIVER_NUM_BUFFERS_ENV_VAR, "1");
+    aeron_env_set(AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR, "1");
     ASSERT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
+    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_RECEIVER_NUM_BUFFERS_ENV_VAR, "16");
+    aeron_env_set(AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR, "16");
     ASSERT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_receiver_num_buffers(context));
+    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_receiver_io_vector_capacity(context));
     aeron_driver_context_close(context);
 }
 
-TEST_F(DriverContextConfigTest, shouldValidateSenderNumBuffers)
+TEST_F(DriverContextConfigTest, shouldValidateSenderIoVectorCapacity)
 {
     aeron_driver_context_t *context;
 
     EXPECT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_sender_num_buffers(context));
-    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_sender_num_buffers(context));
-    aeron_driver_context_set_sender_num_buffers(context, 0);
-    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_sender_num_buffers(context));
-    aeron_driver_context_set_sender_num_buffers(context, 2);
-    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_sender_num_buffers(context));
-    aeron_driver_context_set_sender_num_buffers(context, 16);
-    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_sender_num_buffers(context));
-    aeron_driver_context_set_sender_num_buffers(context, 17);
-    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_sender_num_buffers(context));
+    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
+    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
+    aeron_driver_context_set_sender_io_vector_capacity(context, 0);
+    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
+    aeron_driver_context_set_sender_io_vector_capacity(context, 2);
+    EXPECT_EQ(DEFAULT_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
+    aeron_driver_context_set_sender_io_vector_capacity(context, 16);
+    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
+    aeron_driver_context_set_sender_io_vector_capacity(context, 17);
+    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_SENDER_NUM_BUFFERS_ENV_VAR, "-1");
+    aeron_env_set(AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR, "-1");
     EXPECT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_sender_num_buffers(context));
+    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_SENDER_NUM_BUFFERS_ENV_VAR, "0");
+    aeron_env_set(AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR, "0");
     EXPECT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_sender_num_buffers(context));
+    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_SENDER_NUM_BUFFERS_ENV_VAR, "17");
+    aeron_env_set(AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR, "17");
     EXPECT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_sender_num_buffers(context));
+    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_SENDER_NUM_BUFFERS_ENV_VAR, "1");
+    aeron_env_set(AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR, "1");
     ASSERT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_sender_num_buffers(context));
+    EXPECT_EQ(MIN_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
     aeron_driver_context_close(context);
 
-    aeron_env_set(AERON_SENDER_NUM_BUFFERS_ENV_VAR, "16");
+    aeron_env_set(AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR, "16");
     ASSERT_EQ(0, aeron_driver_context_init(&context));
-    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_sender_num_buffers(context));
+    EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_sender_io_vector_capacity(context));
     aeron_driver_context_close(context);
 }
 
@@ -164,4 +165,3 @@ TEST_F(DriverContextConfigTest, shouldValidateMaxMessagesPerSendBuffers)
     EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_network_publication_max_messages_per_send(context));
     aeron_driver_context_close(context);
 }
-

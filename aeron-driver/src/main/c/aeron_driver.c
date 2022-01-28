@@ -541,8 +541,8 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    publication_reserved_session_id_high=%" PRId32, context->publication_reserved_session_id_high);
     fprintf(fpout, "\n    loss_report_length=%" PRIu64, (uint64_t)context->loss_report_length);
     fprintf(fpout, "\n    send_to_sm_poll_ratio=%" PRIu64, (uint64_t)context->send_to_sm_poll_ratio);
-    fprintf(fpout, "\n    receiver_num_buffers=%" PRIu64, (uint64_t)context->receiver_num_buffers);
-    fprintf(fpout, "\n    sender_num_buffers=%" PRIu64, (uint64_t)context->sender_num_buffers);
+    fprintf(fpout, "\n    receiver_io_vector_capacity=%" PRIu64, (uint64_t)context->receiver_io_vector_capacity);
+    fprintf(fpout, "\n    sender_io_vector_capacity=%" PRIu64, (uint64_t)context->sender_io_vector_capacity);
     fprintf(
         fpout, "\n    network_publication_max_messages_per_send=%" PRIu64,
         (uint64_t)context->network_publication_max_messages_per_send);

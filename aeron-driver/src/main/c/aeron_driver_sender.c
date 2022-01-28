@@ -46,8 +46,8 @@ int aeron_driver_sender_init(
         return -1;
     }
 
-    sender->recv_buffers.num_buffers = context->sender_num_buffers;
-    for (size_t i = 0; i < sender->recv_buffers.num_buffers; i++)
+    sender->recv_buffers.vector_capacity = context->sender_io_vector_capacity;
+    for (size_t i = 0; i < sender->recv_buffers.vector_capacity; i++)
     {
         size_t offset = 0;
         if (aeron_alloc_aligned(
@@ -131,7 +131,7 @@ int aeron_driver_sender_do_work(void *clientd)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
 
-    const size_t vlen = sender->recv_buffers.num_buffers;
+    const size_t vlen = sender->recv_buffers.vector_capacity;
 
     int64_t now_ns = sender->context->nano_clock();
     aeron_clock_update_cached_nano_time(sender->context->sender_cached_clock, now_ns);
@@ -146,7 +146,7 @@ int aeron_driver_sender_do_work(void *clientd)
         ++sender->duty_cycle_counter >= sender->duty_cycle_ratio ||
         now_ns > sender->control_poll_timeout_ns)
     {
-        struct mmsghdr mmsghdr[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
+        struct mmsghdr mmsghdr[AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX];
 
         for (size_t i = 0; i < vlen; i++)
         {
@@ -195,7 +195,7 @@ void aeron_driver_sender_on_close(void *clientd)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
 
-    for (size_t i = 0; i < AERON_DRIVER_SENDER_NUM_RECV_BUFFERS; i++)
+    for (size_t i = 0; i < sender->recv_buffers.vector_capacity; i++)
     {
         aeron_free(sender->recv_buffers.buffers[i]);
     }

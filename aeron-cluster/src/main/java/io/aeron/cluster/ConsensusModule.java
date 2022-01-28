@@ -316,8 +316,8 @@ public final class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of cluster member endpoints.
          * <p>
          * <code>
-         *     0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
-         *     1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
+         * 0,ingress:port[@interface=member0-interface],consensus:port[@interface=member0-interface],log:port[@interface=member0-interface],catchup:port[@interface=member0-interface],archive:port[@interface=member0-interface]| \
+         * 1,ingress:port[@interface=member1-interface],consensus:port[@interface=member1-interface],log:port[@interface=member1-interface],catchup:port[@interface=member1-interface],archive:port[@interface=member1-interface]| ...
          * </code>
          * <p>
          * The ingress endpoints will be used as the endpoint substituted into the
@@ -1700,8 +1700,8 @@ public final class ConsensusModule implements AutoCloseable
          * String representing the cluster members.
          * <p>
          * <code>
-         * 0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
-         * 1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
+         * 0,ingress:port[@interface=member0-interface],consensus:port[@interface=member0-interface],log:port[@interface=member0-interface],catchup:port[@interface=member0-interface],archive:port[@interface=member0-interface]| \
+         * 1,ingress:port[@interface=member1-interface],consensus:port[@interface=member1-interface],log:port[@interface=member1-interface],catchup:port[@interface=member1-interface],archive:port[@interface=member1-interface]| ...
          * </code>
          * <p>
          * The ingress endpoints will be used as the endpoint substituted into the {@link #ingressChannel()}

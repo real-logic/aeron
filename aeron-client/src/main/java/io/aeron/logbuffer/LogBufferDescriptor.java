@@ -740,7 +740,7 @@ public class LogBufferDescriptor
      */
     public static long packTail(final int termId, final int termOffset)
     {
-        return ((long)termId << 32) | (termOffset & 0xFFFF_FFFFL);
+        return ((long)termId << 32) | termOffset;
     }
 
     /**

@@ -126,7 +126,7 @@ int aeron_network_publication_create(
         size_t active_index = aeron_logbuffer_index_by_term_count(term_count);
 
         _pub->log_meta_data->term_tail_counters[active_index] =
-            (term_id * (INT64_C(1) << 32)) + (int64_t)params->term_offset;
+            (term_id * (INT64_C(1) << 32)) | (int64_t)params->term_offset;
 
         for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
         {

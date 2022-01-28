@@ -449,7 +449,7 @@ public final class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
         final ChannelUri channelUri = udpChannel.channelUri();
-        final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, false);
+        final PublicationParams params = getPublicationParams(channelUri, ctx, this, false);
         validateEndpointForPublication(udpChannel);
         validateMtuForMaxMessage(params, channel);
 
@@ -662,7 +662,7 @@ public final class DriverConductor implements Agent
     {
         IpcPublication publication = null;
         final ChannelUri channelUri = ChannelUri.parse(channel);
-        final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, true);
+        final PublicationParams params = getPublicationParams(channelUri, ctx, this, true);
 
         if (!isExclusive)
         {

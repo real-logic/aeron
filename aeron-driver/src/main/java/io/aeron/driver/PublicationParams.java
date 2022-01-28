@@ -49,7 +49,6 @@ final class PublicationParams
         final ChannelUri channelUri,
         final MediaDriver.Context ctx,
         final DriverConductor driverConductor,
-        final boolean isExclusive,
         final boolean isIpc)
     {
         final PublicationParams params = new PublicationParams(ctx, isIpc);
@@ -104,8 +103,7 @@ final class PublicationParams
             {
                 throw new IllegalArgumentException(
                     TERM_OFFSET_PARAM_NAME + "=" + params.termOffset +
-                    " must be a multiple of FRAME_ALIGNMENT: channel=" +
-                    channelUri);
+                    " must be a multiple of FRAME_ALIGNMENT: channel=" + channelUri);
             }
 
             if (params.termId - params.initialTermId < 0)

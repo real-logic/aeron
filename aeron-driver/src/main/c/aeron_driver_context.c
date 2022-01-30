@@ -2600,8 +2600,8 @@ int aeron_driver_context_bindings_clientd_find(aeron_driver_context_t *context, 
 static uint32_t aeron_driver_context_clamp_value(uint32_t value, uint32_t min, uint32_t max)
 {
     uint32_t clamped_value;
-    clamped_value = value > AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX ? AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX : value;
-    clamped_value = clamped_value < 1 ? 1 : clamped_value;
+    clamped_value = value > max ? max : value;
+    clamped_value = clamped_value < min ? min : clamped_value;
 
     return clamped_value;
 }

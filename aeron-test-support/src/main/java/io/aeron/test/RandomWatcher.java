@@ -22,8 +22,19 @@ import java.util.Random;
 
 public class RandomWatcher implements TestWatcher
 {
-    private final long seed = System.nanoTime();
-    private final Random random = new Random();
+    private final Random random;
+    private final long seed;
+
+    public RandomWatcher(final long seed)
+    {
+        this.seed = seed;
+        random = new Random(seed);
+    }
+
+    public RandomWatcher()
+    {
+        this(System.nanoTime());
+    }
 
     public void testFailed(final ExtensionContext context, final Throwable cause)
     {

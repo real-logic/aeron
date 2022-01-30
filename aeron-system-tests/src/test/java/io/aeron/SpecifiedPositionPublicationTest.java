@@ -71,7 +71,8 @@ class SpecifiedPositionPublicationTest
             termOffset,
             positionBitsToShift,
             initialTermId);
-        final long nextPosition = startPosition + DataHeaderFlyweight.HEADER_LENGTH + msg.capacity();
+        final PositionCalculator positionCalculator = new PositionCalculator(startPosition, termLength, termOffset);
+        final long nextPosition = positionCalculator.addMessage(DataHeaderFlyweight.HEADER_LENGTH + msg.capacity());
 
         final String channel = new ChannelUriStringBuilder(initialUri)
             .initialPosition(startPosition, initialTermId, termLength)
@@ -130,9 +131,11 @@ class SpecifiedPositionPublicationTest
             termOffset,
             positionBitsToShift,
             initialTermId);
-        final long positionMsg1 = startPosition + DataHeaderFlyweight.HEADER_LENGTH + msg.capacity();
-        final long positionMsg2 = positionMsg1 + DataHeaderFlyweight.HEADER_LENGTH + msg.capacity();
-        final long positionMsg3 = positionMsg2 + DataHeaderFlyweight.HEADER_LENGTH + msg.capacity();
+        final int totalMessageLength = DataHeaderFlyweight.HEADER_LENGTH + msg.capacity();
+        final PositionCalculator positionCalculator = new PositionCalculator(startPosition, termLength, termOffset);
+        final long positionMsg1 = positionCalculator.addMessage(totalMessageLength);
+        final long positionMsg2 = positionCalculator.addMessage(totalMessageLength);
+        final long positionMsg3 = positionCalculator.addMessage(totalMessageLength);
 
         final String channel = new ChannelUriStringBuilder(initialUri)
             .initialPosition(startPosition, initialTermId, termLength)
@@ -233,6 +236,32 @@ class SpecifiedPositionPublicationTest
         finally
         {
             context.deleteDirectory();
+        }
+    }
+
+    private final class PositionCalculator
+    {
+        final int termLength;
+        long position;
+        int termRemaining;
+
+        PositionCalculator(final long startingPosition, final int termLength, final int termOffset)
+        {
+            this.position = startingPosition;
+            this.termLength = termLength;
+            this.termRemaining = termLength - termOffset;
+        }
+
+        long addMessage(final int totalMessageLength)
+        {
+            if (termRemaining < totalMessageLength)
+            {
+                position += termRemaining;
+                termRemaining = termLength;
+            }
+            position += totalMessageLength;
+            termRemaining -= totalMessageLength;
+            return position;
         }
     }
 }

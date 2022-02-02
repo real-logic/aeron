@@ -96,7 +96,7 @@ void aeron_idle_strategy_noop_idle(void *state, int work_count)
 
 typedef struct aeron_idle_strategy_backoff_state_stct
 {
-    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH];
+    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH - sizeof(uint64_t)];
     uint64_t max_spins;
     uint64_t max_yields;
     uint64_t min_park_period_ns;

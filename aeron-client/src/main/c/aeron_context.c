@@ -136,7 +136,7 @@ int aeron_context_init(aeron_context_t **context)
         getenv(AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY_ENV_VAR), AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT);
 
     if ((_context->idle_strategy_func = aeron_idle_strategy_load(
-        "sleeping", &_context->idle_strategy_state, NULL,"1ms")) == NULL)
+        "sleep-ns", &_context->idle_strategy_state, NULL,"1ms")) == NULL)
     {
         return -1;
     }

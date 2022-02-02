@@ -292,7 +292,7 @@ public final class Configuration
     public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
 
     /**
-     * Default timeout for {@link Image} liveness timeout..
+     * Default timeout for {@link Image} liveness timeout.
      */
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
@@ -435,7 +435,7 @@ public final class Configuration
      * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
      * <p>
      * Max length is 65,507 bytes as 65,535 minus 8 byte UDP header then minus 20 byte IP header.
-     * Then round down to nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} giving 65,504.
+     * Then round down to the nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} giving 65,504.
      */
     public static final int MAX_UDP_PAYLOAD_LENGTH = 65504;
 

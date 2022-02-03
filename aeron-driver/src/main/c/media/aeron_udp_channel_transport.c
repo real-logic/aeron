@@ -108,6 +108,7 @@ int aeron_udp_channel_transport_init(
         AERON_APPEND_ERR("%s", "");
         goto error;
     }
+    transport->recv_fd = transport->fd;
 
     is_ipv6 = AF_INET6 == bind_addr->ss_family;
     is_multicast = aeron_is_addr_multicast(bind_addr);
@@ -115,7 +116,7 @@ int aeron_udp_channel_transport_init(
 
     if (!is_multicast)
     {
-        if (bind(transport->fd, (struct sockaddr *)bind_addr, bind_addr_len) < 0)
+        if (bind(transport->recv_fd, (struct sockaddr *)bind_addr, bind_addr_len) < 0)
         {
             char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
             aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
@@ -125,10 +126,19 @@ int aeron_udp_channel_transport_init(
     }
     else
     {
+        if (NULL != connect_addr)
+        {
+            if ((transport->recv_fd = aeron_socket(bind_addr->ss_family, SOCK_DGRAM, 0)) < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+                goto error;
+            }
+        }
+
         int reuse = 1;
 
 #if defined(SO_REUSEADDR)
-        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+        if (aeron_setsockopt(transport->recv_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
         {
             AERON_APPEND_ERR("failed to set SOL_SOCKET/SO_REUSEADDR option to: %d", reuse);
             goto error;
@@ -136,7 +146,7 @@ int aeron_udp_channel_transport_init(
 #endif
 
 #if defined(SO_REUSEPORT)
-        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0)
+        if (aeron_setsockopt(transport->recv_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0)
         {
             AERON_SET_ERR(errno, "%s", "setsockopt(SO_REUSEPORT)");
             goto error;
@@ -149,7 +159,7 @@ int aeron_udp_channel_transport_init(
             memcpy(&addr, bind_addr, sizeof(addr));
             addr.sin6_addr = in6addr_any;
 
-            if (bind(transport->fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
+            if (bind(transport->recv_fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
                 char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
                 aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
@@ -162,7 +172,7 @@ int aeron_udp_channel_transport_init(
             memcpy(&mreq.ipv6mr_multiaddr, &in6->sin6_addr, sizeof(in6->sin6_addr));
             mreq.ipv6mr_interface = multicast_if_index;
 
-            if (aeron_setsockopt(transport->fd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0)
+            if (aeron_setsockopt(transport->recv_fd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0)
             {
                 char addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
                 inet_ntop(AF_INET6, &mreq.ipv6mr_multiaddr, addr_buf, sizeof(addr_buf));
@@ -196,7 +206,7 @@ int aeron_udp_channel_transport_init(
             memcpy(&addr, bind_addr, sizeof(addr));
             addr.sin_addr.s_addr = INADDR_ANY;
 
-            if (bind(transport->fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
+            if (bind(transport->recv_fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
                 char bind_addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
                 aeron_format_source_identity(bind_addr_str, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
@@ -210,7 +220,7 @@ int aeron_udp_channel_transport_init(
             mreq.imr_multiaddr.s_addr = in4->sin_addr.s_addr;
             mreq.imr_interface.s_addr = interface_addr->sin_addr.s_addr;
 
-            if (aeron_setsockopt(transport->fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+            if (aeron_setsockopt(transport->recv_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
             {
                 char addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
                 char intr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
@@ -257,7 +267,7 @@ int aeron_udp_channel_transport_init(
 
     if (socket_rcvbuf > 0)
     {
-        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
+        if (aeron_setsockopt(transport->recv_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
             AERON_APPEND_ERR(
                 "failed to set SOL_SOCKET/SO_RCVBUF option to: %" PRIu64, (uint64_t)socket_rcvbuf);
@@ -286,9 +296,16 @@ int aeron_udp_channel_transport_init(
 
     if (aeron_set_socket_non_blocking(transport->fd) < 0)
     {
-        AERON_APPEND_ERR("%", "");
+        AERON_APPEND_ERR("%", "failed to set transport->fd to be non-blocking");
         goto error;
     }
+
+    if (aeron_set_socket_non_blocking(transport->recv_fd) < 0)
+    {
+        AERON_APPEND_ERR("%", "failed to set transport->recv_fd to be non-blocking");
+        goto error;
+    }
+
 
     return 0;
 
@@ -307,6 +324,10 @@ int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport)
     if (transport->fd != -1)
     {
         aeron_close_socket(transport->fd);
+    }
+    if (transport->recv_fd != transport->fd)
+    {
+        aeron_close_socket(transport->recv_fd);
     }
 
     return 0;
@@ -336,17 +357,25 @@ int aeron_udp_channel_transport_recvmmsg(
         }
     }
 
-    int result = recvmmsg(transport->fd, msgvec, vlen, 0, &tv);
+    int result = recvmmsg(transport->recv_fd, msgvec, vlen, 0, &tv);
     if (result < 0)
     {
         int err = errno;
 
-        if (EINTR == err || EAGAIN == err)
+        // ECONNREFUSED can sometimes occur with connected UDP sockets if ICMP traffic is able to indicate that the
+        // remote end had closed on a previous send.
+        if (EINTR == err || EAGAIN == err || ECONNREFUSED == err)
         {
             return 0;
         }
 
-        AERON_SET_ERR(err, "Failed to recvmmsg, fd: %d", transport->fd);
+        AERON_SET_ERR(
+            err,
+            "Failed to recvmmsg, fd=%d, recv_fd=%d, connected=%s",
+            transport->fd,
+            transport->recv_fd,
+            NULL != transport->connected_address ? "true" : "false");
+
         return -1;
     }
     else if (0 == result)
@@ -386,7 +415,7 @@ int aeron_udp_channel_transport_recvmmsg(
 
     for (size_t i = 0, length = vlen; i < length; i++)
     {
-        ssize_t result = aeron_recvmsg(transport->fd, &msgvec[i].msg_hdr, 0);
+        ssize_t result = aeron_recvmsg(transport->recv_fd, &msgvec[i].msg_hdr, 0);
 
         if (result < 0)
         {
@@ -599,7 +628,7 @@ int aeron_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *tra
 {
     socklen_t len = sizeof(size_t);
 
-    if (aeron_getsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, so_rcvbuf, &len) < 0)
+    if (aeron_getsockopt(transport->recv_fd, SOL_SOCKET, SO_RCVBUF, so_rcvbuf, &len) < 0)
     {
         AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_RCVBUF option");
         return -1;
@@ -614,7 +643,7 @@ int aeron_udp_channel_transport_bind_addr_and_port(
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
 
-    if (getsockname(transport->fd, (struct sockaddr *)&addr, &addr_len) < 0)
+    if (getsockname(transport->recv_fd, (struct sockaddr *)&addr, &addr_len) < 0)
     {
         AERON_SET_ERR(errno, "Failed to get socket name for fd: %d", transport->fd);
         return -1;

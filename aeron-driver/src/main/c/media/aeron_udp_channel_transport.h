@@ -31,6 +31,7 @@
 typedef struct aeron_udp_channel_transport_stct
 {
     aeron_socket_t fd;
+    aeron_socket_t recv_fd;
     aeron_udp_channel_data_paths_t *data_paths;
     struct sockaddr_storage *connected_address;
     void *dispatch_clientd;

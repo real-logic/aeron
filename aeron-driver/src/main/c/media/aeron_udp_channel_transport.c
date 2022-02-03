@@ -505,26 +505,26 @@ int aeron_udp_channel_transport_sendmsg(
     return (int)sendmsg_result;
 }
 
-//static int aeron_udp_channel_transport_send_connected(
-//    aeron_udp_channel_transport_t *transport,
-//    struct iovec *io_vec,
-//    size_t io_vec_length,
-//    int64_t *bytes_sent)
-//{
-//    if (aeron_send(transport->fd, io_vec[0].iov_base, io_vec->iov_len, 0) < 0)
-//    {
-//        *bytes_sent = 0;
-//        char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
-//        aeron_format_source_identity(addr, sizeof(addr), transport->connected_address);
-//        AERON_APPEND_ERR("message->msg_name=%s", addr);
-//        return -1;
-//    }
-//    else
-//    {
-//        *bytes_sent = io_vec->iov_len;
-//        return 1;
-//    }
-//}
+static int aeron_udp_channel_transport_send_connected(
+    aeron_udp_channel_transport_t *transport,
+    struct iovec *io_vec,
+    size_t io_vec_length,
+    int64_t *bytes_sent)
+{
+    if (aeron_send(transport->fd, io_vec[0].iov_base, io_vec->iov_len, 0) < 0)
+    {
+        *bytes_sent = 0;
+        char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+        aeron_format_source_identity(addr, sizeof(addr), transport->connected_address);
+        AERON_APPEND_ERR("message->msg_name=%s", addr);
+        return -1;
+    }
+    else
+    {
+        *bytes_sent = io_vec->iov_len;
+        return 1;
+    }
+}
 
 static int aeron_udp_channel_transport_sendv(
     aeron_udp_channel_transport_t *transport,
@@ -614,11 +614,11 @@ int aeron_udp_channel_transport_send(
     size_t io_vec_length,
     int64_t *bytes_sent)
 {
-//    if (1 == io_vec_length && NULL != transport->connected_address)
-//    {
-//        return aeron_udp_channel_transport_send_connected(transport, io_vec, io_vec_length, bytes_sent);
-//    }
-//    else
+    if (1 == io_vec_length && NULL != transport->connected_address)
+    {
+        return aeron_udp_channel_transport_send_connected(transport, io_vec, io_vec_length, bytes_sent);
+    }
+    else
     {
         return aeron_udp_channel_transport_sendv(transport, address, io_vec, io_vec_length, bytes_sent);
     }

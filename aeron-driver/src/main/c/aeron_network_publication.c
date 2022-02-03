@@ -388,7 +388,6 @@ int aeron_network_publication_send_data(
     int32_t available_window = (int32_t)(aeron_counter_get(publication->snd_lmt_position.value_addr) - snd_pos);
     int64_t highest_pos = snd_pos;
     struct iovec iov[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
-//    struct mmsghdr mmsghdr[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
 
     for (size_t i = 0; i < max_vlen && available_window > 0; i++)
     {
@@ -405,15 +404,8 @@ int aeron_network_publication_send_data(
         {
             iov[i].iov_base = ptr;
             iov[i].iov_len = (uint32_t)available;
-//            mmsghdr[i].msg_hdr.msg_iov = &iov[i];
-//            mmsghdr[i].msg_hdr.msg_iovlen = 1;
-//            mmsghdr[i].msg_hdr.msg_flags = 0;
-//            mmsghdr[i].msg_len = 0;
-//            mmsghdr[i].msg_hdr.msg_control = NULL;
-//            mmsghdr[i].msg_hdr.msg_controllen = 0;
             vlen++;
 
-//            bytes_sent += (int)available;
             int32_t total_available = (int32_t)(available + padding);
             available_window -= total_available;
             term_offset += total_available;

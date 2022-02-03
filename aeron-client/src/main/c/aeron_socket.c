@@ -98,6 +98,26 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
     return result;
 }
 
+ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
+{
+    ssize_t result = send(fd, buf, len, flags);
+
+    if (result < 0)
+    {
+        if (EINTR == errno || EAGAIN == errno || EWOULDBLOCK == errno)
+        {
+            return 0;
+        }
+        else
+        {
+            AERON_SET_ERR(errno, "failed send(fd=%d,...)", fd);
+            return -1;
+        }
+    }
+
+    return result;
+}
+
 ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
     ssize_t result = recvmsg(fd, msghdr, flags);
@@ -404,6 +424,25 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
         }
 
         AERON_SET_ERR_WIN(err, "WSARecvFrom(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return size;
+}
+
+ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
+{
+    const int result = send(fd, (const char *)buf, len, flags);
+
+    if (SOCKET_ERROR == result)
+    {
+        const int err = WSAGetLastError();
+        if (WSAEWOULDBLOCK == err)
+        {
+            return 0;
+        }
+
+        AERON_SET_ERR_WIN(err, "WSASendTo(fd=%d,...)", fd);
         return -1;
     }
 

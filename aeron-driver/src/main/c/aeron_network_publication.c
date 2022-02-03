@@ -383,11 +383,12 @@ int aeron_network_publication_send_data(
 {
     const size_t term_length = (size_t)publication->term_length_mask + 1;
     const size_t max_vlen = publication->max_messages_per_send;
-    int result = 0, vlen = 0, bytes_sent = 0;
+    int result = 0, vlen = 0;
+    int64_t bytes_sent = 0;
     int32_t available_window = (int32_t)(aeron_counter_get(publication->snd_lmt_position.value_addr) - snd_pos);
     int64_t highest_pos = snd_pos;
     struct iovec iov[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
-    struct mmsghdr mmsghdr[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
+//    struct mmsghdr mmsghdr[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
 
     for (size_t i = 0; i < max_vlen && available_window > 0; i++)
     {
@@ -404,15 +405,15 @@ int aeron_network_publication_send_data(
         {
             iov[i].iov_base = ptr;
             iov[i].iov_len = (uint32_t)available;
-            mmsghdr[i].msg_hdr.msg_iov = &iov[i];
-            mmsghdr[i].msg_hdr.msg_iovlen = 1;
-            mmsghdr[i].msg_hdr.msg_flags = 0;
-            mmsghdr[i].msg_len = 0;
-            mmsghdr[i].msg_hdr.msg_control = NULL;
-            mmsghdr[i].msg_hdr.msg_controllen = 0;
+//            mmsghdr[i].msg_hdr.msg_iov = &iov[i];
+//            mmsghdr[i].msg_hdr.msg_iovlen = 1;
+//            mmsghdr[i].msg_hdr.msg_flags = 0;
+//            mmsghdr[i].msg_len = 0;
+//            mmsghdr[i].msg_hdr.msg_control = NULL;
+//            mmsghdr[i].msg_hdr.msg_controllen = 0;
             vlen++;
 
-            bytes_sent += (int)available;
+//            bytes_sent += (int)available;
             int32_t total_available = (int32_t)(available + padding);
             available_window -= total_available;
             term_offset += total_available;
@@ -427,7 +428,7 @@ int aeron_network_publication_send_data(
 
     if (vlen > 0)
     {
-        result = aeron_send_channel_sendmmsg(publication->endpoint, mmsghdr, (size_t)vlen);
+        result = aeron_send_channel_send(publication->endpoint, NULL, iov, vlen, &bytes_sent);
         if (result != vlen)
         {
             if (result >= 0)
@@ -447,7 +448,7 @@ int aeron_network_publication_send_data(
         publication->track_sender_limits = false;
     }
 
-    return result < 0 ? result : bytes_sent;
+    return result < 0 ? result : (int)bytes_sent;
 }
 
 int aeron_network_publication_send(aeron_network_publication_t *publication, int64_t now_ns)

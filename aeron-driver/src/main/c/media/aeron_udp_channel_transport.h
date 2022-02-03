@@ -32,6 +32,7 @@ typedef struct aeron_udp_channel_transport_stct
 {
     aeron_socket_t fd;
     aeron_udp_channel_data_paths_t *data_paths;
+    struct sockaddr_storage *connected_address;
     void *dispatch_clientd;
     void *bindings_clientd;
     void *destination_clientd;
@@ -46,6 +47,7 @@ int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *bind_addr,
     struct sockaddr_storage *multicast_if_addr,
+    struct sockaddr_storage *connect_addr,
     unsigned int multicast_if_index,
     uint8_t ttl,
     size_t socket_rcvbuf,
@@ -74,6 +76,14 @@ int aeron_udp_channel_transport_sendmsg(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     struct msghdr *message);
+
+int aeron_udp_channel_transport_send(
+    aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *address,
+    struct iovec *io_vec,
+    size_t io_vec_length,
+    int64_t *bytes_sent);
 
 int aeron_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf);
 int aeron_udp_channel_transport_bind_addr_and_port(

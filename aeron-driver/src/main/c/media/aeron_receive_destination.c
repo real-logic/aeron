@@ -48,6 +48,7 @@ int aeron_receive_destination_create(
         &_destination->transport,
         &destination_channel->remote_data,
         &destination_channel->local_data,
+        NULL,
         destination_channel->interface_index,
         0 != destination_channel->multicast_ttl ? destination_channel->multicast_ttl : context->multicast_ttl,
         socket_rcvbuf,

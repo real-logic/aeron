@@ -2617,6 +2617,25 @@ int aeron_driver_context_bindings_clientd_find(aeron_driver_context_t *context, 
     return -1;
 }
 
+aeron_driver_context_bindings_clientd_entry_t *aeron_driver_context_bindings_clientd_get_or_find_first_free_entry(
+    aeron_driver_context_t *context, const char *name)
+{
+    int index = aeron_driver_context_bindings_clientd_find(context, name);
+    if (-1 == index)
+    {
+        index = aeron_driver_context_bindings_clientd_find_first_free_index(context);
+        if (-1 == index)
+        {
+            return NULL;
+        }
+
+        context->bindings_clientd_entries[index].name = name;
+    }
+
+    return &context->bindings_clientd_entries[index];
+}
+
+
 static uint32_t aeron_driver_context_clamp_value(uint32_t value, uint32_t min, uint32_t max)
 {
     uint32_t clamped_value;

@@ -36,6 +36,7 @@ int aeron_test_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *bind_addr,
     struct sockaddr_storage *multicast_if_addr,
+    struct sockaddr_storage *connect_addr,
     unsigned int multicast_if_index,
     uint8_t ttl,
     size_t socket_rcvbuf,

@@ -54,6 +54,7 @@ INSTANTIATE_TEST_SUITE_P(
     PubSubTest,
     testing::Values(
         std::make_tuple("udp", "localhost:24325"),
+        std::make_tuple("udp", "224.20.30.39:24326"),
         std::make_tuple("ipc", nullptr)
     ));
 

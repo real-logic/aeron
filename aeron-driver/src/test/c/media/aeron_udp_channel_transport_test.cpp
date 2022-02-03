@@ -103,6 +103,7 @@ TEST_F(UdpChannelTransportTest, shouldErrorWithInvalidSendAddress)
         &transport,
         (struct sockaddr_storage*)&bind_addr,
         (struct sockaddr_storage*)nullptr,
+        (struct sockaddr_storage*)nullptr,
         0,
         16,
         65536,

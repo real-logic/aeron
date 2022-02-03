@@ -292,6 +292,7 @@ int aeron_driver_name_resolver_init(
         &_driver_resolver->transport,
         &_driver_resolver->local_socket_addr,
         NULL, // Unicast only.
+        NULL, // No connected
         _driver_resolver->interface_index,
         0,
         context->socket_rcvbuf,

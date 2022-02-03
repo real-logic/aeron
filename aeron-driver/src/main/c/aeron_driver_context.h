@@ -294,6 +294,9 @@ int aeron_driver_context_bindings_clientd_delete_entries(aeron_driver_context_t 
 int aeron_driver_context_bindings_clientd_find_first_free_index(aeron_driver_context_t *context);
 int aeron_driver_context_bindings_clientd_find(aeron_driver_context_t *context, const char *name);
 
+aeron_driver_context_bindings_clientd_entry_t *aeron_driver_context_bindings_clientd_get_or_find_first_free_entry(
+    aeron_driver_context_t *context, const char *name);
+
 inline void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, int32_t cnc_version)
 {
     AERON_PUT_VOLATILE(metadata->cnc_version, cnc_version);

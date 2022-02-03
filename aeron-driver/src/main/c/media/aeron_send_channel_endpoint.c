@@ -55,6 +55,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->destination_tracker = NULL;
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
 
+    struct sockaddr_storage *connect_addr = NULL;
     if (channel->has_explicit_control || channel->is_dynamic_control_mode || channel->is_manual_control_mode)
     {
         if (aeron_alloc((void **)&_endpoint->destination_tracker, sizeof(aeron_udp_destination_tracker_t)) < 0 ||
@@ -67,6 +68,10 @@ int aeron_send_channel_endpoint_create(
         {
             return -1;
         }
+    }
+    else
+    {
+        connect_addr = &channel->remote_data;
     }
 
     _endpoint->conductor_fields.refcnt = 0;
@@ -91,6 +96,7 @@ int aeron_send_channel_endpoint_create(
         &_endpoint->transport,
         channel->is_multicast ? &channel->remote_control : &channel->local_control,
         channel->is_multicast ? &channel->local_control : &channel->remote_control,
+        connect_addr,
         channel->interface_index,
         0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
         _endpoint->conductor_fields.socket_rcvbuf,
@@ -285,6 +291,29 @@ int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct m
     else
     {
         result = aeron_udp_destination_tracker_sendmsg(endpoint->destination_tracker, &endpoint->transport, msghdr);
+    }
+
+    return result;
+}
+
+int aeron_send_channel_send(
+    aeron_send_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *address,
+    struct iovec *io_vec,
+    size_t io_vec_length,
+    int64_t *bytes_sent)
+{
+    int result;
+
+    if (NULL == endpoint->destination_tracker)
+    {
+        result = endpoint->data_paths->send_func(
+            endpoint->data_paths, &endpoint->transport, &endpoint->current_data_addr, io_vec, io_vec_length, bytes_sent);
+    }
+    else
+    {
+        result = aeron_udp_destination_tracker_send(
+            endpoint->destination_tracker, &endpoint->transport, io_vec, io_vec_length, bytes_sent);
     }
 
     return result;

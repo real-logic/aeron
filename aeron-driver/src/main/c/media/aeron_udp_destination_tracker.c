@@ -146,6 +146,43 @@ int aeron_udp_destination_tracker_sendmsg(
     return min_bytes_sent;
 }
 
+int aeron_udp_destination_tracker_send(
+    aeron_udp_destination_tracker_t *tracker,
+    aeron_udp_channel_transport_t *transport,
+    struct iovec *io_vec,
+    size_t io_vec_length,
+    int64_t *bytes_sent)
+{
+    const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
+    const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;
+    int min_bytes_sent = (int)io_vec->iov_len;
+
+    for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
+
+        if (is_dynamic_control_mode && now_ns > (entry->time_of_last_activity_ns + tracker->destination_timeout_ns))
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)tracker->destinations.array,
+                sizeof(aeron_udp_destination_entry_t),
+                (size_t)i,
+                (size_t)last_index);
+            last_index--;
+            tracker->destinations.length--;
+        }
+        else if (entry->addr.ss_family != AF_UNSPEC)
+        {
+            const int sendmsg_result = tracker->data_paths->send_func(
+                tracker->data_paths, transport, &entry->addr, io_vec, io_vec_length, bytes_sent);
+
+            min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
+        }
+    }
+
+    return min_bytes_sent;
+}
+
 bool aeron_udp_destination_tracker_same_port(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)
 {
     bool result = false;

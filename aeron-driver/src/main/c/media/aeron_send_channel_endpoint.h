@@ -114,8 +114,11 @@ void aeron_send_channel_endpoint_on_rttm(
 int aeron_send_channel_endpoint_check_for_re_resolution(
     aeron_send_channel_endpoint_t *endpoint, int64_t now_ns, aeron_driver_conductor_proxy_t *conductor_proxy);
 
-void aeron_send_channel_endpoint_resolution_change(
-    aeron_send_channel_endpoint_t *endpoint, const char *endpoint_name, struct sockaddr_storage *new_addr);
+int aeron_send_channel_endpoint_resolution_change(
+    aeron_driver_context_t *context,
+    aeron_send_channel_endpoint_t *endpoint,
+    const char *endpoint_name,
+    struct sockaddr_storage *new_addr);
 
 inline void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint)
 {

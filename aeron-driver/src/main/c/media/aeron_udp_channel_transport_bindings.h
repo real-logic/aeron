@@ -52,6 +52,10 @@ typedef int (*aeron_udp_channel_transport_init_func_t)(
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 
+typedef int (*aeron_udp_channel_transport_reconnect_func_t)(
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *connect_addr);
+
 typedef int (*aeron_udp_channel_transport_close_func_t)(aeron_udp_channel_transport_t *transport);
 
 typedef void (*aeron_udp_transport_recv_func_t)(
@@ -112,6 +116,7 @@ typedef struct aeron_udp_channel_transport_bindings_stct aeron_udp_channel_trans
 struct aeron_udp_channel_transport_bindings_stct
 {
     aeron_udp_channel_transport_init_func_t init_func;
+    aeron_udp_channel_transport_reconnect_func_t reconnect_func;
     aeron_udp_channel_transport_close_func_t close_func;
     aeron_udp_channel_transport_recvmmsg_func_t recvmmsg_func;
     aeron_udp_channel_transport_send_func_t send_func;

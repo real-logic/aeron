@@ -319,6 +319,24 @@ error:
     return -1;
 }
 
+int aeron_udp_channel_transport_reconnect(
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *connect_addr)
+{
+    if (NULL != connect_addr && NULL != transport->connected_address)
+    {
+        if (connect(transport->fd, (struct sockaddr *)connect_addr, AERON_ADDR_LEN(connect_addr)) < 0)
+        {
+            AERON_SET_ERR(errno, "%s", "failed to reconnect");
+            return -1;
+        }
+
+        transport->connected_address = connect_addr;
+    }
+
+    return 0;
+}
+
 int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport)
 {
     if (transport->fd != -1)

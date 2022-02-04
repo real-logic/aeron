@@ -459,8 +459,11 @@ int aeron_send_channel_endpoint_check_for_re_resolution(
     return 0;
 }
 
-void aeron_send_channel_endpoint_resolution_change(
-    aeron_send_channel_endpoint_t *endpoint, const char *endpoint_name, struct sockaddr_storage *new_addr)
+int aeron_send_channel_endpoint_resolution_change(
+    aeron_driver_context_t *context,
+    aeron_send_channel_endpoint_t *endpoint,
+    const char *endpoint_name,
+    struct sockaddr_storage *new_addr)
 {
     if (NULL != endpoint->destination_tracker)
     {
@@ -469,7 +472,16 @@ void aeron_send_channel_endpoint_resolution_change(
     else
     {
         memcpy(&endpoint->current_data_addr, new_addr, sizeof(endpoint->current_data_addr));
+        if (context->udp_channel_transport_bindings->reconnect_func(&endpoint->transport, &endpoint->current_data_addr) < 0)
+        {
+            char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+            aeron_format_source_identity(addr_str, sizeof(addr_str), &endpoint->current_data_addr);
+            AERON_APPEND_ERR("failed to reconnect transport with re-resolved address: %s", addr_str);
+            return -1;
+        }
     }
+
+    return 0;
 }
 
 extern void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint);

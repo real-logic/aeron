@@ -57,6 +57,10 @@ int aeron_udp_channel_transport_init(
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 
+int aeron_udp_channel_transport_reconnect(
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *connect_addr);
+
 int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport);
 
 int aeron_udp_channel_transport_recvmmsg(

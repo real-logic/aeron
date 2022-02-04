@@ -36,6 +36,7 @@
 aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_default =
     {
         aeron_udp_channel_transport_init,
+        aeron_udp_channel_transport_reconnect,
         aeron_udp_channel_transport_close,
         aeron_udp_channel_transport_recvmmsg,
         aeron_udp_channel_transport_send,

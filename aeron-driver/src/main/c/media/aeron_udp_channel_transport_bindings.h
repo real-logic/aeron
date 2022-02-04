@@ -73,12 +73,6 @@ typedef int (*aeron_udp_channel_transport_recvmmsg_func_t)(
     aeron_udp_transport_recv_func_t recv_func,
     void *clientd);
 
-typedef int (*aeron_udp_channel_transport_sendmmsg_func_t)(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen);
-
 typedef int (*aeron_udp_channel_transport_send_func_t)(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
@@ -86,11 +80,6 @@ typedef int (*aeron_udp_channel_transport_send_func_t)(
     struct iovec *io_vec,
     size_t io_vec_length,
     int64_t *bytes_sent);
-
-typedef int (*aeron_udp_channel_transport_sendmsg_func_t)(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message);
 
 typedef int (*aeron_udp_channel_transport_get_so_rcvbuf_func_t)(
     aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf);

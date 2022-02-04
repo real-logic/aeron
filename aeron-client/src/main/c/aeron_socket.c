@@ -104,7 +104,7 @@ ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
 
     if (result < 0)
     {
-        if (EINTR == errno || EAGAIN == errno || EWOULDBLOCK == errno)
+        if (EINTR == errno || EAGAIN == errno || EWOULDBLOCK == errno || ECONNREFUSED == errno)
         {
             return 0;
         }
@@ -437,7 +437,7 @@ ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
     if (SOCKET_ERROR == result)
     {
         const int err = WSAGetLastError();
-        if (WSAEWOULDBLOCK == err)
+        if (WSAEWOULDBLOCK == err || WASECONNREFUSED == err)
         {
             return 0;
         }

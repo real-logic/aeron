@@ -27,6 +27,8 @@
 #include <errno.h>
 #include <poll.h>
 
+#include "util/aeron_netutil.h"
+
 int aeron_net_init()
 {
     return 0;
@@ -67,6 +69,20 @@ aeron_socket_t aeron_socket(int domain, int type, int protocol)
 void aeron_close_socket(aeron_socket_t socket)
 {
     close(socket);
+}
+
+int aeron_connect(int fd, struct sockaddr *address, socklen_t address_length)
+{
+    if (connect(fd, address, address_length) < 0)
+    {
+        char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+        aeron_format_source_identity(addr_str, sizeof(addr_str), (struct sockaddr_storage *)address);
+        AERON_SET_ERR(errno, "failed to connect to address: %s", addr_str);
+
+        return -1;
+    }
+
+    return 0;
 }
 
 int aeron_getifaddrs(struct ifaddrs **ifap)
@@ -510,6 +526,20 @@ aeron_socket_t aeron_socket(int domain, int type, int protocol)
 void aeron_close_socket(aeron_socket_t socket)
 {
     closesocket(socket);
+}
+
+int aeron_connect(int fd, struct sockaddr *address, socklen_t address_length)
+{
+    if (SOCKET_ERROR == connect(fd, address, address_length))
+    {
+        char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+        aeron_format_source_identity(addr_str, sizeof(addr_str), (struct sockaddr_storage *)address);
+        AERON_SET_ERR_WIN(WSAGetLastError(), "failed to connect to address: %s", addr_str);
+
+        return -1;
+    }
+
+    return 0;
 }
 
 /* aeron_getsockopt and aeron_setsockopt ensure a consistent signature between platforms

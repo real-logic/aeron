@@ -257,9 +257,9 @@ int aeron_udp_channel_transport_init(
 
     if (NULL != connect_addr)
     {
-        if (connect(transport->fd, (struct sockaddr *)connect_addr, AERON_ADDR_LEN(connect_addr)) < 0)
+        if (aeron_connect(transport->fd, (struct sockaddr *)connect_addr, AERON_ADDR_LEN(connect_addr)) < 0)
         {
-            AERON_SET_ERR(errno, "%s", "failed to connect");
+            AERON_APPEND_ERR("%s", "");
             goto error;
         }
         transport->connected_address = connect_addr;
@@ -325,9 +325,9 @@ int aeron_udp_channel_transport_reconnect(
 {
     if (NULL != connect_addr && NULL != transport->connected_address)
     {
-        if (connect(transport->fd, (struct sockaddr *)connect_addr, AERON_ADDR_LEN(connect_addr)) < 0)
+        if (aeron_connect(transport->fd, (struct sockaddr *)connect_addr, AERON_ADDR_LEN(connect_addr)) < 0)
         {
-            AERON_SET_ERR(errno, "%s", "failed to reconnect");
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 

@@ -280,7 +280,6 @@ struct aeron_udp_channel_data_paths_stct
 {
     aeron_udp_channel_outgoing_interceptor_t *outgoing_interceptors;
     aeron_udp_channel_incoming_interceptor_t *incoming_interceptors;
-    aeron_udp_channel_transport_sendmmsg_func_t sendmmsg_func;
     aeron_udp_channel_transport_sendmsg_func_t sendmsg_func;
     aeron_udp_channel_transport_send_func_t send_func;
     aeron_udp_transport_recv_func_t recv_func;

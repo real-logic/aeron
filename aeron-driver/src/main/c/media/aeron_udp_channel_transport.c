@@ -511,7 +511,8 @@ static int aeron_udp_channel_transport_send_connected(
     size_t io_vec_length,
     int64_t *bytes_sent)
 {
-    if (aeron_send(transport->fd, io_vec[0].iov_base, io_vec->iov_len, 0) < 0)
+    ssize_t send_result = aeron_send(transport->fd, io_vec[0].iov_base, io_vec->iov_len, 0);
+    if (send_result < 0)
     {
         *bytes_sent = 0;
         char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
@@ -521,7 +522,7 @@ static int aeron_udp_channel_transport_send_connected(
     }
     else
     {
-        *bytes_sent = io_vec->iov_len;
+        *bytes_sent = send_result;
         return 1;
     }
 }
@@ -597,7 +598,7 @@ static int aeron_udp_channel_transport_sendv(
             break;
         }
 
-        *bytes_sent += result;
+        *bytes_sent += sendmsg_result;
         result++;
     }
 

@@ -187,7 +187,6 @@ int aeron_udp_channel_data_paths_init(
     data_paths->incoming_interceptors = NULL;
 
     /* if no interceptors, then use sendmmsg_func from transport bindings. */
-    data_paths->sendmmsg_func = media_bindings->sendmmsg_func;
     data_paths->sendmsg_func = media_bindings->sendmsg_func;
     data_paths->send_func = media_bindings->send_func;
     /* if no interceptors, then use passed in recv_func */
@@ -254,7 +253,6 @@ int aeron_udp_channel_data_paths_init(
         outgoing_transport_interceptor->next_interceptor = NULL;
         last_outgoing_interceptor->next_interceptor = outgoing_transport_interceptor;
         /* set up to pass into interceptors */
-        data_paths->sendmmsg_func = aeron_udp_channel_outgoing_interceptor_sendmmsg;
         data_paths->sendmsg_func = aeron_udp_channel_outgoing_interceptor_sendmsg;
         data_paths->send_func = aeron_udp_channel_outgoing_interceptor_send;
     }

@@ -231,28 +231,7 @@ void aeron_send_channel_endpoint_decref(void *clientd)
     }
 }
 
-void aeron_send_channel_apply_timestamps(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
-{
-    if (AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_SND_TIMESTAMP & endpoint->transport.timestamp_flags)
-    {
-        struct timespec send_timestamp;
-        if (0 == aeron_clock_gettime_realtime(&send_timestamp))
-        {
-            int32_t offset = endpoint->conductor_fields.udp_channel->channel_snd_timestamp_offset;
-
-            for (size_t i = 0; i < vlen; i++)
-            {
-                aeron_timestamps_set_timestamp(
-                    &send_timestamp,
-                    offset,
-                    (uint8_t *)mmsghdr[i].msg_hdr.msg_iov[0].iov_base,
-                    mmsghdr[i].msg_hdr.msg_iov[0].iov_len);
-            }
-        }
-    }
-}
-
-void aeron_send_channel_apply_timestamps_iov(
+static void aeron_send_channel_apply_timestamps(
     aeron_send_channel_endpoint_t *endpoint,
     struct iovec *iov,
     size_t iov_length)
@@ -276,60 +255,15 @@ void aeron_send_channel_apply_timestamps_iov(
     }
 }
 
-int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
-{
-    int result;
-
-    aeron_send_channel_apply_timestamps(endpoint, mmsghdr, vlen);
-
-    if (NULL == endpoint->destination_tracker)
-    {
-        for (size_t i = 0; i < vlen; i++)
-        {
-            mmsghdr[i].msg_hdr.msg_name = &endpoint->current_data_addr;
-            mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->current_data_addr);
-        }
-
-        result = endpoint->data_paths->sendmmsg_func(endpoint->data_paths, &endpoint->transport, mmsghdr, vlen);
-    }
-    else
-    {
-        result = aeron_udp_destination_tracker_sendmmsg(
-            endpoint->destination_tracker, &endpoint->transport, mmsghdr, vlen);
-    }
-
-    return result;
-}
-
-int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr)
-{
-    int result;
-
-    if (NULL == endpoint->destination_tracker)
-    {
-        msghdr->msg_name = &endpoint->current_data_addr;
-        msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->current_data_addr);
-
-        result = endpoint->data_paths->sendmsg_func(endpoint->data_paths, &endpoint->transport, msghdr);
-    }
-    else
-    {
-        result = aeron_udp_destination_tracker_sendmsg(endpoint->destination_tracker, &endpoint->transport, msghdr);
-    }
-
-    return result;
-}
-
 int aeron_send_channel_send(
     aeron_send_channel_endpoint_t *endpoint,
-    struct sockaddr_storage *address,
     struct iovec *io_vec,
     size_t io_vec_length,
     int64_t *bytes_sent)
 {
     int result;
 
-    aeron_send_channel_apply_timestamps_iov(endpoint, io_vec, io_vec_length);
+    aeron_send_channel_apply_timestamps(endpoint, io_vec, io_vec_length);
 
     if (NULL == endpoint->destination_tracker)
     {

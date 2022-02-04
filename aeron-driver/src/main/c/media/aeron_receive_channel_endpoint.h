@@ -93,7 +93,10 @@ int aeron_receive_channel_endpoint_delete(
 
 int aeron_receive_channel_endpoint_close(aeron_receive_channel_endpoint_t *endpoint);
 
-int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr);
+int aeron_receive_channel_endpoint_send(
+    aeron_receive_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *address,
+    struct iovec *iov);
 
 int aeron_receive_channel_endpoint_send_sm(
     aeron_receive_channel_endpoint_t *endpoint,

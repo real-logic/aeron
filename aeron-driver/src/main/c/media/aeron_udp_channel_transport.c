@@ -447,64 +447,6 @@ int aeron_udp_channel_transport_recvmmsg(
 #endif
 }
 
-int aeron_udp_channel_transport_sendmmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
-{
-#if defined(HAVE_SENDMMSG)
-    int sendmmsg_result = sendmmsg(transport->fd, msgvec, vlen, 0);
-    if (sendmmsg_result < 0)
-    {
-        AERON_SET_ERR(errno, "Failed to sendmmsg, fd: %d", transport->fd);
-        return -1;
-    }
-
-    return sendmmsg_result;
-#else
-    int result = 0;
-
-    for (size_t i = 0, length = vlen; i < length; i++)
-    {
-        ssize_t sendmsg_result = aeron_sendmsg(transport->fd, &msgvec[i].msg_hdr, 0);
-        if (sendmsg_result < 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-            return -1;
-        }
-
-        msgvec[i].msg_len = (unsigned int)sendmsg_result;
-
-        if (0 == sendmsg_result)
-        {
-            break;
-        }
-
-        result++;
-    }
-
-    return result;
-#endif
-}
-
-int aeron_udp_channel_transport_sendmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    ssize_t sendmsg_result = aeron_sendmsg(transport->fd, message, 0);
-    if (sendmsg_result < 0)
-    {
-        char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
-        aeron_format_source_identity(addr, sizeof(addr), (struct sockaddr_storage *)message->msg_name);
-        AERON_APPEND_ERR("message->msg_name=%s", addr);
-        return -1;
-    }
-
-    return (int)sendmsg_result;
-}
-
 static int aeron_udp_channel_transport_send_connected(
     aeron_udp_channel_transport_t *transport,
     struct iovec *io_vec,

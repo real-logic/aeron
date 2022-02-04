@@ -231,9 +231,7 @@ void aeron_test_udp_bindings_load(aeron_udp_channel_transport_bindings_t *bindin
     bindings->poller_init_func = aeron_test_udp_transport_poller_init;
     bindings->poller_poll_func = aeron_test_udp_transport_poller_poll;
 
-    bindings->sendmsg_func = aeron_test_udp_channel_transport_sendmsg;
     bindings->send_func = aeron_test_udp_channel_transport_send;
-    bindings->sendmmsg_func = aeron_test_udp_channel_transport_sendmmsg;
     bindings->recvmmsg_func = aeron_test_udp_channel_transport_recvmmsg;
     bindings->init_func = aeron_test_udp_channel_transport_init;
     bindings->bind_addr_and_port_func = aeron_test_udp_channel_transport_bind_addr_and_port;

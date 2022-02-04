@@ -101,9 +101,9 @@ TEST_F(UdpChannelTransportTest, shouldErrorWithInvalidSendAddress)
     aeron_udp_channel_transport_t transport = {};
     ASSERT_NE(-1, transport_bindings->init_func(
         &transport,
-        (struct sockaddr_storage*)&bind_addr,
-        (struct sockaddr_storage*)nullptr,
-        (struct sockaddr_storage*)nullptr,
+        (struct sockaddr_storage *)&bind_addr,
+        (struct sockaddr_storage *)nullptr,
+        (struct sockaddr_storage *)&send_addr,
         0,
         16,
         65536,
@@ -117,15 +117,7 @@ TEST_F(UdpChannelTransportTest, shouldErrorWithInvalidSendAddress)
     struct iovec message = {};
     message.iov_base = static_cast<void *>(const_cast<char *>(data));
     message.iov_len = static_cast<unsigned int>(strlen(data));
+    int64_t bytes_sent = 0;
 
-    struct msghdr header = {};
-    header.msg_name = static_cast<void *>(&send_addr);
-    header.msg_namelen = sizeof(send_addr);
-    header.msg_iov = &message;
-    header.msg_iovlen = 1;
-    header.msg_control = nullptr;
-    header.msg_controllen = 1;
-    header.msg_flags = 389475;
-
-    ASSERT_EQ(-1, transport_bindings->sendmsg_func(&data_paths, &transport, &header)) << aeron_errmsg();
+    ASSERT_EQ(1, transport_bindings->send_func(&data_paths, &transport, (struct sockaddr_storage *)&send_addr, &message, 1, &bytes_sent)) << aeron_errmsg();
 }

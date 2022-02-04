@@ -684,41 +684,60 @@ void aeron_driver_agent_log_frame(
     }
 }
 
-int aeron_driver_agent_outgoing_mmsg(
+void aeron_driver_agent_log_frame_iov(
+    int32_t msg_type_id, const struct sockaddr_storage *address, struct iovec *iov, int32_t message_len, int result)
+{
+    const int32_t copy_length = message_len < AERON_MAX_FRAME_LENGTH ? message_len : AERON_MAX_FRAME_LENGTH;
+    size_t address_length = AERON_ADDR_LEN(address);
+    const size_t command_length =
+        sizeof(aeron_driver_agent_frame_log_header_t) + address_length + copy_length;
+    int32_t offset = aeron_mpsc_rb_try_claim(&logging_mpsc_rb, msg_type_id, command_length);
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        hdr->result = (int32_t)result;
+        hdr->sockaddr_len = address_length;
+        hdr->message_len = message_len;
+
+        ptr += sizeof(aeron_driver_agent_frame_log_header_t);
+        memcpy(ptr, address, address_length);
+
+        ptr += address_length;
+        memcpy(ptr, iov->iov_base, (size_t)copy_length);
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
+}
+
+
+int aeron_driver_agent_outgoing_send(
     void *interceptor_state,
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
+    struct sockaddr_storage *address,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent)
 {
-    int result = delegate->outgoing_mmsg_func(
-        delegate->interceptor_state, delegate->next_interceptor, transport, msgvec, vlen);
+    int result = delegate->outgoing_send_func(
+        delegate->interceptor_state, delegate->next_interceptor, transport, address, iov, iov_length, bytes_sent);
 
     for (int i = 0; i < result; i++)
     {
-        aeron_driver_agent_log_frame(
+        aeron_driver_agent_log_frame_iov(
             AERON_DRIVER_EVENT_FRAME_OUT,
-            &msgvec[i].msg_hdr,
-            (int32_t)msgvec[i].msg_len,
-            (int32_t)msgvec[i].msg_hdr.msg_iov[0].iov_len);
+            address,
+            &iov[i],
+            iov[i].iov_len,
+            result);
     }
 
     return result;
 }
 
-int aeron_driver_agent_outgoing_msg(
-    void *interceptor_state,
-    aeron_udp_channel_outgoing_interceptor_t *delegate,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    int result = delegate->outgoing_msg_func(
-        delegate->interceptor_state, delegate->next_interceptor, transport, message);
-
-    aeron_driver_agent_log_frame(AERON_DRIVER_EVENT_FRAME_OUT, message, result, (int32_t)message->msg_iov[0].iov_len);
-
-    return result;
-}
 
 void aeron_driver_agent_incoming_msg(
     void *interceptor_state,
@@ -996,8 +1015,7 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
 
         incoming_bindings->outgoing_init_func = NULL;
         incoming_bindings->outgoing_close_func = NULL;
-        incoming_bindings->outgoing_mmsg_func = NULL;
-        incoming_bindings->outgoing_msg_func = NULL;
+        incoming_bindings->outgoing_send_func = NULL;
         incoming_bindings->incoming_init_func = aeron_driver_agent_interceptor_init;
         incoming_bindings->incoming_close_func = NULL;
         incoming_bindings->incoming_func = aeron_driver_agent_incoming_msg;
@@ -1041,8 +1059,7 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
 
         outgoing_bindings->outgoing_init_func = aeron_driver_agent_interceptor_init;
         outgoing_bindings->outgoing_close_func = NULL;
-        outgoing_bindings->outgoing_mmsg_func = aeron_driver_agent_outgoing_mmsg;
-        outgoing_bindings->outgoing_msg_func = aeron_driver_agent_outgoing_msg;
+        outgoing_bindings->outgoing_send_func = aeron_driver_agent_outgoing_send;
         outgoing_bindings->outgoing_send_func = NULL;
         outgoing_bindings->incoming_init_func = NULL;
         outgoing_bindings->incoming_close_func = NULL;

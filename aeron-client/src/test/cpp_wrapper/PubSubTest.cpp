@@ -217,6 +217,7 @@ TEST_P(PubSubTest, shouldSubscribeExclusivePublish)
         .termId(termId)
         .termOffset(termOffset)
         .initialTermId(initialTermId)
+        .networkInterface("localhost")
         .build();
 
     Context ctx;

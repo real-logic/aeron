@@ -51,8 +51,6 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     target_link_libraries(ping_pong_raw m hdr_histogram_static)
 endif ()
 
-add_executable(send_raw raw/send_raw.c)
-
 target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})
 

@@ -18,6 +18,7 @@
 #include "util/aeron_error.h"
 #include "command/aeron_control_protocol.h"
 #include "aeron_alloc.h"
+#include "util/aeron_netutil.h"
 
 #if defined(AERON_COMPILER_GCC)
 
@@ -26,8 +27,6 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <poll.h>
-
-#include "util/aeron_netutil.h"
 
 int aeron_net_init()
 {
@@ -205,7 +204,6 @@ int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optv
 
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
-#include <stdio.h>
 
 int aeron_net_init()
 {
@@ -448,12 +446,12 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
 ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
 {
-    const int result = send(fd, (const char *)buf, len, flags);
+    const DWORD size = send(fd, (const char *)buf, (int)len, flags);
 
-    if (SOCKET_ERROR == result)
+    if (SOCKET_ERROR == size)
     {
         const int err = WSAGetLastError();
-        if (WSAEWOULDBLOCK == err || WASECONNREFUSED == err)
+        if (WSAEWOULDBLOCK == err || WSAECONNREFUSED == err)
         {
             return 0;
         }

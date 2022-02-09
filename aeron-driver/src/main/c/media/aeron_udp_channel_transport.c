@@ -78,16 +78,6 @@ static int aeron_udp_channel_transport_setup_media_rcv_timestamps(aeron_udp_chan
     return 0;
 }
 
-static bool aeron_udp_channel_transport_is_inaddr_any(struct sockaddr_storage *addr)
-{
-    return AF_INET == addr->ss_family && INADDR_ANY == ((struct sockaddr_in *)addr)->sin_addr.s_addr;
-}
-
-static bool aeron_udp_channel_transport_is_in6addr_any(struct sockaddr_storage *addr)
-{
-    return AF_INET6 == addr->ss_family && IN6ADDR_ISANY((const struct sockaddr_in6 *)addr);
-}
-
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *bind_addr,
@@ -111,18 +101,6 @@ int aeron_udp_channel_transport_init(
     for (size_t i = 0; i < AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS; i++)
     {
         transport->interceptor_clientds[i] = NULL;
-    }
-
-    if (NULL != connect_addr && aeron_udp_channel_transport_is_in6addr_any(connect_addr))
-    {
-        AERON_SET_ERR(EINVAL, "%s", "invalid IPv6 address, can not connect to IN6ADDR_ANY");
-        goto error;
-    }
-
-    if (NULL != connect_addr && aeron_udp_channel_transport_is_inaddr_any(connect_addr))
-    {
-        AERON_SET_ERR(EINVAL, "%s", "invalid IPv4 address, can not connect to INADDR_ANY");
-        goto error;
     }
 
     if ((transport->fd = aeron_socket(bind_addr->ss_family, SOCK_DGRAM, 0)) < 0)

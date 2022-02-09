@@ -98,7 +98,9 @@ aeron_socket_t aeron_socket(int domain, int type, int protocol);
 
 void aeron_close_socket(aeron_socket_t socket);
 
-int aeron_connect(int fd, struct sockaddr *address, socklen_t address_length);
+int aeron_connect(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length);
+
+int aeron_bind(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length);
 
 int aeron_net_init();
 

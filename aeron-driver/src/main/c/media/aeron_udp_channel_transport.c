@@ -78,6 +78,16 @@ static int aeron_udp_channel_transport_setup_media_rcv_timestamps(aeron_udp_chan
     return 0;
 }
 
+static bool aeron_udp_channel_transport_is_inaddr_any(struct sockaddr_storage *addr)
+{
+    return AF_INET == addr->ss_family && INADDR_ANY == ((struct sockaddr_in *)addr)->sin_addr.s_addr;
+}
+
+static bool aeron_udp_channel_transport_is_in6addr_any(struct sockaddr_storage *addr)
+{
+    return AF_INET6 == addr->ss_family && IN6ADDR_ISANY((const struct sockaddr_in6 *)addr);
+}
+
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *bind_addr,
@@ -103,6 +113,18 @@ int aeron_udp_channel_transport_init(
         transport->interceptor_clientds[i] = NULL;
     }
 
+    if (NULL != connect_addr && aeron_udp_channel_transport_is_in6addr_any(connect_addr))
+    {
+        AERON_SET_ERR(EINVAL, "%s", "invalid IPv6 address, can not connect to IN6ADDR_ANY");
+        goto error;
+    }
+
+    if (NULL != connect_addr && aeron_udp_channel_transport_is_inaddr_any(connect_addr))
+    {
+        AERON_SET_ERR(EINVAL, "%s", "invalid IPv4 address, can not connect to INADDR_ANY");
+        goto error;
+    }
+
     if ((transport->fd = aeron_socket(bind_addr->ss_family, SOCK_DGRAM, 0)) < 0)
     {
         AERON_APPEND_ERR("%s", "");
@@ -116,11 +138,9 @@ int aeron_udp_channel_transport_init(
 
     if (!is_multicast)
     {
-        if (bind(transport->recv_fd, (struct sockaddr *)bind_addr, bind_addr_len) < 0)
+        if (aeron_bind(transport->recv_fd, (struct sockaddr *)bind_addr, bind_addr_len) < 0)
         {
-            char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
-            aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
-            AERON_SET_ERR(errno, "unicast bind(%s)", buffer);
+            AERON_APPEND_ERR("%s", "unicast bind, affinity=%d", affinity);
             goto error;
         }
     }
@@ -159,11 +179,9 @@ int aeron_udp_channel_transport_init(
             memcpy(&addr, bind_addr, sizeof(addr));
             addr.sin6_addr = in6addr_any;
 
-            if (bind(transport->recv_fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
+            if (aeron_bind(transport->recv_fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
-                char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
-                aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
-                AERON_SET_ERR(errno, "multicast IPv6 bind(%s)", buffer);
+                AERON_APPEND_ERR("%s", "multicast IPv6 bind, affinity=%d", affinity);
                 goto error;
             }
 
@@ -206,11 +224,9 @@ int aeron_udp_channel_transport_init(
             memcpy(&addr, bind_addr, sizeof(addr));
             addr.sin_addr.s_addr = INADDR_ANY;
 
-            if (bind(transport->recv_fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
+            if (aeron_bind(transport->recv_fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
-                char bind_addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
-                aeron_format_source_identity(bind_addr_str, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
-                AERON_SET_ERR(errno, "multicast IPv4 bind(%s)", bind_addr_str);
+                AERON_APPEND_ERR("multicast IPv4 bind, affinity=%d", affinity);
                 goto error;
             }
 
@@ -466,12 +482,11 @@ int aeron_udp_channel_transport_recvmmsg(
 }
 
 static int aeron_udp_channel_transport_send_connected(
-    aeron_udp_channel_transport_t *transport,
-    struct iovec *io_vec,
-    size_t io_vec_length,
-    int64_t *bytes_sent)
+        aeron_udp_channel_transport_t *transport,
+        struct iovec *io_vec,
+        int64_t *bytes_sent)
 {
-    ssize_t send_result = aeron_send(transport->fd, io_vec[0].iov_base, io_vec->iov_len, 0);
+    ssize_t send_result = aeron_send(transport->fd, io_vec->iov_base, io_vec->iov_len, 0);
     if (send_result < 0)
     {
         *bytes_sent = 0;
@@ -577,7 +592,7 @@ int aeron_udp_channel_transport_send(
 {
     if (1 == io_vec_length && NULL != transport->connected_address)
     {
-        return aeron_udp_channel_transport_send_connected(transport, io_vec, io_vec_length, bytes_sent);
+        return aeron_udp_channel_transport_send_connected(transport, io_vec, bytes_sent);
     }
     else
     {

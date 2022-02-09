@@ -70,7 +70,7 @@ void aeron_close_socket(aeron_socket_t socket)
     close(socket);
 }
 
-int aeron_connect(int fd, struct sockaddr *address, socklen_t address_length)
+int aeron_connect(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length)
 {
     if (connect(fd, address, address_length) < 0)
     {
@@ -83,6 +83,18 @@ int aeron_connect(int fd, struct sockaddr *address, socklen_t address_length)
 
     return 0;
 }
+
+int aeron_bind(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length)
+{
+    if (bind(transport->recv_fd, (struct sockaddr *)address, address_length) < 0)
+    {
+        char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
+        aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, address);
+        AERON_SET_ERR(errno, "failed to bind(fd, %s)", buffer);
+        goto error;
+    }
+}
+
 
 int aeron_getifaddrs(struct ifaddrs **ifap)
 {
@@ -526,13 +538,29 @@ void aeron_close_socket(aeron_socket_t socket)
     closesocket(socket);
 }
 
-int aeron_connect(int fd, struct sockaddr *address, socklen_t address_length)
+int aeron_connect(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length)
 {
     if (SOCKET_ERROR == connect(fd, address, address_length))
     {
         char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
         aeron_format_source_identity(addr_str, sizeof(addr_str), (struct sockaddr_storage *)address);
+        struct sockaddr_in *a = (struct sockaddr_in *) address;
+        printf("addr: %lu, %d\n", a->sin_addr.s_addr, a->sin_port);
         AERON_SET_ERR_WIN(WSAGetLastError(), "failed to connect to address: %s", addr_str);
+
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_bind(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length)
+{
+    if (SOCKET_ERROR == bind(fd, address, address_length))
+    {
+        char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+        aeron_format_source_identity(addr_str, sizeof(addr_str), (struct sockaddr_storage *)address);
+        AERON_SET_ERR_WIN(WSAGetLastError(), "failed to bind to address: %s", addr_str);
 
         return -1;
     }

@@ -91,8 +91,10 @@ int aeron_bind(aeron_socket_t fd, struct sockaddr *address, socklen_t address_le
         char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
         aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, (struct sockaddr_storage *)address);
         AERON_SET_ERR(errno, "failed to bind(%d, %s)", fd, buffer);
-        goto error;
+        return -1;
     }
+
+    return 0;
 }
 
 

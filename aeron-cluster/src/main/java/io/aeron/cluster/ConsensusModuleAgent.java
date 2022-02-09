@@ -440,9 +440,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long clusterSessionId,
         final long correlationId,
         final AdminRequestType requestType,
-        final DirectBuffer requestPayload,
-        final int requestPayloadOffset,
-        final int requestPayloadLength)
+        final DirectBuffer payload,
+        final int payloadOffset,
+        final int payloadLength)
     {
         if (Cluster.Role.LEADER != role)
         {

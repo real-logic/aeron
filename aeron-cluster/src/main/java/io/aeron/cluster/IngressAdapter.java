@@ -181,8 +181,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     adminRequestDecoder.requestType(),
                     buffer,
                     payloadOffset,
-                    adminRequestDecoder.payloadLength()
-                );
+                    adminRequestDecoder.payloadLength());
                 break;
             }
         }

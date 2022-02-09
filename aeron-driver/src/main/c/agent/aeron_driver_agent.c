@@ -699,7 +699,7 @@ void aeron_driver_agent_log_frame_iov(
 
         hdr->time_ns = aeron_nano_clock();
         hdr->result = (int32_t)result;
-        hdr->sockaddr_len = address_length;
+        hdr->sockaddr_len = (int32_t)address_length;
         hdr->message_len = message_len;
 
         ptr += sizeof(aeron_driver_agent_frame_log_header_t);

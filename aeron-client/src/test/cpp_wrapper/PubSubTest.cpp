@@ -69,6 +69,7 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
     ChannelUriStringBuilder uriBuilder;
     const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
         .sessionId(sessionId)
+        .networkInterface("localhost")
         .build();
 
     std::int64_t reservedValue = INT64_C(78923648723465);
@@ -154,7 +155,9 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveSubscriptionCallbacks)
     AtomicBuffer buffer(buf);
     std::int32_t streamId = 982375;
     ChannelUriStringBuilder uriBuilder;
-    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
+        .networkInterface("localhost")
+        .build();
     std::int32_t imageUnavailable = 0;
     Context ctx;
 
@@ -257,7 +260,9 @@ TEST_P(PubSubTest, shouldBlockPollSubscription)
     AtomicBuffer buffer(buf);
     std::int32_t streamId = 982375;
     ChannelUriStringBuilder uriBuilder;
-    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
+        .networkInterface("localhost")
+        .build();
 
     Context ctx;
     ctx.useConductorAgentInvoker(true);
@@ -303,7 +308,9 @@ TEST_P(PubSubTest, shouldTryClaimAndControlledPollSubscription)
 {
     std::int32_t streamId = 982375;
     ChannelUriStringBuilder uriBuilder;
-    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
+        .networkInterface("localhost")
+        .build();
 
     Context ctx;
     ctx.useConductorAgentInvoker(true);
@@ -348,7 +355,9 @@ TEST_P(PubSubTest, shouldExclusivePublicationTryClaimAndControlledPollSubscripti
 {
     std::int32_t streamId = 982375;
     ChannelUriStringBuilder uriBuilder;
-    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
+        .networkInterface("localhost")
+        .build();
 
     Context ctx;
     ctx.useConductorAgentInvoker(true);
@@ -402,6 +411,7 @@ TEST_F(PubSubTest, DISABLED_shouldError)
         .termId(termId)
         .termOffset(termOffset)
         .initialTermId(initialTermId)
+        .networkInterface("localhost")
         .build();
 
     Context ctx;

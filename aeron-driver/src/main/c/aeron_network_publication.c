@@ -324,7 +324,7 @@ int aeron_network_publication_heartbeat_message_check(
     int32_t term_offset,
     bool signal_end_of_stream)
 {
-    int result;
+    int result = 0;
     int64_t bytes_sent = 0;
 
     if (publication->has_initial_connection &&
@@ -355,7 +355,7 @@ int aeron_network_publication_heartbeat_message_check(
 
         if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
         {
-            result = bytes_sent;
+            result = (int)bytes_sent;
             if (bytes_sent < (int64_t)iov.iov_len)
             {
                 aeron_counter_increment(publication->short_sends_counter, 1);
@@ -366,7 +366,7 @@ int aeron_network_publication_heartbeat_message_check(
         publication->time_of_last_data_or_heartbeat_ns = now_ns;
     }
 
-    return bytes_sent;
+    return result;
 }
 
 int aeron_network_publication_send_data(

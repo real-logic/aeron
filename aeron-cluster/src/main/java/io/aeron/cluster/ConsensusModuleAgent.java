@@ -316,8 +316,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
      */
     public int doWork()
     {
-        final long now = clusterClock.time();
-        final long nowNs = clusterTimeUnit.toNanos(now);
+        final long timestamp = clusterClock.time();
+        final long nowNs = clusterTimeUnit.toNanos(timestamp);
         int workCount = 0;
 
         try
@@ -325,7 +325,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             if (nowNs >= slowTickDeadlineNs)
             {
                 slowTickDeadlineNs = nowNs + SLOW_TICK_INTERVAL_NS;
-                workCount += slowTickWork(clusterTimeUnit.toMillis(now), nowNs);
+                workCount += slowTickWork(nowNs);
             }
 
             workCount += consensusAdapter.poll();
@@ -340,7 +340,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
             else
             {
-                workCount += consensusWork(now, nowNs);
+                workCount += consensusWork(timestamp, nowNs);
             }
         }
         catch (final AgentTerminationException ex)
@@ -360,7 +360,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
         }
 
-        clusterTimeConsumer.accept(now);
+        clusterTimeConsumer.accept(timestamp);
 
         return workCount;
     }
@@ -2025,7 +2025,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         ingressEndpoints = ClusterMember.ingressEndpoints(activeMembers);
     }
 
-    private int slowTickWork(final long nowMs, final long nowNs)
+    private int slowTickWork(final long nowNs)
     {
         int workCount = aeronClientInvoker.invoke();
         if (aeron.isClosed())
@@ -2048,7 +2048,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         if (nowNs >= markFileUpdateDeadlineNs)
         {
             markFileUpdateDeadlineNs = nowNs + MARK_FILE_UPDATE_INTERVAL_NS;
-            markFile.updateActivityTimestamp(nowMs);
+            markFile.updateActivityTimestamp(clusterClock.timeMillis());
         }
 
         workCount += pollArchiveEvents();
@@ -2063,7 +2063,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
                 if (ConsensusModule.State.ACTIVE == state)
                 {
-                    workCount += processPendingSessions(pendingSessions, nowMs, nowNs);
+                    workCount += processPendingSessions(pendingSessions, nowNs);
                     workCount += checkSessions(sessionByIdMap, nowNs);
                     workCount += processPassiveMembers(passiveMembers);
 
@@ -2212,8 +2212,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action);
     }
 
-    private int processPendingSessions(
-        final ArrayList<ClusterSession> pendingSessions, final long nowMs, final long nowNs)
+    private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowNs)
     {
         int workCount = 0;
 
@@ -2241,7 +2240,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 if (session.isResponsePublicationConnected(aeron, nowNs))
                 {
                     session.state(CONNECTED);
-                    authenticator.onConnectedSession(sessionProxy.session(session), nowMs);
+                    authenticator.onConnectedSession(sessionProxy.session(session), clusterClock.timeMillis());
                 }
             }
 
@@ -2249,7 +2248,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             {
                 if (session.isResponsePublicationConnected(aeron, nowNs))
                 {
-                    authenticator.onChallengedSession(sessionProxy.session(session), nowMs);
+                    authenticator.onChallengedSession(sessionProxy.session(session), clusterClock.timeMillis());
                 }
             }
 

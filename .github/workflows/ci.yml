@@ -539,7 +539,7 @@ jobs:
           7z x cmake-$Env:CMAKE_VERSION-win64-x64.zip
           echo "cmake-$Env:CMAKE_VERSION-win64-x64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
       - name: Build
-        run: cmake --version && cppbuild/cppbuild
+        run: cmake --version && cppbuild/cppbuild --parallel
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

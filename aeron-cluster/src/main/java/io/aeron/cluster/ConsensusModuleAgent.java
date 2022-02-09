@@ -457,24 +457,18 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         if (leadershipTermId != this.leadershipTermId)
         {
-            egressPublisher.sendAdminResponse(
-                session,
-                correlationId,
-                requestType,
-                AdminResponseCode.ERROR,
-                "Invalid leadership term: expected " + this.leadershipTermId + ", got " + leadershipTermId);
+            final String msg =
+                "Invalid leadership term: expected " + this.leadershipTermId + ", got " + leadershipTermId;
+            egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
             return;
         }
 
         if (!authorisationService.isAuthorised(
             MessageHeaderDecoder.SCHEMA_ID, AdminRequestDecoder.TEMPLATE_ID, requestType, session.encodedPrincipal()))
         {
+            final String msg = "Execution of the " + requestType + " request was not authorised";
             egressPublisher.sendAdminResponse(
-                session,
-                correlationId,
-                requestType,
-                AdminResponseCode.UNAUTHORISED_ACCESS,
-                "Execution of the " + requestType + " request was not authorised");
+                session, correlationId, requestType, AdminResponseCode.UNAUTHORISED_ACCESS, msg);
             return;
         }
 
@@ -482,31 +476,18 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             if (ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle))
             {
-                egressPublisher.sendAdminResponse(
-                    session,
-                    correlationId,
-                    requestType,
-                    AdminResponseCode.OK,
-                    "");
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");
             }
             else
             {
-                egressPublisher.sendAdminResponse(
-                    session,
-                    correlationId,
-                    requestType,
-                    AdminResponseCode.ERROR,
-                    "Failed to switch ClusterControl to the ToggleState.SNAPSHOT state");
+                final String msg = "Failed to switch ClusterControl to the ToggleState.SNAPSHOT state";
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
             }
         }
         else
         {
             egressPublisher.sendAdminResponse(
-                session,
-                correlationId,
-                requestType,
-                AdminResponseCode.ERROR,
-                "Unknown request type: " + requestType);
+                session, correlationId, requestType, AdminResponseCode.ERROR, "Unknown request type: " + requestType);
         }
     }
 

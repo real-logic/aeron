@@ -120,8 +120,15 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
     if (result < 0)
     {
-        AERON_SET_ERR(errno, "failed sendmsg(fd=%d,...)", fd);
-        return -1;
+//        if (EAGAIN == errno || EWOULDBLOCK == errno || ECONNREFUSED == errno || EINTR == errno)
+//        {
+//            return 0;
+//        }
+//        else
+        {
+            AERON_SET_ERR(errno, "failed sendmsg(fd=%d,...)", fd);
+            return -1;
+        }
     }
 
     return result;
@@ -133,7 +140,7 @@ ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
 
     if (result < 0)
     {
-        if (EINTR == errno || EAGAIN == errno || EWOULDBLOCK == errno || ECONNREFUSED == errno)
+        if (EAGAIN == errno || EWOULDBLOCK == errno || ECONNREFUSED == errno || EINTR == errno)
         {
             return 0;
         }

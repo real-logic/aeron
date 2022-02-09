@@ -257,23 +257,23 @@ static void aeron_send_channel_apply_timestamps(
 
 int aeron_send_channel_send(
     aeron_send_channel_endpoint_t *endpoint,
-    struct iovec *io_vec,
-    size_t io_vec_length,
+    struct iovec *iov,
+    size_t iov_length,
     int64_t *bytes_sent)
 {
     int result;
 
-    aeron_send_channel_apply_timestamps(endpoint, io_vec, io_vec_length);
+    aeron_send_channel_apply_timestamps(endpoint, iov, iov_length);
 
     if (NULL == endpoint->destination_tracker)
     {
         result = endpoint->data_paths->send_func(
-            endpoint->data_paths, &endpoint->transport, &endpoint->current_data_addr, io_vec, io_vec_length, bytes_sent);
+            endpoint->data_paths, &endpoint->transport, &endpoint->current_data_addr, iov, iov_length, bytes_sent);
     }
     else
     {
         result = aeron_udp_destination_tracker_send(
-            endpoint->destination_tracker, &endpoint->transport, io_vec, io_vec_length, bytes_sent);
+            endpoint->destination_tracker, &endpoint->transport, iov, iov_length, bytes_sent);
     }
 
     return result;

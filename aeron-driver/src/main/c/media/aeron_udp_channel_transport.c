@@ -461,10 +461,10 @@ int aeron_udp_channel_transport_recvmmsg(
 
 static int aeron_udp_channel_transport_send_connected(
         aeron_udp_channel_transport_t *transport,
-        struct iovec *io_vec,
+        struct iovec *iov,
         int64_t *bytes_sent)
 {
-    ssize_t send_result = aeron_send(transport->fd, io_vec->iov_base, io_vec->iov_len, 0);
+    ssize_t send_result = aeron_send(transport->fd, iov->iov_base, iov->iov_len, 0);
     if (send_result < 0)
     {
         *bytes_sent = 0;
@@ -484,7 +484,7 @@ static int aeron_udp_channel_transport_send_connected(
 static int aeron_udp_channel_transport_send_unconnected(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *address,
-    struct iovec *io_vec,
+    struct iovec *iov,
     int64_t *bytes_sent)
 {
     struct msghdr msg;
@@ -494,7 +494,7 @@ static int aeron_udp_channel_transport_send_unconnected(
     msg.msg_namelen = AERON_ADDR_LEN(address);
     msg.msg_iovlen = 1;
     msg.msg_flags = 0;
-    msg.msg_iov = io_vec;
+    msg.msg_iov = iov;
 
     ssize_t send_result = aeron_sendmsg(transport->fd, &msg, 0);
     if (send_result < 0)
@@ -516,21 +516,21 @@ static int aeron_udp_channel_transport_send_unconnected(
 static int aeron_udp_channel_transport_sendv(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *address,
-    struct iovec *io_vec,
-    size_t io_vec_length,
+    struct iovec *iov,
+    size_t iov_length,
     int64_t *bytes_sent)
 {
     struct mmsghdr msg[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
     size_t msg_i;
 
-    for (msg_i = 0; msg_i < io_vec_length && msg_i < AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND; msg_i++)
+    for (msg_i = 0; msg_i < iov_length && msg_i < AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND; msg_i++)
     {
         msg[msg_i].msg_hdr.msg_control = NULL;
         msg[msg_i].msg_hdr.msg_controllen = 0;
         msg[msg_i].msg_hdr.msg_name = address;
         msg[msg_i].msg_hdr.msg_namelen = AERON_ADDR_LEN(address);
         msg[msg_i].msg_hdr.msg_flags = 0;
-        msg[msg_i].msg_hdr.msg_iov = &io_vec[msg_i];
+        msg[msg_i].msg_hdr.msg_iov = &iov[msg_i];
         msg[msg_i].msg_hdr.msg_iovlen = 1;
         msg[msg_i].msg_len = 0;
     }
@@ -583,9 +583,9 @@ int aeron_udp_channel_transport_send(
     int result = 0;
     if (NULL != transport->connected_address)
     {
-        for (size_t i = 0; i < io_vec_length; i++)
+        for (size_t i = 0; i < iov_length; i++)
         {
-            int send_result = aeron_udp_channel_transport_send_connected(transport, &io_vec[i], bytes_sent);
+            int send_result = aeron_udp_channel_transport_send_connected(transport, &iov[i], bytes_sent);
             if (send_result < 0)
             {
                 result = -1;
@@ -603,9 +603,9 @@ int aeron_udp_channel_transport_send(
     }
     else
     {
-        for (size_t i = 0; i < io_vec_length; i++)
+        for (size_t i = 0; i < iov_length; i++)
         {
-            int send_result = aeron_udp_channel_transport_send_unconnected(transport, address, &io_vec[i], bytes_sent);
+            int send_result = aeron_udp_channel_transport_send_unconnected(transport, address, &iov[i], bytes_sent);
             if (send_result < 0)
             {
                 result = -1;

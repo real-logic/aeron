@@ -81,8 +81,8 @@ void aeron_send_channel_endpoint_decref(void *clientd);
 
 int aeron_send_channel_send(
     aeron_send_channel_endpoint_t *endpoint,
-    struct iovec *io_vec,
-    size_t io_vec_length,
+    struct iovec *iov,
+    size_t iov_length,
     int64_t *bytes_sent);
 
 int aeron_send_channel_endpoint_add_publication(

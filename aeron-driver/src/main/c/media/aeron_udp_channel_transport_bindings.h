@@ -81,8 +81,8 @@ typedef int (*aeron_udp_channel_transport_send_func_t)(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *address,
-    struct iovec *io_vec,
-    size_t io_vec_length,
+    struct iovec *iov,
+    size_t iov_length,
     int64_t *bytes_sent);
 
 typedef int (*aeron_udp_channel_transport_get_so_rcvbuf_func_t)(
@@ -162,8 +162,8 @@ typedef int (*aeron_udp_channel_interceptor_outgoing_send_func_t)(
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *address,
-    struct iovec *io_vec,
-    size_t io_vec_length,
+    struct iovec *iov,
+    size_t iov_length,
     int64_t *bytes_sent);
 
 typedef void (*aeron_udp_channel_interceptor_incoming_func_t)(
@@ -271,8 +271,8 @@ inline int aeron_udp_channel_outgoing_interceptor_send(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *address,
-    struct iovec *io_vec,
-    size_t io_vec_length,
+    struct iovec *iov,
+    size_t iov_length,
     int64_t *bytes_sent)
 {
     aeron_udp_channel_outgoing_interceptor_t *interceptor = data_paths->outgoing_interceptors;
@@ -283,8 +283,8 @@ inline int aeron_udp_channel_outgoing_interceptor_send(
         interceptor->next_interceptor,
         transport,
         address,
-        io_vec,
-        io_vec_length,
+        iov,
+        iov_length,
         bytes_sent);
 }
 
@@ -293,14 +293,14 @@ inline int aeron_udp_channel_outgoing_interceptor_send_to_transport(
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *address,
-    struct iovec *io_vec,
-    size_t io_vec_length,
+    struct iovec *iov,
+    size_t iov_length,
     int64_t *bytes_sent)
 {
     aeron_udp_channel_transport_send_func_t func =
         ((aeron_udp_channel_transport_bindings_t *)interceptor_state)->send_func;
 
-    return func(NULL, transport, address, io_vec, io_vec_length, bytes_sent);
+    return func(NULL, transport, address, iov, iov_length, bytes_sent);
 }
 
 

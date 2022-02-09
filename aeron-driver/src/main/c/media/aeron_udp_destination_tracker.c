@@ -72,13 +72,13 @@ int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker
 int aeron_udp_destination_tracker_send(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_transport_t *transport,
-    struct iovec *io_vec,
-    size_t io_vec_length,
+    struct iovec *iov,
+    size_t iov_length,
     int64_t *bytes_sent)
 {
     const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
     const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;
-    int min_bytes_sent = (int)io_vec->iov_len;
+    int min_bytes_sent = (int)iov->iov_len;
 
     for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
     {
@@ -97,7 +97,7 @@ int aeron_udp_destination_tracker_send(
         else if (entry->addr.ss_family != AF_UNSPEC)
         {
             const int sendmsg_result = tracker->data_paths->send_func(
-                tracker->data_paths, transport, &entry->addr, io_vec, io_vec_length, bytes_sent);
+                tracker->data_paths, transport, &entry->addr, iov, iov_length, bytes_sent);
 
             min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
         }

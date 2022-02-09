@@ -522,10 +522,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             final ClusterSession session = sessionByIdMap.get(clusterSessionId);
             if (null != session && session.state() == OPEN)
             {
-                final long now = clusterClock.time();
-                if (logPublisher.appendMessage(leadershipTermId, clusterSessionId, now, buffer, offset, length) > 0)
+                final long timestamp = clusterClock.time();
+                if (logPublisher.appendMessage(
+                    leadershipTermId, clusterSessionId, timestamp, buffer, offset, length) > 0)
                 {
-                    session.timeOfLastActivityNs(clusterTimeUnit.toNanos(now));
+                    session.timeOfLastActivityNs(clusterTimeUnit.toNanos(timestamp));
                     return ControlledFragmentHandler.Action.CONTINUE;
                 }
                 else
@@ -545,7 +546,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             final ClusterSession session = sessionByIdMap.get(clusterSessionId);
             if (null != session && session.state() == OPEN)
             {
-                session.timeOfLastActivityNs(clusterTimeUnit.toNanos(clusterClock.time()));
+                session.timeOfLastActivityNs(clusterClock.timeNanos());
             }
         }
     }
@@ -560,9 +561,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
                 if (session.id() == clusterSessionId && session.state() == CHALLENGED)
                 {
-                    final long now = clusterClock.time();
-                    final long nowMs = clusterTimeUnit.toMillis(now);
-                    session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
+                    final long timestamp = clusterClock.time();
+                    final long nowMs = clusterTimeUnit.toMillis(timestamp);
+                    session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
                     authenticator.onChallengeResponse(clusterSessionId, encodedCredentials, nowMs);
                     break;
                 }
@@ -923,8 +924,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 session.markAsBackupSession();
                 session.asyncConnect(aeron);
 
-                final long now = clusterClock.time();
-                session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
+                final long timestamp = clusterClock.time();
+                session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
 
                 if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
                 {
@@ -935,7 +936,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 }
                 else
                 {
-                    authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
+                    authenticator.onConnectRequest(
+                        session.id(), encodedCredentials, clusterTimeUnit.toMillis(timestamp));
                     pendingSessions.add(session);
                 }
             }
@@ -2357,18 +2359,18 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             else if (member.hasRequestedJoin() && member.logPosition() == logPublisher.position())
             {
                 final ClusterMember[] newMembers = ClusterMember.addMember(activeMembers, member);
-                final long now = clusterClock.time();
+                final long timestamp = clusterClock.time();
 
                 if (logPublisher.appendMembershipChangeEvent(
                     leadershipTermId,
-                    now,
+                    timestamp,
                     leaderMember.id(),
                     newMembers.length,
                     ChangeType.JOIN,
                     member.id(),
                     ClusterMember.encodeAsString(newMembers)) > 0)
                 {
-                    timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(now) - leaderHeartbeatIntervalNs;
+                    timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(timestamp) - leaderHeartbeatIntervalNs;
                     this.passiveMembers = ClusterMember.removeMember(this.passiveMembers, member.id());
                     activeMembers = newMembers;
                     rankedPositions = new long[ClusterMember.quorumThreshold(activeMembers.length)];

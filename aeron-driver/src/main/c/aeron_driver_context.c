@@ -332,6 +332,7 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT UINT32_C(2)
 #define AERON_CPU_AFFINITY_DEFAULT (-1)
+#define AERON_DRIVER_CONNECT_DEFAULT true
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -476,6 +477,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->receiver_io_vector_capacity = AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT;
     _context->sender_io_vector_capacity = AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT;
     _context->network_publication_max_messages_per_send = AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
+    _context->connect_enabled = AERON_DRIVER_CONNECT_DEFAULT;
 
     char *value = NULL;
 
@@ -567,6 +569,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->rejoin_stream = aeron_parse_bool(
         getenv(AERON_REJOIN_STREAM_ENV_VAR), _context->rejoin_stream);
+
+    _context->connect_enabled = aeron_parse_bool(getenv(AERON_DRIVER_CONNECT_ENV_VAR), _context->connect_enabled);
 
     _context->to_driver_buffer_length = aeron_config_parse_size64(
         AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR,
@@ -2492,6 +2496,19 @@ int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driv
 bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context)
 {
     return NULL != context ? context->rejoin_stream : AERON_REJOIN_STREAM_DEFAULT;
+}
+
+int aeron_driver_context_set_connect_enabled(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->connect_enabled = value;
+    return 0;
+}
+
+int aeron_driver_context_get_connect_enabled(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->connect_enabled : AERON_DRIVER_CONNECT_DEFAULT;
 }
 
 int aeron_driver_context_set_resolver_name(aeron_driver_context_t *context, const char *value)

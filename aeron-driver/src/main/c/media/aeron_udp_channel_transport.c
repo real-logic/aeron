@@ -540,7 +540,6 @@ static int aeron_udp_channel_transport_sendv(
     {
         if (EAGAIN == errno || EWOULDBLOCK == errno || EINTR == errno)
         {
-            bytes_sent = 0;
             return 0;
         }
         else

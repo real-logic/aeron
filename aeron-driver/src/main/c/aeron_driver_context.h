@@ -92,6 +92,7 @@ typedef struct aeron_driver_context_stct
     bool tether_subscriptions;                              /* aeron.tether.subscriptions = true */
     bool rejoin_stream;                                     /* aeron.rejoin.stream = true */
     bool ats_enabled;
+    bool connect_enabled;                                   /* aeron.driver.connect = true */
     uint64_t driver_timeout_ms;                             /* aeron.driver.timeout = 10s */
     uint64_t client_liveness_timeout_ns;                    /* aeron.client.liveness.timeout = 10s */
     uint64_t publication_linger_timeout_ns;                 /* aeron.publication.linger.timeout = 5s */

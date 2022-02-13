@@ -1060,7 +1060,6 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
         outgoing_bindings->outgoing_init_func = aeron_driver_agent_interceptor_init;
         outgoing_bindings->outgoing_close_func = NULL;
         outgoing_bindings->outgoing_send_func = aeron_driver_agent_outgoing_send;
-        outgoing_bindings->outgoing_send_func = NULL;
         outgoing_bindings->incoming_init_func = NULL;
         outgoing_bindings->incoming_close_func = NULL;
         outgoing_bindings->incoming_func = NULL;

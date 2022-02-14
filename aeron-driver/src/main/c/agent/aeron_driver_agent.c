@@ -574,7 +574,7 @@ static aeron_driver_agent_event_t command_id_to_driver_event_id(const int32_t ms
             return AERON_DRIVER_EVENT_CMD_OUT_ERROR;
 
         case AERON_RESPONSE_ON_AVAILABLE_IMAGE:
-            return AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE;
+            return AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE;
 
         case AERON_RESPONSE_ON_PUBLICATION_READY:
             return AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY;

@@ -1,11 +1,26 @@
+/*
+ * Copyright 2014-2022 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.samples.echo;
 
 import io.aeron.Aeron;
 import io.aeron.ConcurrentPublication;
 import io.aeron.Subscription;
-import io.aeron.bindings.agent.api.EchoMonitorMBean;
-import io.aeron.bindings.agent.api.ProvisioningConstants;
-import io.aeron.bindings.agent.api.ProvisioningMBean;
+import io.aeron.samples.echo.api.EchoMonitorMBean;
+import io.aeron.samples.echo.api.ProvisioningConstants;
+import io.aeron.samples.echo.api.ProvisioningMBean;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
@@ -13,6 +28,9 @@ import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import javax.management.*;
 import java.lang.management.ManagementFactory;
 
+/**
+ * Implementation of the ProvisionMBean to manage pub/sub echo pairs for testing.
+ */
 public class Provisioning implements ProvisioningMBean
 {
     private final Aeron aeron;
@@ -20,11 +38,21 @@ public class Provisioning implements ProvisioningMBean
     private final ManyToOneConcurrentArrayQueue<ProvisioningMessage> provisioningMessageQ =
         new ManyToOneConcurrentArrayQueue<>(1024);
 
-    public Provisioning(Aeron aeron)
+    /**
+     * Construct using the specified Aeron instance.
+     *
+     * @param aeron Aeron client instance.
+     */
+    public Provisioning(final Aeron aeron)
     {
         this.aeron = aeron;
     }
 
+    /**
+     * poll and send messages.
+     *
+     * @return amount of work done.
+     */
     public int doWork()
     {
         int workDone = 0;
@@ -38,7 +66,7 @@ public class Provisioning implements ProvisioningMBean
     private int pollEchoPairs()
     {
         int workDone = 0;
-        for (EchoPair echoPair : echoPairByCorrelationId.values())
+        for (final EchoPair echoPair : echoPairByCorrelationId.values())
         {
             workDone += echoPair.poll();
         }
@@ -55,15 +83,18 @@ public class Provisioning implements ProvisioningMBean
 
             try
             {
-                if (poll instanceof CreateEchoPair) {
+                if (poll instanceof CreateEchoPair)
+                {
                     handleCreateEchoPair((CreateEchoPair)poll);
-                } else if (poll instanceof RemoveAllEchoPairs) {
+                }
+                else if (poll instanceof RemoveAllEchoPairs)
+                {
                     handleRemoveAll((RemoveAllEchoPairs)poll);
                 }
 
                 poll.complete("OK");
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 poll.complete(e);
             }
@@ -72,6 +103,9 @@ public class Provisioning implements ProvisioningMBean
         return workDone;
     }
 
+    /**
+     * Remove all existing echo pairs
+     */
     public void removeAll()
     {
         final RemoveAllEchoPairs removeAllEchoPairs = new RemoveAllEchoPairs();
@@ -82,7 +116,7 @@ public class Provisioning implements ProvisioningMBean
         {
             removeAllEchoPairs.await();
         }
-        catch (InterruptedException e)
+        catch (final InterruptedException e)
         {
             throw new RuntimeException(e);
         }
@@ -98,6 +132,15 @@ public class Provisioning implements ProvisioningMBean
         echoPairByCorrelationId.clear();
     }
 
+    /**
+     * Create a pub/sub echo pair.
+     *
+     * @param correlationId user specified correlationId to track the echo pair
+     * @param subChannel    channel used for subscription
+     * @param subStreamId   stream id used for subscription
+     * @param pubChannel    channel used for publication
+     * @param pubStreamId   stream id used for publication
+     */
     public void createEchoPair(
         final long correlationId,
         final String subChannel,
@@ -118,7 +161,7 @@ public class Provisioning implements ProvisioningMBean
         {
             createEchoPair.await();
         }
-        catch (InterruptedException e)
+        catch (final InterruptedException e)
         {
             throw new RuntimeException(e);
         }
@@ -150,7 +193,10 @@ public class Provisioning implements ProvisioningMBean
                 new StandardMBean(echoPair.monitor(), EchoMonitorMBean.class),
                 new ObjectName(ProvisioningConstants.echoPairObjectName(create.correlationId)));
         }
-        catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException e)
+        catch (final InstanceAlreadyExistsException |
+            MBeanRegistrationException |
+            NotCompliantMBeanException |
+            MalformedObjectNameException e)
         {
             CloseHelper.quietCloseAll(subscription, publication);
             throw e;

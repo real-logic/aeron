@@ -40,5 +40,11 @@ public interface EchoMonitorMBean
      * @return current fragment count.
      */
     long getFragmentCount();
+
+    /**
+     * Get the number of bytes echoed through the pair.
+     *
+     * @return number of bytes.
+     */
     long getByteCount();
 }

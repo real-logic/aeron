@@ -198,7 +198,7 @@ subprojects {
         }
 
         useJUnitPlatform {
-            excludeTags 'slow', 'topology'
+            excludeTags 'slow', 'topology', 'bindings'
         }
 
         testLogging {

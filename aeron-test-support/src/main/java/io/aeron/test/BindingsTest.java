@@ -13,11 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.samples.echo;
+package io.aeron.test;
 
-/**
- * Message to remove all the echo pairs from the service.
- */
-public class RemoveAllEchoPairs extends ProvisioningMessage
+import org.junit.jupiter.api.Tag;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target({ ElementType.TYPE, ElementType.METHOD })
+@Retention(RetentionPolicy.RUNTIME)
+@Tag("bindings")
+public @interface BindingsTest
 {
 }

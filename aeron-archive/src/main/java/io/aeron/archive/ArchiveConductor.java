@@ -611,7 +611,7 @@ abstract class ArchiveConductor
     {
         if (minRecordingId < 0)
         {
-            final String msg = "minRecordingId=" + minRecordingId + " is < 0";
+            final String msg = "minRecordingId=" + minRecordingId + " < 0";
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
         }
         else

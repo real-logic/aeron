@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import org.mockito.ArgumentCaptor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import static java.lang.Math.abs;
 import static org.junit.jupiter.api.Assertions.*;
@@ -438,7 +437,7 @@ class BackgroundSnapshotReplicatorTest
         snapshotReplicator.setLatestSnapshot(memberTakingSnapshot, logPositionForLaterSnapshot);
 
         snapshotReplicator.doWork(
-            clock.nextTime(TimeUnit.NANOSECONDS.toMillis(consensusModuleCtx.dynamicJoinIntervalNs()))
+            clock.nextTime(consensusModuleCtx.dynamicJoinIntervalNs())
         );
 
         verify(mockConsensusPublisher, times(2)).snapshotRecordingQuery(any(), anyLong(), eq(thisMember.id()));

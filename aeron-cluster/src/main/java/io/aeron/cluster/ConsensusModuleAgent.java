@@ -2189,7 +2189,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
         }
 
-        workCount += snapshotReplicator.doWork(nowMs);
+        workCount += snapshotReplicator.doWork(nowNs);
         if (snapshotReplicator.isComplete())
         {
             final List<RecordingLog.Snapshot> snapshots = snapshotReplicator.snapshotsRetrieved();

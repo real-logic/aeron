@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUri;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingSignal;
@@ -173,7 +174,7 @@ class BackgroundSnapshotReplicator
     private AeronArchive archive;
     private final ConsensusModule.Context ctx;
     private final ConsensusPublisher consensusPublisher;
-    private final long queryTimeoutMs;
+    private final long queryTimeoutNs;
     private final ClusterMember thisMember;
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
     private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>(4);
@@ -187,7 +188,7 @@ class BackgroundSnapshotReplicator
     private long currentSnapshotLogPosition = Aeron.NULL_VALUE;
 
     private long queryCorrelationId = Aeron.NULL_VALUE;
-    private long sendQueryDeadlineMs = 0;
+    private long sendQueryDeadlineNs = 0;
     private State state = State.IDLE;
 
     BackgroundSnapshotReplicator(
@@ -197,7 +198,7 @@ class BackgroundSnapshotReplicator
     {
         this.ctx = ctx;
         this.consensusPublisher = consensusPublisher;
-        this.queryTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.dynamicJoinIntervalNs());
+        this.queryTimeoutNs = ctx.dynamicJoinIntervalNs();
         this.thisMember = thisMember;
     }
 
@@ -212,7 +213,7 @@ class BackgroundSnapshotReplicator
         this.nextSnapshotLogPosition = logPosition;
     }
 
-    int doWork(final long nowMs)
+    int doWork(final long nowNs)
     {
         switch (state)
         {
@@ -220,12 +221,12 @@ class BackgroundSnapshotReplicator
                 if (null != nextSnapshotMember && Aeron.NULL_VALUE != nextSnapshotLogPosition)
                 {
                     state = State.AWAIT_QUERY;
-                    query(nowMs, thisMember);
+                    query(nowNs, thisMember);
                 }
                 break;
 
             case AWAIT_QUERY:
-                return query(nowMs, thisMember);
+                return query(nowNs, thisMember);
 
             case REPLICATE:
                 return replicate();
@@ -248,11 +249,11 @@ class BackgroundSnapshotReplicator
         return 0;
     }
 
-    private int query(final long nowMs, final ClusterMember thisMember)
+    private int query(final long nowNs, final ClusterMember thisMember)
     {
         int workDone = 0;
 
-        if (sendQueryDeadlineMs <= nowMs)
+        if (sendQueryDeadlineNs <= nowNs)
         {
             if (null != nextSnapshotMember && currentSnapshotLogPosition < nextSnapshotLogPosition)
             {
@@ -270,7 +271,7 @@ class BackgroundSnapshotReplicator
                 thisMember.id());
 
             workDone++;
-            sendQueryDeadlineMs = nowMs + queryTimeoutMs;
+            sendQueryDeadlineNs = nowNs + queryTimeoutNs;
         }
 
         return workDone;
@@ -349,7 +350,7 @@ class BackgroundSnapshotReplicator
                 }
             }
 
-            this.sendQueryDeadlineMs = nowMs + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
+            this.sendQueryDeadlineNs = nowMs + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
             this.queryCorrelationId = Aeron.NULL_VALUE;
         }
     }

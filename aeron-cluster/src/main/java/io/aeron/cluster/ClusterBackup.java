@@ -314,7 +314,7 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Default timeout within which a cluster backup will expect a response from a backup query.
          */
-        public static final long CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(3);
+        public static final long CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
          * Timeout within which a cluster backup will expect progress.

@@ -595,7 +595,7 @@ final class ClientConductor implements Agent
         clientLock.lock();
         try
         {
-            if (isTerminating || isClosed)
+            if (NULL_VALUE == publicationRegistrationId || isTerminating || isClosed)
             {
                 return;
             }
@@ -610,9 +610,11 @@ final class ClientConductor implements Agent
                     publication.logBuffers(), publication.originalRegistrationId(), EXPLICIT_CLOSE_LINGER_NS);
             }
 
-            driverProxy.removePublication(publicationRegistrationId);
-            stashedChannelByRegistrationId.remove(publicationRegistrationId);
-            asyncCommandIdSet.remove(publicationRegistrationId);
+            if (asyncCommandIdSet.remove(publicationRegistrationId) || null != publication)
+            {
+                driverProxy.removePublication(publicationRegistrationId);
+                stashedChannelByRegistrationId.remove(publicationRegistrationId);
+            }
         }
         finally
         {

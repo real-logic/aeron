@@ -27,10 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("try")
@@ -113,6 +110,7 @@ class AsyncResourceTest
 
             aeron.asyncRemovePublication(registrationId);
             assertTrue(publication.isClosed());
+            assertNull(aeron.getPublication(registrationId));
         }
         finally
         {

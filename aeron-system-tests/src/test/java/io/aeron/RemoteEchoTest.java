@@ -45,6 +45,8 @@ import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import static io.aeron.samples.echo.api.ProvisioningConstants.IO_AERON_TYPE_PROVISIONING_NAME_TESTING;
@@ -137,7 +139,7 @@ public class RemoteEchoTest
 
     @Test
     @InterruptAfter(10)
-    void testSingleEchoPair() throws IOException, MalformedObjectNameException
+    void shouldHandleSingleUnicastEchoPair() throws IOException, MalformedObjectNameException
     {
         final String requestUri = new ChannelUriStringBuilder()
             .media("udp").endpoint(remoteHost + ":24324").rejoin(false).linger(0L).termLength(1 << 16).build();
@@ -171,6 +173,56 @@ public class RemoteEchoTest
             sendAndReceiveRandomData(pub, sub);
 
             assertTrue(0 < echoMonitorMBean.getFragmentCount());
+        }
+    }
+
+
+    @Test
+    @InterruptAfter(10)
+    void shouldHandleTenUnicastEchoPairs() throws IOException, MalformedObjectNameException
+    {
+        final List<Publication> pubs = new ArrayList<>();
+        final List<Subscription> subs = new ArrayList<>();
+
+        final ChannelUriStringBuilder requestUriBuilder = new ChannelUriStringBuilder()
+            .media("udp").rejoin(false).linger(0L).termLength(1 << 16);
+        final ChannelUriStringBuilder responseUriBuilder = new ChannelUriStringBuilder()
+            .media("udp").rejoin(false).linger(0L).termLength(1 << 16);
+        final int requestStreamId = 1001;
+        final int responseStreamId = 1002;
+
+        final MBeanServerConnection mBeanServerConnection = mbeanConnectionSupplier.get();
+        final ProvisioningMBean provisioningMBean = JMX.newMBeanProxy(
+            mBeanServerConnection,
+            new ObjectName(IO_AERON_TYPE_PROVISIONING_NAME_TESTING),
+            ProvisioningMBean.class);
+        provisioningMBean.removeAll();
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir)))
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                final String requestUri = requestUriBuilder.endpoint(remoteHost + ":" + (24300 + i)).build();
+                final String responseUri = responseUriBuilder.endpoint(localHost + ":" + (24400 + i)).build();
+
+                provisioningMBean.createEchoPair(i + 1, requestUri, requestStreamId, responseUri, responseStreamId);
+
+                final ConcurrentPublication pub = aeron.addPublication(requestUri, requestStreamId);
+                final Subscription sub = aeron.addSubscription(responseUri, responseStreamId);
+
+                pubs.add(pub);
+                subs.add(sub);
+
+                Tests.awaitConnected(pub);
+                Tests.awaitConnected(sub);
+            }
+
+            sendAndReceiveRandomData(pubs, subs);
+        }
+        finally
+        {
+            CloseHelper.quietCloseAll(pubs);
+            CloseHelper.quietCloseAll(subs);
         }
     }
 
@@ -208,6 +260,81 @@ public class RemoteEchoTest
         }
 
         assertEquals(0, sourceData.compareTo(receivedData));
+    }
+
+    private void sendAndReceiveRandomData(
+        final List<Publication> pubs,
+        final List<Subscription> subs)
+    {
+        assertEquals(pubs.size(), subs.size());
+
+        final List<ExpandableArrayBuffer> receivedDataBuffers = new ArrayList<>();
+        final List<MutableInteger> sentDataCounts = new ArrayList<>();
+        final List<MutableInteger> receivedDataCounts = new ArrayList<>();
+        final List<FragmentHandler> handlers = new ArrayList<>();
+
+        for (int i = 0; i < pubs.size(); i++)
+        {
+            final ExpandableArrayBuffer receivedData = new ExpandableArrayBuffer(SOURCE_DATA_LENGTH);
+            final MutableInteger sentBytes = new MutableInteger(0);
+            final MutableInteger recvBytes = new MutableInteger(0);
+            final FragmentHandler handler = (buffer, offset, length, header) ->
+            {
+                receivedData.putBytes(recvBytes.get(), buffer, offset, length);
+                recvBytes.addAndGet(length);
+            };
+
+            receivedDataBuffers.add(receivedData);
+            sentDataCounts.add(sentBytes);
+            receivedDataCounts.add(recvBytes);
+            handlers.add(handler);
+        }
+
+        while (dataIsPending(receivedDataCounts, SOURCE_DATA_LENGTH))
+        {
+            for (int i = 0; i < pubs.size(); i++)
+            {
+                final Publication pub = pubs.get(i);
+                final Subscription sub = subs.get(i);
+                final MutableInteger sentBytes = sentDataCounts.get(i);
+                final FragmentHandler handler = handlers.get(i);
+
+                if (sentBytes.get() < SOURCE_DATA_LENGTH)
+                {
+                    final int randomLength = randomWatcher.random().nextInt(pub.maxMessageLength());
+                    final int toSend = min(SOURCE_DATA_LENGTH - sentBytes.get(), randomLength);
+                    if (pub.offer(sourceData, sentBytes.get(), toSend) > 0)
+                    {
+                        sentBytes.addAndGet(toSend);
+                    }
+                    Tests.yield();
+                }
+
+                if (sub.poll(handler, 10) <= 0)
+                {
+                    Tests.yield();
+                }
+            }
+        }
+
+        for (final ExpandableArrayBuffer receivedData : receivedDataBuffers)
+        {
+            assertEquals(0, sourceData.compareTo(receivedData));
+        }
+
+    }
+
+    private boolean dataIsPending(final List<MutableInteger> receivedDataCounts, final int sourceDataLength)
+    {
+        for (final MutableInteger receivedDataCount : receivedDataCounts)
+        {
+            if (receivedDataCount.get() < sourceDataLength)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private interface IoSupplier<T>

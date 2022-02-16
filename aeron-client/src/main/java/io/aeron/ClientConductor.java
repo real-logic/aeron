@@ -602,9 +602,16 @@ final class ClientConductor implements Agent
 
             ensureNotReentrant();
 
-            final Publication publication = (Publication)resourceByRegIdMap.remove(publicationRegistrationId);
+            final Object resource = resourceByRegIdMap.get(publicationRegistrationId);
+            if (null != resource && !(resource instanceof Publication))
+            {
+                throw new AeronException("registration id is not a Publication");
+            }
+
+            final Publication publication = (Publication)resource;
             if (null != publication)
             {
+                resourceByRegIdMap.remove(publicationRegistrationId);
                 publication.internalClose();
                 releaseLogBuffers(
                     publication.logBuffers(), publication.originalRegistrationId(), EXPLICIT_CLOSE_LINGER_NS);

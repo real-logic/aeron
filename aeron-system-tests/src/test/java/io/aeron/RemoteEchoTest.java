@@ -18,12 +18,12 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.NetworkUtil;
 import io.aeron.samples.echo.ProvisioningServerMain;
+import io.aeron.samples.echo.api.EchoMonitorMBean;
 import io.aeron.samples.echo.api.ProvisioningConstants;
 import io.aeron.samples.echo.api.ProvisioningMBean;
+import io.aeron.test.BindingsTest;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,30 +41,38 @@ import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+import static io.aeron.samples.echo.api.ProvisioningConstants.IO_AERON_TYPE_PROVISIONING_NAME_TESTING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@BindingsTest
 public class RemoteEchoTest
 {
     private static MediaDriver mediaDriver = null;
     private static ProvisioningServerMain provisioningServer = null;
-    private static Thread provisioningServerThread = null;
     private static JMXConnector connector = null;
     private static String remoteHost = null;
     private static String localHost = null;
+    private static String aeronDir = null;
 
     @BeforeAll
     static void beforeAll() throws IOException
     {
         remoteHost = System.getProperty("aeron.test.system.binding.remote.host");
         localHost = System.getProperty("aeron.test.system.binding.local.host");
+        aeronDir = System.getProperty("aeron.dir");
+
+        // If aeron.dir is set assume an external driver, otherwise start embedded.
+        if (null == aeronDir)
+        {
+            mediaDriver = MediaDriver.launchEmbedded();
+            aeronDir = mediaDriver.aeronDirectoryName();
+        }
+
+        // If remote host is not set run the provision service locally.
         if (null == remoteHost)
         {
-            // TODO: check before launching and may use existing driver.
-            mediaDriver = MediaDriver.launch();
-            // TODO: only start echo service in basic test, check for remote access property.
+            // TODO: echo service in basic test, check for remote access property.
             provisioningServer = ProvisioningServerMain.launch(new Aeron.Context());
-            provisioningServerThread = AgentRunner.startOnThread(new AgentRunner(
-                new BackoffIdleStrategy(), throwable -> {}, null, provisioningServer));
             remoteHost = "localhost";
             localHost = "localhost";
         }
@@ -84,42 +92,38 @@ public class RemoteEchoTest
     @AfterAll
     static void afterAll()
     {
-        if (null != provisioningServerThread)
-        {
-            provisioningServerThread.interrupt();
-            try
-            {
-                provisioningServerThread.join();
-            }
-            catch (final InterruptedException ignore)
-            {
-            }
-        }
         CloseHelper.quietCloseAll(connector, provisioningServer, mediaDriver);
     }
 
     @Test
     void testSingleEchoPair() throws IOException, MalformedObjectNameException
     {
-        final String requestUri = new ChannelUriStringBuilder().media("udp").endpoint(remoteHost + ":24324").build();
-        final String responseUri = new ChannelUriStringBuilder().media("udp").endpoint(localHost + ":24325").build();
+        final String requestUri = new ChannelUriStringBuilder()
+            .media("udp").endpoint(remoteHost + ":24324").rejoin(false).linger(0L).build();
+        final String responseUri = new ChannelUriStringBuilder()
+            .media("udp").endpoint(localHost + ":24325").rejoin(false).linger(0L).build();
         final int requestStreamId = 1001;
         final int responseStreamId = 1001;
         final String message = "hello world";
 
+        final MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
+        final ProvisioningMBean provisioningMBean = JMX.newMBeanProxy(
+            mBeanServerConnection,
+            new ObjectName(IO_AERON_TYPE_PROVISIONING_NAME_TESTING),
+            ProvisioningMBean.class);
+        provisioningMBean.removeAll();
+        provisioningMBean.createEchoPair(1, requestUri, requestStreamId, responseUri, responseStreamId);
+
         try (
-            MediaDriver driver = MediaDriver.launchEmbedded();
-            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir));
             Publication pub = aeron.addPublication(requestUri, requestStreamId);
             Subscription sub = aeron.addSubscription(responseUri, responseStreamId))
         {
-            final MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
+            final EchoMonitorMBean echoMonitorMBean = JMX.newMBeanProxy(
+                mBeanServerConnection,
+                new ObjectName(ProvisioningConstants.echoPairObjectName(1)),
+                EchoMonitorMBean.class);
 
-            final ObjectName objectName = new ObjectName(ProvisioningConstants.IO_AERON_TYPE_PROVISIONING_NAME_TESTING);
-            final ProvisioningMBean provisioningMBean = JMX.newMBeanProxy(
-                mBeanServerConnection, objectName, ProvisioningMBean.class);
-
-            provisioningMBean.createEchoPair(1, requestUri, requestStreamId, responseUri, responseStreamId);
 
             Tests.awaitConnected(pub);
             Tests.awaitConnected(sub);
@@ -140,6 +144,8 @@ public class RemoteEchoTest
             {
                 Tests.yield();
             }
+
+            assertEquals(1, echoMonitorMBean.getFragmentCount());
         }
     }
 }

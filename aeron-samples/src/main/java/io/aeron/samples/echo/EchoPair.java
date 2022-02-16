@@ -127,7 +127,7 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
      */
     public void close()
     {
-        CloseHelper.quietCloseAll(subscription, publication);
+        CloseHelper.quietCloseAll(publication, subscription);
     }
 
     private class EchoMonitor implements EchoMonitorMBean

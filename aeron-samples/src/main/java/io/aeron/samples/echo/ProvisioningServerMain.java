@@ -16,28 +16,38 @@
 package io.aeron.samples.echo;
 
 import io.aeron.Aeron;
+import io.aeron.CommonContext;
+import io.aeron.driver.MediaDriver;
 import io.aeron.samples.echo.api.ProvisioningConstants;
 import io.aeron.samples.echo.api.ProvisioningMBean;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import javax.management.*;
 import java.lang.management.ManagementFactory;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Main class for starting the provisioning service
  */
 public final class ProvisioningServerMain implements Agent, AutoCloseable
 {
+    private final MediaDriver driver;
     private final Aeron aeron;
     private final Provisioning provisioning;
+    private final AgentRunner runner;
     private volatile ObjectName beanName = null;
 
-    private ProvisioningServerMain(final Aeron aeron)
+    private ProvisioningServerMain(final MediaDriver driver, final Aeron aeron)
     {
-        this.aeron = aeron;
+        this.driver = driver;
+        this.aeron = requireNonNull(aeron);
         this.provisioning = new Provisioning(aeron);
+        runner = new AgentRunner(new BackoffIdleStrategy(), Throwable::printStackTrace, null, this);
     }
 
     /**
@@ -45,19 +55,15 @@ public final class ProvisioningServerMain implements Agent, AutoCloseable
      *
      * @param args command line arguments
      */
+    @SuppressWarnings("try")
     public static void main(final String[] args)
     {
-        try (ProvisioningServerMain provisioningServerMain = ProvisioningServerMain.launch(new Aeron.Context()))
+        final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
+
+        try (ProvisioningServerMain ignore = ProvisioningServerMain.launch(new Aeron.Context()))
         {
-            System.out.println("Connected to Aeron");
-
-            final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy();
-
-            idleStrategy.reset();
-            while (!Thread.currentThread().isInterrupted())
-            {
-                idleStrategy.idle(provisioningServerMain.doWork());
-            }
+            barrier.await();
+            System.out.println("Shutdown Provisioning Server...");
         }
     }
 
@@ -69,8 +75,18 @@ public final class ProvisioningServerMain implements Agent, AutoCloseable
      */
     public static ProvisioningServerMain launch(final Aeron.Context context)
     {
+        MediaDriver driver = null;
+        if (null == System.getProperty(CommonContext.AERON_DIR_PROP_NAME))
+        {
+            driver = MediaDriver.launchEmbedded();
+            context.aeronDirectoryName(driver.aeronDirectoryName());
+        }
         final Aeron aeron = Aeron.connect(context);
-        return new ProvisioningServerMain(aeron);
+        final ProvisioningServerMain provisioningServerMain = new ProvisioningServerMain(driver, aeron);
+
+        AgentRunner.startOnThread(provisioningServerMain.runner);
+
+        return provisioningServerMain;
     }
 
     /**
@@ -124,6 +140,6 @@ public final class ProvisioningServerMain implements Agent, AutoCloseable
             {
             }
         }
-        CloseHelper.quietClose(aeron);
+        CloseHelper.quietCloseAll(runner, aeron, driver);
     }
 }

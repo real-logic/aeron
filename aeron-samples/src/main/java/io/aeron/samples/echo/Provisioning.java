@@ -126,6 +126,19 @@ public class Provisioning implements ProvisioningMBean
     {
         for (final EchoPair echoPair : echoPairByCorrelationId.values())
         {
+            try
+            {
+                ManagementFactory.getPlatformMBeanServer().unregisterMBean(
+                    new ObjectName(ProvisioningConstants.echoPairObjectName(echoPair.correlationId())));
+            }
+            catch (final InstanceNotFoundException ignore)
+            {
+            }
+            catch (final MBeanRegistrationException | MalformedObjectNameException e)
+            {
+                e.printStackTrace();
+            }
+
             CloseHelper.quietClose(echoPair);
         }
 

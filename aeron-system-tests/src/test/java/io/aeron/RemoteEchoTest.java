@@ -17,17 +17,23 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.NetworkUtil;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.samples.echo.ProvisioningServerMain;
 import io.aeron.samples.echo.api.EchoMonitorMBean;
 import io.aeron.samples.echo.api.ProvisioningConstants;
 import io.aeron.samples.echo.api.ProvisioningMBean;
-import io.aeron.test.BindingsTest;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.management.JMX;
 import javax.management.MBeanServerConnection;
@@ -37,22 +43,31 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import static io.aeron.samples.echo.api.ProvisioningConstants.IO_AERON_TYPE_PROVISIONING_NAME_TESTING;
+import static java.lang.Math.min;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @BindingsTest
+@ExtendWith(InterruptingTestCallback.class)
 public class RemoteEchoTest
 {
+    private static final int SOURCE_DATA_LENGTH = 1024 * 1024;
     private static MediaDriver mediaDriver = null;
     private static ProvisioningServerMain provisioningServer = null;
     private static JMXConnector connector = null;
+    private static IoSupplier<MBeanServerConnection> mbeanConnectionSupplier = null;
     private static String remoteHost = null;
     private static String localHost = null;
     private static String aeronDir = null;
+    private DirectBuffer sourceData;
+
+    @RegisterExtension
+    private final RandomWatcher randomWatcher = new RandomWatcher(18604930465192L);
 
     @BeforeAll
     static void beforeAll() throws IOException
@@ -75,6 +90,7 @@ public class RemoteEchoTest
             provisioningServer = ProvisioningServerMain.launch(new Aeron.Context());
             remoteHost = "localhost";
             localHost = "localhost";
+            mbeanConnectionSupplier = ManagementFactory::getPlatformMBeanServer;
         }
         else
         {
@@ -83,36 +99,61 @@ public class RemoteEchoTest
                 final InetAddress address = InetAddress.getByName(remoteHost);
                 localHost = Objects.requireNonNull(NetworkUtil.findFirstMatchingLocalAddress(address)).getHostAddress();
             }
-        }
 
-        final JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + remoteHost + ":10000/jmxrmi");
-        connector = JMXConnectorFactory.connect(url);
+            final String serviceURL = "service:jmx:rmi:///jndi/rmi://" + remoteHost + ":10000/jmxrmi";
+            final JMXServiceURL url = new JMXServiceURL(serviceURL);
+            connector = JMXConnectorFactory.connect(url);
+            mbeanConnectionSupplier = connector::getMBeanServerConnection;
+        }
     }
 
     @AfterAll
     static void afterAll()
     {
+        try
+        {
+            final MBeanServerConnection mBeanServerConnection = mbeanConnectionSupplier.get();
+            final ProvisioningMBean provisioningMBean = JMX.newMBeanProxy(
+                mBeanServerConnection,
+                new ObjectName(IO_AERON_TYPE_PROVISIONING_NAME_TESTING),
+                ProvisioningMBean.class);
+            provisioningMBean.removeAll();
+        }
+        catch (final Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
         CloseHelper.quietCloseAll(connector, provisioningServer, mediaDriver);
     }
 
+    @BeforeEach
+    void setUp()
+    {
+        final byte[] bytes = new byte[SOURCE_DATA_LENGTH];
+        randomWatcher.random().nextBytes(bytes);
+        sourceData = new UnsafeBuffer(bytes);
+    }
+
     @Test
+    @InterruptAfter(10)
     void testSingleEchoPair() throws IOException, MalformedObjectNameException
     {
         final String requestUri = new ChannelUriStringBuilder()
-            .media("udp").endpoint(remoteHost + ":24324").rejoin(false).linger(0L).build();
+            .media("udp").endpoint(remoteHost + ":24324").rejoin(false).linger(0L).termLength(1 << 16).build();
         final String responseUri = new ChannelUriStringBuilder()
-            .media("udp").endpoint(localHost + ":24325").rejoin(false).linger(0L).build();
+            .media("udp").endpoint(localHost + ":24325").rejoin(false).linger(0L).termLength(1 << 16).build();
         final int requestStreamId = 1001;
-        final int responseStreamId = 1001;
-        final String message = "hello world";
+        final int responseStreamId = 1002;
 
-        final MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
+        final MBeanServerConnection mBeanServerConnection = mbeanConnectionSupplier.get();
         final ProvisioningMBean provisioningMBean = JMX.newMBeanProxy(
             mBeanServerConnection,
             new ObjectName(IO_AERON_TYPE_PROVISIONING_NAME_TESTING),
             ProvisioningMBean.class);
         provisioningMBean.removeAll();
         provisioningMBean.createEchoPair(1, requestUri, requestStreamId, responseUri, responseStreamId);
+
 
         try (
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir));
@@ -124,28 +165,53 @@ public class RemoteEchoTest
                 new ObjectName(ProvisioningConstants.echoPairObjectName(1)),
                 EchoMonitorMBean.class);
 
-
             Tests.awaitConnected(pub);
             Tests.awaitConnected(sub);
 
-            final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(message.getBytes(StandardCharsets.UTF_8));
-            while (pub.offer(unsafeBuffer) < 0)
-            {
-                Tests.yield();
-            }
+            sendAndReceiveRandomData(pub, sub);
 
-            while (sub.poll((buffer, offset, length, header) ->
-            {
-                final byte[] bytes = new byte[length];
-                buffer.getBytes(offset, bytes);
-                final String incoming = new String(bytes);
-                assertEquals(message, incoming);
-            }, 1) < 1)
-            {
-                Tests.yield();
-            }
-
-            assertEquals(1, echoMonitorMBean.getFragmentCount());
+            assertTrue(0 < echoMonitorMBean.getFragmentCount());
         }
+    }
+
+    private void sendAndReceiveRandomData(
+        final Publication pub,
+        final Subscription sub)
+    {
+        final ExpandableArrayBuffer receivedData = new ExpandableArrayBuffer(SOURCE_DATA_LENGTH);
+        final MutableInteger sentBytes = new MutableInteger(0);
+        final MutableInteger recvBytes = new MutableInteger(0);
+
+        final FragmentHandler handler = (buffer, offset, length, header) ->
+        {
+            receivedData.putBytes(recvBytes.get(), buffer, offset, length);
+            recvBytes.addAndGet(length);
+        };
+
+        while (recvBytes.get() < SOURCE_DATA_LENGTH)
+        {
+            if (sentBytes.get() < SOURCE_DATA_LENGTH)
+            {
+                final int randomLength = randomWatcher.random().nextInt(pub.maxMessageLength());
+                final int toSend = min(SOURCE_DATA_LENGTH - sentBytes.get(), randomLength);
+                if (pub.offer(sourceData, sentBytes.get(), toSend) > 0)
+                {
+                    sentBytes.addAndGet(toSend);
+                }
+                Tests.yield();
+            }
+
+            if (sub.poll(handler, 10) <= 0)
+            {
+                Tests.yield();
+            }
+        }
+
+        assertEquals(0, sourceData.compareTo(receivedData));
+    }
+
+    private interface IoSupplier<T>
+    {
+        T get() throws IOException;
     }
 }

@@ -198,7 +198,7 @@ subprojects {
         }
 
         useJUnitPlatform {
-            excludeTags 'slow', 'topology', 'bindings'
+            excludeTags 'slow', 'topology'
         }
 
         testLogging {
@@ -244,6 +244,26 @@ subprojects {
         systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
         systemProperty "aeron.fallback.logger", "no_op"
     }
+
+    task bindingsTest(type: Test, group: 'verification') {
+        dependsOn ":aeron-agent:jar"
+
+        maxParallelForks = 1
+        useJUnitPlatform {
+            includeTags 'bindings'
+        }
+
+        ext.agentFilename = {
+            project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
+        }
+
+        jvmArgs '-javaagent:' + agentFilename()
+        systemProperty "aeron.event.cluster.log", "all"
+        systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION"
+        systemProperty "aeron.debug.timeout", "3600s"
+        systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
+    }
+
 
     task topologyTest(type: Test, group: 'verification') {
         maxParallelForks = 1

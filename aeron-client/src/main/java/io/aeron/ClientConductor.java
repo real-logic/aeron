@@ -561,7 +561,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    void releasePublication(final Publication publication)
+    void removePublication(final Publication publication)
     {
         clientLock.lock();
         try
@@ -583,6 +583,36 @@ final class ClientConductor implements Agent
                     asyncCommandIdSet.add(driverProxy.removePublication(publication.registrationId()));
                 }
             }
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void removePublication(final long publicationRegistrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            if (isTerminating || isClosed)
+            {
+                return;
+            }
+
+            ensureNotReentrant();
+
+            final Publication publication = (Publication)resourceByRegIdMap.remove(publicationRegistrationId);
+            if (null != publication)
+            {
+                publication.internalClose();
+                releaseLogBuffers(
+                    publication.logBuffers(), publication.originalRegistrationId(), EXPLICIT_CLOSE_LINGER_NS);
+            }
+
+            driverProxy.removePublication(publicationRegistrationId);
+            stashedChannelByRegistrationId.remove(publicationRegistrationId);
+            asyncCommandIdSet.remove(publicationRegistrationId);
         }
         finally
         {
@@ -627,7 +657,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    void releaseSubscription(final Subscription subscription)
+    void removeSubscription(final Subscription subscription)
     {
         clientLock.lock();
         try

@@ -387,7 +387,7 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
     {
         if (!isClosed)
         {
-            conductor.releaseSubscription(this);
+            conductor.removeSubscription(this);
         }
     }
 

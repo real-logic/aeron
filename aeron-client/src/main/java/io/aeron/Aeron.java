@@ -314,6 +314,18 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Asynchronously remove a {@link Publication}.
+     *
+     * @param registrationId to be of the publication removed.
+     * @see #asyncAddPublication(String, int)
+     * @see #asyncAddExclusivePublication(String, int)
+     */
+    public void asyncRemovePublication(final long registrationId)
+    {
+        conductor.removePublication(registrationId);
+    }
+
+    /**
      * Get a {@link Publication} for publishing messages to subscribers. The publication returned is threadsafe.
      *
      * @param registrationId returned from {@link #asyncAddPublication(String, int)}.

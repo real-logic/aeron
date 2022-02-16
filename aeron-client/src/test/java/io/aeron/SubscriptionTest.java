@@ -85,7 +85,7 @@ public class SubscriptionTest
             {
                 subscription.internalClose(NULL_VALUE);
                 return null;
-            }).when(conductor).releaseSubscription(subscription);
+            }).when(conductor).removeSubscription(subscription);
     }
 
     @Test
@@ -94,7 +94,7 @@ public class SubscriptionTest
         subscription.close();
         assertTrue(subscription.isClosed());
 
-        verify(conductor).releaseSubscription(subscription);
+        verify(conductor).removeSubscription(subscription);
     }
 
     @Test

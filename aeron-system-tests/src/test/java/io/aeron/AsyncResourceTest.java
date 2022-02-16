@@ -27,8 +27,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("try")
@@ -76,6 +78,41 @@ class AsyncResourceTest
 
             assertNotNull(publicationOne);
             assertNotNull(publicationTwo);
+        }
+        finally
+        {
+            driverCtx.deleteDirectory();
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    void shouldAsyncRemovePublication()
+    {
+        final Aeron.Context clientCtx = new Aeron.Context()
+            .errorHandler(Tests::onError);
+
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED);
+
+        try (
+            TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher);
+            Aeron aeron = Aeron.connect(clientCtx))
+        {
+            final long registrationId = aeron.asyncAddPublication(AERON_IPC, STREAM_ID);
+
+            Publication publication;
+            while (null == (publication = aeron.getPublication(registrationId)))
+            {
+                Tests.yield();
+            }
+
+            assertFalse(aeron.hasActiveCommands());
+            assertEquals(registrationId, publication.registrationId());
+
+            aeron.asyncRemovePublication(registrationId);
+            assertTrue(publication.isClosed());
         }
         finally
         {

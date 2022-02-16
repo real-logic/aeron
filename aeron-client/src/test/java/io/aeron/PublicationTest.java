@@ -89,7 +89,7 @@ public class PublicationTest
             {
                 publication.internalClose();
                 return null;
-            }).when(conductor).releasePublication(publication);
+            }).when(conductor).removePublication(publication);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class PublicationTest
         publication.close();
         assertEquals(Publication.CLOSED, publication.position());
 
-        verify(conductor).releasePublication(publication);
+        verify(conductor).removePublication(publication);
     }
 
     @Test
@@ -145,10 +145,10 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldReleasePublicationOnClose()
+    public void shouldRemovePublicationOnClose()
     {
         publication.close();
 
-        verify(conductor).releasePublication(publication);
+        verify(conductor).removePublication(publication);
     }
 }

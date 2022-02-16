@@ -272,7 +272,7 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
-     * Release resources used by this Publication when there are no more references.
+     * Remove resources used by this Publication when there are no more references.
      * <p>
      * Publications are reference counted and are only truly closed when the ref count reaches zero.
      */
@@ -280,7 +280,7 @@ public abstract class Publication implements AutoCloseable
     {
         if (!isClosed)
         {
-            conductor.releasePublication(this);
+            conductor.removePublication(this);
         }
     }
 

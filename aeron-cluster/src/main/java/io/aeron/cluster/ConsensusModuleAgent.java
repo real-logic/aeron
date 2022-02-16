@@ -225,7 +225,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
                 for (final ClusterSession session : sessionByIdMap.values())
                 {
-                    session.close(errorHandler);
+                    session.close(aeron, errorHandler);
                 }
 
                 CloseHelper.close(errorHandler, ingressAdapter);
@@ -422,14 +422,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             if (null != session && session.state() == OPEN)
             {
                 session.closing(CloseReason.CLIENT_ACTION);
-                session.disconnect(ctx.countedErrorHandler());
+                session.disconnect(aeron, ctx.countedErrorHandler());
 
                 if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
                 {
                     session.closedLogPosition(logPublisher.position());
                     uncommittedClosedSessions.addLast(session);
                     sessionByIdMap.remove(clusterSessionId);
-                    session.close(ctx.countedErrorHandler());
+                    session.close(aeron, ctx.countedErrorHandler());
                 }
             }
         }
@@ -1064,7 +1064,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             clearSessionsAfter(logPosition);
             for (final ClusterSession session : sessionByIdMap.values())
             {
-                session.disconnect(ctx.countedErrorHandler());
+                session.disconnect(aeron, ctx.countedErrorHandler());
             }
 
             commitPosition.setOrdered(logPosition);
@@ -1089,7 +1089,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
-                session.close(ctx.countedErrorHandler());
+                session.close(aeron, ctx.countedErrorHandler());
             }
         }
     }
@@ -1221,7 +1221,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         if (null != clusterSession)
         {
             clusterSession.closing(closeReason);
-            clusterSession.close(ctx.countedErrorHandler());
+            clusterSession.close(aeron, ctx.countedErrorHandler());
         }
     }
 
@@ -2206,14 +2206,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             if (session.state() == INVALID)
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                session.close(ctx.countedErrorHandler());
+                session.close(aeron, ctx.countedErrorHandler());
                 continue;
             }
 
             if (nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs) && session.state() != INIT)
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                session.close(ctx.countedErrorHandler());
+                session.close(aeron, ctx.countedErrorHandler());
                 ctx.timedOutClientCounter().incrementOrdered();
                 continue;
             }
@@ -2249,7 +2249,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                         ClusterMember.encodeAsString(activeMembers)))
                     {
                         ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                        session.close(ctx.countedErrorHandler());
+                        session.close(aeron, ctx.countedErrorHandler());
                         workCount += 1;
                     }
                 }
@@ -2286,7 +2286,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 session.state() == INVALID)
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex--);
-                session.close(ctx.countedErrorHandler());
+                session.close(aeron, ctx.countedErrorHandler());
                 workCount++;
             }
         }
@@ -2310,7 +2310,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 session.state() == INVALID)
             {
                 ArrayListUtil.fastUnorderedRemove(redirectSessions, i, lastIndex--);
-                session.close(ctx.countedErrorHandler());
+                session.close(aeron, ctx.countedErrorHandler());
                 workCount++;
             }
         }
@@ -2386,7 +2386,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
-                        session.close(ctx.countedErrorHandler());
+                        session.close(aeron, ctx.countedErrorHandler());
                         ctx.timedOutClientCounter().incrementOrdered();
                         workCount++;
                     }
@@ -2400,7 +2400,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
                         i.remove();
-                        session.close(ctx.countedErrorHandler());
+                        session.close(aeron, ctx.countedErrorHandler());
                         if (session.closeReason() == CloseReason.TIMEOUT)
                         {
                             ctx.timedOutClientCounter().incrementOrdered();
@@ -2411,7 +2411,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 else
                 {
                     i.remove();
-                    session.close(ctx.countedErrorHandler());
+                    session.close(aeron, ctx.countedErrorHandler());
                     workCount++;
                 }
             }
@@ -2747,14 +2747,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             {
                 i.remove();
                 egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, "election");
-                session.close(ctx.countedErrorHandler());
+                session.close(aeron, ctx.countedErrorHandler());
             }
         }
 
         for (final ClusterSession session : pendingSessions)
         {
             egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, "election");
-            session.close(ctx.countedErrorHandler());
+            session.close(aeron, ctx.countedErrorHandler());
         }
 
         pendingSessions.clear();

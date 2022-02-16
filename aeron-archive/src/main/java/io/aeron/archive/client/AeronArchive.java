@@ -3234,10 +3234,12 @@ public final class AeronArchive implements AutoCloseable
             {
                 channelUri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
             }
+
             if (!channelUri.containsKey(CommonContext.MTU_LENGTH_PARAM_NAME))
             {
                 channelUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
             }
+
             if (!channelUri.containsKey(CommonContext.SPARSE_PARAM_NAME))
             {
                 channelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
@@ -3254,9 +3256,9 @@ public final class AeronArchive implements AutoCloseable
     {
         private final Context ctx;
         private final ControlResponsePoller controlResponsePoller;
-        private final NanoClock nanoClock;
         private ArchiveProxy archiveProxy;
         private final long deadlineNs;
+        private long publicationRegistrationId = Aeron.NULL_VALUE;
         private long correlationId = Aeron.NULL_VALUE;
         private long challengeControlSessionId = Aeron.NULL_VALUE;
         private byte[] encodedCredentialsFromChallenge = null;
@@ -3267,13 +3269,12 @@ public final class AeronArchive implements AutoCloseable
             this.ctx = ctx;
 
             final Aeron aeron = ctx.aeron();
-            nanoClock = aeron.context().nanoClock();
             controlResponsePoller = new ControlResponsePoller(
                 aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId()));
 
-            correlationId = aeron.asyncAddExclusivePublication(
+            publicationRegistrationId = aeron.asyncAddExclusivePublication(
                 ctx.controlRequestChannel(), ctx.controlRequestStreamId());
-            deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
+            deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
         }
 
         AsyncConnect(
@@ -3282,9 +3283,8 @@ public final class AeronArchive implements AutoCloseable
             this.ctx = ctx;
             this.controlResponsePoller = controlResponsePoller;
             this.archiveProxy = archiveProxy;
-            this.nanoClock = ctx.aeron().context().nanoClock();
 
-            deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
+            deadlineNs = ctx.aeron().context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
             step = 1;
         }
 
@@ -3297,10 +3297,16 @@ public final class AeronArchive implements AutoCloseable
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
                 CloseHelper.close(errorHandler, controlResponsePoller.subscription());
+
                 if (null != archiveProxy)
                 {
                     CloseHelper.close(errorHandler, archiveProxy.publication());
                 }
+                else if (Aeron.NULL_VALUE != publicationRegistrationId)
+                {
+                    ctx.aeron().asyncRemovePublication(publicationRegistrationId);
+                }
+
                 ctx.close();
             }
         }
@@ -3338,9 +3344,10 @@ public final class AeronArchive implements AutoCloseable
 
             if (0 == step)
             {
-                final ExclusivePublication publication = ctx.aeron().getExclusivePublication(correlationId);
+                final ExclusivePublication publication = ctx.aeron().getExclusivePublication(publicationRegistrationId);
                 if (null != publication)
                 {
+                    publicationRegistrationId = Aeron.NULL_VALUE;
                     archiveProxy = new ArchiveProxy(
                         publication,
                         ctx.idleStrategy(),
@@ -3455,7 +3462,7 @@ public final class AeronArchive implements AutoCloseable
 
         private void checkDeadline()
         {
-            if (deadlineNs - nanoClock.nanoTime() < 0)
+            if (deadlineNs - ctx.aeron().context().nanoClock().nanoTime() < 0)
             {
                 throw new TimeoutException("Archive connect timeout: step=" + step +
                     (step < 3 ?

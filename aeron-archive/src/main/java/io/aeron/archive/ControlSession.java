@@ -126,7 +126,14 @@ final class ControlSession implements Session
             activeListing.abort();
         }
 
-        CloseHelper.close(conductor.context().countedErrorHandler(), controlPublication);
+        if (null == controlPublication)
+        {
+            aeron.asyncRemovePublication(controlPublicationId);
+        }
+        else
+        {
+            CloseHelper.close(conductor.context().countedErrorHandler(), controlPublication);
+        }
 
         demuxer.removeControlSession(controlSessionId);
         if (!conductor.context().controlSessionsCounter().isClosed())

@@ -91,10 +91,18 @@ final class ClusterSession
         }
     }
 
-    public void close(final ErrorHandler errorHandler)
+    public void close(final Aeron aeron, final ErrorHandler errorHandler)
     {
-        CloseHelper.close(errorHandler, responsePublication);
-        responsePublication = null;
+        if (null == responsePublication)
+        {
+            aeron.asyncRemovePublication(responsePublicationId);
+        }
+        else
+        {
+            CloseHelper.close(errorHandler, responsePublication);
+            responsePublication = null;
+        }
+
         state(State.CLOSED);
     }
 
@@ -150,10 +158,17 @@ final class ClusterSession
         }
     }
 
-    void disconnect(final ErrorHandler errorHandler)
+    void disconnect(final Aeron aeron, final ErrorHandler errorHandler)
     {
-        CloseHelper.close(errorHandler, responsePublication);
-        responsePublication = null;
+        if (null == responsePublication)
+        {
+            aeron.asyncRemovePublication(responsePublicationId);
+        }
+        else
+        {
+            CloseHelper.close(errorHandler, responsePublication);
+            responsePublication = null;
+        }
     }
 
     boolean isResponsePublicationConnected(final Aeron aeron, final long nowNs)

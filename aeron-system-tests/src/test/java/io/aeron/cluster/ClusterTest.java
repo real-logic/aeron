@@ -1644,51 +1644,6 @@ public class ClusterTest
     }
 
     @Test
-    @InterruptAfter(40)
-    public void shouldCatchup() throws InterruptedException
-    {
-        cluster = aCluster().withStaticNodes(3).start(3);
-
-        systemTestWatcher.cluster(cluster);
-
-        final int messageCount = 10;
-        int totalMessages = 0;
-        final TestNode oldLeader = cluster.awaitLeader();
-
-        cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        totalMessages += messageCount;
-        cluster.awaitResponseMessageCount(totalMessages);
-        cluster.awaitServicesMessageCount(totalMessages);
-
-        cluster.stopNode(oldLeader);
-
-        final TestNode newLeader = cluster.awaitLeader();
-        final List<TestNode> followers = cluster.followers();
-        cluster.connectClient();
-
-        for (final TestNode follower : followers)
-        {
-            cluster.stopNode(follower);
-        }
-        Tests.sleep(1);
-
-        cluster.sendMessages(messageCount);
-        totalMessages += messageCount;
-
-        cluster.startStaticNode(followers.get(0).index(), false);
-
-        final String a = Staller.INSTANCE.exchanger.exchange("b");
-
-        cluster.sendMessages(messageCount);
-        totalMessages += messageCount;
-
-        final String b = Staller.INSTANCE.exchanger.exchange(a);
-
-        cluster.awaitResponseMessageCount(totalMessages);
-    }
-
-    @Test
     @InterruptAfter(10)
     void shouldRejectTakeSnapshotRequestWithAnAuthorisationError()
     {

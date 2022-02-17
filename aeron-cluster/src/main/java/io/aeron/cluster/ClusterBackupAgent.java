@@ -827,7 +827,7 @@ public final class ClusterBackupAgent implements Agent
         catch (final Exception ex)
         {
             ctx.countedErrorHandler().onError(ex);
-            throw new AgentTerminationException("failed to update recording log", ex);
+            throw new AgentTerminationException("failed to update recording log");
         }
 
         if (wasRecordingLogUpdated && null != eventsListener)

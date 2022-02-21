@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.RecordingSignal;
@@ -37,7 +38,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.CommonContext.*;
+import static io.aeron.CommonContext.MDC_CONTROL_MODE_MANUAL;
+import static io.aeron.CommonContext.NULL_SESSION_ID;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.compareLog;
 import static io.aeron.cluster.ElectionState.*;
@@ -1159,16 +1161,20 @@ class Election
     private Subscription addFollowerSubscription()
     {
         final Aeron aeron = ctx.aeron();
-        final ChannelUri channel = ChannelUri.parse(ctx.logChannel());
+        final ChannelUri logChannel = ChannelUri.parse(ctx.logChannel());
 
-        channel.put(TAGS_PARAM_NAME, aeron.nextCorrelationId() + "," + aeron.nextCorrelationId());
-        channel.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
-        channel.put(SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        channel.put(GROUP_PARAM_NAME, "true");
-        channel.put(REJOIN_PARAM_NAME, "false");
-        channel.put(ALIAS_PARAM_NAME, "log");
+        final String channel = new ChannelUriStringBuilder()
+            .media(logChannel)
+            .networkInterface(logChannel)
+            .tags(aeron.nextCorrelationId() + "," + aeron.nextCorrelationId())
+            .controlMode(MDC_CONTROL_MODE_MANUAL)
+            .sessionId(logSessionId)
+            .group(Boolean.TRUE)
+            .rejoin(Boolean.FALSE)
+            .alias("log")
+            .build();
 
-        return aeron.addSubscription(channel.toString(), ctx.logStreamId());
+        return aeron.addSubscription(channel, ctx.logStreamId());
     }
 
     private void state(final ElectionState newState, final long nowNs)

@@ -15,7 +15,10 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ChannelUri;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
@@ -34,6 +37,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.compareLog;
 import static io.aeron.cluster.ElectionState.*;
@@ -47,7 +51,7 @@ class Election
     private boolean isFirstInit = true;
     private boolean isLeaderStartup;
     private boolean isExtendedCanvass;
-    private int logSessionId = CommonContext.NULL_SESSION_ID;
+    private int logSessionId = NULL_SESSION_ID;
     private long timeOfLastStateChangeNs;
     private long timeOfLastUpdateNs;
     private long timeOfLastCommitPositionUpdateNs;
@@ -556,7 +560,7 @@ class Election
             resetCatchup();
 
             appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
-            logSessionId = CommonContext.NULL_SESSION_ID;
+            logSessionId = NULL_SESSION_ID;
             cleanupReplay();
             CloseHelper.close(logSubscription);
             logSubscription = null;
@@ -956,7 +960,7 @@ class Election
     {
         if (null == logSubscription)
         {
-            if (CommonContext.NULL_SESSION_ID != logSessionId)
+            if (NULL_SESSION_ID != logSessionId)
             {
                 logSubscription = addFollowerSubscription();
                 addLiveLogDestination();
@@ -1075,7 +1079,7 @@ class Election
     private void publishNewLeadershipTerm(
         final ClusterMember member, final long logLeadershipTermId, final long timestamp)
     {
-        if (member.id() != thisMember.id() && CommonContext.NULL_SESSION_ID != logSessionId)
+        if (member.id() != thisMember.id() && NULL_SESSION_ID != logSessionId)
         {
             final RecordingLog.Entry logNextTermEntry =
                 ctx.recordingLog().findTermEntry(logLeadershipTermId + 1);
@@ -1132,14 +1136,22 @@ class Election
 
     private void addCatchupLogDestination()
     {
-        final String destination = "aeron:udp?endpoint=" + thisMember.catchupEndpoint();
+        final String destination = ChannelUri.createDestinationUri(ctx.logChannel(), thisMember.catchupEndpoint());
         logSubscription.addDestination(destination);
         consensusModuleAgent.catchupLogDestination(destination);
     }
 
     private void addLiveLogDestination()
     {
-        final String destination = ctx.isLogMdc() ? "aeron:udp?endpoint=" + thisMember.logEndpoint() : ctx.logChannel();
+        final String destination;
+        if (ctx.isLogMdc())
+        {
+            destination = ChannelUri.createDestinationUri(ctx.logChannel(), thisMember.logEndpoint());
+        }
+        else
+        {
+            destination = ctx.logChannel();
+        }
         logSubscription.addDestination(destination);
         consensusModuleAgent.liveLogDestination(destination);
     }
@@ -1147,17 +1159,16 @@ class Election
     private Subscription addFollowerSubscription()
     {
         final Aeron aeron = ctx.aeron();
-        final String channel = new ChannelUriStringBuilder()
-            .media(CommonContext.UDP_MEDIA)
-            .tags(aeron.nextCorrelationId() + "," + aeron.nextCorrelationId())
-            .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
-            .sessionId(logSessionId)
-            .group(Boolean.TRUE)
-            .rejoin(Boolean.FALSE)
-            .alias("log")
-            .build();
+        final ChannelUri channel = ChannelUri.parse(ctx.logChannel());
 
-        return aeron.addSubscription(channel, ctx.logStreamId());
+        channel.put(TAGS_PARAM_NAME, aeron.nextCorrelationId() + "," + aeron.nextCorrelationId());
+        channel.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
+        channel.put(SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+        channel.put(GROUP_PARAM_NAME, "true");
+        channel.put(REJOIN_PARAM_NAME, "false");
+        channel.put(ALIAS_PARAM_NAME, "log");
+
+        return aeron.addSubscription(channel.toString(), ctx.logStreamId());
     }
 
     private void state(final ElectionState newState, final long nowNs)

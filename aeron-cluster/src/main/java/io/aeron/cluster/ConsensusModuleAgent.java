@@ -383,7 +383,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final byte[] encodedCredentials)
     {
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
-        final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
+        final ClusterSession session = new ClusterSession(
+            clusterSessionId, responseStreamId, createResponseChannel(responseChannel));
 
         session.asyncConnect(aeron);
         final long now = clusterClock.time();
@@ -743,16 +744,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && follower.catchupReplaySessionId() == NULL_VALUE)
             {
-                final String channel = new ChannelUriStringBuilder()
-                    .media(CommonContext.UDP_MEDIA)
-                    .endpoint(catchupEndpoint)
-                    .sessionId(logPublisher.sessionId())
-                    .linger(0L)
-                    .eos(Boolean.FALSE)
-                    .build();
+                final ChannelUri channel = ChannelUri.parse(ctx.followerCatchupChannel());
+                channel.put(ENDPOINT_PARAM_NAME, catchupEndpoint);
+                channel.put(SESSION_ID_PARAM_NAME, Integer.toString(logPublisher.sessionId()));
+                channel.put(LINGER_PARAM_NAME, "0");
+                channel.put(EOS_PARAM_NAME, "false");
 
                 follower.catchupReplaySessionId(archive.startReplay(
-                    logRecordingId, logPosition, Long.MAX_VALUE, channel, ctx.logStreamId()));
+                    logRecordingId, logPosition, Long.MAX_VALUE, channel.toString(), ctx.logStreamId()));
                 follower.catchupReplayCorrelationId(archive.lastCorrelationId());
             }
         }
@@ -901,7 +900,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
             else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-                final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
+                final ClusterSession session = new ClusterSession(
+                    NULL_VALUE, responseStreamId, createResponseChannel(responseChannel));
 
                 session.markAsBackupSession();
                 session.asyncConnect(aeron);
@@ -1205,7 +1205,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final int responseStreamId,
         final String responseChannel)
     {
-        final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
+        final ClusterSession session = new ClusterSession(
+            clusterSessionId, responseStreamId, createResponseChannel(responseChannel));
         session.open(logPosition);
         session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
 
@@ -1353,7 +1354,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             openedPosition,
             timeOfLastActivity,
             responseStreamId,
-            responseChannel,
+            createResponseChannel(responseChannel),
             closeReason));
 
         if (clusterSessionId >= nextSessionId)
@@ -1445,6 +1446,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         final String channel = channelUri.toString();
         final ExclusivePublication publication = aeron.addExclusivePublication(channel, ctx.logStreamId());
+        logPublisher.publication(publication);
 
         if (ctx.isLogMdc())
         {
@@ -1452,17 +1454,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             {
                 if (member.id() != memberId)
                 {
-                    publication.asyncAddDestination("aeron:udp?endpoint=" + member.logEndpoint());
+                    logPublisher.addDestination(true, member.logEndpoint());
                 }
             }
 
             for (final ClusterMember member : passiveMembers)
             {
-                publication.asyncAddDestination("aeron:udp?endpoint=" + member.logEndpoint());
+                logPublisher.addDestination(true, member.logEndpoint());
             }
         }
-
-        logPublisher.publication(publication);
 
         return publication.sessionId();
     }
@@ -2738,7 +2738,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             leaderRecordingId,
             logRecordingId,
             stopPosition,
-            leaderArchiveEndpoint,
+            ChannelUri.createDestinationUri(ctx.leaderArchiveControlChannel(), leaderArchiveEndpoint),
             ctx.replicationChannel(),
             ctx.leaderHeartbeatTimeoutNs(),
             ctx.leaderHeartbeatIntervalNs(),
@@ -3293,6 +3293,26 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         catch (final Exception ex)
         {
             ctx.countedErrorHandler().onError(ex);
+        }
+    }
+
+    private String createResponseChannel(final String responseChannel)
+    {
+        final String egressChannel = ctx.egressChannel();
+        if (null == egressChannel)
+        {
+            return responseChannel; // legacy behavior
+        }
+        else if (responseChannel.contains(ENDPOINT_PARAM_NAME))
+        {
+            final String responseEndpoint = ChannelUri.parse(responseChannel).get(ENDPOINT_PARAM_NAME);
+            final ChannelUri channel = ChannelUri.parse(egressChannel);
+            channel.put(ENDPOINT_PARAM_NAME, responseEndpoint);
+            return channel.toString();
+        }
+        else
+        {
+            return egressChannel;
         }
     }
 

@@ -443,6 +443,28 @@ public final class ConsensusModule implements AutoCloseable
         public static final String REPLICATION_CHANNEL_PROP_NAME = "aeron.cluster.replication.channel";
 
         /**
+         * Channel template used for replaying logs to a follower using the {@link ClusterMember#catchupEndpoint()}.
+         */
+        public static final String FOLLOWER_CATCHUP_CHANNEL_PROP_NAME = "aeron.cluster.follower.catchup.channel";
+
+        /**
+         * Default channel template used for replaying logs to a follower using the
+         * {@link ClusterMember#catchupEndpoint()}.
+         */
+        public static final String FOLLOWER_CATCHUP_CHANNEL_DEFAULT = UDP_CHANNEL;
+
+        /**
+         * Channel used to build the control request channel for the leader Archive.
+         */
+        public static final String LEADER_ARCHIVE_CONTROL_CHANNEL_PROP_NAME =
+            "aeron.cluster.leader.archive.control.channel";
+
+        /**
+         * Default channel used to build the control request channel for the leader Archive.
+         */
+        public static final String LEADER_ARCHIVE_CONTROL_CHANNEL_DEFAULT = "aeron:udp?term-length=64k";
+
+        /**
          * Counter type id for the consensus module state.
          */
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = AeronCounters.CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID;
@@ -1042,6 +1064,30 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * The value {@link #FOLLOWER_CATCHUP_CHANNEL_DEFAULT} or system property
+         * {@link #FOLLOWER_CATCHUP_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #FOLLOWER_CATCHUP_CHANNEL_DEFAULT} or system property
+         * {@link #FOLLOWER_CATCHUP_CHANNEL_PROP_NAME} if set.
+         */
+        public static String followerCatchupChannel()
+        {
+            return System.getProperty(FOLLOWER_CATCHUP_CHANNEL_PROP_NAME, FOLLOWER_CATCHUP_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #LEADER_ARCHIVE_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #LEADER_ARCHIVE_CONTROL_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #LEADER_ARCHIVE_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #LEADER_ARCHIVE_CONTROL_CHANNEL_PROP_NAME} if set.
+         */
+        public static String leaderArchiveControlChannel()
+        {
+            return System.getProperty(LEADER_ARCHIVE_CONTROL_CHANNEL_PROP_NAME, LEADER_ARCHIVE_CONTROL_CHANNEL_DEFAULT);
+        }
+
+        /**
          * The value {@link #WHEEL_TICK_RESOLUTION_DEFAULT_NS} or system property
          * {@link #WHEEL_TICK_RESOLUTION_PROP_NAME} if set.
          *
@@ -1139,6 +1185,7 @@ public final class ConsensusModule implements AutoCloseable
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private int ingressFragmentLimit = Configuration.ingressFragmentLimit();
+        private String egressChannel = AeronCluster.Configuration.egressChannel();
         private String logChannel = Configuration.logChannel();
         private int logStreamId = Configuration.logStreamId();
         private String memberEndpoints = Configuration.memberEndpoints();
@@ -1152,6 +1199,8 @@ public final class ConsensusModule implements AutoCloseable
         private String consensusChannel = Configuration.consensusChannel();
         private int consensusStreamId = Configuration.consensusStreamId();
         private String replicationChannel = Configuration.replicationChannel();
+        private String followerCatchupChannel = Configuration.followerCatchupChannel();
+        private String leaderArchiveControlChannel = Configuration.leaderArchiveControlChannel();
         private int logFragmentLimit = ClusteredServiceContainer.Configuration.logFragmentLimit();
 
         private int serviceCount = Configuration.serviceCount();
@@ -1452,7 +1501,7 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == logPublisher)
             {
-                logPublisher = new LogPublisher();
+                logPublisher = new LogPublisher(logChannel());
             }
 
             if (null == egressPublisher)
@@ -1855,6 +1904,34 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Set the channel parameter for the egress channel that is used as template to define a response
+         * channel for a client:
+         * <ul>
+         *     <li></li>
+         * </ul>
+         *
+         * @param channel parameter for the egress channel.
+         * @return this for a fluent API.
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#EGRESS_CHANNEL_PROP_NAME
+         */
+        public Context egressChannel(final String channel)
+        {
+            egressChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for the egress channel.
+         *
+         * @return the channel parameter for the egress channel.
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#EGRESS_CHANNEL_PROP_NAME
+         */
+        public String egressChannel()
+        {
+            return egressChannel;
+        }
+
+        /**
          * Set the channel parameter for the cluster log channel.
          *
          * @param channel parameter for the cluster log channel.
@@ -2168,6 +2245,58 @@ public final class ConsensusModule implements AutoCloseable
         public String replicationChannel()
         {
             return replicationChannel;
+        }
+
+        /**
+         * Set a channel template used for replaying logs to a follower using the
+         * {@link ClusterMember#catchupEndpoint()}.
+         *
+         * @param channel to do a catch replay to a follower.
+         * @return this for a fluent API
+         * @see Configuration#FOLLOWER_CATCHUP_CHANNEL_PROP_NAME
+         */
+        public Context followerCatchupChannel(final String channel)
+        {
+            this.followerCatchupChannel = channel;
+            return this;
+        }
+
+        /**
+         * Gets the channel template used for replaying logs to a follower using the
+         * {@link ClusterMember#catchupEndpoint()}.
+         *
+         * @return channel used for replaying older data during a catchup phase.
+         * @see Configuration#FOLLOWER_CATCHUP_CHANNEL_PROP_NAME
+         */
+        public String followerCatchupChannel()
+        {
+            return followerCatchupChannel;
+        }
+
+        /**
+         * Set a channel template used to build the control request channel for the leader Archive using the
+         * {@link ClusterMember#archiveEndpoint()}.
+         *
+         * @param channel for the Archive control requests.
+         * @return this for a fluent API
+         * @see Configuration#LEADER_ARCHIVE_CONTROL_CHANNEL_PROP_NAME
+         */
+        public Context leaderArchiveControlChannel(final String channel)
+        {
+            this.leaderArchiveControlChannel = channel;
+            return this;
+        }
+
+        /**
+         * Gets the channel template used to build the control request channel for the leader Archive using the
+         * {@link ClusterMember#archiveEndpoint()}.
+         *
+         * @return channel used for replaying older data during a catchup phase.
+         * @see Configuration#LEADER_ARCHIVE_CONTROL_CHANNEL_PROP_NAME
+         */
+        public String leaderArchiveControlChannel()
+        {
+            return leaderArchiveControlChannel;
         }
 
         /**

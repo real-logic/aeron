@@ -38,8 +38,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.CommonContext.MDC_CONTROL_MODE_MANUAL;
-import static io.aeron.CommonContext.NULL_SESSION_ID;
+import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.compareLog;
 import static io.aeron.cluster.ElectionState.*;
@@ -1161,11 +1160,8 @@ class Election
     private Subscription addFollowerSubscription()
     {
         final Aeron aeron = ctx.aeron();
-        final ChannelUri logChannel = ChannelUri.parse(ctx.logChannel());
-
         final String channel = new ChannelUriStringBuilder()
-            .media(logChannel)
-            .networkInterface(logChannel)
+            .media(UDP_MEDIA)
             .tags(aeron.nextCorrelationId() + "," + aeron.nextCorrelationId())
             .controlMode(MDC_CONTROL_MODE_MANUAL)
             .sessionId(logSessionId)

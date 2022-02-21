@@ -350,7 +350,9 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 
     set(AERON_LIB_M_LIBS m)
 
-    set(AERON_LIB_ATOMIC_LIBS atomic)
+    if ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "aarch64")
+        set(AERON_LIB_ATOMIC_LIBS atomic)
+    endif ()
 endif ()
 
 if (CYGWIN)

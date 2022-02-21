@@ -186,12 +186,14 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(AERON_LIB_M_LIBS m)
+    set(AERON_LIB_ATOMIC_LIBS atomic)
 endif ()
 
 target_link_libraries(
     aeron
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})
 
@@ -199,6 +201,7 @@ target_link_libraries(
     aeron_static INTERFACE
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS}
     ${AERON_STATIC_LIB_LINK_OPTS}

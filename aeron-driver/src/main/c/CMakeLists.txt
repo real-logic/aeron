@@ -349,6 +349,8 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     endif ()
 
     set(AERON_LIB_M_LIBS m)
+
+    set(AERON_LIB_ATOMIC_LIBS atomic)
 endif ()
 
 if (CYGWIN)
@@ -363,6 +365,7 @@ target_link_libraries(
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
     ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})
 
@@ -373,6 +376,7 @@ target_link_libraries(
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
     ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})
 

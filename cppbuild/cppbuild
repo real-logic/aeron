@@ -47,6 +47,7 @@ do
       ;;
     --no-parallel)
       ncpus=1
+      echo "Disabling parallel build"
       shift
       ;;
     --spare-cpu)

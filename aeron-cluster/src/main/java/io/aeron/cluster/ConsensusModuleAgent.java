@@ -755,10 +755,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     logRecordingId, logPosition, Long.MAX_VALUE, channel, ctx.logStreamId()));
                 follower.catchupReplayCorrelationId(archive.lastCorrelationId());
             }
-            else if (null != follower)
-            {
-                System.out.println("Existing catchup already running: " + follower);
-            }
         }
     }
 

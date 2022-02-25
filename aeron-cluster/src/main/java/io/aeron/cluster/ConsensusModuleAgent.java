@@ -2523,8 +2523,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long leadershipTermId,
         final long position)
     {
-        boolean positionSent = false;
-
         if (consensusPublisher.appendPosition(publication, leadershipTermId, position, memberId))
         {
             if (position > lastAppendPosition)
@@ -2534,10 +2532,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
             timeOfLastAppendPositionSendNs = nowNs;
 
-            positionSent = true;
+            return true;
         }
 
-        return positionSent;
+        return false;
     }
 
     private void loadSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)

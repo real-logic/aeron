@@ -75,7 +75,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private long notifiedCommitPosition = 0;
     private long lastAppendPosition = 0;
     private long timeOfLastLogUpdateNs = 0;
-    private long timeOfLastAppendPositionNs = 0;
+    private long timeOfLastAppendPositionUpdateNs = 0;
+    private long timeOfLastAppendPositionSendNs = 0;
     private long slowTickDeadlineNs = 0;
     private long markFileUpdateDeadlineNs = 0;
     private int pendingServiceMessageHeadOffset = 0;
@@ -1668,7 +1669,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         else
         {
             timeOfLastLogUpdateNs = nowNs;
-            timeOfLastAppendPositionNs = nowNs;
+            timeOfLastAppendPositionUpdateNs = nowNs;
+            timeOfLastAppendPositionSendNs = nowNs;
         }
 
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
@@ -1749,7 +1751,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void catchupInitiated(final long nowNs)
     {
-        timeOfLastAppendPositionNs = nowNs;
+        timeOfLastAppendPositionUpdateNs = nowNs;
+        timeOfLastAppendPositionSendNs = nowNs;
     }
 
     int catchupPoll(final long limitPosition, final long nowNs)
@@ -1768,18 +1771,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         final long appendPosition = logAdapter.position();
-        if (appendPosition > lastAppendPosition || nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs))
+        if (appendPosition > lastAppendPosition || nowNs > (timeOfLastAppendPositionSendNs + leaderHeartbeatIntervalNs))
         {
             commitPosition.proposeMaxOrdered(appendPosition);
             final ExclusivePublication publication = election.leader().publication();
-            if (consensusPublisher.appendPosition(publication, replayLeadershipTermId, appendPosition, memberId))
-            {
-                lastAppendPosition = appendPosition;
-                timeOfLastAppendPositionNs = nowNs;
-            }
+            tryUpdateAppendPosition(publication, nowNs, replayLeadershipTermId, appendPosition);
         }
 
-        if (nowNs > (timeOfLastAppendPositionNs + leaderHeartbeatTimeoutNs) && ConsensusModule.State.ACTIVE == state)
+        if (nowNs > (timeOfLastAppendPositionUpdateNs + leaderHeartbeatTimeoutNs) &&
+            ConsensusModule.State.ACTIVE == state)
         {
             throw new ClusterEvent("no catchup progress");
         }
@@ -2517,6 +2517,29 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return true;
     }
 
+    private boolean tryUpdateAppendPosition(
+        final ExclusivePublication publication,
+        final long nowNs,
+        final long leadershipTermId,
+        final long position)
+    {
+        boolean positionSent = false;
+
+        if (consensusPublisher.appendPosition(publication, leadershipTermId, position, memberId))
+        {
+            if (position > lastAppendPosition)
+            {
+                lastAppendPosition = position;
+                timeOfLastAppendPositionUpdateNs = nowNs;
+            }
+            timeOfLastAppendPositionSendNs = nowNs;
+
+            positionSent = true;
+        }
+
+        return positionSent;
+    }
+
     private void loadSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
     {
         final String channel = ctx.replayChannel();
@@ -2730,11 +2753,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long position = Math.max(recordedPosition, lastAppendPosition);
 
         if ((recordedPosition > lastAppendPosition ||
-            nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
-            consensusPublisher.appendPosition(leaderMember.publication(), leadershipTermId, position, memberId))
+            nowNs >= (timeOfLastAppendPositionSendNs + leaderHeartbeatIntervalNs)) &&
+            tryUpdateAppendPosition(leaderMember.publication(), nowNs, leadershipTermId, position))
         {
-            lastAppendPosition = position;
-            timeOfLastAppendPositionNs = nowNs;
             return 1;
         }
 

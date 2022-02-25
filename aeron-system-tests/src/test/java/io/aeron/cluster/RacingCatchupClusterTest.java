@@ -90,7 +90,7 @@ public class RacingCatchupClusterTest
     }
 
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(40)
     @Disabled
     public void shouldCatchupIfLogPositionMovesForwardBeforeFollowersCommitPositionWhenCatchingUpNodeIsOnlyFollower()
     {

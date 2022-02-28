@@ -1592,7 +1592,7 @@ public class ClusterTest
     }
 
     @Test
-    @InterruptAfter(40)
+    @InterruptAfter(60)
     public void shouldRecoverWhenFollowersIsMultipleTermsBehindFromEmptyLogAndPartialLogWithoutCommittedLogEntry()
     {
         cluster = aCluster().withStaticNodes(5).start(4);

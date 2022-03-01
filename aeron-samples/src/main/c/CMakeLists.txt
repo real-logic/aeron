@@ -47,8 +47,8 @@ add_executable(cping cping.c ${HEADERS} ${SOURCES})
 
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     add_executable(ping_pong_raw raw/ping_pong_raw.c)
-    target_link_libraries(ping_pong_raw ${HDRHISTOGRAM_LIBS} m)
     add_dependencies(ping_pong_raw hdr_histogram)
+    target_link_libraries(ping_pong_raw m hdr_histogram)
 endif ()
 
 target_link_libraries(basic_publisher
@@ -71,7 +71,7 @@ target_link_libraries(cpong
 
 target_link_libraries(cping
     ${CLIENT_LINK_LIB}
-    ${HDRHISTOGRAM_LIBS})
+    hdr_histogram)
 
 add_dependencies(cping hdr_histogram)
 

@@ -16,6 +16,8 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 cmake_policy(VERSION 3.14)
 
+include(FetchContent)
+
 file(STRINGS version.txt AERON_VERSION_TXT LIMIT_COUNT 1 REGEX "^[0-9]+(\\.[0-9]+)+")
 string(REGEX REPLACE "^([0-9]+(\\.[0-9]+)+).*$" "\\1" AERON_VERSION_FROM_FILE "${AERON_VERSION_TXT}")
 
@@ -108,22 +110,13 @@ if (AERON_BUILD_SAMPLES)
         SET(HDR_HISTOGRAM_CMAKE_C_FLAGS "-DCMAKE_C_FLAGS_DEBUG=/MTd;-DCMAKE_C_FLAGS_RELEASE=/MT")
     endif()
 
-    ExternalProject_Add(
+    FetchContent_Declare(
         hdr_histogram
         URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.4.zip
-        URL_MD5 4d8f8ed3fe69422cf6b44fdabd98d462
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};-DCMAKE_C_STANDARD=99;-DHDR_LOG_REQUIRED=OFF;-DCMAKE_IGNORE_PATH="optimized;${HDR_HISTOGRAM_CMAKE_C_FLAGS}"
-        PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
-        BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram/src/hdr_histogram-build/src/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        INSTALL_COMMAND "")
+        URL_MD5 4d8f8ed3fe69422cf6b44fdabd98d462)
 
-    ExternalProject_Get_Property(hdr_histogram source_dir)
-    set(HDRHISTOGRAM_SOURCE_DIR ${source_dir})
-    ExternalProject_Get_Property(hdr_histogram binary_dir)
-    set(HDRHISTOGRAM_BINARY_DIR ${binary_dir})
+    FetchContent_MakeAvailable(hdr_histogram)
 
-    set(HDRHISTOGRAM_LIBS
-        ${HDRHISTOGRAM_BINARY_DIR}/src/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif ()
 
 unset(AERON_THIRDPARTY_BINARY_DIR)

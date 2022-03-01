@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.6.1 FATAL_ERROR)
-cmake_policy(VERSION 3.6.1)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_policy(VERSION 3.14)
 
 file(STRINGS version.txt AERON_VERSION_TXT LIMIT_COUNT 1 REGEX "^[0-9]+(\\.[0-9]+)+")
 string(REGEX REPLACE "^([0-9]+(\\.[0-9]+)+).*$" "\\1" AERON_VERSION_FROM_FILE "${AERON_VERSION_TXT}")
@@ -110,9 +110,9 @@ if (AERON_BUILD_SAMPLES)
 
     ExternalProject_Add(
         hdr_histogram
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.2.zip
-        URL_MD5 6050b8c88a2979545522e9fcb17da9bb
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};-DCMAKE_C_STANDARD=99;-DHDR_LOG_REQUIRED=OFF;-DCMAKE_IGNORE_PATH="optimized;C:/Program Files/PostgreSQL/12/lib;${HDR_HISTOGRAM_CMAKE_C_FLAGS}"
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.4.zip
+        URL_MD5 4d8f8ed3fe69422cf6b44fdabd98d462
+        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};-DCMAKE_C_STANDARD=99;-DHDR_LOG_REQUIRED=OFF;-DCMAKE_IGNORE_PATH="optimized;${HDR_HISTOGRAM_CMAKE_C_FLAGS}"
         PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
         BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram/src/hdr_histogram-build/src/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}"
         INSTALL_COMMAND "")
@@ -280,7 +280,7 @@ endif ()
 
 if (AERON_BUILD_SAMPLES)
     # hdr_histogram
-    include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
+    include_directories(${HDRHISTOGRAM_SOURCE_DIR}/include)
 endif ()
 
 ##########################################################

@@ -37,7 +37,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include <hdr_histogram.h>
+#include <hdr/hdr_histogram.h>
 
 #define AERON_RAW_DEFAULT_PING_HOST "127.0.0.1"
 #define AERON_RAW_DEFAULT_PING_PORT (13334)

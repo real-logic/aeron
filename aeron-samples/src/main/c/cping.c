@@ -30,7 +30,7 @@
 #include <unistd.h>
 #endif
 
-#include <hdr_histogram.h>
+#include <hdr/hdr_histogram.h>
 
 #include "aeronc.h"
 #include "concurrent/aeron_atomic.h"

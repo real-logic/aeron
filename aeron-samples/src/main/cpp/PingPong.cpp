@@ -21,7 +21,7 @@
 
 extern "C"
 {
-#include <hdr_histogram.h>
+#include <hdr/hdr_histogram.h>
 }
 
 #include "Configuration.h"

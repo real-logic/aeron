@@ -75,7 +75,7 @@ target_include_directories(Ping
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(Ping
     ${CLIENT_LINK_LIB}
-    hdr_histogram)
+    hdr_histogram_static)
 add_dependencies(Ping hdr_histogram)
 
 target_include_directories(BasicPublisherW
@@ -103,11 +103,13 @@ target_include_directories(PongW
 target_link_libraries(PongW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
+set (CMAKE_VERBOSE_MAKEFILE "ON")
 target_include_directories(PingW
     PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(PingW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
-    hdr_histogram)
+    hdr_histogram_static)
+set_target_properties(PingW PROPERTIES LINK_FLAGS "/NODEFAULTLIB:MSVCRT")
 add_dependencies(PingW hdr_histogram)
 
 target_include_directories(Throughput
@@ -124,7 +126,7 @@ target_include_directories(PingPong
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(PingPong
     ${CLIENT_LINK_LIB}
-    hdr_histogram)
+    hdr_histogram_static)
 add_dependencies(PingPong hdr_histogram)
 
 target_include_directories(TimeTests

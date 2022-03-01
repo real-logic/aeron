@@ -101,24 +101,6 @@ if (AERON_TESTS)
     )
 endif ()
 
-##########################################################
-# HdrHistogram usage - use MD5 as means to identify snapshot
-
-if (AERON_BUILD_SAMPLES)
-
-    if (MSVC)
-        SET(HDR_HISTOGRAM_CMAKE_C_FLAGS "-DCMAKE_C_FLAGS_DEBUG=/MTd;-DCMAKE_C_FLAGS_RELEASE=/MT")
-    endif()
-
-    FetchContent_Declare(
-        hdr_histogram
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.4.zip
-        URL_MD5 4d8f8ed3fe69422cf6b44fdabd98d462)
-
-    FetchContent_MakeAvailable(hdr_histogram)
-
-endif ()
-
 unset(AERON_THIRDPARTY_BINARY_DIR)
 
 ##########################################################
@@ -209,6 +191,8 @@ elseif (MSVC)
 
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP /wd4251")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP /wd4251")
+    set(CMAKE_C_FLAGS_DEBUG "/MTd")
+    set(CMAKE_C_FLAGS_RELEASE "/MT")
 
     unset(CMAKE_C_STANDARD) # To avoid `/std:c11` in the compiler options
 
@@ -279,6 +263,23 @@ endif ()
 ##########################################################
 
 add_definitions(-D_FILE_OFFSET_BITS=64)
+
+##########################################################
+# HdrHistogram usage - use MD5 as means to identify snapshot
+
+if (AERON_BUILD_SAMPLES)
+
+    set(HDR_LOG_REQUIRED "OFF" CACHE INTERNAL "Set log required option")
+    FetchContent_Declare(
+            hdr_histogram
+            URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.4.zip
+            URL_MD5 4d8f8ed3fe69422cf6b44fdabd98d462
+    )
+
+    FetchContent_MakeAvailable(hdr_histogram)
+
+endif ()
+
 
 add_subdirectory(${AERON_C_CLIENT_SOURCE_PATH})
 

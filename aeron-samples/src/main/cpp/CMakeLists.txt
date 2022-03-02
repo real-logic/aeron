@@ -108,7 +108,6 @@ target_include_directories(PingW
 target_link_libraries(PingW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
     hdr_histogram_static)
-set_target_properties(PingW PROPERTIES LINK_FLAGS "/NODEFAULTLIB:MSVCRT")
 add_dependencies(PingW hdr_histogram)
 
 target_include_directories(Throughput

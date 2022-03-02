@@ -54,7 +54,6 @@ aeron_client_native_test(imagePollTest ImageTest.cpp)
 aeron_client_wrapper_test(localAddresses LocalAddressesTest.cpp)
 aeron_client_native_test(localAddresses LocalAddressesTest.cpp)
 
-set (CMAKE_VERBOSE_MAKEFILE "ON")
 aeron_client_wrapper_test(multiDestinationCast MultiDestinationTest.cpp)
 aeron_client_native_test(multiDestinationCast MultiDestinationTest.cpp)
 

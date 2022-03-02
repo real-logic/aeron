@@ -238,9 +238,9 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 
 if (AERON_TESTS)
     FetchContent_Declare(
-            gmock
-            URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.11.0.zip
-            URL_MD5 52943a59cefce0ae0491d4d2412c120b)
+        gmock
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.11.0.zip
+        URL_MD5 52943a59cefce0ae0491d4d2412c120b)
 
     FetchContent_MakeAvailable(gmock)
 endif ()
@@ -252,9 +252,9 @@ if (AERON_BUILD_SAMPLES)
     set(HDR_LOG_REQUIRED "OFF" CACHE INTERNAL "Set log required option")
     set(HDR_HISTOGRAM_BUILD_PROGRAMS "OFF" CACHE INTERNAL "Set build programs option")
     FetchContent_Declare(
-            hdr_histogram
-            URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.4.zip
-            URL_MD5 4d8f8ed3fe69422cf6b44fdabd98d462
+        hdr_histogram
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.4.zip
+        URL_MD5 4d8f8ed3fe69422cf6b44fdabd98d462
     )
 
     FetchContent_MakeAvailable(hdr_histogram)

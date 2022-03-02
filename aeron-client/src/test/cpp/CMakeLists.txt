@@ -27,7 +27,7 @@ set(TEST_SOURCE
 add_library(aeron_client_test STATIC ${TEST_SOURCE} ${TEST_HEADERS})
 target_include_directories(aeron_client_test
     PUBLIC ${AERON_CLIENT_TEST_PATH})
-target_link_libraries(aeron_client_test aeron_client)
+target_link_libraries(aeron_client_test aeron_client gmock)
 target_compile_definitions(aeron_client_test PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
 add_dependencies(aeron_client_test gmock)
 
@@ -37,9 +37,9 @@ endif ()
 
 function(aeron_client_test name file)
     add_executable(${name} ${file})
-    target_link_libraries(${name} aeron_client aeron_driver aeron_client_test ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-    target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_dependencies(${name} gmock)
+    target_link_libraries(${name} aeron_client aeron_driver aeron_client_test gmock_main ${CMAKE_THREAD_LIBS_INIT})
+    target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 

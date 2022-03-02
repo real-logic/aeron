@@ -786,6 +786,10 @@ uint32_t aeron_driver_context_get_sender_io_vector_capacity(aeron_driver_context
 int aeron_driver_context_set_network_publication_max_messages_per_send(aeron_driver_context_t *context, uint32_t value);
 uint32_t aeron_driver_context_get_network_publication_max_messages_per_send(aeron_driver_context_t *context);
 
+#define AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR "AERON_CONDUCTOR_CPU_AFFINITY"
+#define AERON_RECEIVER_CPU_AFFINITY_ENV_VAR "AERON_RECEIVER_CPU_AFFINITY"
+#define AERON_SENDER_CPU_AFFINITY_ENV_VAR "AERON_SENDER_CPU_AFFINITY"
+
 /**
  * Set the list of filenames to dynamic libraries to load upon context init.
  */

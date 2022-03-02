@@ -331,6 +331,7 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT UINT32_C(2)
+#define AERON_CPU_AFFINITY_DEFAULT (-1)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -670,6 +671,25 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_SOCKET_MULTICAST_TTL_ENV_VAR),
         _context->multicast_ttl,
         0,
+        255);
+
+    _context->conductor_cpu_affinity_no = aeron_config_parse_int32(
+        AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR),
+        _context->conductor_cpu_affinity_no,
+        -1,
+        255);
+    _context->receiver_cpu_affinity_no = aeron_config_parse_int32(
+        AERON_RECEIVER_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_RECEIVER_CPU_AFFINITY_ENV_VAR),
+        _context->receiver_cpu_affinity_no,
+        -1,
+        255);
+    _context->sender_cpu_affinity_no = aeron_config_parse_int32(
+        AERON_SENDER_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_SENDER_CPU_AFFINITY_ENV_VAR),
+        _context->sender_cpu_affinity_no,
+        -1,
         255);
 
     _context->send_to_sm_poll_ratio = (uint8_t)aeron_config_parse_uint64(

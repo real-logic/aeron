@@ -58,39 +58,6 @@ int set_property(void *clientd, const char *name, const char *value)
     return aeron_properties_setenv(name, value);
 }
 
-void aeronmd_set_thread_affinity(void *state, const char *role_name)
-{
-    aeron_driver_context_t *context = (aeron_driver_context_t *)state;
-    int result = 0;
-    if (0 == strcmp("conductor", role_name) && 0 < context->conductor_cpu_affinity_no)
-    {
-        result = aeron_thread_set_affinity(role_name, (uint8_t)context->conductor_cpu_affinity_no);
-    }
-    else if (0 == strcmp("sender", role_name) && 0 < context->sender_cpu_affinity_no)
-    {
-        result = aeron_thread_set_affinity(role_name, (uint8_t)context->sender_cpu_affinity_no);
-    }
-    else if (0 == strcmp("receiver", role_name) && 0 < context->receiver_cpu_affinity_no)
-    {
-        result = aeron_thread_set_affinity(role_name, (uint8_t)context->receiver_cpu_affinity_no);
-    }
-
-    if (result < 0)
-    {
-        AERON_APPEND_ERR("%s", "WARNING: unable to apply affinity");
-        // Just in case the error log is not initialised, but it should be by this point.
-        if (NULL != context->error_log)
-        {
-            aeron_distinct_error_log_record(context->error_log, aeron_errcode(), aeron_errmsg());
-        }
-        else
-        {
-            fprintf(stderr, "%s", aeron_errmsg());
-        }
-        aeron_err_clear();
-    }
-}
-
 int main(int argc, char **argv)
 {
     int status = EXIT_FAILURE;
@@ -151,7 +118,7 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
-    if (aeron_driver_context_set_agent_on_start_function(context, aeronmd_set_thread_affinity, context))
+    if (aeron_driver_context_set_agent_on_start_function(context, aeron_set_thread_affinity_on_start, context))
     {
         fprintf(stderr, "ERROR: unable to set on_start function(%d) %s\n", aeron_errcode(), aeron_errmsg());
         goto cleanup;

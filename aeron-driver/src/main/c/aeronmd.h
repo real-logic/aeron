@@ -989,6 +989,17 @@ const char *aeron_errmsg();
  */
 int aeron_default_path(char *path, size_t path_length);
 
+/**
+ * Affinity setting function that complies with the aeron_agent_on_start_func_t structure that can
+ * be used as an agent start function.  The state should be the aeron_driver_context_t* and the function
+ * will match the values "conductor", "sender", "receiver" and use the respective configuration options from
+ * the aeron_driver_context_t.
+ *
+ * @param state client information passed to function, should be the aeron_driver_context_t*.
+ * @param role_name name of the role specified on the agent.
+ */
+void aeron_set_thread_affinity_on_start(void *state, const char *role_name);
+
 #ifdef __cplusplus
 }
 #endif

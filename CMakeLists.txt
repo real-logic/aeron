@@ -68,10 +68,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif (NOT CMAKE_BUILD_TYPE)
 
-set(AERON_THIRDPARTY_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/thirdparty")
-
-unset(AERON_THIRDPARTY_BINARY_DIR)
-
 ##########################################################
 # Platform flags, etc.
 
@@ -218,10 +214,6 @@ if (AERON_TESTS)
     set(AERON_CLIENT_WRAPPER_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp_wrapper")
     set(AERON_ARCHIVE_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/test/cpp")
     set(AERON_SYSTEM_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-system-tests")
-
-    # gmock - includes gtest
-    include_directories(${GMOCK_SOURCE_DIR}/googletest/include)
-    include_directories(${GMOCK_SOURCE_DIR}/googlemock/include)
 endif ()
 
 if (AERON_BUILD_SAMPLES)

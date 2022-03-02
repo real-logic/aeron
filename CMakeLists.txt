@@ -70,37 +70,6 @@ endif (NOT CMAKE_BUILD_TYPE)
 
 set(AERON_THIRDPARTY_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/thirdparty")
 
-##########################################################
-# gmock usage
-
-if (AERON_TESTS)
-    ExternalProject_Add(
-        gmock
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.11.0.zip
-        URL_MD5 52943a59cefce0ae0491d4d2412c120b
-        PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/gmock"
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};-DCMAKE_CXX_FLAGS=-D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
-        BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX};${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        INSTALL_COMMAND "")
-
-    ExternalProject_Get_Property(gmock source_dir)
-    set(GMOCK_SOURCE_DIR ${source_dir})
-    ExternalProject_Get_Property(gmock binary_dir)
-    set(GMOCK_BINARY_DIR ${binary_dir})
-
-    if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(GMOCK_POSTFIX "d")
-    else ()
-        set(GMOCK_POSTFIX "")
-    endif ()
-
-    set(GMOCK_LIBS
-        ${GMOCK_BINARY_DIR}/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${GMOCK_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${GMOCK_BINARY_DIR}/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${GMOCK_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${GMOCK_BINARY_DIR}/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest_main${GMOCK_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
-endif ()
-
 unset(AERON_THIRDPARTY_BINARY_DIR)
 
 ##########################################################
@@ -265,11 +234,23 @@ endif ()
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
 ##########################################################
+# gmock usage
+
+if (AERON_TESTS)
+    FetchContent_Declare(
+            gmock
+            URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.11.0.zip
+            URL_MD5 52943a59cefce0ae0491d4d2412c120b)
+
+    FetchContent_MakeAvailable(gmock)
+endif ()
+
+##########################################################
 # HdrHistogram usage - use MD5 as means to identify snapshot
 
 if (AERON_BUILD_SAMPLES)
-
     set(HDR_LOG_REQUIRED "OFF" CACHE INTERNAL "Set log required option")
+    set(HDR_HISTOGRAM_BUILD_PROGRAMS "OFF" CACHE INTERNAL "Set build programs option")
     FetchContent_Declare(
             hdr_histogram
             URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.4.zip
@@ -277,7 +258,6 @@ if (AERON_BUILD_SAMPLES)
     )
 
     FetchContent_MakeAvailable(hdr_histogram)
-
 endif ()
 
 

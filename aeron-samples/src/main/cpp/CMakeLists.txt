@@ -103,7 +103,6 @@ target_include_directories(PongW
 target_link_libraries(PongW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
-set (CMAKE_VERBOSE_MAKEFILE "ON")
 target_include_directories(PingW
     PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(PingW

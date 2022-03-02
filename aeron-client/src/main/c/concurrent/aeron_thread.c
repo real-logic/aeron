@@ -115,7 +115,7 @@ int aeron_thread_set_affinity(const char *role_name, uint8_t cpu_affinity_no)
     }
     return 0;
 #else
-    AERON_SET_ERR(EINVAL, "%s", "thread affinity not supported")
+    AERON_SET_ERR(EINVAL, "%s", "thread affinity not supported");
     return -1;
 #endif
 }

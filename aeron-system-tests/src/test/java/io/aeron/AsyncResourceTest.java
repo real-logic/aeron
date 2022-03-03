@@ -22,7 +22,10 @@ import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,6 +42,31 @@ class AsyncResourceTest
     @RegisterExtension
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
+    private TestMediaDriver driver;
+
+    @BeforeEach
+    void setUp()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED);
+
+        try
+        {
+            driver = TestMediaDriver.launch(driverCtx, testWatcher);
+        }
+        finally
+        {
+            testWatcher.dataCollector().add(driverCtx.aeronDirectory());
+        }
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        CloseHelper.close(driver);
+    }
+
     @Test
     @Timeout(10)
     void shouldAddAsyncPublications()
@@ -46,13 +74,7 @@ class AsyncResourceTest
         final Aeron.Context clientCtx = new Aeron.Context()
             .errorHandler(Tests::onError);
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .threadingMode(ThreadingMode.SHARED);
-
-        try (
-            TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher);
-            Aeron aeron = Aeron.connect(clientCtx))
+        try (Aeron aeron = Aeron.connect(clientCtx))
         {
             final long registrationIdOne = aeron.asyncAddPublication(AERON_IPC, STREAM_ID);
             final long registrationIdTwo = aeron.asyncAddExclusivePublication(AERON_IPC, STREAM_ID);
@@ -76,10 +98,6 @@ class AsyncResourceTest
             assertNotNull(publicationOne);
             assertNotNull(publicationTwo);
         }
-        finally
-        {
-            driverCtx.deleteDirectory();
-        }
     }
 
     @Test
@@ -89,13 +107,7 @@ class AsyncResourceTest
         final Aeron.Context clientCtx = new Aeron.Context()
             .errorHandler(Tests::onError);
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .threadingMode(ThreadingMode.SHARED);
-
-        try (
-            TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher);
-            Aeron aeron = Aeron.connect(clientCtx))
+        try (Aeron aeron = Aeron.connect(clientCtx))
         {
             final long registrationId = aeron.asyncAddPublication(AERON_IPC, STREAM_ID);
 
@@ -112,10 +124,6 @@ class AsyncResourceTest
             assertTrue(publication.isClosed());
             assertNull(aeron.getPublication(registrationId));
         }
-        finally
-        {
-            driverCtx.deleteDirectory();
-        }
     }
 
     @Test
@@ -126,24 +134,16 @@ class AsyncResourceTest
         final Aeron.Context clientCtx = new Aeron.Context()
             .errorHandler(mockClientErrorHandler);
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .threadingMode(ThreadingMode.SHARED);
-
-        try (
-            TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher);
-            Aeron aeron = Aeron.connect(clientCtx))
+        try (Aeron aeron = Aeron.connect(clientCtx))
         {
+//            testWatcher.ignoreErrorsMatching((s) -> s.contains("Aeron URIs must start with"));
+
             final long registrationId = aeron.asyncAddPublication("invalid" + AERON_IPC, STREAM_ID);
 
             verify(mockClientErrorHandler, timeout(5000)).onError(any(RegistrationException.class));
 
             assertFalse(aeron.isCommandActive(registrationId));
             assertFalse(aeron.hasActiveCommands());
-        }
-        finally
-        {
-            driverCtx.deleteDirectory();
         }
     }
 
@@ -156,24 +156,16 @@ class AsyncResourceTest
         final Aeron.Context clientCtx = new Aeron.Context()
             .errorHandler(mockClientErrorHandler);
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .threadingMode(ThreadingMode.SHARED);
-
-        try (
-            TestMediaDriver ignore = TestMediaDriver.launch(driverCtx, testWatcher);
-            Aeron aeron = Aeron.connect(clientCtx))
+        try (Aeron aeron = Aeron.connect(clientCtx))
         {
+            testWatcher.ignoreErrorsMatching((s) -> s.contains("unresolved"));
+
             final long registrationId = aeron.asyncAddPublication("aeron:udp?endpoint=wibble:1234", STREAM_ID);
 
             verify(mockClientErrorHandler, timeout(55_000)).onError(any(RegistrationException.class));
 
             assertFalse(aeron.isCommandActive(registrationId));
             assertFalse(aeron.hasActiveCommands());
-        }
-        finally
-        {
-            driverCtx.deleteDirectory();
         }
     }
 }

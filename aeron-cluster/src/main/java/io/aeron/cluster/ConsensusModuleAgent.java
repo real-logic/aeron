@@ -1634,7 +1634,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     {
         archive.stopAllReplays(logRecordingId);
         archive.truncateRecording(logRecordingId, logPosition);
-//        if (NULL_VALUE != leadershipTermId)
+        if (NULL_VALUE != leadershipTermId)
         {
             recordingLog.commitLogPosition(leadershipTermId, logPosition);
         }

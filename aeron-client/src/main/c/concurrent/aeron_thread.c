@@ -19,8 +19,12 @@
 #define _GNU_SOURCE
 #endif
 
+#include "errno.h"
+#include "inttypes.h"
 #include "aeron_alloc.h"
 #include "concurrent/aeron_thread.h"
+#include "util/aeron_error.h"
+
 #if !defined(_WIN32)
 #include <unistd.h>
 #else
@@ -86,6 +90,25 @@ void aeron_micro_sleep(unsigned int microseconds)
 #endif
 }
 
+int aeron_thread_set_affinity(const char *role_name, uint8_t cpu_affinity_no)
+{
+#if defined(__linux__)
+    cpu_set_t mask;
+    const size_t size = sizeof(mask);
+    CPU_ZERO(&mask);
+    CPU_SET(cpu_affinity_no, &mask);
+    if (sched_setaffinity(0, size, &mask) < 0)
+    {
+        AERON_SET_ERR(errno, "failed to set thread affinity role_name=%s, cpu_affinity_no=%" PRIu8, role_name, cpu_affinity_no);
+        return -1;
+    }
+    return 0;
+#else
+    AERON_SET_ERR(EINVAL, "%s", "thread affinity not supported");
+    return -1;
+#endif
+}
+
 #if defined(AERON_COMPILER_GCC)
 
 void aeron_thread_set_name(const char *role_name)
@@ -96,6 +119,7 @@ void aeron_thread_set_name(const char *role_name)
     pthread_setname_np(pthread_self(), role_name);
 #endif
 }
+
 
 #elif defined(AERON_COMPILER_MSVC)
 

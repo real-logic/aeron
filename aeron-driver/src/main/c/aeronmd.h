@@ -786,6 +786,10 @@ uint32_t aeron_driver_context_get_sender_io_vector_capacity(aeron_driver_context
 int aeron_driver_context_set_network_publication_max_messages_per_send(aeron_driver_context_t *context, uint32_t value);
 uint32_t aeron_driver_context_get_network_publication_max_messages_per_send(aeron_driver_context_t *context);
 
+#define AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR "AERON_CONDUCTOR_CPU_AFFINITY"
+#define AERON_RECEIVER_CPU_AFFINITY_ENV_VAR "AERON_RECEIVER_CPU_AFFINITY"
+#define AERON_SENDER_CPU_AFFINITY_ENV_VAR "AERON_SENDER_CPU_AFFINITY"
+
 /**
  * Set the list of filenames to dynamic libraries to load upon context init.
  */
@@ -984,6 +988,17 @@ const char *aeron_errmsg();
  * is equal to or greater than the path_length then the path has been truncated.
  */
 int aeron_default_path(char *path, size_t path_length);
+
+/**
+ * Affinity setting function that complies with the aeron_agent_on_start_func_t structure that can
+ * be used as an agent start function.  The state should be the aeron_driver_context_t* and the function
+ * will match the values "conductor", "sender", "receiver" and use the respective configuration options from
+ * the aeron_driver_context_t.
+ *
+ * @param state client information passed to function, should be the aeron_driver_context_t*.
+ * @param role_name name of the role specified on the agent.
+ */
+void aeron_set_thread_affinity_on_start(void *state, const char *role_name);
 
 #ifdef __cplusplus
 }

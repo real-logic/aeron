@@ -546,6 +546,9 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(
         fpout, "\n    network_publication_max_messages_per_send=%" PRIu64,
         (uint64_t)context->network_publication_max_messages_per_send);
+    fprintf(fpout, "\n    conductor_cpu_affinity_no=%" PRId32, context->conductor_cpu_affinity_no);
+    fprintf(fpout, "\n    receiver_cpu_affinity_no=%" PRId32, context->receiver_cpu_affinity_no);
+    fprintf(fpout, "\n    sender_cpu_affinity_no=%" PRId32, context->sender_cpu_affinity_no);
 
     fprintf(fpout, "\n    epoch_clock=%s",
         aeron_dlinfo_func((aeron_fptr_t)context->epoch_clock, buffer, sizeof(buffer)));

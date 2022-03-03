@@ -331,6 +331,7 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT UINT32_C(2)
+#define AERON_CPU_AFFINITY_DEFAULT (-1)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -670,6 +671,25 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_SOCKET_MULTICAST_TTL_ENV_VAR),
         _context->multicast_ttl,
         0,
+        255);
+
+    _context->conductor_cpu_affinity_no = aeron_config_parse_int32(
+        AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR),
+        _context->conductor_cpu_affinity_no,
+        -1,
+        255);
+    _context->receiver_cpu_affinity_no = aeron_config_parse_int32(
+        AERON_RECEIVER_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_RECEIVER_CPU_AFFINITY_ENV_VAR),
+        _context->receiver_cpu_affinity_no,
+        -1,
+        255);
+    _context->sender_cpu_affinity_no = aeron_config_parse_int32(
+        AERON_SENDER_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_SENDER_CPU_AFFINITY_ENV_VAR),
+        _context->sender_cpu_affinity_no,
+        -1,
         255);
 
     _context->send_to_sm_poll_ratio = (uint8_t)aeron_config_parse_uint64(
@@ -2660,3 +2680,35 @@ uint32_t aeron_driver_context_get_network_publication_max_messages_per_send(aero
         context->network_publication_max_messages_per_send : AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
 }
 
+void aeron_set_thread_affinity_on_start(void *state, const char *role_name)
+{
+    aeron_driver_context_t *context = (aeron_driver_context_t *)state;
+    int result = 0;
+    if (0 == strcmp("conductor", role_name) && 0 < context->conductor_cpu_affinity_no)
+    {
+        result = aeron_thread_set_affinity(role_name, (uint8_t)context->conductor_cpu_affinity_no);
+    }
+    else if (0 == strcmp("sender", role_name) && 0 < context->sender_cpu_affinity_no)
+    {
+        result = aeron_thread_set_affinity(role_name, (uint8_t)context->sender_cpu_affinity_no);
+    }
+    else if (0 == strcmp("receiver", role_name) && 0 < context->receiver_cpu_affinity_no)
+    {
+        result = aeron_thread_set_affinity(role_name, (uint8_t)context->receiver_cpu_affinity_no);
+    }
+
+    if (result < 0)
+    {
+        AERON_APPEND_ERR("%s", "WARNING: unable to apply affinity");
+        // Just in case the error log is not initialised, but it should be by this point.
+        if (NULL != context->error_log)
+        {
+            aeron_distinct_error_log_record(context->error_log, aeron_errcode(), aeron_errmsg());
+        }
+        else
+        {
+            fprintf(stderr, "%s", aeron_errmsg());
+        }
+        aeron_err_clear();
+    }
+}

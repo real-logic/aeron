@@ -136,7 +136,7 @@ int aeron_context_init(aeron_context_t **context)
         getenv(AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY_ENV_VAR), AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT);
 
     if ((_context->idle_strategy_func = aeron_idle_strategy_load(
-        "sleep-ns", &_context->idle_strategy_state, NULL,"1ms")) == NULL)
+        "sleep-ns", &_context->idle_strategy_state, NULL, "1ms")) == NULL)
     {
         return -1;
     }
@@ -171,6 +171,7 @@ do \
     } \
 } \
 while (false) \
+
 
 int aeron_context_set_dir(aeron_context_t *context, const char *value)
 {
@@ -412,7 +413,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
         AERON_SET_ERR(EINVAL, "%s", "Invalid file length");
         return -1;
     }
-    
+
     size_t file_length = (size_t)file_length_result;
     if (file_length > min_length)
     {
@@ -434,7 +435,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
                 AERON_SET_ERR(
                     EINVAL,
                     "Aeron CnC version does not match: client=%" PRId32 ", file=%" PRId32,
-                    AERON_CNC_VERSION, 
+                    AERON_CNC_VERSION,
                     cnc_version);
 
                 result = -1;

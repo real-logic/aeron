@@ -159,7 +159,8 @@ class AsyncResourceTest
 
         try (Aeron aeron = Aeron.connect(clientCtx))
         {
-            testWatcher.ignoreErrorsMatching((s) -> s.contains("unresolved"));
+            testWatcher.ignoreErrorsMatching(
+                (s) -> s.contains("unresolved") || s.contains("unknown host"));
 
             final long registrationId = aeron.asyncAddPublication("aeron:udp?endpoint=wibble:1234", STREAM_ID);
 

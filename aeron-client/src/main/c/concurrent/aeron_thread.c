@@ -90,17 +90,6 @@ void aeron_micro_sleep(unsigned int microseconds)
 #endif
 }
 
-#if defined(AERON_COMPILER_GCC)
-
-void aeron_thread_set_name(const char *role_name)
-{
-#if defined(Darwin)
-    pthread_setname_np(role_name);
-#else
-    pthread_setname_np(pthread_self(), role_name);
-#endif
-}
-
 int aeron_thread_set_affinity(const char *role_name, uint8_t cpu_affinity_no)
 {
 #if defined(__linux__)
@@ -119,6 +108,18 @@ int aeron_thread_set_affinity(const char *role_name, uint8_t cpu_affinity_no)
     return -1;
 #endif
 }
+
+#if defined(AERON_COMPILER_GCC)
+
+void aeron_thread_set_name(const char *role_name)
+{
+#if defined(Darwin)
+    pthread_setname_np(role_name);
+#else
+    pthread_setname_np(pthread_self(), role_name);
+#endif
+}
+
 
 #elif defined(AERON_COMPILER_MSVC)
 

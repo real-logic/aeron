@@ -136,7 +136,8 @@ class AsyncResourceTest
 
         try (Aeron aeron = Aeron.connect(clientCtx))
         {
-            testWatcher.ignoreErrorsMatching((s) -> s.contains("Aeron URIs must start with"));
+            testWatcher.ignoreErrorsMatching(
+                (s) -> s.contains("Aeron URIs must start with") || s.contains("invalid channel"));
 
             final long registrationId = aeron.asyncAddPublication("invalid" + AERON_IPC, STREAM_ID);
 

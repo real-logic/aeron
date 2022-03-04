@@ -1466,7 +1466,7 @@ abstract class ArchiveConductor
     private static ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
     {
         return new ChannelUriStringBuilder()
-            .media(channelUri.media())
+            .media(channelUri)
             .endpoint(channelUri)
             .networkInterface(channelUri)
             .controlEndpoint(channelUri)

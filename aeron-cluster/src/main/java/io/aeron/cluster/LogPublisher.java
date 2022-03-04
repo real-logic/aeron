@@ -15,13 +15,18 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
-import io.aeron.cluster.service.ClusterClock;
+import io.aeron.ChannelUri;
+import io.aeron.ExclusivePublication;
+import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.service.ClusterClock;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.TimeUnit;
@@ -47,10 +52,13 @@ final class LogPublisher
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
 
+    private final String destinationChannel;
+
     private ExclusivePublication publication;
 
-    LogPublisher()
+    LogPublisher(final String destinationChannel)
     {
+        this.destinationChannel = destinationChannel;
         sessionHeaderEncoder.wrapAndApplyHeader(sessionHeaderBuffer, 0, new MessageHeaderEncoder());
     }
 
@@ -101,7 +109,7 @@ final class LogPublisher
     {
         if (isLogChannelMultiDestination && null != publication)
         {
-            publication.asyncAddDestination("aeron:udp?endpoint=" + followerLogEndpoint);
+            publication.asyncAddDestination(ChannelUri.createDestinationUri(destinationChannel, followerLogEndpoint));
         }
     }
 
@@ -109,7 +117,8 @@ final class LogPublisher
     {
         if (isLogChannelMultiDestination && null != publication)
         {
-            publication.asyncRemoveDestination("aeron:udp?endpoint=" + followerLogEndpoint);
+            publication.asyncRemoveDestination(
+                ChannelUri.createDestinationUri(destinationChannel, followerLogEndpoint));
         }
     }
 

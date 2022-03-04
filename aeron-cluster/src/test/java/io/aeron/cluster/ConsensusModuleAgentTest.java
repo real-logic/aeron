@@ -17,7 +17,9 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.codecs.CloseReason;
+import io.aeron.cluster.codecs.ClusterAction;
+import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
@@ -27,13 +29,18 @@ import io.aeron.status.ReadableCounter;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.CountedErrorHandler;
+import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -42,7 +49,8 @@ import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
 import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static java.lang.Boolean.TRUE;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 public class ConsensusModuleAgentTest
@@ -329,5 +337,36 @@ public class ConsensusModuleAgentTest
 
         assertThrows(ClusterTerminationException.class,
             () -> agent.onServiceAck(1024, 100, 0, 55, 0));
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+        "null, aeron:udp?endpoint=acme:2040, aeron:udp?endpoint=acme:2040",
+        ", aeron:ipc, aeron:ipc",
+        "aeron:udp?endpoint=host1:5050|interface=eth0|mtu=1440, aeron:udp?endpoint=localhost:8080|mtu=8000, " +
+            "aeron:udp?endpoint=localhost:8080|interface=eth0|mtu=1440",
+        "aeron:udp?endpoint=node0:21300|eos=false, aeron:udp?mtu=8000|interface=if1|eos=true|ttl=100, " +
+            "aeron:udp?endpoint=node0:21300|eos=false"
+    }, nullValues = "null")
+    void responseChannelIsBuiltBasedOnTheEgressChannel(
+        final String egressChannel, final String responseChannel, final String expectedResponseChannel)
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        ctx.epochClock(clock).clusterClock(clock);
+        ctx.egressChannel(egressChannel);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+        agent.state(ConsensusModule.State.ACTIVE);
+        agent.role(Cluster.Role.LEADER);
+
+        final long correlationId = 1L;
+        final int responseStreamId = 42;
+        agent.onSessionConnect(
+            correlationId, responseStreamId, PROTOCOL_SEMANTIC_VERSION, responseChannel, new byte[0]);
+
+        final ArgumentCaptor<String> channelCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockAeron).asyncAddPublication(channelCaptor.capture(), eq(responseStreamId));
+
+        assertEquals(ChannelUri.parse(expectedResponseChannel), ChannelUri.parse(channelCaptor.getValue()));
     }
 }

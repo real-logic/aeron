@@ -440,7 +440,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             if (isMds)
             {
-                replayDestination = "aeron:udp?endpoint=" + endpoint;
+                replayDestination = ChannelUri.createDestinationUri(replicationChannel, endpoint);
                 recordingSubscription.asyncAddDestination(replayDestination);
             }
 

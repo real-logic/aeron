@@ -460,9 +460,9 @@ int aeron_udp_channel_transport_recvmmsg(
 }
 
 static int aeron_udp_channel_transport_send_connected(
-        aeron_udp_channel_transport_t *transport,
-        struct iovec *iov,
-        int64_t *bytes_sent)
+    aeron_udp_channel_transport_t *transport,
+    struct iovec *iov,
+    int64_t *bytes_sent)
 {
     ssize_t send_result = aeron_send(transport->fd, iov->iov_base, iov->iov_len, 0);
     if (send_result < 0)

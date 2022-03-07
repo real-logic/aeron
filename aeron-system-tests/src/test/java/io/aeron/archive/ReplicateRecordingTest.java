@@ -503,10 +503,7 @@ public class ReplicateRecordingTest
             awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE);
             awaitSignal(signalRef, adapter, RecordingSignal.EXTEND);
 
-            final CountersReader dstCounters = dstAeron.countersReader();
             final long dstRecordingId = recordingIdRef.get();
-            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
-            awaitPosition(dstCounters, dstCounterId, publication.position());
 
             awaitSignal(signalRef, adapter, RecordingSignal.SYNC);
             awaitSignal(signalRef, adapter, RecordingSignal.REPLICATION_STOP);

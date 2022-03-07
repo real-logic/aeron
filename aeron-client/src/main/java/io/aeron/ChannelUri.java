@@ -526,10 +526,12 @@ public final class ChannelUri
         final ChannelUri channelUri = ChannelUri.parse(channel);
         final String uri = AERON_PREFIX + channelUri.media() + "?" + ENDPOINT_PARAM_NAME + "=" + endpoint;
         final String networkInterface = channelUri.get(INTERFACE_PARAM_NAME);
+
         if (null != networkInterface)
         {
             return uri + "|" + INTERFACE_PARAM_NAME + "=" + networkInterface;
         }
+
         return uri;
     }
 

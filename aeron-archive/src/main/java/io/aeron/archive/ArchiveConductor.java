@@ -1021,7 +1021,7 @@ abstract class ArchiveConductor
                 recordingSessionByIdMap.remove(recordingId);
                 catalog.recordingStopped(recordingId, position, epochClock.time());
                 session.sendPendingError(controlResponseProxy);
-                session.controlSession().attemptSignal(
+                session.controlSession().sendSignal(
                     session.correlationId(),
                     recordingId,
                     subscriptionId,
@@ -1291,7 +1291,7 @@ abstract class ArchiveConductor
 
                 if (files.isEmpty())
                 {
-                    controlSession.attemptSignal(
+                    controlSession.sendSignal(
                         correlationId, srcRecordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
                 }
             }
@@ -1585,16 +1585,16 @@ abstract class ArchiveConductor
             controlSession,
             autoStop);
 
-        subscriptionRefCountMap.incrementAndGet(image.subscription().registrationId());
-        recordingSessionByIdMap.put(recordingId, session);
-        recorder.addSession(session);
-
-        controlSession.attemptSignal(
+        controlSession.sendSignal(
             correlationId,
             recordingId,
             image.subscription().registrationId(),
             image.joinPosition(),
             RecordingSignal.START);
+
+        subscriptionRefCountMap.incrementAndGet(image.subscription().registrationId());
+        recordingSessionByIdMap.put(recordingId, session);
+        recorder.addSession(session);
     }
 
     private void extendRecordingSession(
@@ -1644,13 +1644,13 @@ abstract class ArchiveConductor
                 controlSession,
                 autoStop);
 
+            catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
+            controlSession.sendSignal(
+                correlationId, recordingId, subscriptionId, image.joinPosition(), RecordingSignal.EXTEND);
+
             subscriptionRefCountMap.incrementAndGet(subscriptionId);
             recordingSessionByIdMap.put(recordingId, session);
-            catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
             recorder.addSession(session);
-
-            controlSession.attemptSignal(
-                correlationId, recordingId, subscriptionId, image.joinPosition(), RecordingSignal.EXTEND);
         }
         catch (final Exception ex)
         {
@@ -2078,7 +2078,7 @@ abstract class ArchiveConductor
 
             if (0 == count)
             {
-                controlSession.attemptSignal(
+                controlSession.sendSignal(
                     correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
             }
         }

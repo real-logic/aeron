@@ -606,7 +606,8 @@ final class ControlSession implements Session
         final String errorMessage,
         final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, this))
+        if (!queuedResponses.isEmpty() ||
+            !proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, this))
         {
             queueResponse(correlationId, relevantId, code, errorMessage);
         }
@@ -634,21 +635,34 @@ final class ControlSession implements Session
         return proxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
     }
 
-    void attemptSignal(
+    void sendSignal(
         final long correlationId,
         final long recordingId,
         final long subscriptionId,
         final long position,
         final RecordingSignal recordingSignal)
     {
-        controlResponseProxy.attemptSendSignal(
+        if (!queuedResponses.isEmpty() || !controlResponseProxy.sendSignal(
             controlSessionId,
             correlationId,
             recordingId,
             subscriptionId,
             position,
             recordingSignal,
-            controlPublication);
+            controlPublication))
+        {
+            if (controlPublication.isConnected())
+            {
+                queuedResponses.offer(() -> controlResponseProxy.sendSignal(
+                    controlSessionId,
+                    correlationId,
+                    recordingId,
+                    subscriptionId,
+                    position,
+                    recordingSignal,
+                    controlPublication));
+            }
+        }
     }
 
     int maxPayloadLength()

@@ -553,7 +553,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             (NULL_POSITION != dstStopPosition && position >= dstStopPosition) ||
             isEndOfStream || isClosed)
         {
-            if ((NULL_POSITION != srcStopPosition && position >= srcStopPosition))
+            if (NULL_POSITION != srcStopPosition && position >= srcStopPosition)
             {
                 signal(position, SYNC);
             }
@@ -678,7 +678,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private void signal(final long position, final RecordingSignal recordingSignal)
     {
         final long subscriptionId = null != recordingSubscription ? recordingSubscription.registrationId() : NULL_VALUE;
-        controlSession.attemptSignal(replicationId, dstRecordingId, subscriptionId, position, recordingSignal);
+        controlSession.sendSignal(replicationId, dstRecordingId, subscriptionId, position, recordingSignal);
     }
 
     private void stopReplaySession(final CountedErrorHandler countedErrorHandler)

@@ -104,7 +104,7 @@ class DeleteSegmentsSession implements Session
 
             if (files.isEmpty())
             {
-                controlSession.attemptSignal(
+                controlSession.sendSignal(
                     correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
             }
 

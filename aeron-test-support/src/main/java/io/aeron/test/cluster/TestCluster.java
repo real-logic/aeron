@@ -671,6 +671,34 @@ public class TestCluster implements AutoCloseable
         return client;
     }
 
+    public AeronCluster connectIpcClient(final AeronCluster.Context clientCtx, final String aeronDirName)
+    {
+
+        clientCtx
+            .aeronDirectoryName(aeronDirName)
+            .isIngressExclusive(true)
+            .ingressChannel("aeron:ipc")
+            .egressChannel("aeron:ipc")
+            .egressListener(egressListener)
+            .controlledEgressListener(controlledEgressListener)
+            .ingressEndpoints(null);
+
+        try
+        {
+            CloseHelper.close(client);
+            client = AeronCluster.connect(clientCtx.clone());
+        }
+        catch (final TimeoutException ex)
+        {
+            System.out.println("Warning: " + ex);
+
+            CloseHelper.close(client);
+            client = AeronCluster.connect(clientCtx);
+        }
+
+        return client;
+    }
+
     public void closeClient()
     {
         CloseHelper.close(client);

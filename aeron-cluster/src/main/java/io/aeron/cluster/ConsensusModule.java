@@ -286,6 +286,16 @@ public final class ConsensusModule implements AutoCloseable
         public static final int CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT = 50;
 
         /**
+         * Property name for whether IPC ingress is allowed or not.
+         */
+        public static final String CLUSTER_INGRESS_IPC_ALLOWED_PROP_NAME = "aeron.cluster.ingress.ipc.allowed";
+
+        /**
+         * Default for whether IPC ingress is allowed or not.
+         */
+        public static final String CLUSTER_INGRESS_IPC_ALLOWED_DEFAULT = "false";
+
+        /**
          * Service ID to identify a snapshot in the {@link RecordingLog}.
          */
         public static final int SERVICE_ID = Aeron.NULL_VALUE;
@@ -738,6 +748,19 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * The value {@link #CLUSTER_INGRESS_IPC_ALLOWED_DEFAULT} or system property
+         * {@link #CLUSTER_INGRESS_IPC_ALLOWED_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_INGRESS_IPC_ALLOWED_DEFAULT} or system property
+         * {@link #CLUSTER_INGRESS_IPC_ALLOWED_PROP_NAME} if set.
+         */
+        public static boolean isIpcIngressAllowed()
+        {
+            return "true".equalsIgnoreCase(System.getProperty(
+                CLUSTER_INGRESS_IPC_ALLOWED_PROP_NAME, CLUSTER_INGRESS_IPC_ALLOWED_DEFAULT));
+        }
+
+        /**
          * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
          * {@link #CLUSTER_MEMBER_ID_PROP_NAME} if set.
          *
@@ -1184,6 +1207,7 @@ public final class ConsensusModule implements AutoCloseable
         private boolean clusterMembersIgnoreSnapshot = Configuration.clusterMembersIgnoreSnapshot();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
+        private boolean isIpcIngressAllowed = Configuration.isIpcIngressAllowed();
         private int ingressFragmentLimit = Configuration.ingressFragmentLimit();
         private String egressChannel = AeronCluster.Configuration.egressChannel();
         private String logChannel = Configuration.logChannel();
@@ -1929,6 +1953,30 @@ public final class ConsensusModule implements AutoCloseable
         public String egressChannel()
         {
             return egressChannel;
+        }
+
+        /**
+         * Set whether IPC ingress is allowed or not.
+         *
+         * @param isIpcIngressAllowed or not.
+         * @return this for a fluent API
+         * @see Configuration#CLUSTER_INGRESS_IPC_ALLOWED_PROP_NAME
+         */
+        public Context isIpcIngressAllowed(final boolean isIpcIngressAllowed)
+        {
+            this.isIpcIngressAllowed = isIpcIngressAllowed;
+            return this;
+        }
+
+        /**
+         * Get whether IPC ingress is allowed or not.
+         *
+         * @return whether IPC ingress is allowed or not.
+         * @see Configuration#CLUSTER_INGRESS_IPC_ALLOWED_PROP_NAME
+         */
+        public boolean isIpcIngressAllowed()
+        {
+            return isIpcIngressAllowed;
         }
 
         /**

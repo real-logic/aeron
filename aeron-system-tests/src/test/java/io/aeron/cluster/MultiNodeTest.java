@@ -22,6 +22,7 @@ import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import io.aeron.test.driver.TestMediaDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -114,6 +115,24 @@ public class MultiNodeTest
 
         cluster.awaitLeader();
         cluster.awaitServicesMessageCount(totalMessageCount);
+    }
+
+    @Test
+    @InterruptAfter(20)
+    void shouldConnectClientOverIpc()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("C driver doesn't support IPC MDS destinations yet");
+        final AeronCluster.Context clientCtx = new AeronCluster.Context();
+
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+
+        final int numMessages = 10;
+        cluster.connectIpcClient(clientCtx, leader.mediaDriver().aeronDirectoryName());
+        cluster.sendMessages(numMessages);
+        cluster.awaitResponseMessageCount(numMessages);
     }
 
     @ParameterizedTest

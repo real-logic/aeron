@@ -27,6 +27,8 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
+import io.aeron.driver.DefaultNameResolver;
+import io.aeron.driver.media.UdpChannel;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.security.Authenticator;
@@ -37,6 +39,7 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
@@ -3250,20 +3253,59 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
     }
 
+    private boolean isIngressMulticast()
+    {
+        final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
+
+        if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
+        {
+            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
+        }
+
+        final InetSocketAddress addr = UdpChannel.destinationAddress(ingressUri, DefaultNameResolver.INSTANCE);
+
+        // assume that if not resolved is a non-multicast address
+        return (null == addr || null == addr.getAddress()) ? false : addr.getAddress().isMulticastAddress();
+    }
+
     private void connectIngress()
     {
-        if (!ctx.ingressChannel().contains(ENDPOINT_PARAM_NAME))
-        {
-            final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
+        final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
+        final boolean isIngressMulticast = isIngressMulticast();
 
-            ingressAdapter.connect(aeron.addSubscription(
-                ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
-        }
-        else if (Cluster.Role.LEADER == role)
+        if (Cluster.Role.LEADER != role && isIngressMulticast)
         {
-            ingressAdapter.connect(aeron.addSubscription(
-                ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
+            // don't subscribe to ingress if follower and multicast ingress
+            return;
+        }
+
+        String ingressNetworkEndpoint = ingressUri.get(ENDPOINT_PARAM_NAME);
+        if (null == ingressNetworkEndpoint)
+        {
+            ingressNetworkEndpoint = thisMember.ingressEndpoint();
+        }
+
+        ingressUri.remove(ENDPOINT_PARAM_NAME);
+        ingressUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
+
+//        System.out.println("connectIngress " + ingressUri);
+
+        final Subscription ingressSubscription = aeron.addSubscription(
+            ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage);
+        ingressAdapter.connect(ingressSubscription);
+
+        final String ingressNetworkDestination = new ChannelUriStringBuilder()
+            .media(UDP_MEDIA)
+            .endpoint(ingressNetworkEndpoint)
+            .build();
+
+//        System.out.println("destination " + ingressNetworkDestination);
+
+        ingressSubscription.addDestination(ingressNetworkDestination);
+
+        if (ctx.isIpcIngressAllowed())
+        {
+            ingressSubscription.addDestination(IPC_CHANNEL);
         }
     }
 
@@ -3309,6 +3351,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             final ChannelUri channel = ChannelUri.parse(egressChannel);
             channel.put(ENDPOINT_PARAM_NAME, responseEndpoint);
             return channel.toString();
+        }
+        else if (ctx.isIpcIngressAllowed() && responseChannel.startsWith(IPC_CHANNEL))
+        {
+            return responseChannel;
         }
         else
         {

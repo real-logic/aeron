@@ -631,7 +631,11 @@ public final class AeronCluster implements AutoCloseable
         if (null == newLeader.publication)
         {
             final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
-            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, newLeader.endpoint);
+            if (channelUri.isUdp())
+            {
+                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, newLeader.endpoint);
+            }
+
             publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
             newLeader.publication = publication;
         }
@@ -1176,6 +1180,15 @@ public final class AeronCluster implements AutoCloseable
                         throw new ConfigurationException(
                             "controlledEgressListener must be specified on AeronCluster.Context");
                     };
+            }
+
+            if (ingressChannel.startsWith(CommonContext.IPC_CHANNEL))
+            {
+                if (null != ingressEndpoints)
+                {
+                    throw new ConfigurationException(
+                        "AeronCluster.Context ingressEndpoints must be null when using IPC ingress");
+                }
             }
         }
 
@@ -1791,7 +1804,11 @@ public final class AeronCluster implements AutoCloseable
                 {
                     try
                     {
-                        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+                        if (channelUri.isUdp())
+                        {
+                            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+                        }
+
                         member.publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
                         ++publicationCount;
                     }
@@ -1932,7 +1949,12 @@ public final class AeronCluster implements AutoCloseable
             {
                 final MemberIngress member = memberByIdMap.get(leaderMemberId);
                 final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
-                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+
+                if (channelUri.isUdp())
+                {
+                    channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+                }
+
                 ingressPublication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
             }
 

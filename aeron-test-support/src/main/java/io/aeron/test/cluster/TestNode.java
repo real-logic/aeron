@@ -106,6 +106,8 @@ public class TestNode implements AutoCloseable
             context.consensusModuleContext
                 .serviceCount(services.length)
                 .aeronDirectoryName(aeronDirectoryName)
+                // temporary until C media driver has support for IPC MDS
+                .isIpcIngressAllowed(!TestMediaDriver.shouldRunCMediaDriver())
                 .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
 

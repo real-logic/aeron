@@ -136,6 +136,17 @@ class ArchiveSystemTests
         }
     }
 
+    static void awaitSignal(
+        final MutableReference<RecordingSignal> signalRef,
+        final RecordingSignalAdapter adapter,
+        final RecordingSignal expectedSignal)
+    {
+        while (expectedSignal != awaitSignal(signalRef, adapter))
+        {
+            Tests.yield();
+        }
+    }
+
     static RecordingSignal awaitSignal(
         final MutableReference<RecordingSignal> signalRef, final RecordingSignalAdapter adapter)
     {

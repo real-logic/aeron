@@ -164,7 +164,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         CloseHelper.close(countedErrorHandler, asyncConnect);
         CloseHelper.close(countedErrorHandler, srcArchive);
+
         archiveConductor.removeReplicationSession(this);
+        signal(NULL_POSITION, REPLICATION_STOP);
     }
 
     /**
@@ -291,7 +293,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             nextState = State.SRC_RECORDING_POSITION;
         }
 
-        if (startPosition == stopPosition)
+        if (startPosition == stopPosition ||
+            (NULL_VALUE != dstRecordingId && stopPosition == catalog.stopPosition(dstRecordingId)))
         {
             signal(stopPosition, SYNC);
             nextState = State.DONE;

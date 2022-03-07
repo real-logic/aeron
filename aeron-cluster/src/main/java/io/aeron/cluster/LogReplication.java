@@ -162,8 +162,12 @@ final class LogReplication
             }
 
             this.recordingId = recordingId;
-            this.position = position;
             this.lastRecordingSignal = signal;
+
+            if (NULL_POSITION != position)
+            {
+                this.position = position;
+            }
         }
     }
 

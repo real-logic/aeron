@@ -80,7 +80,7 @@ final class SnapshotReplication
             {
                 hasSync = true;
             }
-            else if (RecordingSignal.STOP == signal)
+            else if (RecordingSignal.REPLICATION_STOP == signal)
             {
                 isDone = true;
             }

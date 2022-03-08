@@ -3280,7 +3280,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         String ingressNetworkEndpoint = ingressUri.get(ENDPOINT_PARAM_NAME);
-        String ingressNetworkInterface = ingressUri.get(INTERFACE_PARAM_NAME);
+        final String ingressNetworkInterface = ingressUri.get(INTERFACE_PARAM_NAME);
         if (null == ingressNetworkEndpoint)
         {
             ingressNetworkEndpoint = thisMember.ingressEndpoint();

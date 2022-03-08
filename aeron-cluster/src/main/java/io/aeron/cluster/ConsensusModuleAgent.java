@@ -3280,6 +3280,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         String ingressNetworkEndpoint = ingressUri.get(ENDPOINT_PARAM_NAME);
+        String ingressNetworkInterface = ingressUri.get(INTERFACE_PARAM_NAME);
         if (null == ingressNetworkEndpoint)
         {
             ingressNetworkEndpoint = thisMember.ingressEndpoint();
@@ -3297,6 +3298,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final String ingressNetworkDestination = new ChannelUriStringBuilder()
             .media(UDP_MEDIA)
             .endpoint(ingressNetworkEndpoint)
+            .networkInterface(ingressNetworkInterface)
             .build();
 
 //        System.out.println("destination " + ingressNetworkDestination);

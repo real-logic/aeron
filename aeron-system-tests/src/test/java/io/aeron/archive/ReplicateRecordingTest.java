@@ -262,7 +262,7 @@ public class ReplicateRecordingTest
 
         assertTrue(transitionEventsSet.contains(RecordingSignal.STOP));
         assertTrue(transitionEventsSet.contains(RecordingSignal.SYNC));
-        assertTrue(transitionEventsSet.contains(RecordingSignal.REPLICATION_STOP));
+        assertTrue(transitionEventsSet.contains(RecordingSignal.REPLICATE_END));
     }
 
     @Test
@@ -357,7 +357,7 @@ public class ReplicateRecordingTest
 
             dstAeronArchive.stopReplication(replicationId);
 
-            awaitSignal(signalRef, adapter, RecordingSignal.REPLICATION_STOP);
+            awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE_END);
         }
 
         srcAeronArchive.stopRecording(subscriptionId);
@@ -455,7 +455,7 @@ public class ReplicateRecordingTest
 
             dstAeronArchive.stopReplication(replicationId);
 
-            awaitSignal(signalRef, adapter, RecordingSignal.REPLICATION_STOP);
+            awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE_END);
 
             replicationId = dstAeronArchive.replicate(
                 srcRecordingId, dstRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
@@ -506,13 +506,13 @@ public class ReplicateRecordingTest
             final long dstRecordingId = recordingIdRef.get();
 
             awaitSignal(signalRef, adapter, RecordingSignal.SYNC);
-            awaitSignal(signalRef, adapter, RecordingSignal.REPLICATION_STOP);
+            awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE_END);
 
             dstAeronArchive.replicate(
                 srcRecordingId, dstRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
             awaitSignal(signalRef, adapter, RecordingSignal.SYNC);
-            awaitSignal(signalRef, adapter, RecordingSignal.REPLICATION_STOP);
+            awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE_END);
         }
     }
 
@@ -596,7 +596,7 @@ public class ReplicateRecordingTest
         }
 
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(signalRef, adapter, RecordingSignal.REPLICATION_STOP);
+        awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE_END);
     }
 
     @Test
@@ -658,7 +658,7 @@ public class ReplicateRecordingTest
         }
 
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(signalRef, adapter, RecordingSignal.REPLICATION_STOP);
+        awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE_END);
     }
 
     private RecordingSignalAdapter newRecordingSignalAdapter(

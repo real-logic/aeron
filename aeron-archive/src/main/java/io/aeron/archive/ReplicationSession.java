@@ -166,7 +166,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         CloseHelper.close(countedErrorHandler, srcArchive);
 
         archiveConductor.removeReplicationSession(this);
-        signal(NULL_POSITION, REPLICATION_STOP);
+        signal(NULL_POSITION, REPLICATE_END);
     }
 
     /**

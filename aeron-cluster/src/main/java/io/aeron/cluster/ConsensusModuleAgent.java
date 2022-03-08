@@ -3287,13 +3287,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         ingressUri.remove(ENDPOINT_PARAM_NAME);
+        ingressUri.remove(INTERFACE_PARAM_NAME);
         ingressUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
-
-//        System.out.println("connectIngress " + ingressUri);
 
         final Subscription ingressSubscription = aeron.addSubscription(
             ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage);
-        ingressAdapter.connect(ingressSubscription);
 
         final String ingressNetworkDestination = new ChannelUriStringBuilder()
             .media(UDP_MEDIA)
@@ -3301,14 +3299,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             .networkInterface(ingressNetworkInterface)
             .build();
 
-//        System.out.println("destination " + ingressNetworkDestination);
-
         ingressSubscription.addDestination(ingressNetworkDestination);
 
         if (ctx.isIpcIngressAllowed())
         {
             ingressSubscription.addDestination(IPC_CHANNEL);
         }
+
+        ingressAdapter.connect(ingressSubscription);
     }
 
     private void ensureConsistentInitialTermId(final ChannelUri channelUri)

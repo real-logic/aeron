@@ -659,20 +659,61 @@ abstract class ArchiveConductor
             replayPosition = position;
         }
 
-        final ExclusivePublication replayPublication = newReplayPublication(
-            correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
+        final ChannelUri channelUri = ChannelUri.parse(replayChannel);
+        final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
+            .initialPosition(replayPosition, recordingSummary.initialTermId, recordingSummary.termBufferLength)
+            .ttl(channelUri)
+            .eos(channelUri)
+            .sparse(channelUri)
+            .mtu(recordingSummary.mtuLength);
+
+        final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);
+        channelBuilder.linger(null != lingerValue ? Long.parseLong(lingerValue) : ctx.replayLingerTimeoutNs());
+
+        try
+        {
+            addSession(new CreateReplayPublicationSession(
+                correlationId,
+                recordingId,
+                replayPosition,
+                length,
+                aeron.asyncAddExclusivePublication(channelBuilder.build(), replayStreamId),
+                limitPosition,
+                aeron,
+                controlSession,
+                this));
+        }
+        catch (final Exception ex)
+        {
+            final String msg = "failed to create replay publication - " + ex;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            throw ex;
+        }
+    }
+
+    void newReplaySession(
+        final long recordingId,
+        final long replayPosition,
+        final long replayLength,
+        final long correlationId,
+        final ControlSession controlSession,
+        final Counter limitPositionCounter,
+        final ExclusivePublication replayPublication)
+    {
         final long replaySessionId = ((long)(replayId++) << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
 
-        Counter replayLimitPosition = limitPosition;
+        Counter replayLimitPosition = limitPositionCounter;
         if (null == replayLimitPosition)
         {
             final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
             replayLimitPosition = null == recordingSession ? null : recordingSession.recordingPosition();
         }
 
+        catalog.recordingSummary(recordingId, recordingSummary);
+
         final ReplaySession replaySession = new ReplaySession(
             replayPosition,
-            length,
+            replayLength,
             replaySessionId,
             connectTimeoutMs,
             correlationId,
@@ -1676,37 +1717,6 @@ abstract class ArchiveConductor
         }
 
         return null;
-    }
-
-    private ExclusivePublication newReplayPublication(
-        final long correlationId,
-        final ControlSession controlSession,
-        final String replayChannel,
-        final int replayStreamId,
-        final long position,
-        final RecordingSummary recording)
-    {
-        final ChannelUri channelUri = ChannelUri.parse(replayChannel);
-        final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
-            .initialPosition(position, recording.initialTermId, recording.termBufferLength)
-            .ttl(channelUri)
-            .eos(channelUri)
-            .sparse(channelUri)
-            .mtu(recording.mtuLength);
-
-        final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);
-        channelBuilder.linger(null != lingerValue ? Long.parseLong(lingerValue) : ctx.replayLingerTimeoutNs());
-
-        try
-        {
-            return aeron.addExclusivePublication(channelBuilder.build(), replayStreamId);
-        }
-        catch (final Exception ex)
-        {
-            final String msg = "failed to create replay publication - " + ex;
-            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-            throw ex;
-        }
     }
 
     private void validateImageForExtendRecording(

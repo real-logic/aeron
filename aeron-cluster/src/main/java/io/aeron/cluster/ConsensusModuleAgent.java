@@ -3301,7 +3301,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         ingressSubscription.addDestination(ingressNetworkDestination);
 
-        if (ctx.isIpcIngressAllowed())
+        if (ctx.isIpcIngressAllowed() && Cluster.Role.LEADER == role)
         {
             ingressSubscription.addDestination(IPC_CHANNEL);
         }

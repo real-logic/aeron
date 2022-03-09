@@ -274,13 +274,13 @@ int aeron_network_publication_setup_message_check(
     aeron_network_publication_t *publication, int64_t now_ns, int32_t active_term_id, int32_t term_offset)
 {
     int result = 0;
+    int64_t bytes_sent = 0;
 
     if (now_ns > (publication->time_of_last_setup_ns + AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS))
     {
         uint8_t setup_buffer[sizeof(aeron_setup_header_t)];
         aeron_setup_header_t *setup_header = (aeron_setup_header_t *)setup_buffer;
-        struct iovec iov[1];
-        struct msghdr msghdr;
+        struct iovec iov;
 
         setup_header->frame_header.frame_length = sizeof(aeron_setup_header_t);
         setup_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -295,17 +295,12 @@ int aeron_network_publication_setup_message_check(
         setup_header->mtu = (int32_t)publication->mtu_length;
         setup_header->ttl = publication->endpoint->conductor_fields.udp_channel->multicast_ttl;
 
-        iov[0].iov_base = setup_buffer;
-        iov[0].iov_len = sizeof(aeron_setup_header_t);
-        msghdr.msg_iov = iov;
-        msghdr.msg_iovlen = 1;
-        msghdr.msg_flags = 0;
-        msghdr.msg_control = NULL;
-        msghdr.msg_controllen = 0;
+        iov.iov_base = setup_buffer;
+        iov.iov_len = sizeof(aeron_setup_header_t);
 
-        if ((result = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
+        if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
         {
-            if (result >= 0)
+            if (bytes_sent < (int64_t)iov.iov_len)
             {
                 aeron_counter_increment(publication->short_sends_counter, 1);
             }
@@ -329,15 +324,15 @@ int aeron_network_publication_heartbeat_message_check(
     int32_t term_offset,
     bool signal_end_of_stream)
 {
-    int bytes_sent = 0;
+    int result = 0;
+    int64_t bytes_sent = 0;
 
     if (publication->has_initial_connection &&
         now_ns > (publication->time_of_last_data_or_heartbeat_ns + AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS))
     {
         uint8_t heartbeat_buffer[sizeof(aeron_data_header_t)];
         aeron_data_header_t *data_header = (aeron_data_header_t *)heartbeat_buffer;
-        struct iovec iov[1];
-        struct msghdr msghdr;
+        struct iovec iov;
 
         data_header->frame_header.frame_length = 0;
         data_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -355,17 +350,13 @@ int aeron_network_publication_heartbeat_message_check(
                 AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_EOS_FLAG;
         }
 
-        iov[0].iov_base = heartbeat_buffer;
-        iov[0].iov_len = sizeof(aeron_data_header_t);
-        msghdr.msg_iov = iov;
-        msghdr.msg_iovlen = 1;
-        msghdr.msg_flags = 0;
-        msghdr.msg_control = NULL;
-        msghdr.msg_controllen = 0;
+        iov.iov_base = heartbeat_buffer;
+        iov.iov_len = sizeof(aeron_data_header_t);
 
-        if ((bytes_sent = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
+        if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
         {
-            if (bytes_sent >= 0)
+            result = (int)bytes_sent;
+            if (bytes_sent < (int64_t)iov.iov_len)
             {
                 aeron_counter_increment(publication->short_sends_counter, 1);
             }
@@ -375,7 +366,7 @@ int aeron_network_publication_heartbeat_message_check(
         publication->time_of_last_data_or_heartbeat_ns = now_ns;
     }
 
-    return bytes_sent;
+    return result;
 }
 
 int aeron_network_publication_send_data(
@@ -383,11 +374,11 @@ int aeron_network_publication_send_data(
 {
     const size_t term_length = (size_t)publication->term_length_mask + 1;
     const size_t max_vlen = publication->max_messages_per_send;
-    int result = 0, vlen = 0, bytes_sent = 0;
+    int result = 0, vlen = 0;
+    int64_t bytes_sent = 0;
     int32_t available_window = (int32_t)(aeron_counter_get(publication->snd_lmt_position.value_addr) - snd_pos);
     int64_t highest_pos = snd_pos;
     struct iovec iov[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
-    struct mmsghdr mmsghdr[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
 
     for (size_t i = 0; i < max_vlen && available_window > 0; i++)
     {
@@ -404,15 +395,8 @@ int aeron_network_publication_send_data(
         {
             iov[i].iov_base = ptr;
             iov[i].iov_len = (uint32_t)available;
-            mmsghdr[i].msg_hdr.msg_iov = &iov[i];
-            mmsghdr[i].msg_hdr.msg_iovlen = 1;
-            mmsghdr[i].msg_hdr.msg_flags = 0;
-            mmsghdr[i].msg_len = 0;
-            mmsghdr[i].msg_hdr.msg_control = NULL;
-            mmsghdr[i].msg_hdr.msg_controllen = 0;
             vlen++;
 
-            bytes_sent += (int)available;
             int32_t total_available = (int32_t)(available + padding);
             available_window -= total_available;
             term_offset += total_available;
@@ -427,7 +411,7 @@ int aeron_network_publication_send_data(
 
     if (vlen > 0)
     {
-        result = aeron_send_channel_sendmmsg(publication->endpoint, mmsghdr, (size_t)vlen);
+        result = aeron_send_channel_send(publication->endpoint, iov, vlen, &bytes_sent);
         if (result != vlen)
         {
             if (result >= 0)
@@ -447,7 +431,7 @@ int aeron_network_publication_send_data(
         publication->track_sender_limits = false;
     }
 
-    return result < 0 ? result : bytes_sent;
+    return result < 0 ? result : (int)bytes_sent;
 }
 
 int aeron_network_publication_send(aeron_network_publication_t *publication, int64_t now_ns)
@@ -548,30 +532,24 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
                 break;
             }
 
-            struct iovec iov[1];
-            struct msghdr msghdr;
+            struct iovec iov;
+            iov.iov_base = ptr;
+            iov.iov_len = (uint32_t)available;
+            int64_t msg_bytes_sent = 0;
 
-            iov[0].iov_base = ptr;
-            iov[0].iov_len = (uint32_t)available;
-            msghdr.msg_iov = iov;
-            msghdr.msg_iovlen = 1;
-            msghdr.msg_control = NULL;
-            msghdr.msg_controllen = 0;
-            msghdr.msg_flags = 0;
-
-            int sendmsg_result = aeron_send_channel_sendmsg(publication->endpoint, &msghdr);
-            if (sendmsg_result != (int)iov[0].iov_len)
+            int sendmsg_result;
+            if (0 <= (sendmsg_result = aeron_send_channel_send(publication->endpoint, &iov, 1, &msg_bytes_sent)))
             {
-                if (sendmsg_result >= 0)
+                if (msg_bytes_sent < (int64_t)iov.iov_len)
                 {
                     aeron_counter_increment(publication->short_sends_counter, 1);
                     break;
                 }
-                else
-                {
-                    result = -1;
-                    break;
-                }
+            }
+            else
+            {
+                result = -1;
+                break;
             }
 
             bytes_sent = (int32_t)(available + padding);
@@ -663,9 +641,9 @@ void aeron_network_publication_on_rttm(
     {
         uint8_t rttm_reply_buffer[sizeof(aeron_rttm_header_t)];
         aeron_rttm_header_t *rttm_out_header = (aeron_rttm_header_t *)rttm_reply_buffer;
-        struct iovec iov[1];
-        struct msghdr msghdr;
+        struct iovec iov;
         int result;
+        int64_t bytes_sent;
 
         rttm_out_header->frame_header.frame_length = sizeof(aeron_rttm_header_t);
         rttm_out_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -677,17 +655,13 @@ void aeron_network_publication_on_rttm(
         rttm_out_header->reception_delta = 0;
         rttm_out_header->receiver_id = rttm_in_header->receiver_id;
 
-        iov[0].iov_base = rttm_reply_buffer;
-        iov[0].iov_len = sizeof(aeron_rttm_header_t);
-        msghdr.msg_iov = iov;
-        msghdr.msg_iovlen = 1;
-        msghdr.msg_flags = 0;
-        msghdr.msg_control = NULL;
-        msghdr.msg_controllen = 0;
+        iov.iov_base = rttm_reply_buffer;
+        iov.iov_len = sizeof(aeron_rttm_header_t);
 
-        if ((result = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
+
+        if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
         {
-            if (result >= 0)
+            if (bytes_sent < (int64_t)iov.iov_len)
             {
                 aeron_counter_increment(publication->short_sends_counter, 1);
             }

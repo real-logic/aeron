@@ -36,10 +36,10 @@
 aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_default =
     {
         aeron_udp_channel_transport_init,
+        aeron_udp_channel_transport_reconnect,
         aeron_udp_channel_transport_close,
         aeron_udp_channel_transport_recvmmsg,
-        aeron_udp_channel_transport_sendmmsg,
-        aeron_udp_channel_transport_sendmsg,
+        aeron_udp_channel_transport_send,
         aeron_udp_channel_transport_get_so_rcvbuf,
         aeron_udp_channel_transport_bind_addr_and_port,
         aeron_udp_transport_poller_init,
@@ -186,8 +186,7 @@ int aeron_udp_channel_data_paths_init(
     data_paths->incoming_interceptors = NULL;
 
     /* if no interceptors, then use sendmmsg_func from transport bindings. */
-    data_paths->sendmmsg_func = media_bindings->sendmmsg_func;
-    data_paths->sendmsg_func = media_bindings->sendmsg_func;
+    data_paths->send_func = media_bindings->send_func;
     /* if no interceptors, then use passed in recv_func */
     data_paths->recv_func = recv_func;
 
@@ -210,8 +209,7 @@ int aeron_udp_channel_data_paths_init(
             }
 
             interceptor->interceptor_state = NULL;
-            interceptor->outgoing_mmsg_func = binding->outgoing_mmsg_func;
-            interceptor->outgoing_msg_func = binding->outgoing_msg_func;
+            interceptor->outgoing_send_func = binding->outgoing_send_func;
             interceptor->close_func = binding->outgoing_close_func;
             interceptor->outgoing_transport_notification_func = binding->outgoing_transport_notification_func;
             interceptor->outgoing_publication_notification_func = binding->outgoing_publication_notification_func;
@@ -244,14 +242,12 @@ int aeron_udp_channel_data_paths_init(
         outgoing_transport_interceptor->interceptor_state = media_bindings;
 
         /* last interceptor calls sendmmsg_func/sendmsg_func from transport bindings */
-        outgoing_transport_interceptor->outgoing_mmsg_func = aeron_udp_channel_outgoing_interceptor_mmsg_to_transport;
-        outgoing_transport_interceptor->outgoing_msg_func = aeron_udp_channel_outgoing_interceptor_msg_to_transport;
+        outgoing_transport_interceptor->outgoing_send_func = aeron_udp_channel_outgoing_interceptor_send_to_transport;
         outgoing_transport_interceptor->close_func = NULL;
         outgoing_transport_interceptor->next_interceptor = NULL;
         last_outgoing_interceptor->next_interceptor = outgoing_transport_interceptor;
         /* set up to pass into interceptors */
-        data_paths->sendmmsg_func = aeron_udp_channel_outgoing_interceptor_sendmmsg;
-        data_paths->sendmsg_func = aeron_udp_channel_outgoing_interceptor_sendmsg;
+        data_paths->send_func = aeron_udp_channel_outgoing_interceptor_send;
     }
 
     if (NULL != incoming_interceptor_bindings)
@@ -367,16 +363,13 @@ int aeron_udp_channel_transport_recv_func_holder_close(void *holder)
     return 0;
 }
 
-extern int aeron_udp_channel_outgoing_interceptor_sendmmsg(
+extern int aeron_udp_channel_outgoing_interceptor_send(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen);
-
-extern int aeron_udp_channel_outgoing_interceptor_sendmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message);
+    struct sockaddr_storage *address,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent);
 
 extern int aeron_udp_channel_outgoing_interceptor_mmsg_to_transport(
     void *interceptor_state,
@@ -390,6 +383,16 @@ extern int aeron_udp_channel_outgoing_interceptor_msg_to_transport(
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
     struct msghdr *message);
+
+extern int aeron_udp_channel_outgoing_interceptor_send_to_transport(
+    void *interceptor_state,
+    aeron_udp_channel_outgoing_interceptor_t *delegate,
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *address,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent);
+
 
 extern void aeron_udp_channel_incoming_interceptor_recv_func(
     aeron_udp_channel_data_paths_t *data_paths,

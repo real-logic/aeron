@@ -99,8 +99,8 @@ class MediaDriverTestUtil
         outputFilesByAeronDirectoryName.forEach(
             (aeronDirectoryName, files) ->
             {
-                IoUtil.delete(files.stdout, false);
-                IoUtil.delete(files.stderr, false);
+                IoUtil.delete(files.stdout, true);
+                IoUtil.delete(files.stderr, true);
             });
     }
 

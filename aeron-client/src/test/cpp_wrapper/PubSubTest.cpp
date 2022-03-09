@@ -54,6 +54,7 @@ INSTANTIATE_TEST_SUITE_P(
     PubSubTest,
     testing::Values(
         std::make_tuple("udp", "localhost:24325"),
+        std::make_tuple("udp", "224.20.30.39:24326"),
         std::make_tuple("ipc", nullptr)
     ));
 
@@ -68,6 +69,7 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveContextCallbacks)
     ChannelUriStringBuilder uriBuilder;
     const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
         .sessionId(sessionId)
+        .networkInterface("localhost")
         .build();
 
     std::int64_t reservedValue = INT64_C(78923648723465);
@@ -153,7 +155,9 @@ TEST_P(PubSubTest, shouldSubscribePublishAndReceiveSubscriptionCallbacks)
     AtomicBuffer buffer(buf);
     std::int32_t streamId = 982375;
     ChannelUriStringBuilder uriBuilder;
-    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
+        .networkInterface("localhost")
+        .build();
     std::int32_t imageUnavailable = 0;
     Context ctx;
 
@@ -216,6 +220,7 @@ TEST_P(PubSubTest, shouldSubscribeExclusivePublish)
         .termId(termId)
         .termOffset(termOffset)
         .initialTermId(initialTermId)
+        .networkInterface("localhost")
         .build();
 
     Context ctx;
@@ -255,7 +260,9 @@ TEST_P(PubSubTest, shouldBlockPollSubscription)
     AtomicBuffer buffer(buf);
     std::int32_t streamId = 982375;
     ChannelUriStringBuilder uriBuilder;
-    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
+        .networkInterface("localhost")
+        .build();
 
     Context ctx;
     ctx.useConductorAgentInvoker(true);
@@ -301,7 +308,9 @@ TEST_P(PubSubTest, shouldTryClaimAndControlledPollSubscription)
 {
     std::int32_t streamId = 982375;
     ChannelUriStringBuilder uriBuilder;
-    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
+        .networkInterface("localhost")
+        .build();
 
     Context ctx;
     ctx.useConductorAgentInvoker(true);
@@ -346,7 +355,9 @@ TEST_P(PubSubTest, shouldExclusivePublicationTryClaimAndControlledPollSubscripti
 {
     std::int32_t streamId = 982375;
     ChannelUriStringBuilder uriBuilder;
-    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder).build();
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
+        .networkInterface("localhost")
+        .build();
 
     Context ctx;
     ctx.useConductorAgentInvoker(true);
@@ -400,6 +411,7 @@ TEST_F(PubSubTest, DISABLED_shouldError)
         .termId(termId)
         .termOffset(termOffset)
         .initialTermId(initialTermId)
+        .networkInterface("localhost")
         .build();
 
     Context ctx;

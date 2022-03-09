@@ -362,8 +362,13 @@ void aeron_driver_sender_on_resolution_change(void *clientd, void *command)
     aeron_command_sender_resolution_change_t *resolution_change = (aeron_command_sender_resolution_change_t *)command;
     aeron_send_channel_endpoint_t *endpoint = resolution_change->endpoint;
 
-    aeron_send_channel_endpoint_resolution_change(
-        endpoint, resolution_change->endpoint_name, &resolution_change->new_addr);
+    if (aeron_send_channel_endpoint_resolution_change(
+        sender->context, endpoint, resolution_change->endpoint_name, &resolution_change->new_addr) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        aeron_driver_sender_log_error(sender);
+    }
+
     aeron_counter_add_ordered(sender->resolution_changes_counter, 1);
 }
 

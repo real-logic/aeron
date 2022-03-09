@@ -55,6 +55,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->destination_tracker = NULL;
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
 
+    struct sockaddr_storage *connect_addr = NULL;
     if (channel->has_explicit_control || channel->is_dynamic_control_mode || channel->is_manual_control_mode)
     {
         if (aeron_alloc((void **)&_endpoint->destination_tracker, sizeof(aeron_udp_destination_tracker_t)) < 0 ||
@@ -67,6 +68,10 @@ int aeron_send_channel_endpoint_create(
         {
             return -1;
         }
+    }
+    else if (context->connect_enabled)
+    {
+        connect_addr = &channel->remote_data;
     }
 
     _endpoint->conductor_fields.refcnt = 0;
@@ -91,6 +96,7 @@ int aeron_send_channel_endpoint_create(
         &_endpoint->transport,
         channel->is_multicast ? &channel->remote_control : &channel->local_control,
         channel->is_multicast ? &channel->local_control : &channel->remote_control,
+        connect_addr,
         channel->interface_index,
         0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
         _endpoint->conductor_fields.socket_rcvbuf,
@@ -225,7 +231,10 @@ void aeron_send_channel_endpoint_decref(void *clientd)
     }
 }
 
-void aeron_send_channel_apply_timestamps(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
+static void aeron_send_channel_apply_timestamps(
+    aeron_send_channel_endpoint_t *endpoint,
+    struct iovec *iov,
+    size_t iov_length)
 {
     if (AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_SND_TIMESTAMP & endpoint->transport.timestamp_flags)
     {
@@ -234,57 +243,37 @@ void aeron_send_channel_apply_timestamps(aeron_send_channel_endpoint_t *endpoint
         {
             int32_t offset = endpoint->conductor_fields.udp_channel->channel_snd_timestamp_offset;
 
-            for (size_t i = 0; i < vlen; i++)
+            for (size_t i = 0; i < iov_length; i++)
             {
                 aeron_timestamps_set_timestamp(
                     &send_timestamp,
                     offset,
-                    (uint8_t *)mmsghdr[i].msg_hdr.msg_iov[0].iov_base,
-                    mmsghdr[i].msg_hdr.msg_iov[0].iov_len);
+                    (uint8_t *)iov[0].iov_base,
+                    iov[0].iov_len);
             }
         }
     }
 }
 
-int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
+int aeron_send_channel_send(
+    aeron_send_channel_endpoint_t *endpoint,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent)
 {
     int result;
 
-    aeron_send_channel_apply_timestamps(endpoint, mmsghdr, vlen);
+    aeron_send_channel_apply_timestamps(endpoint, iov, iov_length);
 
     if (NULL == endpoint->destination_tracker)
     {
-        for (size_t i = 0; i < vlen; i++)
-        {
-            mmsghdr[i].msg_hdr.msg_name = &endpoint->current_data_addr;
-            mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->current_data_addr);
-        }
-
-        result = endpoint->data_paths->sendmmsg_func(endpoint->data_paths, &endpoint->transport, mmsghdr, vlen);
+        result = endpoint->data_paths->send_func(
+            endpoint->data_paths, &endpoint->transport, &endpoint->current_data_addr, iov, iov_length, bytes_sent);
     }
     else
     {
-        result = aeron_udp_destination_tracker_sendmmsg(
-            endpoint->destination_tracker, &endpoint->transport, mmsghdr, vlen);
-    }
-
-    return result;
-}
-
-int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr)
-{
-    int result;
-
-    if (NULL == endpoint->destination_tracker)
-    {
-        msghdr->msg_name = &endpoint->current_data_addr;
-        msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->current_data_addr);
-
-        result = endpoint->data_paths->sendmsg_func(endpoint->data_paths, &endpoint->transport, msghdr);
-    }
-    else
-    {
-        result = aeron_udp_destination_tracker_sendmsg(endpoint->destination_tracker, &endpoint->transport, msghdr);
+        result = aeron_udp_destination_tracker_send(
+            endpoint->destination_tracker, &endpoint->transport, iov, iov_length, bytes_sent);
     }
 
     return result;
@@ -470,8 +459,11 @@ int aeron_send_channel_endpoint_check_for_re_resolution(
     return 0;
 }
 
-void aeron_send_channel_endpoint_resolution_change(
-    aeron_send_channel_endpoint_t *endpoint, const char *endpoint_name, struct sockaddr_storage *new_addr)
+int aeron_send_channel_endpoint_resolution_change(
+    aeron_driver_context_t *context,
+    aeron_send_channel_endpoint_t *endpoint,
+    const char *endpoint_name,
+    struct sockaddr_storage *new_addr)
 {
     if (NULL != endpoint->destination_tracker)
     {
@@ -480,7 +472,16 @@ void aeron_send_channel_endpoint_resolution_change(
     else
     {
         memcpy(&endpoint->current_data_addr, new_addr, sizeof(endpoint->current_data_addr));
+        if (context->udp_channel_transport_bindings->reconnect_func(&endpoint->transport, &endpoint->current_data_addr) < 0)
+        {
+            char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+            aeron_format_source_identity(addr_str, sizeof(addr_str), &endpoint->current_data_addr);
+            AERON_APPEND_ERR("failed to reconnect transport with re-resolved address: %s", addr_str);
+            return -1;
+        }
     }
+
+    return 0;
 }
 
 extern void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint);

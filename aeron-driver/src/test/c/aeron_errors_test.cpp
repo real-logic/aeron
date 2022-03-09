@@ -102,6 +102,7 @@ static int resolveLocalhostOnly(
     {
         auto *address_in = reinterpret_cast<sockaddr_in *>(address);
         inet_pton(AF_INET, "127.0.0.1", &address_in->sin_addr);
+        address_in->sin_family = AF_INET;
         return 0;
     }
     else
@@ -442,7 +443,7 @@ TEST_F(CErrorsTest, shouldRecordDistinctErrorCorrectlyOnReresolve)
         std::this_thread::yield();
     }
 
-    ASSERT_EQ(1, result);
+    ASSERT_EQ(1, result) << aeron_errmsg();
 
     waitForErrorCounterIncrease();
     verifyDistinctErrorLogContains(EXPECTED_RESOLVER_ERROR, 10000);

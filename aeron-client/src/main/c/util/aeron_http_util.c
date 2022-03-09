@@ -259,9 +259,9 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
     bool is_ipv6 = AF_INET6 == parsed_url.address.ss_family;
     socklen_t addr_len = is_ipv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
 
-    if (connect(sock, (struct sockaddr *)&parsed_url.address, addr_len) < 0)
+    if (aeron_connect(sock, (struct sockaddr *)&parsed_url.address, addr_len) < 0)
     {
-        AERON_SET_ERR(errno, "http connect: %s", url);
+        AERON_APPEND_ERR("http connect: %s", url);
         goto error;
     }
 

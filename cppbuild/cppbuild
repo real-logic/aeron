@@ -50,8 +50,9 @@ do
       echo "Disabling parallel build"
       shift
       ;;
-    --spare-cpu)
-      ((ncpus=(ncpus > 1 ? ncpus-1 : 1)))
+    --parallel-cpus)
+      ncpus=${2}
+      shift
       shift
       ;;
     --no-tests)

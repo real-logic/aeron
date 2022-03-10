@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "util/aeron_bitutil.h"
@@ -25,18 +26,22 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
         offsetof(aeron_status_message_optional_header_t, group_tag);
     const size_t group_tag_size = sizeof(*group_tag);
     const size_t frame_length_with_group_tag = group_tag_offset + group_tag_size;
+    const bool has_group_tag =
+        (sm->frame_header.flags & AERON_STATUS_MESSAGE_HEADER_GROUP_TAG_FLAG &&
+        sm->frame_header.frame_length >= (int32_t)frame_length_with_group_tag) || // ATS frames
+        sm->frame_header.frame_length == (int32_t)frame_length_with_group_tag;    // Compatibility with existing behaviour
 
-    if (sm->frame_header.frame_length == (int32_t)frame_length_with_group_tag)
+    if (has_group_tag && sm->frame_header.frame_length >= (int32_t)frame_length_with_group_tag)
     {
         const uint8_t *sm_ptr = (const uint8_t *)sm + group_tag_offset;
         memcpy(group_tag, sm_ptr, group_tag_size);
 
-        return (int)group_tag_size;
+        return 1;
     }
 
     *group_tag = 0;
 
-    return (int)((size_t)sm->frame_header.frame_length - group_tag_offset);
+    return 0;
 }
 
 extern size_t aeron_res_header_address_length(int8_t res_type);

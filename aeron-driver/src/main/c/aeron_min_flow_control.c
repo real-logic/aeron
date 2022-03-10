@@ -243,20 +243,8 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
     aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
 
     int64_t receiver_group_tag;
-    const int bytes_read = aeron_udp_protocol_group_tag(status_message_header, &receiver_group_tag);
-    const bool was_present = bytes_read == sizeof(receiver_group_tag);
-
-    if (0 != bytes_read && !was_present)
-    {
-        AERON_SET_ERR(
-            EINVAL,
-            "%s",
-            "Received a status message for tagged flow control that did not have 0 or 8 bytes for the group_tag");
-        aeron_distinct_error_log_record(strategy_state->error_log, aeron_errcode(), aeron_errmsg());
-        aeron_err_clear();
-    }
-
-    const bool matches_tag = was_present && receiver_group_tag == strategy_state->group_tag;
+    const bool has_group_tag = aeron_udp_protocol_group_tag(status_message_header, &receiver_group_tag);
+    const bool matches_tag = has_group_tag && receiver_group_tag == strategy_state->group_tag;
 
     return aeron_min_flow_control_strategy_process_sm(
         strategy_state, status_message_header, snd_lmt, initial_term_id, position_bits_to_shift, now_ns, matches_tag);

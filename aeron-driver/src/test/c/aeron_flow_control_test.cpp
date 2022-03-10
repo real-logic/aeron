@@ -69,27 +69,6 @@ public:
             strategy->state, (uint8_t *)sm, sizeof(struct sockaddr_storage), &address, snd_lmt, 0, 0, now_ns);
     }
 
-    int64_t apply_old_asf_status_message(
-        aeron_flow_control_strategy_t *strategy,
-        int64_t receiver_id,
-        int32_t term_offset,
-        int32_t asf_value)
-    {
-        uint8_t msg[1024];
-        auto *sm = (aeron_status_message_header_t *)msg;
-        auto *asf = (int32_t *)(msg + sizeof(aeron_status_message_header_t));
-
-        sm->frame_header.frame_length = sizeof(aeron_status_message_header_t) + sizeof(int32_t);
-        sm->consumption_term_id = 0;
-        sm->consumption_term_offset = term_offset;
-        sm->receiver_window = WINDOW_LENGTH;
-        sm->receiver_id = receiver_id;
-        *asf = asf_value;
-
-        return strategy->on_status_message(
-            strategy->state, (uint8_t *)sm, sizeof(struct sockaddr_storage), &address, sizeof(address), 0, 0, 0);
-    }
-
     void initialise_channel(const char *uri)
     {
         aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &m_channel, false);
@@ -313,23 +292,6 @@ TEST_F(TaggedFlowControlTest, shouldUseTaggedStrategyWith8ByteTag)
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(m_strategy, 1, 1000, 3000000000));
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(m_strategy, 2, 2000, 3000000000));
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(m_strategy, 3, 994, -1294967296));
-}
-
-TEST_F(TaggedFlowControlTest, shouldUseTaggedStrategyWithOldAsfValue)
-{
-    initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123");
-
-    ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &m_strategy, context, m_channel,
-        1001, 1001, 0, 64 * 1024));
-
-    ASSERT_FALSE(nullptr == m_strategy);
-
-    size_t initial_observations = aeron_distinct_error_log_num_observations(&error_log);
-
-    ASSERT_EQ(WINDOW_LENGTH + 1000, apply_old_asf_status_message(m_strategy, 1, 1000, 123));
-
-    ASSERT_LT(initial_observations, aeron_distinct_error_log_num_observations(&error_log));
 }
 
 TEST_F(TaggedFlowControlTest, shouldUsePositionAndWindowFromStatusMessageWhenReceiverAreEmpty)

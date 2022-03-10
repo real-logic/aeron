@@ -229,10 +229,12 @@ int aeron_receive_channel_endpoint_send_sm(
     const int32_t frame_length = endpoint->group_tag.is_present ?
         sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t) :
         sizeof(aeron_status_message_header_t);
+    const uint8_t sm_flags = endpoint->group_tag.is_present ?
+        flags | AERON_STATUS_MESSAGE_HEADER_GROUP_TAG_FLAG : flags;
 
     sm_header->frame_header.frame_length = frame_length;
     sm_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
-    sm_header->frame_header.flags = flags;
+    sm_header->frame_header.flags = sm_flags;
     sm_header->frame_header.type = AERON_HDR_TYPE_SM;
     sm_header->session_id = session_id;
     sm_header->stream_id = stream_id;

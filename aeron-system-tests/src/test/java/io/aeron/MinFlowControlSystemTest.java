@@ -99,8 +99,24 @@ class MinFlowControlSystemTest
             .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverA = TestMediaDriver.launch(driverAContext, testWatcher);
-        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+        try
+        {
+            driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+        }
+        finally
+        {
+            testWatcher.dataCollector().add(driverAContext.aeronDirectory());
+        }
+
+        try
+        {
+            driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+        }
+        finally
+        {
+            testWatcher.dataCollector().add(driverBContext.aeronDirectory());
+        }
+
         clientA = Aeron.connect(
             new Aeron.Context()
                 .aeronDirectoryName(driverAContext.aeronDirectoryName()));
@@ -114,7 +130,6 @@ class MinFlowControlSystemTest
     void after()
     {
         CloseHelper.quietCloseAll(clientB, clientA, driverB, driverA);
-        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     private static Stream<Arguments> strategyConfigurations()
@@ -400,7 +415,11 @@ class MinFlowControlSystemTest
 
         while (currentSenderLimit == countersReader.getCounterValue(senderLimitCounterId))
         {
-            Tests.sleep(1);
+            Tests.sleep(
+                1,
+                "currentSenderLimit(%d) == countersReader.getCounterValue(senderLimitCounterId)(%d)",
+                currentSenderLimit,
+                countersReader.getCounterValue(senderLimitCounterId));
         }
     }
 }

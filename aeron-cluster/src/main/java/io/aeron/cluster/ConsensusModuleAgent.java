@@ -1771,14 +1771,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 throw new ClusterEvent(
                     "unexpected image close during catchup: position=" + logAdapter.image().position());
             }
-        }
 
-        final long appendPosition = logAdapter.position();
-        if (appendPosition > lastAppendPosition || nowNs > (timeOfLastAppendPositionSendNs + leaderHeartbeatIntervalNs))
-        {
-            commitPosition.proposeMaxOrdered(appendPosition);
             final ExclusivePublication publication = election.leader().publication();
-            tryUpdateAppendPosition(publication, nowNs, replayLeadershipTermId, appendPosition);
+            tryUpdateAppendPosition(publication, nowNs, replayLeadershipTermId, appendPosition.get());
+            commitPosition.proposeMaxOrdered(logAdapter.position());
         }
 
         if (nowNs > (timeOfLastAppendPositionUpdateNs + leaderHeartbeatTimeoutNs) &&

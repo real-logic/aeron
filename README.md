@@ -110,7 +110,7 @@ For those comfortable with CMake - then a clean, build, and test looks like:
 ```shell
     $ mkdir -p cppbuild/Debug
     $ cd cppbuild/Debug
-    $ cmake ../..
+    $ cmake -DCMAKE_BUILD_TYPE=Debug ../..
     $ cmake --build . --clean-first
     $ ctest
 ```

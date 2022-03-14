@@ -3155,7 +3155,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 else if (NULL_POSITION == terminationPosition)
                 {
                     ctx.countedErrorHandler().onError(new ClusterEvent(
-                        "log recording ended unexpectedly (NULL_POSITION == terminationPosition"));
+                        "log recording ended unexpectedly (NULL_POSITION == terminationPosition)"));
                     isElectionRequired = true;
                 }
             }

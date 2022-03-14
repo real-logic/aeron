@@ -28,7 +28,7 @@
 #   else
 #       define CLIENT_EXPORT
 #   endif
-#else 
+#else
 #   define CLIENT_EXPORT
 #endif
 

@@ -229,6 +229,9 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 # gmock usage
 
 if (AERON_TESTS)
+    set(INSTALL_GMOCK OFF CACHE INTERNAL "Install Googletest's GMock?")
+    set(INSTALL_GTEST OFF CACHE INTERNAL "Install Googletest's GTest?" )
+
     FetchContent_Declare(
         gmock
         URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.11.0.zip
@@ -249,7 +252,13 @@ if (AERON_BUILD_SAMPLES)
         URL_MD5 4d8f8ed3fe69422cf6b44fdabd98d462
     )
 
-    FetchContent_MakeAvailable(hdr_histogram)
+
+    FetchContent_GetProperties(hdr_histogram)
+    if(NOT hdr_histogram_POPULATED)
+        FetchContent_Populate(hdr_histogram)
+        add_subdirectory(${hdr_histogram_SOURCE_DIR} ${hdr_histogram_BINARY_DIR} EXCLUDE_FROM_ALL)
+    endif()
+#    FetchContent_MakeAvailable(hdr_histogram)
 endif ()
 
 

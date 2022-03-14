@@ -42,6 +42,7 @@ import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.compareLog;
 import static io.aeron.cluster.ElectionState.*;
+import static java.lang.Math.max;
 
 /**
  * Election process to determine a new cluster leader and catch up followers.
@@ -60,7 +61,8 @@ class Election
     private long nominationDeadlineNs;
     private long logPosition;
     private long appendPosition;
-    private long catchupPosition = NULL_POSITION;
+    private long catchupJoinPosition = NULL_POSITION;
+    private long catchupCommitPosition = 0;
     private long replicationLeadershipTermId = NULL_VALUE;
     private long replicationStopPosition = NULL_POSITION;
     private long leaderRecordingId = NULL_VALUE;
@@ -119,7 +121,7 @@ class Election
 
         if (clusterMembers.length == 1 && thisMember.id() == clusterMembers[0].id())
         {
-            candidateTermId = Math.max(leadershipTermId + 1, ctx.clusterMarkFile().candidateTermId() + 1);
+            candidateTermId = max(leadershipTermId + 1, ctx.clusterMarkFile().candidateTermId() + 1);
             this.leadershipTermId = candidateTermId;
             leaderMember = thisMember;
             ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
@@ -416,10 +418,10 @@ class Election
                 this.leaderMember = leader;
                 this.isLeaderStartup = isStartup;
                 this.leadershipTermId = leadershipTermId;
-                this.candidateTermId = Math.max(leadershipTermId, candidateTermId);
+                this.candidateTermId = max(leadershipTermId, candidateTermId);
                 this.logSessionId = logSessionId;
                 this.leaderRecordingId = leaderRecordingId;
-                this.catchupPosition = appendPosition < logPosition ? logPosition : NULL_POSITION;
+                this.catchupJoinPosition = appendPosition < logPosition ? logPosition : NULL_POSITION;
 
                 if (this.appendPosition < termBaseLogPosition)
                 {
@@ -508,15 +510,15 @@ class Election
         }
 
         if (leadershipTermId == this.leadershipTermId &&
-            NULL_POSITION != catchupPosition &&
+            NULL_POSITION != catchupJoinPosition &&
             FOLLOWER_CATCHUP == state &&
             leaderMemberId == leaderMember.id())
         {
-            catchupPosition = Math.max(catchupPosition, logPosition);
+            catchupCommitPosition = max(catchupCommitPosition, logPosition);
         }
         else if (FOLLOWER_LOG_REPLICATION == state && leaderMemberId == leaderMember.id())
         {
-            replicationCommitPosition = Math.max(replicationCommitPosition, logPosition);
+            replicationCommitPosition = max(replicationCommitPosition, logPosition);
             replicationDeadlineNs = ctx.clusterClock().timeNanos() + ctx.leaderHeartbeatTimeoutNs();
         }
         else if (leadershipTermId > this.leadershipTermId && LEADER_READY == state)
@@ -567,7 +569,7 @@ class Election
             logSubscription = null;
         }
 
-        candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
+        candidateTermId = max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
 
         if (clusterMembers.length == 1 && thisMember.id() == clusterMembers[0].id())
         {
@@ -851,7 +853,7 @@ class Election
             }
             else
             {
-                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
+                state(NULL_POSITION != catchupJoinPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
             }
         }
         else
@@ -861,7 +863,7 @@ class Election
             {
                 cleanupReplay();
                 logPosition = appendPosition;
-                state(NULL_POSITION != catchupPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
+                state(NULL_POSITION != catchupJoinPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
             }
         }
 
@@ -934,17 +936,18 @@ class Election
 
     private int followerCatchup(final long nowNs)
     {
-        int workCount = consensusModuleAgent.catchupPoll(catchupPosition, nowNs);
+        int workCount = consensusModuleAgent.catchupPoll(catchupCommitPosition, nowNs);
 
         if (null == consensusModuleAgent.liveLogDestination() &&
-            consensusModuleAgent.isCatchupNearLive(catchupPosition))
+            consensusModuleAgent.isCatchupNearLive(max(catchupJoinPosition, catchupCommitPosition)))
         {
             addLiveLogDestination();
             workCount++;
         }
 
         final long position = ctx.commitPositionCounter().getWeak();
-        if (position >= catchupPosition &&
+        if (position >= catchupJoinPosition &&
+            position >= catchupCommitPosition &&
             null == consensusModuleAgent.catchupLogDestination() &&
             ConsensusModule.State.SNAPSHOT != consensusModuleAgent.state())
         {
@@ -1187,7 +1190,7 @@ class Election
                 logPosition,
                 logLeadershipTermId,
                 appendPosition,
-                catchupPosition);
+                catchupJoinPosition);
 
             if (CANVASS == state)
             {
@@ -1230,7 +1233,8 @@ class Election
     private void resetCatchup()
     {
         consensusModuleAgent.stopAllCatchups();
-        catchupPosition = NULL_POSITION;
+        catchupJoinPosition = NULL_POSITION;
+        catchupCommitPosition = 0;
     }
 
     private void resetMembers()
@@ -1420,7 +1424,8 @@ class Election
             ", nominationDeadlineNs=" + nominationDeadlineNs +
             ", logPosition=" + logPosition +
             ", appendPosition=" + appendPosition +
-            ", catchupPosition=" + catchupPosition +
+            ", catchupJoinPosition=" + catchupJoinPosition +
+            ", catchupCommitPosition=" + catchupCommitPosition +
             ", logReplicationPosition=" + replicationStopPosition +
             ", leaderRecordingId=" + leaderRecordingId +
             ", leadershipTermId=" + leadershipTermId +

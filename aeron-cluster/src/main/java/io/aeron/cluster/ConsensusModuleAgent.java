@@ -1771,14 +1771,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 throw new ClusterEvent(
                     "unexpected image close during catchup: position=" + logAdapter.image().position());
             }
-        }
 
-        final long appendPosition = logAdapter.position();
-        if (appendPosition > lastAppendPosition || nowNs > (timeOfLastAppendPositionSendNs + leaderHeartbeatIntervalNs))
-        {
-            commitPosition.proposeMaxOrdered(appendPosition);
             final ExclusivePublication publication = election.leader().publication();
-            tryUpdateAppendPosition(publication, nowNs, replayLeadershipTermId, appendPosition);
+            workCount += updateFollowerPosition(publication, nowNs, replayLeadershipTermId, appendPosition.get());
+            commitPosition.proposeMaxOrdered(logAdapter.position());
         }
 
         if (nowNs > (timeOfLastAppendPositionUpdateNs + leaderHeartbeatTimeoutNs) &&
@@ -2520,25 +2516,36 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return true;
     }
 
-    private boolean tryUpdateAppendPosition(
+    private int updateFollowerPosition(final long nowNs)
+    {
+        final long recordedPosition = null != appendPosition ? appendPosition.get() : logRecordedPosition;
+        return updateFollowerPosition(leaderMember.publication(), nowNs, this.leadershipTermId, recordedPosition);
+    }
+
+    private int updateFollowerPosition(
         final ExclusivePublication publication,
         final long nowNs,
         final long leadershipTermId,
-        final long position)
+        final long appendPosition)
     {
-        if (consensusPublisher.appendPosition(publication, leadershipTermId, position, memberId))
+        final long position = Math.max(appendPosition, lastAppendPosition);
+        if ((position > lastAppendPosition ||
+            nowNs >= (timeOfLastAppendPositionSendNs + leaderHeartbeatIntervalNs)))
         {
-            if (position > lastAppendPosition)
+            if (consensusPublisher.appendPosition(publication, leadershipTermId, position, memberId))
             {
-                lastAppendPosition = position;
-                timeOfLastAppendPositionUpdateNs = nowNs;
-            }
-            timeOfLastAppendPositionSendNs = nowNs;
+                if (position > lastAppendPosition)
+                {
+                    lastAppendPosition = position;
+                    timeOfLastAppendPositionUpdateNs = nowNs;
+                }
+                timeOfLastAppendPositionSendNs = nowNs;
 
-            return true;
+                return 1;
+            }
         }
 
-        return false;
+        return 0;
     }
 
     private void loadSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
@@ -2746,21 +2753,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             ctx.leaderHeartbeatTimeoutNs(),
             ctx.leaderHeartbeatIntervalNs(),
             nowNs);
-    }
-
-    private int updateFollowerPosition(final long nowNs)
-    {
-        final long recordedPosition = null != appendPosition ? appendPosition.get() : logRecordedPosition;
-        final long position = Math.max(recordedPosition, lastAppendPosition);
-
-        if ((recordedPosition > lastAppendPosition ||
-            nowNs >= (timeOfLastAppendPositionSendNs + leaderHeartbeatIntervalNs)) &&
-            tryUpdateAppendPosition(leaderMember.publication(), nowNs, leadershipTermId, position))
-        {
-            return 1;
-        }
-
-        return 0;
     }
 
     private void clearSessionsAfter(final long logPosition)

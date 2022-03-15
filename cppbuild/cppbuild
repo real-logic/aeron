@@ -4,6 +4,7 @@ SOURCE_DIR="$(pwd)"
 export BUILD_DIR="${SOURCE_DIR}/cppbuild/Release"
 export BUILD_CONFIG=Release
 EXTRA_CMAKE_ARGS=""
+BUILD_PACKAGE=false
 COVERAGE_BUILD=0
 
 ncpus=1
@@ -92,6 +93,10 @@ do
       shift
       shift
       ;;
+    --package)
+      BUILD_PACKAGE=true
+      shift
+      ;;
     -h|--help)
       echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--help]"
       exit
@@ -124,4 +129,12 @@ if [[ ${COVERAGE_BUILD} -eq 1 ]] ; then
 else
   cd "${BUILD_DIR}" || exit
   cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j ${ncpus} all && ctest -C ${BUILD_CONFIG} --output-on-failure
+fi
+
+if [ true = "${BUILD_PACKAGE}" ]
+then
+  (
+    cd "${BUILD_DIR}"
+    make package
+  )
 fi

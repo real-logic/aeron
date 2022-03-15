@@ -32,4 +32,4 @@ ENV PATH="$PATH:/opt/tools/cmake-${CMAKE_VERSION}-Linux-x86_64/bin" \
 USER athena
 
 WORKDIR /opt/aeron
-ENTRYPOINT scl enable "devtoolset-${GCC_VERSION}" -- cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+ENTRYPOINT scl enable "devtoolset-${GCC_VERSION}" -- cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --package

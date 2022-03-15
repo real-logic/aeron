@@ -199,6 +199,12 @@ int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
 
     *state = NULL;
 
+    if (NULL == aeron_dlsym(RTLD_DEFAULT, "aeron_driver_context_init"))
+    {
+        AERON_SET_ERR(EPERM, "%s", "dynamic loading of libraries not supported with a statically link driver");
+        return -1;
+    }
+
     if (libs_length >= (size_t)AERON_MAX_DL_LIBS_LEN)
     {
         AERON_SET_ERR(

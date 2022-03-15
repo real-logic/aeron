@@ -337,6 +337,10 @@ add_executable(aeronmd aeronmd.c)
 target_include_directories(aeronmd
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
 
+add_executable(aeronmd_s aeronmd.c)
+target_include_directories(aeronmd_s
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
+
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
@@ -373,6 +377,17 @@ target_link_libraries(
 
 target_link_libraries(
     aeronmd
+    aeron_driver
+    ${CMAKE_DL_LIBS}
+    ${AERON_LIB_BSD_LIBS}
+    ${AERON_LIB_UUID_LIBS}
+    ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${AERON_LIB_WINSOCK_LIBS})
+
+target_link_libraries(
+    aeronmd_s
     aeron_driver_static
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_BSD_LIBS}
@@ -391,6 +406,6 @@ if (AERON_INSTALL_TARGETS)
         RUNTIME DESTINATION lib
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
-    install(TARGETS aeronmd DESTINATION bin)
+    install(TARGETS aeronmd aeronmd_s DESTINATION bin)
     install(DIRECTORY . DESTINATION include/aeronmd FILES_MATCHING PATTERN "*.h")
 endif ()

@@ -98,7 +98,7 @@ do
       shift
       ;;
     -h|--help)
-      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--help]"
+      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--package] [--help]"
       exit
       ;;
     *)

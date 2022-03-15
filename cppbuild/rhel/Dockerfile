@@ -24,4 +24,4 @@ ENV JAVA_HOME=/usr/lib/jvm/zulu-8 \
 USER athena
 
 WORKDIR /opt/aeron
-ENTRYPOINT ["cppbuild/cppbuild", "--c-warnings-as-errors", "--cxx-warnings-as-errors"]
+ENTRYPOINT ["cppbuild/cppbuild", "--c-warnings-as-errors", "--cxx-warnings-as-errors", "--package"]

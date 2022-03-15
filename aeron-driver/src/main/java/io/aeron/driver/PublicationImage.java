@@ -45,7 +45,6 @@ import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermGapFiller.tryFillGap;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.UnsafeAccess.UNSAFE;
 
 class PublicationImagePadding1
 {
@@ -622,7 +621,7 @@ public final class PublicationImage
             final long smPosition = nextSmPosition;
             final int receiverWindowLength = nextSmReceiverWindowLength;
 
-            UNSAFE.loadFence();
+            MemoryAccess.acquireFence();
 
             if (changeNumber == beginSmChange)
             {
@@ -664,7 +663,7 @@ public final class PublicationImage
             final int termOffset = lossTermOffset;
             final int length = lossLength;
 
-            UNSAFE.loadFence();
+            MemoryAccess.acquireFence();
 
             if (changeNumber == beginLossChange)
             {
@@ -888,9 +887,11 @@ public final class PublicationImage
         final long changeNumber = beginSmChange + 1;
 
         BEGIN_SM_CHANGE_UPDATER.lazySet(this, changeNumber);
-        UNSAFE.storeFence();
+        MemoryAccess.releaseFence();
+
         nextSmPosition = smPosition;
         nextSmReceiverWindowLength = receiverWindowLength;
+
         END_SM_CHANGE_UPDATER.lazySet(this, changeNumber);
     }
 

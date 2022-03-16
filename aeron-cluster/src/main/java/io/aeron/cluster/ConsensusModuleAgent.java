@@ -1782,6 +1782,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             throw new ClusterEvent(
                 "no catchup progress commitPosition=" + commitPosition.getWeak() + " limitPosition=" + limitPosition +
+                    " lastAppendPosition=" + lastAppendPosition +
                     " appendPosition=" + (null != appendPosition ? appendPosition.get() : -1) +
                     " logPosition=" + election.logPosition());
         }

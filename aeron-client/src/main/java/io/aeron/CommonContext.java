@@ -26,10 +26,7 @@ import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
@@ -354,6 +351,40 @@ public class CommonContext implements Cloneable
      * Placeholder value to use in URIs to specify that a timestamp should be stored in the reserved value field.
      */
     public static final String RESERVED_OFFSET = "reserved";
+
+    /**
+     * Property name for a fallback PrintStream based logger when it is not possible to use the error logging
+     * callback.  Supported values are stdout, stderr, no_op (stderr is the default).
+     */
+    public static final String FALLBACK_LOGGER_PROP_NAME = "aeron.fallback.logger";
+
+    /**
+     * Get the current fallback logger based on the supplied property.
+     *
+     * @return the configured PrintStream.
+     */
+    public static PrintStream fallbackLogger()
+    {
+        final String fallbackLoggerName = getProperty(FALLBACK_LOGGER_PROP_NAME, "stderr");
+        switch (fallbackLoggerName)
+        {
+            case "stdout":
+                return System.out;
+
+            case "no_op":
+                return new PrintStream(new OutputStream()
+                {
+                    public void write(final int b) throws IOException
+                    {
+                        // No-op
+                    }
+                });
+
+            case "stderr":
+            default:
+                return System.err;
+        }
+    }
 
     /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.

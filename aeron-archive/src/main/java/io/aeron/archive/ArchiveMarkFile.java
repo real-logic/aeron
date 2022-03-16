@@ -131,7 +131,7 @@ public class ArchiveMarkFile implements AutoCloseable
             final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
                 buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
 
-            saveExistingErrors(file, existingErrorBuffer, System.err);
+            saveExistingErrors(file, existingErrorBuffer, CommonContext.fallbackLogger());
             existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
         }
 

@@ -819,6 +819,7 @@ project(':aeron-system-tests') {
     tasks.withType(Test) {
         systemProperty('java.net.preferIPv4Stack', 'true')
         systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
+        systemProperty('aeron.fallback.logger', 'no_op')
     }
 
     javadoc.enabled = false

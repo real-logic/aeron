@@ -113,7 +113,7 @@ public final class ClusterMarkFile implements AutoCloseable
             final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
                 buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
 
-            saveExistingErrors(file, existingErrorBuffer, type, System.err);
+            saveExistingErrors(file, existingErrorBuffer, type, CommonContext.fallbackLogger());
             existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
         }
         else

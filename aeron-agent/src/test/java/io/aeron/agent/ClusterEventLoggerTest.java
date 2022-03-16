@@ -236,7 +236,7 @@ class ClusterEventLoggerTest
         final StringBuilder sb = new StringBuilder();
         ClusterEventDissector.dissectCatchupPosition(CATCHUP_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*\\] CLUSTER: CATCHUP_POSITION \\[4079/8256\\]: " +
+        final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*\\] CLUSTER: CATCHUP_POSITION \\[[0-9]*/8256\\]: " +
             "leadershipTermId=1233 logPosition=100 followerMemberId=18 " +
             "aeron:udp\\?endpoint=localhost:9090\\|alias" +
             "=(x)*\\.\\.\\.";

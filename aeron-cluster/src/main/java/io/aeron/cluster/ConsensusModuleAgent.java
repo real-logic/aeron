@@ -2598,7 +2598,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 throw new ClusterException("incompatible time unit: " + clusterTimeUnit + " snapshot=" + timeUnit);
             }
 
-            pendingServiceMessages.forEach(this::serviceSessionMessageReset, Integer.MAX_VALUE);
+            pendingServiceMessages.forEach(ConsensusModuleAgent::serviceSessionMessageReset, Integer.MAX_VALUE);
         }
 
         timerService.currentTime(clusterClock.time());
@@ -2827,7 +2827,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         if (uncommittedServiceMessages > 0)
         {
             pendingServiceMessages.consume(leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
-            pendingServiceMessages.forEach(this::serviceSessionMessageReset, Integer.MAX_VALUE);
+            pendingServiceMessages.forEach(ConsensusModuleAgent::serviceSessionMessageReset, Integer.MAX_VALUE);
             uncommittedServiceMessages = 0;
         }
 
@@ -3083,7 +3083,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return false;
     }
 
-    private boolean serviceSessionMessageReset(
+    private static boolean serviceSessionMessageReset(
         final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
         final int timestampOffset = offset +

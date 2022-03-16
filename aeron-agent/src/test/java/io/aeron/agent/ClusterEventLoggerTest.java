@@ -374,7 +374,7 @@ class ClusterEventLoggerTest
             REPLAY_NEW_LEADERSHIP_TERM, logBuffer, encodedMsgOffset(offset), sb);
 
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: REPLAY_NEW_LEADERSHIP_TERM " +
-            "\\[51/51\\]: memberId=982374 isInElection=true leadershipTermId=1233 logPosition=988723465 " +
+            "\\[59/59\\]: memberId=982374 isInElection=true leadershipTermId=1233 logPosition=988723465 " +
             "termBaseLogPosition=988723433 appVersion=13 timestamp=890723452345 timeUnit=NANOSECONDS";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));

@@ -25,7 +25,6 @@ import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
-import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
@@ -411,12 +410,12 @@ class Election
                     consensusModuleAgent.truncateLogEntry(logLeadershipTermId, nextTermBaseLogPosition);
                     throw new ClusterEvent(
                         "Truncating Cluster Log - this.logLeadershipTermId=" + logLeadershipTermId +
-                            " this.leadershipTermId=" + this.leadershipTermId +
-                            " this.candidateTermId=" + candidateTermId +
-                            " commitPosition=" + ctx.commitPositionCounter().getWeak() +
-                            " appendPosition=" + appendPosition +
-                            " oldPosition=" + logPosition +
-                            " newPosition=" + nextTermBaseLogPosition);
+                        " this.leadershipTermId=" + this.leadershipTermId +
+                        " this.candidateTermId=" + candidateTermId +
+                        " commitPosition=" + ctx.commitPositionCounter().getWeak() +
+                        " appendPosition=" + appendPosition +
+                        " oldPosition=" + logPosition +
+                        " newPosition=" + nextTermBaseLogPosition);
                 }
 
                 this.leaderMember = leader;

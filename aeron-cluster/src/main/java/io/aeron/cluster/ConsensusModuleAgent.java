@@ -1257,6 +1257,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final TimeUnit timeUnit,
         final int appVersion)
     {
+        onReplayNewLeadershipTermEvent0(
+            memberId,
+            null != election,
+            leadershipTermId,
+            logPosition,
+            timestamp,
+            termBaseLogPosition,
+            timeUnit,
+            appVersion);
+
         if (timeUnit != clusterTimeUnit)
         {
             ctx.countedErrorHandler().onError(new ClusterException(
@@ -1281,6 +1291,18 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             election.onReplayNewLeadershipTermEvent(
                 logRecordingId, leadershipTermId, logPosition, timestamp, termBaseLogPosition);
         }
+    }
+
+    private void onReplayNewLeadershipTermEvent0(
+        final int memberId,
+        final boolean isInElection,
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestamp,
+        final long termBaseLogPosition,
+        final TimeUnit timeUnit,
+        final int appVersion)
+    {
     }
 
     void onReplayMembershipChange(

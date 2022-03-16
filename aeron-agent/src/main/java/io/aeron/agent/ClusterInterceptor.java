@@ -17,6 +17,8 @@ package io.aeron.agent;
 
 import net.bytebuddy.asm.Advice;
 
+import java.util.concurrent.TimeUnit;
+
 import static io.aeron.agent.ClusterEventCode.ROLE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.STATE_CHANGE;
 import static io.aeron.agent.ClusterEventLogger.LOGGER;
@@ -174,6 +176,31 @@ class ClusterInterceptor
                 appendPosition,
                 oldPosition,
                 newPosition);
+        }
+    }
+
+    static class ReplayNewLeadershipTerm
+    {
+        @Advice.OnMethodEnter
+        static void onReplayNewLeadershipTermEvent0(
+            final int memberId,
+            final boolean isInElection,
+            final long leadershipTermId,
+            final long logPosition,
+            final long timestamp,
+            final long termBaseLogPosition,
+            final TimeUnit timeUnit,
+            final int appVersion)
+        {
+            LOGGER.logReplayNewLeadershipTermEvent(
+                memberId,
+                isInElection,
+                leadershipTermId,
+                logPosition,
+                timestamp,
+                termBaseLogPosition,
+                timeUnit,
+                appVersion);
         }
     }
 }

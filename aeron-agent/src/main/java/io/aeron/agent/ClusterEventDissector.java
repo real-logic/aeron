@@ -276,4 +276,49 @@ final class ClusterEventDissector
         builder.append(" oldPosition=").append(oldPosition);
         builder.append(" newPosition=").append(newPosition);
     }
+
+    public static void dissectReplayNewLeadershipTerm(
+        final ClusterEventCode eventCode,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, eventCode, buffer, absoluteOffset, builder);
+
+        final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        final boolean isInElection = 0 != buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        final long leadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long logPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long timestamp = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long termBaseLogPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final int appVersion = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        final int timeUnitLength = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(": memberId=").append(memberId);
+        builder.append(" isInElection=").append(isInElection);
+        builder.append(" leadershipTermId=").append(leadershipTermId);
+        builder.append(" logPosition=").append(logPosition);
+        builder.append(" termBaseLogPosition=").append(termBaseLogPosition);
+        builder.append(" appVersion=").append(appVersion);
+        builder.append(" timestamp=").append(timestamp);
+        builder.append(" timeUnit=");
+
+        buffer.getStringWithoutLengthAscii(absoluteOffset, timeUnitLength, builder);
+    }
 }

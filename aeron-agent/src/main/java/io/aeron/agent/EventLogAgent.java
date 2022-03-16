@@ -453,6 +453,14 @@ public final class EventLogAgent
             ClusterInterceptor.TruncateLogEntry.class,
             "onTruncateLogEntry");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.REPLAY_NEW_LEADERSHIP_TERM,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.ReplayNewLeadershipTerm.class,
+            "onReplayNewLeadershipTermEvent0");
+
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
 
         return tempBuilder;

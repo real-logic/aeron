@@ -27,13 +27,11 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.ClusterEventCode.*;
-import static io.aeron.agent.ClusterEventEncoder.electionStateChangeLength;
-import static io.aeron.agent.ClusterEventEncoder.newLeaderShipTermLength;
+import static io.aeron.agent.ClusterEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.BUFFER_LENGTH_DEFAULT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.BitUtil.*;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.ALIGNMENT;
@@ -322,5 +320,63 @@ class ClusterEventLoggerTest
         assertEquals(newPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
         assertEquals(stateName(state), logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+    }
+
+    @Test
+    void logReplayNewLeadershipTerm()
+    {
+        final int offset = ALIGNMENT * 4;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final int memberId = 982374;
+        final boolean isInElection = true;
+        final long leadershipTermId = 1233L;
+        final long logPosition = 988723465L;
+        final long timestamp = 890723452345L;
+        final long termBaseLogPosition = logPosition - 32;
+        final TimeUnit timeUnit = NANOSECONDS;
+        final int appVersion = 13;
+
+        logger.logReplayNewLeadershipTermEvent(
+            memberId,
+            isInElection,
+            leadershipTermId,
+            logPosition,
+            timestamp,
+            termBaseLogPosition,
+            TimeUnit.NANOSECONDS,
+            appVersion);
+
+        final int length = replayNewLeadershipTermEventLength(timeUnit);
+        verifyLogHeader(logBuffer, offset, REPLAY_NEW_LEADERSHIP_TERM.toEventCodeId(), length, length);
+        int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+
+        assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(isInElection, 0 != logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(leadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(logPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(timestamp, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(termBaseLogPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(appVersion, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(timeUnit.name().length(), logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(timeUnit.name(), logBuffer.getStringWithoutLengthAscii(index, timeUnit.name().length()));
+        index += timeUnit.name().length();
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectReplayNewLeadershipTerm(
+            REPLAY_NEW_LEADERSHIP_TERM, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: REPLAY_NEW_LEADERSHIP_TERM " +
+            "\\[51/51\\]: memberId=982374 isInElection=true leadershipTermId=1233 logPosition=988723465 " +
+            "termBaseLogPosition=988723433 appVersion=13 timestamp=890723452345 timeUnit=NANOSECONDS";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
 }

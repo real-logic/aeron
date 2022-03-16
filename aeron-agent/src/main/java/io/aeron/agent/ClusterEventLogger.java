@@ -20,6 +20,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
+import java.util.concurrent.TimeUnit;
+
 import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.*;
@@ -414,6 +416,59 @@ public final class ClusterEventLogger
                     appendPosition,
                     oldPosition,
                     newPosition);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log the replay of the leadership term id.
+     *
+     * @param memberId current memberId
+     * @param isInElection an election is currently in process
+     * @param leadershipTermId the logged leadership term id
+     * @param logPosition current position in the log
+     * @param timestamp logged timestamp
+     * @param termBaseLogPosition initial position for this term
+     * @param timeUnit cluster time unit
+     * @param appVersion version of the application
+     */
+    public void logReplayNewLeadershipTermEvent(
+        final int memberId,
+        final boolean isInElection,
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestamp,
+        final long termBaseLogPosition,
+        final TimeUnit timeUnit,
+        final int appVersion)
+    {
+        final int length = replayNewLeadershipTermEventLength(timeUnit);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(REPLAY_NEW_LEADERSHIP_TERM.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeReplayNewLeadershipTermEvent(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    memberId,
+                    isInElection,
+                    leadershipTermId,
+                    logPosition,
+                    timestamp,
+                    termBaseLogPosition,
+                    timeUnit,
+                    appVersion);
             }
             finally
             {

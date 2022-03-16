@@ -17,6 +17,8 @@ package io.aeron.agent;
 
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.util.concurrent.TimeUnit;
+
 import static io.aeron.agent.CommonEventEncoder.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -331,5 +333,57 @@ final class ClusterEventEncoder
         encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, stateName(state), LITTLE_ENDIAN);
 
         return encodedLength;
+    }
+
+    static int encodeReplayNewLeadershipTermEvent(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final int memberId,
+        final boolean isInElection,
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestamp,
+        final long termBaseLogPosition,
+        final TimeUnit timeUnit,
+        final int appVersion)
+    {
+        final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + logHeaderLength;
+        int bodyLength = 0;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, memberId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, isInElection ? 1 : 0, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, leadershipTermId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, logPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, timestamp, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, termBaseLogPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, appVersion, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, timeUnit.name().length(), LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        bodyLength += encodingBuffer.putStringWithoutLengthAscii(bodyOffset + bodyLength, timeUnit.name());
+
+        return logHeaderLength + bodyLength;
+    }
+
+    static int replayNewLeadershipTermEventLength(final TimeUnit timeUnit)
+    {
+        return (2 * SIZE_OF_INT) + (4 * SIZE_OF_LONG) + SIZE_OF_INT + SIZE_OF_INT + timeUnit.name().length();
     }
 }

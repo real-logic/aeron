@@ -71,7 +71,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when a RecordingLog entry is being truncated.
      */
-    TRUNCATE_LOG_ENTRY(9, ClusterEventDissector::dissectTruncateLogEntry);
+    TRUNCATE_LOG_ENTRY(9, ClusterEventDissector::dissectTruncateLogEntry),
+
+    /**
+     * Event when a new leadership term is replayed
+     */
+    REPLAY_NEW_LEADERSHIP_TERM(10, ClusterEventDissector::dissectReplayNewLeadershipTerm);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

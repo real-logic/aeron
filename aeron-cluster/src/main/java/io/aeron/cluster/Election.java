@@ -409,10 +409,14 @@ class Election
                 if (NULL_POSITION != nextTermBaseLogPosition && nextTermBaseLogPosition < appendPosition)
                 {
                     consensusModuleAgent.truncateLogEntry(logLeadershipTermId, nextTermBaseLogPosition);
-                    throw new AeronEvent(
-                        "Truncating Cluster Log - leadershipTermId=" + logLeadershipTermId +
-                            " oldPosition=" + logPosition + " newPosition=" + nextTermBaseLogPosition,
-                        AeronException.Category.WARN);
+                    throw new ClusterEvent(
+                        "Truncating Cluster Log - this.logLeadershipTermId=" + logLeadershipTermId +
+                            " this.leadershipTermId=" + this.leadershipTermId +
+                            " this.candidateTermId=" + candidateTermId +
+                            " commitPosition=" + ctx.commitPositionCounter().getWeak() +
+                            " appendPosition=" + appendPosition +
+                            " oldPosition=" + logPosition +
+                            " newPosition=" + nextTermBaseLogPosition);
                 }
 
                 this.leaderMember = leader;

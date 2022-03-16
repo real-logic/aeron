@@ -113,7 +113,7 @@ public class ArchiveMarkFile implements AutoCloseable
                 if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
                     throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software:" + MAJOR_VERSION);
+                        " does not match software: " + MAJOR_VERSION);
                 }
             },
             null);
@@ -164,7 +164,7 @@ public class ArchiveMarkFile implements AutoCloseable
                 if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
                     throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software:" + MAJOR_VERSION);
+                        " does not match software: " + MAJOR_VERSION);
                 }
             },
             logger);

@@ -56,7 +56,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * A vote request for new leadership.
      */
-    REQUEST_VOTE(6, ClusterEventDissector::dissectRequestVote);
+    REQUEST_VOTE(6, ClusterEventDissector::dissectRequestVote),
+
+    /**
+     * A catch position
+     */
+    CATCHUP_POSITION(7, ClusterEventDissector::dissectCatchupPosition);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

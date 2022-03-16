@@ -17,9 +17,12 @@ package io.aeron.agent;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.AgentTests.verifyLogHeader;
@@ -28,22 +31,24 @@ import static io.aeron.agent.ClusterEventEncoder.electionStateChangeLength;
 import static io.aeron.agent.ClusterEventEncoder.newLeaderShipTermLength;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.STATE_SEPARATOR;
-import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
-import static java.nio.ByteBuffer.allocateDirect;
+import static io.aeron.agent.EventConfiguration.BUFFER_LENGTH_DEFAULT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.agrona.BitUtil.*;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.ALIGNMENT;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.encodedMsgOffset;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TAIL_POSITION_OFFSET;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ClusterEventLoggerTest
 {
-    private static final int CAPACITY = align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH);
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(CAPACITY + TRAILER_LENGTH));
+    private static final int CAPACITY = align(BUFFER_LENGTH_DEFAULT, CACHE_LINE_LENGTH);
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(
+        allocateDirectAligned(BUFFER_LENGTH_DEFAULT + TRAILER_LENGTH, CACHE_LINE_LENGTH));
     private final ClusterEventLogger logger = new ClusterEventLogger(new ManyToOneRingBuffer(logBuffer));
 
     @Test
@@ -174,5 +179,68 @@ class ClusterEventLoggerTest
         assertEquals(catchupPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
         assertEquals(from.name() + STATE_SEPARATOR + "null", logBuffer.getStringAscii(index));
+    }
+
+    @Test
+    void logCatchupPosition()
+    {
+        final int offset = ALIGNMENT * 4;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final long leadershipTermId = 1233L;
+        final long logPosition = 100L;
+        final int followerMemberId = 18;
+        final String catchupEndpoint = "aeron:udp?endpoint=localhost:9090";
+
+        logger.logCatchupPosition(leadershipTermId, logPosition, followerMemberId, catchupEndpoint);
+
+        final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT + SIZE_OF_INT + catchupEndpoint.length();
+        verifyLogHeader(logBuffer, offset, CATCHUP_POSITION.toEventCodeId(), length, length);
+        int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(leadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(logPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(followerMemberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        final int catchupEndpointLength = logBuffer.getInt(index, LITTLE_ENDIAN);
+        index += SIZE_OF_INT;
+        assertEquals(catchupEndpoint, logBuffer.getStringWithoutLengthAscii(index, catchupEndpointLength));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectCatchupPosition(CATCHUP_POSITION, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*\\] CLUSTER: CATCHUP_POSITION \\[57/57\\]: " +
+            "leadershipTermId=1233 logPosition=100 followerMemberId=18 aeron:udp\\?endpoint=localhost:9090";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logCatchupPositionLongCatchupEndpoint()
+    {
+        final int offset = ALIGNMENT * 4;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final long leadershipTermId = 1233L;
+        final long logPosition = 100L;
+        final int followerMemberId = 18;
+
+        final byte[] alias = new byte[8192];
+        Arrays.fill(alias, (byte)'x');
+
+        final String catchupEndpoint = "aeron:udp?endpoint=localhost:9090|alias=" + new String(
+            alias,
+            StandardCharsets.US_ASCII);
+
+        logger.logCatchupPosition(leadershipTermId, logPosition, followerMemberId, catchupEndpoint);
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectCatchupPosition(CATCHUP_POSITION, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*\\] CLUSTER: CATCHUP_POSITION \\[4079/8256\\]: " +
+            "leadershipTermId=1233 logPosition=100 followerMemberId=18 " +
+            "aeron:udp\\?endpoint=localhost:9090\\|alias" +
+            "=(x)*\\.\\.\\.";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
 }

@@ -125,4 +125,17 @@ class ClusterInterceptor
             LOGGER.logRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
     }
+
+    static class CatchupPosition
+    {
+        @Advice.OnMethodEnter
+        static void onCatchupPosition(
+            final long leadershipTermId,
+            final long logPosition,
+            final int followerMemberId,
+            final String catchupEndpoint)
+        {
+            LOGGER.logCatchupPosition(leadershipTermId, logPosition, followerMemberId, catchupEndpoint);
+        }
+    }
 }

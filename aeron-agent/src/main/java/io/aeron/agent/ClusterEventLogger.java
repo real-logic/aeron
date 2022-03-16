@@ -288,4 +288,45 @@ public final class ClusterEventLogger
             }
         }
     }
+
+    /**
+     * Log the catchup position message
+     *
+     * @param leadershipTermId leadership term to catch up on
+     * @param logPosition position to catchup from
+     * @param followerMemberId the id of the follower that is catching up
+     * @param catchupEndpoint the endpoint to send catchup messages
+     */
+    public void logCatchupPosition(
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId,
+        final String catchupEndpoint)
+    {
+        final int length = catchupPositionLength(catchupEndpoint);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(CATCHUP_POSITION.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeCatchupPosition(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    leadershipTermId,
+                    logPosition,
+                    followerMemberId,
+                    catchupEndpoint);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
 }

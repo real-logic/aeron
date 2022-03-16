@@ -185,4 +185,29 @@ final class ClusterEventDissector
         builder.append(" candidateTermId=").append(candidateTermId);
         builder.append(" candidateId=").append(candidateId);
     }
+
+    static void dissectCatchupPosition(
+        final ClusterEventCode eventCode,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, eventCode, buffer, absoluteOffset, builder);
+
+        final long leadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long logPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final int followerMemberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final int catchupEndpointLength = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(": leadershipTermId=").append(leadershipTermId);
+        builder.append(" logPosition=").append(logPosition);
+        builder.append(" followerMemberId=").append(followerMemberId);
+        builder.append(" ");
+        buffer.getStringWithoutLengthAscii(absoluteOffset, catchupEndpointLength, builder);
+    }
 }

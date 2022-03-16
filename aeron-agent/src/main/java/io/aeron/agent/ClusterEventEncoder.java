@@ -227,4 +227,38 @@ final class ClusterEventEncoder
     {
         return (3 * SIZE_OF_LONG) + SIZE_OF_INT;
     }
+
+    static int encodeCatchupPosition(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId,
+        final String catchupEndpoint)
+    {
+        final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + logHeaderLength;
+        int bodyLength = 0;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, leadershipTermId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, logPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, followerMemberId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        bodyLength += encodeTrailingString(
+            encodingBuffer, bodyOffset + bodyLength, captureLength - bodyLength, catchupEndpoint);
+
+        return logHeaderLength + bodyLength;
+    }
+
+    static int catchupPositionLength(final String endpoint)
+    {
+        return (2 * SIZE_OF_LONG) + SIZE_OF_INT + SIZE_OF_INT + endpoint.length();
+    }
 }

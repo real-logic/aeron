@@ -493,6 +493,14 @@ public final class EventLogAgent
             ClusterInterceptor.RequestVote.class,
             "onRequestVote");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.CATCHUP_POSITION,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.CatchupPosition.class,
+            "onCatchupPosition");
+
         return tempBuilder;
     }
 

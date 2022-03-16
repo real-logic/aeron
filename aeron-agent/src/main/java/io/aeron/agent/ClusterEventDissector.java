@@ -207,7 +207,7 @@ final class ClusterEventDissector
         builder.append(": leadershipTermId=").append(leadershipTermId);
         builder.append(" logPosition=").append(logPosition);
         builder.append(" followerMemberId=").append(followerMemberId);
-        builder.append(" endpoint=");
+        builder.append(" catchupEndpoint=");
         buffer.getStringWithoutLengthAscii(absoluteOffset, catchupEndpointLength, builder);
     }
 

@@ -209,8 +209,9 @@ class ClusterEventLoggerTest
         final StringBuilder sb = new StringBuilder();
         ClusterEventDissector.dissectCatchupPosition(CATCHUP_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*\\] CLUSTER: CATCHUP_POSITION \\[57/57\\]: " +
-            "leadershipTermId=1233 logPosition=100 followerMemberId=18 aeron:udp\\?endpoint=localhost:9090";
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: CATCHUP_POSITION \\[57/57\\]: " +
+            "leadershipTermId=1233 logPosition=100 followerMemberId=18 " +
+            "catchupEndpoint=aeron:udp\\?endpoint=localhost:9090";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
@@ -238,7 +239,7 @@ class ClusterEventLoggerTest
 
         final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*\\] CLUSTER: CATCHUP_POSITION \\[[0-9]*/8256\\]: " +
             "leadershipTermId=1233 logPosition=100 followerMemberId=18 " +
-            "aeron:udp\\?endpoint=localhost:9090\\|alias" +
+            "catchupEndpoint=aeron:udp\\?endpoint=localhost:9090\\|alias" +
             "=(x)*\\.\\.\\.";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
@@ -265,7 +266,7 @@ class ClusterEventLoggerTest
         final StringBuilder sb = new StringBuilder();
         ClusterEventDissector.dissectStopCatchup(STOP_CATCHUP, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*\\] CLUSTER: STOP_CATCHUP \\[12/12\\]: " +
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: STOP_CATCHUP \\[12/12\\]: " +
             "leadershipTermId=1233 followerMemberId=18";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));

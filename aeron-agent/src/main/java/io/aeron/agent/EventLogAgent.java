@@ -445,6 +445,14 @@ public final class EventLogAgent
             ClusterInterceptor.ElectionStateChange.class,
             "stateChange");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.TRUNCATE_LOG_ENTRY,
+            "Election",
+            ClusterInterceptor.TruncateLogEntry.class,
+            "onTruncateLogEntry");
+
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
 
         return tempBuilder;

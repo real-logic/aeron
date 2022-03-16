@@ -29,8 +29,7 @@ import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventEncoder.electionStateChangeLength;
 import static io.aeron.agent.ClusterEventEncoder.newLeaderShipTermLength;
-import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
-import static io.aeron.agent.CommonEventEncoder.STATE_SEPARATOR;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.BUFFER_LENGTH_DEFAULT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -270,5 +269,58 @@ class ClusterEventLoggerTest
             "leadershipTermId=1233 followerMemberId=18";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logTruncateLogEntry()
+    {
+        final int offset = align(22, ALIGNMENT);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final ChronoUnit state = ChronoUnit.FOREVER;
+        final int memberId = 8;
+        final long logLeadershipTermId = 777L;
+        final long leadershipTermId = 1233L;
+        final long candidateTermId = 42L;
+        final int commitPosition = 1000;
+        final long logPosition = 33L;
+        final long appendPosition = 555L;
+        final long oldPosition = 98L;
+        final long newPosition = 24L;
+
+        logger.logTruncateLogEntry(
+            memberId,
+            state,
+            logLeadershipTermId,
+            leadershipTermId,
+            candidateTermId,
+            commitPosition,
+            logPosition,
+            appendPosition,
+            oldPosition,
+            newPosition);
+
+        final int length = SIZE_OF_INT + state.name().length() + SIZE_OF_INT + 8 * SIZE_OF_LONG;
+        verifyLogHeader(logBuffer, offset, TRUNCATE_LOG_ENTRY.toEventCodeId(), length, length);
+
+        int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(logLeadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(leadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(candidateTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(commitPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(logPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(appendPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(oldPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(newPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(stateName(state), logBuffer.getStringAscii(index, LITTLE_ENDIAN));
     }
 }

@@ -20,8 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
-import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
+import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventDissector.CONTEXT;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.internalEncodeLogHeader;
@@ -105,6 +104,40 @@ class ClusterEventDissectorTest
         assertEquals("[5.0] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: memberId=86" +
             " old -> new leaderId=3 candidateTermId=101010 leadershipTermId=6 logPosition=1024 logLeadershipTermId=2" +
             " appendPosition=1218 catchupPosition=800",
+            builder.toString());
+    }
+
+    @Test
+    void dissectTruncateLogEntry()
+    {
+        final int offset = 10;
+        int writeIndex = offset;
+        writeIndex += internalEncodeLogHeader(buffer, offset, 100, 200, () -> 5_000_000_000L);
+        buffer.putInt(writeIndex, 123, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_INT;
+        buffer.putLong(writeIndex, 555, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 166, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 42, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 1024, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 998, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 1024, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 1200, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putLong(writeIndex, 800, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_LONG;
+        buffer.putStringAscii(writeIndex, "election state", LITTLE_ENDIAN);
+
+        ClusterEventDissector.dissectTruncateLogEntry(TRUNCATE_LOG_ENTRY, buffer, offset, builder);
+
+        assertEquals("[5.0] " + CONTEXT + ": " + TRUNCATE_LOG_ENTRY.name() + " [100/200]: memberId=123 " +
+            "state=election state logLeadershipTermId=555 leadershipTermId=166 candidateTermId=42 " +
+            "commitPosition=1024 logPosition=998 appendPosition=1024 oldPosition=1200 newPosition=800",
             builder.toString());
     }
 }

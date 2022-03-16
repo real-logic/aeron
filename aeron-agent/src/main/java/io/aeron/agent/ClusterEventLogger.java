@@ -16,16 +16,15 @@
 package io.aeron.agent;
 
 import io.aeron.cluster.ConsensusModule;
-import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventEncoder.*;
-import static io.aeron.agent.CommonEventEncoder.captureLength;
-import static io.aeron.agent.CommonEventEncoder.encodedLength;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
+import static org.agrona.BitUtil.*;
 
 /**
  * Event logger interface used by interceptors for recording cluster events into a {@link RingBuffer} for a
@@ -294,9 +293,9 @@ public final class ClusterEventLogger
      * Log the catchup position message
      *
      * @param leadershipTermId leadership term to catch up on
-     * @param logPosition position to catchup from
+     * @param logPosition      position to catchup from
      * @param followerMemberId the id of the follower that is catching up
-     * @param catchupEndpoint the endpoint to send catchup messages
+     * @param catchupEndpoint  the endpoint to send catchup messages
      */
     public void logCatchupPosition(
         final long leadershipTermId,
@@ -333,12 +332,13 @@ public final class ClusterEventLogger
 
     /**
      * Log the stop catchup message
+     *
      * @param leadershipTermId current leadershipTermId
      * @param followerMemberId id of follower currently catching up.
      */
     public void logStopCatchup(final long leadershipTermId, final int followerMemberId)
     {
-        final int length = BitUtil.SIZE_OF_LONG + BitUtil.SIZE_OF_INT;
+        final int length = SIZE_OF_LONG + SIZE_OF_INT;
         final int encodedLength = encodedLength(length);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(STOP_CATCHUP.toEventCodeId(), encodedLength);
@@ -354,6 +354,66 @@ public final class ClusterEventLogger
                     length,
                     leadershipTermId,
                     followerMemberId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log an event when a log entry is being truncated.
+     *
+     * @param <E>                 type of the enum.
+     * @param memberId            the node which truncates its log entry.
+     * @param state               of the election.
+     * @param logLeadershipTermId the election is in.
+     * @param leadershipTermId    the election is in.
+     * @param candidateTermId     the election is in.
+     * @param commitPosition      when the truncation happens.
+     * @param logPosition         of the election.
+     * @param appendPosition      of the election.
+     * @param oldPosition         truncated from.
+     * @param newPosition         truncated to.
+     */
+    public <E extends Enum<E>> void logTruncateLogEntry(
+        final int memberId,
+        final E state,
+        final long logLeadershipTermId,
+        final long leadershipTermId,
+        final long candidateTermId,
+        final long commitPosition,
+        final long logPosition,
+        final long appendPosition,
+        final long oldPosition,
+        final long newPosition)
+    {
+        final int length = SIZE_OF_INT + stateName(state).length() + SIZE_OF_INT + 8 * SIZE_OF_LONG;
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(TRUNCATE_LOG_ENTRY.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeTruncateLogEntry(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    memberId,
+                    state,
+                    logLeadershipTermId,
+                    leadershipTermId,
+                    candidateTermId,
+                    commitPosition,
+                    logPosition,
+                    appendPosition,
+                    oldPosition,
+                    newPosition);
             }
             finally
             {

@@ -403,19 +403,21 @@ class Election
         if (((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state) && leadershipTermId == candidateTermId) ||
             CANVASS == state)
         {
-            if (this.logLeadershipTermId == logLeadershipTermId)
+            if (logLeadershipTermId == this.logLeadershipTermId)
             {
                 if (NULL_POSITION != nextTermBaseLogPosition && nextTermBaseLogPosition < appendPosition)
                 {
-                    consensusModuleAgent.truncateLogEntry(logLeadershipTermId, nextTermBaseLogPosition);
-                    throw new ClusterEvent(
-                        "Truncating Cluster Log - this.logLeadershipTermId=" + logLeadershipTermId +
-                        " this.leadershipTermId=" + this.leadershipTermId +
-                        " this.candidateTermId=" + candidateTermId +
-                        " commitPosition=" + ctx.commitPositionCounter().getWeak() +
-                        " appendPosition=" + appendPosition +
-                        " oldPosition=" + logPosition +
-                        " newPosition=" + nextTermBaseLogPosition);
+                    onTruncateLogEntry(
+                        thisMember.id(),
+                        state,
+                        logLeadershipTermId,
+                        this.leadershipTermId,
+                        candidateTermId,
+                        ctx.commitPositionCounter().getWeak(),
+                        this.logPosition,
+                        appendPosition,
+                        logPosition, nextTermBaseLogPosition
+                    );
                 }
 
                 this.leaderMember = leader;
@@ -481,6 +483,32 @@ class Election
         {
             replicationDeadlineNs = ctx.clusterClock().timeNanos() + ctx.leaderHeartbeatTimeoutNs();
         }
+    }
+
+    void onTruncateLogEntry(
+        final int memberId,
+        final ElectionState state,
+        final long logLeadershipTermId,
+        final long leadershipTermId,
+        final long candidateTermId,
+        final long commitPosition,
+        final long logPosition,
+        final long appendPosition,
+        final long oldPosition,
+        final long newPosition)
+    {
+        consensusModuleAgent.truncateLogEntry(logLeadershipTermId, newPosition);
+        throw new ClusterEvent(
+            "Truncating Cluster Log - memberId=" + memberId +
+            " state=" + state +
+            " this.logLeadershipTermId=" + logLeadershipTermId +
+            " this.leadershipTermId=" + leadershipTermId +
+            " this.candidateTermId=" + candidateTermId +
+            " this.commitPosition=" + commitPosition +
+            " this.logPosition=" + logPosition +
+            " this.appendPosition=" + appendPosition +
+            " oldPosition=" + oldPosition +
+            " newPosition=" + newPosition);
     }
 
     void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)

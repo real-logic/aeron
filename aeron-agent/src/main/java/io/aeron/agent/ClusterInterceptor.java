@@ -147,4 +147,33 @@ class ClusterInterceptor
             LOGGER.logStopCatchup(leadershipTermId, followerMemberId);
         }
     }
+
+    static class TruncateLogEntry
+    {
+        @Advice.OnMethodEnter
+        static <E extends Enum<E>> void onTruncateLogEntry(
+            final int memberId,
+            final E state,
+            final long logLeadershipTermId,
+            final long leadershipTermId,
+            final long candidateTermId,
+            final long commitPosition,
+            final long logPosition,
+            final long appendPosition,
+            final long oldPosition,
+            final long newPosition)
+        {
+            LOGGER.logTruncateLogEntry(
+                memberId,
+                state,
+                logLeadershipTermId,
+                leadershipTermId,
+                candidateTermId,
+                commitPosition,
+                logPosition,
+                appendPosition,
+                oldPosition,
+                newPosition);
+        }
+    }
 }

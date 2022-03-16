@@ -22,6 +22,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -188,6 +189,19 @@ class CommonEventEncoderTest
         final TimeUnit to = TimeUnit.HOURS;
         assertEquals(from.name().length() + STATE_SEPARATOR.length() + to.name().length() + SIZE_OF_INT,
             stateTransitionStringLength(from, to));
+    }
+
+    @Test
+    void stateNameReturnsNameOfTheEnumConstant()
+    {
+        final ChronoUnit state = ChronoUnit.CENTURIES;
+        assertEquals(state.name(), stateName(state));
+    }
+
+    @Test
+    void stateNameReturnsNullIfNull()
+    {
+        assertEquals("null", stateName(null));
     }
 
     private static List<Arguments> captureLengthArgs()

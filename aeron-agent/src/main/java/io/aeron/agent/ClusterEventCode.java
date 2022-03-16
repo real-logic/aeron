@@ -66,7 +66,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * A request to stop follower catchup
      */
-    STOP_CATCHUP(8, ClusterEventDissector::dissectStopCatchup);
+    STOP_CATCHUP(8, ClusterEventDissector::dissectStopCatchup),
+
+    /**
+     * Event when a RecordingLog entry is being truncated.
+     */
+    TRUNCATE_LOG_ENTRY(9, ClusterEventDissector::dissectTruncateLogEntry);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

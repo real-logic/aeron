@@ -282,4 +282,54 @@ final class ClusterEventEncoder
 
         return logHeaderLength + bodyLength;
     }
+
+    static <E extends Enum<E>> int encodeTruncateLogEntry(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int length,
+        final int captureLength,
+        final int memberId,
+        final E state,
+        final long logLeadershipTermId,
+        final long leadershipTermId,
+        final long candidateTermId,
+        final long commitPosition,
+        final long logPosition,
+        final long appendPosition,
+        final long oldPosition,
+        final long newPosition)
+    {
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putInt(offset + encodedLength, memberId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+
+        encodingBuffer.putLong(offset + encodedLength, logLeadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, leadershipTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, candidateTermId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, commitPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, logPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, appendPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, oldPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(offset + encodedLength, newPosition, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, stateName(state), LITTLE_ENDIAN);
+
+        return encodedLength;
+    }
 }

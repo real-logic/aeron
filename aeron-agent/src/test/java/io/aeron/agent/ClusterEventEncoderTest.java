@@ -18,8 +18,12 @@ package io.aeron.agent;
 import io.aeron.cluster.ConsensusModule;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.ClusterEventEncoder.*;
@@ -212,5 +216,75 @@ class ClusterEventEncoderTest
         assertEquals(catchupPosition, buffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
         assertEquals("null" + STATE_SEPARATOR + to.name(), buffer.getStringAscii(index));
+    }
+
+    @ParameterizedTest
+    @MethodSource("logEntryStates")
+    void testEncodeTruncateLogEntry(final TimeUnit state)
+    {
+        final int offset = 8;
+        final int length = 300;
+        final int captureLength = 128;
+        final int memberId = -18;
+        final long logLeadershipTermId = 42;
+        final long leadershipTermId = -408324982349823L;
+        final long candidateTermId = 233333L;
+        final long commitPosition = 192L;
+        final long logPosition = 100L;
+        final long appendPosition = 120L;
+        final long oldPosition = 200L;
+        final long newPosition = 88L;
+
+        final int encodedLength = encodeTruncateLogEntry(
+            buffer,
+            offset,
+            length,
+            captureLength,
+            memberId, state,
+            logLeadershipTermId,
+            leadershipTermId,
+            candidateTermId,
+            commitPosition,
+            logPosition,
+            appendPosition,
+            oldPosition,
+            newPosition);
+
+        assertEquals(
+            encodedLength(SIZE_OF_INT + 8 * SIZE_OF_LONG + SIZE_OF_INT + stateName(state).length()),
+            encodedLength);
+        int index = offset;
+        assertEquals(captureLength, buffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(length, buffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertNotEquals(0, buffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(memberId, buffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(logLeadershipTermId, buffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(leadershipTermId, buffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(candidateTermId, buffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(commitPosition, buffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(logPosition, buffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(appendPosition, buffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(oldPosition, buffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(newPosition, buffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(stateName(state), buffer.getStringAscii(index, LITTLE_ENDIAN));
+    }
+
+    private static List<TimeUnit> logEntryStates()
+    {
+        return Arrays.asList(
+            TimeUnit.MICROSECONDS,
+            null);
     }
 }

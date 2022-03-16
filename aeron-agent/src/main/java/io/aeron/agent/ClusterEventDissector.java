@@ -227,4 +227,53 @@ final class ClusterEventDissector
         builder.append(": leadershipTermId=").append(leadershipTermId);
         builder.append(" followerMemberId=").append(followerMemberId);
     }
+
+    static void dissectTruncateLogEntry(
+        final ClusterEventCode eventCode,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, eventCode, buffer, absoluteOffset, builder);
+
+        final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        final long logLeadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long leadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long candidateTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long commitPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long logPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long appendPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long oldPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        final long newPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(": memberId=").append(memberId);
+        builder.append(" state=");
+        buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
+        builder.append(" logLeadershipTermId=").append(logLeadershipTermId);
+        builder.append(" leadershipTermId=").append(leadershipTermId);
+        builder.append(" candidateTermId=").append(candidateTermId);
+        builder.append(" commitPosition=").append(commitPosition);
+        builder.append(" logPosition=").append(logPosition);
+        builder.append(" appendPosition=").append(appendPosition);
+        builder.append(" oldPosition=").append(oldPosition);
+        builder.append(" newPosition=").append(newPosition);
+    }
 }

@@ -59,9 +59,14 @@ public enum ClusterEventCode implements EventCode
     REQUEST_VOTE(6, ClusterEventDissector::dissectRequestVote),
 
     /**
-     * A catch position
+     * Notification of a follower's catchup position
      */
-    CATCHUP_POSITION(7, ClusterEventDissector::dissectCatchupPosition);
+    CATCHUP_POSITION(7, ClusterEventDissector::dissectCatchupPosition),
+
+    /**
+     * A request to stop follower catchup
+     */
+    STOP_CATCHUP(8, ClusterEventDissector::dissectStopCatchup);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

@@ -16,6 +16,7 @@
 package io.aeron.agent;
 
 import io.aeron.cluster.ConsensusModule;
+import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
@@ -322,6 +323,37 @@ public final class ClusterEventLogger
                     logPosition,
                     followerMemberId,
                     catchupEndpoint);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log the stop catchup message
+     * @param leadershipTermId current leadershipTermId
+     * @param followerMemberId id of follower currently catching up.
+     */
+    public void logStopCatchup(final long leadershipTermId, final int followerMemberId)
+    {
+        final int length = BitUtil.SIZE_OF_LONG + BitUtil.SIZE_OF_INT;
+        final int encodedLength = encodedLength(length);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(STOP_CATCHUP.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeStopCatchup(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    length,
+                    length,
+                    leadershipTermId,
+                    followerMemberId);
             }
             finally
             {

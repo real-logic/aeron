@@ -243,4 +243,31 @@ class ClusterEventLoggerTest
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
+
+    @Test
+    void logStopCatchup()
+    {
+        final int offset = ALIGNMENT * 4;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final long leadershipTermId = 1233L;
+        final int followerMemberId = 18;
+
+        logger.logStopCatchup(leadershipTermId, followerMemberId);
+
+        final int length = SIZE_OF_LONG + SIZE_OF_INT;
+        verifyLogHeader(logBuffer, offset, STOP_CATCHUP.toEventCodeId(), length, length);
+        int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(leadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(followerMemberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectStopCatchup(STOP_CATCHUP, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*\\] CLUSTER: STOP_CATCHUP \\[12/12\\]: " +
+            "leadershipTermId=1233 followerMemberId=18";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
 }

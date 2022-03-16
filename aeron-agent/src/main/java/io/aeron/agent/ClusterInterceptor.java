@@ -138,4 +138,13 @@ class ClusterInterceptor
             LOGGER.logCatchupPosition(leadershipTermId, logPosition, followerMemberId, catchupEndpoint);
         }
     }
+
+    static class StopCatchup
+    {
+        @Advice.OnMethodEnter
+        static void onStopCatchup(final long leadershipTermId, final int followerMemberId)
+        {
+            LOGGER.logStopCatchup(leadershipTermId, followerMemberId);
+        }
+    }
 }

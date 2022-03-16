@@ -1780,7 +1780,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         if (nowNs > (timeOfLastAppendPositionUpdateNs + leaderHeartbeatTimeoutNs) &&
             ConsensusModule.State.ACTIVE == state)
         {
-            throw new ClusterEvent("no catchup progress");
+            throw new ClusterEvent(
+                "no catchup progress commitPosition=" + commitPosition.getWeak() + " limitPosition=" + limitPosition +
+                    " appendPosition=" + (null != appendPosition ? appendPosition.get() : -1) +
+                    " logPosition=" + election.logPosition());
         }
 
         workCount += consensusModuleAdapter.poll();

@@ -549,6 +549,7 @@ class Election
             final long nowNs = ctx.clusterClock().timeUnit().toNanos(timestamp);
             ensureRecordingLogCoherent(leadershipTermId, termBaseLogPosition, NULL_VALUE, nowNs);
             this.logPosition = logPosition;
+            this.logLeadershipTermId = leadershipTermId;
         }
     }
 

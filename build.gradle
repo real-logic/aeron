@@ -242,6 +242,7 @@ subprojects {
         systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION"
         systemProperty "aeron.debug.timeout", "3600s"
         systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
+        systemProperty "aeron.fallback.logger", "no_op"
     }
 
     task topologyTest(type: Test, group: 'verification') {

@@ -1332,6 +1332,7 @@ public class ClusterTest
         cluster.startStaticNode(leader0.index(), false);
         awaitElectionClosed(cluster.node(leader0.index()));
 
+        cluster.connectClient();
         cluster.sendMessages(numMessages);
         cluster.awaitResponseMessageCount(numMessages * 2);
         cluster.awaitServicesMessageCount(numMessages * 2);
@@ -1344,6 +1345,7 @@ public class ClusterTest
         cluster.startStaticNode(leader1.index(), false);
         awaitElectionClosed(cluster.node(leader1.index()));
 
+        cluster.connectClient();
         cluster.sendMessages(numMessages);
         cluster.awaitResponseMessageCount(numMessages * 3);
         cluster.awaitServicesMessageCount(numMessages * 3);

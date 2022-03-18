@@ -75,7 +75,7 @@ public class StalledLeaderLogReplicationClusterTest
     }
 
     @Test
-    @InterruptAfter(60)
+    @InterruptAfter(120)
     void shouldHandleMultipleElections()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();

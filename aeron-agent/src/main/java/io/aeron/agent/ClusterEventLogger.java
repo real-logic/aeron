@@ -476,4 +476,70 @@ public final class ClusterEventLogger
             }
         }
     }
+
+    /**
+     * The append position received by the leader from a follower
+     * @param leadershipTermId the current leadership term id
+     * @param logPosition the current position in the log
+     * @param followerMemberId follower member sending the append position
+     */
+    public void logAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
+    {
+        final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT;
+        final int encodedLength = encodedLength(length);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(APPEND_POSITION.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                ClusterEventEncoder.encodeAppendPosition(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    length,
+                    length,
+                    leadershipTermId,
+                    logPosition,
+                    followerMemberId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * The commit position received by the follower form the leader
+     * @param leadershipTermId the current leadership term id
+     * @param logPosition the current position in the log
+     * @param leaderMemberId leader member sending the commit position
+     */
+    public void logCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
+    {
+        final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT;
+        final int encodedLength = encodedLength(length);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(COMMIT_POSITION.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                ClusterEventEncoder.encodeAppendPosition(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    length,
+                    length,
+                    leadershipTermId,
+                    logPosition,
+                    leaderMemberId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
 }

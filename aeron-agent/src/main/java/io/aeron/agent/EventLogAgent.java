@@ -461,6 +461,22 @@ public final class EventLogAgent
             ClusterInterceptor.ReplayNewLeadershipTerm.class,
             "onReplayNewLeadershipTermEvent0");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.APPEND_POSITION,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.AppendPosition.class,
+            "onAppendPosition");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.COMMIT_POSITION,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.CommitPosition.class,
+            "onCommitPosition");
+
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
 
         return tempBuilder;

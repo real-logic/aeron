@@ -76,7 +76,17 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when a new leadership term is replayed
      */
-    REPLAY_NEW_LEADERSHIP_TERM(10, ClusterEventDissector::dissectReplayNewLeadershipTerm);
+    REPLAY_NEW_LEADERSHIP_TERM(10, ClusterEventDissector::dissectReplayNewLeadershipTerm),
+
+    /**
+     * Event when an append position is received
+     */
+    APPEND_POSITION(11, ClusterEventDissector::dissectAppendPosition),
+
+    /**
+     * Event when a commit position is received
+     */
+    COMMIT_POSITION(12, ClusterEventDissector::dissectCommitPosition);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

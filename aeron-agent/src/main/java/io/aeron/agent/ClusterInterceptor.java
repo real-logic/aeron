@@ -203,4 +203,34 @@ class ClusterInterceptor
                 appVersion);
         }
     }
+
+    static class AppendPosition
+    {
+        @Advice.OnMethodEnter
+        static void onAppendPosition(
+            final long leadershipTermId,
+            final long logPosition,
+            final int memberId)
+        {
+            LOGGER.logAppendPosition(
+                leadershipTermId,
+                logPosition,
+                memberId);
+        }
+    }
+
+    static class CommitPosition
+    {
+        @Advice.OnMethodEnter
+        static void onCommitPosition(
+            final long leadershipTermId,
+            final long logPosition,
+            final int memberId)
+        {
+            LOGGER.logCommitPosition(
+                leadershipTermId,
+                logPosition,
+                memberId);
+        }
+    }
 }

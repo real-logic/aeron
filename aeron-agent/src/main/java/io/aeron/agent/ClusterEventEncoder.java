@@ -386,4 +386,29 @@ final class ClusterEventEncoder
     {
         return (2 * SIZE_OF_INT) + (4 * SIZE_OF_LONG) + SIZE_OF_INT + SIZE_OF_INT + timeUnit.name().length();
     }
+
+    public static int encodeAppendPosition(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final long leadershipTermId,
+        final long logPosition,
+        final int memberId)
+    {
+        final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + logHeaderLength;
+        int bodyLength = 0;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, leadershipTermId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, logPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, memberId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        return logHeaderLength + bodyLength;
+    }
 }

@@ -39,10 +39,11 @@ enum ConfigOption
     /**
      * Driver Event tags system property. This is either:
      * <ul>
-     * <li>A comma separated list of {@link DriverEventCode}s to enable</li>
-     * <li>"all" which enables all the codes</li>
-     * <li>"admin" which enables the codes specified by {@link EventConfiguration#ADMIN_ONLY_EVENT_CODES} which
-     * is the admin commands</li>
+     * <li>A comma separated list of {@link DriverEventCode}s to enable.</li>
+     * <li>"all" which enables all driver events.</li>
+     * <li>"admin" which enables all driver events except for {@link DriverEventCode#FRAME_IN},
+     * {@link DriverEventCode#FRAME_OUT}, {@link DriverEventCode#NAME_RESOLUTION_NEIGHBOR_ADDED},
+     * {@link DriverEventCode#NAME_RESOLUTION_NEIGHBOR_REMOVED}.</li>
      * </ul>
      */
     ENABLED_DRIVER_EVENT_CODES("aeron.event.log"),
@@ -57,8 +58,8 @@ enum ConfigOption
     /**
      * Archive Event tags system property. This is either:
      * <ul>
-     * <li>A comma separated list of {@link ArchiveEventCode}s to enable</li>
-     * <li>"all" which enables all the codes</li>
+     * <li>A comma separated list of {@link ArchiveEventCode}s to enable.</li>
+     * <li>"all" which enables all the codes.</li>
      * </ul>
      */
     ENABLED_ARCHIVE_EVENT_CODES("aeron.event.archive.log"),
@@ -73,8 +74,10 @@ enum ConfigOption
     /**
      * Cluster Event tags system property. This is either:
      * <ul>
-     * <li>A comma separated list of {@link ClusterEventCode}s to enable</li>
-     * <li>"all" which enables all the codes</li>
+     * <li>A comma separated list of {@link ClusterEventCode}s to enable.</li>
+     * <li>"all" which enables all the codes.</li>
+     * <li>"admin" which enables all driver events except for {@link ClusterEventCode#COMMIT_POSITION},
+     * {@link ClusterEventCode#APPEND_POSITION} and {@link ClusterEventCode#CANVASS_POSITION}.</li>
      * </ul>
      */
     ENABLED_CLUSTER_EVENT_CODES("aeron.event.cluster.log"),

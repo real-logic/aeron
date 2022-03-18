@@ -32,8 +32,11 @@ import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.aeron.agent.ArchiveEventCode.*;
+import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.ConfigOption.*;
+import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.EventConfiguration.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -96,12 +99,18 @@ final class AgentTests
             EventLogAgent.agentmain(agentArgs, ByteBuddyAgent.install());
 
             assertEquals(instanceCount + 1, TestLoggingAgent.INSTANCE_COUNT.get());
-            assertEquals(ADMIN_ONLY_EVENT_CODES, DRIVER_EVENT_CODES);
             assertEquals(
-                EnumSet.of(ArchiveEventCode.CMD_IN_EXTEND_RECORDING, ArchiveEventCode.CATALOG_RESIZE),
+                EnumSet.complementOf(EnumSet.of(
+                FRAME_IN,
+                FRAME_OUT,
+                NAME_RESOLUTION_NEIGHBOR_ADDED,
+                NAME_RESOLUTION_NEIGHBOR_REMOVED)),
+                DRIVER_EVENT_CODES);
+            assertEquals(
+                EnumSet.of(CMD_IN_EXTEND_RECORDING, CATALOG_RESIZE),
                 ARCHIVE_EVENT_CODES);
             assertEquals(
-                EnumSet.complementOf(EnumSet.of(ClusterEventCode.ROLE_CHANGE)),
+                EnumSet.complementOf(EnumSet.of(ROLE_CHANGE)),
                 CLUSTER_EVENT_CODES);
         }
         finally
@@ -138,7 +147,7 @@ final class AgentTests
         final int instanceCount = TestLoggingAgent.INSTANCE_COUNT.get();
         final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
         configOptions.put(READER_CLASSNAME, TestLoggingAgent.class.getName());
-        configOptions.put(ENABLED_ARCHIVE_EVENT_CODES, ArchiveEventCode.CMD_IN_AUTH_CONNECT.name());
+        configOptions.put(ENABLED_ARCHIVE_EVENT_CODES, CMD_IN_AUTH_CONNECT.name());
 
         startLogging(configOptions);
         assertEquals(instanceCount + 1, TestLoggingAgent.INSTANCE_COUNT.get());

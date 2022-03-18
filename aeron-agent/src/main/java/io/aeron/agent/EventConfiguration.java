@@ -16,13 +16,17 @@
 package io.aeron.agent;
 
 import org.agrona.Strings;
+import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 
+import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static java.lang.System.err;
 import static java.lang.System.lineSeparator;
@@ -39,47 +43,57 @@ final class EventConfiguration
     /**
      * Event buffer length system property name.
      */
-    public static final String BUFFER_LENGTH_PROP_NAME = "aeron.event.buffer.length";
-
-    /**
-     * Event codes for admin events within the driver, i.e. does not include frame capture and name resolution
-     * events.
-     */
-    public static final Set<DriverEventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.complementOf(EnumSet.of(
-        FRAME_IN,
-        FRAME_OUT,
-        NAME_RESOLUTION_NEIGHBOR_ADDED,
-        NAME_RESOLUTION_NEIGHBOR_REMOVED));
+    static final String BUFFER_LENGTH_PROP_NAME = "aeron.event.buffer.length";
 
     /**
      * Event Buffer default length (in bytes).
      */
-    public static final int BUFFER_LENGTH_DEFAULT = 8 * 1024 * 1024;
+    static final int BUFFER_LENGTH_DEFAULT = 8 * 1024 * 1024;
 
     /**
      * Maximum length of an event in bytes.
      */
-    public static final int MAX_EVENT_LENGTH = 4096 - lineSeparator().length();
+    static final int MAX_EVENT_LENGTH = 4096 - lineSeparator().length();
 
     /**
      * Iteration limit for event reader loop.
      */
-    public static final int EVENT_READER_FRAME_LIMIT = 20;
+    static final int EVENT_READER_FRAME_LIMIT = 20;
 
     /**
      * Ring Buffer to use for logging that will be read by {@link ConfigOption#READER_CLASSNAME}.
      */
-    public static final ManyToOneRingBuffer EVENT_RING_BUFFER;
+    static final ManyToOneRingBuffer EVENT_RING_BUFFER;
+
+    static final EnumSet<DriverEventCode> DRIVER_EVENT_CODES = EnumSet.noneOf(DriverEventCode.class);
+    static final EnumSet<ArchiveEventCode> ARCHIVE_EVENT_CODES = EnumSet.noneOf(ArchiveEventCode.class);
+    static final EnumSet<ClusterEventCode> CLUSTER_EVENT_CODES = EnumSet.noneOf(ClusterEventCode.class);
+
+    static final Object2ObjectHashMap<String, EnumSet<DriverEventCode>> SPECIAL_DRIVER_EVENTS =
+        new Object2ObjectHashMap<>();
+    static final Object2ObjectHashMap<String, EnumSet<ArchiveEventCode>> SPECIAL_ARCHIVE_EVENTS =
+        new Object2ObjectHashMap<>();
+    static final Object2ObjectHashMap<String, EnumSet<ClusterEventCode>> SPECIAL_CLUSTER_EVENTS =
+        new Object2ObjectHashMap<>();
 
     static
     {
+        SPECIAL_DRIVER_EVENTS.put("all", EnumSet.allOf(DriverEventCode.class));
+        SPECIAL_DRIVER_EVENTS.put("admin", EnumSet.complementOf(EnumSet.of(
+            FRAME_IN,
+            FRAME_OUT,
+            NAME_RESOLUTION_NEIGHBOR_ADDED,
+            NAME_RESOLUTION_NEIGHBOR_REMOVED)));
+
+        SPECIAL_ARCHIVE_EVENTS.put("all", EnumSet.allOf(ArchiveEventCode.class));
+
+        SPECIAL_CLUSTER_EVENTS.put("all", EnumSet.allOf(ClusterEventCode.class));
+        SPECIAL_CLUSTER_EVENTS.put("admin", EnumSet.complementOf(EnumSet.of(
+            COMMIT_POSITION, APPEND_POSITION, CANVASS_POSITION)));
+
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(allocateDirectAligned(
             getSizeAsInt(BUFFER_LENGTH_PROP_NAME, BUFFER_LENGTH_DEFAULT) + TRAILER_LENGTH, CACHE_LINE_LENGTH)));
     }
-
-    public static final EnumSet<DriverEventCode> DRIVER_EVENT_CODES = EnumSet.noneOf(DriverEventCode.class);
-    public static final EnumSet<ArchiveEventCode> ARCHIVE_EVENT_CODES = EnumSet.noneOf(ArchiveEventCode.class);
-    public static final EnumSet<ClusterEventCode> CLUSTER_EVENT_CODES = EnumSet.noneOf(ClusterEventCode.class);
 
     private EventConfiguration()
     {
@@ -125,15 +139,12 @@ final class EventConfiguration
      */
     static EnumSet<ArchiveEventCode> getArchiveEventCodes(final String enabledEventCodes)
     {
-        if (Strings.isEmpty(enabledEventCodes))
-        {
-            return EnumSet.noneOf(ArchiveEventCode.class);
-        }
-
-        final Function<Integer, ArchiveEventCode> eventCodeById = ArchiveEventCode::get;
-        final Function<String, ArchiveEventCode> eventCodeByName = ArchiveEventCode::valueOf;
-
-        return parseEventCodes(ArchiveEventCode.class, enabledEventCodes, eventCodeById, eventCodeByName);
+        return parseEventCodes(
+            ArchiveEventCode.class,
+            enabledEventCodes,
+            SPECIAL_ARCHIVE_EVENTS,
+            ArchiveEventCode::get,
+            ArchiveEventCode::valueOf);
     }
 
     /**
@@ -144,15 +155,12 @@ final class EventConfiguration
      */
     static EnumSet<ClusterEventCode> getClusterEventCodes(final String enabledEventCodes)
     {
-        if (Strings.isEmpty(enabledEventCodes))
-        {
-            return EnumSet.noneOf(ClusterEventCode.class);
-        }
-
-        final Function<Integer, ClusterEventCode> eventCodeById = ClusterEventCode::get;
-        final Function<String, ClusterEventCode> eventCodeByName = ClusterEventCode::valueOf;
-
-        return parseEventCodes(ClusterEventCode.class, enabledEventCodes, eventCodeById, eventCodeByName);
+        return parseEventCodes(
+            ClusterEventCode.class,
+            enabledEventCodes,
+            SPECIAL_CLUSTER_EVENTS,
+            ClusterEventCode::get,
+            ClusterEventCode::valueOf);
     }
 
     /**
@@ -163,76 +171,35 @@ final class EventConfiguration
      */
     static EnumSet<DriverEventCode> getDriverEventCodes(final String enabledEventCodes)
     {
-        if (Strings.isEmpty(enabledEventCodes))
-        {
-            return EnumSet.noneOf(DriverEventCode.class);
-        }
-
-        final EnumSet<DriverEventCode> eventCodeSet = EnumSet.noneOf(DriverEventCode.class);
-        final String[] codeIds = enabledEventCodes.split(",");
-
-        for (final String codeId : codeIds)
-        {
-            switch (codeId)
-            {
-                case "all":
-                    return EnumSet.allOf(DriverEventCode.class);
-
-                case "admin":
-                    eventCodeSet.addAll(ADMIN_ONLY_EVENT_CODES);
-                    break;
-
-                default:
-                {
-                    DriverEventCode code = null;
-                    try
-                    {
-                        code = DriverEventCode.valueOf(codeId);
-                    }
-                    catch (final IllegalArgumentException ignore)
-                    {
-                    }
-
-                    if (null == code)
-                    {
-                        try
-                        {
-                            code = DriverEventCode.get(Integer.parseInt(codeId));
-                        }
-                        catch (final IllegalArgumentException ignore)
-                        {
-                        }
-                    }
-
-                    if (null != code)
-                    {
-                        eventCodeSet.add(code);
-                    }
-                    else
-                    {
-                        err.println("unknown event code: " + codeId);
-                    }
-                }
-            }
-        }
-
-        return eventCodeSet;
+        return parseEventCodes(
+            DriverEventCode.class,
+            enabledEventCodes,
+            SPECIAL_DRIVER_EVENTS,
+            DriverEventCode::get,
+            DriverEventCode::valueOf);
     }
 
     private static <E extends Enum<E>> EnumSet<E> parseEventCodes(
         final Class<E> eventCodeType,
-        final String enabledEventCodes,
-        final Function<Integer, E> eventCodeById,
+        final String eventCodes,
+        final Map<String, EnumSet<E>> specialEvents,
+        final IntFunction<E> eventCodeById,
         final Function<String, E> eventCodeByName)
     {
+        if (Strings.isEmpty(eventCodes))
+        {
+            return EnumSet.noneOf(eventCodeType);
+        }
+
         final EnumSet<E> eventCodeSet = EnumSet.noneOf(eventCodeType);
-        final String[] codeIds = enabledEventCodes.split(",");
+        final String[] codeIds = eventCodes.split(",");
 
         for (final String codeId : codeIds)
         {
-            if ("all".equals(codeId))
+            final EnumSet<E> specialCodes = specialEvents.get(codeId);
+            if (null != specialCodes)
             {
-                return EnumSet.allOf(eventCodeType);
+                eventCodeSet.addAll(specialCodes);
             }
             else
             {

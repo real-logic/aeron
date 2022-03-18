@@ -34,12 +34,10 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.*;
 import org.agrona.collections.LongHashSet;
 import org.agrona.collections.MutableInteger;
@@ -50,6 +48,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
@@ -81,12 +80,15 @@ public class StartFromTruncatedRecordingLogTest
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL = "aeron:udp?term-length=64k|endpoint=localhost:801";
     private static final String LOCAL_ARCHIVE_CONTROL_CHANNEL = "aeron:ipc?term-length=64k";
 
+    @RegisterExtension
+    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+
     private final AtomicLong[] snapshotCounters = new AtomicLong[MEMBER_COUNT];
     private final Counter[] mockSnapshotCounters = new Counter[MEMBER_COUNT];
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
     private final ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
     private final ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
-    private MediaDriver clientMediaDriver;
+    private TestMediaDriver clientMediaDriver;
     private AeronCluster client;
 
     private final AtomicLong terminateCount = new AtomicLong();
@@ -143,11 +145,19 @@ public class StartFromTruncatedRecordingLogTest
             startNode(i, true);
         }
 
-        clientMediaDriver = MediaDriver.launch(
-            new MediaDriver.Context()
-                .threadingMode(ThreadingMode.SHARED)
-                .warnIfDirectoryExists(false)
-                .dirDeleteOnStart(true));
+        try
+        {
+            clientMediaDriver = TestMediaDriver.launch(
+                new MediaDriver.Context()
+                    .threadingMode(ThreadingMode.SHARED)
+                    .warnIfDirectoryExists(false)
+                    .dirDeleteOnStart(true),
+                systemTestWatcher);
+        }
+        finally
+        {
+            systemTestWatcher.dataCollector().add(clientMediaDriver.context().aeronDirectory());
+        }
     }
 
     @AfterEach
@@ -165,52 +175,20 @@ public class StartFromTruncatedRecordingLogTest
 
         CloseHelper.closeAll(containers);
         CloseHelper.closeAll(clusteredMediaDrivers);
-
-        clientMediaDriver.context().deleteDirectory();
-
-        for (final ClusteredServiceContainer container : containers)
-        {
-            if (null != container)
-            {
-                container.context().deleteDirectory();
-            }
-        }
-
-        for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
-        {
-            if (null != driver)
-            {
-                driver.consensusModule().context().deleteDirectory();
-                driver.archive().context().deleteDirectory();
-                driver.mediaDriver().context().deleteDirectory();
-            }
-        }
     }
 
     @Test
     @InterruptAfter(30)
     public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws IOException
     {
-        try
-        {
-            restartClusterWithTruncatedRecordingLog();
-            assertClusterIsOperational();
+        restartClusterWithTruncatedRecordingLog();
+        assertClusterIsOperational();
 
-            restartClusterWithTruncatedRecordingLog();
-            assertClusterIsOperational();
+        restartClusterWithTruncatedRecordingLog();
+        assertClusterIsOperational();
 
-            restartClusterWithTruncatedRecordingLog();
-            assertClusterIsOperational();
-
-            ClusterTests.failOnClusterError();
-        }
-        catch (final Exception ex)
-        {
-            ex.printStackTrace();
-            ClusterTests.printWarning();
-            SystemUtil.threadDump();
-            throw ex;
-        }
+        restartClusterWithTruncatedRecordingLog();
+        assertClusterIsOperational();
     }
 
     private void restartClusterWithTruncatedRecordingLog() throws IOException
@@ -355,7 +333,6 @@ public class StartFromTruncatedRecordingLogTest
                 .warnIfDirectoryExists(false)
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
-                .errorHandler(ClusterTests.errorHandler(index))
                 .dirDeleteOnShutdown(false)
                 .dirDeleteOnStart(true),
             new Archive.Context()
@@ -365,10 +342,8 @@ public class StartFromTruncatedRecordingLogTest
                 .localControlChannel(LOCAL_ARCHIVE_CONTROL_CHANNEL)
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
-                .errorHandler(ClusterTests.errorHandler(index))
                 .deleteArchiveOnStart(cleanStart),
             new ConsensusModule.Context()
-                .errorHandler(ClusterTests.errorHandler(index))
                 .terminationHook(terminateCount::incrementAndGet)
                 .terminationTimeoutNs(TimeUnit.SECONDS.toNanos(10))
                 .clusterMemberId(index)
@@ -381,13 +356,20 @@ public class StartFromTruncatedRecordingLogTest
                 .archiveContext(archiveCtx.clone())
                 .deleteDirOnStart(cleanStart));
 
+        systemTestWatcher.dataCollector().add(clusteredMediaDrivers[index].archive().context().archiveDir());
+        systemTestWatcher.dataCollector().add(
+            clusteredMediaDrivers[index].consensusModule().context().clusterDir());
+        systemTestWatcher.dataCollector().add(
+            clusteredMediaDrivers[index].mediaDriver().context().aeronDirectory());
+
         containers[index] = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .aeronDirectoryName(aeronDirName)
                 .archiveContext(archiveCtx.clone())
                 .clusterDir(new File(baseDirName, "service"))
-                .clusteredService(echoServices[index])
-                .errorHandler(ClusterTests.errorHandler(index)));
+                .clusteredService(echoServices[index]));
+
+        systemTestWatcher.dataCollector().add(containers[index].context().clusterDir());
     }
 
     private void closeNodes()

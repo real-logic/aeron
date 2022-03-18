@@ -88,7 +88,7 @@ final class EventConfiguration
         SPECIAL_ARCHIVE_EVENTS.put("all", EnumSet.allOf(ArchiveEventCode.class));
 
         SPECIAL_CLUSTER_EVENTS.put("all", EnumSet.allOf(ClusterEventCode.class));
-        SPECIAL_CLUSTER_EVENTS.put("admin", EnumSet.complementOf(EnumSet.of(
+        SPECIAL_CLUSTER_EVENTS.put("no-position-events", EnumSet.complementOf(EnumSet.of(
             COMMIT_POSITION, APPEND_POSITION, CANVASS_POSITION)));
 
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(allocateDirectAligned(

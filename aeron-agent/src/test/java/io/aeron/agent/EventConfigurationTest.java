@@ -94,11 +94,11 @@ public class EventConfigurationTest
     }
 
     @Test
-    public void adminClusterEventsShouldBeEnabled()
+    public void noPositionEventsShouldEnableAllClusterEventsExcludingThePositionRelatedOnes()
     {
         assertEquals(
             EnumSet.complementOf(EnumSet.of(COMMIT_POSITION, APPEND_POSITION, CANVASS_POSITION)),
-            getClusterEventCodes("admin"));
+            getClusterEventCodes("no-position-events"));
     }
 
     @Test

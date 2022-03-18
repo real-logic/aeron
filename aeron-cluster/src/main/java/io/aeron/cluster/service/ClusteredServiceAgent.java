@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.driver.Configuration;
@@ -948,6 +949,12 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         if (NULL_POSITION != terminationPosition && logPosition >= terminationPosition)
         {
+            if (logPosition > terminationPosition)
+            {
+                ctx.countedErrorHandler().onError(new ClusterEvent(
+                    "service terminate: logPosition=" + logPosition + " > terminationPosition=" + terminationPosition));
+            }
+
             terminate();
         }
     }

@@ -3184,7 +3184,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     {
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
-        throw new ClusterTerminationException();
+        throw new ClusterTerminationException(true);
     }
 
     private void unexpectedTermination()
@@ -3193,7 +3193,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         serviceProxy.terminationPosition(0, ctx.countedErrorHandler());
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
-        throw new ClusterTerminationException();
+        throw new ClusterTerminationException(false);
     }
 
     private void tryStopLogRecording()

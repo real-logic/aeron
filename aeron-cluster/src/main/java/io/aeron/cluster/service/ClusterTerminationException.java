@@ -18,9 +18,32 @@ package io.aeron.cluster.service;
 import org.agrona.concurrent.AgentTerminationException;
 
 /**
- * Used to terminate the {@link org.agrona.concurrent.Agent} within a cluster in an expected fashion.
+ * Used to terminate the {@link org.agrona.concurrent.Agent} within a cluster in an expected/unexpected fashion.
  */
 public class ClusterTerminationException extends AgentTerminationException
 {
     private static final long serialVersionUID = -2705156056823180407L;
+
+    private final boolean expected;
+
+    /**
+     * Construct an exception used to terminate the cluster.
+     *
+     * @param expected true if the termination is expected, i.e. it was requested
+     */
+    public ClusterTerminationException(final boolean expected)
+    {
+        super(expected ? "expected termination" : "unexpected termination");
+        this.expected = expected;
+    }
+
+    /**
+     * Whether the termination was expected.
+     *
+     * @return true if expected
+     */
+    public boolean expected()
+    {
+        return expected;
+    }
 }

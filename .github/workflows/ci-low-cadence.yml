@@ -6,6 +6,10 @@ on:
   schedule:
     - cron: '0 0,12 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail"
   INSTALL_COMPILER_RETRIES: "5"

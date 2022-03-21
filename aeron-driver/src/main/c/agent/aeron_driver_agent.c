@@ -333,13 +333,14 @@ static bool aeron_driver_agent_events_set_enabled(char const **events, const int
     for (int i = num_events - 1; i >= 0; i--)
     {
         const char *event_name = events[i];
-        if (0 == strncmp(AERON_DRIVER_AGENT_ALL_EVENTS, event_name, strlen(AERON_DRIVER_AGENT_ALL_EVENTS) + 1))
+        if (0 == strncmp(AERON_DRIVER_AGENT_TRACE_EVENTS, event_name, strlen(AERON_DRIVER_AGENT_TRACE_EVENTS) + 1))
         {
             aeron_driver_agent_set_enabled_all_events(is_enabled);
             result = true;
             break;
         }
-        else if (0 == strncmp(AERON_DRIVER_AGENT_ADMIN_EVENTS, event_name, strlen(AERON_DRIVER_AGENT_ADMIN_EVENTS) + 1))
+        else if (0 == strncmp(AERON_DRIVER_AGENT_ALL_EVENTS, event_name, strlen(AERON_DRIVER_AGENT_ALL_EVENTS) + 1) ||
+                 0 == strncmp(AERON_DRIVER_AGENT_ADMIN_EVENTS, event_name, strlen(AERON_DRIVER_AGENT_ADMIN_EVENTS) + 1))
         {
             aeron_driver_agent_set_enabled_admin_events(is_enabled);
             result = true;

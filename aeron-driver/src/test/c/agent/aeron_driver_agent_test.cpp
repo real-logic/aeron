@@ -168,14 +168,24 @@ TEST_F(DriverAgentTest, shouldHaveAllEventsDisabledByDefault)
     assert_all_events_disabled();
 }
 
-TEST_F(DriverAgentTest, shouldEnabledAllLoggingEvents)
+TEST_F(DriverAgentTest, shouldEnableAllLoggingEventsViaAliasTrace)
 {
-    EXPECT_TRUE(aeron_driver_agent_logging_events_init(AERON_DRIVER_AGENT_ALL_EVENTS, nullptr));
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init(AERON_DRIVER_AGENT_TRACE_EVENTS, nullptr));
 
     assert_all_events_enabled();
 }
 
-TEST_F(DriverAgentTest, shouldEnabledAdminLoggingEvents)
+TEST_F(DriverAgentTest, shouldEnableAdminLoggingEventsViaAliasAll)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init(AERON_DRIVER_AGENT_ALL_EVENTS, nullptr));
+
+    assert_admin_events_enabled(true);
+
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE));
+}
+
+TEST_F(DriverAgentTest, shouldEnableAdminLoggingEventsViaAliasAdmin)
 {
     EXPECT_TRUE(aeron_driver_agent_logging_events_init(AERON_DRIVER_AGENT_ADMIN_EVENTS, nullptr));
 
@@ -249,7 +259,7 @@ TEST_F(DriverAgentTest, shouldEnableMultipleEventsSplitByComma)
 TEST_F(DriverAgentTest, shouldDisableMultipleEventsSplitByComma)
 {
     EXPECT_TRUE(aeron_driver_agent_logging_events_init(
-        "all", "CMD_IN_REMOVE_COUNTER,33,NAME_RESOLUTION_NEIGHBOR_ADDED,CMD_OUT_ERROR,FRAME_OUT,"));
+        "trace", "CMD_IN_REMOVE_COUNTER,33,NAME_RESOLUTION_NEIGHBOR_ADDED,CMD_OUT_ERROR,FRAME_OUT,"));
 
     for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {

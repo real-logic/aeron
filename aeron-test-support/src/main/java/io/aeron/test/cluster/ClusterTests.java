@@ -59,7 +59,7 @@ public class ClusterTests
                         hasTerminated.set(true);
                     }
 
-                    throw new ClusterTerminationException(true);
+                    throw new ClusterTerminationException();
                 }
 
                 throw new AgentTerminationException();

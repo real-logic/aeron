@@ -959,7 +959,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
     }
 
-    private void terminate(final boolean expectedTermination)
+    private void terminate(final boolean isTerminationExpected)
     {
         isServiceActive = false;
         activeLifecycleCallbackName = "onTerminate";
@@ -995,7 +995,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         terminationPosition = NULL_VALUE;
-        throw new ClusterTerminationException(expectedTermination);
+        throw new ClusterTerminationException(isTerminationExpected);
     }
 
     private void checkForLifecycleCallback()

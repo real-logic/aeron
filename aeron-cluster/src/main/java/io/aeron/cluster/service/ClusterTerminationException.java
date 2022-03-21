@@ -24,26 +24,34 @@ public class ClusterTerminationException extends AgentTerminationException
 {
     private static final long serialVersionUID = -2705156056823180407L;
 
-    private final boolean expected;
+    private final boolean isExpected;
+
+    /**
+     * Construct an exception used to terminate the cluster with {@link #isExpected()} set to true.
+     */
+    public ClusterTerminationException()
+    {
+        this(true);
+    }
 
     /**
      * Construct an exception used to terminate the cluster.
      *
-     * @param expected true if the termination is expected, i.e. it was requested
+     * @param isExpected true if the termination is expected, i.e. it was requested.
      */
-    public ClusterTerminationException(final boolean expected)
+    public ClusterTerminationException(final boolean isExpected)
     {
-        super(expected ? "expected termination" : "unexpected termination");
-        this.expected = expected;
+        super(isExpected ? "expected termination" : "unexpected termination");
+        this.isExpected = isExpected;
     }
 
     /**
-     * Whether the termination was expected.
+     * Whether the termination is expected.
      *
-     * @return true if expected
+     * @return true if expected otherwise false.
      */
-    public boolean expected()
+    public boolean isExpected()
     {
-        return expected;
+        return isExpected;
     }
 }

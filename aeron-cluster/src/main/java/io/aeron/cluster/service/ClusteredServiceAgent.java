@@ -490,7 +490,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         if (memberId == this.memberId && changeType == ChangeType.QUIT)
         {
-            terminate();
+            terminate(true);
         }
     }
 
@@ -955,11 +955,11 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                     "service terminate: logPosition=" + logPosition + " > terminationPosition=" + terminationPosition));
             }
 
-            terminate();
+            terminate(logPosition == terminationPosition);
         }
     }
 
-    private void terminate()
+    private void terminate(final boolean expectedTermination)
     {
         isServiceActive = false;
         activeLifecycleCallbackName = "onTerminate";
@@ -995,7 +995,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         terminationPosition = NULL_VALUE;
-        throw new ClusterTerminationException();
+        throw new ClusterTerminationException(expectedTermination);
     }
 
     private void checkForLifecycleCallback()

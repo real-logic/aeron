@@ -90,7 +90,7 @@ final class AgentTests
             ENABLED_ARCHIVE_EVENT_CODES.propertyName(),
             "CMD_IN_EXTEND_RECORDING,REPLICATION_SESSION_STATE_CHANGE,CATALOG_RESIZE");
         System.setProperty(DISABLED_ARCHIVE_EVENT_CODES.propertyName(), "REPLICATION_SESSION_STATE_CHANGE");
-        System.setProperty(ENABLED_CLUSTER_EVENT_CODES.propertyName(), "all");
+        System.setProperty(ENABLED_CLUSTER_EVENT_CODES.propertyName(), "trace");
         System.setProperty(DISABLED_CLUSTER_EVENT_CODES.propertyName(), "ROLE_CHANGE");
         System.setProperty(READER_CLASSNAME.propertyName(), TestLoggingAgent.class.getName());
         final int instanceCount = TestLoggingAgent.INSTANCE_COUNT.get();

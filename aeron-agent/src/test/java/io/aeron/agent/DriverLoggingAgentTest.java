@@ -67,7 +67,7 @@ public class DriverLoggingAgentTest
     @InterruptAfter(10)
     public void logAllNetworkChannel()
     {
-        testLogMediaDriverEvents(NETWORK_CHANNEL, "all", EnumSet.of(
+        testLogMediaDriverEvents(NETWORK_CHANNEL, "trace", EnumSet.of(
             FRAME_IN,
             FRAME_OUT,
             CMD_IN_ADD_PUBLICATION,
@@ -95,7 +95,7 @@ public class DriverLoggingAgentTest
     @InterruptAfter(10)
     public void logAllIpcChannel()
     {
-        testLogMediaDriverEvents(IPC_CHANNEL, "all", EnumSet.of(
+        testLogMediaDriverEvents(IPC_CHANNEL, "trace", EnumSet.of(
             CMD_IN_ADD_PUBLICATION,
             CMD_IN_REMOVE_PUBLICATION,
             CMD_IN_ADD_SUBSCRIPTION,

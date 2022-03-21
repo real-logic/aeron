@@ -40,10 +40,12 @@ enum ConfigOption
      * Driver Event tags system property. This is either:
      * <ul>
      * <li>A comma separated list of {@link DriverEventCode}s to enable.</li>
-     * <li>"all" which enables all driver events.</li>
-     * <li>"admin" which enables all driver events except for {@link DriverEventCode#FRAME_IN},
+     * <li>{@code trace} which enables all driver events.
+     * <p/>Note: can be high volume so be careful enabling it in production.</li>
+     * <li>{@code admin} which enables all driver events except for {@link DriverEventCode#FRAME_IN},
      * {@link DriverEventCode#FRAME_OUT}, {@link DriverEventCode#NAME_RESOLUTION_NEIGHBOR_ADDED},
      * {@link DriverEventCode#NAME_RESOLUTION_NEIGHBOR_REMOVED}.</li>
+     * <li>{@code all} same as {@code admin}</li>
      * </ul>
      */
     ENABLED_DRIVER_EVENT_CODES("aeron.event.log"),
@@ -59,7 +61,9 @@ enum ConfigOption
      * Archive Event tags system property. This is either:
      * <ul>
      * <li>A comma separated list of {@link ArchiveEventCode}s to enable.</li>
-     * <li>"all" which enables all the codes.</li>
+     * <li>{@code trace} which enables all archive events.
+     * <p/>Note: can be high volume so be careful enabling it in production.</li>
+     * <li>{@code all} same as {@code trace}.</li>
      * </ul>
      */
     ENABLED_ARCHIVE_EVENT_CODES("aeron.event.archive.log"),
@@ -75,8 +79,9 @@ enum ConfigOption
      * Cluster Event tags system property. This is either:
      * <ul>
      * <li>A comma separated list of {@link ClusterEventCode}s to enable.</li>
-     * <li>"all" which enables all the codes.</li>
-     * <li>"admin" which enables all driver events except for {@link ClusterEventCode#COMMIT_POSITION},
+     * <li>{@code trace} which enables all cluster events.
+     * <p/>Note: can be high volume so be careful enabling it in production.</li>
+     * <li>{@code all} which enables all cluster events except for {@link ClusterEventCode#COMMIT_POSITION},
      * {@link ClusterEventCode#APPEND_POSITION} and {@link ClusterEventCode#CANVASS_POSITION}.</li>
      * </ul>
      */

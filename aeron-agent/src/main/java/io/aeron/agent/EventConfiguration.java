@@ -78,17 +78,20 @@ final class EventConfiguration
 
     static
     {
-        SPECIAL_DRIVER_EVENTS.put("all", EnumSet.allOf(DriverEventCode.class));
-        SPECIAL_DRIVER_EVENTS.put("admin", EnumSet.complementOf(EnumSet.of(
+        SPECIAL_DRIVER_EVENTS.put("trace", EnumSet.allOf(DriverEventCode.class));
+        final EnumSet<DriverEventCode> adminEvents = EnumSet.complementOf(EnumSet.of(
             FRAME_IN,
             FRAME_OUT,
             NAME_RESOLUTION_NEIGHBOR_ADDED,
-            NAME_RESOLUTION_NEIGHBOR_REMOVED)));
+            NAME_RESOLUTION_NEIGHBOR_REMOVED));
+        SPECIAL_DRIVER_EVENTS.put("admin", adminEvents);
+        SPECIAL_DRIVER_EVENTS.put("all", adminEvents);
 
+        SPECIAL_ARCHIVE_EVENTS.put("trace", EnumSet.allOf(ArchiveEventCode.class));
         SPECIAL_ARCHIVE_EVENTS.put("all", EnumSet.allOf(ArchiveEventCode.class));
 
-        SPECIAL_CLUSTER_EVENTS.put("all", EnumSet.allOf(ClusterEventCode.class));
-        SPECIAL_CLUSTER_EVENTS.put("no-position-events", EnumSet.complementOf(EnumSet.of(
+        SPECIAL_CLUSTER_EVENTS.put("trace", EnumSet.allOf(ClusterEventCode.class));
+        SPECIAL_CLUSTER_EVENTS.put("all", EnumSet.complementOf(EnumSet.of(
             COMMIT_POSITION, APPEND_POSITION, CANVASS_POSITION)));
 
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(allocateDirectAligned(

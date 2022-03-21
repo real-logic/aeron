@@ -16,6 +16,8 @@
 package io.aeron.agent;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -58,13 +60,14 @@ public class EventConfigurationTest
     }
 
     @Test
-    public void allDriverEventsShouldBeEnabled()
+    public void traceEnablesAllDriverEvents()
     {
-        assertEquals(EnumSet.allOf(DriverEventCode.class), getDriverEventCodes("all"));
+        assertEquals(EnumSet.allOf(DriverEventCode.class), getDriverEventCodes("trace"));
     }
 
-    @Test
-    public void adminDriverEventsShouldBeEnabled()
+    @ParameterizedTest
+    @ValueSource(strings = { "all", "admin" })
+    public void adminDriverEventsShouldBeEnabled(final String alias)
     {
         assertEquals(
             EnumSet.complementOf(EnumSet.of(
@@ -72,7 +75,7 @@ public class EventConfigurationTest
             FRAME_OUT,
             NAME_RESOLUTION_NEIGHBOR_ADDED,
             NAME_RESOLUTION_NEIGHBOR_REMOVED)),
-            getDriverEventCodes("admin"));
+            getDriverEventCodes(alias));
     }
 
     @Test
@@ -88,17 +91,17 @@ public class EventConfigurationTest
     }
 
     @Test
-    public void allClusterEventsShouldBeEnabled()
+    public void traceEnablesAllClusterEvents()
     {
-        assertEquals(EnumSet.allOf(ClusterEventCode.class), getClusterEventCodes("all"));
+        assertEquals(EnumSet.allOf(ClusterEventCode.class), getClusterEventCodes("trace"));
     }
 
     @Test
-    public void noPositionEventsShouldEnableAllClusterEventsExcludingThePositionRelatedOnes()
+    public void allClusterEventsShouldBeEnabled()
     {
         assertEquals(
             EnumSet.complementOf(EnumSet.of(COMMIT_POSITION, APPEND_POSITION, CANVASS_POSITION)),
-            getClusterEventCodes("no-position-events"));
+            getClusterEventCodes("all"));
     }
 
     @Test
@@ -111,10 +114,11 @@ public class EventConfigurationTest
             getClusterEventCodes("STATE_CHANGE,NEW_LEADERSHIP_TERM,ROLE_CHANGE,"));
     }
 
-    @Test
-    public void allArchiveEventsShouldBeEnabled()
+    @ParameterizedTest
+    @ValueSource(strings = { "trace", "all" })
+    public void allArchiveEventsShouldBeEnabled(final String alias)
     {
-        assertEquals(EnumSet.allOf(ArchiveEventCode.class), getArchiveEventCodes("all"));
+        assertEquals(EnumSet.allOf(ArchiveEventCode.class), getArchiveEventCodes(alias));
     }
 
     @Test
@@ -128,7 +132,7 @@ public class EventConfigurationTest
     void shouldDisableSpecificDriverEvents()
     {
         EventConfiguration.init(
-            "all",
+            "trace",
             "FRAME_IN,FRAME_OUT",
             null,
             null,
@@ -162,7 +166,7 @@ public class EventConfigurationTest
             null,
             null,
             null,
-            "all",
+            "trace",
             ROLE_CHANGE.name() + "," + ELECTION_STATE_CHANGE);
         assertEquals(ClusterEventCode.values().length - 2, CLUSTER_EVENT_CODES.size());
         assertFalse(CLUSTER_EVENT_CODES.contains(ROLE_CHANGE));

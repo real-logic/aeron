@@ -3,7 +3,7 @@
                    package="io.aeron.cluster.codecs"
                    id="111"
                    version="8"
-                   semanticVersion="5.2"
+                   semanticVersion="5.3"
                    description="Message Codecs for communicating with, and within, an Aeron Cluster."
                    byteOrder="littleEndian">
     <types>

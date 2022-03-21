@@ -28,6 +28,7 @@ import org.agrona.collections.ArrayUtil;
 class ConsensusAdapter implements FragmentHandler, AutoCloseable
 {
     static final int FRAGMENT_LIMIT = 10;
+    static final int SCHEMA_VERSION_WITH_APPEND_POSITION_FLAGS = 8;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final CanvassPositionDecoder canvassPositionDecoder = new CanvassPositionDecoder();
@@ -159,11 +160,15 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                final int flags = messageHeaderDecoder.version() < SCHEMA_VERSION_WITH_APPEND_POSITION_FLAGS ?
+                    ConsensusModuleAgent.APPEND_POSITION_FLAG_NONE : appendPositionDecoder.flags();
+
                 consensusModuleAgent.onAppendPosition(
                     appendPositionDecoder.leadershipTermId(),
                     appendPositionDecoder.logPosition(),
                     appendPositionDecoder.followerMemberId(),
-                    appendPositionDecoder.flags());
+                    flags);
+
                 break;
 
             case CommitPositionDecoder.TEMPLATE_ID:

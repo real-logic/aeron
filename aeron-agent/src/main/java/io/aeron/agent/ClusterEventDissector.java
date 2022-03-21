@@ -336,10 +336,13 @@ final class ClusterEventDissector
         final long logPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
         final int followerMemberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final int flags = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
 
         builder.append(": leadershipTermId=").append(leadershipTermId);
         builder.append(" logPosition=").append(logPosition);
         builder.append(" followerMemberId=").append(followerMemberId);
+        builder.append(" flags=0b").append(Integer.toBinaryString(flags));
     }
 
     public static void dissectCommitPosition(

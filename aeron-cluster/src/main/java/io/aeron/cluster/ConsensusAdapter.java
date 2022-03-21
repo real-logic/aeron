@@ -162,7 +162,8 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                 consensusModuleAgent.onAppendPosition(
                     appendPositionDecoder.leadershipTermId(),
                     appendPositionDecoder.logPosition(),
-                    appendPositionDecoder.followerMemberId());
+                    appendPositionDecoder.followerMemberId(),
+                    appendPositionDecoder.flags());
                 break;
 
             case CommitPositionDecoder.TEMPLATE_ID:

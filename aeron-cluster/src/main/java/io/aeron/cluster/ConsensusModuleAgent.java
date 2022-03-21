@@ -62,6 +62,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 {
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final int SERVICE_MESSAGE_LIMIT = 20;
+    static final int APPEND_POSITION_FLAG_NONE = 0;
+    static final int APPEND_POSITION_FLAG_CATCHUP = 1;
 
     private final long sessionTimeoutNs;
     private final long leaderHeartbeatIntervalNs;
@@ -700,11 +702,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
     }
 
-    void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
+    void onAppendPosition(
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId,
+        final int flags)
     {
         if (null != election)
         {
-            election.onAppendPosition(leadershipTermId, logPosition, followerMemberId);
+            election.onAppendPosition(leadershipTermId, logPosition, followerMemberId, flags);
         }
         else if (leadershipTermId <= this.leadershipTermId && Cluster.Role.LEADER == role)
         {
@@ -714,7 +720,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 follower
                     .logPosition(logPosition)
                     .timeOfLastAppendPositionNs(clusterClock.timeNanos());
-                trackCatchupCompletion(follower, leadershipTermId);
+                trackCatchupCompletion(follower, leadershipTermId, flags);
             }
         }
     }
@@ -1751,9 +1757,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return true;
     }
 
-    void trackCatchupCompletion(final ClusterMember follower, final long leadershipTermId)
+    void trackCatchupCompletion(
+        final ClusterMember follower,
+        final long leadershipTermId,
+        final int appendPositionFlags)
     {
-        if (NULL_VALUE != follower.catchupReplaySessionId())
+        if (NULL_VALUE != follower.catchupReplaySessionId() || isCatchupAppendPosition(appendPositionFlags))
         {
             if (follower.logPosition() >= logPublisher.position())
             {
@@ -1795,7 +1804,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
 
             final ExclusivePublication publication = election.leader().publication();
-            workCount += updateFollowerPosition(publication, nowNs, replayLeadershipTermId, appendPosition.get());
+            workCount += updateFollowerPosition(
+                publication, nowNs, replayLeadershipTermId, appendPosition.get(), APPEND_POSITION_FLAG_CATCHUP);
             commitPosition.proposeMaxOrdered(logAdapter.position());
         }
 
@@ -2545,20 +2555,22 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private int updateFollowerPosition(final long nowNs)
     {
         final long recordedPosition = null != appendPosition ? appendPosition.get() : logRecordedPosition;
-        return updateFollowerPosition(leaderMember.publication(), nowNs, this.leadershipTermId, recordedPosition);
+        return updateFollowerPosition(leaderMember.publication(), nowNs, this.leadershipTermId, recordedPosition,
+            APPEND_POSITION_FLAG_NONE);
     }
 
     private int updateFollowerPosition(
         final ExclusivePublication publication,
         final long nowNs,
         final long leadershipTermId,
-        final long appendPosition)
+        final long appendPosition,
+        final int flags)
     {
         final long position = Math.max(appendPosition, lastAppendPosition);
         if ((position > lastAppendPosition ||
             nowNs >= (timeOfLastAppendPositionSendNs + leaderHeartbeatIntervalNs)))
         {
-            if (consensusPublisher.appendPosition(publication, leadershipTermId, position, memberId))
+            if (consensusPublisher.appendPosition(publication, leadershipTermId, position, memberId, flags))
             {
                 if (position > lastAppendPosition)
                 {
@@ -3378,6 +3390,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             return egressChannel;
         }
+    }
+
+    private static boolean isCatchupAppendPosition(final int flags)
+    {
+        return 0 != (APPEND_POSITION_FLAG_CATCHUP & flags);
     }
 
     public String toString()

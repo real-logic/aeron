@@ -482,10 +482,15 @@ public final class ClusterEventLogger
      * @param leadershipTermId the current leadership term id
      * @param logPosition the current position in the log
      * @param followerMemberId follower member sending the append position
+     * @param flags applied to append position by follower
      */
-    public void logAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
+    public void logAppendPosition(
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId,
+        final int flags)
     {
-        final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT;
+        final int length = (2 * SIZE_OF_LONG) + (2 * SIZE_OF_INT);
         final int encodedLength = encodedLength(length);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(APPEND_POSITION.toEventCodeId(), encodedLength);
@@ -501,7 +506,8 @@ public final class ClusterEventLogger
                     length,
                     leadershipTermId,
                     logPosition,
-                    followerMemberId);
+                    followerMemberId,
+                    flags);
             }
             finally
             {
@@ -516,7 +522,10 @@ public final class ClusterEventLogger
      * @param logPosition the current position in the log
      * @param leaderMemberId leader member sending the commit position
      */
-    public void logCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
+    public void logCommitPosition(
+        final long leadershipTermId,
+        final long logPosition,
+        final int leaderMemberId)
     {
         final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT;
         final int encodedLength = encodedLength(length);
@@ -527,7 +536,7 @@ public final class ClusterEventLogger
         {
             try
             {
-                ClusterEventEncoder.encodeAppendPosition(
+                ClusterEventEncoder.encodeCommitPosition(
                     (UnsafeBuffer)ringBuffer.buffer(),
                     index,
                     length,

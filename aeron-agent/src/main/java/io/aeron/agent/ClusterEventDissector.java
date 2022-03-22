@@ -15,7 +15,6 @@
  */
 package io.aeron.agent;
 
-import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.MutableDirectBuffer;
 
 import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;

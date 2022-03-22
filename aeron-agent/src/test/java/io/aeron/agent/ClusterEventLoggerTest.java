@@ -392,7 +392,7 @@ class ClusterEventLoggerTest
 
         logger.logAppendPosition(leadershipTermId, logPosition, memberId, flags);
 
-        final int length = (2 * SIZE_OF_LONG) + (2 * SIZE_OF_INT);
+        final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT + SIZE_OF_BYTE;
         verifyLogHeader(logBuffer, offset, APPEND_POSITION.toEventCodeId(), length, length);
         int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
 
@@ -403,14 +403,14 @@ class ClusterEventLoggerTest
         assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
         assertEquals(flags, logBuffer.getInt(index, LITTLE_ENDIAN));
-        index += SIZE_OF_INT;
+        index += SIZE_OF_BYTE;
 
         final StringBuilder sb = new StringBuilder();
         ClusterEventDissector.dissectAppendPosition(
             APPEND_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: APPEND_POSITION " +
-            "\\[24/24\\]: leadershipTermId=1233 logPosition=988723465 followerMemberId=982374 flags=0b1";
+            "\\[21/21\\]: leadershipTermId=1233 logPosition=988723465 followerMemberId=982374 flags=0b00000001";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

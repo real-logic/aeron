@@ -15,8 +15,10 @@
  */
 package io.aeron.agent;
 
+import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
+import java.io.IOException;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
@@ -143,5 +145,24 @@ final class CommonEventDissector
         encodedLength += addressLength;
 
         return encodedLength;
+    }
+
+    static void appendFlagsAsChars(final short flags, final Appendable appendable)
+    {
+        final int length = 8;
+        short mask = (short)(1 << (length - 1));
+
+        try
+        {
+            for (int i = 0; i < length; i++)
+            {
+                appendable.append((flags & mask) == mask ? '1' : '0');
+                mask >>= 1;
+            }
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 }

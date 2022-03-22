@@ -249,7 +249,7 @@ final class ConsensusPublisher
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
                     .followerMemberId(followerMemberId)
-                    .flags(flags);
+                    .flags((short)(flags & 0xFF));
 
                 bufferClaim.commit();
 

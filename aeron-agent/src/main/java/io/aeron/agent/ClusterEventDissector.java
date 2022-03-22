@@ -15,10 +15,12 @@
  */
 package io.aeron.agent;
 
+import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.MutableDirectBuffer;
 
 import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
+import static io.aeron.agent.CommonEventDissector.appendFlagsAsChars;
 import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -337,12 +339,13 @@ final class ClusterEventDissector
         absoluteOffset += SIZE_OF_LONG;
         final int followerMemberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_INT;
-        final int flags = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        final short flags = (short)(buffer.getByte(absoluteOffset) & 0xFF);
 
         builder.append(": leadershipTermId=").append(leadershipTermId);
         builder.append(" logPosition=").append(logPosition);
         builder.append(" followerMemberId=").append(followerMemberId);
-        builder.append(" flags=0b").append(Integer.toBinaryString(flags));
+        builder.append(" flags=0b");
+        appendFlagsAsChars(flags, builder);
     }
 
     public static void dissectCommitPosition(

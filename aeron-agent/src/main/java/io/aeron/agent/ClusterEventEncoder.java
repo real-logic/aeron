@@ -21,8 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.CommonEventEncoder.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 final class ClusterEventEncoder
 {
@@ -410,8 +409,8 @@ final class ClusterEventEncoder
         encodingBuffer.putInt(bodyOffset + bodyLength, memberId, LITTLE_ENDIAN);
         bodyLength += SIZE_OF_INT;
 
-        encodingBuffer.putInt(bodyOffset + bodyLength, flags, LITTLE_ENDIAN);
-        bodyLength += SIZE_OF_INT;
+        encodingBuffer.putByte(bodyOffset + bodyLength, (byte)flags);
+        bodyLength += SIZE_OF_BYTE;
 
         return logHeaderLength + bodyLength;
     }

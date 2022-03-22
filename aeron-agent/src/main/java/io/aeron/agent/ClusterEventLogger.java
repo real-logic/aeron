@@ -490,7 +490,7 @@ public final class ClusterEventLogger
         final int followerMemberId,
         final int flags)
     {
-        final int length = (2 * SIZE_OF_LONG) + (2 * SIZE_OF_INT);
+        final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT + SIZE_OF_BYTE;
         final int encodedLength = encodedLength(length);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(APPEND_POSITION.toEventCodeId(), encodedLength);

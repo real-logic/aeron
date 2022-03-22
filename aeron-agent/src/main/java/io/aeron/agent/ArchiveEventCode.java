@@ -189,7 +189,7 @@ public enum ArchiveEventCode implements EventCode
      */
     public int toEventCodeId()
     {
-        return EVENT_CODE_TYPE << 16 | (id() & 0xFFFF);
+        return EVENT_CODE_TYPE << 16 | (id & 0xFFFF);
     }
 
     /**

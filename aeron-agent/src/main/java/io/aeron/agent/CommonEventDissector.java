@@ -146,23 +146,4 @@ final class CommonEventDissector
 
         return encodedLength;
     }
-
-    static void appendFlagsAsChars(final short flags, final Appendable appendable)
-    {
-        final int length = 8;
-        short mask = (short)(1 << (length - 1));
-
-        try
-        {
-            for (int i = 0; i < length; i++)
-            {
-                appendable.append((flags & mask) == mask ? '1' : '0');
-                mask >>= 1;
-            }
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-    }
 }

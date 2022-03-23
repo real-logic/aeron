@@ -73,7 +73,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private long nextServiceSessionId = Long.MIN_VALUE + 1;
     private long logServiceSessionId = Long.MIN_VALUE;
     private long leadershipTermId = NULL_VALUE;
-    private long replayLeadershipTermId = NULL_VALUE;
     private long expectedAckPosition = 0;
     private long serviceAckId = 0;
     private long terminationPosition = NULL_POSITION;
@@ -768,7 +767,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void onStopCatchup(final long leadershipTermId, final int followerMemberId)
     {
-        if (leadershipTermId == this.replayLeadershipTermId && followerMemberId == memberId)
+        if (leadershipTermId == this.leadershipTermId && followerMemberId == memberId)
         {
             if (null != catchupLogDestination)
             {
@@ -1038,7 +1037,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return role;
     }
 
-    long prepareForNewLeadership(final long logPosition)
+    long prepareForNewLeadership(final long logPosition, final long nowNs)
     {
         role(Cluster.Role.FOLLOWER);
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
@@ -1063,6 +1062,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             tryStopLogRecording();
             lastAppendPosition = getLastAppendedPosition();
+            timeOfLastAppendPositionUpdateNs = nowNs;
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
 
             final CountersReader counters = ctx.aeron().countersReader();
@@ -1238,7 +1238,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void onReplayClusterAction(final long leadershipTermId, final ClusterAction action)
     {
-        if (leadershipTermId == this.replayLeadershipTermId)
+        if (leadershipTermId == this.leadershipTermId)
         {
             if (ClusterAction.SUSPEND == action)
             {
@@ -1319,7 +1319,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final int memberId,
         final String clusterMembers)
     {
-        if (leadershipTermId == this.replayLeadershipTermId)
+        if (leadershipTermId == this.leadershipTermId)
         {
             if (ChangeType.JOIN == changeType)
             {
@@ -1542,7 +1542,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return catchupLogDestination;
     }
 
-    boolean tryJoinLogAsFollower(final Image image, final boolean isLeaderStartup)
+    boolean tryJoinLogAsFollower(final Image image, final boolean isLeaderStartup, final long nowNs)
     {
         final Subscription logSubscription = image.subscription();
         final int streamId = logSubscription.streamId();
@@ -1562,6 +1562,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         logAdapter.image(image);
         lastAppendPosition = image.joinPosition();
+        timeOfLastAppendPositionUpdateNs = nowNs;
 
         awaitServicesReady(
             channel,
@@ -1608,7 +1609,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     void leadershipTermId(final long leadershipTermId)
     {
         this.leadershipTermId = leadershipTermId;
-        this.replayLeadershipTermId = leadershipTermId;
     }
 
     LogReplay newLogReplay(final long logPosition, final long appendPosition)
@@ -1805,7 +1805,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
             final ExclusivePublication publication = election.leader().publication();
             workCount += updateFollowerPosition(
-                publication, nowNs, replayLeadershipTermId, appendPosition.get(), APPEND_POSITION_FLAG_CATCHUP);
+                publication, nowNs, leadershipTermId, appendPosition.get(), APPEND_POSITION_FLAG_CATCHUP);
             commitPosition.proposeMaxOrdered(logAdapter.position());
         }
 
@@ -2951,7 +2951,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             final int counterId = awaitRecordingCounter(counters, publication.sessionId());
             recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-            snapshotState(publication, logPosition, replayLeadershipTermId);
+            snapshotState(publication, logPosition, leadershipTermId);
             awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
         }
         catch (final ArchiveException ex)
@@ -2965,17 +2965,17 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             throw ex;
         }
 
-        final long termBaseLogPosition = recordingLog.getTermEntry(replayLeadershipTermId).termBaseLogPosition;
+        final long termBaseLogPosition = recordingLog.getTermEntry(leadershipTermId).termBaseLogPosition;
 
         for (int serviceId = serviceAcks.length - 1; serviceId >= 0; serviceId--)
         {
             final long snapshotId = serviceAcks[serviceId].relevantId();
             recordingLog.appendSnapshot(
-                snapshotId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
+                snapshotId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
         }
 
         recordingLog.appendSnapshot(
-            recordingId, replayLeadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
+            recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
 
         recordingLog.force(ctx.fileSyncLevel());
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), Aeron.NULL_VALUE);

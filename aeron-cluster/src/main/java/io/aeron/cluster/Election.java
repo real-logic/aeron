@@ -591,7 +591,7 @@ class Election
             isFirstInit = false;
             if (!isNodeStartup)
             {
-                appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
+                appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition, nowNs);
             }
         }
         else
@@ -599,7 +599,7 @@ class Election
             cleanupLogReplication();
             resetCatchup();
 
-            appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition);
+            appendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition, nowNs);
             logSessionId = NULL_SESSION_ID;
             cleanupReplay();
             CloseHelper.close(logSubscription);
@@ -953,7 +953,7 @@ class Election
         if (null != image)
         {
             verifyLogImage(image);
-            if (consensusModuleAgent.tryJoinLogAsFollower(image, isLeaderStartup))
+            if (consensusModuleAgent.tryJoinLogAsFollower(image, isLeaderStartup, nowNs))
             {
                 state(FOLLOWER_CATCHUP, nowNs);
                 workCount++;
@@ -1024,7 +1024,7 @@ class Election
         if (null != image)
         {
             verifyLogImage(image);
-            if (consensusModuleAgent.tryJoinLogAsFollower(image, isLeaderStartup))
+            if (consensusModuleAgent.tryJoinLogAsFollower(image, isLeaderStartup, nowNs))
             {
                 appendPosition = image.joinPosition();
                 logPosition = image.joinPosition();

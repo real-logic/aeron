@@ -1037,7 +1037,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return role;
     }
 
-    long prepareForNewLeadership(final long logPosition)
+    long prepareForNewLeadership(final long logPosition, final long nowNs)
     {
         role(Cluster.Role.FOLLOWER);
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
@@ -1062,6 +1062,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             tryStopLogRecording();
             lastAppendPosition = getLastAppendedPosition();
+            timeOfLastAppendPositionUpdateNs = nowNs;
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
 
             final CountersReader counters = ctx.aeron().countersReader();
@@ -1541,7 +1542,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return catchupLogDestination;
     }
 
-    boolean tryJoinLogAsFollower(final Image image, final boolean isLeaderStartup)
+    boolean tryJoinLogAsFollower(final Image image, final boolean isLeaderStartup, final long nowNs)
     {
         final Subscription logSubscription = image.subscription();
         final int streamId = logSubscription.streamId();
@@ -1561,6 +1562,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         logAdapter.image(image);
         lastAppendPosition = image.joinPosition();
+        timeOfLastAppendPositionUpdateNs = nowNs;
 
         awaitServicesReady(
             channel,

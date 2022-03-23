@@ -159,10 +159,15 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                final int flags = AppendPositionDecoder.flagsNullValue() == appendPositionDecoder.flags() ?
+                    ConsensusModuleAgent.APPEND_POSITION_FLAG_NONE : appendPositionDecoder.flags();
+
                 consensusModuleAgent.onAppendPosition(
                     appendPositionDecoder.leadershipTermId(),
                     appendPositionDecoder.logPosition(),
-                    appendPositionDecoder.followerMemberId());
+                    appendPositionDecoder.followerMemberId(),
+                    flags);
+
                 break;
 
             case CommitPositionDecoder.TEMPLATE_ID:

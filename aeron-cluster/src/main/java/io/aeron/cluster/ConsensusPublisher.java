@@ -228,7 +228,8 @@ final class ConsensusPublisher
         final ExclusivePublication publication,
         final long leadershipTermId,
         final long logPosition,
-        final int followerMemberId)
+        final int followerMemberId,
+        final int flags)
     {
         if (null == publication)
         {
@@ -247,7 +248,8 @@ final class ConsensusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
-                    .followerMemberId(followerMemberId);
+                    .followerMemberId(followerMemberId)
+                    .flags((short)(flags & 0xFF));
 
                 bufferClaim.commit();
 

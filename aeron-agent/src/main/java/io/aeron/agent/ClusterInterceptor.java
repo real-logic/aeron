@@ -210,12 +210,14 @@ class ClusterInterceptor
         static void onAppendPosition(
             final long leadershipTermId,
             final long logPosition,
-            final int memberId)
+            final int memberId,
+            final int flags)
         {
             LOGGER.logAppendPosition(
                 leadershipTermId,
                 logPosition,
-                memberId);
+                memberId,
+                flags);
         }
     }
 

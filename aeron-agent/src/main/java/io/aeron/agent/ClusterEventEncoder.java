@@ -21,8 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.CommonEventEncoder.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 final class ClusterEventEncoder
 {
@@ -388,6 +387,35 @@ final class ClusterEventEncoder
     }
 
     public static int encodeAppendPosition(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final long leadershipTermId,
+        final long logPosition,
+        final int memberId,
+        final int flags)
+    {
+        final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + logHeaderLength;
+        int bodyLength = 0;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, leadershipTermId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, logPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, memberId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        encodingBuffer.putByte(bodyOffset + bodyLength, (byte)flags);
+        bodyLength += SIZE_OF_BYTE;
+
+        return logHeaderLength + bodyLength;
+    }
+
+    public static int encodeCommitPosition(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,

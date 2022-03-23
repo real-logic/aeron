@@ -40,6 +40,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.compareLog;
+import static io.aeron.cluster.ConsensusModuleAgent.APPEND_POSITION_FLAG_NONE;
 import static io.aeron.cluster.ElectionState.*;
 import static java.lang.Math.max;
 
@@ -485,7 +486,11 @@ class Election
         }
     }
 
-    void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
+    void onAppendPosition(
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId,
+        final int flags)
     {
         if (INIT == state)
         {
@@ -502,7 +507,7 @@ class Election
                     .logPosition(logPosition)
                     .timeOfLastAppendPositionNs(ctx.clusterClock().timeNanos());
 
-                consensusModuleAgent.trackCatchupCompletion(follower, leadershipTermId);
+                consensusModuleAgent.trackCatchupCompletion(follower, leadershipTermId, flags);
             }
         }
     }
@@ -1043,7 +1048,7 @@ class Election
     private int followerReady(final long nowNs)
     {
         if (consensusPublisher.appendPosition(
-            leaderMember.publication(), leadershipTermId, logPosition, thisMember.id()))
+            leaderMember.publication(), leadershipTermId, logPosition, thisMember.id(), APPEND_POSITION_FLAG_NONE))
         {
             consensusModuleAgent.leadershipTermId(leadershipTermId);
             consensusModuleAgent.electionComplete(nowNs);
@@ -1153,7 +1158,7 @@ class Election
             (position == appendPosition && hasUpdateIntervalExpired(nowNs, ctx.leaderHeartbeatIntervalNs())))
         {
             if (consensusPublisher.appendPosition(
-                leaderMember.publication(), leadershipTermId, position, thisMember.id()))
+                leaderMember.publication(), leadershipTermId, position, thisMember.id(), APPEND_POSITION_FLAG_NONE))
             {
                 appendPosition = position;
                 timeOfLastUpdateNs = nowNs;

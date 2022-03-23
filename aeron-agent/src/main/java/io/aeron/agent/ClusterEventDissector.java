@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.MutableDirectBuffer;
 
 import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
@@ -336,10 +337,14 @@ final class ClusterEventDissector
         final long logPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
         final int followerMemberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final short flags = (short)(buffer.getByte(absoluteOffset) & 0xFF);
 
         builder.append(": leadershipTermId=").append(leadershipTermId);
         builder.append(" logPosition=").append(logPosition);
         builder.append(" followerMemberId=").append(followerMemberId);
+        builder.append(" flags=0b");
+        HeaderFlyweight.appendFlagsAsChars(flags, builder);
     }
 
     public static void dissectCommitPosition(

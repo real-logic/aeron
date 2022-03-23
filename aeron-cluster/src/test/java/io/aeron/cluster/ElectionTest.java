@@ -34,6 +34,7 @@ import java.util.Random;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.cluster.ConsensusModuleAgent.APPEND_POSITION_FLAG_NONE;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -224,8 +225,8 @@ public class ElectionTest
         when(consensusModuleAgent.appendNewLeadershipTermEvent(anyLong())).thenReturn(true);
 
         clock.increment(1);
-        election.onAppendPosition(candidateTermId, logPosition, clusterMembers[1].id());
-        election.onAppendPosition(candidateTermId, logPosition, clusterMembers[2].id());
+        election.onAppendPosition(candidateTermId, logPosition, clusterMembers[1].id(), APPEND_POSITION_FLAG_NONE);
+        election.onAppendPosition(candidateTermId, logPosition, clusterMembers[2].id(), APPEND_POSITION_FLAG_NONE);
         election.doWork(clock.nanoTime());
         final InOrder inOrder = inOrder(consensusModuleAgent, electionStateCounter);
         inOrder.verify(consensusModuleAgent).electionComplete(anyLong());
@@ -288,13 +289,18 @@ public class ElectionTest
         election.doWork(++nowNs);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_READY.code());
 
-        when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
+        when(consensusPublisher.appendPosition(
+            any(), anyLong(), anyLong(), anyInt(), anyInt())).thenReturn(Boolean.TRUE);
         when(consensusModuleAgent.appendNewLeadershipTermEvent(anyLong())).thenReturn(true);
 
         election.doWork(++nowNs);
         final InOrder inOrder = inOrder(consensusPublisher, consensusModuleAgent, electionStateCounter);
         inOrder.verify(consensusPublisher).appendPosition(
-            clusterMembers[candidateId].publication(), candidateTermId, logPosition, followerMember.id());
+            clusterMembers[candidateId].publication(),
+            candidateTermId,
+            logPosition,
+            followerMember.id(),
+            APPEND_POSITION_FLAG_NONE);
         inOrder.verify(consensusModuleAgent).electionComplete(anyLong());
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.CLOSED.code());
     }
@@ -372,7 +378,7 @@ public class ElectionTest
         election.doWork(clock.nanoTime());
         verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
 
-        election.onAppendPosition(leadershipTermId, logPosition, 0);
+        election.onAppendPosition(leadershipTermId, logPosition, 0, APPEND_POSITION_FLAG_NONE);
 
         clock.increment(1);
         election.doWork(clock.nanoTime());
@@ -740,7 +746,7 @@ public class ElectionTest
         when(logReplication.position()).thenReturn(term2BaseLogPosition);
         when(logReplication.recordingId()).thenReturn(localRecordingId);
         when(consensusPublisher.appendPosition(
-            liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id()))
+            liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id(), APPEND_POSITION_FLAG_NONE))
             .thenReturn(true);
         t1 += ctx.leaderHeartbeatIntervalNs();
 
@@ -748,7 +754,7 @@ public class ElectionTest
         followerElection.doWork(clock.nanoTime());
 
         verify(consensusPublisher).appendPosition(
-            liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id());
+            liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id(), APPEND_POSITION_FLAG_NONE);
         verify(electionStateCounter, times(2)).setOrdered(ElectionState.CANVASS.code());
 
         followerElection.onCommitPosition(term2Id, term2BaseLogPosition, leaderId);
@@ -820,14 +826,14 @@ public class ElectionTest
         when(logReplication.position()).thenReturn(term2BaseLogPosition);
         when(logReplication.recordingId()).thenReturn(localRecordingId);
         when(consensusPublisher.appendPosition(
-            liveLeader.publication(), term1Id, term2BaseLogPosition, thisMember.id()))
+            liveLeader.publication(), term1Id, term2BaseLogPosition, thisMember.id(), APPEND_POSITION_FLAG_NONE))
             .thenReturn(true);
         clock.increment(ctx.leaderHeartbeatIntervalNs());
         election.doWork(clock.nanoTime());
 
         verify(consensusModuleAgent, atLeastOnce()).pollArchiveEvents();
         verify(consensusPublisher).appendPosition(
-            liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id());
+            liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id(), APPEND_POSITION_FLAG_NONE);
         verify(electionStateCounter, never()).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
         reset(countedErrorHandler);
 
@@ -1126,12 +1132,16 @@ public class ElectionTest
         when(logReplication.isDone(anyLong())).thenReturn(true);
         when(logReplication.position()).thenReturn(termBaseLogPosition);
         when(logReplication.recordingId()).thenReturn(localRecordingId);
-        when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(true);
+        when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt(), anyInt())).thenReturn(true);
         t1 += ctx.leaderHeartbeatIntervalNs();
         election.doWork(++t1);
 
         verify(consensusPublisher).appendPosition(
-            liveLeader.publication(), leadershipTermId, termBaseLogPosition, thisMember.id());
+            liveLeader.publication(),
+            leadershipTermId,
+            termBaseLogPosition,
+            thisMember.id(),
+            APPEND_POSITION_FLAG_NONE);
 
         election.onCommitPosition(leadershipTermId, leaderLogPosition, leaderId);
         election.doWork(++t1);

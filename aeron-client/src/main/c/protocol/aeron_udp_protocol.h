@@ -181,6 +181,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_OPT_HDR_TYPE_ATS_EC_KEY (UINT16_C(0x0004))
 #define AERON_OPT_HDR_TYPE_ATS_EC_SIG (UINT16_C(0x0005))
 #define AERON_OPT_HDR_TYPE_ATS_SECRET (UINT16_C(0x0006))
+#define AERON_OPT_HDR_TYPE_ATS_GTAG (UINT16_C(0x0007))
 
 #define AERON_OPT_HDR_ALIGNMENT (4u)
 

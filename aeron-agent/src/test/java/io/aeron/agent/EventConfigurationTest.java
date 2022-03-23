@@ -94,14 +94,6 @@ public class EventConfigurationTest
     }
 
     @Test
-    public void noPositionEventsShouldEnableAllClusterEventsExcludingThePositionRelatedOnes()
-    {
-        assertEquals(
-            EnumSet.complementOf(EnumSet.of(COMMIT_POSITION, APPEND_POSITION, CANVASS_POSITION)),
-            getClusterEventCodes("no-position-events"));
-    }
-
-    @Test
     public void clusterEventCodesShouldBeParsedAsListOfEventCodes()
     {
         assertEquals(EnumSet.of(

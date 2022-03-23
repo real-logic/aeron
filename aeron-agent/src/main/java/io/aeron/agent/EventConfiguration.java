@@ -88,8 +88,6 @@ final class EventConfiguration
         SPECIAL_ARCHIVE_EVENTS.put("all", EnumSet.allOf(ArchiveEventCode.class));
 
         SPECIAL_CLUSTER_EVENTS.put("all", EnumSet.allOf(ClusterEventCode.class));
-        SPECIAL_CLUSTER_EVENTS.put("no-position-events", EnumSet.complementOf(EnumSet.of(
-            COMMIT_POSITION, APPEND_POSITION, CANVASS_POSITION)));
 
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(allocateDirectAligned(
             getSizeAsInt(BUFFER_LENGTH_PROP_NAME, BUFFER_LENGTH_DEFAULT) + TRAILER_LENGTH, CACHE_LINE_LENGTH)));

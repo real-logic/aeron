@@ -1290,7 +1290,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             unexpectedTermination();
         }
 
-        leadershipTermId(leadershipTermId);
+        this.leadershipTermId = leadershipTermId;
 
         if (null != election)
         {
@@ -1505,7 +1505,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final String channel = (isIpc ? IPC_CHANNEL : UDP_CHANNEL) +
             "?tags=" + logPublicationChannelTag + "|session-id=" + logSessionId + "|alias=log";
 
-        leadershipTermId(leadershipTermId);
+        this.leadershipTermId = leadershipTermId;
         startLogRecording(channel, ctx.logStreamId(), SourceLocation.LOCAL);
         while (!tryCreateAppendPosition(logSessionId))
         {
@@ -1606,11 +1606,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         ++serviceAckId;
     }
 
-    void leadershipTermId(final long leadershipTermId)
-    {
-        this.leadershipTermId = leadershipTermId;
-    }
-
     LogReplay newLogReplay(final long logPosition, final long appendPosition)
     {
         return new LogReplay(
@@ -1686,14 +1681,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void electionComplete(final long nowNs)
     {
-        final long logPosition = election.logPosition();
+        leadershipTermId = election.leadershipTermId();
 
         if (Cluster.Role.LEADER == role)
         {
-            final long now = clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
-
             timeOfLastLogUpdateNs = nowNs - leaderHeartbeatIntervalNs;
-            timerService.currentTime(now);
+            timerService.currentTime(clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
             ClusterControl.ToggleState.activate(controlToggle);
             prepareSessionsForNewTerm(election.isLeaderStartup());
         }
@@ -1705,6 +1698,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
+
+        final long logPosition = election.logPosition();
         notifiedCommitPosition = logPosition;
         commitPosition.setOrdered(logPosition);
         pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
@@ -2636,8 +2631,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         timerService.currentTime(clusterClock.time());
-        leadershipTermId(snapshot.leadershipTermId);
         commitPosition.setOrdered(snapshot.logPosition);
+        leadershipTermId = snapshot.leadershipTermId;
         expectedAckPosition = snapshot.logPosition;
     }
 

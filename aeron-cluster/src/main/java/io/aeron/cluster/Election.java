@@ -1050,7 +1050,6 @@ class Election
         if (consensusPublisher.appendPosition(
             leaderMember.publication(), leadershipTermId, logPosition, thisMember.id(), APPEND_POSITION_FLAG_NONE))
         {
-            consensusModuleAgent.leadershipTermId(leadershipTermId);
             consensusModuleAgent.electionComplete(nowNs);
             state(CLOSED, nowNs);
         }

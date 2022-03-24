@@ -91,9 +91,7 @@ public class StalledLeaderLogReplicationClusterTest
 
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader(leader0.index());
-        cluster.awaitNewLeadershipEvent(1);
-        awaitAvailableWindow(cluster.client().ingressPublication());
-        assertTrue(cluster.client().sendKeepAlive());
+        cluster.connectClient();
         cluster.startStaticNode(leader0.index(), false);
         awaitElectionClosed(cluster.node(leader0.index()));
 
@@ -104,9 +102,6 @@ public class StalledLeaderLogReplicationClusterTest
 
         cluster.stopNode(leader1);
         cluster.awaitLeader(leader1.index());
-        cluster.awaitNewLeadershipEvent(2);
-        awaitAvailableWindow(cluster.client().ingressPublication());
-        assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader1.index(), false);
         awaitElectionClosed(cluster.node(leader1.index()));
 

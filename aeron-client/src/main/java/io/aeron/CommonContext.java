@@ -374,7 +374,7 @@ public class CommonContext implements Cloneable
             case "no_op":
                 return new PrintStream(new OutputStream()
                 {
-                    public void write(final int b) throws IOException
+                    public void write(final int b)
                     {
                         // No-op
                     }
@@ -699,7 +699,7 @@ public class CommonContext implements Cloneable
     {
         final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
-        if (cncFile.exists() && cncFile.length() > 0)
+        if (cncFile.exists() && cncFile.length() > CncFileDescriptor.END_OF_METADATA_OFFSET)
         {
             if (null != logger)
             {
@@ -725,7 +725,7 @@ public class CommonContext implements Cloneable
     {
         final File cncFile = new File(directory, CncFileDescriptor.CNC_FILE);
 
-        if (cncFile.exists() && cncFile.length() > 0)
+        if (cncFile.exists() && cncFile.length() > CncFileDescriptor.END_OF_METADATA_OFFSET)
         {
             logger.accept("INFO: Aeron CnC file exists: " + cncFile);
 
@@ -825,7 +825,7 @@ public class CommonContext implements Cloneable
     {
         final File cncFile = new File(directory, CncFileDescriptor.CNC_FILE);
 
-        if (cncFile.exists() && cncFile.length() > 0)
+        if (cncFile.exists() && cncFile.length() > CncFileDescriptor.END_OF_METADATA_OFFSET)
         {
             final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "CnC file");
             try

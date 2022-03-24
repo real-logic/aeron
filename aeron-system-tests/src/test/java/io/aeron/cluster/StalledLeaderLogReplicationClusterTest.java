@@ -32,10 +32,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static io.aeron.test.Tests.awaitAvailableWindow;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })

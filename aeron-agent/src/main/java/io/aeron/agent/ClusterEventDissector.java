@@ -364,6 +364,6 @@ final class ClusterEventDissector
 
         builder.append(": leadershipTermId=").append(leadershipTermId);
         builder.append(" logPosition=").append(logPosition);
-        builder.append(" followerMemberId=").append(followerMemberId);
+        builder.append(" leaderMemberId=").append(followerMemberId);
     }
 }

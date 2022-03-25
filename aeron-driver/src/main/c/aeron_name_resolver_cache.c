@@ -101,7 +101,7 @@ int aeron_name_resolver_cache_add_or_update(
 
         cache->entries.length++;
 
-        aeron_counter_set_ordered(cache_entries_counter, cache->entries.length);
+        aeron_counter_set_ordered(cache_entries_counter, (int64_t)cache->entries.length);
     }
     else
     {
@@ -154,7 +154,7 @@ int aeron_name_resolver_cache_timeout_old_entries(
 
     if (0 != num_removed)
     {
-        aeron_counter_set_ordered(cache_entries_counter, cache->entries.length);
+        aeron_counter_set_ordered(cache_entries_counter, (int64_t)cache->entries.length);
     }
 
     return num_removed;

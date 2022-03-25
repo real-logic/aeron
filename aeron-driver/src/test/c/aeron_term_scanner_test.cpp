@@ -52,7 +52,7 @@ TEST_F(TermScannerTest, shouldReturnZeroOnEmptyLog)
 TEST_F(TermScannerTest, shouldScanSingleMessage)
 {
     int32_t frame_length = AERON_DATA_HEADER_LENGTH + 1;
-    size_t aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    auto aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     auto *data_header = (aeron_data_header_t *)m_ptr;
 
     data_header->frame_header.frame_length = (int32_t)aligned_frame_length;
@@ -65,7 +65,7 @@ TEST_F(TermScannerTest, shouldScanSingleMessage)
 TEST_F(TermScannerTest, shouldFailToScanMessageLargerThanMaxLength)
 {
     int32_t frame_length = AERON_DATA_HEADER_LENGTH + 1;
-    size_t aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    auto aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     size_t max_length = aligned_frame_length - 1;
     auto *data_header = (aeron_data_header_t *)m_ptr;
 
@@ -79,7 +79,7 @@ TEST_F(TermScannerTest, shouldFailToScanMessageLargerThanMaxLength)
 TEST_F(TermScannerTest, shouldScanTwoMessagesThatFitInSingleMtu)
 {
     int32_t frame_length = AERON_DATA_HEADER_LENGTH + 100;
-    size_t aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    auto aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     auto *data_header = (aeron_data_header_t *)m_ptr;
 
     data_header->frame_header.frame_length = (int32_t)aligned_frame_length;

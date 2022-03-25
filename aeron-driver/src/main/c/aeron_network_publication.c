@@ -506,7 +506,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     int64_t resend_position = aeron_logbuffer_compute_position(
         term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
     size_t term_length = (size_t)publication->term_length_mask + 1;
-    int64_t bottom_resend_window = sender_position - (term_length / 2);
+    int64_t bottom_resend_window = sender_position - (int64_t)(term_length / 2);
     int result = 0;
 
     if (bottom_resend_window <= resend_position && resend_position < sender_position)
@@ -537,8 +537,8 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
             iov.iov_len = (uint32_t)available;
             int64_t msg_bytes_sent = 0;
 
-            int sendmsg_result;
-            if (0 <= (sendmsg_result = aeron_send_channel_send(publication->endpoint, &iov, 1, &msg_bytes_sent)))
+            int sendmsg_result = aeron_send_channel_send(publication->endpoint, &iov, 1, &msg_bytes_sent);
+            if (0 <= sendmsg_result)
             {
                 if (msg_bytes_sent < (int64_t)iov.iov_len)
                 {
@@ -689,7 +689,7 @@ void aeron_network_publication_clean_buffer(aeron_network_publication_t *publica
         uint64_t *ptr = (uint64_t *)(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset);
         AERON_PUT_ORDERED(*ptr, (uint64_t)0);
 
-        publication->conductor_fields.clean_position = clean_position + length;
+        publication->conductor_fields.clean_position = clean_position + (int64_t)length;
     }
 }
 
@@ -724,7 +724,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
             if (proposed_pub_lmt > publication_limit)
             {
                 size_t term_length = (size_t)publication->term_length_mask + 1;
-                aeron_network_publication_clean_buffer(publication, min_consumer_position - term_length);
+                aeron_network_publication_clean_buffer(publication, min_consumer_position - (int64_t)term_length);
                 aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, proposed_pub_lmt);
                 work_count = 1;
             }
@@ -733,7 +733,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
         {
             size_t term_length = (size_t)publication->term_length_mask + 1;
             aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, snd_pos);
-            aeron_network_publication_clean_buffer(publication, snd_pos - term_length);
+            aeron_network_publication_clean_buffer(publication, snd_pos - (int64_t)term_length);
             work_count = 1;
         }
     }
@@ -840,8 +840,8 @@ void aeron_network_publication_check_untethered_subscriptions(
         }
         else
         {
-            int64_t window_limit_timeout_ns = conductor->context->untethered_window_limit_timeout_ns;
-            int64_t resting_timeout_ns = conductor->context->untethered_resting_timeout_ns;
+            int64_t window_limit_timeout_ns = (int64_t)conductor->context->untethered_window_limit_timeout_ns;
+            int64_t resting_timeout_ns = (int64_t)conductor->context->untethered_resting_timeout_ns;
 
             switch (tetherable_position->state)
             {

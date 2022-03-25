@@ -45,7 +45,7 @@ public:
     }
 
 protected:
-    buffer_t m_term_buffer;
+    buffer_t m_term_buffer = {};
     log_meta_data_buffer_t m_log_meta_data_buffer = {};
     uint8_t *m_buffer = nullptr;
     aeron_logbuffer_metadata_t *m_log_meta_data = nullptr;

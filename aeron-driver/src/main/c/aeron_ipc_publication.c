@@ -275,7 +275,7 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
         uint64_t *ptr = (uint64_t *)(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset);
         AERON_PUT_ORDERED(*ptr, (uint64_t)0);
 
-        publication->conductor_fields.clean_position = clean_position + length;
+        publication->conductor_fields.clean_position = (int64_t)(clean_position + length);
     }
 }
 
@@ -296,8 +296,8 @@ void aeron_ipc_publication_check_untethered_subscriptions(
         }
         else
         {
-            int64_t window_limit_timeout_ns = conductor->context->untethered_window_limit_timeout_ns;
-            int64_t resting_timeout_ns = conductor->context->untethered_resting_timeout_ns;
+            int64_t window_limit_timeout_ns = (int64_t)conductor->context->untethered_window_limit_timeout_ns;
+            int64_t resting_timeout_ns = (int64_t)conductor->context->untethered_resting_timeout_ns;
 
             switch (tetherable_position->state)
             {

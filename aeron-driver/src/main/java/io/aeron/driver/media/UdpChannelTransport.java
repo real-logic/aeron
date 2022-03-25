@@ -92,7 +92,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final int socketRcvbufLength;
 
     /**
-     * Construct a transport for a given channel.
+     * Construct transport for a given channel.
      *
      * @param udpChannel         configuration for the media.
      * @param endPointAddress    to which data will be sent.
@@ -123,7 +123,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Construct a transport for a given channel.
+     * Construct transport for a given channel.
      *
      * @param udpChannel      configuration for the media.
      * @param endPointAddress to which data will be sent.

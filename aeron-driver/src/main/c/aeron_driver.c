@@ -635,7 +635,7 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
             fpout, "\n    conductor_udp_channel_transport_bindings.%s=%s,%p%s",
             conductor_bindings->meta_info.type,
             conductor_bindings->meta_info.name,
-            bindings->meta_info.source_symbol,
+            conductor_bindings->meta_info.source_symbol,
             aeron_dlinfo(conductor_bindings->meta_info.source_symbol, buffer, sizeof(buffer)));
     }
 

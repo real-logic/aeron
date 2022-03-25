@@ -86,7 +86,7 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateInitialPosition)
 {
     ChannelUriStringBuilder builder;
 
-    std::uint32_t termLength = 1024 * 128;
+    std::int32_t termLength = 1024 * 128;
     std::int64_t position = (termLength * 3) + 64;
 
     builder

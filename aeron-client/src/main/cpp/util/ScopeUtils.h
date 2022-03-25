@@ -44,7 +44,7 @@ private:
         {
         }
 
-        virtual ~FuncHolder()
+        ~FuncHolder() override
         {
             f();
         }

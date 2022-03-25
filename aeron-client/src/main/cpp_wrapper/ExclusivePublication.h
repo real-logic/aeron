@@ -60,8 +60,7 @@ public:
     /// @cond HIDDEN_SYMBOLS
     ExclusivePublication(aeron_t *aeron, aeron_exclusive_publication_t *publication) :
         m_aeron(aeron),
-        m_publication(publication),
-        m_channel()
+        m_publication(publication)
     {
         if (aeron_exclusive_publication_constants(m_publication, &m_constants) < 0)
         {
@@ -657,12 +656,12 @@ public:
     /// @endcond
 
 private:
-    aeron_t *m_aeron;
-    aeron_exclusive_publication_t *m_publication;
+    aeron_t *m_aeron = nullptr;
+    aeron_exclusive_publication_t *m_publication = nullptr;
     aeron_publication_constants_t m_constants;
-    std::string m_channel;
-    std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations;
-    std::recursive_mutex m_adminLock;
+    std::string m_channel = {};
+    std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations = {};
+    std::recursive_mutex m_adminLock = {};
 
     static std::int64_t reservedValueSupplierCallback(void *clientd, std::uint8_t *buffer, std::size_t frame_length)
     {

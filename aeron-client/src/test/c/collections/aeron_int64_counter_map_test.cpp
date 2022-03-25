@@ -34,7 +34,7 @@ public:
 protected:
     static void for_each(void *clientd, int64_t key, int64_t value)
     {
-        Int64CounterMapTest *t = (Int64CounterMapTest *)clientd;
+        auto t = (Int64CounterMapTest *)clientd;
 
         t->m_for_each(key, value);
     }
@@ -135,7 +135,7 @@ TEST_F(Int64CounterMapTest, shouldHandleCollisionAndThenLinearProbe)
     ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 32, 0.5f), 0);
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, value, nullptr), 0);
 
-    int64_t collision_key = (int64_t)(key + m_map.entries_length);
+    auto collision_key = (int64_t)(key + m_map.entries_length);
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, collision_key, collision_value, nullptr), 0);
 
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), value);
@@ -161,7 +161,7 @@ TEST_F(Int64CounterMapTest, shouldRemoveEntryAndCompactCollisionChain)
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 12, value_12, nullptr), 0);
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 13, value_13, nullptr), 0);
 
-    int64_t collision_key = (int64_t)(12 + m_map.entries_length);
+    auto collision_key = (int64_t)(12 + m_map.entries_length);
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, collision_key, collision_value, nullptr), 0);
     EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 14, value_14, nullptr), 0);
 

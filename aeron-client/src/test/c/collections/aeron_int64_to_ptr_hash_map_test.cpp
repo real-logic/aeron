@@ -114,7 +114,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldHandleCollisionAndThenLinearProbe)
     ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 32, 0.5f), 0);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, key, &value), 0);
 
-    int64_t collision_key = (int64_t)(key + m_map.capacity);
+    auto collision_key = (int64_t)(key + m_map.capacity);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, collision_key, &collision_value), 0);
 
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_get(&m_map, key), &value);
@@ -140,7 +140,7 @@ TEST_F(Int64ToPtrHashMapTest, shouldRemoveEntryAndCompactCollisionChain)
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 12, (void *)&value_12), 0);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 13, (void *)&value_13), 0);
 
-    int64_t collision_key = (int64_t)(12 + m_map.capacity);
+    auto collision_key = (int64_t)(12 + m_map.capacity);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, collision_key, &collision_value), 0);
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 14, (void *)&value_14), 0);
 

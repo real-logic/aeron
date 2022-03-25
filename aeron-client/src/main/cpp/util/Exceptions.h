@@ -91,7 +91,7 @@ public:
     {
     }
 
-    virtual const char *what() const noexcept
+    const char *what() const noexcept override
     {
         return m_what.c_str();
     }

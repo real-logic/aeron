@@ -2100,9 +2100,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for bi-directional communications between the consensus module and services.
+         * Set the channel parameter for bidirectional communications between the consensus module and services.
          *
-         * @param channel parameter for bi-directional communications between the consensus module and services.
+         * @param channel parameter for bidirectional communications between the consensus module and services.
          * @return this for a fluent API.
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CONTROL_CHANNEL_PROP_NAME
          */
@@ -2113,9 +2113,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the channel parameter for bi-directional communications between the consensus module and services.
+         * Get the channel parameter for bidirectional communications between the consensus module and services.
          *
-         * @return the channel parameter for bi-directional communications between the consensus module and services.
+         * @return the channel parameter for bidirectional communications between the consensus module and services.
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CONTROL_CHANNEL_PROP_NAME
          */
         public String controlChannel()

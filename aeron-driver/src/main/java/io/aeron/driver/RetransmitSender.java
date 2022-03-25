@@ -24,9 +24,9 @@ public interface RetransmitSender
     /**
      * Called when a retransmit frame should be sent.
      *
-     * @param termId     for the NAK
-     * @param termOffset for the NAK
-     * @param length     for the NAK
+     * @param termId     containing the data to NAK.
+     * @param termOffset of the data to NAK.
+     * @param length     of the data to NAK.
      */
     void resend(int termId, int termOffset, int length);
 }

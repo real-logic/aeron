@@ -97,7 +97,7 @@ public class ClusterException extends AeronException
     }
 
     /**
-     * Constructs a new Cluster exception with the a detail message, cause, suppression enabled or disabled,
+     * Constructs a new Cluster exception with a detail message, cause, suppression enabled or disabled,
      * and writable stack trace enabled or disabled, in the category
      * {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      *

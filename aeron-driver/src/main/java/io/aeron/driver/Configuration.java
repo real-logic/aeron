@@ -640,7 +640,7 @@ public final class Configuration
     public static final String TERMINATION_VALIDATOR_PROP_NAME = "aeron.driver.termination.validator";
 
     /**
-     * Property name for default boolean value for if a stream can be rejoined. True to allow rejoin, false to not.
+     * Property name for default boolean value for if a stream can be rejoined. True to allow stream rejoin.
      */
     public static final String REJOIN_STREAM_PROP_NAME = "aeron.rejoin.stream";
 
@@ -989,9 +989,9 @@ public final class Configuration
     }
 
     /**
-     * Default boolean value for if a stream can be rejoined. True to allow rejoin, false to not.
+     * Default boolean value for if a stream can be rejoined. True to allow stream rejoin, false to not.
      *
-     * @return boolean value for if a stream can be rejoined. True to allow rejoin, false to not.
+     * @return boolean value for if a stream can be rejoined. True to allow stream rejoin, false to not.
      * @see #REJOIN_STREAM_PROP_NAME
      */
     public static boolean rejoinStream()

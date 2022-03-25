@@ -239,7 +239,7 @@ class SpecifiedPositionPublicationTest
         }
     }
 
-    private final class PositionCalculator
+    static final class PositionCalculator
     {
         final int termLength;
         long position;
@@ -259,8 +259,10 @@ class SpecifiedPositionPublicationTest
                 position += termRemaining;
                 termRemaining = termLength;
             }
+
             position += totalMessageLength;
             termRemaining -= totalMessageLength;
+
             return position;
         }
     }

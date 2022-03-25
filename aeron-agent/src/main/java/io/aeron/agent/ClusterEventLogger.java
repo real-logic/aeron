@@ -427,14 +427,14 @@ public final class ClusterEventLogger
     /**
      * Log the replay of the leadership term id.
      *
-     * @param memberId current memberId
-     * @param isInElection an election is currently in process
-     * @param leadershipTermId the logged leadership term id
-     * @param logPosition current position in the log
-     * @param timestamp logged timestamp
-     * @param termBaseLogPosition initial position for this term
-     * @param timeUnit cluster time unit
-     * @param appVersion version of the application
+     * @param memberId            current memberId.
+     * @param isInElection        an election is currently in process.
+     * @param leadershipTermId    the logged leadership term id.
+     * @param logPosition         current position in the log.
+     * @param timestamp           logged timestamp.
+     * @param termBaseLogPosition initial position for this term.
+     * @param timeUnit            cluster time unit.
+     * @param appVersion          version of the application.
      */
     public void logReplayNewLeadershipTermEvent(
         final int memberId,
@@ -478,11 +478,12 @@ public final class ClusterEventLogger
     }
 
     /**
-     * The append position received by the leader from a follower
-     * @param leadershipTermId the current leadership term id
-     * @param logPosition the current position in the log
-     * @param followerMemberId follower member sending the append position
-     * @param flags applied to append position by follower
+     * The append position received by the leader from a follower.
+     *
+     * @param leadershipTermId the current leadership term id.
+     * @param logPosition      the current position in the log.
+     * @param followerMemberId follower member sending the append position.
+     * @param flags            applied to append position by follower.
      */
     public void logAppendPosition(
         final long leadershipTermId,
@@ -517,10 +518,11 @@ public final class ClusterEventLogger
     }
 
     /**
-     * The commit position received by the follower form the leader
-     * @param leadershipTermId the current leadership term id
-     * @param logPosition the current position in the log
-     * @param leaderMemberId leader member sending the commit position
+     * The commit position received by the follower form the leader.
+     *
+     * @param leadershipTermId the current leadership term id.
+     * @param logPosition      the current position in the log.
+     * @param leaderMemberId   leader member sending the commit position.
      */
     public void logCommitPosition(
         final long leadershipTermId,

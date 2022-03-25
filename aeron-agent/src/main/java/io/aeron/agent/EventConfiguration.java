@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static java.lang.System.err;
 import static java.lang.System.lineSeparator;

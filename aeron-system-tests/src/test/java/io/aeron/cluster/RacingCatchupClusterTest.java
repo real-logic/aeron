@@ -36,7 +36,7 @@ import static io.aeron.test.cluster.TestCluster.aCluster;
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 public class RacingCatchupClusterTest
 {
-    static Exchanger<String> exchanger = new Exchanger<>();
+    static final Exchanger<String> EXCHANGER = new Exchanger<>();
     private static ClusterInstrumentor clusterInstrumentor;
 
     @BeforeAll
@@ -59,8 +59,8 @@ public class RacingCatchupClusterTest
     {
         try
         {
-            exchanger.exchange("a");
-            exchanger.exchange("a");
+            EXCHANGER.exchange("a");
+            EXCHANGER.exchange("a");
         }
         catch (final InterruptedException ignore)
         {
@@ -71,7 +71,7 @@ public class RacingCatchupClusterTest
     {
         try
         {
-            exchanger.exchange("a");
+            EXCHANGER.exchange("a");
         }
         catch (final InterruptedException ignore)
         {

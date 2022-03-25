@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
  * The {@code cluster} object should only be used to send messages to the cluster or schedule timers in
  * response to other messages and timers. Sending messages and timers should not happen from cluster lifecycle
  * methods like {@link #onStart(Cluster, Image)}, {@link #onRoleChange(Cluster.Role)} or
- * {@link #onTakeSnapshot(ExclusivePublication)}, or {@link #onTerminate(Cluster)}, with the exception of
- * the session lifecycle methods.
+ * {@link #onTakeSnapshot(ExclusivePublication)}, or {@link #onTerminate(Cluster)}, except the session lifecycle
+ * methods.
  */
 public interface ClusteredService
 {

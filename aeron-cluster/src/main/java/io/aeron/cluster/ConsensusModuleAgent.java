@@ -3290,7 +3290,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final InetSocketAddress addr = UdpChannel.destinationAddress(ingressUri, DefaultNameResolver.INSTANCE);
 
         // assume that if not resolved is a non-multicast address
-        return (null == addr || null == addr.getAddress()) ? false : addr.getAddress().isMulticastAddress();
+        return null != addr && null != addr.getAddress() && addr.getAddress().isMulticastAddress();
     }
 
     private void connectIngress()

@@ -2660,9 +2660,9 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit.
+         * {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit frame.
          *
-         * @return {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit.
+         * @return {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit frame.
          * @see Configuration#RETRANSMIT_UNICAST_DELAY_PROP_NAME
          */
         public FeedbackDelayGenerator retransmitUnicastDelayGenerator()
@@ -2671,9 +2671,9 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Set the {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit.
+         * Set the {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit frame.
          *
-         * @param feedbackDelayGenerator for controlling the delay before sending a retransmit.
+         * @param feedbackDelayGenerator for controlling the delay before sending a retransmit frame.
          * @return this for a fluent API
          * @see Configuration#RETRANSMIT_UNICAST_DELAY_PROP_NAME
          */
@@ -2695,7 +2695,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Set the {@link FeedbackDelayGenerator} for controlling the linger after a retransmit.
+         * Set the {@link FeedbackDelayGenerator} for controlling the linger after a retransmit frame.
          *
          * @param feedbackDelayGenerator for controlling the linger after a retransmit.
          * @return this for a fluent API

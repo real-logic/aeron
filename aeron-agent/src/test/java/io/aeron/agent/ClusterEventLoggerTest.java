@@ -263,7 +263,7 @@ class ClusterEventLoggerTest
         final StringBuilder sb = new StringBuilder();
         ClusterEventDissector.dissectStopCatchup(STOP_CATCHUP, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: STOP_CATCHUP \\[12/12\\]: " +
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: STOP_CATCHUP \\[12/12]: " +
             "leadershipTermId=1233 followerMemberId=18";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));

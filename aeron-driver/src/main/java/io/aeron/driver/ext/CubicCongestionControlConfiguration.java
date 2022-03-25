@@ -44,8 +44,8 @@ public class CubicCongestionControlConfiguration
     /**
      * Property name for accounting for TCP behavior in low RTT values after a loss.
      * <p>
-     * <b>WARNING:</b> Be aware that throughput utilization becomes important. Turning this on may drastically be off
-     * the necessary throughput if utilization is low.
+     * <b>WARNING:</b> Be aware that throughput utilization becomes important. Turning this on can result in being
+     * drastically be off the necessary throughput if utilization is low.
      */
     public static final String TCP_MODE_PROP_NAME = "aeron.CubicCongestionControl.tcpMode";
 

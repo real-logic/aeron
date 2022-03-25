@@ -167,7 +167,7 @@ public final class ClusterConfig
      * @param hostnames         list of hostnames that will receive ingress request and cluster traffic.
      * @param portBase          base port to derive remaining ports from.
      * @param clusteredService  instance of the clustered service that will run on this node.
-     * @return                  configuration that wraps all of the detail aeron service configuration.
+     * @return                  configuration that wraps the detailed aeron service configuration.
      */
     public static ClusterConfig create(
         final int nodeId,

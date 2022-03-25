@@ -68,7 +68,7 @@ public final class ClusterMember
      * @param ingressEndpoint   address and port endpoint to which cluster clients send ingress.
      * @param consensusEndpoint address and port endpoint to which other cluster members connect.
      * @param logEndpoint       address and port endpoint to which the log is replicated.
-     * @param catchupEndpoint   address and port endpoint to which a stream is replayed to catchup to the leader.
+     * @param catchupEndpoint   address and port endpoint to which a stream is replayed for catchup to the leader.
      * @param archiveEndpoint   address and port endpoint to which the archive control channel can be reached.
      * @param endpoints         comma separated list of endpoints.
      */

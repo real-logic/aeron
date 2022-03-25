@@ -25,7 +25,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 /**
  * Separates the concern of communicating with the client conductor away from the rest of the client.
  * <p>
- * Writes commands into the client conductor buffer.
+ * For writing commands into the client conductor buffer.
  * <p>
  * <b>Note:</b> this class is not thread safe and is expecting to be called within {@link Aeron.Context#clientLock()}.
  */

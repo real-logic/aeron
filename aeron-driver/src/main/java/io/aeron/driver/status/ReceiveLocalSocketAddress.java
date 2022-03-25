@@ -21,7 +21,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
 /**
- * The receive end of a local socket address, i.e the destination or endpoint for a subscription.
+ * The receive end of a local socket address, i.e. the destination or endpoint for a subscription.
  */
 public class ReceiveLocalSocketAddress
 {

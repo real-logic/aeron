@@ -699,7 +699,7 @@ public abstract class Publication implements AutoCloseable
      */
     public static String errorString(final long position)
     {
-        if (position < 0 && MAX_POSITION_EXCEEDED <= position)
+        if (MAX_POSITION_EXCEEDED <= position && position < 0)
         {
             final int errorCode = (int)position;
             switch (errorCode)

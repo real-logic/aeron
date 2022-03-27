@@ -715,7 +715,7 @@ public abstract class Publication implements AutoCloseable
                 case (int)MAX_POSITION_EXCEEDED:
                     return "MAX_POSITION_EXCEEDED";
                 default:
-                    return "NONE";
+                    return "UNKNOWN";
             }
         }
         else if (0 <= position)

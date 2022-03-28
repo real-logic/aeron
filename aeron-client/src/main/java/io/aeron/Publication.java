@@ -690,6 +690,45 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
+     * Returns a string representation of a position.  Generally used for errors.  If the position is a valid error then
+     * String name of the error will be returned.  If the value is 0 or greater the text will be "NONE". If the position
+     * is negative, but not a known error code then "UNKNOWN" will be returned.
+     *
+     * @param position position value returned from a call to offer.
+     * @return String representation of the error.
+     */
+    public static String errorString(final long position)
+    {
+        if (MAX_POSITION_EXCEEDED <= position && position < 0)
+        {
+            final int errorCode = (int)position;
+            switch (errorCode)
+            {
+                case (int)NOT_CONNECTED:
+                    return "NOT_CONNECTED";
+                case (int)BACK_PRESSURED:
+                    return "BACK_PRESSURED";
+                case (int)ADMIN_ACTION:
+                    return "ADMIN_ACTION";
+                case (int)CLOSED:
+                    return "CLOSED";
+                case (int)MAX_POSITION_EXCEEDED:
+                    return "MAX_POSITION_EXCEEDED";
+                default:
+                    return "UNKNOWN";
+            }
+        }
+        else if (0 <= position)
+        {
+            return "NONE";
+        }
+        else
+        {
+            return "UNKNOWN";
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     public String toString()

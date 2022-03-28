@@ -151,4 +151,18 @@ public class PublicationTest
 
         verify(conductor).removePublication(publication);
     }
+
+    @Test
+    void shouldReturnErrorMessages()
+    {
+        assertEquals("NOT_CONNECTED", Publication.errorString(-1L));
+        assertEquals("BACK_PRESSURED", Publication.errorString(-2L));
+        assertEquals("ADMIN_ACTION", Publication.errorString(-3L));
+        assertEquals("CLOSED", Publication.errorString(-4L));
+        assertEquals("MAX_POSITION_EXCEEDED", Publication.errorString(-5L));
+        assertEquals("NONE", Publication.errorString(0L));
+        assertEquals("NONE", Publication.errorString(1L));
+        assertEquals("UNKNOWN", Publication.errorString(-6L));
+        assertEquals("UNKNOWN", Publication.errorString(Long.MIN_VALUE));
+    }
 }

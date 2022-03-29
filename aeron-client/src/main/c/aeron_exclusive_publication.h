@@ -90,7 +90,7 @@ inline void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_
     publication->term_id = next_term_id;
     publication->term_begin_position += publication->term_buffer_length;
 
-    publication->log_meta_data->term_tail_counters[next_index] = (int64_t)next_term_id << 32;
+    publication->log_meta_data->term_tail_counters[next_index] = (int64_t)((uint64_t)next_term_id << 32);
     AERON_PUT_ORDERED(publication->log_meta_data->active_term_count, next_term_count);
 }
 

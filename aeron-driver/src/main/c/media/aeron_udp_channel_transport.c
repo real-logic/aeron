@@ -544,6 +544,8 @@ static int aeron_udp_channel_transport_sendv(
         }
         else
         {
+            char address_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+            aeron_format_source_identity(address_str, AERON_NETUTIL_FORMATTED_MAX_LENGTH, address);
             AERON_SET_ERR(errno, "%s", "failed to sendmmsg");
             return -1;
         }

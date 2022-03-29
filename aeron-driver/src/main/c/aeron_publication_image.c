@@ -580,6 +580,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
 
                     if (send_sm_result < 0)
                     {
+                        AERON_APPEND_ERR("%s", "");
                         work_count = send_sm_result;
                         break;
                     }

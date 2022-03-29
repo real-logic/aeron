@@ -614,8 +614,8 @@ class ManualSndMultiDestination extends MultiSndDestination
 
         for (final Destination destination : destinations)
         {
-            minBytesSent = Math.min(
-                minBytesSent, send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address));
+            final int bytesSent = send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+            minBytesSent = Math.min(minBytesSent, bytesSent);
         }
 
         return minBytesSent;
@@ -734,8 +734,9 @@ class DynamicSndMultiDestination extends MultiSndDestination
             }
             else
             {
-                minBytesSent = Math.min(
-                    minBytesSent, send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address));
+                final int bytesSent = send(
+                    channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+                minBytesSent = Math.min(minBytesSent, bytesSent);
             }
         }
 

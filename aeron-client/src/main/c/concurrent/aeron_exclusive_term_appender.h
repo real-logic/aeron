@@ -29,7 +29,7 @@
 inline void aeron_exclusive_term_appender_put_raw_tail_ordered(
     volatile int64_t *addr, int32_t term_id, int32_t term_offset)
 {
-    AERON_PUT_ORDERED(*addr, ((int64_t)term_id << 32 | term_offset));
+    AERON_PUT_ORDERED(*addr, ((uint64_t)term_id << 32 | term_offset));
 }
 
 inline void aeron_exclusive_term_appender_header_write(

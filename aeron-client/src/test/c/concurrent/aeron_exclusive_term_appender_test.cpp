@@ -376,3 +376,10 @@ TEST_F(CExclusiveTermAppenderTest, shouldAppendFragmentedFromVectorsToEmptyLog)
         iov[1].iov_len - (maxPayloadLength - iov[0].iov_len)),
         0);
 }
+
+TEST_F(CExclusiveTermAppenderTest, shouldHandleNegativeTermIdInPutRawTailOrdered)
+{
+    int64_t p;
+    aeron_exclusive_term_appender_put_raw_tail_ordered(&p, -1, 0);
+    std::cout << p << std::endl;
+}

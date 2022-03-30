@@ -822,11 +822,12 @@ project(':aeron-system-tests') {
 //        systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
         systemProperty('aeron.fallback.logger', 'no_op')
 
-        systemProperty('aeron.test.system.aeronmd.path', '/home/mike/sources/real_logic/aeron-java/cppbuild/Release/binaries/aeronmd')
+        systemProperty('aeron.test.system.aeronmd.path', '/home/mike/sources/real_logic/aeron-native/cppbuild/Release/binaries/aeronmd')
         systemProperty('aeron.test.system.ats.path', '/home/mike/sources/real_logic/premium-extensions/cppbuild/Release/lib/libaeron_transport_security.so')
         systemProperty('aeron.test.system.ats.conf.dir', '/home/mike/sources/real_logic/premium-extensions/aeron-transport-security/src/test/resource')
         systemProperty('aeron.test.system.ats.conf.file', 'multiple-public-key.conf')
     }
+
 
     javadoc.enabled = false
 }

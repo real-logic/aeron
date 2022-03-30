@@ -249,12 +249,13 @@ class TaggedFlowControlSystemTest
 
         launch();
 
-        subscriptionA = clientA.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
         publication = clientA.addPublication(MULTICAST_URI + "|fc=tagged,g:123,t:1s", STREAM_ID);
 
+        subscriptionA = clientA.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
         Tests.awaitConnected(subscriptionA);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
         Tests.awaitConnected(subscriptionB);
+
         Tests.awaitConnected(publication);
 
         while (state.numFragmentsReadFromA < state.numMessagesToSend)

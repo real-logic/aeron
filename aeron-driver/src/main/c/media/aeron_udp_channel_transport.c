@@ -476,7 +476,7 @@ static int aeron_udp_channel_transport_send_connected(
     else
     {
         *bytes_sent += send_result;
-        return (int)send_result;
+        return 0 == send_result ? 0 : 1;
     }
 }
 

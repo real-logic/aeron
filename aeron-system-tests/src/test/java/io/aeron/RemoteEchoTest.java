@@ -98,8 +98,6 @@ public class RemoteEchoTest
             remoteHost = "localhost";
             localHost = "localhost";
             mbeanConnectionSupplier = ManagementFactory::getPlatformMBeanServer;
-
-            System.out.println("Using local loopback for communication");
         }
         else
         {

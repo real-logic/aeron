@@ -68,6 +68,11 @@ public class RemoteEchoTest
     private static String aeronDir = null;
     private DirectBuffer sourceData;
 
+    private static boolean isEmpty(final String s)
+    {
+        return null == s || s.trim().isEmpty();
+    }
+
     @RegisterExtension
     private final RandomWatcher randomWatcher = new RandomWatcher(18604930465192L);
 
@@ -76,27 +81,29 @@ public class RemoteEchoTest
     {
         remoteHost = System.getProperty("aeron.test.system.binding.remote.host");
         localHost = System.getProperty("aeron.test.system.binding.local.host");
-        aeronDir = System.getProperty("aeron.dir");
+        aeronDir = System.getProperty("aeron.test.system.aeron.dir");
 
         // If aeron.dir is set assume an external driver, otherwise start embedded.
-        if (null == aeronDir)
+        if (isEmpty(aeronDir))
         {
-            mediaDriver = MediaDriver.launchEmbedded();
+            mediaDriver = MediaDriver.launchEmbedded(new MediaDriver.Context().dirDeleteOnShutdown(true));
             aeronDir = mediaDriver.aeronDirectoryName();
         }
 
         // If remote host is not set run the provision service locally.
-        if (null == remoteHost)
+        if (isEmpty(remoteHost))
         {
             // TODO: echo service in basic test, check for remote access property.
             provisioningServer = ProvisioningServerMain.launch(new Aeron.Context());
             remoteHost = "localhost";
             localHost = "localhost";
             mbeanConnectionSupplier = ManagementFactory::getPlatformMBeanServer;
+
+            System.out.println("Using local loopback for communication");
         }
         else
         {
-            if (null == localHost)
+            if (isEmpty(localHost))
             {
                 final InetAddress address = InetAddress.getByName(remoteHost);
                 localHost = Objects.requireNonNull(NetworkUtil.findFirstMatchingLocalAddress(address)).getHostAddress();
@@ -106,6 +113,8 @@ public class RemoteEchoTest
             final JMXServiceURL url = new JMXServiceURL(serviceURL);
             connector = JMXConnectorFactory.connect(url);
             mbeanConnectionSupplier = connector::getMBeanServerConnection;
+
+            System.out.println("Using local=" + localHost + " remote=" + remoteHost + " for communication");
         }
     }
 

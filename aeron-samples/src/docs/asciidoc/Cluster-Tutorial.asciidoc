@@ -30,7 +30,7 @@ This tutorial assumes that the user already has a basic working knowledge of Aer
 
 == Introduction
 
-Aeron Cluster is a framework for high-performance in memory fault tolerant services. It implements the
+Aeron Cluster is a framework for high-performance in-memory fault tolerant services. It implements the
 https://raft.github.io/[Raft Consensus Algorithm] to provide log replication, to allow multiple nodes to maintain the
 same state and automated leader election to ensure that there is a single leader within the cluster. Systems built using
 Aeron Cluster have a linearizable consistency model and can cope with partial system failure, including failure of the
@@ -58,16 +58,16 @@ acknowledgements.
 Within Aeron Cluster, replication (ensuring that a follower node has the same state as the leader) and recovery
 (restoring a stopped node to its previous state)footnote:[Where stopping could include crashing or manually shutting
 down] are the same problem, or at least at similar enough, to use the same mechanism. They rely on three functions.
-Firstly, for some known initial state, this could either be the state when first provisioned (a 'null' or empty state), or
-some snapshot of state at a point in time. Secondly, an ordered log of all input messages, this is handled by Cluster's
-Raft implementation. Thirdly, the application logic needs to be deterministic, i.e. it must derive all of its resulting
-state and output events from the initial state, and the input messages, such that for the same inputs it will always get
-the same result. This can be a trickier than it first seems as it excludes some functionality that we may normally take
-for granted.
+Firstly, for some known initial state, this could either be the state when first provisioned (a 'null' or empty state),
+or some snapshot of state at a point in time. Secondly, an ordered log of all input messages, this is handled by
+Cluster's Raft implementation. Thirdly, the application logic needs to be deterministic, i.e. it must derive all of its
+resulting state and output events from the initial state, and the input messages, such that for the same inputs it will
+always get the same result. This can be a trickier than it first seems as it excludes some functionality that we may
+normally take for granted.
 
 [TIP]
 ====
-Be careful to ensure determinism in clustered service, common pitfalls include:
+Be careful to ensure determinism in how you code a clustered service, common pitfalls include:
 
 - Timestamps
 - Random Numbers
@@ -82,26 +82,24 @@ TreeMap, LinkedHashMap) through sorting the values from the collection before se
 the Agrona collections can be used with their consistent iteration order and low allocation characteristics.
 
 As it may be impractical to replay all data from the "beginning of time" the system should take snapshots periodically,
-e.g. daily or hourly. The frequency of snapshots should be determined by the volume of data into the
-system, the throughput of the business logic, and the desired mean time to recovery. It is not uncommon to have systems
-that may take an hour or two to recover from a days worth of messages, in those systems snapshotting every 30 minutes
-may be more appropriate.
+e.g. daily or hourly. The frequency of snapshots should be determined by the volume of data into the system, the
+throughput of the business logic, and the desired mean time to recovery. It is not uncommon to have systems that may
+take an hour or two to recover from a days worth of messages, in those systems snapshotting every 30 minutes may be
+more appropriate.
 
 === Components of Aeron Cluster
 
 One of the key design goals of Aeron is to build a system that is highly composable. For example, Aeron Archive which
 provides a means to persist the Raft log created by Aeron Cluster. Aeron Cluster sends messages via a Media Driver.
 Therefore, Aeron Cluster is an aggregation of a number of existing Aeron components and a few new ones. To successfully
-run a cluster node it is necessary to have one (or at least one in the case of ClusteredServiceContainer) of each of
+run a cluster node it is necessary to have one (or at least one in the case of `ClusteredServiceContainer`) of each of
 the Aeron components running. Because all communication between these components within a single node uses IPC they can
 be run all in the same process, in separate processes or any arbitrary combination.
 
 ==== MediaDriver
 
-The MediaDriver is the means by which the cluster communicates. Aeron Cluster reuses the Publication, Subscription, and
-Counter functionality in Aeron to handle all distributed and inter-process communication.
-
-NOTE: Currently, only the Java implementation of the MediaDriver is supported for use in Aeron Cluster.
+The Media Driver is the means by which the cluster communicates. Aeron Cluster reuses the `Publication`, `Subscription`,
+and `Counter` functionality in Aeron to handle all distributed and inter-process communication.
 
 ==== Archive
 
@@ -109,23 +107,23 @@ Raft is primarily a log replication protocol, so Aeron Cluster uses Aeron Archiv
 
 ==== ConsensusModule
 
-The Consensus Module is the key component with Aeron Cluster and ensures the nodes have a consistent copy of the
+The Consensus Module is the key component in Aeron Cluster and ensures the nodes have a consistent copy of the
 replicated log. The Consensus Module will coordinate with the Archive to persist messages, replicate/ack messages
 to/from other nodes and deliver messages through to the Clustered Services.
 
 ==== ClusteredServiceContainer
 
 This is the service running the developer supplied application logic. There can be one or more clustered services per
-node. Aeron Cluster provides a container for the application logic. There is a ClusteredService interface that must be
+node. Aeron Cluster provides a container for the application logic. There is a `ClusteredService` interface that must be
 implemented by the application to receive the events and messages from Cluster.
 
 == Getting Started Aeron Cluster
 
-Install JDK 8 or JDK 11 and ensure that `$JAVA_HOME` is set and `$JAVA_HOME/bin` is on your `$PATH`.
+Install JDK 8, 11, or 17 and ensure that `$JAVA_HOME` is set and `$JAVA_HOME/bin` is on your `$PATH`.
 
 The typical way to get started with Aeron in your own application is to use the
 https://search.maven.org/artifact/io.aeron/aeron-all[aeron-all jar]. However, for this tutorial we are going to
-recommend that you check out the source code from Github.
+recommend that you check out the source code from GitHub.
 
 [#usingthesource]
 === Using the Source From this Tutorial
@@ -182,7 +180,7 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 The clustered service container will notify the service it has started using the `onStart` callback. This will occur
 before input messages are received, either from log replay or live from a client. It is during this phase that we need
 to load the initial state of the service. Aeron Cluster passes in an `Image` that will contain the most recent valid
-snapshot of the service. The service should take care of deserializing the data from the image and initialize its state.
+snapshot of the service. The service should take care of deserializing the data from the image and initialise its state.
 We will come back to the details of how the snapshot is loaded after we've looked how messages are handled and how a
 snapshot is stored.
 
@@ -200,7 +198,7 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 === Handling Messages
 
 The `onSessionMessage` callback is the main entry point for requests coming into the cluster. Messages reach here by
-being published to Cluster's ingress channel. This method will also be passed messages during log replay. It is from
+being published to the Cluster's ingress channel. This method will also be passed messages during log replay. It is from
 within this method we will interact with our application logic. Cluster also provides a reliable timestamp as a
 parameter to this method. As mentioned earlier this is one of the challenges of building deterministic systems. Use
 this value as the timestamp within your application state, so it will be consistent under replay.
@@ -262,7 +260,7 @@ the Cluster's `IdleStrategy::idle` inside the busy wait loop.
 Our `onStart` implementation contained a method to load the snapshot. Now we have seen how to take a snapshot, we
 can now look at how it is loaded. The `Image` provided to the `onStart` has a method that will indicate if there is no
 more data available. However, application code should also encode enough information that the end of the stream can be
-detected from the store messages. The two approaches can be used to sanity check all the received data.
+detected from the stored messages. The two approaches can be used to sanity check all the received data.
 
 [source, Java, indent=0, options="nowrap"]
 ----
@@ -271,7 +269,7 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 
 <1> The method `Image::isEndOfStream` can be used to determine if there is going to be any more input.
 
-<2> Because our snapshot is a stream of messages written to a publication, we use the Image's poll method for
+<2> Because our snapshot is a stream of messages written to a `Publication`, we use the `Image.poll` method for
 extracting data from the snapshot.
 
 <3> Our total snapshot length (16 bytes) is going to be smaller than any reasonable MTU therefore we can assume that all
@@ -285,7 +283,7 @@ the data will come in a single message.
 to be propagated to the service, so the number of fragments can be zero on any given invocation.
 
 <7> It is also worthwhile having some sanity checks, these ensure that the snapshot store/load code and Aeron agree on
-where the end of the input data is. We've used asserts, but other mechanisms, (e.g. log message, exceptions) could
+where the end of the input data is. We've used asserts, but other mechanisms, (e.g. log message or exceptions) could
 also be used to indicate an issue.
 
 === Other events
@@ -295,11 +293,11 @@ and disconnecting from the cluster, plus leadership and role changes. We won't l
 
 == Configuring a Cluster
 
-Now we have our application implemented we can move onto running it in a cluster. There are a number of moving parts to
+Now we have our application implemented we can move onto running it in a Cluster. There are a number of moving parts to
 setting up a cluster node, one of the trickiest parts of using Aeron Cluster is getting the configuration correct. We
 are going to start with a static three-node cluster with a simplified configuration where all the components
-(MediaDriver, Archive, ConsensusModule and ClusteredServiceContainer) for a single node within a single process. Later
-we will then start the cluster as three separate processes.
+(`MediaDriver`, `Archive`, `ConsensusModule` and `ClusteredServiceContainer`) for a single node within a single process.
+Later we will then start the cluster as three separate processes.
 
 === Running Multiple Nodes on the Same Host
 
@@ -326,8 +324,8 @@ each service. Each endpoint will be an offset from the first port in a node's ra
 port has an offset of 1, so for Node 2 it will have port 9201.
 
 To start the cluster node we are going define our own class with a main method. It will construct and start all the
-necessary components. As indicated above we are going to give each node of the cluster a unique id (0, 1, and 2). We are
-also going to use this value as the cluster member id.
+necessary components. As indicated above we are going to give each node of the cluster a unique id (0, 1, and 2). We
+are also going to use this value as the cluster member id.
 
 [source, Java, indent=0, options="nowrap"]
 ----
@@ -342,7 +340,7 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 the service.
 
 <2> Define a set of hostnames for the cluster. For now everything is running on localhost, but we could put actual
-hostnames or ip addresses in this list and run the same example across multiple servers.
+hostnames or IP addresses in this list and run the same example across multiple servers.
 
 <3> For each node we need a location on disk that will hold the persistent data. This will include the raft log, mark
 files for each service component, and the recording log used to track snapshots within the log. In a production system
@@ -382,9 +380,9 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 
 Because Cluster's Consensus Module requires that we write a log file to support the Raft protocol, we need a client for
 the constructed Archive for it to use. As the Consensus Module should always be deployed on the same node as its
-archive, we're going to use the local (IPC) configuration.  It is also worth noting that we haven't changed the
-controlRequestStreamId in our setup.  The defaults in this situation are the most appropriate (from Aeron version 1.33.0
-onwards).
+Archive, we're going to use the local (IPC) configuration. It is also worth noting that we haven't changed the
+`controlRequestStreamId` in our setup. The defaults in this situation are the most appropriate (from Aeron version
+1.33.0 onwards).
 
 ==== Consensus Module
 
@@ -413,9 +411,9 @@ The values for each endpoint represent:
 
 * ingress, where the client will connect to for the ingress channel.
 * consensus, where other members of the cluster communicate with each other to achieve cluster consensus.
-* log, used to replicate logs to.
+* log, used to replicate logs from leader to followers.
 * catchup, used for a stream that members can use to catch up to a leader when behind the current log position.
-* archive, the same endpoint used to control archive running on this node.
+* archive, the same endpoint used to control the Archive running on this node.
 +
 In our example we've used the same hostname for each of the endpoints (localhost), however each endpoint allows the
 specification of a host, so that traffic could potentially be separated if required, e.g. running consensus traffic
@@ -428,7 +426,7 @@ template that specifies the parameters, but excludes the endpoint, which will be
 `clusterMembersString` as appropriate for this node.
 
 <5> Specify the log channel. Like the ingress channel this is specified as a template. This channel needs to be a
-multi-destination cast or multicast channel. In our example we are using multi-destination cast using manual
+multi-destination-cast (MDC) or multicast channel. In our example we are using multi-destination-cast using manual
 configuration, hence we need a separate control endpoint (including a port) used for adding and removing destination to
 the publication.
 
@@ -469,8 +467,7 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 
 <2> Immediately afterward we launch a `ClusteredServiceContainer` which is our application.
 
-<3> Use the shutdown barrier to keep our system live until it is signalled to shut down (e.g. using SIG_TERM or SIG_INT
-on Unix).
+<3> Use the shutdown barrier to await a signal to shut down (e.g. using `SIG_TERM` or `SIG_INT` on Unix).
 
 There is a script provide to launch the cluster. Assuming you've followed the <<usingthesource>> step above you
 should be able to do the following:
@@ -552,7 +549,7 @@ also avoiding using the media drivers that each of the cluster nodes are using.
 
 <2> This is where we bind our client application code to the responses from the cluster. This requires implementing the
 `EgressListener` interface, which provides callbacks for session messages, session related events (e.g. errors), and
-cluster events (e.g. new elected leaders).
+cluster events (e.g. newly elected leaders).
 
 <3> Specify the channel to receive egress responses back from the cluster. In our case we are using a UDP unicast
 response, which will limit responses to the session that sent the ingress message. We are using port 0 to allow for
@@ -580,30 +577,30 @@ supported or in very early stages, so unicast is currently recommended in those 
 
 Next we are going to push messages into the cluster itself. So that the client is able to fail over to different nodes,
 as nodes come and go, in the cluster the Aeron publications are contained in a class called `AeronCluster`. This is the
-second of the two items that are connected at start up. This class provides an API very similar to the Publication API.
+second of the two items that are connected at start up. This class provides an API very similar to `Publication`.
 
 [source, Java, indent=0, options="nowrap"]
 ----
 include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusterClient.java[tag=publish]
 ----
 
-<1> In much the same way that we would send messages to a publication we put the data that we want to send into an
+<1> In much the same way that we would send messages to a `Publication` we put the data that we want to send into an
 Agrona `DirectBuffer`. The `AeronCluster` contains offer methods that behave in the same way as the `Publication` offer
 methods.
 
 <2> Publish the data in the same way we would with a `Publication`. We must check the return value to ensure that the
-message has been sent because back pressure could happen at any time.
+message has been sent because back-pressure could happen at any time.
 
 <3> If we fail to send, and need to run an idle loop, we should utilise an `IdleStrategy` to ensure that we don't
-inappropriately overuse the CPU. With cluster clients we should also be continually polling the egress stream to pick
-up any messages that have been sent back from the cluster, including errors or session status messages.
+inappropriately overuse the CPU. With cluster clients we should also be continually polling the egress stream to consume
+any messages that have been sent back from the cluster, including errors or session status messages.
 
 === Receiving Responses
 
-As was mentioned previously, our client must have a class which implements the `EgressListener` interface to receive
+As was mentioned previously, our client must have a class which implements the `EgressListener` interface to consume
 messages that come back from the cluster. The responses can be application messages, session events (e.g. error
 messages), or notifications of a new leader. In this tutorial there is not a lot to do, therefore we simply print out
-the responses that received.
+the responses.
 
 [source, Java, indent=0, options="nowrap"]
 ----
@@ -612,7 +609,7 @@ include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionCluster
 
 === Using the Cluster
 
-Now we have all the pieces in place we start to run the cluster and client together and see how the cluster behaves.
+Now we have all the pieces in place we can start to run the cluster and client together and see how the cluster behaves.
 You will need at least three terminal windows as we will leave the one we used to start the cluster open showing logging
 information for the cluster.
 
@@ -664,11 +661,11 @@ SessionMessage(1, 8474093274723075715, 10, 142, true)
 
 === Failed Nodes and Leader Election
 
-Now the cluster is up and running, and we are able to send and receive messages, we can look at some additional tools
-available for Cluster and experiment with the fault tolerance functionality.
+Now the cluster is up and running, and we are able to publish messages and subscribe to responses and events, we can
+look at some additional tools available for Cluster and experiment with the fault tolerance functionality.
 
-First thing we are interested in is which node of the three is the leader, with this information we can try shutdown the
-leader and see if our client is able to recover.
+First thing we are interested in is which of the three node is the leader, with this information we can try shutdown the
+leader and see if our client is able to continue.
 
 [subs = "attributes+"]
 ----
@@ -700,8 +697,8 @@ endpoints='localhost:9203,localhost:9204,localhost:9205,localhost:9206,localhost
 vote=null}], passiveMembers=[]
 ----
 
-The part we are interested in is the leaderMemberId, this allows us to identify the leader in order to shut it down. We
-can discover the pid for that member using the following command:
+The part we are interested in is the `leaderMemberId`, this allows us to identify the leader in order to shut it down.
+We can discover the `pid` for that member using the following command:
 
 [subs = "attributes+"]
 ----
@@ -762,8 +759,8 @@ io.aeron.cluster.client.ClusterException: heartbeat timeout from leader
 [65188.033401987] CLUSTER: ELECTION_STATE_CHANGE [29/29]: memberId=2, LEADER_READY -> CLOSE
 ----
 
-Showing that a new leader has been elected to run the cluster. At this point the cluster will have no redundancy and
-will only have two working nodes.
+Showing that a new leader has been elected to lead the cluster. At this point the cluster will not be able to tolerate
+another failure and continue.
 
 The client should automatically resume sending messages into the cluster and receiving responses. There may, or may
 not, be an exception logged by the client depending on timing.
@@ -792,8 +789,8 @@ SessionMessage(20, -7819190107498904363, 10, 12977, false)
 
 IMPORTANT: If you look carefully at the `correlationId` values you will notice there are no `SessionMessage` log entries
 for a number of the messages that were sent. This is because when the leader fails some messages sent into the cluster
-can be lost. For this reason it is important the client to track responses for its messages and provide timeouts to the
-caller if required.
+can be lost. For this reason it is important for the client to track responses for its messages and provide timeouts to
+the caller if required.
 
 We can restore the failed node back into service:
 
@@ -802,7 +799,7 @@ We can restore the failed node back into service:
 > ./basic-auction-cluster <leaderMemberId>
 ----
 
-Where the leaderMemberId is the id of the member that was killed (not the new leader of the cluster). The cluster logs
+Where the `leaderMemberId` is the id of the member that was killed (not the new leader of the cluster). The cluster logs
 will show the member rejoining the cluster:
 
 ----
@@ -854,7 +851,7 @@ The recording log will now have additional entries.
 RecordingLog{entries=[Entry{recordingId=0, leadershipTermId=0, termBaseLogPosition=0, logPosition=-1, timestamp=1579569542227, serviceId=-1, type=0, isValid=true, entryIndex=0}, Entry{recordingId=1, leadershipTermId=0, termBaseLogPosition=0, logPosition=1376, timestamp=1579570195606, serviceId=0, type=1, isValid=true, entryIndex=1}, Entry{recordingId=2, leadershipTermId=0, termBaseLogPosition=0, logPosition=1376, timestamp=1579570195606, serviceId=-1, type=1, isValid=true, entryIndex=2}], cacheIndex={0=0}}
 ----
 
-There are two more entries. One for the snapshot just taken and a now term entry to indicate the point within the log
+There are two more entries. One for the snapshot just taken and a new term entry to indicate the point within the log
 the service should start recovering from where it to use the new snapshot on re-start.
 
 == Exercises
@@ -877,8 +874,8 @@ Here are some exercises that you can try out.
 ////
 <1> To manage fragmenting the arbitrary sized state we are going to serialize our state to a single buffer. In this case
 we are using the `snapshotMessageBuffer` as our temporary buffer for the keys and their counts. This makes sense when
-the state of the system is as simple as this. However, in a real scenario you probably wouldn't want to serialize
-the whole state of a service to a single buffer, you may want to break up this by
+the state of the system is as simple as this. However, in a more realistic scenario you probably wouldn't want to
+serialize the whole state of a service to a single buffer, you may want to break up this by
 https://dddcommunity.org/resources/ddd_terms/[repository or entity]
 
 <2> You'll notice that we are sorting the output before writing to the buffer. While not strictly required, it is highly
@@ -889,9 +886,9 @@ deterministic (especially in cases where services are at the same point in the l
 taken at different times). An alternative would be to use a collection that has a known order, e.g. `TreeMap`.
 
 <3> Two things are happening here. Firstly, we mentioned the necessity of having a protocol to handle fragmentation of
-our data when sending via the `Publication`. In our case we are going to have a very minimal header, consisting of two
+our data when sending via a `Publication`. In our case we are going to have a very minimal header, consisting of two
 32-bit values, the current offset in to the full buffer of data and the total size. This will allow a consumer to know
-how far through the total set of data this fragment is, and can be used for sanity checking on load.  Secondly, we are
+how far through the total set of data this fragment is, and can be used for sanity checking on load. Secondly, we are
 determining the size of the individual Aeron message being sent. Given that we will be handling fragmentation ourselves,
 there is no point in having Aeron fragment and reconstruct messages for us, so we should limit the size of the messages
 such that we do not exceed the `MTU`, so this calculation tells us the maximum amount of the encoded

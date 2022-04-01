@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.log.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
@@ -31,7 +32,7 @@ import static io.aeron.test.cluster.TestCluster.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
-@ExtendWith(InterruptingTestCallback.class)
+@ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 public class DynamicMembershipTest
 {
     private TestCluster cluster = null;

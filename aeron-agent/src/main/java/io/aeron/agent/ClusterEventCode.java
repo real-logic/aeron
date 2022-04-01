@@ -86,7 +86,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when a commit position is received
      */
-    COMMIT_POSITION(12, ClusterEventDissector::dissectCommitPosition);
+    COMMIT_POSITION(12, ClusterEventDissector::dissectCommitPosition),
+
+    /**
+     * Event when an event to add a new passive member is received
+     */
+    ADD_PASSIVE_MEMBER(13, ClusterEventDissector::dissectAddPassiveMember);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

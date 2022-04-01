@@ -17,6 +17,7 @@ package io.aeron.agent;
 
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
@@ -365,5 +366,24 @@ final class ClusterEventDissector
         builder.append(": leadershipTermId=").append(leadershipTermId);
         builder.append(" logPosition=").append(logPosition);
         builder.append(" leaderMemberId=").append(leaderMemberId);
+    }
+
+    public static void dissectAddPassiveMember(
+        final ClusterEventCode eventCode,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, eventCode, buffer, absoluteOffset, builder);
+
+        final long correlationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final int memberEndpointsLength = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(": correlationId=").append(correlationId);
+        builder.append(" memberEndpoints=");
+        buffer.getStringWithoutLengthAscii(absoluteOffset, memberEndpointsLength, builder);
     }
 }

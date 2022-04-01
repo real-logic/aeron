@@ -477,6 +477,14 @@ public final class EventLogAgent
             ClusterInterceptor.CommitPosition.class,
             "onCommitPosition");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.COMMIT_POSITION,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.AddPassiveMember.class,
+            "onAddPassiveMember");
+
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
 
         return tempBuilder;

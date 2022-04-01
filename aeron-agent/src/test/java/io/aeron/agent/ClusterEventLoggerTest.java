@@ -446,4 +446,37 @@ class ClusterEventLoggerTest
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
+
+    @Test
+    void testLogAddPassiveMember()
+    {
+        final int offset = ALIGNMENT + 4;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final long correlationId = 28397456L;
+        final String memberEndpoints = "localhost:20113,localhost:20223,localhost:20333,localhost:0,localhost:8013";
+
+        logger.logAddPassiveMember(correlationId, memberEndpoints);
+
+        final int length = SIZE_OF_LONG + SIZE_OF_INT + memberEndpoints.length();
+        verifyLogHeader(logBuffer, offset, ADD_PASSIVE_MEMBER.toEventCodeId(), length, length);
+        int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+
+
+        assertEquals(correlationId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(memberEndpoints.length(), logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(memberEndpoints, logBuffer.getStringWithoutLengthAscii(index, memberEndpoints.length()));
+        index += memberEndpoints.length();
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectAddPassiveMember(
+            ADD_PASSIVE_MEMBER, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: ADD_PASSIVE_MEMBER " +
+            "\\[86/86\\]: correlationId=28397456 memberEndpoints=localhost:20113,localhost:20223,localhost:20333," +
+            "localhost:0,localhost:8013";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
 }

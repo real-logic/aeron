@@ -415,7 +415,7 @@ final class ClusterEventEncoder
         return logHeaderLength + bodyLength;
     }
 
-    public static int encodeCommitPosition(
+    static int encodeCommitPosition(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,
@@ -436,6 +436,32 @@ final class ClusterEventEncoder
 
         encodingBuffer.putInt(bodyOffset + bodyLength, memberId, LITTLE_ENDIAN);
         bodyLength += SIZE_OF_INT;
+
+        return logHeaderLength + bodyLength;
+    }
+
+    static int addPassiveMemberLength(final String endpoints)
+    {
+        return SIZE_OF_LONG + SIZE_OF_INT + endpoints.length();
+    }
+
+    public static int encodeAddPassiveMember(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final long correlationId,
+        final String memberEndpoints)
+    {
+        final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + logHeaderLength;
+        int bodyLength = 0;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, correlationId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        bodyLength += encodeTrailingString(
+            encodingBuffer, bodyOffset + bodyLength, captureLength - bodyLength, memberEndpoints);
 
         return logHeaderLength + bodyLength;
     }

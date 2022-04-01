@@ -325,8 +325,6 @@ public final class CTestMediaDriver implements TestMediaDriver
             throw new RuntimeException(
                 "Unable to find driver agent file at: " + DRIVER_AGENT_PATH_PROP_NAME + "=" + driverAgentPath);
         }
-
-        environment.put("LD_PRELOAD", driverAgent.getAbsolutePath());
     }
 
     private static void setFlowControlStrategy(final Map<String, String> environment, final MediaDriver.Context context)

@@ -235,4 +235,15 @@ class ClusterInterceptor
                 memberId);
         }
     }
+
+    static class AddPassiveMember
+    {
+        @Advice.OnMethodEnter
+        static void onAddPassiveMember(
+            final long correlationId,
+            final String passiveMember)
+        {
+            LOGGER.logAddPassiveMember(correlationId, passiveMember);
+        }
+    }
 }

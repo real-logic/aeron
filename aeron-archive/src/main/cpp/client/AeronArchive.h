@@ -148,6 +148,7 @@ public:
     {
         std::shared_ptr<AsyncConnect> asyncConnect = AeronArchive::asyncConnect(context);
         std::shared_ptr<Aeron> aeron = context.aeron();
+        delegating_invoker_t &delegatingInvoker = context.delegatingInvoker();
         ConnectIdleStrategy idleStrategy;
         std::uint8_t previousStep = asyncConnect->step();
 
@@ -168,6 +169,8 @@ public:
             {
                 aeron->conductorAgentInvoker().invoke();
             }
+
+            delegatingInvoker();
 
             archive = asyncConnect->poll();
         }
@@ -1809,6 +1812,8 @@ private:
         {
             m_aeron->conductorAgentInvoker().invoke();
         }
+
+        m_ctx->delegatingInvoker()();
     }
 
     inline void dispatchRecordingSignal() const

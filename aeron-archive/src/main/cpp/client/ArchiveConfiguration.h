@@ -98,6 +98,16 @@ struct CredentialsSupplier
 };
 
 /**
+ * Callback to allow execution of a delegating invoker to be run.
+ */
+typedef std::function<void()> delegating_invoker_t;
+
+inline delegating_invoker_t defaultDelegatingInvoker()
+{
+    return [](){};
+}
+
+/**
  * A signal has been received from the Archive indicating an operation on a recording.
  *
  * The raw code representing the recording operation can be converted using methods on the RecordingSignal enum
@@ -577,6 +587,30 @@ public:
         return *this;
     }
 
+    /**
+     * Get the function to be invoked in addition to any invoker used by the Aeron instance.
+     *
+     * @return the function that is used.
+     */
+    inline delegating_invoker_t &delegatingInvoker()
+    {
+        return m_delegating_invoker;
+    }
+
+    /**
+     * Set the function to be invoked in addition to any invoker used by the Aeron instance.
+     *
+     * Useful for when running on a low thread count scenario.
+     *
+     * @param delegatingInvokerFunc to be invoked while awaiting a response in the client.
+     * @return this for a fluent API.
+     */
+    inline this_t &delegatingInvoker(const delegating_invoker_t &delegatingInvokerFunc)
+    {
+        m_delegating_invoker = delegatingInvokerFunc;
+        return *this;
+    }
+
 private:
     std::shared_ptr<Aeron> m_aeron;
     std::string m_aeronDirectoryName = aeron::Context::defaultAeronPath();
@@ -601,6 +635,7 @@ private:
     on_recording_signal_t m_onRecordingSignal = defaultRecordingSignalConsumer();
 
     CredentialsSupplier m_credentialsSupplier;
+    delegating_invoker_t m_delegating_invoker = defaultDelegatingInvoker();
 
     inline void applyDefaultParams(std::string &channel) const
     {

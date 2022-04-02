@@ -69,7 +69,7 @@ final class ClusterEventDissector
         final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_INT;
 
-        final int leaderMemberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        final int leaderId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_INT;
 
         final int logSessionId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
@@ -87,7 +87,7 @@ final class ClusterEventDissector
             .append(" logPosition=").append(logPosition)
             .append(" leaderRecordingId=").append(leaderRecordingId)
             .append(" timestamp=").append(timestamp)
-            .append(" leaderMemberId=").append(leaderMemberId)
+            .append(" leaderId=").append(leaderId)
             .append(" logSessionId=").append(logSessionId)
             .append(" isStartup=").append(isStartup);
     }
@@ -371,7 +371,7 @@ final class ClusterEventDissector
         builder.append(": memberId=").append(memberId);
         builder.append(" leadershipTermId=").append(leadershipTermId);
         builder.append(" logPosition=").append(logPosition);
-        builder.append(" leaderMemberId=").append(leaderId);
+        builder.append(" leaderId=").append(leaderId);
     }
 
     public static void dissectAddPassiveMember(

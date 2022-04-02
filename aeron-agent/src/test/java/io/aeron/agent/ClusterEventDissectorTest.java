@@ -58,7 +58,7 @@ class ClusterEventDissectorTest
         assertEquals("[33.0] " + CONTEXT + ": " + NEW_LEADERSHIP_TERM.name() + " [8/9]: memberId=13 " +
             "logLeadershipTermId=1 nextLeadershipTermId=2 nextTermBaseLogPosition=3 nextLogPosition=13 " +
             "leadershipTermId=23 termBaseLogPosition=4 logPosition=5 leaderRecordingId=6 " +
-            "timestamp=7 leaderMemberId=100 logSessionId=200 isStartup=true",
+            "timestamp=7 leaderId=100 logSessionId=200 isStartup=true",
             builder.toString());
     }
 

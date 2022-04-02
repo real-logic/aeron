@@ -446,7 +446,7 @@ class ClusterEventLoggerTest
             COMMIT_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: COMMIT_POSITION " +
-            "\\[24/24]: memberId=2 leadershipTermId=1233 logPosition=988723465 leaderMemberId=982374";
+            "\\[24/24]: memberId=2 leadershipTermId=1233 logPosition=988723465 leaderId=982374";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

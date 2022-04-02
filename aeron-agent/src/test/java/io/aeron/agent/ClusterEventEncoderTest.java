@@ -74,7 +74,7 @@ class ClusterEventEncoderTest
         final long logPosition = 1024;
         final long timestamp = 32423436;
         final int memberId = 5;
-        final int leaderMemberId = 42;
+        final int leaderId = 42;
         final int logSessionId = 18;
         final long termBaseLogPosition = 23874;
         final long leaderRecordingId = 9;
@@ -95,7 +95,7 @@ class ClusterEventEncoderTest
             leaderRecordingId,
             timestamp,
             memberId,
-            leaderMemberId,
+            leaderId,
             logSessionId,
             isStartup);
 
@@ -127,7 +127,7 @@ class ClusterEventEncoderTest
         index += SIZE_OF_LONG;
         assertEquals(memberId, buffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
-        assertEquals(leaderMemberId, buffer.getInt(index, LITTLE_ENDIAN));
+        assertEquals(leaderId, buffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
         assertEquals(logSessionId, buffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;

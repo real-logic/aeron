@@ -229,14 +229,10 @@ class ClusterInterceptor
         static void onCommitPositionExtended(
             final long leadershipTermId,
             final long logPosition,
-            final int leaderMemberId,
+            final int leaderId,
             final int memberId)
         {
-            LOGGER.logCommitPosition(
-                leadershipTermId,
-                logPosition,
-                leaderMemberId,
-                memberId);
+            LOGGER.logCommitPosition(leadershipTermId, logPosition, leaderId, memberId);
         }
     }
 

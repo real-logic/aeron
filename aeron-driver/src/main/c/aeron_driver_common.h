@@ -83,6 +83,7 @@ void aeron_untethered_subscription_state_change(
 
 typedef struct aeron_subscribable_stct
 {
+    int64_t correlation_id;
     size_t length;
     size_t capacity;
     aeron_tetherable_position_t *array;

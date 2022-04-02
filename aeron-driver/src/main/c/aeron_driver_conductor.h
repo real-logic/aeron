@@ -462,11 +462,27 @@ int aeron_driver_conductor_on_add_send_destination(
 int aeron_driver_conductor_on_remove_send_destination(
     aeron_driver_conductor_t *conductor, aeron_destination_command_t *command);
 
-int aeron_driver_conductor_on_add_receive_destination(
+int aeron_driver_conductor_on_add_receive_ipc_destination(
     aeron_driver_conductor_t *conductor,
     aeron_destination_command_t *command);
 
-int aeron_driver_conductor_on_remove_receive_destination(
+int aeron_driver_conductor_on_add_receive_spy_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command);
+
+int aeron_driver_conductor_on_add_receive_network_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command);
+
+int aeron_driver_conductor_on_remove_receive_ipc_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command);
+
+int aeron_driver_conductor_on_remove_receive_spy_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command);
+
+int aeron_driver_conductor_on_remove_receive_network_destination(
     aeron_driver_conductor_t *conductor,
     aeron_destination_command_t *command);
 

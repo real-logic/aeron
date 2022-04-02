@@ -166,6 +166,7 @@ int aeron_publication_image_create(
     _image->congestion_control = congestion_control;
     _image->loss_reporter = loss_reporter;
     _image->loss_reporter_offset = -1;
+    _image->conductor_fields.subscribable.correlation_id = correlation_id;
     _image->conductor_fields.subscribable.array = NULL;
     _image->conductor_fields.subscribable.length = 0;
     _image->conductor_fields.subscribable.capacity = 0;

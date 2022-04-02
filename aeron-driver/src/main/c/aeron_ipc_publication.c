@@ -141,6 +141,7 @@ int aeron_ipc_publication_create(
     aeron_logbuffer_fill_default_header(
         _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
+    _pub->conductor_fields.subscribable.correlation_id = registration_id;
     _pub->conductor_fields.subscribable.array = NULL;
     _pub->conductor_fields.subscribable.length = 0;
     _pub->conductor_fields.subscribable.capacity = 0;

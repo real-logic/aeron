@@ -57,7 +57,7 @@ class ClusterInterceptor
     static class NewLeadershipTerm
     {
         @Advice.OnMethodEnter
-        static void onNewLeadershipTerm(
+        static void onNewLeadershipTermExtended(
             final long logLeadershipTermId,
             final long nextLeadershipTermId,
             final long nextTermBaseLogPosition,
@@ -67,7 +67,8 @@ class ClusterInterceptor
             final long logPosition,
             final long leaderRecordingId,
             final long timestamp,
-            final int leaderMemberId,
+            final int memberId,
+            final int leaderId,
             final int logSessionId,
             final boolean isStartup)
         {
@@ -81,7 +82,8 @@ class ClusterInterceptor
                 logPosition,
                 leaderRecordingId,
                 timestamp,
-                leaderMemberId,
+                memberId,
+                leaderId,
                 logSessionId,
                 isStartup);
         }
@@ -224,14 +226,16 @@ class ClusterInterceptor
     static class CommitPosition
     {
         @Advice.OnMethodEnter
-        static void onCommitPosition(
+        static void onCommitPositionExtended(
             final long leadershipTermId,
             final long logPosition,
+            final int leaderMemberId,
             final int memberId)
         {
             LOGGER.logCommitPosition(
                 leadershipTermId,
                 logPosition,
+                leaderMemberId,
                 memberId);
         }
     }
@@ -239,11 +243,12 @@ class ClusterInterceptor
     static class AddPassiveMember
     {
         @Advice.OnMethodEnter
-        static void onAddPassiveMember(
+        static void onAddPassiveMemberExtended(
             final long correlationId,
-            final String passiveMember)
+            final String passiveMember,
+            final int memberId)
         {
-            LOGGER.logAddPassiveMember(correlationId, passiveMember);
+            LOGGER.logAddPassiveMember(correlationId, passiveMember, memberId);
         }
     }
 }

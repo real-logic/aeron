@@ -60,7 +60,8 @@ class ClusterEventLoggerTest
         final long leadershipTermId = -500;
         final long logPosition = 43;
         final long timestamp = 2;
-        final int leaderMemberId = 0;
+        final int memberId = 19;
+        final int leaderId = -1;
         final int logSessionId = 3;
         final int captureLength = newLeaderShipTermLength();
         final boolean isStartup = true;
@@ -77,7 +78,8 @@ class ClusterEventLoggerTest
             logPosition,
             leaderRecordingId,
             timestamp,
-            leaderMemberId,
+            memberId,
+            leaderId,
             logSessionId,
             isStartup);
 
@@ -102,11 +104,13 @@ class ClusterEventLoggerTest
         index += SIZE_OF_LONG;
         assertEquals(timestamp, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
-        assertEquals(leaderMemberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(leaderId, logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
         assertEquals(logSessionId, logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
-        assertEquals(isStartup, 1 == logBuffer.getInt(index, LITTLE_ENDIAN));
+        assertEquals(isStartup, 1 == logBuffer.getByte(index));
     }
 
     @Test
@@ -206,9 +210,8 @@ class ClusterEventLoggerTest
         final StringBuilder sb = new StringBuilder();
         ClusterEventDissector.dissectCatchupPosition(CATCHUP_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: CATCHUP_POSITION \\[57/57\\]: " +
-            "leadershipTermId=1233 logPosition=100 followerMemberId=18 " +
-            "catchupEndpoint=aeron:udp\\?endpoint=localhost:9090";
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: CATCHUP_POSITION \\[57/57]: " +
+            "memberId=18 leadershipTermId=1233 logPosition=100 catchupEndpoint=aeron:udp\\?endpoint=localhost:9090";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
@@ -220,7 +223,7 @@ class ClusterEventLoggerTest
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
         final long leadershipTermId = 1233L;
         final long logPosition = 100L;
-        final int followerMemberId = 18;
+        final int followerMemberId = -7;
 
         final byte[] alias = new byte[8192];
         Arrays.fill(alias, (byte)'x');
@@ -234,10 +237,9 @@ class ClusterEventLoggerTest
         final StringBuilder sb = new StringBuilder();
         ClusterEventDissector.dissectCatchupPosition(CATCHUP_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*\\] CLUSTER: CATCHUP_POSITION \\[[0-9]*/8256\\]: " +
-            "leadershipTermId=1233 logPosition=100 followerMemberId=18 " +
-            "catchupEndpoint=aeron:udp\\?endpoint=localhost:9090\\|alias" +
-            "=(x)*\\.\\.\\.";
+        final String expectedMessagePattern = "\\[[0-9]*\\.[0-9]*] CLUSTER: CATCHUP_POSITION \\[[0-9]*/8256]: " +
+            "memberId=-7 leadershipTermId=1233 logPosition=100 " +
+            "catchupEndpoint=aeron:udp\\?endpoint=localhost:9090\\|alias=(x)*\\.\\.\\.";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
@@ -248,7 +250,7 @@ class ClusterEventLoggerTest
         final int offset = ALIGNMENT * 4;
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
         final long leadershipTermId = 1233L;
-        final int followerMemberId = 18;
+        final int followerMemberId = 42;
 
         logger.logStopCatchup(leadershipTermId, followerMemberId);
 
@@ -264,7 +266,7 @@ class ClusterEventLoggerTest
         ClusterEventDissector.dissectStopCatchup(STOP_CATCHUP, logBuffer, encodedMsgOffset(offset), sb);
 
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: STOP_CATCHUP \\[12/12]: " +
-            "leadershipTermId=1233 followerMemberId=18";
+            "memberId=42 leadershipTermId=1233";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
@@ -373,8 +375,8 @@ class ClusterEventLoggerTest
         ClusterEventDissector.dissectReplayNewLeadershipTerm(
             REPLAY_NEW_LEADERSHIP_TERM, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: REPLAY_NEW_LEADERSHIP_TERM " +
-            "\\[59/59\\]: memberId=982374 isInElection=true leadershipTermId=1233 logPosition=988723465 " +
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: REPLAY_NEW_LEADERSHIP_TERM " +
+            "\\[59/59]: memberId=982374 isInElection=true leadershipTermId=1233 logPosition=988723465 " +
             "termBaseLogPosition=988723433 appVersion=13 timestamp=890723452345 timeUnit=NANOSECONDS";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
@@ -409,8 +411,8 @@ class ClusterEventLoggerTest
         ClusterEventDissector.dissectAppendPosition(
             APPEND_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: APPEND_POSITION " +
-            "\\[21/21\\]: leadershipTermId=1233 logPosition=988723465 followerMemberId=982374 flags=0b00000001";
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: APPEND_POSITION " +
+            "\\[21/21]: memberId=982374 leadershipTermId=1233 logPosition=988723465 flags=0b00000001";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
@@ -422,11 +424,12 @@ class ClusterEventLoggerTest
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
         final long leadershipTermId = 1233L;
         final long logPosition = 988723465L;
-        final int memberId = 982374;
+        final int leaderId = 982374;
+        final int memberId = 2;
 
-        logger.logCommitPosition(leadershipTermId, logPosition, memberId);
+        logger.logCommitPosition(leadershipTermId, logPosition, leaderId, memberId);
 
-        final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT;
+        final int length = 2 * SIZE_OF_LONG + 2 * SIZE_OF_INT;
         verifyLogHeader(logBuffer, offset, COMMIT_POSITION.toEventCodeId(), length, length);
         int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
 
@@ -434,15 +437,16 @@ class ClusterEventLoggerTest
         index += SIZE_OF_LONG;
         assertEquals(logPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
-        assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        assertEquals(leaderId, logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
+        assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
 
         final StringBuilder sb = new StringBuilder();
         ClusterEventDissector.dissectCommitPosition(
             COMMIT_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: COMMIT_POSITION " +
-            "\\[20/20\\]: leadershipTermId=1233 logPosition=988723465 leaderMemberId=982374";
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: COMMIT_POSITION " +
+            "\\[24/24]: memberId=2 leadershipTermId=1233 logPosition=988723465 leaderMemberId=982374";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
@@ -454,16 +458,18 @@ class ClusterEventLoggerTest
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
         final long correlationId = 28397456L;
         final String memberEndpoints = "localhost:20113,localhost:20223,localhost:20333,localhost:0,localhost:8013";
+        final int memberId = 42;
 
-        logger.logAddPassiveMember(correlationId, memberEndpoints);
+        logger.logAddPassiveMember(correlationId, memberEndpoints, memberId);
 
-        final int length = SIZE_OF_LONG + SIZE_OF_INT + memberEndpoints.length();
+        final int length = SIZE_OF_LONG + 2 * SIZE_OF_INT + memberEndpoints.length();
         verifyLogHeader(logBuffer, offset, ADD_PASSIVE_MEMBER.toEventCodeId(), length, length);
         int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
 
-
         assertEquals(correlationId, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
+        assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
         assertEquals(memberEndpoints.length(), logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
         assertEquals(memberEndpoints, logBuffer.getStringWithoutLengthAscii(index, memberEndpoints.length()));
@@ -473,9 +479,9 @@ class ClusterEventLoggerTest
         ClusterEventDissector.dissectAddPassiveMember(
             ADD_PASSIVE_MEMBER, logBuffer, encodedMsgOffset(offset), sb);
 
-        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+\\] CLUSTER: ADD_PASSIVE_MEMBER " +
-            "\\[86/86\\]: correlationId=28397456 memberEndpoints=localhost:20113,localhost:20223,localhost:20333," +
-            "localhost:0,localhost:8013";
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: ADD_PASSIVE_MEMBER " +
+            "\\[90/90]: memberId=42 correlationId=28397456 " +
+            "memberEndpoints=localhost:20113,localhost:20223,localhost:20333,localhost:0,localhost:8013";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

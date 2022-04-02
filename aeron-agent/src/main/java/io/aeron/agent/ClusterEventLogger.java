@@ -58,7 +58,8 @@ public final class ClusterEventLogger
      * @param logPosition             position the log reached for the new term.
      * @param leaderRecordingId       of the log in the leader archive.
      * @param timestamp               of the new term.
-     * @param leaderMemberId          member id for the new leader.
+     * @param memberId                of the current cluster node.
+     * @param leaderId                member id for the new leader.
      * @param logSessionId            session id of the log extension.
      * @param isStartup               is the leader starting up fresh.
      */
@@ -72,7 +73,8 @@ public final class ClusterEventLogger
         final long logPosition,
         final long leaderRecordingId,
         final long timestamp,
-        final int leaderMemberId,
+        final int memberId,
+        final int leaderId,
         final int logSessionId,
         final boolean isStartup)
     {
@@ -100,7 +102,8 @@ public final class ClusterEventLogger
                     logPosition,
                     leaderRecordingId,
                     timestamp,
-                    leaderMemberId,
+                    memberId,
+                    leaderId,
                     logSessionId,
                     isStartup);
             }
@@ -522,14 +525,16 @@ public final class ClusterEventLogger
      *
      * @param leadershipTermId the current leadership term id.
      * @param logPosition      the current position in the log.
-     * @param leaderMemberId   leader member sending the commit position.
+     * @param leaderId         leader member sending the commit position.
+     * @param memberId         of the node receiving commit position message.
      */
     public void logCommitPosition(
         final long leadershipTermId,
         final long logPosition,
-        final int leaderMemberId)
+        final int leaderId,
+        final int memberId)
     {
-        final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT;
+        final int length = 2 * SIZE_OF_LONG + 2 * SIZE_OF_INT;
         final int encodedLength = encodedLength(length);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
         final int index = ringBuffer.tryClaim(COMMIT_POSITION.toEventCodeId(), encodedLength);
@@ -545,7 +550,8 @@ public final class ClusterEventLogger
                     length,
                     leadershipTermId,
                     logPosition,
-                    leaderMemberId);
+                    leaderId,
+                    memberId);
             }
             finally
             {
@@ -557,10 +563,11 @@ public final class ClusterEventLogger
     /**
      * Log addition of a passive member to the cluster.
      *
-     * @param correlationId     correlationId for responding to the addition of the passive member
-     * @param memberEndpoints   the endpoints for the new member
+     * @param correlationId   correlationId for responding to the addition of the passive member
+     * @param memberEndpoints the endpoints for the new member
+     * @param memberId        of the node executing the passive member command.
      */
-    public void logAddPassiveMember(final long correlationId, final String memberEndpoints)
+    public void logAddPassiveMember(final long correlationId, final String memberEndpoints, final int memberId)
     {
         final int length = addPassiveMemberLength(memberEndpoints);
         final int captureLength = captureLength(length);
@@ -578,7 +585,8 @@ public final class ClusterEventLogger
                     length,
                     length,
                     correlationId,
-                    memberEndpoints);
+                    memberEndpoints,
+                    memberId);
             }
             finally
             {

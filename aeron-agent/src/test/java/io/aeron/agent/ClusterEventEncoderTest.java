@@ -30,8 +30,7 @@ import static io.aeron.agent.ClusterEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -74,6 +73,7 @@ class ClusterEventEncoderTest
         final long leadershipTermId = 222;
         final long logPosition = 1024;
         final long timestamp = 32423436;
+        final int memberId = 5;
         final int leaderMemberId = 42;
         final int logSessionId = 18;
         final long termBaseLogPosition = 23874;
@@ -94,6 +94,7 @@ class ClusterEventEncoderTest
             logPosition,
             leaderRecordingId,
             timestamp,
+            memberId,
             leaderMemberId,
             logSessionId,
             isStartup);
@@ -124,6 +125,8 @@ class ClusterEventEncoderTest
         index += SIZE_OF_LONG;
         assertEquals(timestamp, buffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
+        assertEquals(memberId, buffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
         assertEquals(leaderMemberId, buffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
         assertEquals(logSessionId, buffer.getInt(index, LITTLE_ENDIAN));
@@ -134,7 +137,7 @@ class ClusterEventEncoderTest
     @Test
     void testNewLeaderShipTermLength()
     {
-        assertEquals(SIZE_OF_LONG * 9 + SIZE_OF_INT * 3, newLeaderShipTermLength());
+        assertEquals(SIZE_OF_LONG * 9 + SIZE_OF_INT * 3 + SIZE_OF_BYTE, newLeaderShipTermLength());
     }
 
     @Test

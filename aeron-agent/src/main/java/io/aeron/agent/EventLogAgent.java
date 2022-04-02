@@ -475,7 +475,7 @@ public final class EventLogAgent
             ClusterEventCode.COMMIT_POSITION,
             "ConsensusModuleAgent",
             ClusterInterceptor.CommitPosition.class,
-            "onCommitPosition");
+            "onCommitPositionExtended");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
@@ -483,7 +483,7 @@ public final class EventLogAgent
             ClusterEventCode.COMMIT_POSITION,
             "ConsensusModuleAgent",
             ClusterInterceptor.AddPassiveMember.class,
-            "onAddPassiveMember");
+            "onAddPassiveMemberExtended");
 
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
 
@@ -499,7 +499,7 @@ public final class EventLogAgent
             ClusterEventCode.NEW_LEADERSHIP_TERM,
             "ConsensusModuleAgent",
             ClusterInterceptor.NewLeadershipTerm.class,
-            "onNewLeadershipTerm");
+            "onNewLeadershipTermExtended");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,

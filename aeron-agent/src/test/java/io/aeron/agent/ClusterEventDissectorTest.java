@@ -48,15 +48,16 @@ class ClusterEventDissectorTest
         buffer.putLong(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 6), 5, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 7), 6, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 8), 7, LITTLE_ENDIAN);
-        buffer.putInt(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 9), 100, LITTLE_ENDIAN);
-        buffer.putInt(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 9) + SIZE_OF_INT, 200, LITTLE_ENDIAN);
-        buffer.putInt(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 9) + SIZE_OF_INT + SIZE_OF_INT, 1, LITTLE_ENDIAN);
+        buffer.putInt(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 9), 13, LITTLE_ENDIAN);
+        buffer.putInt(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 9) + SIZE_OF_INT, 100, LITTLE_ENDIAN);
+        buffer.putInt(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 9) + SIZE_OF_INT * 2, 200, LITTLE_ENDIAN);
+        buffer.putByte(LOG_HEADER_LENGTH + (SIZE_OF_LONG * 9) + SIZE_OF_INT * 3, (byte)1);
 
         ClusterEventDissector.dissectNewLeadershipTerm(buffer, 0, builder);
 
-        assertEquals("[33.0] " + CONTEXT + ": " + NEW_LEADERSHIP_TERM.name() + " [8/9]: logLeadershipTermId=1 " +
-            "nextLeadershipTermId=2 nextTermBaseLogPosition=3 nextLogPosition=13 leadershipTermId=23 " +
-            "termBaseLogPosition=4 logPosition=5 leaderRecordingId=6 " +
+        assertEquals("[33.0] " + CONTEXT + ": " + NEW_LEADERSHIP_TERM.name() + " [8/9]: memberId=13 " +
+            "logLeadershipTermId=1 nextLeadershipTermId=2 nextTermBaseLogPosition=3 nextLogPosition=13 " +
+            "leadershipTermId=23 termBaseLogPosition=4 logPosition=5 leaderRecordingId=6 " +
             "timestamp=7 leaderMemberId=100 logSessionId=200 isStartup=true",
             builder.toString());
     }

@@ -671,34 +671,20 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final int logSessionId,
         final boolean isStartup)
     {
-        if (null != election)
-        {
-            election.onNewLeadershipTerm(
-                logLeadershipTermId,
-                nextLeadershipTermId,
-                nextTermBaseLogPosition,
-                nextLogPosition,
-                leadershipTermId,
-                termBaseLogPosition,
-                logPosition,
-                leaderRecordingId,
-                timestamp,
-                leaderId,
-                logSessionId,
-                isStartup);
-        }
-        else if (Cluster.Role.FOLLOWER == role &&
-            leadershipTermId == this.leadershipTermId &&
-            leaderId == leaderMember.id())
-        {
-            notifiedCommitPosition = Math.max(notifiedCommitPosition, logPosition);
-            timeOfLastLogUpdateNs = clusterClock.timeNanos();
-        }
-        else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
-        {
-            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected new leadership term event"));
-            enterElection();
-        }
+        onNewLeadershipTermExtended(
+            logLeadershipTermId,
+            nextLeadershipTermId,
+            nextTermBaseLogPosition,
+            nextLogPosition,
+            leadershipTermId,
+            termBaseLogPosition,
+            logPosition,
+            leaderRecordingId,
+            timestamp,
+            memberId,
+            leaderId,
+            logSessionId,
+            isStartup);
     }
 
     void onAppendPosition(
@@ -726,22 +712,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
-        if (null != election)
-        {
-            election.onCommitPosition(leadershipTermId, logPosition, leaderMemberId);
-        }
-        else if (leadershipTermId == this.leadershipTermId &&
-            leaderMemberId == leaderMember.id() &&
-            Cluster.Role.FOLLOWER == role)
-        {
-            notifiedCommitPosition = logPosition;
-            timeOfLastLogUpdateNs = clusterClock.timeNanos();
-        }
-        else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
-        {
-            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected commit position from new leader"));
-            enterElection();
-        }
+        onCommitPositionExtended(leadershipTermId, logPosition, leaderMemberId, memberId);
     }
 
     void onCatchupPosition(
@@ -779,28 +750,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void onAddPassiveMember(final long correlationId, final String memberEndpoints)
     {
-        if (null == election && null == dynamicJoin)
-        {
-            if (Cluster.Role.LEADER == role)
-            {
-                if (ClusterMember.notDuplicateEndpoint(passiveMembers, memberEndpoints))
-                {
-                    final ClusterMember newMember = ClusterMember.parseEndpoints(++highMemberId, memberEndpoints);
-
-                    newMember.correlationId(correlationId);
-                    passiveMembers = ClusterMember.addMember(passiveMembers, newMember);
-                    clusterMemberByIdMap.put(newMember.id(), newMember);
-
-                    ClusterMember.addConsensusPublication(
-                        newMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
-                    logPublisher.addDestination(ctx.isLogMdc(), newMember.logEndpoint());
-                }
-            }
-            else if (Cluster.Role.FOLLOWER == role)
-            {
-                consensusPublisher.addPassiveMember(leaderMember.publication(), correlationId, memberEndpoints);
-            }
-        }
+        onAddPassiveMemberExtended(correlationId, memberEndpoints, memberId);
     }
 
     void onClusterMembersChange(
@@ -1296,6 +1246,104 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             election.onReplayNewLeadershipTermEvent(
                 logRecordingId, leadershipTermId, logPosition, timestamp, termBaseLogPosition);
+        }
+    }
+
+    private void onNewLeadershipTermExtended(
+        final long logLeadershipTermId,
+        final long nextLeadershipTermId,
+        final long nextTermBaseLogPosition,
+        final long nextLogPosition,
+        final long leadershipTermId,
+        final long termBaseLogPosition,
+        final long logPosition,
+        final long leaderRecordingId,
+        final long timestamp,
+        final int memberId /* Used for logging */,
+        final int leaderId,
+        final int logSessionId,
+        final boolean isStartup)
+    {
+        if (null != election)
+        {
+            election.onNewLeadershipTerm(
+                logLeadershipTermId,
+                nextLeadershipTermId,
+                nextTermBaseLogPosition,
+                nextLogPosition,
+                leadershipTermId,
+                termBaseLogPosition,
+                logPosition,
+                leaderRecordingId,
+                timestamp,
+                leaderId,
+                logSessionId,
+                isStartup);
+        }
+        else if (Cluster.Role.FOLLOWER == role &&
+            leadershipTermId == this.leadershipTermId &&
+            leaderId == leaderMember.id())
+        {
+            notifiedCommitPosition = Math.max(notifiedCommitPosition, logPosition);
+            timeOfLastLogUpdateNs = clusterClock.timeNanos();
+        }
+        else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
+        {
+            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected new leadership term event"));
+            enterElection();
+        }
+    }
+
+    private void onCommitPositionExtended(
+        final long leadershipTermId,
+        final long logPosition,
+        final int leaderMemberId,
+        final int memberId /* Used for logging */)
+    {
+        if (null != election)
+        {
+            election.onCommitPosition(leadershipTermId, logPosition, leaderMemberId);
+        }
+        else if (leadershipTermId == this.leadershipTermId &&
+            leaderMemberId == leaderMember.id() &&
+            Cluster.Role.FOLLOWER == role)
+        {
+            notifiedCommitPosition = logPosition;
+            timeOfLastLogUpdateNs = clusterClock.timeNanos();
+        }
+        else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
+        {
+            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected commit position from new leader"));
+            enterElection();
+        }
+    }
+
+    private void onAddPassiveMemberExtended(
+        final long correlationId,
+        final String memberEndpoints,
+        final int memberId /* Used for logging */)
+    {
+        if (null == election && null == dynamicJoin)
+        {
+            if (Cluster.Role.LEADER == role)
+            {
+                if (ClusterMember.notDuplicateEndpoint(passiveMembers, memberEndpoints))
+                {
+                    final ClusterMember newMember = ClusterMember.parseEndpoints(++highMemberId, memberEndpoints);
+
+                    newMember.correlationId(correlationId);
+                    passiveMembers = ClusterMember.addMember(passiveMembers, newMember);
+                    clusterMemberByIdMap.put(newMember.id(), newMember);
+
+                    ClusterMember.addConsensusPublication(
+                        newMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
+                    logPublisher.addDestination(ctx.isLogMdc(), newMember.logEndpoint());
+                }
+            }
+            else if (Cluster.Role.FOLLOWER == role)
+            {
+                consensusPublisher.addPassiveMember(leaderMember.publication(), correlationId, memberEndpoints);
+            }
         }
     }
 

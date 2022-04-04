@@ -1216,7 +1216,7 @@ class Election
     {
         if (newState != state)
         {
-            stateChange(
+            logStateChange(
                 state,
                 newState,
                 thisMember.id(),
@@ -1419,7 +1419,7 @@ class Election
         return (nowNs - previousTimestampForIntervalNs) >= intervalNs;
     }
 
-    void stateChange(
+    private void logStateChange(
         final ElectionState oldState,
         final ElectionState newState,
         final int memberId,

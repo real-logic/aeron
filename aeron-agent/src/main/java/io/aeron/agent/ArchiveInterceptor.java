@@ -29,7 +29,7 @@ class ArchiveInterceptor
     static class ReplicationSessionStateChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void stateChange(final E oldState, final E newState, final long replicationId)
+        static <E extends Enum<E>> void logStateChange(final E oldState, final E newState, final long replicationId)
         {
             LOGGER.logSessionStateChange(REPLICATION_SESSION_STATE_CHANGE, oldState, newState, replicationId);
         }
@@ -38,7 +38,7 @@ class ArchiveInterceptor
     static class ControlSessionStateChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void stateChange(final E oldState, final E newState, final long controlSessionId)
+        static <E extends Enum<E>> void logStateChange(final E oldState, final E newState, final long controlSessionId)
         {
             LOGGER.logSessionStateChange(CONTROL_SESSION_STATE_CHANGE, oldState, newState, controlSessionId);
         }

@@ -40,12 +40,12 @@ class UntetheredSubscription
 
     void state(final State newState, final long nowNs, final int streamId, final int sessionId)
     {
-        stateChange(state, newState, subscriptionLink.registrationId, streamId, sessionId, nowNs);
+        logStateChange(state, newState, subscriptionLink.registrationId, streamId, sessionId, nowNs);
         state = newState;
         timeOfLastUpdateNs = nowNs;
     }
 
-    void stateChange(
+    private void logStateChange(
         final State oldState,
         final State newState,
         final long subscriptionId,

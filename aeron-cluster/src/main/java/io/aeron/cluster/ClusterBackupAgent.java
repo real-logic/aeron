@@ -877,7 +877,7 @@ public final class ClusterBackupAgent implements Agent
 
     private void state(final ClusterBackup.State newState, final long nowMs)
     {
-        stateChange(state, newState, nowMs);
+        logStateChange(state, newState, nowMs);
 
         if (BACKUP_QUERY == newState && null != eventsListener)
         {
@@ -893,7 +893,8 @@ public final class ClusterBackupAgent implements Agent
         correlationId = NULL_VALUE;
     }
 
-    private void stateChange(final ClusterBackup.State oldState, final ClusterBackup.State newState, final long nowMs)
+    private void logStateChange(
+        final ClusterBackup.State oldState, final ClusterBackup.State newState, final long nowMs)
     {
         //System.out.println("ClusterBackup: " + oldState + " -> " + newState + " nowMs=" + nowMs);
     }

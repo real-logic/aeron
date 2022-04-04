@@ -880,12 +880,11 @@ final class ControlSession implements Session
 
     private void state(final State state)
     {
-        stateChange(this.state, state, controlSessionId);
+        logStateChange(this.state, state, controlSessionId);
         this.state = state;
     }
 
-    @SuppressWarnings("unused")
-    void stateChange(final State oldState, final State newState, final long controlSessionId)
+    private void logStateChange(final State oldState, final State newState, final long controlSessionId)
     {
 //        System.out.println(controlSessionId + ": " + oldState + " -> " + newState);
     }

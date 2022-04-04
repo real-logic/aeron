@@ -28,7 +28,7 @@ class ClusterInterceptor
     static class ElectionStateChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void stateChange(
+        static <E extends Enum<E>> void logStateChange(
             final E oldState,
             final E newState,
             final int memberId,
@@ -57,7 +57,7 @@ class ClusterInterceptor
     static class NewLeadershipTerm
     {
         @Advice.OnMethodEnter
-        static void onNewLeadershipTermExtended(
+        static void logNewLeadershipTerm(
             final long logLeadershipTermId,
             final long nextLeadershipTermId,
             final long nextTermBaseLogPosition,
@@ -92,7 +92,7 @@ class ClusterInterceptor
     static class ConsensusModuleStateChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void stateChange(final E oldState, final E newState, final int memberId)
+        static <E extends Enum<E>> void logStateChange(final E oldState, final E newState, final int memberId)
         {
             LOGGER.logStateChange(STATE_CHANGE, oldState, newState, memberId);
         }
@@ -101,7 +101,7 @@ class ClusterInterceptor
     static class ConsensusModuleRoleChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void roleChange(final E oldRole, final E newRole, final int memberId)
+        static <E extends Enum<E>> void logRoleChange(final E oldRole, final E newRole, final int memberId)
         {
             LOGGER.logStateChange(ROLE_CHANGE, oldRole, newRole, memberId);
         }
@@ -184,7 +184,7 @@ class ClusterInterceptor
     static class ReplayNewLeadershipTerm
     {
         @Advice.OnMethodEnter
-        static void onReplayNewLeadershipTermEventExtended(
+        static void logReplayNewLeadershipTermEvent(
             final int memberId,
             final boolean isInElection,
             final long leadershipTermId,
@@ -226,7 +226,7 @@ class ClusterInterceptor
     static class CommitPosition
     {
         @Advice.OnMethodEnter
-        static void onCommitPositionExtended(
+        static void logCommitPosition(
             final long leadershipTermId,
             final long logPosition,
             final int leaderId,
@@ -239,7 +239,7 @@ class ClusterInterceptor
     static class AddPassiveMember
     {
         @Advice.OnMethodEnter
-        static void onAddPassiveMemberExtended(
+        static void logAddPassiveMember(
             final long correlationId,
             final String passiveMember,
             final int memberId)

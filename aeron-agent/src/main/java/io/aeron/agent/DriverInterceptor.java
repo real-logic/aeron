@@ -28,7 +28,7 @@ class DriverInterceptor
     static class UntetheredSubscriptionStateChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void stateChange(
+        static <E extends Enum<E>> void logStateChange(
             final E oldState, final E newState, final long subscriptionId, final int streamId, final int sessionId)
         {
             LOGGER.logUntetheredSubscriptionStateChange(oldState, newState, subscriptionId, streamId, sessionId);

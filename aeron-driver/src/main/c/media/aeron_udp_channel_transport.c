@@ -73,9 +73,11 @@ static int aeron_udp_channel_transport_setup_media_rcv_timestamps(aeron_udp_chan
 
     // The kernel does both falling back when required.  Essentially we just need a non-zero value for normal UDP.
     transport->timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_MEDIA_RCV_TIMESTAMP;
+    return 0;
 #endif
 
-    return 0;
+    AERON_SET_ERR(EINVAL, "%s", "Timestamps are not supported on this platform");
+    return -1;
 }
 
 int aeron_udp_channel_transport_init(
@@ -283,8 +285,9 @@ int aeron_udp_channel_transport_init(
     {
         if (aeron_udp_channel_transport_setup_media_rcv_timestamps(transport) < 0)
         {
-            AERON_APPEND_ERR("%s", "");
-            goto error;
+            AERON_APPEND_ERR("%s", "WARNING, unable to setup media timestamping");
+            aeron_distinct_error_log_record(context->error_log, aeron_errcode(), aeron_errmsg());
+            aeron_err_clear();
         }
     }
 

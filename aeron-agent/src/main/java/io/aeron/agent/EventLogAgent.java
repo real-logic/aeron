@@ -459,7 +459,7 @@ public final class EventLogAgent
             ClusterEventCode.REPLAY_NEW_LEADERSHIP_TERM,
             "ConsensusModuleAgent",
             ClusterInterceptor.ReplayNewLeadershipTerm.class,
-            "onReplayNewLeadershipTermEvent0");
+            "onReplayNewLeadershipTermEventExtended");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,

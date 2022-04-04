@@ -184,7 +184,7 @@ class ClusterInterceptor
     static class ReplayNewLeadershipTerm
     {
         @Advice.OnMethodEnter
-        static void onReplayNewLeadershipTermEvent0(
+        static void onReplayNewLeadershipTermEventExtended(
             final int memberId,
             final boolean isInElection,
             final long leadershipTermId,

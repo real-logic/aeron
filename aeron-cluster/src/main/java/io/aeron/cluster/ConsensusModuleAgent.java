@@ -1213,7 +1213,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final TimeUnit timeUnit,
         final int appVersion)
     {
-        onReplayNewLeadershipTermEvent0(
+        onReplayNewLeadershipTermEventExtended(
             memberId,
             null != election,
             leadershipTermId,
@@ -1347,7 +1347,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
     }
 
-    private void onReplayNewLeadershipTermEvent0(
+    private void onReplayNewLeadershipTermEventExtended(
         final int memberId,
         final boolean isInElection,
         final long leadershipTermId,

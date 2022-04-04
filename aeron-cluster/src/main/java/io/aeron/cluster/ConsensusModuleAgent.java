@@ -1327,7 +1327,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             if (Cluster.Role.LEADER == role)
             {
-                if (ClusterMember.notDuplicateEndpoint(passiveMembers, memberEndpoints))
+                if (ClusterMember.notDuplicateEndpoint(passiveMembers, memberEndpoints) &&
+                    ClusterMember.notDuplicateEndpoint(activeMembers, memberEndpoints))
                 {
                     final ClusterMember newMember = ClusterMember.parseEndpoints(++highMemberId, memberEndpoints);
 

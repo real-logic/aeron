@@ -2592,7 +2592,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             return false;
         }
 
-        logRecordingId = RecordingPos.getRecordingId(counters, counterId);
+        final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+        if (RecordingPos.NULL_RECORDING_ID == recordingId)
+        {
+            return false;
+        }
+
+        logRecordingId = recordingId;
         appendPosition = new ReadableCounter(counters, registrationId, counterId);
         logRecordedPosition = NULL_POSITION;
 
@@ -2602,8 +2608,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private int updateFollowerPosition(final long nowNs)
     {
         final long recordedPosition = null != appendPosition ? appendPosition.get() : logRecordedPosition;
-        return updateFollowerPosition(leaderMember.publication(), nowNs, this.leadershipTermId, recordedPosition,
-            APPEND_POSITION_FLAG_NONE);
+        return updateFollowerPosition(
+            leaderMember.publication(), nowNs, this.leadershipTermId, recordedPosition, APPEND_POSITION_FLAG_NONE);
     }
 
     private int updateFollowerPosition(

@@ -35,19 +35,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import javax.management.JMX;
-import javax.management.MBeanServerConnection;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
+import javax.management.*;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static io.aeron.samples.echo.api.ProvisioningConstants.IO_AERON_TYPE_PROVISIONING_NAME_TESTING;
 import static java.lang.Math.min;
@@ -66,7 +66,10 @@ public class RemoteEchoTest
     private static String remoteHost = null;
     private static String localHost = null;
     private static String aeronDir = null;
+
     private DirectBuffer sourceData;
+    private MBeanServerConnection mBeanServerConnection;
+    private ProvisioningMBean provisioningMBean;
 
     private static boolean isEmpty(final String s)
     {
@@ -137,16 +140,18 @@ public class RemoteEchoTest
     }
 
     @BeforeEach
-    void setUp()
+    void setUp() throws IOException, MalformedObjectNameException, TimeoutException
     {
         final byte[] bytes = new byte[SOURCE_DATA_LENGTH];
         randomWatcher.random().nextBytes(bytes);
         sourceData = new UnsafeBuffer(bytes);
+
+        connectJmxMBean();
     }
 
     @Test
     @InterruptAfter(10)
-    void shouldHandleSingleUnicastEchoPair() throws IOException, MalformedObjectNameException
+    void shouldHandleSingleUnicastEchoPair() throws MalformedObjectNameException
     {
         final String requestUri = new ChannelUriStringBuilder()
             .media("udp").endpoint(remoteHost + ":24324").rejoin(false).linger(0L).termLength(1 << 16).build();
@@ -155,14 +160,7 @@ public class RemoteEchoTest
         final int requestStreamId = 1001;
         final int responseStreamId = 1002;
 
-        final MBeanServerConnection mBeanServerConnection = mbeanConnectionSupplier.get();
-        final ProvisioningMBean provisioningMBean = JMX.newMBeanProxy(
-            mBeanServerConnection,
-            new ObjectName(IO_AERON_TYPE_PROVISIONING_NAME_TESTING),
-            ProvisioningMBean.class);
-        provisioningMBean.removeAll();
         provisioningMBean.createEchoPair(1, requestUri, requestStreamId, responseUri, responseStreamId);
-
 
         try (
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir));
@@ -183,10 +181,9 @@ public class RemoteEchoTest
         }
     }
 
-
     @Test
     @InterruptAfter(10)
-    void shouldHandleTenUnicastEchoPairs() throws IOException, MalformedObjectNameException
+    void shouldHandleTenUnicastEchoPairs()
     {
         final List<Publication> pubs = new ArrayList<>();
         final List<Subscription> subs = new ArrayList<>();
@@ -197,13 +194,6 @@ public class RemoteEchoTest
             .media("udp").rejoin(false).linger(0L).termLength(1 << 16);
         final int requestStreamId = 1001;
         final int responseStreamId = 1002;
-
-        final MBeanServerConnection mBeanServerConnection = mbeanConnectionSupplier.get();
-        final ProvisioningMBean provisioningMBean = JMX.newMBeanProxy(
-            mBeanServerConnection,
-            new ObjectName(IO_AERON_TYPE_PROVISIONING_NAME_TESTING),
-            ProvisioningMBean.class);
-        provisioningMBean.removeAll();
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir)))
         {
@@ -347,5 +337,38 @@ public class RemoteEchoTest
     private interface IoSupplier<T>
     {
         T get() throws IOException;
+    }
+
+    private void connectJmxMBean() throws IOException, MalformedObjectNameException, TimeoutException
+    {
+        mBeanServerConnection = mbeanConnectionSupplier.get();
+        final long deadlineMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(1);
+        do
+        {
+            final ProvisioningMBean provisioningMBean = JMX.newMBeanProxy(
+                mBeanServerConnection,
+                new ObjectName(IO_AERON_TYPE_PROVISIONING_NAME_TESTING),
+                ProvisioningMBean.class);
+
+            try
+            {
+                provisioningMBean.removeAll();
+                this.provisioningMBean = provisioningMBean;
+                break;
+            }
+            catch (final UndeclaredThrowableException e)
+            {
+                if (!(e.getCause() instanceof InstanceNotFoundException))
+                {
+                    throw e;
+                }
+            }
+
+            if (deadlineMs <= System.currentTimeMillis())
+            {
+                throw new TimeoutException("Failed to connect to provisioning mbean");
+            }
+        }
+        while (true);
     }
 }

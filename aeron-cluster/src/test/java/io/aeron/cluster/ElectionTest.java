@@ -290,7 +290,7 @@ public class ElectionTest
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_READY.code());
 
         when(consensusPublisher.appendPosition(
-            any(), anyLong(), anyLong(), anyInt(), anyInt())).thenReturn(Boolean.TRUE);
+            any(), anyLong(), anyLong(), anyInt(), anyShort())).thenReturn(Boolean.TRUE);
         when(consensusModuleAgent.appendNewLeadershipTermEvent(anyLong())).thenReturn(true);
 
         election.doWork(++nowNs);
@@ -1133,7 +1133,7 @@ public class ElectionTest
         when(logReplication.isDone(anyLong())).thenReturn(true);
         when(logReplication.position()).thenReturn(termBaseLogPosition);
         when(logReplication.recordingId()).thenReturn(localRecordingId);
-        when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt(), anyInt())).thenReturn(true);
+        when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt(), anyShort())).thenReturn(true);
         t1 += ctx.leaderHeartbeatIntervalNs();
         election.doWork(++t1);
 

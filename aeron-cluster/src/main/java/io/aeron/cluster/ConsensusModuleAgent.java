@@ -62,8 +62,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 {
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final int SERVICE_MESSAGE_LIMIT = 20;
-    static final int APPEND_POSITION_FLAG_NONE = 0;
-    static final int APPEND_POSITION_FLAG_CATCHUP = 1;
+    static final short APPEND_POSITION_FLAG_NONE = 0;
+    static final short APPEND_POSITION_FLAG_CATCHUP = 1;
 
     private final long sessionTimeoutNs;
     private final long leaderHeartbeatIntervalNs;
@@ -720,7 +720,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long leadershipTermId,
         final long logPosition,
         final int followerMemberId,
-        final int flags)
+        final short flags)
     {
         if (null != election)
         {
@@ -1761,7 +1761,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     void trackCatchupCompletion(
         final ClusterMember follower,
         final long leadershipTermId,
-        final int appendPositionFlags)
+        final short appendPositionFlags)
     {
         if (NULL_VALUE != follower.catchupReplaySessionId() || isCatchupAppendPosition(appendPositionFlags))
         {
@@ -2615,7 +2615,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long nowNs,
         final long leadershipTermId,
         final long appendPosition,
-        final int flags)
+        final short flags)
     {
         final long position = Math.max(appendPosition, lastAppendPosition);
         if ((position > lastAppendPosition ||
@@ -3443,7 +3443,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
     }
 
-    private static boolean isCatchupAppendPosition(final int flags)
+    private static boolean isCatchupAppendPosition(final short flags)
     {
         return 0 != (APPEND_POSITION_FLAG_CATCHUP & flags);
     }

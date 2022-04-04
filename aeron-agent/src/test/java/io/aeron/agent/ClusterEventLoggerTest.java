@@ -390,7 +390,7 @@ class ClusterEventLoggerTest
         final long leadershipTermId = 1233L;
         final long logPosition = 988723465L;
         final int memberId = 982374;
-        final int flags = 1;
+        final byte flags = 1;
 
         logger.logAppendPosition(leadershipTermId, logPosition, memberId, flags);
 
@@ -404,12 +404,11 @@ class ClusterEventLoggerTest
         index += SIZE_OF_LONG;
         assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
-        assertEquals(flags, logBuffer.getInt(index, LITTLE_ENDIAN));
+        assertEquals(flags, logBuffer.getByte(index));
         index += SIZE_OF_BYTE;
 
         final StringBuilder sb = new StringBuilder();
-        ClusterEventDissector.dissectAppendPosition(
-            APPEND_POSITION, logBuffer, encodedMsgOffset(offset), sb);
+        ClusterEventDissector.dissectAppendPosition(APPEND_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: APPEND_POSITION " +
             "\\[21/21]: memberId=982374 leadershipTermId=1233 logPosition=988723465 flags=0b00000001";
@@ -442,8 +441,7 @@ class ClusterEventLoggerTest
         assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
 
         final StringBuilder sb = new StringBuilder();
-        ClusterEventDissector.dissectCommitPosition(
-            COMMIT_POSITION, logBuffer, encodedMsgOffset(offset), sb);
+        ClusterEventDissector.dissectCommitPosition(COMMIT_POSITION, logBuffer, encodedMsgOffset(offset), sb);
 
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: COMMIT_POSITION " +
             "\\[24/24]: memberId=2 leadershipTermId=1233 logPosition=988723465 leaderId=982374";

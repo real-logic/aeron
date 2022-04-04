@@ -229,7 +229,7 @@ final class ConsensusPublisher
         final long leadershipTermId,
         final long logPosition,
         final int followerMemberId,
-        final int flags)
+        final short flags)
     {
         if (null == publication)
         {
@@ -249,7 +249,7 @@ final class ConsensusPublisher
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
                     .followerMemberId(followerMemberId)
-                    .flags((short)(flags & 0xFF));
+                    .flags(flags);
 
                 bufferClaim.commit();
 

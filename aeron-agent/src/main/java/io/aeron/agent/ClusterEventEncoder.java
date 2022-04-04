@@ -398,7 +398,7 @@ final class ClusterEventEncoder
         final long leadershipTermId,
         final long logPosition,
         final int memberId,
-        final int flags)
+        final short flags)
     {
         final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
         final int bodyOffset = offset + logHeaderLength;

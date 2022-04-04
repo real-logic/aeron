@@ -213,7 +213,7 @@ class ClusterInterceptor
             final long leadershipTermId,
             final long logPosition,
             final int memberId,
-            final int flags)
+            final short flags)
         {
             LOGGER.logAppendPosition(
                 leadershipTermId,

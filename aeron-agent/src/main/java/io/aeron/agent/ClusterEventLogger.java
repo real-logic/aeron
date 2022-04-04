@@ -492,7 +492,7 @@ public final class ClusterEventLogger
         final long leadershipTermId,
         final long logPosition,
         final int followerMemberId,
-        final int flags)
+        final short flags)
     {
         final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT + SIZE_OF_BYTE;
         final int encodedLength = encodedLength(length);

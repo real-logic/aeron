@@ -490,7 +490,7 @@ class Election
         final long leadershipTermId,
         final long logPosition,
         final int followerMemberId,
-        final int flags)
+        final short flags)
     {
         if (INIT == state)
         {

@@ -1315,8 +1315,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         if (null != election)
         {
-            election.onReplayNewLeadershipTermEvent(
-                logRecordingId, leadershipTermId, logPosition, timestamp, termBaseLogPosition);
+            election.onReplayNewLeadershipTermEvent(leadershipTermId, logPosition, timestamp, termBaseLogPosition);
         }
     }
 

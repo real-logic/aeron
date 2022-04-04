@@ -538,7 +538,6 @@ class Election
     }
 
     void onReplayNewLeadershipTermEvent(
-        final long logRecordingId,
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,

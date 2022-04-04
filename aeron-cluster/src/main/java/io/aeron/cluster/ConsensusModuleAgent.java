@@ -1553,35 +1553,33 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     boolean tryJoinLogAsFollower(final Image image, final boolean isLeaderStartup, final long nowNs)
     {
         final Subscription logSubscription = image.subscription();
-        final int streamId = logSubscription.streamId();
-        final String channel = logSubscription.channel();
 
         if (NULL_VALUE == logSubscriptionId)
         {
-            startLogRecording(channel, streamId, SourceLocation.REMOTE);
+            startLogRecording(logSubscription.channel(), logSubscription.streamId(), SourceLocation.REMOTE);
         }
 
-        if (!tryCreateAppendPosition(image.sessionId()))
+        if (tryCreateAppendPosition(image.sessionId()))
         {
-            return false;
+            appendDynamicJoinTermAndSnapshots();
+
+            logAdapter.image(image);
+            lastAppendPosition = image.joinPosition();
+            timeOfLastAppendPositionUpdateNs = nowNs;
+
+            awaitServicesReady(
+                logSubscription.channel(),
+                logSubscription.streamId(),
+                image.sessionId(),
+                image.joinPosition(),
+                Long.MAX_VALUE,
+                isLeaderStartup,
+                Cluster.Role.FOLLOWER);
+
+            return true;
         }
 
-        appendDynamicJoinTermAndSnapshots();
-
-        logAdapter.image(image);
-        lastAppendPosition = image.joinPosition();
-        timeOfLastAppendPositionUpdateNs = nowNs;
-
-        awaitServicesReady(
-            channel,
-            streamId,
-            image.sessionId(),
-            image.joinPosition(),
-            Long.MAX_VALUE,
-            isLeaderStartup,
-            Cluster.Role.FOLLOWER);
-
-        return true;
+        return false;
     }
 
     void awaitServicesReady(

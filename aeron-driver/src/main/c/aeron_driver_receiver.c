@@ -417,8 +417,6 @@ void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
 
     if (destination->conductor_fields.udp_channel->has_explicit_control)
     {
-        printf("Adding destination: %s\n", destination->conductor_fields.udp_channel->original_uri);
-
         if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination) < 0)
         {
             AERON_APPEND_ERR("%s", "on_add_destination, pending_setup");

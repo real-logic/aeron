@@ -45,11 +45,6 @@ protected:
     }
 };
 
-//static int64_t set_reserved_value(void *clientd, uint8_t *buffer, size_t frame_length)
-//{
-//    return *(int64_t *)clientd;
-//}
-
 static void mdsParameters(
     aeron_exclusive_publication_t *pub,
     std::int32_t *initialTermId,
@@ -86,10 +81,10 @@ TEST_F(CMultiDestinationTest, shouldAddTwoPublicationDestinationsForMds)
     mdsParameters(pub1, &initialTermId, &termId, &termOffset, &sessionId);
 
     auto pubUri2 = std::string(PUB_URI_2)
-        .append("|init-term-id=" + std::to_string(initialTermId))
-        .append("|term-id=" + std::to_string(termId))
-        .append("|term-offset=" + std::to_string(termOffset))
-        .append("|session-id=" + std::to_string(sessionId));
+        .append("|init-term-id=").append(std::to_string(initialTermId))
+        .append("|term-id=").append(std::to_string(termId))
+        .append("|term-offset=").append(std::to_string(termOffset))
+        .append("|session-id=").append(std::to_string(sessionId));
 
     aeron_async_add_exclusive_publication_t *async_pub2 = nullptr;
     ASSERT_EQ(0, aeron_async_add_exclusive_publication(&async_pub2, m_aeron, pubUri2.c_str(), STREAM_ID));
@@ -135,10 +130,10 @@ TEST_F(CMultiDestinationTest, shouldAddPublicationAndMdcPublicationForMds)
     mdsParameters(pub1, &initialTermId, &termId, &termOffset, &sessionId);
 
     auto pubUri2 = std::string(PUB_URI_2)
-        .append("|init-term-id=" + std::to_string(initialTermId))
-        .append("|term-id=" + std::to_string(termId))
-        .append("|term-offset=" + std::to_string(termOffset))
-        .append("|session-id=" + std::to_string(sessionId));
+        .append("|init-term-id=").append(std::to_string(initialTermId))
+        .append("|term-id=").append(std::to_string(termId))
+        .append("|term-offset=").append(std::to_string(termOffset))
+        .append("|session-id=").append(std::to_string(sessionId));
 
     aeron_async_add_exclusive_publication_t *async_pub2 = nullptr;
     ASSERT_EQ(0, aeron_async_add_exclusive_publication(&async_pub2, m_aeron, pubUri2.c_str(), STREAM_ID));

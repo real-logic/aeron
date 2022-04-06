@@ -960,14 +960,17 @@ abstract class ArchiveConductor
 
             if (catalog.invalidateRecording(recordingId))
             {
-                final String prefix = recordingId + "-";
-                final String[] segmentFiles = archiveDir.list((dir, name) -> name.startsWith(prefix) &&
-                    (name.endsWith(RECORDING_SEGMENT_SUFFIX) || name.endsWith(DELETE_SUFFIX)));
+                final String[] segmentFiles = archiveDir.list();
                 if (null != segmentFiles)
                 {
+                    final String prefix = recordingId + "-";
                     for (final String segmentFile : segmentFiles)
                     {
-                        files.addLast(segmentFile);
+                        if (segmentFile.startsWith(prefix) &&
+                            (segmentFile.endsWith(RECORDING_SEGMENT_SUFFIX) || segmentFile.endsWith(DELETE_SUFFIX)))
+                        {
+                            files.addLast(segmentFile);
+                        }
                     }
                 }
             }

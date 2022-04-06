@@ -23,6 +23,7 @@ import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
@@ -408,6 +409,7 @@ public class ArchiveTest
     {
         Tests.awaitConnected(controlPublication);
         Tests.awaitConnected(recordingEvents);
+        Tests.awaitCounterDelta(client.countersReader(), SystemCounterDescriptor.HEARTBEATS_RECEIVED.id(), 2);
 
         controlResponse = client.addSubscription(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
         final long connectCorrelationId = client.nextCorrelationId();

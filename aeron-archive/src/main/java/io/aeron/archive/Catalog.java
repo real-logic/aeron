@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
@@ -953,7 +954,7 @@ final class Catalog implements AutoCloseable
         final long recordingId = decoder.recordingId();
         if (VALID == headerDecoder.state() && NULL_POSITION == decoder.stopPosition())
         {
-            final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
+            final ArrayList<String> segmentFiles = listSegmentFiles(archiveDir, recordingId);
             final String maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
 
             encoder.stopPosition(computeStopPosition(
@@ -991,20 +992,29 @@ final class Catalog implements AutoCloseable
         }
     }
 
-    static String[] listSegmentFiles(final File archiveDir, final long recordingId)
+    static ArrayList<String> listSegmentFiles(final File archiveDir, final long recordingId)
     {
-        final String prefix = recordingId + "-";
+        final ArrayList<String> segmentFiles = new ArrayList<>();
+        final String[] files = archiveDir.list();
 
-        return archiveDir.list((dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
-    }
-
-    static String findSegmentFileWithHighestPosition(final String[] segmentFiles)
-    {
-        if (null == segmentFiles || 0 == segmentFiles.length)
+        if (null != files)
         {
-            return null;
+            final String prefix = recordingId + "-";
+
+            for (final String file : files)
+            {
+                if (file.startsWith(prefix) && file.endsWith(RECORDING_SEGMENT_SUFFIX))
+                {
+                    segmentFiles.add(file);
+                }
+            }
         }
 
+        return segmentFiles;
+    }
+
+    static String findSegmentFileWithHighestPosition(final ArrayList<String> segmentFiles)
+    {
         long maxSegmentPosition = NULL_POSITION;
         String maxFileName = null;
 

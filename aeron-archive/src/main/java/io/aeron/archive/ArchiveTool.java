@@ -691,11 +691,8 @@ public class ArchiveTool
             catalog.forEach(
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
-                    final String[] segmentFiles = listSegmentFiles(archiveDir, descriptorDecoder.recordingId());
-                    if (null != segmentFiles && 0 != segmentFiles.length)
-                    {
-                        deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, segmentFiles);
-                    }
+                    final ArrayList<String> files = listSegmentFiles(archiveDir, descriptorDecoder.recordingId());
+                    deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, files);
                 });
         }
     }
@@ -739,14 +736,12 @@ public class ArchiveTool
                                 deletedRecords.increment();
                                 reclaimedBytes.addAndGet(frameLength);
 
-                                final String[] segmentFiles = listSegmentFiles(archiveDir, descriptorDecoder
-                                    .recordingId());
-                                if (segmentFiles != null)
+                                final ArrayList<String> segmentFiles = listSegmentFiles(
+                                    archiveDir, descriptorDecoder.recordingId());
+
+                                for (final String segmentFile : segmentFiles)
                                 {
-                                    for (final String segmentFile : segmentFiles)
-                                    {
-                                        IoUtil.deleteIfExists(new File(archiveDir, segmentFile));
-                                    }
+                                    IoUtil.deleteIfExists(new File(archiveDir, segmentFile));
                                 }
                             }
                             else
@@ -1048,7 +1043,7 @@ public class ArchiveTool
 
         final int segmentLength = decoder.segmentFileLength();
         final int termLength = decoder.termBufferLength();
-        final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
+        final ArrayList<String> segmentFiles = listSegmentFiles(archiveDir, recordingId);
         final String maxSegmentFile;
         final long computedStopPosition;
 
@@ -1348,14 +1343,9 @@ public class ArchiveTool
         final RecordingDescriptorDecoder descriptorDecoder)
     {
         final long recordingId = descriptorDecoder.recordingId();
-        final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
-        if (segmentFiles == null)
-        {
-            return;
-        }
-
         final long startPosition = descriptorDecoder.startPosition();
         final int termLength = descriptorDecoder.termBufferLength();
+        final ArrayList<String> segmentFiles = listSegmentFiles(archiveDir, recordingId);
 
         if (allFiles)
         {
@@ -1478,7 +1468,7 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final RecordingDescriptorDecoder descriptorDecoder,
-        final String[] segmentFiles)
+        final ArrayList<String> segmentFiles)
     {
         final long minBaseOffset = segmentFileBasePosition(
             descriptorDecoder.startPosition(),

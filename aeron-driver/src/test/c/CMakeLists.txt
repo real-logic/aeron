@@ -76,6 +76,10 @@ aeron_driver_test(c_system_test aeron_c_system_test.cpp)
 set_tests_properties(c_system_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_system_test PROPERTIES RUN_SERIAL TRUE)
 
+aeron_driver_test(c_multi_destination_test aeron_c_multi_destination_test.cpp)
+set_tests_properties(c_multi_destination_test PROPERTIES TIMEOUT 60)
+set_tests_properties(c_multi_destination_test PROPERTIES RUN_SERIAL TRUE)
+
 aeron_driver_test(c_local_addresses_test aeron_c_local_addresses_test.cpp)
 set_tests_properties(c_local_addresses_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_local_addresses_test PROPERTIES RUN_SERIAL TRUE)

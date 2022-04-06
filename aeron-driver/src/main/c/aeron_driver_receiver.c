@@ -227,8 +227,10 @@ int aeron_driver_receiver_do_work(void *clientd)
             }
             else if (aeron_receive_channel_endpoint_should_elicit_setup_message(entry->endpoint))
             {
+                // TODO (MB): Check pending entries control_addr is populated correctly...
                 if (aeron_receive_channel_endpoint_send_sm(
                     entry->endpoint,
+                    entry->destination,
                     &entry->control_addr,
                     entry->stream_id,
                     entry->session_id,
@@ -415,6 +417,8 @@ void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
 
     if (destination->conductor_fields.udp_channel->has_explicit_control)
     {
+        printf("Adding destination: %s\n", destination->conductor_fields.udp_channel->original_uri);
+
         if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination) < 0)
         {
             AERON_APPEND_ERR("%s", "on_add_destination, pending_setup");

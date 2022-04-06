@@ -75,55 +75,6 @@ int aeron_test_udp_channel_transport_recvmmsg(
     return 0;
 }
 
-int aeron_test_udp_channel_transport_sendmmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
-{
-    aeron_test_udp_bindings_state_t *state = (aeron_test_udp_bindings_state_t *)transport->bindings_clientd;
-    state->mmsg_count++;
-    return 0;
-}
-
-int aeron_test_udp_channel_transport_sendmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    aeron_test_udp_bindings_state_t *state = (aeron_test_udp_bindings_state_t *)transport->bindings_clientd;
-    state->msg_count++;
-
-    aeron_frame_header_t *header = (aeron_frame_header_t *)message->msg_iov->iov_base;
-
-    switch (header->type)
-    {
-        case AERON_HDR_TYPE_SETUP:
-            state->setup_count++;
-            break;
-
-        case AERON_HDR_TYPE_SM:
-            state->sm_count++;
-            break;
-
-        case AERON_HDR_TYPE_NAK:
-            state->nak_count++;
-            break;
-
-        case AERON_HDR_TYPE_RTTM:
-            state->rttm_count++;
-            break;
-
-        case AERON_HDR_TYPE_DATA:
-            state->heartbeat_count++;
-
-        default:
-            break;
-    }
-
-    return 0;
-}
-
 int aeron_test_udp_channel_transport_send(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,

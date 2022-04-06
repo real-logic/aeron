@@ -95,12 +95,14 @@ int aeron_receive_channel_endpoint_close(aeron_receive_channel_endpoint_t *endpo
 
 int aeron_receive_channel_endpoint_send(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *address,
     struct iovec *iov);
 
 int aeron_receive_channel_endpoint_send_sm(
     aeron_receive_channel_endpoint_t *endpoint,
-    struct sockaddr_storage *addr,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *control_addr,
     int32_t stream_id,
     int32_t session_id,
     int32_t term_id,
@@ -110,6 +112,7 @@ int aeron_receive_channel_endpoint_send_sm(
 
 int aeron_receive_channel_endpoint_send_nak(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id,
@@ -119,6 +122,7 @@ int aeron_receive_channel_endpoint_send_nak(
 
 int aeron_receive_channel_endpoint_send_rttm(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id,

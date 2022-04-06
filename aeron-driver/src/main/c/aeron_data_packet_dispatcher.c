@@ -480,7 +480,14 @@ int aeron_data_packet_dispatcher_on_rttm(
                     &endpoint->conductor_fields.udp_channel->remote_control : addr;
 
                 return aeron_receive_channel_endpoint_send_rttm(
-                    endpoint, control_addr, header->stream_id, header->session_id, header->echo_timestamp, 0, false);
+                    endpoint,
+                    destination,
+                    control_addr,
+                    header->stream_id,
+                    header->session_id,
+                    header->echo_timestamp,
+                    0,
+                    false);
             }
             else
             {
@@ -516,8 +523,10 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
         return -1;
     }
 
+    // TODO (MB): Needs to send to single destination
     if (aeron_receive_channel_endpoint_send_sm(
-        endpoint, control_addr, stream_id, session_id, 0, 0, 0, AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
+        endpoint, destination, control_addr, stream_id, session_id, 0, 0, 0,
+        AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
     {
         return -1;
     }

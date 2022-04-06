@@ -112,8 +112,6 @@ TEST_F(CMultiDestinationTest, shouldAddTwoPublicationDestinationsForMds)
 
     awaitConnected(subscription);
 
-    sleep(5);
-
     EXPECT_EQ(aeron_exclusive_publication_close(pub1, nullptr, nullptr), 0);
     EXPECT_EQ(aeron_exclusive_publication_close(pub2, nullptr, nullptr), 0);
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);

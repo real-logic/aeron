@@ -571,6 +571,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
                 {
                     int send_sm_result = aeron_receive_channel_endpoint_send_sm(
                         image->endpoint,
+                        connection->destination,
                         connection->control_addr,
                         image->stream_id,
                         image->session_id,
@@ -633,6 +634,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
                     {
                         int send_nak_result = aeron_receive_channel_endpoint_send_nak(
                             image->endpoint,
+                            connection->destination,
                             connection->control_addr,
                             image->stream_id,
                             image->session_id,
@@ -685,6 +687,7 @@ int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int6
             {
                 int send_rttm_result = aeron_receive_channel_endpoint_send_rttm(
                     image->endpoint,
+                    connection->destination,
                     connection->control_addr,
                     image->stream_id,
                     image->session_id,

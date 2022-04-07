@@ -184,26 +184,23 @@ int aeron_receive_channel_endpoint_close(aeron_receive_channel_endpoint_t *endpo
 
 int aeron_receive_channel_endpoint_send(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *address,
     struct iovec *iov)
 {
     int64_t min_bytes_sent = (int64_t)iov->iov_len;
     int64_t bytes_sent = 0;
 
-    for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
-    {
-        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
-        const int sendmsg_result = destination->data_paths->send_func(
-            destination->data_paths, &destination->transport, address, iov, 1, &bytes_sent);
+    const int sendmsg_result = destination->data_paths->send_func(
+        destination->data_paths, &destination->transport, address, iov, 1, &bytes_sent);
 
-        if (0 <= sendmsg_result)
-        {
-            min_bytes_sent = bytes_sent < min_bytes_sent ? bytes_sent : min_bytes_sent;
-        }
-        else
-        {
-            min_bytes_sent = sendmsg_result;
-        }
+    if (0 <= sendmsg_result)
+    {
+        min_bytes_sent = bytes_sent < min_bytes_sent ? bytes_sent : min_bytes_sent;
+    }
+    else
+    {
+        min_bytes_sent = sendmsg_result;
     }
 
     return (int)min_bytes_sent;
@@ -211,7 +208,8 @@ int aeron_receive_channel_endpoint_send(
 
 int aeron_receive_channel_endpoint_send_sm(
     aeron_receive_channel_endpoint_t *endpoint,
-    struct sockaddr_storage *addr,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *control_addr,
     int32_t stream_id,
     int32_t session_id,
     int32_t term_id,
@@ -245,7 +243,7 @@ int aeron_receive_channel_endpoint_send_sm(
     iov.iov_base = buffer;
     iov.iov_len = (size_t)frame_length;
 
-    int bytes_sent = aeron_receive_channel_endpoint_send(endpoint, addr, &iov);
+    int bytes_sent = aeron_receive_channel_endpoint_send(endpoint, destination, control_addr, &iov);
     if (bytes_sent != (int)iov.iov_len)
     {
         if (bytes_sent >= 0)
@@ -259,6 +257,7 @@ int aeron_receive_channel_endpoint_send_sm(
 
 int aeron_receive_channel_endpoint_send_nak(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id,
@@ -283,7 +282,7 @@ int aeron_receive_channel_endpoint_send_nak(
     iov.iov_base = buffer;
     iov.iov_len = sizeof(aeron_nak_header_t);
 
-    int bytes_sent = aeron_receive_channel_endpoint_send(endpoint, addr, &iov);
+    int bytes_sent = aeron_receive_channel_endpoint_send(endpoint, destination, addr, &iov);
     if (bytes_sent != (int)iov.iov_len)
     {
         if (bytes_sent >= 0)
@@ -297,6 +296,7 @@ int aeron_receive_channel_endpoint_send_nak(
 
 int aeron_receive_channel_endpoint_send_rttm(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id,
@@ -321,7 +321,7 @@ int aeron_receive_channel_endpoint_send_rttm(
     iov.iov_base = buffer;
     iov.iov_len = sizeof(aeron_rttm_header_t);
 
-    int bytes_sent = aeron_receive_channel_endpoint_send(endpoint, addr, &iov);
+    int bytes_sent = aeron_receive_channel_endpoint_send(endpoint, destination, addr, &iov);
     if (bytes_sent != (int)iov.iov_len)
     {
         if (bytes_sent >= 0)
@@ -926,7 +926,8 @@ int aeron_receive_channel_endpoint_add_pending_setup_destination(
         }
 
         if (aeron_receive_channel_endpoint_send_sm(
-            endpoint, &destination->current_control_addr, 0, 0, 0, 0, 0, AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
+            endpoint, destination, &destination->current_control_addr, 0, 0, 0, 0, 0,
+            AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
         {
             AERON_APPEND_ERR("%s", "Failed to send sm for receiver");
             return -1;

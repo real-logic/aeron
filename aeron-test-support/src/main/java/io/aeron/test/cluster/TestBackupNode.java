@@ -22,13 +22,9 @@ import io.aeron.cluster.ClusterBackup;
 import io.aeron.cluster.ClusterTool;
 import io.aeron.driver.MediaDriver;
 import io.aeron.test.DataCollector;
-import io.aeron.test.driver.DriverOutputConsumer;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
-
-import java.io.File;
-import java.util.Map;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
@@ -46,25 +42,7 @@ public class TestBackupNode implements AutoCloseable
         try
         {
             mediaDriver = TestMediaDriver.launch(
-                context.mediaDriverContext,
-                TestMediaDriver.shouldRunCMediaDriver() ? new DriverOutputConsumer()
-                {
-                    public void outputFiles(
-                        final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
-                    {
-                        dataCollector.add(stdoutFile.toPath());
-                        dataCollector.add(stderrFile.toPath());
-                    }
-
-                    public void exitCode(final String aeronDirectoryName, final int exitValue)
-                    {
-                    }
-
-                    public void environmentVariables(
-                        final String aeronDirectoryName, final Map<String, String> environment)
-                    {
-                    }
-                } : null);
+                context.mediaDriverContext, TestCluster.clientDriverOutputConsumer(dataCollector));
 
             final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
             archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));

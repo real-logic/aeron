@@ -22,6 +22,7 @@ import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,13 @@ public class DynamicMembershipTest
 
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+
+    @BeforeEach
+    void setUp()
+    {
+        systemTestWatcher.ignoreErrorsMatching(
+            s -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
+    }
 
     @Test
     @InterruptAfter(30)

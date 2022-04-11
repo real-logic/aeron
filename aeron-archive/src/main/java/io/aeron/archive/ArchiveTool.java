@@ -846,8 +846,8 @@ public class ArchiveTool
         {
             if (options.contains(APPLY_CHECKSUM))
             {
-                throw new IllegalArgumentException("Checksum class name is required when " + APPLY_CHECKSUM +
-                    " option is specified!");
+                throw new IllegalArgumentException(
+                    "Checksum class name is required when " + APPLY_CHECKSUM + " option is specified!");
             }
 
             return null;

@@ -28,6 +28,8 @@ import org.agrona.DirectBuffer;
  */
 public class EchoPair implements ControlledFragmentHandler, AutoCloseable
 {
+    public static final int FRAGMENT_LIMIT = 10;
+
     private final long correlationId;
     private final Subscription subscription;
     private final Publication publication;
@@ -100,7 +102,7 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
      */
     public int poll()
     {
-        return subscription.controlledPoll(this, 20);
+        return subscription.controlledPoll(this, FRAGMENT_LIMIT);
     }
 
     /**

@@ -61,8 +61,5 @@ public class ProvisioningClientMain
             EchoMonitorMBean.class);
 
         System.out.println(echoMonitorMBean.getBackPressureCount());
-
-
-//        System.out.println(registrationId);
     }
 }

@@ -40,6 +40,4 @@ public interface ProvisioningMBean
      * Removes all echo pairs on remote provisioning service.
      */
     void removeAll();
-
-
 }

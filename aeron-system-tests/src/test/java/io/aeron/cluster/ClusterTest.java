@@ -1137,7 +1137,6 @@ public class ClusterTest
         }
     }
 
-
     @Test
     @InterruptAfter(40)
     public void shouldRecoverWhenFollowerIsMultipleTermsBehindFromEmptyLog()
@@ -1172,6 +1171,49 @@ public class ClusterTest
         final TestNode lateJoiningNode = cluster.node(originalLeader.index());
 
         cluster.awaitServiceMessageCount(lateJoiningNode, messageCount * 3);
+    }
+
+    @Test
+    @InterruptAfter(40)
+    public void shouldRecoverWhenFollowerWithInitialSnapshotAndArchivePurgeThenIsMultipleTermsBehind()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode originalLeader = cluster.awaitLeader();
+
+        final int largeMessageCount = 128_000;
+        final int messageCount = 10;
+
+        cluster.connectClient();
+        cluster.sendLargeMessages(largeMessageCount);
+        cluster.awaitResponseMessageCount(largeMessageCount);
+        cluster.awaitServicesMessageCount(largeMessageCount);
+
+        cluster.takeSnapshot(originalLeader);
+        cluster.awaitSnapshotCount(1);
+        cluster.purgeLogToLastSnapshot();
+
+        cluster.stopNode(originalLeader);
+        final TestNode newLeader = cluster.awaitLeader();
+
+        cluster.reconnectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(largeMessageCount + messageCount);
+
+        cluster.stopNode(newLeader);
+        cluster.startStaticNode(newLeader.index(), false);
+        cluster.awaitLeader();
+
+        cluster.reconnectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(largeMessageCount + (messageCount * 2));
+
+        cluster.startStaticNode(originalLeader.index(), false);
+        final TestNode lateJoiningNode = cluster.node(originalLeader.index());
+
+        cluster.awaitServiceMessageCount(lateJoiningNode, largeMessageCount + (messageCount * 2));
     }
 
     @Test

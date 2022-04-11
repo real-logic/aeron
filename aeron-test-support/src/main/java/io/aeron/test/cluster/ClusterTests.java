@@ -29,6 +29,8 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -41,6 +43,14 @@ public class ClusterTests
     public static final String ECHO_IPC_INGRESS_MSG = "Echo as IPC ingress";
     public static final String UNEXPECTED_MSG =
         "Should never get this message because it is not going to be committed!";
+    public static final String LARGE_MSG;
+
+    static
+    {
+        final byte[] bs = new byte[1024];
+        Arrays.fill(bs, (byte)'a');
+        LARGE_MSG = new String(bs, StandardCharsets.US_ASCII);
+    }
 
     private static final AtomicReference<Throwable> ERROR = new AtomicReference<>();
     private static final AtomicReference<Throwable> WARNING = new AtomicReference<>();

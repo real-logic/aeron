@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.*;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
@@ -34,6 +35,8 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
+import io.aeron.samples.archive.RecordingDescriptor;
+import io.aeron.samples.archive.RecordingDescriptorCollector;
 import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
@@ -64,6 +67,7 @@ import java.util.stream.Stream;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
+import static io.aeron.test.cluster.ClusterTests.LARGE_MSG;
 import static io.aeron.test.cluster.ClusterTests.errorHandler;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -727,6 +731,22 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    public void sendLargeMessages(final int messageCount)
+    {
+        for (int i = 0; i < messageCount; i++)
+        {
+            msgBuffer.putStringWithoutLengthAscii(0, LARGE_MSG);
+            try
+            {
+                pollUntilMessageSent(LARGE_MSG.length());
+            }
+            catch (final Exception ex)
+            {
+                throw new ClusterException("failed to send message " + i + " of " + messageCount, ex);
+            }
+        }
+    }
+
     public void sendUnexpectedMessages(final int messageCount)
     {
         final int length = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.UNEXPECTED_MSG);
@@ -1218,6 +1238,56 @@ public class TestCluster implements AutoCloseable
         builder.setLength(builder.length() - 1);
 
         return builder.toString();
+    }
+
+    public void purgeLogToLastSnapshot()
+    {
+        for (final TestNode testNode : nodes)
+        {
+            purgeLogToLastSnapshot(testNode);
+        }
+    }
+
+    public void purgeLogToLastSnapshot(final TestNode node)
+    {
+        if (null == node || node.isClosed())
+        {
+            return;
+        }
+
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
+        final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir(), false);
+        final RecordingLog.Entry latestSnapshot = Objects.requireNonNull(
+            recordingLog.getLatestSnapshot(ConsensusModule.Configuration.SERVICE_ID));
+        final long recordingId = recordingLog.findLastTermRecordingId();
+        if (RecordingPos.NULL_RECORDING_ID == recordingId)
+        {
+            throw new RuntimeException("Unable to find log recording");
+        }
+
+        try (Aeron aeron = Aeron.connect(
+            new Aeron.Context().aeronDirectoryName(node.mediaDriver().aeronDirectoryName())))
+        {
+            final AeronArchive.Context aeronArchiveCtx = node
+                .consensusModule()
+                .context()
+                .archiveContext()
+                .clone()
+                .aeron(aeron).ownsAeronClient(false);
+
+            try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveCtx))
+            {
+                aeronArchive.listRecording(recordingId, collector.reset());
+                final RecordingDescriptor recordingDescriptor = collector.descriptors().get(0);
+
+                final long newStartPosition = AeronArchive.segmentFileBasePosition(
+                    recordingDescriptor.startPosition(),
+                    latestSnapshot.logPosition,
+                    recordingDescriptor.termBufferLength(),
+                    recordingDescriptor.segmentFileLength());
+                aeronArchive.purgeSegments(recordingId, newStartPosition);
+            }
+        }
     }
 
     private static String[] clusterMembersEndpoints(final int clusterId, final int maxMemberCount)

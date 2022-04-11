@@ -698,12 +698,12 @@ public class ClusterTool
             id.set(aeron.nextCorrelationId());
             if (consensusModuleProxy.clusterMembersQuery(id.get()))
             {
-                final long startTime = System.currentTimeMillis();
+                final long deadlineMs = System.currentTimeMillis() + timeoutMs;
                 do
                 {
                     if (clusterControlAdapter.poll() == 0)
                     {
-                        if ((System.currentTimeMillis() - startTime) > timeoutMs)
+                        if (System.currentTimeMillis() > deadlineMs)
                         {
                             break;
                         }
@@ -1053,13 +1053,13 @@ public class ClusterTool
             if (waitForToggleToComplete)
             {
                 final long toggleTimeoutMs = Math.max(defaultTimeoutMs, TIMEOUT_MS);
-                final long startTime = System.currentTimeMillis();
+                final long deadlineMs = System.currentTimeMillis() + toggleTimeoutMs;
                 ClusterControl.ToggleState currentState = null;
 
                 do
                 {
                     Thread.yield();
-                    if ((System.currentTimeMillis() - startTime) > toggleTimeoutMs)
+                    if (System.currentTimeMillis() > deadlineMs)
                     {
                         break;
                     }

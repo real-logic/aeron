@@ -426,7 +426,12 @@ public class ClusterTool
         }
 
         final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println);
-        errors(out, serviceMarkFiles);
+        for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
+        {
+            printTypeAndActivityTimestamp(out, serviceMarkFile);
+            printErrors(out, serviceMarkFile);
+            serviceMarkFile.close();
+        }
     }
 
     /**
@@ -567,22 +572,6 @@ public class ClusterTool
         {
             printTypeAndActivityTimestamp(out, serviceMarkFile);
             out.println(serviceMarkFile.decoder());
-            serviceMarkFile.close();
-        }
-    }
-
-    /**
-     * Print out the errors in the error logs for the cluster components.
-     *
-     * @param out              to print the output to.
-     * @param serviceMarkFiles to query.
-     */
-    public static void errors(final PrintStream out, final ClusterMarkFile[] serviceMarkFiles)
-    {
-        for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
-        {
-            printTypeAndActivityTimestamp(out, serviceMarkFile);
-            printErrors(out, serviceMarkFile);
             serviceMarkFile.close();
         }
     }

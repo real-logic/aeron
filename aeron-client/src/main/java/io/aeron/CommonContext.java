@@ -905,7 +905,7 @@ public class CommonContext implements Cloneable
     {
         int distinctErrorCount = 0;
 
-        if (errorBuffer.capacity() > 0 && ErrorLogReader.hasErrors(errorBuffer))
+        if (ErrorLogReader.hasErrors(errorBuffer))
         {
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
             final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->

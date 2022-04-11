@@ -550,7 +550,7 @@ public class Tests
     {
         while (!subscription.isConnected())
         {
-            Tests.yield();
+            Tests.yieldingIdle(subscription.channel());
         }
     }
 
@@ -564,7 +564,7 @@ public class Tests
     {
         while (subscription.imageCount() < connectionCount)
         {
-            Tests.yield();
+            Tests.yieldingIdle(subscription.channel());
         }
     }
 

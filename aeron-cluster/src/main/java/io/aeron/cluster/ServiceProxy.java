@@ -102,10 +102,11 @@ final class ServiceProxy implements AutoCloseable
             ClusterMembersResponseEncoder.activeMembersHeaderLength() + activeMembers.length() +
             ClusterMembersResponseEncoder.passiveFollowersHeaderLength() + passiveFollowers.length();
 
+        long result;
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
                 clusterMembersResponseEncoder
@@ -120,7 +121,6 @@ final class ServiceProxy implements AutoCloseable
                 return;
             }
 
-            checkResult(result);
             if (Publication.BACK_PRESSURED == result)
             {
                 Thread.yield();
@@ -128,7 +128,7 @@ final class ServiceProxy implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new ClusterException("failed to send cluster members response");
+        throw new ClusterException("failed to send cluster members response: result=" + result);
     }
 
     void clusterMembersExtendedResponse(
@@ -180,16 +180,16 @@ final class ServiceProxy implements AutoCloseable
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + clusterMembersExtendedResponseEncoder.encodedLength();
 
+        long result;
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(expandableArrayBuffer, 0, length, null);
+            result = publication.offer(expandableArrayBuffer, 0, length, null);
             if (result > 0)
             {
                 return;
             }
 
-            checkResult(result);
             if (Publication.BACK_PRESSURED == result)
             {
                 Thread.yield();
@@ -197,7 +197,7 @@ final class ServiceProxy implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new ClusterException("failed to send cluster members extended response");
+        throw new ClusterException("failed to send cluster members extended response: result=" + result);
     }
 
     void terminationPosition(final long logPosition, final ErrorHandler errorHandler)

@@ -28,8 +28,8 @@ import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static io.aeron.FlowControlTests.awaitConnectionAndStatusMessages;
+import static io.aeron.test.Tests.awaitConnected;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -99,8 +100,24 @@ class MinFlowControlSystemTest
             .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverA = TestMediaDriver.launch(driverAContext, testWatcher);
-        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+        try
+        {
+            driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+        }
+        finally
+        {
+            testWatcher.dataCollector().add(driverAContext.aeronDirectory());
+        }
+
+        try
+        {
+            driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+        }
+        finally
+        {
+            testWatcher.dataCollector().add(driverBContext.aeronDirectory());
+        }
+
         clientA = Aeron.connect(
             new Aeron.Context()
                 .aeronDirectoryName(driverAContext.aeronDirectoryName()));
@@ -114,7 +131,6 @@ class MinFlowControlSystemTest
     void after()
     {
         CloseHelper.quietCloseAll(clientB, clientA, driverB, driverA);
-        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     private static Stream<Arguments> strategyConfigurations()
@@ -197,49 +213,66 @@ class MinFlowControlSystemTest
 
     @Test
     @InterruptAfter(10)
-    void shouldRemoveDeadTaggedReceiverWithMinMulticastFlowControlStrategy()
+    void shouldRemoveDeadReceiverWithMinMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
-        int numMessagesLeftToSend = numMessagesToSend;
-        int numFragmentsReadFromA = 0, numFragmentsReadFromB = 0;
+        final MutableInteger numMessagesLeftToSend = new MutableInteger(numMessagesToSend);
+        final MutableInteger numFragmentsReadFromA = new MutableInteger(0);
+        final MutableInteger numFragmentsReadFromB = new MutableInteger(0);
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
         driverAContext.multicastFlowControlSupplier(new MinMulticastFlowControlSupplier());
 
         launch();
 
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
         publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
-        while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
-        {
-            Tests.yield();
-        }
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        awaitConnected(subscriptionA);
+
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        awaitConnected(subscriptionB);
+
+        awaitConnected(publication);
 
         boolean isBClosed = false;
-        while (numFragmentsReadFromA < numMessagesToSend)
+        while (numFragmentsReadFromA.get() < numMessagesToSend)
         {
-            if (numMessagesLeftToSend > 0)
+            int workDone = 0;
+            if (numMessagesLeftToSend.get() > 0)
             {
-                if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
+                final long position = publication.offer(buffer, 0, buffer.capacity());
+                if (position >= 0L)
                 {
-                    numMessagesLeftToSend--;
+                    numMessagesLeftToSend.decrement();
+                    workDone++;
                 }
             }
 
             // A keeps up
-            numFragmentsReadFromA += subscriptionA.poll(fragmentHandlerA, 10);
+            final int readA = subscriptionA.poll(fragmentHandlerA, 10);
+            numFragmentsReadFromA.addAndGet(readA);
+            workDone += readA;
 
             // B receives up to 1/8 of the messages, then stops
-            if (numFragmentsReadFromB < (numMessagesToSend / 8))
+            if (numFragmentsReadFromB.get() < (numMessagesToSend / 8))
             {
-                numFragmentsReadFromB += subscriptionB.poll(fragmentHandlerB, 10);
+                final int readB = subscriptionB.poll(fragmentHandlerB, 10);
+                numFragmentsReadFromB.addAndGet(readB);
+                workDone += readB;
             }
             else if (!isBClosed)
             {
                 subscriptionB.close();
                 isBClosed = true;
+            }
+
+            if (0 == workDone)
+            {
+                Tests.yieldingIdle(
+                    () -> "numMessagesToSend=" + numMessagesToSend + " numMessagesLeftToSend=" + numMessagesLeftToSend +
+                    " numFragmentsReadFromA=" + numFragmentsReadFromA + " numFragmentsReadFromB=" +
+                    numFragmentsReadFromB);
             }
         }
 
@@ -360,7 +393,7 @@ class MinFlowControlSystemTest
         publication = clientA.addPublication(uriWithMinFlowControl, STREAM_ID);
         final Publication otherPublication = clientA.addPublication(plainUri, STREAM_ID + 1);
 
-        Tests.awaitConnected(otherPublication);
+        awaitConnected(otherPublication);
 
         // We know another publication on the same channel is connected
 
@@ -400,7 +433,11 @@ class MinFlowControlSystemTest
 
         while (currentSenderLimit == countersReader.getCounterValue(senderLimitCounterId))
         {
-            Tests.sleep(1);
+            Tests.sleep(
+                1,
+                "currentSenderLimit(%d) == countersReader.getCounterValue(senderLimitCounterId)(%d)",
+                currentSenderLimit,
+                countersReader.getCounterValue(senderLimitCounterId));
         }
     }
 }

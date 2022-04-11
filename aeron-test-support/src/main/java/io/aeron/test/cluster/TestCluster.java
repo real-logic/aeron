@@ -37,7 +37,9 @@ import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.DriverOutputConsumer;
 import io.aeron.test.driver.RedirectingNameResolver;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.*;
 import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableInteger;
@@ -111,6 +113,11 @@ public class TestCluster implements AutoCloseable
             final EventCode code,
             final String detail)
         {
+            if (code == EventCode.CLOSED)
+            {
+                new RuntimeException("close: " + detail).printStackTrace();
+            }
+
             if (EventCode.ERROR == code)
             {
                 throw new ClusterException(detail);
@@ -154,7 +161,7 @@ public class TestCluster implements AutoCloseable
     private String egressChannel;
     private AuthorisationServiceSupplier authorisationServiceSupplier;
 
-    private MediaDriver clientMediaDriver;
+    private TestMediaDriver clientMediaDriver;
     private AeronCluster client;
     private TestBackupNode backupNode;
 
@@ -645,7 +652,7 @@ public class TestCluster implements AutoCloseable
                 .aeronDirectoryName(aeronDirName)
                 .nameResolver(new RedirectingNameResolver(nodeNameMappings()));
 
-            clientMediaDriver = MediaDriver.launch(ctx);
+            clientMediaDriver = TestMediaDriver.launch(ctx, clientDriverOutputConsumer(dataCollector));
         }
 
         clientCtx
@@ -782,7 +789,15 @@ public class TestCluster implements AutoCloseable
             final long nowMs = epochClock.time();
             if (nowMs > heartbeatDeadlineMs)
             {
-                client.sendKeepAlive();
+                try
+                {
+                    System.out.println("Sending keep alive, responseCount=" + responseCount.get());
+                    client.sendKeepAlive();
+                }
+                catch (final ClusterException e)
+                {
+                    throw new RuntimeException("count=" + count + " awaiting=" + messageCount, e);
+                }
                 heartbeatDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
             }
         }
@@ -1636,5 +1651,23 @@ public class TestCluster implements AutoCloseable
 
             return testCluster;
         }
+    }
+
+    public static DriverOutputConsumer clientDriverOutputConsumer(final DataCollector dataCollector)
+    {
+        if (TestMediaDriver.shouldRunJavaMediaDriver())
+        {
+            return null;
+        }
+
+        return new DriverOutputConsumer()
+        {
+            public void outputFiles(
+                final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
+            {
+                dataCollector.add(stdoutFile.toPath());
+                dataCollector.add(stderrFile.toPath());
+            }
+        };
     }
 }

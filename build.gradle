@@ -239,7 +239,7 @@ subprojects {
 
         jvmArgs '-javaagent:' + agentFilename()
         systemProperty "aeron.event.cluster.log", "all"
-        systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION"
+        systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION"
         systemProperty "aeron.debug.timeout", "3600s"
         systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
         systemProperty "aeron.fallback.logger", "no_op"
@@ -819,9 +819,13 @@ project(':aeron-system-tests') {
 
     tasks.withType(Test) {
         systemProperty('java.net.preferIPv4Stack', 'true')
-        systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
         systemProperty('aeron.fallback.logger', 'no_op')
+        systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
+        systemProperty('aeron.test.system.ats.path', System.getProperty('aeron.test.system.ats.path'))
+        systemProperty('aeron.test.system.ats.conf.dir', System.getProperty('aeron.test.system.ats.conf.dir'))
+        systemProperty('aeron.test.system.ats.conf.file', System.getProperty('aeron.test.system.ats.conf.file'))
     }
+
 
     javadoc.enabled = false
 }

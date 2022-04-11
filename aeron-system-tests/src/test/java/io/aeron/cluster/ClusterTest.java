@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.ControlledEgressListener;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.*;
@@ -33,6 +34,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -64,6 +66,13 @@ public class ClusterTest
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private TestCluster cluster = null;
+
+    @BeforeEach
+    void setUp()
+    {
+        systemTestWatcher.ignoreErrorsMatching(
+            s -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
+    }
 
     @Test
     @InterruptAfter(30)
@@ -458,7 +467,6 @@ public class ClusterTest
         assertEquals(FOLLOWER, followerB.role());
 
         cluster.awaitServiceMessageCount(followerB, messageCount);
-        assertEquals(0L, followerB.errors());
     }
 
     @Test
@@ -1535,7 +1543,14 @@ public class ClusterTest
         final int secondBatch = 11;
         for (int i = 0; i < secondBatch; i++)
         {
-            cluster.pollUntilMessageSent(messageLength);
+            try
+            {
+                cluster.pollUntilMessageSent(messageLength);
+            }
+            catch (final ClusterException ex)
+            {
+                throw new RuntimeException("i=" + i, ex);
+            }
         }
         cluster.awaitResponseMessageCount(firstBatch + secondBatch);
 

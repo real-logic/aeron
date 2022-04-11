@@ -25,6 +25,9 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 public interface TestMediaDriver extends AutoCloseable
 {
     String AERONMD_PATH_PROP_NAME = "aeron.test.system.aeronmd.path";
+    String ATS_LIBRARY_PATH_PROP_NAME = "aeron.test.system.ats.path";
+    String ATS_LIBRARY_CONF_PATH_PROP_NAME = "aeron.test.system.ats.conf.dir";
+    String ATS_LIBRARY_CONF_FILE_PROP_NAME = "aeron.test.system.ats.conf.file";
     String DRIVER_AGENT_PATH_PROP_NAME = "aeron.test.system.driver.agent.path";
 
     static boolean shouldRunCMediaDriver()

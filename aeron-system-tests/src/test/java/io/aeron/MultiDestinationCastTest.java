@@ -27,7 +27,6 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -50,7 +49,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(InterruptingTestCallback.class)
 class MultiDestinationCastTest
 {
-    private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325";
+    private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325|control-mode=dynamic|fc=min";
     private static final String SUB1_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325|group=true";
     private static final String SUB2_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325|group=true";
     private static final String SUB3_MDC_DYNAMIC_URI = CommonContext.SPY_PREFIX + PUB_MDC_DYNAMIC_URI;
@@ -109,13 +108,15 @@ class MultiDestinationCastTest
         driverB = TestMediaDriver.launch(driverBContext, testWatcher);
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
+
+        testWatcher.dataCollector().add(driverA.context().aeronDirectory());
+        testWatcher.dataCollector().add(driverB.context().aeronDirectory());
     }
 
     @AfterEach
     void closeEverything()
     {
         CloseHelper.closeAll(clientB, clientA, driverB, driverA);
-        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     @Test
@@ -271,6 +272,7 @@ class MultiDestinationCastTest
     @InterruptAfter(10)
     void addDestinationWithSpySubscriptionsShouldFailWithRegistrationException()
     {
+        testWatcher.ignoreErrorsMatching(s -> s.contains("spies are invalid"));
         final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
         launch(mockErrorHandler);
 

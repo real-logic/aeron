@@ -335,8 +335,8 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     private static void setTransportSecurity(final HashMap<String, String> environment)
     {
-        final String atsLibPath = System.getProperty(ATS_LIBRARY_PATH_PROP_NAME);
-        if (null != atsLibPath)
+        final String atsLibPath = (String)System.getProperties().get(ATS_LIBRARY_PATH_PROP_NAME);
+        if (null != atsLibPath && !atsLibPath.isEmpty())
         {
             IoUtil.checkFileExists(new File(atsLibPath), ATS_LIBRARY_PATH_PROP_NAME);
 

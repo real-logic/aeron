@@ -117,7 +117,6 @@ class MultiDestinationCastTest
     void closeEverything()
     {
         CloseHelper.closeAll(clientB, clientA, driverB, driverA);
-//        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     @Test

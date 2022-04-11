@@ -235,11 +235,6 @@ class MinFlowControlSystemTest
 
         awaitConnected(publication);
 
-//        while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
-//        {
-//            Tests.yield();
-//        }
-
         boolean isBClosed = false;
         while (numFragmentsReadFromA.get() < numMessagesToSend)
         {
@@ -279,13 +274,6 @@ class MinFlowControlSystemTest
                     " numFragmentsReadFromA=" + numFragmentsReadFromA + " numFragmentsReadFromB=" +
                     numFragmentsReadFromB);
             }
-//            else
-//            {
-//                System.out.println(
-//                    "numMessagesToSend=" + numMessagesToSend + " numMessagesLeftToSend=" + numMessagesLeftToSend +
-//                    " numFragmentsReadFromA=" + numFragmentsReadFromA + " numFragmentsReadFromB=" +
-//                    numFragmentsReadFromB);
-//            }
         }
 
         verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(

@@ -430,6 +430,15 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
 
             aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap.addr;
             int32_t cnc_version = aeron_cnc_version_volatile(metadata);
+
+            if (cnc_version <= 0)
+            {
+                AERON_SET_ERR(EINVAL, "Aeron CnC not initialised");
+
+                result = -1;
+                goto cleanup;
+            }
+
             if (aeron_semantic_version_major(cnc_version) != aeron_semantic_version_major(AERON_CNC_VERSION))
             {
                 AERON_SET_ERR(

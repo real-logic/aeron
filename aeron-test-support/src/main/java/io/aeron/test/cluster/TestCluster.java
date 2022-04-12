@@ -117,11 +117,6 @@ public class TestCluster implements AutoCloseable
             final EventCode code,
             final String detail)
         {
-            if (code == EventCode.CLOSED)
-            {
-                new RuntimeException("close: " + detail).printStackTrace();
-            }
-
             if (EventCode.ERROR == code)
             {
                 throw new ClusterException(detail);

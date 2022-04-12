@@ -833,14 +833,17 @@ public class CommonContext implements Cloneable
                 final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 final int cncVersion = cncMetaDataBuffer.getIntVolatile(cncVersionOffset(0));
 
-                CncFileDescriptor.checkVersion(cncVersion);
+                if (cncVersion > 0)
+                {
+                    CncFileDescriptor.checkVersion(cncVersion);
 
-                final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
-                    CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
-                final long clientId = toDriverBuffer.nextCorrelationId();
-                final DriverProxy driverProxy = new DriverProxy(toDriverBuffer, clientId);
+                    final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
+                        CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    final long clientId = toDriverBuffer.nextCorrelationId();
+                    final DriverProxy driverProxy = new DriverProxy(toDriverBuffer, clientId);
 
-                return driverProxy.terminateDriver(tokenBuffer, tokenOffset, tokenLength);
+                    return driverProxy.terminateDriver(tokenBuffer, tokenOffset, tokenLength);
+                }
             }
             finally
             {

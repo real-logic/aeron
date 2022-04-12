@@ -157,9 +157,9 @@ public class CncFileDescriptor
     /**
      * Compute the length of the cnc file and return it.
      *
-     * @param totalLengthOfBuffers in bytes
-     * @param alignment for file length to adhere to
-     * @return cnc file length in bytes
+     * @param totalLengthOfBuffers in bytes.
+     * @param alignment            for file length to adhere to.
+     * @return cnc file length in bytes.
      */
     public static int computeCncFileLength(final int totalLengthOfBuffers, final int alignment)
     {
@@ -311,7 +311,8 @@ public class CncFileDescriptor
 
     /**
      * Create the buffer which wraps the area in the CnC file for the metadata about the CnC file itself.
-     * @param buffer for the CnC file
+     *
+     * @param buffer for the CnC file.
      * @return the buffer which wraps the area in the CnC file for the metadata about the CnC file itself.
      */
     public static UnsafeBuffer createMetaDataBuffer(final ByteBuffer buffer)
@@ -466,14 +467,14 @@ public class CncFileDescriptor
     }
 
     /**
-     * Determines if this path name matches the cnc file name pattern
+     * Determines if this path name matches the cnc file name pattern.
      *
-     * @param p to examine
-     * @param attributes ignored, only needed for BiPredicate signature matching
-     * @return true if the name matches
+     * @param path    to examine.
+     * @param ignored only needed for bi-predicate signature matching.
+     * @return true if the name matches.
      */
-    public static boolean isCncFile(final Path p, final BasicFileAttributes attributes)
+    public static boolean isCncFile(final Path path, final BasicFileAttributes ignored)
     {
-        return p.getFileName().toString().equals(CNC_FILE);
+        return path.getFileName().toString().equals(CNC_FILE);
     }
 }

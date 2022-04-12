@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.util.RuntimeUtils;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -43,6 +44,17 @@ public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCa
         if (null != timer)
         {
             timer.cancel(false);
+            if (!timer.isDone())
+            {
+                try
+                {
+                    timer.get();
+                }
+                catch (final InterruptedException | ExecutionException ignore)
+                {
+                }
+            }
+
             timer = null;
         }
     }

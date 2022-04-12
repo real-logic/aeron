@@ -433,7 +433,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
 
             if (cnc_version <= 0)
             {
-                AERON_SET_ERR(EINVAL, "Aeron CnC not initialised");
+                AERON_SET_ERR(EINVAL, "%s", "Aeron CnC not initialised");
 
                 result = -1;
                 goto cleanup;

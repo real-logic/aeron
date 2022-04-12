@@ -27,13 +27,15 @@ import java.util.concurrent.ScheduledFuture;
 public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCallback
 {
     private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor(
-        r ->
+        (runnable) ->
         {
-            final Thread thread = new Thread(r);
+            final Thread thread = new Thread(runnable);
             thread.setDaemon(true);
             thread.setName("interrupting-test-callback");
+
             return thread;
         });
+
     private ScheduledFuture<?> timer = null;
 
     public void afterEach(final ExtensionContext context)
@@ -53,6 +55,7 @@ public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCa
         if (null != annotation && !RuntimeUtils.isDebugMode())
         {
             final Thread testThread = Thread.currentThread();
+
             timer = SCHEDULER.schedule(testThread::interrupt, annotation.value(), annotation.unit());
         }
     }

@@ -35,6 +35,7 @@ import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -1175,6 +1176,7 @@ public class ClusterTest
 
     @Test
     @InterruptAfter(40)
+    @Disabled
     public void shouldRecoverWhenFollowerWithInitialSnapshotAndArchivePurgeThenIsMultipleTermsBehind()
     {
         cluster = aCluster().withStaticNodes(3).start();

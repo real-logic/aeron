@@ -1264,6 +1264,8 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
 
         case AERON_COMMAND_ADD_DESTINATION:
         case AERON_COMMAND_REMOVE_DESTINATION:
+        case AERON_COMMAND_ADD_RCV_DESTINATION:
+        case AERON_COMMAND_REMOVE_RCV_DESTINATION:
         {
             aeron_destination_command_t *command = (aeron_destination_command_t *)message;
 

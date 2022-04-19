@@ -2287,7 +2287,7 @@ public final class ConsensusModule implements AutoCloseable
          * Get the replication channel for logs and snapshots.
          *
          * @return channel to receive replication responses from other node's archives when using log and snapshot
-         * replication  to catch up.
+         * replication to catch up.
          * @see Configuration#REPLICATION_CHANNEL_PROP_NAME
          */
         public String replicationChannel()

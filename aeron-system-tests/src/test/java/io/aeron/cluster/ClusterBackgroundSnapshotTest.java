@@ -16,7 +16,10 @@
 package io.aeron.cluster;
 
 import io.aeron.log.EventLogExtension;
-import io.aeron.test.*;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.Test;

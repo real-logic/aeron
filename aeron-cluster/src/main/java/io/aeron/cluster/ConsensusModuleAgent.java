@@ -1271,7 +1271,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final int memberId,
         final long logPosition)
     {
-        if (leadershipTermId == this.leadershipTermId && (NULL_VALUE == memberId || this.memberId == memberId))
+        if (leadershipTermId == this.leadershipTermId)
         {
             if (ClusterAction.SUSPEND == action)
             {

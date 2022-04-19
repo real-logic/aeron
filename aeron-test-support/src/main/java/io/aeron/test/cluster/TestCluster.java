@@ -121,7 +121,6 @@ public class TestCluster implements AutoCloseable
             final EventCode code,
             final String detail)
         {
-            System.out.println("Session event: " + code);
             if (EventCode.ERROR == code)
             {
                 throw new ClusterException(detail);

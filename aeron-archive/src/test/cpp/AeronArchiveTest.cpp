@@ -39,7 +39,7 @@
 #include <windows.h>
 typedef intptr_t pid_t;
 #else
-#error "must spawn Java archive per test"
+#error "must spawn Java Archive per test"
 #endif
 
 using namespace aeron;

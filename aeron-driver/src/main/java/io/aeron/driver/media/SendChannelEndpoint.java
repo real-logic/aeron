@@ -509,6 +509,7 @@ abstract class MultiSndDestination
 
     Destination[] destinations = EMPTY_DESTINATIONS;
     final CachedNanoClock nanoClock;
+    int roundRobinIndex = 0;
 
     MultiSndDestination(final CachedNanoClock nanoClock)
     {
@@ -610,15 +611,39 @@ class ManualSndMultiDestination extends MultiSndDestination
         final int bytesToSend)
     {
         final int position = buffer.position();
-        int minBytesSent = bytesToSend;
+        final int length = destinations.length;
 
-        for (final Destination destination : destinations)
+        int startingIndex = roundRobinIndex++;
+        if (startingIndex >= length)
         {
-            final int bytesSent = send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
-            minBytesSent = Math.min(minBytesSent, bytesSent);
+            roundRobinIndex = startingIndex = 0;
         }
 
-        return minBytesSent;
+        for (int i = startingIndex; i < length; i++)
+        {
+            final Destination destination = destinations[i];
+
+            final int bytesSent = send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+            if (bytesSent < bytesToSend)
+            {
+                roundRobinIndex = i;
+                return bytesSent;
+            }
+        }
+
+        for (int i = 0; i < startingIndex; i++)
+        {
+            final Destination destination = destinations[i];
+
+            final int bytesSent = send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+            if (bytesSent < bytesToSend)
+            {
+                roundRobinIndex = i;
+                return bytesSent;
+            }
+        }
+
+        return bytesToSend;
     }
 
     void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
@@ -718,34 +743,61 @@ class DynamicSndMultiDestination extends MultiSndDestination
     {
         final long nowNs = nanoClock.nanoTime();
         final int position = buffer.position();
-        int minBytesSent = bytesToSend;
-        int removed = 0;
+        final int length = destinations.length;
+        int toBeRemoved = 0;
 
-        for (int lastIndex = destinations.length - 1, i = lastIndex; i >= 0; i--)
+        int startingIndex = roundRobinIndex++;
+        if (startingIndex >= length)
+        {
+            roundRobinIndex = startingIndex = 0;
+        }
+
+        for (int i = startingIndex; i < length; i++)
         {
             final Destination destination = destinations[i];
-            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs < 0)
-            {
-                if (i != lastIndex)
-                {
-                    destinations[i] = destinations[lastIndex--];
-                }
-                removed++;
-            }
-            else
+
+            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs >= 0)
             {
                 final int bytesSent = send(
                     channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
-                minBytesSent = Math.min(minBytesSent, bytesSent);
+                if (bytesSent < bytesToSend)
+                {
+                    roundRobinIndex = i;
+                    return bytesSent;
+                }
+            }
+            else
+            {
+                toBeRemoved++;
             }
         }
 
-        if (removed > 0)
+        for (int i = 0; i < startingIndex; i++)
         {
-            truncateDestinations(removed);
+            final Destination destination = destinations[i];
+
+            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs >= 0)
+            {
+                final int bytesSent = send(
+                    channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+                if (bytesSent < bytesToSend)
+                {
+                    roundRobinIndex = i;
+                    return bytesSent;
+                }
+            }
+            else
+            {
+                toBeRemoved++;
+            }
         }
 
-        return minBytesSent;
+        if (toBeRemoved > 0)
+        {
+            removeInactiveDestinations(nowNs);
+        }
+
+        return bytesToSend;
     }
 
     private void add(final Destination destination)
@@ -765,6 +817,29 @@ class DynamicSndMultiDestination extends MultiSndDestination
         else
         {
             destinations = Arrays.copyOf(destinations, newLength);
+        }
+    }
+
+    private void removeInactiveDestinations(final long nowNs)
+    {
+        int removed = 0;
+
+        for (int lastIndex = destinations.length - 1, i = lastIndex; i >= 0; i--)
+        {
+            final Destination destination = destinations[i];
+            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs < 0)
+            {
+                if (i != lastIndex)
+                {
+                    destinations[i] = destinations[lastIndex--];
+                }
+                removed++;
+            }
+        }
+
+        if (removed > 0)
+        {
+            truncateDestinations(removed);
         }
     }
 }

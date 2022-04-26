@@ -429,6 +429,15 @@ int aeron_subscription_poll(
 {
     volatile aeron_image_list_t *image_list;
 
+    if (NULL == handler)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "handler must not be null %s",
+            AERON_NULL_STR(handler));
+        return -1;
+    }
+
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
 
     size_t length = image_list->length;
@@ -441,14 +450,20 @@ int aeron_subscription_poll(
 
     for (size_t i = starting_index; i < length && fragments_read < fragment_limit; i++)
     {
-        fragments_read += (size_t)aeron_image_poll(
-            image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        if (NULL != image_list->array[i])
+        {
+            fragments_read += (size_t)aeron_image_poll(
+                image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        }
     }
 
     for (size_t i = 0; i < starting_index && fragments_read < fragment_limit; i++)
     {
-        fragments_read += (size_t)aeron_image_poll(
-            image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        if (NULL != image_list->array[i])
+        {
+            fragments_read += (size_t)aeron_image_poll(
+                image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        }
     }
 
     aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
@@ -464,6 +479,15 @@ int aeron_subscription_controlled_poll(
 {
     volatile aeron_image_list_t *image_list;
 
+    if (NULL == handler)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "handler must not be null %s",
+            AERON_NULL_STR(handler));
+        return -1;
+    }
+
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
 
     size_t length = image_list->length;
@@ -476,14 +500,20 @@ int aeron_subscription_controlled_poll(
 
     for (size_t i = starting_index; i < length && fragments_read < fragment_limit; i++)
     {
-        fragments_read += (size_t)aeron_image_controlled_poll(
-            image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        if (NULL != image_list->array[i])
+        {
+            fragments_read += (size_t)aeron_image_controlled_poll(
+                image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        }
     }
 
     for (size_t i = 0; i < starting_index && fragments_read < fragment_limit; i++)
     {
-        fragments_read += (size_t)aeron_image_controlled_poll(
-            image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        if (NULL != image_list->array[i])
+        {
+            fragments_read += (size_t)aeron_image_controlled_poll(
+                image_list->array[i], handler, clientd, fragment_limit - fragments_read);
+        }
     }
 
     aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
@@ -497,12 +527,24 @@ long aeron_subscription_block_poll(
     volatile aeron_image_list_t *image_list;
     long bytes_consumed = 0;
 
+    if (NULL == handler)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "handler must not be null %s",
+            AERON_NULL_STR(handler));
+        return -1;
+    }
+
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
 
     for (size_t i = 0, length = image_list->length; i < length; i++)
     {
-        bytes_consumed += aeron_image_block_poll(
-            image_list->array[i], handler, clientd, block_length_limit);
+        if (NULL != image_list->array[i])
+        {
+            bytes_consumed += aeron_image_block_poll(
+                image_list->array[i], handler, clientd, block_length_limit);
+        }
     }
 
     aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);

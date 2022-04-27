@@ -237,11 +237,11 @@ int main(int argc, char **argv)
         }
         else
         {
-            #if defined(_MSC_VER)
+#if defined(_MSC_VER)
                 message_len = sprintf_s(small_message, sizeof(small_message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
-            #else
+#else
                 message_len = snprintf(small_message, sizeof(small_message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
-            #endif
+#endif
             message = small_message;
         }
         printf("offering %" PRIu64 "/%" PRIu64 " - ", (uint64_t)i, (uint64_t)messages);

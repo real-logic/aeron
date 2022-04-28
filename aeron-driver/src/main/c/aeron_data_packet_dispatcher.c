@@ -523,10 +523,6 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
         return -1;
     }
 
-    char addr_s[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
-    aeron_format_source_identity(addr_s, sizeof(addr_s), control_addr);
-
-    // TODO (MB): Needs to send to single destination
     if (aeron_receive_channel_endpoint_send_sm(
         endpoint, destination, control_addr, stream_id, session_id, 0, 0, 0,
         AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)

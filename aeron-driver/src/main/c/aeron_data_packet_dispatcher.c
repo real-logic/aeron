@@ -508,8 +508,8 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     int32_t stream_id,
     int32_t session_id)
 {
-    struct sockaddr_storage *control_addr = endpoint->conductor_fields.udp_channel->is_multicast ?
-        &endpoint->conductor_fields.udp_channel->remote_control : addr;
+    struct sockaddr_storage *control_addr = destination->conductor_fields.udp_channel->is_multicast ?
+        &destination->conductor_fields.udp_channel->remote_control : addr;
 
     if (aeron_int64_to_tagged_ptr_hash_map_put(
         &stream_interest->image_by_session_id_map,
@@ -522,6 +522,9 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
             session_id);
         return -1;
     }
+
+    char addr_s[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+    aeron_format_source_identity(addr_s, sizeof(addr_s), control_addr);
 
     // TODO (MB): Needs to send to single destination
     if (aeron_receive_channel_endpoint_send_sm(

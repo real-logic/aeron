@@ -64,3 +64,6 @@ aeron_c_client_test(strutil_test util/aeron_strutil_test.cpp)
 aeron_c_client_test(error_test util/aeron_error_test.cpp)
 aeron_c_client_test(netutil_test util/aeron_netutil_test.cpp)
 aeron_c_client_test(symbol_table_test util/aeron_symbol_table_test.cpp)
+
+aeron_c_client_test(pubsub_test aeron_pubsub_test.cpp)
+target_link_libraries(pubsub_test aeron_driver)

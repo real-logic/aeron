@@ -101,7 +101,7 @@ class BlockingSubscriber {
   MessageHandler pending_handler = nullptr;
 };
 
-class AeronTest : public ::testing::Test {
+class PubSubTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // Setup driver.
@@ -141,7 +141,7 @@ class AeronTest : public ::testing::Test {
   aeron_t* aeron = nullptr;
 };
 
-TEST_F(AeronTest, OneToOne) {
+TEST_F(PubSubTest, OneToOne) {
   BlockingSubscriber subscriber;
   ASSERT_EQ(subscriber.Connect(aeron, kChannel, kStream), 0);
 
@@ -158,7 +158,7 @@ TEST_F(AeronTest, OneToOne) {
   EXPECT_EQ(message[0], kMessage);
 }
 
-TEST_F(AeronTest, OneToMany) {
+TEST_F(PubSubTest, OneToMany) {
   std::array<BlockingSubscriber, 2> subscribers;
   for (auto& subscriber : subscribers) {
     ASSERT_EQ(subscriber.Connect(aeron, kChannel, kStream), 0);

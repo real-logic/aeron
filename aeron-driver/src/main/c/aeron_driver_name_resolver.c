@@ -823,7 +823,7 @@ static int aeron_driver_name_resolver_send_self_resolutions(
 
     bool send_to_bootstrap = driver_resolver->bootstrap_neighbors_length > 0;
     int work_count = 0;
-    // TODO: Optimise with sendmmsg
+
     for (size_t k = 0; k < driver_resolver->neighbors.length; k++)
     {
         aeron_driver_name_resolver_neighbor_t *neighbor = &driver_resolver->neighbors.array[k];
@@ -947,7 +947,6 @@ static int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_nam
 
         frame_header->frame_length = (int32_t)entry_offset;
 
-        // TODO: Optimise with sendmmsg
         for (size_t k = 0; k < resolver->neighbors.length; k++)
         {
             aeron_driver_name_resolver_neighbor_t *neighbor = &resolver->neighbors.array[k];

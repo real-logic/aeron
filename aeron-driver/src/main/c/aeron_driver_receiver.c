@@ -227,7 +227,6 @@ int aeron_driver_receiver_do_work(void *clientd)
             }
             else if (aeron_receive_channel_endpoint_should_elicit_setup_message(entry->endpoint))
             {
-                // TODO (MB): Check pending entries control_addr is populated correctly...
                 if (aeron_receive_channel_endpoint_send_sm(
                     entry->endpoint,
                     entry->destination,

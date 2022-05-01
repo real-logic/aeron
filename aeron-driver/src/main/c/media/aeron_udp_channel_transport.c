@@ -513,6 +513,7 @@ static int aeron_udp_channel_transport_send_unconnected(
 #endif
 
 #if defined(HAVE_SENDMMSG)
+
 static int aeron_udp_channel_transport_sendv(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *address,
@@ -560,6 +561,7 @@ static int aeron_udp_channel_transport_sendv(
         return num_sent;
     }
 }
+
 #endif
 
 

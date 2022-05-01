@@ -92,10 +92,10 @@ int build_large_message(char *buf, size_t len)
 
 int main(int argc, char **argv)
 {
-    char small_message[256];
-    char large_message[8192];
+    char small_message[256] = { 0 };
+    char large_message[8192] = { 0 };
     const char *message;
-    int message_len;
+    int message_len = sizeof(small_message);
     int status = EXIT_FAILURE, opt;
     bool fill_mtu = false;
     aeron_context_t *context = NULL;

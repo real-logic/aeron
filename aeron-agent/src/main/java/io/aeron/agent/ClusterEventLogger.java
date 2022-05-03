@@ -16,6 +16,7 @@
 package io.aeron.agent;
 
 import io.aeron.cluster.ConsensusModule;
+import io.aeron.cluster.codecs.CloseReason;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
@@ -587,6 +588,53 @@ public final class ClusterEventLogger
                     correlationId,
                     memberEndpoints,
                     memberId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log the appending of a session close event to the log.
+     *
+     * @param memberId          member (leader) publishing the event
+     * @param sessionId         session id of the session be closed
+     * @param closeReason       reason to close the session
+     * @param leadershipTermId  current leadership term id
+     * @param timestamp         the current timestamp
+     * @param timeUnit          units for the timestamp
+     */
+    public void logAppendSessionClose(
+        final int memberId,
+        final long sessionId,
+        final CloseReason closeReason,
+        final long leadershipTermId,
+        final long timestamp,
+        final TimeUnit timeUnit)
+    {
+        final int length = appendSessionCloseLength(closeReason, timeUnit);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(APPEND_SESSION_CLOSE.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                ClusterEventEncoder.encodeAppendSessionClose(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    memberId,
+                    sessionId,
+                    closeReason,
+                    leadershipTermId,
+                    timestamp,
+                    timeUnit);
             }
             finally
             {

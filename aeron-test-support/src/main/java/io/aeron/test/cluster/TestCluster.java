@@ -797,8 +797,6 @@ public class TestCluster implements AutoCloseable
 
         while ((count = responseCount.get()) < messageCount)
         {
-            Tests.sleep(1, "count=%d awaiting=%d", count, messageCount);
-
             client.pollEgress();
 
             final long nowMs = epochClock.time();
@@ -806,7 +804,6 @@ public class TestCluster implements AutoCloseable
             {
                 try
                 {
-                    System.out.println("Sending keep alive, responseCount=" + responseCount.get());
                     client.sendKeepAlive();
                 }
                 catch (final ClusterException e)

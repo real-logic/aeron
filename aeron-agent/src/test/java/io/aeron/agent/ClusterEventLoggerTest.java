@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.cluster.codecs.CloseReason;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.hamcrest.Matchers;
@@ -480,6 +481,54 @@ class ClusterEventLoggerTest
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: ADD_PASSIVE_MEMBER " +
             "\\[90/90]: memberId=42 correlationId=28397456 " +
             "memberEndpoints=localhost:20113,localhost:20223,localhost:20333,localhost:0,localhost:8013";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void testLogAppendSessionClose()
+    {
+        final int offset = ALIGNMENT + 4;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+
+        final int memberId = 829374;
+        final long sessionId = 289374L;
+        final CloseReason closeReason = CloseReason.TIMEOUT;
+        final long leadershipTermId = 2039842L;
+        final long timestamp = 29384;
+        final TimeUnit timeUnit = MILLISECONDS;
+
+        logger.logAppendSessionClose(memberId, sessionId, closeReason, leadershipTermId, timestamp, timeUnit);
+
+        final int length = SIZE_OF_INT + SIZE_OF_LONG + (SIZE_OF_INT + closeReason.name().length()) + SIZE_OF_LONG +
+            SIZE_OF_LONG + (SIZE_OF_INT + timeUnit.name().length());
+
+        verifyLogHeader(logBuffer, offset, APPEND_SESSION_CLOSE.toEventCodeId(), length, length);
+        int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+
+        assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(sessionId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(closeReason.name().length(), logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(closeReason.name(), logBuffer.getStringWithoutLengthAscii(index, closeReason.name().length()));
+        index += closeReason.name().length();
+        assertEquals(leadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(timestamp, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+        assertEquals(timeUnit.name().length(), logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        assertEquals(timeUnit.name(), logBuffer.getStringWithoutLengthAscii(index, timeUnit.name().length()));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectAppendCloseSession(
+            APPEND_SESSION_CLOSE, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: APPEND_SESSION_CLOSE " +
+            "\\[55/55]: memberId=829374 sessionId=289374 closeReason=TIMEOUT leadershipTermId=2039842 " +
+            "timestamp=29384 timeUnit=MILLISECONDS";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

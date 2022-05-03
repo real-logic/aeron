@@ -91,7 +91,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when an event to add a new passive member is received
      */
-    ADD_PASSIVE_MEMBER(13, ClusterEventDissector::dissectAddPassiveMember);
+    ADD_PASSIVE_MEMBER(13, ClusterEventDissector::dissectAddPassiveMember),
+
+    /**
+     * Event when a session is closed
+     */
+    APPEND_SESSION_CLOSE(14, ClusterEventDissector::dissectAppendCloseSession);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

@@ -92,7 +92,7 @@ public class ConsensusModuleAgentTest
     {
         when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));
         when(mockEgressPublisher.sendEvent(any(), anyLong(), anyInt(), any(), any())).thenReturn(TRUE);
-        when(mockLogPublisher.appendSessionClose(any(), anyLong(), anyLong())).thenReturn(TRUE);
+        when(mockLogPublisher.appendSessionClose(anyInt(), any(), anyLong(), anyLong(), any())).thenReturn(TRUE);
         when(mockLogPublisher.appendSessionOpen(any(), anyLong(), anyLong())).thenReturn(128L);
         when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), any(ClusterAction.class)))
             .thenReturn(TRUE);
@@ -193,7 +193,8 @@ public class ConsensusModuleAgentTest
 
         verify(mockTimeConsumer).accept(clock.time());
         verify(mockTimedOutClientCounter).incrementOrdered();
-        verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), anyLong(), eq(timeoutMs));
+        verify(mockLogPublisher).appendSessionClose(
+            anyInt(), any(ClusterSession.class), anyLong(), eq(timeoutMs), eq(clock.timeUnit()));
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.CLOSED), eq(CloseReason.TIMEOUT.name()));
     }
@@ -228,7 +229,8 @@ public class ConsensusModuleAgentTest
 
         agent.onServiceCloseSession(sessionCaptor.getValue().id());
 
-        verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), anyLong(), eq(timeMs));
+        verify(mockLogPublisher).appendSessionClose(
+            anyInt(), any(ClusterSession.class), anyLong(), eq(timeMs), eq(clock.timeUnit()));
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class),
             anyLong(),

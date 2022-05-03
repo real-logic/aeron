@@ -187,8 +187,15 @@ final class LogPublisher
         return result;
     }
 
-    boolean appendSessionClose(final ClusterSession session, final long leadershipTermId, final long timestamp)
+    boolean appendSessionClose(
+        final int memberId,
+        final ClusterSession session,
+        final long leadershipTermId,
+        final long timestamp,
+        final TimeUnit timeUnit)
     {
+        logAppendSessionClose(memberId, session.id(), session.closeReason(), leadershipTermId, timestamp, timeUnit);
+
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseEventEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
@@ -382,5 +389,15 @@ final class LogPublisher
         {
             throw new AeronException("unexpected publication state: " + result);
         }
+    }
+
+    private static void logAppendSessionClose(
+        final int memberId,
+        final long id,
+        final CloseReason closeReason,
+        final long leadershipTermId,
+        final long timestamp,
+        final TimeUnit timeUnit)
+    {
     }
 }

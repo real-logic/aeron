@@ -430,7 +430,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 session.closing(CloseReason.CLIENT_ACTION);
                 session.disconnect(aeron, ctx.countedErrorHandler());
 
-                if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
+                if (logPublisher.appendSessionClose(
+                    memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
                 {
                     session.closedLogPosition(logPublisher.position());
                     uncommittedClosedSessions.addLast(session);
@@ -1112,8 +1113,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             session.closing(CloseReason.SERVICE_ACTION);
 
-            if (Cluster.Role.LEADER == role &&
-                logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
+            if (Cluster.Role.LEADER == role && logPublisher.appendSessionClose(
+                memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
             {
                 final String msg = CloseReason.SERVICE_ACTION.name();
                 egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
@@ -2462,7 +2463,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 if (session.state() == OPEN)
                 {
                     session.closing(CloseReason.TIMEOUT);
-                    if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
+
+                    if (logPublisher.appendSessionClose(
+                        memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
                     {
                         final String msg = session.closeReason().name();
                         egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
@@ -2476,7 +2479,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 }
                 else if (session.state() == CLOSING)
                 {
-                    if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
+                    if (logPublisher.appendSessionClose(
+                        memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
                     {
                         final String msg = session.closeReason().name();
                         egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);

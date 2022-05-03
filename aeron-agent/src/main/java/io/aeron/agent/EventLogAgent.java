@@ -480,10 +480,18 @@ public final class EventLogAgent
         tempBuilder = addEventInstrumentation(
             tempBuilder,
             CLUSTER_EVENT_CODES,
-            ClusterEventCode.COMMIT_POSITION,
+            ClusterEventCode.ADD_PASSIVE_MEMBER,
             "ConsensusModuleAgent",
             ClusterInterceptor.AddPassiveMember.class,
             "logAddPassiveMember");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.APPEND_SESSION_CLOSE,
+            "LogPublisher",
+            ClusterInterceptor.AppendSessionClose.class,
+            "logAppendSessionClose");
 
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
 

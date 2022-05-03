@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.cluster.codecs.CloseReason;
 import net.bytebuddy.asm.Advice;
 
 import java.util.concurrent.TimeUnit;
@@ -245,6 +246,21 @@ class ClusterInterceptor
             final int memberId)
         {
             LOGGER.logAddPassiveMember(correlationId, passiveMember, memberId);
+        }
+    }
+
+    static class AppendSessionClose
+    {
+        @Advice.OnMethodEnter
+        static void logAppendSessionClose(
+            final int memberId,
+            final long sessionId,
+            final CloseReason closeReason,
+            final long leadershipTermId,
+            final long timestamp,
+            final TimeUnit timeUnit)
+        {
+            LOGGER.logAppendSessionClose(memberId, sessionId, closeReason, leadershipTermId, timestamp, timeUnit);
         }
     }
 }

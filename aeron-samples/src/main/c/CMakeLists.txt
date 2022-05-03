@@ -39,6 +39,7 @@ set(HEADERS
 
 add_executable(basic_publisher basic_publisher.c ${HEADERS} ${SOURCES})
 add_executable(basic_subscriber basic_subscriber.c ${HEADERS} ${SOURCES})
+add_executable(basic_mds_subscriber basic_mds_subscriber.c ${HEADERS} ${SOURCES})
 add_executable(rate_subscriber rate_subscriber.c ${HEADERS} ${SOURCES})
 add_executable(streaming_publisher streaming_publisher.c ${HEADERS} ${SOURCES})
 add_executable(streaming_exclusive_publisher streaming_exclusive_publisher.c ${HEADERS} ${SOURCES})
@@ -55,6 +56,9 @@ target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})
 
 target_link_libraries(basic_subscriber
+    ${CLIENT_LINK_LIB})
+
+target_link_libraries(basic_mds_subscriber
     ${CLIENT_LINK_LIB})
 
 target_link_libraries(rate_subscriber

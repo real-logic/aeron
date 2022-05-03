@@ -41,6 +41,7 @@ const char usage_str[] =
     "[-h][-v][-c uri][-l linger][-m messages][-p prefix][-s stream-id]\n"
     "    -h               help\n"
     "    -v               show version and exit\n"
+    "    -f               use a message that will fill the whole MTU\n"
     "    -c uri           use channel specified in uri\n"
     "    -l linger        linger at end of publishing for linger seconds\n"
     "    -m messages      number of messages to send\n"
@@ -61,10 +62,42 @@ inline bool is_running()
     return result;
 }
 
+int build_large_message(char *buf, size_t len)
+{
+    if (len < 2)
+    {
+        len = 2;
+    }
+
+    int limit = len - 1;
+    buf[0] = '\n';
+    char *current_buf = &buf[1];
+
+    int line_counter = 0;
+    while (limit > 0)
+    {
+        int written = snprintf(
+            current_buf,
+            limit,
+            "[%3d] This is a line of text fill out a large message to test whether large MTUs cause issues...\n",
+            line_counter);
+
+        limit -= written;
+        line_counter++;
+        current_buf = &current_buf[written];
+    }
+
+    return (int)len;
+}
+
 int main(int argc, char **argv)
 {
-    char message[256];
+    char small_message[256] = { 0 };
+    char large_message[8192] = { 0 };
+    const char *message;
+    int message_len = sizeof(small_message);
     int status = EXIT_FAILURE, opt;
+    bool fill_mtu = false;
     aeron_context_t *context = NULL;
     aeron_t *aeron = NULL;
     aeron_async_add_publication_t *async = NULL;
@@ -75,7 +108,7 @@ int main(int argc, char **argv)
     uint64_t messages = DEFAULT_NUMBER_OF_MESSAGES;
     int32_t stream_id = DEFAULT_STREAM_ID;
 
-    while ((opt = getopt(argc, argv, "hvc:l:m:p:s:")) != -1)
+    while ((opt = getopt(argc, argv, "hvfc:l:m:p:s:")) != -1)
     {
         switch (opt)
         {
@@ -119,9 +152,16 @@ int main(int argc, char **argv)
 
             case 'v':
             {
-                printf("%s <%s> major %d minor %d patch %d\n",
+                printf(
+                    "%s <%s> major %d minor %d patch %d\n",
                     argv[0], aeron_version_full(), aeron_version_major(), aeron_version_minor(), aeron_version_patch());
                 exit(EXIT_SUCCESS);
+            }
+
+            case 'f':
+            {
+                fill_mtu = true;
+                break;
             }
 
             case 'h':
@@ -181,18 +221,33 @@ int main(int argc, char **argv)
 
     printf("Publication channel status %" PRIu64 "\n", aeron_publication_channel_status(publication));
 
+    if (fill_mtu)
+    {
+        aeron_publication_constants_t pub_constants = { 0 };
+        aeron_publication_constants(publication, &pub_constants);
+        message_len = build_large_message(large_message, pub_constants.max_payload_length);
+        printf("Using message of %d bytes\n", message_len);
+    }
+
     for (size_t i = 0; i < messages && is_running(); i++)
     {
+        if (fill_mtu)
+        {
+            message = large_message;
+        }
+        else
+        {
 #if defined(_MSC_VER)
-        const int message_len = sprintf_s(message, sizeof(message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
+                message_len = sprintf_s(small_message, sizeof(small_message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
 #else
-        const int message_len = snprintf(message, sizeof(message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
+                message_len = snprintf(small_message, sizeof(small_message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
 #endif
+            message = small_message;
+        }
         printf("offering %" PRIu64 "/%" PRIu64 " - ", (uint64_t)i, (uint64_t)messages);
         fflush(stdout);
 
-        int64_t result = aeron_publication_offer(
-            publication, (const uint8_t *)message, message_len, NULL, NULL);
+        int64_t result = aeron_publication_offer(publication, (const uint8_t *)message, message_len, NULL, NULL);
 
         if (result > 0)
         {

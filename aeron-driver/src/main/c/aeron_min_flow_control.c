@@ -155,7 +155,8 @@ int64_t aeron_min_flow_control_strategy_process_sm(
         AERON_ARRAY_ENSURE_CAPACITY(
             ensure_capacity_result, strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t)
 
-        if (ensure_capacity_result >= 0)
+        if (ensure_capacity_result >= 0 &&
+            (0 == strategy_state->receivers.length || position_plus_window >= min_position - window_length))
         {
             const size_t receivers_length = strategy_state->receivers.length;
             aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[receivers_length];

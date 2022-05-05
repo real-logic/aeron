@@ -957,6 +957,7 @@ public class ClusterTest
             cluster.pollUntilMessageSent(NO_OP_MSG.length());
         }
         cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount);
 
         cluster.terminationsExpected(true);
         cluster.abortCluster(leader);
@@ -1175,6 +1176,27 @@ public class ClusterTest
         final TestNode lateJoiningNode = cluster.node(originalLeader.index());
 
         cluster.awaitServiceMessageCount(lateJoiningNode, messageCount * 3);
+    }
+
+    @Test
+    @InterruptAfter(40)
+    public void shouldHandleManyLargeMessages()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+
+        systemTestWatcher.cluster(cluster);
+
+        cluster.awaitLeader();
+        awaitElectionState(cluster.node(0), ElectionState.CLOSED);
+        awaitElectionState(cluster.node(1), ElectionState.CLOSED);
+        awaitElectionState(cluster.node(2), ElectionState.CLOSED);
+
+        final int largeMessageCount = 256_000;
+
+        cluster.connectClient();
+        cluster.sendLargeMessages(largeMessageCount);
+        cluster.awaitResponseMessageCount(largeMessageCount);
+        cluster.awaitServicesMessageCount(largeMessageCount);
     }
 
     @Test
@@ -1588,6 +1610,7 @@ public class ClusterTest
         msgChecksum = (int)crc32.getValue();
         cluster.msgBuffer().putInt(payloadLength, msgChecksum, LITTLE_ENDIAN);
         final int secondBatch = 11;
+        cluster.reconnectClient();
         for (int i = 0; i < secondBatch; i++)
         {
             try

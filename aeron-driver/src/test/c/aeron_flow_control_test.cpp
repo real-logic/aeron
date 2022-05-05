@@ -520,6 +520,45 @@ TEST_F(TaggedFlowControlTest, shouldUseSenderLimitWhenRequiredReceiversNotMet)
     ASSERT_EQ(term_offset + WINDOW_LENGTH, m_strategy->on_idle(m_strategy->state, 0, sender_limit, 0, false));
 }
 
+TEST_F(MinFlowControlTest, shouldNotIncludeReceiverMoreThanWindowLengthBehind)
+{
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min,g:/2");
+
+    ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
+        &m_strategy, context, m_channel, 1001, 1001, 0, 64 * 1024));
+
+    int sender_limit = 500;
+    int term_offset_0 = 5000 + WINDOW_LENGTH;
+    int term_offset_1 = term_offset_0 - (WINDOW_LENGTH + 1);
+    int term_offset_2 = term_offset_0 - WINDOW_LENGTH;
+
+    ASSERT_EQ(sender_limit, apply_status_message(m_strategy, 1, term_offset_0, -1, 0, false, sender_limit));
+    ASSERT_EQ(sender_limit, apply_status_message(m_strategy, 2, term_offset_1, -1, 0, false, sender_limit));
+    ASSERT_FALSE(m_strategy->has_required_receivers(m_strategy));
+    ASSERT_EQ(WINDOW_LENGTH + term_offset_2, apply_status_message(m_strategy, 2, term_offset_2, -1, 0, false, sender_limit));
+    ASSERT_TRUE(m_strategy->has_required_receivers(m_strategy));
+}
+
+TEST_F(TaggedFlowControlTest, shouldNotIncludeReceiverMoreThanWindowLengthBehind)
+{
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/2");
+
+    ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
+        &m_strategy, context, m_channel, 1001, 1001, 0, 64 * 1024));
+
+    int gtag = 123;
+    int sender_limit = 500;
+    int term_offset_0 = 5000 + WINDOW_LENGTH;
+    int term_offset_1 = term_offset_0 - (WINDOW_LENGTH + 1);
+    int term_offset_2 = term_offset_0 - WINDOW_LENGTH;
+
+    ASSERT_EQ(sender_limit, apply_status_message(m_strategy, 1, term_offset_0, gtag, 0, true, sender_limit));
+    ASSERT_EQ(sender_limit, apply_status_message(m_strategy, 2, term_offset_1, gtag, 0, true, sender_limit));
+    ASSERT_FALSE(m_strategy->has_required_receivers(m_strategy));
+    ASSERT_EQ(WINDOW_LENGTH + term_offset_2, apply_status_message(m_strategy, 3, term_offset_2, gtag, 0, true, sender_limit));
+    ASSERT_TRUE(m_strategy->has_required_receivers(m_strategy));
+}
+
 TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
 {
     const char *fc_options = std::get<0>(GetParam());

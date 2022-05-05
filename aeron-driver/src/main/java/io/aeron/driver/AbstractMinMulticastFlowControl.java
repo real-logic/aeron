@@ -168,7 +168,9 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
             minPosition = Math.min(minPosition, receiver.lastPositionPlusWindow);
         }
 
-        if (matchesTag && !isExisting)
+        if (matchesTag &&
+            !isExisting &&
+            (0 == receivers.length || lastPositionPlusWindow >= minPosition - windowLength))
         {
             final Receiver receiver = new Receiver(
                 receiverId, flyweight.sessionId(), flyweight.streamId(), position, lastPositionPlusWindow, timeNs);

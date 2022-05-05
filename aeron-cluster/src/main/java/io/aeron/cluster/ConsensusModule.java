@@ -559,7 +559,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Timeout for a session if no activity is observed.
          */
-        public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+        public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Timeout for a leader if no heartbeat is received by another member.

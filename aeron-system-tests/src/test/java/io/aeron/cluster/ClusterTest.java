@@ -1180,6 +1180,7 @@ public class ClusterTest
 
     @Test
     @InterruptAfter(40)
+    @Disabled
     public void shouldHandleManyLargeMessages()
     {
         cluster = aCluster().withStaticNodes(3).start();

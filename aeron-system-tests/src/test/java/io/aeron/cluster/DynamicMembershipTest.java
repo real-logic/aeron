@@ -204,13 +204,20 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @InterruptAfter(30)
+    @InterruptAfter(15)
     public void shouldRemoveFollower(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
+
+        // Ensure all members are connected to the log.
+        cluster.connectClient();
+        cluster.sendMessages(1);
+        cluster.awaitResponseMessageCount(1);
+        cluster.awaitServicesMessageCount(1);
+
         final TestNode follower = cluster.followers().get(0);
 
         follower.isTerminationExpected(true);

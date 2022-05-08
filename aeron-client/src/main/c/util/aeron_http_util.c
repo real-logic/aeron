@@ -164,8 +164,7 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
         }
         else if (0 < line_result)
         {
-            char version[8], code_str[4], reason_phrase[1024];
-
+            char version[9], code_str[4], reason_phrase[1024];
             int matches = sscanf(line, "%8s %3[0-9] %s\r\n", version, code_str, reason_phrase);
 
             if (3 == matches)

@@ -149,7 +149,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
             receiver->last_position_plus_window : min_position;
     }
 
-    if (matches_tag && !is_existing)
+    if (!is_existing && matches_tag)
     {
         int ensure_capacity_result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(
@@ -317,8 +317,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     _strategy->fini = aeron_min_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_min_flow_control_strategy_has_required_receivers;
 
-    aeron_min_flow_control_strategy_state_t *state =
-        (aeron_min_flow_control_strategy_state_t *)_strategy->state;
+    aeron_min_flow_control_strategy_state_t *state = (aeron_min_flow_control_strategy_state_t *)_strategy->state;
 
     state->receivers.array = NULL;
     state->receivers.capacity = 0;

@@ -168,8 +168,8 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
             minPosition = Math.min(minPosition, receiver.lastPositionPlusWindow);
         }
 
-        if (matchesTag &&
-            !isExisting &&
+        if (!isExisting &&
+            matchesTag &&
             (0 == receivers.length || lastPositionPlusWindow >= minPosition - windowLength))
         {
             final Receiver receiver = new Receiver(
@@ -185,7 +185,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         {
             return senderLimit;
         }
-        else if (receivers.length == 0)
+        else if (0 == receivers.length)
         {
             return Math.max(senderLimit, lastPositionPlusWindow);
         }

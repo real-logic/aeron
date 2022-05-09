@@ -40,7 +40,6 @@ import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
 import org.agrona.collections.Hashing;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -119,7 +118,7 @@ public class TestNode implements AutoCloseable
         {
             try
             {
-                closeAndDelete();
+                close();
             }
             catch (final Exception e)
             {
@@ -173,45 +172,6 @@ public class TestNode implements AutoCloseable
         {
             isClosed = true;
             CloseHelper.closeAll(consensusModule, () -> CloseHelper.closeAll(containers), archive, mediaDriver);
-        }
-    }
-
-    void closeAndDelete()
-    {
-        Throwable error = null;
-
-        try
-        {
-            CloseHelper.closeAll(
-                this,
-                () ->
-                {
-                    for (final ClusteredServiceContainer c : containers)
-                    {
-                        c.context().deleteDirectory();
-                    }
-                },
-                context.consensusModuleContext::deleteDirectory,
-                context.archiveContext::deleteDirectory,
-                context.mediaDriverContext::deleteDirectory,
-                this::cleanup);
-        }
-        catch (final Exception ex)
-        {
-            error = ex;
-        }
-
-        if (null != error)
-        {
-            LangUtil.rethrowUnchecked(error);
-        }
-    }
-
-    void cleanup()
-    {
-        if (null != mediaDriver)
-        {
-            mediaDriver.cleanup();
         }
     }
 

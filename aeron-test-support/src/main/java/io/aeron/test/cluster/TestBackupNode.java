@@ -57,7 +57,7 @@ public class TestBackupNode implements AutoCloseable
         {
             try
             {
-                closeAndDelete();
+                close();
             }
             catch (final Exception ex2)
             {
@@ -73,20 +73,6 @@ public class TestBackupNode implements AutoCloseable
         {
             isClosed = true;
             CloseHelper.closeAll(clusterBackup, archive, mediaDriver);
-        }
-    }
-
-    void closeAndDelete()
-    {
-        close();
-
-        context.clusterBackupContext.deleteDirectory();
-        context.archiveContext.deleteDirectory();
-        context.mediaDriverContext.deleteDirectory();
-
-        if (null != mediaDriver)
-        {
-            mediaDriver.cleanup();
         }
     }
 

@@ -43,7 +43,10 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.DriverOutputConsumer;
 import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
@@ -84,7 +87,7 @@ public class TestCluster implements AutoCloseable
     private static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
     private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
-    private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k";
+    private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";
     private static final long STARTUP_CANVASS_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
     public static final String DEFAULT_NODE_MAPPINGS =
@@ -123,11 +126,7 @@ public class TestCluster implements AutoCloseable
             }
             else if (EventCode.CLOSED == code && shouldErrorOnClientClose)
             {
-                final String msg = "session closed due to " + detail;
-
-                System.err.println("*** " + msg);
-                System.err.println(SystemUtil.threadDump());
-
+                final String msg = "[" + System.nanoTime() / 1_000_000_000.0 + "] session closed due to " + detail;
                 throw new ClusterException(msg);
             }
         }
@@ -236,9 +235,8 @@ public class TestCluster implements AutoCloseable
             CloseHelper.closeAll(
                 client,
                 clientMediaDriver,
-                null != clientMediaDriver ? () -> clientMediaDriver.context().deleteDirectory() : null,
-                () -> CloseHelper.closeAll(Stream.of(nodes).map(TestCluster::closeAndDeleteNode).collect(toList())),
-                null != backupNode ? () -> backupNode.closeAndDelete() : null);
+                () -> CloseHelper.closeAll(Stream.of(nodes).filter(Objects::nonNull).collect(toList())),
+                null != backupNode ? () -> backupNode.close() : null);
         }
         finally
         {
@@ -249,16 +247,6 @@ public class TestCluster implements AutoCloseable
         }
 
         ClusterTests.failOnClusterError();
-    }
-
-    public static AutoCloseable closeAndDeleteNode(final TestNode node)
-    {
-        if (node == null)
-        {
-            return null;
-        }
-
-        return node::closeAndDelete;
     }
 
     public TestNode startStaticNode(final int index, final boolean cleanStart)
@@ -547,20 +535,12 @@ public class TestCluster implements AutoCloseable
     public void stopNode(final TestNode testNode)
     {
         testNode.close();
-        testNode.cleanup();
     }
 
     public void stopAllNodes()
     {
         CloseHelper.close(backupNode);
         CloseHelper.closeAll(nodes);
-        for (final TestNode node : nodes)
-        {
-            if (null != node)
-            {
-                node.cleanup();
-            }
-        }
     }
 
     public void restartAllNodes(final boolean cleanStart)
@@ -794,6 +774,7 @@ public class TestCluster implements AutoCloseable
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long heartbeatDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
         long count;
+        final Supplier<String> msg = () -> "expected=" + messageCount + " responseCount=" + responseCount.get();
 
         while ((count = responseCount.get()) < messageCount)
         {
@@ -812,6 +793,8 @@ public class TestCluster implements AutoCloseable
                 }
                 heartbeatDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
             }
+
+            Tests.yieldingIdle(msg);
         }
     }
 
@@ -1026,6 +1009,8 @@ public class TestCluster implements AutoCloseable
     public void awaitSnapshotCount(final TestNode node, final long value)
     {
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
+        final Supplier<String> msg =
+            () -> "Node=" + node.index() + " expected=" + value + " snapshotCount=" + snapshotCounter.get();
         while (true)
         {
             if (snapshotCounter.isClosed())
@@ -1038,7 +1023,7 @@ public class TestCluster implements AutoCloseable
                 break;
             }
 
-            Tests.yield();
+            Tests.yieldingIdle(msg);
         }
     }
 

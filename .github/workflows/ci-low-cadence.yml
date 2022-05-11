@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail"
-  INSTALL_COMPILER_RETRIES: "5"
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail'
+  INSTALL_COMPILER_RETRIES: '5'
 
 jobs:
   java-slow-tests:
@@ -138,7 +138,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13' ]
+        version: [ '14' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}
@@ -296,7 +296,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13' ]
+        version: [ '14' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}

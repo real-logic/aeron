@@ -501,8 +501,9 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
     aeron_command_publication_image_t *cmd = (aeron_command_publication_image_t *)item;
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
+    aeron_publication_image_t *image = (aeron_publication_image_t *)cmd->image;
 
-    if (NULL != endpoint && aeron_receive_channel_endpoint_on_remove_publication_image(endpoint, cmd->image) < 0)
+    if (NULL != endpoint && aeron_receive_channel_endpoint_on_remove_publication_image(endpoint, image) < 0)
     {
         AERON_APPEND_ERR("%s", "receiver on_remove_publication_image");
         aeron_driver_receiver_log_error(receiver);
@@ -510,7 +511,7 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
 
     for (size_t i = 0, size = receiver->images.length, last_index = size - 1; i < size; i++)
     {
-        if (cmd->image == receiver->images.array[i].image)
+        if (image == receiver->images.array[i].image)
         {
             aeron_array_fast_unordered_remove(
                 (uint8_t *)receiver->images.array, sizeof(aeron_driver_receiver_image_entry_t), i, last_index);
@@ -518,6 +519,8 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
             break;
         }
     }
+
+    aeron_publication_image_receiver_release(image);
 }
 
 void aeron_driver_receiver_on_remove_cool_down(void *clientd, void *item)

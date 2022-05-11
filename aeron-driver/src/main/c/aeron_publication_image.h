@@ -122,6 +122,7 @@ typedef struct aeron_publication_image_stct
     int64_t time_of_last_packet_ns;
 
     bool is_end_of_stream;
+    volatile bool has_receiver_released;
 
     int64_t *heartbeats_received_counter;
     int64_t *flow_control_under_runs_counter;
@@ -191,6 +192,8 @@ void aeron_publication_image_add_connection_if_unknown(
 
 void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms);
+
+void aeron_publication_image_receiver_release(aeron_publication_image_t *image);
 
 inline bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length)
 {

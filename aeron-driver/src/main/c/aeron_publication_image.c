@@ -194,6 +194,7 @@ int aeron_publication_image_create(
     _image->last_sm_change_number = -1;
     _image->last_loss_change_number = -1;
     _image->is_end_of_stream = false;
+    _image->has_receiver_released = false;
     _image->sm_timeout_ns = (int64_t)context->status_message_timeout_ns;
 
     memcpy(&_image->source_address, source_address, sizeof(_image->source_address));
@@ -915,6 +916,11 @@ void aeron_publication_image_on_time_event(
         case AERON_PUBLICATION_IMAGE_STATE_DONE:
             break;
     }
+}
+
+void aeron_publication_image_receiver_release(aeron_publication_image_t *image)
+{
+    AERON_PUT_ORDERED(image->has_receiver_released, true);
 }
 
 extern bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length);

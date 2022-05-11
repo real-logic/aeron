@@ -54,6 +54,7 @@ typedef struct aeron_http_response_stct
     size_t capacity;
     size_t status_code;
     size_t content_length;
+    bool is_complete;
     bool parse_err;
 }
 aeron_http_response_t;

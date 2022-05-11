@@ -150,84 +150,101 @@ int aeron_http_response_ensure_capacity(aeron_http_response_t *response, size_t 
     return 0;
 }
 
-bool aeron_http_response_is_complete(aeron_http_response_t *response)
+int aeron_http_parse_response(aeron_http_response_t *response)
 {
     char line[AERON_HTTP_MAX_HEADER_LENGTH];
     int line_result;
 
-    if (0 == response->status_code)
+    do
     {
-        if ((line_result = aeron_parse_get_line(line, sizeof(line), response->buffer)) == -1)
+        if (0 == response->status_code)
         {
-            response->parse_err = true;
-            return true;
-        }
-        else if (0 < line_result)
-        {
-            char version[9], code_str[4], reason_phrase[1024];
-            int matches = sscanf(line, "%8s %3[0-9] %s\r\n", version, code_str, reason_phrase);
-
-            if (3 == matches)
+            if ((line_result = aeron_parse_get_line(line, sizeof(line), response->buffer)) == -1)
             {
-                errno = 0;
-                unsigned long code = strtoul(code_str, NULL, 10);
-
-                if (0 == code)
-                {
-                    AERON_SET_ERR(EINVAL, "http response code <%s> parsed to 0, errno=%d", code_str, errno);
-                    return true;
-                }
-
-                response->status_code = (size_t)code;
-                response->cursor = (size_t)line_result;
-                response->headers_offset = (size_t)line_result;
-            }
-            else
-            {
-                AERON_SET_ERR(EINVAL, "could not parse response line: <%s>", line);
                 response->parse_err = true;
+                return true;
             }
-        }
-    }
-    else if (0 == response->body_offset)
-    {
-        if ((line_result = aeron_parse_get_line(line, sizeof(line), response->buffer + response->cursor)) == -1)
-        {
-            response->parse_err = true;
-            return true;
-        }
-        else if (0 < line_result)
-        {
-            if (strncmp(line, "\r\n", 2) == 0)
+            else if (0 == line_result)
             {
-                response->body_offset = response->cursor + line_result;
+                break;
             }
-            else if (strncmp(line, "Content-Length:", strlen("Content-Length:")) == 0)
+            else if (0 < line_result)
             {
-                errno = 0;
-                unsigned long content_length = strtoul(line + strlen("Content-Length:"), NULL, 10);
+                char version[9], code_str[4], reason_phrase[1024];
+                int matches = sscanf(line, "%8s %3[0-9] %s\r\n", version, code_str, reason_phrase);
 
-                if (0 == content_length)
+                if (3 == matches)
                 {
-                    AERON_SET_ERR(EINVAL, "http Content-Length <%s> parsed to 0, errno=%d", line, errno);
-                    return true;
+                    errno = 0;
+                    unsigned long code = strtoul(code_str, NULL, 10);
+
+                    if (0 == code)
+                    {
+                        AERON_SET_ERR(EINVAL, "http response code <%s> parsed to 0, errno=%d", code_str, errno);
+                        response->parse_err = true;
+                        return -1;
+                    }
+
+                    response->status_code = (size_t)code;
+                    response->cursor = (size_t)line_result;
+                    response->headers_offset = (size_t)line_result;
+                }
+                else
+                {
+                    AERON_SET_ERR(EINVAL, "could not parse response line: <%s>", line);
+                    response->parse_err = true;
+                    return -1;
+                }
+            }
+        }
+        else if (0 == response->body_offset)
+        {
+            if ((line_result = aeron_parse_get_line(line, sizeof(line), response->buffer + response->cursor)) == -1)
+            {
+                AERON_APPEND_ERR("%s", "failed to get http line");
+                response->parse_err = true;
+                return -1;
+            }
+            else if (0 == line_result)
+            {
+                break;
+            }
+            else if (0 < line_result)
+            {
+                if (strncmp(line, "\r\n", 2) == 0)
+                {
+                    response->body_offset = response->cursor + line_result;
+                }
+                else if (strncmp(line, "Content-Length:", strlen("Content-Length:")) == 0)
+                {
+                    errno = 0;
+                    unsigned long content_length = strtoul(line + strlen("Content-Length:"), NULL, 10);
+
+                    if (0 == content_length)
+                    {
+                        AERON_SET_ERR(EINVAL, "http Content-Length <%s> parsed to 0, errno=%d", line, errno);
+                        response->parse_err = true;
+                        return -1;
+                    }
+
+                    response->content_length = (size_t)content_length;
                 }
 
-                response->content_length = (size_t)content_length;
+                response->cursor += line_result;
             }
-
-            response->cursor += line_result;
         }
-    }
-    else
-    {
-        if (0 < response->content_length && response->content_length <= (response->length - response->body_offset))
+        else
         {
-            return true;
+            if (0 < response->content_length && response->content_length <= (response->length - response->body_offset))
+            {
+                response->is_complete = true;
+            }
+            break;
         }
     }
+    while (true);
 
-    return false;
+    return 0;
 }
 
 static char aeron_http_request_format[] =
@@ -336,8 +353,14 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
         _response->length += recv_length;
         _response->buffer[_response->length] = '\0';
+
+        if (aeron_http_parse_response(_response) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
     }
-    while (!aeron_http_response_is_complete(_response));
+    while (!_response->is_complete);
 
     if (_response->parse_err)
     {

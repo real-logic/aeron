@@ -803,7 +803,6 @@ final class Catalog implements AutoCloseable
 
     void updateChecksum(final int recordingDescriptorOffset)
     {
-        final Checksum checksum = this.checksum;
         if (null != checksum)
         {
             final UnsafeBuffer headerBuffer = this.headerAccessBuffer;
@@ -820,7 +819,6 @@ final class Catalog implements AutoCloseable
 
     int computeRecordingDescriptorChecksum(final int recordingDescriptorOffset, final int recordingLength)
     {
-        final Checksum checksum = this.checksum;
         if (null != checksum)
         {
             return checksum.compute(
@@ -828,6 +826,7 @@ final class Catalog implements AutoCloseable
                 DESCRIPTOR_HEADER_LENGTH + recordingDescriptorOffset,
                 recordingLength);
         }
+
         return 0;
     }
 

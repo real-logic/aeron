@@ -944,7 +944,7 @@ int aeron_receive_channel_endpoint_add_pending_setup(
 {
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
-        aeron_receive_destination_t *destination = endpoint->destinations.array[0].destination;
+        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
         if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination) < 0)
         {
             AERON_APPEND_ERR("%s", "");

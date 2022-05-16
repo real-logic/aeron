@@ -32,6 +32,7 @@ function startNode() {
         -XX:GuaranteedSafepointInterval=300000 \
         -XX:+UseParallelGC \
         -Daeron.event.cluster.log=all \
+        -Daeron.event.cluster.log.disable=APPEND_POSITION,COMMIT_POSITION \
         -Daeron.cluster.tutorial.nodeId=${1} \
         ${JVM_OPTS} ${ADD_OPENS} \
         io.aeron.samples.cluster.tutorial.BasicAuctionClusteredServiceNode > logs/cluster-${1}.log &

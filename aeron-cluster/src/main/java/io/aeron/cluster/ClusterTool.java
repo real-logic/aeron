@@ -79,6 +79,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *                     backup-query: [delay] get, or set, time of next backup query.
  *       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.
  *                         snapshot: triggers a snapshot on the leader.
+ *              background-snapshot: triggers a snapshot on a leader chosen node and replicates it to other nodes.
  *                          suspend: suspends appending to the log.
  *                           resume: resumes reading from the log.
  *                         shutdown: initiates an orderly stop of the cluster with a snapshot.
@@ -199,6 +200,10 @@ public class ClusterTool
 
             case "snapshot":
                 exitWithErrorOnFailure(snapshot(clusterDir, System.out));
+                break;
+
+            case "background-snapshot":
+                exitWithErrorOnFailure(backgroundSnapshot(clusterDir, System.out));
                 break;
 
             case "suspend":
@@ -888,6 +893,24 @@ public class ClusterTool
     }
 
     /**
+     * Instruct the cluster to take a background snapshot.
+     *
+     * @param clusterDir where the consensus module is running.
+     * @param out        to print the result of the operation.
+     * @return true is the operation was successfully requested.
+     */
+    public static boolean backgroundSnapshot(final File clusterDir, final PrintStream out)
+    {
+        return toggleClusterState(
+            out,
+            clusterDir,
+            ConsensusModule.State.ACTIVE,
+            ClusterControl.ToggleState.BACKGROUND_SNAPSHOT,
+            true,
+            TimeUnit.SECONDS.toMillis(30));
+    }
+
+    /**
      * Instruct the cluster to suspend operation.
      *
      * @param clusterDir where the consensus module is running.
@@ -1198,6 +1221,7 @@ public class ClusterTool
         }
     }
 
+    @SuppressWarnings("linelength")
     private static void printHelp(final PrintStream out)
     {
         out.format(
@@ -1215,6 +1239,7 @@ public class ClusterTool
             "                     backup-query: [delay] get, or set, time of next backup query.%n" +
             "       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.%n" +
             "                         snapshot: triggers a snapshot on the leader.%n" +
+            "              background-snapshot: triggers a snapshot on a leader chosen node and replicates it to other nodes.%n" +
             "                          suspend: suspends appending to the log.%n" +
             "                           resume: resumes appending to the log.%n" +
             "                         shutdown: initiates an orderly stop of the cluster with a snapshot.%n" +

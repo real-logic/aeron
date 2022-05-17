@@ -719,22 +719,6 @@ inline aeron_network_publication_t *aeron_driver_conductor_find_network_publicat
     return NULL;
 }
 
-inline aeron_publication_image_t * aeron_driver_conductor_find_publication_image(
-    aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
-{
-    for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
-    {
-        aeron_publication_image_t *image = conductor->publication_images.array[i].image;
-
-        if (endpoint == image->endpoint && stream_id == image->stream_id)
-        {
-            return image;
-        }
-    }
-
-    return NULL;
-}
-
 inline void aeron_driver_init_subscription_channel(size_t uri_length, const char *uri, aeron_subscription_link_t *link)
 {
     size_t copy_length = sizeof(link->channel) - 1;

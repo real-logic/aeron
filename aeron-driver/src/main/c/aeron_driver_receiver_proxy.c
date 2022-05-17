@@ -334,7 +334,6 @@ void aeron_driver_receiver_proxy_on_add_publication_image(
         aeron_command_publication_image_t cmd =
             {
                 .base = { .func = aeron_driver_receiver_on_add_publication_image, .item = NULL },
-                .endpoint = endpoint,
                 .image = image
             };
 
@@ -352,7 +351,6 @@ void aeron_driver_receiver_proxy_on_add_publication_image(
 
         cmd->base.func = aeron_driver_receiver_on_add_publication_image;
         cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
         cmd->image = image;
 
         aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
@@ -361,7 +359,6 @@ void aeron_driver_receiver_proxy_on_add_publication_image(
 
 void aeron_driver_receiver_proxy_on_remove_publication_image(
     aeron_driver_receiver_proxy_t *receiver_proxy,
-    aeron_receive_channel_endpoint_t *endpoint,
     aeron_publication_image_t *image)
 {
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
@@ -369,7 +366,6 @@ void aeron_driver_receiver_proxy_on_remove_publication_image(
         aeron_command_publication_image_t cmd =
             {
                 .base = { .func = aeron_driver_receiver_on_remove_publication_image, .item = NULL },
-                .endpoint = endpoint,
                 .image = image
             };
 
@@ -387,7 +383,6 @@ void aeron_driver_receiver_proxy_on_remove_publication_image(
 
         cmd->base.func = aeron_driver_receiver_on_remove_publication_image;
         cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
         cmd->image = image;
 
         aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);

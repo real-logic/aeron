@@ -56,6 +56,7 @@ typedef struct aeron_publication_image_stct
         int64_t time_of_last_state_change_ns;
         int64_t liveness_timeout_ns;
         int64_t clean_position;
+        aeron_receive_channel_endpoint_t *endpoint;
     }
     conductor_fields;
 
@@ -275,6 +276,11 @@ inline bool aeron_publication_image_is_accepting_subscriptions(aeron_publication
 inline void aeron_publication_image_disconnect_endpoint(aeron_publication_image_t *image)
 {
     image->endpoint = NULL;
+}
+
+inline void aeron_publication_image_conductor_disconnect_endpoint(aeron_publication_image_t *image)
+{
+    image->conductor_fields.endpoint = NULL;
 }
 
 inline const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image)

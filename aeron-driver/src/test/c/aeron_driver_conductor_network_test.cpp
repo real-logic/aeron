@@ -26,6 +26,22 @@ using testing::AnyNumber;
 
 class DriverConductorNetworkTest : public DriverConductorTest, public testing::Test
 {
+protected:
+    aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
+        aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+    {
+        for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
+        {
+            aeron_publication_image_t *image = conductor->publication_images.array[i].image;
+
+            if (endpoint == image->endpoint && stream_id == image->stream_id)
+            {
+                return image;
+            }
+        }
+
+        return NULL;
+    }
 };
 
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithDifferentChannelSameStreamId)

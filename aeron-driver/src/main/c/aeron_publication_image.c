@@ -163,6 +163,8 @@ int aeron_publication_image_create(
         _image->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
     _image->endpoint = endpoint;
+    _image->conductor_fields.endpoint = endpoint;
+
     _image->congestion_control = congestion_control;
     _image->loss_reporter = loss_reporter;
     _image->loss_reporter_offset = -1;
@@ -295,6 +297,7 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
     }
 }
 
+// Called from conductor via loss detector.
 void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
 {
     aeron_publication_image_t *image = (aeron_publication_image_t *)clientd;
@@ -316,7 +319,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
     }
     else if (NULL != image->loss_reporter)
     {
-        if (NULL != image->endpoint)
+        if (NULL != image->conductor_fields.endpoint)
         {
             char source[AERON_MAX_PATH];
             int source_length = aeron_format_source_identity(source, sizeof(source), &image->source_address);
@@ -327,8 +330,8 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
                 image->epoch_clock(),
                 image->session_id,
                 image->stream_id,
-                image->endpoint->conductor_fields.udp_channel->original_uri,
-                image->endpoint->conductor_fields.udp_channel->uri_length,
+                image->conductor_fields.endpoint->conductor_fields.udp_channel->original_uri,
+                image->conductor_fields.endpoint->conductor_fields.udp_channel->uri_length,
                 source,
                 (size_t)source_length);
         }
@@ -543,6 +546,7 @@ int aeron_publication_image_on_rttm(
     return 1;
 }
 
+// Called from receiver.
 int aeron_publication_image_send_pending_status_message(aeron_publication_image_t *image, int64_t now_ns)
 {
     int work_count = 0;
@@ -606,6 +610,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
     return work_count;
 }
 
+// Called from receiver.
 int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
 {
     int work_count = 0;
@@ -674,6 +679,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
     return work_count;
 }
 
+// Called from receiver
 int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int64_t now_ns)
 {
     int work_count = 0;
@@ -861,6 +867,7 @@ void aeron_publication_image_check_untethered_subscriptions(
     }
 }
 
+// Called from conductor.
 void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms)
 {
@@ -882,8 +889,7 @@ void aeron_publication_image_on_time_event(
                 image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_DRAINING;
                 image->conductor_fields.time_of_last_state_change_ns = now_ns;
 
-                aeron_driver_receiver_proxy_on_remove_publication_image(
-                    conductor->context->receiver_proxy, image->endpoint, image);
+                aeron_driver_receiver_proxy_on_remove_publication_image(conductor->context->receiver_proxy, image);
             }
 
             aeron_publication_image_check_untethered_subscriptions(conductor, image, now_ns);
@@ -943,6 +949,8 @@ extern bool aeron_publication_image_has_no_subscribers(aeron_publication_image_t
 extern bool aeron_publication_image_is_accepting_subscriptions(aeron_publication_image_t *image);
 
 extern void aeron_publication_image_disconnect_endpoint(aeron_publication_image_t *image);
+
+extern void aeron_publication_image_conductor_disconnect_endpoint(aeron_publication_image_t *image);
 
 extern const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image);
 

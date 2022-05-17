@@ -103,7 +103,6 @@ void aeron_driver_receiver_proxy_on_remove_destination(
 typedef struct aeron_command_publication_image_stct
 {
     aeron_command_base_t base;
-    void *endpoint;
     void *image;
 }
 aeron_command_publication_image_t;
@@ -123,7 +122,6 @@ void aeron_driver_receiver_proxy_on_add_publication_image(
     aeron_publication_image_t *image);
 void aeron_driver_receiver_proxy_on_remove_publication_image(
     aeron_driver_receiver_proxy_t *receiver_proxy,
-    aeron_receive_channel_endpoint_t *endpoint,
     aeron_publication_image_t *image);
 void aeron_driver_receiver_proxy_on_remove_cool_down(
     aeron_driver_receiver_proxy_t *receiver_proxy,

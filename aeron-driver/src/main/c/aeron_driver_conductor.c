@@ -1170,6 +1170,7 @@ bool aeron_receive_channel_endpoint_entry_has_reached_end_of_life(
     return aeron_receive_channel_endpoint_has_receiver_released(entry->endpoint);
 }
 
+// Called from conductor.
 void aeron_receive_channel_endpoint_entry_delete(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_entry_t *entry)
 {
@@ -1177,17 +1178,16 @@ void aeron_receive_channel_endpoint_entry_delete(
     {
         aeron_publication_image_t *image = conductor->publication_images.array[i].image;
 
-        if (entry->endpoint == image->endpoint)
+        if (entry->endpoint == image->conductor_fields.endpoint)
         {
-            const aeron_receive_channel_endpoint_t *endpoint = image->endpoint;
-            const aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+            const aeron_udp_channel_t *udp_channel = entry->endpoint->conductor_fields.udp_channel;
             conductor->context->remove_image_cleanup_func(
                 image->conductor_fields.managed_resource.registration_id,
                 image->session_id,
                 image->stream_id,
                 udp_channel->uri_length,
                 udp_channel->original_uri);
-            aeron_publication_image_disconnect_endpoint(image);
+            aeron_publication_image_conductor_disconnect_endpoint(image);
         }
     }
 
@@ -1268,10 +1268,11 @@ bool aeron_linger_resource_entry_free(aeron_linger_resource_entry_t *entry)
     return true;
 }
 
+// Called from conductor
 void aeron_driver_conductor_image_transition_to_linger(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image)
 {
-    if (NULL != image->endpoint)
+    if (NULL != image->conductor_fields.endpoint)
     {
         bool rejoin = true;
 
@@ -1296,7 +1297,10 @@ void aeron_driver_conductor_image_transition_to_linger(
         if (rejoin)
         {
             aeron_driver_receiver_proxy_on_remove_cool_down(
-                conductor->context->receiver_proxy, image->endpoint, image->session_id, image->stream_id);
+                conductor->context->receiver_proxy,
+                image->conductor_fields.endpoint,
+                image->session_id,
+                image->stream_id);
         }
     }
 }
@@ -3509,7 +3513,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         {
             aeron_publication_image_t *image = conductor->publication_images.array[i].image;
 
-            if (endpoint == image->endpoint &&
+            if (endpoint == image->conductor_fields.endpoint &&
                 command->stream_id == image->stream_id &&
                 aeron_publication_image_is_accepting_subscriptions(image))
             {

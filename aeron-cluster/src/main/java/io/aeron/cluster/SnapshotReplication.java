@@ -67,10 +67,13 @@ final class SnapshotReplication
     {
         if (correlationId == replicationId)
         {
-            if (RecordingSignal.EXTEND == signal)
+            if (RecordingPos.NULL_RECORDING_ID != recordingId)
             {
                 this.recordingId = recordingId;
+            }
 
+            if (RecordingSignal.EXTEND == signal)
+            {
                 if (isNew && 0 != position)
                 {
                     throw new ClusterException("expected new extend signal at 0: position=" + position);

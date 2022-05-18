@@ -219,7 +219,7 @@ class BackgroundSnapshotReplicator
             case IDLE:
                 if (null != nextSnapshotMember && Aeron.NULL_VALUE != nextSnapshotLogPosition)
                 {
-                    state = State.AWAIT_QUERY;
+                    state(State.AWAIT_QUERY);
                     query(nowNs, thisMember);
                 }
                 break;
@@ -238,7 +238,7 @@ class BackgroundSnapshotReplicator
                 currentSnapshotMember = null;
                 currentSnapshotLogPosition = Aeron.NULL_VALUE;
 
-                state = State.IDLE;
+                state(State.IDLE);
                 break;
 
             default:
@@ -246,6 +246,21 @@ class BackgroundSnapshotReplicator
         }
 
         return 0;
+    }
+
+    private void state(final State newState)
+    {
+        if (state != newState)
+        {
+            logStateChange(thisMember.id(), state, newState);
+        }
+
+        state = newState;
+    }
+
+    private void logStateChange(final int memberId, final State oldState, final State newState)
+    {
+
     }
 
     private int query(final long nowNs, final ClusterMember thisMember)
@@ -283,7 +298,7 @@ class BackgroundSnapshotReplicator
             if (null != activeReplication.exception())
             {
                 ctx.errorLog().record(activeReplication.exception());
-                state = State.FAILED;
+                state(State.FAILED);
                 return 1;
             }
 
@@ -309,7 +324,7 @@ class BackgroundSnapshotReplicator
             }
             else
             {
-                state = State.COMPLETE;
+                state(State.COMPLETE);
                 return 1;
             }
         }
@@ -345,7 +360,7 @@ class BackgroundSnapshotReplicator
                         snapshots.timestamp(),
                         snapshots.serviceId()));
 
-                    state = State.REPLICATE;
+                    state(State.REPLICATE);
                 }
             }
 

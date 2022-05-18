@@ -263,4 +263,13 @@ class ClusterInterceptor
             LOGGER.logAppendSessionClose(memberId, sessionId, closeReason, leadershipTermId, timestamp, timeUnit);
         }
     }
+
+    static class BackgroundSnapshotStateChange
+    {
+        @Advice.OnMethodEnter
+        static <E extends Enum<E>> void logStateChange(final int memberId, final E oldState, final E newState)
+        {
+            LOGGER.logStateChange(ClusterEventCode.BACKGROUND_SNAPSHOT_STATE_CHANGE, oldState, newState, memberId);
+        }
+    }
 }

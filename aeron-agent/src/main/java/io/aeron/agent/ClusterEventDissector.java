@@ -427,4 +427,14 @@ final class ClusterEventDissector
         builder.append(" timeUnit=");
         buffer.getStringWithoutLengthAscii(absoluteOffset, timeUnitLength, builder);
     }
+
+    public static void backgroundSnapshotStateChange(
+        final ClusterEventCode eventCode,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, eventCode, buffer, absoluteOffset, builder);
+    }
 }

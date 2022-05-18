@@ -557,6 +557,14 @@ public final class EventLogAgent
             ClusterInterceptor.StopCatchup.class,
             "onStopCatchup");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.BACKGROUND_SNAPSHOT_STATE_CHANGE,
+            "BackgroundSnapshotReplicator",
+            ClusterInterceptor.BackgroundSnapshotStateChange.class,
+            "logStateChange");
+
         return tempBuilder;
     }
 

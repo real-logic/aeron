@@ -103,7 +103,7 @@ add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
 
 # all UNIX-based platform compiler flags
 if (UNIX)
-    add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter -g)
+    add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter)
 
     if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "11.0")
         add_compile_options(-Wno-error=maybe-uninitialized)
@@ -118,12 +118,12 @@ if (UNIX)
     endif (CXX_WARNINGS_AS_ERRORS)
 
     if (SANITISE_BUILD)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer -g -O2 -DAERON_SANITIZE_ENABLED")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer -g -O2 -DAERON_SANITIZE_ENABLED")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer -DAERON_SANITIZE_ENABLED")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer -DAERON_SANITIZE_ENABLED")
     endif (SANITISE_BUILD)
 
     if (COVERAGE_BUILD)
-        add_compile_options(-O0 -fno-inline --coverage -g)
+        add_compile_options(-fno-inline --coverage)
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     endif (COVERAGE_BUILD)
 

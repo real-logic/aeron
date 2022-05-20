@@ -42,6 +42,12 @@ do
       echo "Enabling debug build"
       shift
       ;;
+    --relwithdebinfo-build)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCMAKE_BUILD_TYPE=RelWithDebInfo"
+      export BUILD_DIR="${SOURCE_DIR}/cppbuild/RelWithDebInfo"
+      echo "Enabling release with debug info build"
+      shift
+      ;;
     -b|--build-aeron-driver)
       echo "Enabling building of Aeron driver is the default"
       shift
@@ -98,7 +104,7 @@ do
       shift
       ;;
     -h|--help)
-      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--package] [--help]"
+      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--relwithdebinfo-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--package] [--help]"
       exit
       ;;
     *)

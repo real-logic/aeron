@@ -750,6 +750,9 @@ public class ClusterTest
 
         final TestNode leader = cluster.awaitLeader();
         cluster.connectClient();
+        cluster.sendMessages(1);
+        cluster.awaitResponseMessageCount(1);
+        cluster.awaitServicesMessageCount(1);
 
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .controlRequestChannel(leader.archive().context().localControlChannel())

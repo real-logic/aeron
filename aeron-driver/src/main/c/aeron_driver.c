@@ -666,6 +666,7 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     }
 
     fprintf(fpout, "\n}\n");
+    fflush(fpout);
 }
 
 int aeron_driver_shared_do_work(void *clientd)

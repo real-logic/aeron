@@ -346,7 +346,11 @@ public final class MediaDriver implements AutoCloseable
                 System.err.println("WARNING: " + ctx.aeronDirectory() + " exists");
             }
 
-            if (!ctx.dirDeleteOnStart())
+            if (ctx.dirDeleteOnStart())
+            {
+                ctx.deleteDirectory();
+            }
+            else
             {
                 final Consumer<String> logger = ctx.warnIfDirectoryExists() ? System.err::println : (s) -> {};
                 final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile(logger);
@@ -364,8 +368,6 @@ public final class MediaDriver implements AutoCloseable
                     BufferUtil.free(cncByteBuffer);
                 }
             }
-
-            ctx.deleteDirectory();
         }
 
         IoUtil.ensureDirectoryExists(ctx.aeronDirectory(), "aeron");

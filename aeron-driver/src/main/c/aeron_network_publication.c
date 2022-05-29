@@ -298,6 +298,18 @@ int aeron_network_publication_setup_message_check(
         iov.iov_base = setup_buffer;
         iov.iov_len = sizeof(aeron_setup_header_t);
 
+        if (publication->is_setup_elicited)
+        {
+            publication->flow_control->on_setup(
+                publication->flow_control->state,
+                setup_buffer,
+                sizeof(aeron_setup_header_t),
+                now_ns,
+                *publication->snd_lmt_position.value_addr,
+                publication->position_bits_to_shift,
+                *publication->snd_pos_position.value_addr);
+        }
+
         if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
         {
             if (bytes_sent < (int64_t)iov.iov_len)
@@ -506,7 +518,8 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     int64_t resend_position = aeron_logbuffer_compute_position(
         term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
     size_t term_length = (size_t)publication->term_length_mask + 1;
-    int64_t bottom_resend_window = sender_position - (int64_t)(term_length / 2);
+    int64_t bottom_resend_window =
+        sender_position - (int64_t)(term_length / 2) - (int64_t)aeron_compute_max_message_length(term_length);
     int result = 0;
 
     if (bottom_resend_window <= resend_position && resend_position < sender_position)

@@ -76,6 +76,18 @@ int64_t aeron_max_flow_control_strategy_on_idle(
     return snd_lmt;
 }
 
+int64_t aeron_max_flow_control_strategy_on_setup(
+    void *state,
+    const uint8_t *setup,
+    size_t length,
+    int64_t now_ns,
+    int64_t snd_lmt,
+    size_t position_bits_to_shift,
+    int64_t snd_pos)
+{
+    return snd_lmt;
+}
+
 int64_t aeron_max_flow_control_strategy_on_sm(
     void *state,
     const uint8_t *sm,
@@ -108,6 +120,7 @@ int aeron_max_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy
 int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -124,6 +137,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     _strategy->state = NULL;  // Max does not require any state.
     _strategy->on_idle = aeron_max_flow_control_strategy_on_idle;
     _strategy->on_status_message = aeron_max_flow_control_strategy_on_sm;
+    _strategy->on_setup = aeron_max_flow_control_strategy_on_setup;
     _strategy->fini = aeron_max_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_flow_control_strategy_has_required_receivers_default;
 
@@ -135,6 +149,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
 int aeron_unicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -142,7 +157,7 @@ int aeron_unicast_flow_control_strategy_supplier(
     size_t term_length)
 {
     return aeron_max_multicast_flow_control_strategy_supplier(
-        strategy, context, channel, stream_id, registration_id, initial_term_id, term_length);
+        strategy, context, counters_manager, channel, stream_id, registration_id, initial_term_id, term_length);
 }
 
 aeron_flow_control_strategy_supplier_func_table_entry_t aeron_flow_control_strategy_supplier_table[] =
@@ -181,6 +196,7 @@ void aeron_flow_control_extract_strategy_name_length(
 int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -252,7 +268,7 @@ int aeron_default_multicast_flow_control_strategy_supplier(
     }
 
     int rc = flow_control_strategy_supplier_func(
-        strategy, context, channel, stream_id, registration_id, initial_term_id, term_length);
+        strategy, context, counters_manager, channel, stream_id, registration_id, initial_term_id, term_length);
 
     if (0 <= rc && NULL != *strategy && NULL == (*strategy)->has_required_receivers)
     {

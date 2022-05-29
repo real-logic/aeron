@@ -42,16 +42,26 @@ typedef int64_t (*aeron_flow_control_strategy_on_sm_func_t)(
     size_t position_bits_to_shift,
     int64_t now_ns);
 
+typedef int64_t (*aeron_flow_control_strategy_on_setup_func_t)(
+    void *state,
+    const uint8_t *setup,
+    size_t length,
+    int64_t now_ns,
+    int64_t snd_lmt,
+    size_t position_bits_to_shift,
+    int64_t snd_pos);
+
 typedef int (*aeron_flow_control_strategy_fini_func_t)(aeron_flow_control_strategy_t *strategy);
 
-typedef bool (*aeron_flow_control_strategy_has_required_receivers)(aeron_flow_control_strategy_t *strategy);
+typedef bool (*aeron_flow_control_strategy_has_required_receivers_func_t)(aeron_flow_control_strategy_t *strategy);
 
 typedef struct aeron_flow_control_strategy_stct
 {
     aeron_flow_control_strategy_on_sm_func_t on_status_message;
     aeron_flow_control_strategy_on_idle_func_t on_idle;
+    aeron_flow_control_strategy_on_setup_func_t on_setup;
     aeron_flow_control_strategy_fini_func_t fini;
-    aeron_flow_control_strategy_has_required_receivers has_required_receivers;
+    aeron_flow_control_strategy_has_required_receivers_func_t has_required_receivers;
     void *state;
 }
 aeron_flow_control_strategy_t;
@@ -88,6 +98,7 @@ aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier
 int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -97,6 +108,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
 int aeron_unicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -106,6 +118,7 @@ int aeron_unicast_flow_control_strategy_supplier(
 int aeron_min_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -115,6 +128,7 @@ int aeron_min_flow_control_strategy_supplier(
 int aeron_tagged_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -127,6 +141,7 @@ int aeron_tagged_flow_control_strategy_to_string(
 int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,

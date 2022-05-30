@@ -280,6 +280,7 @@ subprojects {
         options.docEncoding = 'UTF-8'
         options.charSet = 'UTF-8'
         options.links("https://www.javadoc.io/doc/org.agrona/agrona/${agronaVersion}/")
+
         if (buildJavaVersion >= 19) { // early access JavaDoc location is different
             options.links("https://download.java.net/java/early_access/jdk${buildJavaVersion}/docs/api/")
         }
@@ -289,6 +290,7 @@ subprojects {
         else {
             options.links("https://docs.oracle.com/javase/${buildJavaVersion}/docs/api/")
         }
+
         if (buildJavaVersion >= 10) {
             options.addBooleanOption 'html5', true
         }

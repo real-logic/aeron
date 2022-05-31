@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 /*
  * Copyright 2014-2022 Real Logic Limited.
  *
@@ -823,6 +825,8 @@ project(':aeron-samples') {
 }
 
 project(':aeron-system-tests') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+
     dependencies {
         testImplementation project(':aeron-archive')
         testImplementation project(':aeron-test-support')
@@ -832,6 +836,7 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-cluster')
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testImplementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        testRuntimeOnly "org.junit.platform:junit-platform-console-standalone:1.8.2"
         testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
         if (buildJavaVersion == 8) {
             def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
@@ -851,6 +856,11 @@ project(':aeron-system-tests') {
         systemProperty('aeron.test.system.ats.conf.file', System.getProperty('aeron.test.system.ats.conf.file'))
     }
 
+    task packageTests(type: ShadowJar) {
+        archiveClassifier.set("tests")
+        from sourceSets.test.output
+        configurations = [project.configurations.testRuntimeClasspath]
+    }
 
     javadoc.enabled = false
 }

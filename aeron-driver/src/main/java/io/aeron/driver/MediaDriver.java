@@ -49,6 +49,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.*;
@@ -57,6 +58,7 @@ import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
@@ -317,13 +319,18 @@ public final class MediaDriver implements AutoCloseable
      */
     public void close()
     {
-        if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows() && !wasHighResTimerEnabled)
+        try
         {
-            HighResolutionTimer.disable();
+            CloseHelper.closeAll(
+                sharedRunner, sharedNetworkRunner, receiverRunner, senderRunner, conductorRunner, sharedInvoker);
         }
-
-        CloseHelper.closeAll(
-            sharedRunner, sharedNetworkRunner, receiverRunner, senderRunner, conductorRunner, sharedInvoker);
+        finally
+        {
+            if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows() && !wasHighResTimerEnabled)
+            {
+                HighResolutionTimer.disable();
+            }
+        }
     }
 
     /**
@@ -409,7 +416,10 @@ public final class MediaDriver implements AutoCloseable
      */
     public static final class Context extends CommonContext
     {
-        private boolean isClosed = false;
+        private static final AtomicIntegerFieldUpdater<MediaDriver.Context> IS_CLOSED_UPDATER = newUpdater(
+            MediaDriver.Context.class, "isClosed");
+
+        private volatile int isClosed;
         private boolean printConfigurationOnStart = Configuration.printConfigurationOnStart();
         private boolean useWindowsHighResTimer = Configuration.useWindowsHighResTimer();
         private boolean warnIfDirectoryExists = Configuration.warnIfDirExists();
@@ -549,10 +559,8 @@ public final class MediaDriver implements AutoCloseable
          */
         public void close()
         {
-            if (!isClosed)
+            if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
             {
-                isClosed = true;
-
                 CloseHelper.close(errorHandler, logFactory);
 
                 final AtomicCounter errorCounter = systemCounters.get(ERRORS);
@@ -3556,7 +3564,7 @@ public final class MediaDriver implements AutoCloseable
             return "MediaDriver.Context" +
                 "\n{" +
                 "\n    isConcluded=" + isConcluded() +
-                "\n    isClosed=" + isClosed +
+                "\n    isClosed=" + (1 == isClosed) +
                 "\n    cncVersion=" + SemanticVersion.toString(CNC_VERSION) +
                 "\n    aeronDirectory=" + aeronDirectory() +
                 "\n    aeronDirectoryName='" + aeronDirectoryName() + '\'' +

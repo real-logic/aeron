@@ -35,6 +35,7 @@ import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.SystemEpochClock;
@@ -69,10 +70,10 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(InterruptingTestCallback.class)
 @SuppressWarnings("try")
-public class ArchiveTest
+class ArchiveTest
 {
     @Test
-    public void shouldGenerateRecordingName()
+    void shouldGenerateRecordingName()
     {
         final long recordingId = 1L;
         final long segmentPosition = 2 * 64 * 1024;
@@ -84,7 +85,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldCalculateCorrectSegmentFilePosition()
+    void shouldCalculateCorrectSegmentFilePosition()
     {
         final int termLength = LogBufferDescriptor.TERM_MIN_LENGTH;
         final int segmentLength = termLength * 8;
@@ -125,7 +126,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldAllowMultipleConnectionsInParallel() throws InterruptedException
+    void shouldAllowMultipleConnectionsInParallel() throws InterruptedException
     {
         final int numberOfArchiveClients = 5;
         final long connectTimeoutNs = TimeUnit.SECONDS.toNanos(10);
@@ -162,7 +163,7 @@ public class ArchiveTest
             AeronArchive archiveClient;
             while (null != (archiveClient = archiveClientQueue.poll()))
             {
-                archiveClient.close();
+                CloseHelper.quietClose(archiveClient);
             }
         }
         finally
@@ -174,7 +175,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldRecoverRecordingWithNonZeroStartPosition()
+    void shouldRecoverRecordingWithNonZeroStartPosition()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
@@ -222,7 +223,7 @@ public class ArchiveTest
             }
         }
 
-        try (Catalog catalog = openCatalog(archiveCtx))
+        try (Catalog catalog = openCatalog(archiveCtx.archiveDirectoryName()))
         {
             final Catalog.CatalogEntryProcessor catalogEntryProcessor =
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
@@ -246,21 +247,9 @@ public class ArchiveTest
         }
     }
 
-    private static Catalog openCatalog(final Context archiveCtx)
-    {
-        final IntConsumer intConsumer = (version) -> {};
-        return new Catalog(
-            new File(archiveCtx.archiveDirectoryName()),
-            new SystemEpochClock(),
-            MIN_CAPACITY,
-            true,
-            null,
-            intConsumer);
-    }
-
     @Test
     @InterruptAfter(10)
-    public void shouldListRegisteredRecordingSubscriptions()
+    void shouldListRegisteredRecordingSubscriptions()
     {
         final int expectedStreamId = 7;
         final String channelOne = "aeron:ipc";
@@ -319,7 +308,7 @@ public class ArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldErrorOnLowSpace() throws IOException
+    void shouldErrorOnLowSpace() throws IOException
     {
         final int streamId = 7;
         final String channel = "aeron:ipc";
@@ -361,7 +350,7 @@ public class ArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldErrorWhenUnauthorised()
+    void shouldErrorWhenUnauthorised()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
@@ -504,7 +493,7 @@ public class ArchiveTest
 
     @ParameterizedTest
     @ValueSource(strings = { "localhost:0", "localhost:8888" })
-    public void shouldResolveControlResponseEndpointAddress(final String endpoint)
+    void shouldResolveControlResponseEndpointAddress(final String endpoint)
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
@@ -544,6 +533,18 @@ public class ArchiveTest
         }
     }
 
+    private static Catalog openCatalog(final String archiveDirectoryName)
+    {
+        final IntConsumer intConsumer = (version) -> {};
+        return new Catalog(
+            new File(archiveDirectoryName),
+            new SystemEpochClock(),
+            MIN_CAPACITY,
+            true,
+            null,
+            intConsumer);
+    }
+
     static final class SubscriptionDescriptor
     {
         final long controlSessionId;
@@ -552,7 +553,7 @@ public class ArchiveTest
         final int streamId;
         final String strippedChannel;
 
-        private SubscriptionDescriptor(
+        SubscriptionDescriptor(
             final long controlSessionId,
             final long correlationId,
             final long subscriptionId,

@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-public class CatalogViewTest
+class CatalogViewTest
 {
     private static final long CAPACITY = 1024 * 1024;
     private static final int TERM_LENGTH = 2 * Catalog.PAGE_SIZE;
@@ -45,7 +45,7 @@ public class CatalogViewTest
     private final RecordingDescriptorConsumer mockRecordingDescriptorConsumer = mock(RecordingDescriptorConsumer.class);
 
     @BeforeEach
-    public void before()
+    void before()
     {
         clock.update(1);
 
@@ -61,13 +61,13 @@ public class CatalogViewTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         IoUtil.delete(archiveDir, false);
     }
 
     @Test
-    public void shouldListAllRecordingsInCatalog()
+    void shouldListAllRecordingsInCatalog()
     {
         final int count = CatalogView.listRecordings(archiveDir, mockRecordingDescriptorConsumer);
         assertEquals(3, count);
@@ -91,7 +91,7 @@ public class CatalogViewTest
     }
 
     @Test
-    public void shouldListRecordingByRecordingId()
+    void shouldListRecordingByRecordingId()
     {
         final boolean found = CatalogView.listRecording(archiveDir, recordingTwoId, mockRecordingDescriptorConsumer);
         assertTrue(found);

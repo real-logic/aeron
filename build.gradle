@@ -854,7 +854,7 @@ project(':aeron-system-tests') {
         systemProperty('aeron.test.system.ats.conf.file', System.getProperty('aeron.test.system.ats.conf.file'))
     }
 
-    task packageTests(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    shadowJar {
         archiveClassifier.set("tests")
         from sourceSets.test.output
         configurations = [project.configurations.testRuntimeClasspath]

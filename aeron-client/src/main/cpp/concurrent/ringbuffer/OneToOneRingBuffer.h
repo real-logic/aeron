@@ -20,6 +20,7 @@
 #include <climits>
 #include <functional>
 #include <algorithm>
+#include "util/Exceptions.h"
 #include "util/LangUtil.h"
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/ringbuffer/RingBufferDescriptor.h"
@@ -54,67 +55,61 @@ public:
         return m_capacity;
     }
 
-    bool write(std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length)
+    bool write(std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t offset, util::index_t length)
+    {
+        bool isSuccessful = false;
+
+        RecordDescriptor::checkMsgTypeId(msgTypeId);
+        checkMsgLength(length);
+
+        const util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+        const util::index_t recordIndex = claimCapacity(recordLength);
+
+        if (INSUFFICIENT_CAPACITY != recordIndex)
+        {
+            m_buffer.putInt64Ordered(recordIndex, RecordDescriptor::makeHeader(-recordLength, msgTypeId));
+            m_buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, offset, length);
+            m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(recordIndex), recordLength);
+            
+            isSuccessful = true;
+        }
+
+        return isSuccessful;
+    }
+
+    util::index_t tryClaim(std::int32_t msgTypeId, util::index_t length)
     {
         RecordDescriptor::checkMsgTypeId(msgTypeId);
         checkMsgLength(length);
 
         const util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
-        const util::index_t requiredCapacity = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
-        const util::index_t mask = m_capacity - 1;
+        const util::index_t recordIndex = claimCapacity(recordLength);
 
-        std::int64_t head = m_buffer.getInt64(m_headCachePositionIndex);
-        std::int64_t tail = m_buffer.getInt64(m_tailPositionIndex);
-        const util::index_t availableCapacity = m_capacity - (util::index_t)(tail - head);
-
-        if (requiredCapacity > availableCapacity)
+        if (INSUFFICIENT_CAPACITY == recordIndex)
         {
-            head = m_buffer.getInt64Volatile(m_headPositionIndex);
-
-            if (requiredCapacity > (m_capacity - (util::index_t)(tail - head)))
-            {
-                return false;
-            }
-
-            m_buffer.putInt64(m_headCachePositionIndex, head);
+            return recordIndex;
         }
 
-        util::index_t padding = 0;
-        auto recordIndex = static_cast<util::index_t>(tail & mask);
-        const util::index_t toBufferEndLength = m_capacity - recordIndex;
+        m_buffer.putInt64Ordered(recordIndex, RecordDescriptor::makeHeader(-recordLength, msgTypeId));
 
-        if (requiredCapacity > toBufferEndLength)
-        {
-            auto headIndex = static_cast<std::int32_t>(head & mask);
+        return RecordDescriptor::encodedMsgOffset(recordIndex);
+    }
 
-            if (requiredCapacity > headIndex)
-            {
-                head = m_buffer.getInt64Volatile(m_headPositionIndex);
-                headIndex = static_cast<std::int32_t>(head & mask);
+    void commit(util::index_t index)
+    {
+        const util::index_t recordIndex = computeRecordIndex(index);
+        const util::index_t recordLength = verifyClaimedSpaceNotReleased(recordIndex);
 
-                if (requiredCapacity > headIndex)
-                {
-                    return false;
-                }
+        m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(recordIndex), -recordLength);
+    }
 
-                m_buffer.putInt64Ordered(m_headCachePositionIndex, head);
-            }
+    
+    void abort(util::index_t index)
+    {
+        const util::index_t recordIndex = computeRecordIndex(index);
+        const util::index_t recordLength = verifyClaimedSpaceNotReleased(recordIndex);
 
-            padding = toBufferEndLength;
-        }
-
-        if (0 != padding)
-        {
-            m_buffer.putInt64Ordered(
-                recordIndex, RecordDescriptor::makeHeader(padding, RecordDescriptor::PADDING_MSG_TYPE_ID));
-            recordIndex = 0;
-        }
-
-        m_buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
-        m_buffer.putInt64Ordered(recordIndex, RecordDescriptor::makeHeader(recordLength, msgTypeId));
-        m_buffer.putInt64Ordered(m_tailPositionIndex, tail + requiredCapacity + padding);
-
-        return true;
+        m_buffer.putInt64Ordered(recordIndex, RecordDescriptor::makeHeader(-recordLength, RecordDescriptor::PADDING_MSG_TYPE_ID));
     }
 
     int read(const handler_t &handler, int messageCountLimit)
@@ -232,7 +227,10 @@ public:
         return false;
     }
 
+    static const util::index_t INSUFFICIENT_CAPACITY = -2;
+
 private:
+
     concurrent::AtomicBuffer &m_buffer;
     util::index_t m_capacity;
     util::index_t m_maxMsgLength;
@@ -242,9 +240,93 @@ private:
     util::index_t m_correlationIdCounterIndex;
     util::index_t m_consumerHeartbeatIndex;
 
+    util::index_t claimCapacity(util::index_t recordLength)
+    {
+        const util::index_t requiredCapacity = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+        const util::index_t mask = m_capacity - 1;
+
+        std::int64_t head = m_buffer.getInt64(m_headCachePositionIndex);
+        std::int64_t tail = m_buffer.getInt64(m_tailPositionIndex);
+        const util::index_t availableCapacity = m_capacity - (util::index_t)(tail - head);
+
+        if (requiredCapacity > availableCapacity)
+        {
+            head = m_buffer.getInt64Volatile(m_headPositionIndex);
+
+            if (requiredCapacity > (m_capacity - (util::index_t)(tail - head)))
+            {
+                return INSUFFICIENT_CAPACITY;
+            }
+
+            m_buffer.putInt64(m_headCachePositionIndex, head);
+        }
+
+        util::index_t padding = 0;
+        auto recordIndex = static_cast<util::index_t>(tail & mask);
+        const util::index_t toBufferEndLength = m_capacity - recordIndex;
+
+        if (requiredCapacity > toBufferEndLength)
+        {
+            auto headIndex = static_cast<std::int32_t>(head & mask);
+
+            if (requiredCapacity > headIndex)
+            {
+                head = m_buffer.getInt64Volatile(m_headPositionIndex);
+                headIndex = static_cast<std::int32_t>(head & mask);
+
+                if (requiredCapacity > headIndex)
+                {
+                    return INSUFFICIENT_CAPACITY;
+                }
+
+                m_buffer.putInt64Ordered(m_headCachePositionIndex, head);
+            }
+
+            padding = toBufferEndLength;
+        }
+
+        if (0 != padding)
+        {
+            m_buffer.putInt64Ordered(
+                recordIndex, RecordDescriptor::makeHeader(padding, RecordDescriptor::PADDING_MSG_TYPE_ID));
+            recordIndex = 0;
+        }
+
+        m_buffer.putInt64Ordered(m_tailPositionIndex, tail + requiredCapacity + padding);
+
+        return recordIndex;
+    }
+
+    inline util::index_t computeRecordIndex(util::index_t index)
+    {
+        const util::index_t recordIndex = index - RecordDescriptor::HEADER_LENGTH;
+        if (recordIndex < 0 || recordIndex > (m_capacity - RecordDescriptor::HEADER_LENGTH))
+        {
+            throw util::IllegalArgumentException("invalid message index " + index, SOURCEINFO);
+        }
+
+        return recordIndex;
+    }
+
+    inline util::index_t verifyClaimedSpaceNotReleased(const util::index_t recordIndex)
+    {
+        const util::index_t recordLength = m_buffer.getInt32(RecordDescriptor::lengthOffset(recordIndex));
+        if (recordLength < 0)
+        {
+            return recordLength;
+        }
+
+        const bool isPadding = RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::typeOffset(recordIndex));
+        throw util::IllegalArgumentException("claimed space previously " + isPadding ? "aborted" : "committed", SOURCEINFO);
+    }
+
     inline void checkMsgLength(util::index_t length) const
     {
-        if (length > m_maxMsgLength)
+        if (length < 0)
+        {
+            throw util::IllegalArgumentException("invalid message length=" + length, SOURCEINFO);
+        }
+        else if (length > m_maxMsgLength)
         {
             throw util::IllegalArgumentException(
                 "encoded message exceeds maxMsgLength of " + std::to_string(m_maxMsgLength) +

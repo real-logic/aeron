@@ -383,6 +383,63 @@ TEST_F(OneToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
     }
 }
 
+TEST_F(OneToOneRingBufferTest, tryClaimThrowsIllegalArgumentExceptionIfMessageTypeIdIsInvalid)
+{
+    ASSERT_THROW(
+        {
+            m_ringBuffer.tryClaim(0, 10);
+        }, util::IllegalArgumentException);
+}
+
+TEST_F(OneToOneRingBufferTest, tryClaimThrowsIllegalArgumentExceptionIfLengthIsBiggerThanMaxMessageLength)
+{
+    ASSERT_THROW(
+        {
+            m_ringBuffer.tryClaim(MSG_TYPE_ID, 2000);
+        }, util::IllegalArgumentException);
+}
+
+TEST_F(OneToOneRingBufferTest, tryClaimThrowsIllegalArgumentExceptionIfLengthIsNegative)
+{
+    ASSERT_THROW(
+        {
+            m_ringBuffer.tryClaim(MSG_TYPE_ID, -5);
+        }, util::IllegalArgumentException);
+}
+
+TEST_F(OneToOneRingBufferTest, tryClaimReturnsOffsetAtWhichMessageBodyCanBeWritten)
+{
+    util::index_t length = 8;
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+    // util::index_t tail = CAPACITY - RecordDescriptor::ALIGNMENT;
+    // util::index_t head = tail - (RecordDescriptor::ALIGNMENT * 4);
+    // util::index_t srcIndex = 0;
+
+    util::index_t index = m_ringBuffer.tryClaim(MSG_TYPE_ID, length);
+
+    EXPECT_EQ(RecordDescriptor::HEADER_LENGTH, index);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(0)), -recordLength);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(0)), MSG_TYPE_ID);
+    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), alignedRecordLength);
+}
+
+TEST_F(OneToOneRingBufferTest, tryClaimReturnsInsufficientCapacityIfThereIsNotEnoughSpaceInTheBuffer)
+{
+    util::index_t length = 100;
+    util::index_t head = 0;
+    util::index_t tail =
+        head + (CAPACITY - util::BitUtil::align(length - RecordDescriptor::ALIGNMENT, RecordDescriptor::ALIGNMENT));
+
+    m_ab.putInt64(HEAD_COUNTER_INDEX, head);
+    m_ab.putInt64(TAIL_COUNTER_INDEX, tail);
+
+    EXPECT_EQ(OneToOneRingBuffer::INSUFFICIENT_CAPACITY, m_ringBuffer.tryClaim(MSG_TYPE_ID, length));
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(0)), -recordLength);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(0)), MSG_TYPE_ID);
+    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), alignedRecordLength);
+}
+
 #define NUM_MESSAGES (10 * 1000 * 1000)
 #define NUM_IDS_PER_THREAD (10 * 1000 * 1000)
 
@@ -508,3 +565,4 @@ TEST(OneToOneRingBufferConcurrentTest, shouldExchangeMessages)
         printf("EXCEPTION unknown\n");
     }
 }
+

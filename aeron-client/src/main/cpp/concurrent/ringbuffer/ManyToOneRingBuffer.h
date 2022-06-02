@@ -20,6 +20,7 @@
 #include <climits>
 #include <functional>
 #include <algorithm>
+#include "util/Exceptions.h"
 #include "util/LangUtil.h"
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/ringbuffer/RingBufferDescriptor.h"
@@ -75,6 +76,41 @@ public:
         }
 
         return isSuccessful;
+    }
+
+    util::index_t tryClaim(std::int32_t msgTypeId, util::index_t length)
+    {
+        RecordDescriptor::checkMsgTypeId(msgTypeId);
+        checkMsgLength(length);
+
+        const util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+        const util::index_t recordIndex = claimCapacity(recordLength);
+
+        if (INSUFFICIENT_CAPACITY == recordIndex)
+        {
+            return recordIndex;
+        }
+
+        m_buffer.putInt64Ordered(recordIndex, RecordDescriptor::makeHeader(-recordLength, msgTypeId));
+
+        return RecordDescriptor::encodedMsgOffset(recordIndex);
+    }
+
+    void commit(util::index_t index)
+    {
+        const util::index_t recordIndex = computeRecordIndex(index);
+        const util::index_t recordLength = verifyClaimedSpaceNotReleased(recordIndex);
+
+        m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(recordIndex), -recordLength);
+    }
+
+    
+    void abort(util::index_t index)
+    {
+        const util::index_t recordIndex = computeRecordIndex(index);
+        const util::index_t recordLength = verifyClaimedSpaceNotReleased(recordIndex);
+
+        m_buffer.putInt64Ordered(recordIndex, RecordDescriptor::makeHeader(-recordLength, RecordDescriptor::PADDING_MSG_TYPE_ID));
     }
 
     int read(const handler_t &handler, int messageCountLimit)
@@ -238,9 +274,9 @@ public:
         return unblocked;
     }
 
-private:
-
     static const util::index_t INSUFFICIENT_CAPACITY = -2;
+
+private:
 
     concurrent::AtomicBuffer &m_buffer;
     util::index_t m_capacity;
@@ -312,9 +348,36 @@ private:
         return tailIndex;
     }
 
+    inline util::index_t computeRecordIndex(util::index_t index)
+    {
+        const util::index_t recordIndex = index - RecordDescriptor::HEADER_LENGTH;
+        if (recordIndex < 0 || recordIndex > (m_capacity - RecordDescriptor::HEADER_LENGTH))
+        {
+            throw util::IllegalArgumentException("invalid message index " + index, SOURCEINFO);
+        }
+
+        return recordIndex;
+    }
+
+    inline util::index_t verifyClaimedSpaceNotReleased(const util::index_t recordIndex)
+    {
+        const util::index_t recordLength = m_buffer.getInt32(RecordDescriptor::lengthOffset(recordIndex));
+        if (recordLength < 0)
+        {
+            return recordLength;
+        }
+
+        const bool isPadding = RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::typeOffset(recordIndex));
+        throw util::IllegalArgumentException("claimed space previously " + isPadding ? "aborted" : "committed", SOURCEINFO);
+    }
+
     inline void checkMsgLength(util::index_t length) const
     {
-        if (length > m_maxMsgLength)
+        if (length < 0)
+        {
+            throw util::IllegalArgumentException("invalid message length=" + length, SOURCEINFO);
+        }
+        else if (length > m_maxMsgLength)
         {
             throw util::IllegalArgumentException(
                 "encoded message exceeds maxMsgLength of " + std::to_string(m_maxMsgLength) +

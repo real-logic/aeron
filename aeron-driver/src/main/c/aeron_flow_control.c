@@ -123,6 +123,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length)
@@ -152,12 +153,14 @@ int aeron_unicast_flow_control_strategy_supplier(
     aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length)
 {
     return aeron_max_multicast_flow_control_strategy_supplier(
-        strategy, context, counters_manager, channel, stream_id, registration_id, initial_term_id, term_length);
+        strategy, context, counters_manager, channel,
+        stream_id, session_id, registration_id, initial_term_id, term_length);
 }
 
 aeron_flow_control_strategy_supplier_func_table_entry_t aeron_flow_control_strategy_supplier_table[] =
@@ -199,6 +202,7 @@ int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length)
@@ -268,7 +272,8 @@ int aeron_default_multicast_flow_control_strategy_supplier(
     }
 
     int rc = flow_control_strategy_supplier_func(
-        strategy, context, counters_manager, channel, stream_id, registration_id, initial_term_id, term_length);
+        strategy, context, counters_manager, channel, stream_id, session_id,
+        registration_id, initial_term_id, term_length);
 
     if (0 <= rc && NULL != *strategy && NULL == (*strategy)->has_required_receivers)
     {

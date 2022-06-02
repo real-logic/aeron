@@ -25,6 +25,8 @@
 #define AERON_MIN_FLOW_CONTROL_STRATEGY_NAME "min"
 #define AERON_TAGGED_FLOW_CONTROL_STRATEGY_NAME "tagged"
 
+#define AERON_MIN_FLOW_CONTROL_RECEIVERS_COUNTER_NAME ("fc-receivers")
+
 typedef int64_t (*aeron_flow_control_strategy_on_idle_func_t)(
     void *state,
     int64_t now_ns,
@@ -101,6 +103,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length);
@@ -111,6 +114,7 @@ int aeron_unicast_flow_control_strategy_supplier(
     aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length);
@@ -121,6 +125,7 @@ int aeron_min_flow_control_strategy_supplier(
     aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_buffer_capacity);
@@ -131,6 +136,7 @@ int aeron_tagged_flow_control_strategy_supplier(
     aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_buffer_capacity);
@@ -144,6 +150,7 @@ int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length);

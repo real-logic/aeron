@@ -88,6 +88,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->transport.fd = -1;
     _endpoint->channel_status.counter_id = -1;
     _endpoint->local_sockaddr_indicator.counter_id = -1;
+    _endpoint->tracker_num_destinations.counter_id = -1;
     _endpoint->transport_bindings = context->udp_channel_transport_bindings;
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
     _endpoint->transport.data_paths = _endpoint->data_paths;
@@ -143,6 +144,28 @@ int aeron_send_channel_endpoint_create(
         return -1;
     }
 
+    if (NULL != _endpoint->destination_tracker)
+    {
+        _endpoint->tracker_num_destinations.counter_id = aeron_channel_endpoint_status_allocate(
+            counters_manager,
+            AERON_COUNTER_CHANNEL_MDC_NUM_DESTINATIONS_NAME,
+            AERON_COUNTER_CHANNEL_NUM_DESTINATIONS_TYPE_ID,
+            registration_id,
+            channel->uri_length,
+            channel->original_uri);
+        _endpoint->tracker_num_destinations.value_addr = aeron_counters_manager_addr(
+            counters_manager, _endpoint->tracker_num_destinations.counter_id);
+
+        if (_endpoint->tracker_num_destinations.counter_id < 0)
+        {
+            aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
+            return -1;
+        }
+
+        aeron_udp_destination_tracker_set_counter(
+            _endpoint->destination_tracker, &_endpoint->tracker_num_destinations);
+    }
+
     // TODO: Remove the update and just create in a single shot.
     aeron_channel_endpoint_status_update_label(
         counters_manager,
@@ -194,6 +217,11 @@ int aeron_send_channel_endpoint_delete(
         if (-1 != endpoint->local_sockaddr_indicator.counter_id)
         {
             aeron_counters_manager_free(counters_manager, endpoint->local_sockaddr_indicator.counter_id);
+        }
+
+        if (-1 != endpoint->tracker_num_destinations.counter_id)
+        {
+            aeron_counters_manager_free(counters_manager, endpoint->tracker_num_destinations.counter_id);
         }
     }
 

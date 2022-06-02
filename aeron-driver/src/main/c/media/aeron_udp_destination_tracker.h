@@ -50,6 +50,7 @@ typedef struct aeron_udp_destination_tracker_stct
     aeron_clock_cache_t *cached_clock;
     int64_t destination_timeout_ns;
     aeron_udp_channel_data_paths_t *data_paths;
+    int64_t *num_destinations_addr;
 }
 aeron_udp_destination_tracker_t;
 
@@ -90,5 +91,11 @@ void aeron_udp_destination_tracker_check_for_re_resolution(
 
 void aeron_udp_destination_tracker_resolution_change(
     aeron_udp_destination_tracker_t *tracker, const char *endpoint_name, struct sockaddr_storage *addr);
+
+inline void aeron_udp_destination_tracker_set_counter(
+    aeron_udp_destination_tracker_t *tracker, aeron_atomic_counter_t *counter)
+{
+    tracker->num_destinations_addr = counter->value_addr;
+}
 
 #endif //AERON_UDP_DESTINATION_TRACKER_H

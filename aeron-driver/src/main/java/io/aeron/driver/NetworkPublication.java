@@ -19,7 +19,6 @@ import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
-import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -462,8 +461,7 @@ public final class NetworkPublication
     {
         final long senderPosition = this.senderPosition.get();
         final long resendPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
-        final long bottomResendWindow =
-            senderPosition - (termBufferLength >> 1) - FrameDescriptor.computeMaxMessageLength(termBufferLength);
+        final long bottomResendWindow = senderPosition - (termBufferLength >> 1);
 
         if (bottomResendWindow <= resendPosition && resendPosition < senderPosition)
         {

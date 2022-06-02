@@ -1635,6 +1635,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     &conductor->counters_manager,
                     udp_channel,
                     stream_id,
+                    session_id,
                     registration_id,
                     initial_term_id,
                     params->term_length) < 0)

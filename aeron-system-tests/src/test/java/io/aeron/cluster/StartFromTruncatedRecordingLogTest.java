@@ -27,6 +27,7 @@ import io.aeron.test.cluster.TestNode;
 import org.agrona.IoUtil;
 import org.agrona.collections.LongHashSet;
 import org.agrona.collections.MutableInteger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -54,6 +55,13 @@ public class StartFromTruncatedRecordingLogTest
 
     private final MutableInteger responseCount = new MutableInteger();
     private TestCluster cluster;
+
+    @BeforeEach
+    void setUp()
+    {
+        systemTestWatcher.ignoreErrorsMatching(
+            (s) -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
+    }
 
     @Test
     @InterruptAfter(30)

@@ -17,7 +17,7 @@
 plugins {
     id 'java-library'
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
-    id 'biz.aQute.bnd.builder' version '6.2.0' apply false
+    id 'biz.aQute.bnd.builder' version '6.3.0' apply false
     id "com.github.ben-manes.versions" version "0.42.0"
 }
 
@@ -51,7 +51,7 @@ def sbeVersion = '1.25.3'
 def checkstyleVersion = '9.3'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.8.2'
-def mockitoVersion = '4.6.0'
+def mockitoVersion = '4.6.1'
 def byteBuddyVersion = '1.12.10'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.1.12'

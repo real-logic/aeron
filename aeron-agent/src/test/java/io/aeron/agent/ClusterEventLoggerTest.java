@@ -532,4 +532,33 @@ class ClusterEventLoggerTest
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
+
+    @Test
+    void logDynamicJoinStateChange()
+    {
+        final int offset = ALIGNMENT * 11;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        final TimeUnit from = MINUTES;
+        final TimeUnit to = SECONDS;
+        final int memberId = 42;
+        final String payload = from.name() + STATE_SEPARATOR + to.name();
+        final int captureLength = SIZE_OF_INT * 2 + payload.length();
+
+        logger.logStateChange(DYNAMIC_JOIN_STATE_CHANGE, from, to, memberId);
+
+        verifyLogHeader(logBuffer, offset, DYNAMIC_JOIN_STATE_CHANGE.toEventCodeId(), captureLength, captureLength);
+        final int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
+        assertEquals(payload, logBuffer.getStringAscii(index + SIZE_OF_INT));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectStateChange(
+            DYNAMIC_JOIN_STATE_CHANGE, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: DYNAMIC_JOIN_STATE_CHANGE " +
+            "\\[26/26]: memberId=42 MINUTES -> SECONDS";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+
+    }
 }

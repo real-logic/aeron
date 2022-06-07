@@ -493,6 +493,15 @@ public final class EventLogAgent
             ClusterInterceptor.AppendSessionClose.class,
             "logAppendSessionClose");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.DYNAMIC_JOIN_STATE_CHANGE,
+            "DynamicJoin",
+            ClusterInterceptor.DynamicJoinStateChange.class,
+            "logStateChange"
+        );
+
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
 
         return tempBuilder;

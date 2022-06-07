@@ -182,7 +182,7 @@ public class TestCluster implements AutoCloseable
         this.staticClusterMembers = clusterMembers(0, staticMemberCount);
         this.staticClusterMemberEndpoints = ingressEndpoints(0, staticMemberCount);
         this.clusterMembersEndpoints = clusterMembersEndpoints(0, memberCount);
-        this.clusterConsensusEndpoints = clusterConsensusEndpoints(0, staticMemberCount);
+        this.clusterConsensusEndpoints = clusterConsensusEndpoints(0, 0, staticMemberCount);
         this.staticMemberCount = staticMemberCount;
         this.dynamicMemberCount = dynamicMemberCount;
         this.appointedLeaderId = appointedLeaderId;
@@ -344,6 +344,64 @@ public class TestCluster implements AutoCloseable
             .clusterMemberId(NULL_VALUE)
             .clusterMembers("")
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
+            .memberEndpoints(clusterMembersEndpoints[index])
+            .clusterDir(new File(baseDirName, "consensus-module"))
+            .ingressChannel(ingressChannel)
+            .logChannel(logChannel)
+            .replicationChannel(REPLICATION_CHANNEL)
+            .archiveContext(context.aeronArchiveContext.clone()
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
+            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authorisationServiceSupplier(authorisationServiceSupplier)
+            .deleteDirOnStart(cleanStart);
+
+        nodes[index] = new TestNode(context, dataCollector);
+
+        return nodes[index];
+    }
+
+    public TestNode startDynamicNodeConsensusEndpoints(final int index, final boolean cleanStart)
+    {
+        return startDynamicNodeConsensusEndpoints(index, cleanStart, serviceSupplier);
+    }
+
+    public TestNode startDynamicNodeConsensusEndpoints(
+        final int index, final boolean cleanStart, final IntFunction<TestNode.TestService[]> serviceSupplier)
+    {
+        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
+        final TestNode.Context context = new TestNode.Context(serviceSupplier.apply(index), nodeNameMappings());
+
+        context.aeronArchiveContext
+            .lock(NoOpLock.INSTANCE)
+            .controlRequestChannel(archiveControlRequestChannel(index))
+            .controlResponseChannel(archiveControlResponseChannel(index))
+            .aeronDirectoryName(aeronDirName);
+
+        context.mediaDriverContext
+            .aeronDirectoryName(aeronDirName)
+            .threadingMode(ThreadingMode.SHARED)
+            .termBufferSparseFile(true)
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(false);
+
+        context.archiveContext
+            .catalogCapacity(CATALOG_CAPACITY)
+            .segmentFileLength(SEGMENT_FILE_LENGTH)
+            .archiveDir(new File(baseDirName, "archive"))
+            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
+            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+            .recordingEventsEnabled(false)
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .deleteArchiveOnStart(cleanStart);
+
+        final String dynamicOnlyConsensusEndpoints = clusterConsensusEndpoints(0, 3, index);
+
+        context.consensusModuleContext
+            .clusterMemberId(NULL_VALUE)
+            .clusterMembers("")
+            .clusterConsensusEndpoints(dynamicOnlyConsensusEndpoints)
             .memberEndpoints(clusterMembersEndpoints[index])
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(ingressChannel)
@@ -1284,11 +1342,11 @@ public class TestCluster implements AutoCloseable
         return clusterMembersEndpoints;
     }
 
-    private static String clusterConsensusEndpoints(final int clusterId, final int staticMemberCount)
+    private static String clusterConsensusEndpoints(final int clusterId, final int beginIndex, final int endIndex)
     {
         final StringBuilder builder = new StringBuilder();
 
-        for (int i = 0; i < staticMemberCount; i++)
+        for (int i = beginIndex; i < endIndex; i++)
         {
             builder.append(hostname(i)).append(":2").append(clusterId).append("22").append(i).append(',');
         }

@@ -3317,11 +3317,30 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             final RecordingLog.Snapshot lastSnapshot = dynamicJoinSnapshots.get(dynamicJoinSnapshots.size() - 1);
 
-            recordingLog.appendTerm(
-                logRecordingId,
-                lastSnapshot.leadershipTermId,
-                lastSnapshot.termBaseLogPosition,
-                lastSnapshot.timestamp);
+            final RecordingLog.Entry termEntry = recordingLog.findTermEntry(lastSnapshot.leadershipTermId);
+
+            if (null == termEntry)
+            {
+                recordingLog.appendTerm(
+                    logRecordingId,
+                    lastSnapshot.leadershipTermId,
+                    lastSnapshot.termBaseLogPosition,
+                    lastSnapshot.timestamp);
+            }
+            else
+            {
+                if (termEntry.recordingId != logRecordingId ||
+                    termEntry.termBaseLogPosition != lastSnapshot.termBaseLogPosition)
+                {
+                    throw new ClusterException(
+                        "Unexpected termEntry found leadershipTermId=" + termEntry.leadershipTermId +
+                        " recordingId=" + termEntry.recordingId +
+                        " termBaseLogPosition=" + termEntry.termBaseLogPosition +
+                        " expected leadershipTermId=" + lastSnapshot.leadershipTermId +
+                        " recordingId=" + logRecordingId +
+                        " termBaseLogPosition=" + lastSnapshot.termBaseLogPosition);
+                }
+            }
 
             for (int i = dynamicJoinSnapshots.size() - 1; i >= 0; i--)
             {

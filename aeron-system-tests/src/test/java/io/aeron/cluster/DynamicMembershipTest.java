@@ -28,6 +28,8 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.List;
+
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.test.cluster.TestCluster.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -362,5 +364,132 @@ public class DynamicMembershipTest
 
         awaitElectionClosed(staticMember);
         cluster.awaitServiceMessageCount(cluster.node(3), messageCount);
+    }
+
+    @Test
+    @InterruptAfter(30)
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithLogReplicationAndCatchup()
+    {
+        final int messageCount = 10;
+        cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
+        systemTestWatcher.cluster(cluster);
+        systemTestWatcher.showAllErrors();
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("expected termination"));
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("leader heartbeat timeout"));
+
+        final TestNode leader0 = cluster.awaitLeader();
+
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount);
+        cluster.takeSnapshot(leader0);
+        cluster.awaitSnapshotCount(1);
+
+        cluster.stopNode(leader0);
+        final TestNode leader1 = cluster.awaitLeader();
+        cluster.startStaticNode(leader0.index(), false);
+        TestCluster.awaitElectionClosed(cluster.node(leader0.index()));
+
+        cluster.reconnectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(2 * messageCount);
+        cluster.awaitServicesMessageCount(2 * messageCount);
+
+        cluster.stopNode(leader1);
+        final TestNode leader2 = cluster.awaitLeader();
+        cluster.startStaticNode(leader1.index(), false);
+        TestCluster.awaitElectionClosed(cluster.node(leader1.index()));
+
+        cluster.reconnectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(3 * messageCount);
+        cluster.awaitServicesMessageCount(3 * messageCount);
+
+        final TestNode dynamicMember = cluster.startDynamicNode(3, true);
+        cluster.awaitServiceMessageCount(dynamicMember, 3 * messageCount);
+    }
+
+    @Test
+    @InterruptAfter(30)
+    public void shouldDynamicallyJoinClusterOfThreeWithSnapshotWithDynamicLeader(final TestInfo testInfo)
+    {
+        cluster = aCluster().withStaticNodes(3).withDynamicNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+        systemTestWatcher.showAllErrors();
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("expected termination"));
+
+        final TestNode staticLeader = cluster.awaitLeader();
+        final List<TestNode> staticFollowers = cluster.followers();
+        final TestNode staticFollowerA = staticFollowers.get(0);
+        final TestNode staticFollowerB = staticFollowers.get(1);
+
+        final int messageCount = 10;
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
+
+        cluster.takeSnapshot(staticLeader);
+        cluster.awaitSnapshotCount(1);
+
+        staticFollowerA.isTerminationExpected(true);
+        staticLeader.removeMember(staticFollowerA.index(), false);
+
+        cluster.awaitNodeTermination(staticFollowerA);
+        cluster.stopNode(staticFollowerA);
+
+        awaitMembershipSize(staticLeader, 2);
+
+        final TestNode dynamicMemberA = cluster.startDynamicNode(3, true);
+
+        awaitElectionClosed(dynamicMemberA);
+        assertEquals(FOLLOWER, dynamicMemberA.role());
+
+        cluster.awaitSnapshotLoadedForService(dynamicMemberA);
+        assertEquals(messageCount, dynamicMemberA.service().messageCount());
+
+        awaitMembershipSize(staticLeader, 3);
+
+        staticFollowerB.isTerminationExpected(true);
+        staticLeader.removeMember(staticFollowerB.index(), false);
+
+        cluster.awaitNodeTermination(staticFollowerB);
+        cluster.stopNode(staticFollowerB);
+
+        awaitMembershipSize(staticLeader, 2);
+
+        final TestNode dynamicMemberB = cluster.startDynamicNode(4, true);
+
+        awaitElectionClosed(dynamicMemberB);
+        assertEquals(FOLLOWER, dynamicMemberB.role());
+
+        cluster.awaitSnapshotLoadedForService(dynamicMemberB);
+        assertEquals(messageCount, dynamicMemberB.service().messageCount());
+
+        awaitMembershipSize(staticLeader, 3);
+
+        final int initialLeaderIndex = staticLeader.index();
+        staticLeader.isTerminationExpected(true);
+        staticLeader.removeMember(initialLeaderIndex, false);
+
+        cluster.awaitNodeTermination(staticLeader);
+        cluster.stopNode(staticLeader);
+
+        final TestNode newLeader = cluster.awaitLeader(initialLeaderIndex);
+
+        awaitMembershipSize(newLeader, 2);
+
+        final TestNode dynamicMemberC = cluster.startDynamicNodeConsensusEndpoints(5, true);
+
+        awaitElectionClosed(dynamicMemberC);
+        assertEquals(FOLLOWER, dynamicMemberC.role());
+
+        cluster.awaitSnapshotLoadedForService(dynamicMemberC);
+        assertEquals(messageCount, dynamicMemberC.service().messageCount());
+
+        awaitMembershipSize(newLeader, 3);
+
+        awaitElectionClosed(dynamicMemberC);
+        assertEquals(FOLLOWER, dynamicMemberC.role());
     }
 }

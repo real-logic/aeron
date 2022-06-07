@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
-import io.aeron.exceptions.TimeoutException;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.MutableLong;
@@ -37,7 +36,6 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModuleAgent.APPEND_POSITION_FLAG_NONE;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 public class ElectionTest
@@ -753,93 +751,7 @@ public class ElectionTest
 
         verify(electionStateCounter, times(2)).setOrdered(ElectionState.CANVASS.code());
         followerElection.doWork(clock.nanoTime());
-
-        verify(consensusPublisher).appendPosition(
-            liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id(), APPEND_POSITION_FLAG_NONE);
-        verify(electionStateCounter, times(2)).setOrdered(ElectionState.CANVASS.code());
-
-        followerElection.onCommitPosition(term2Id, term2BaseLogPosition, leaderId);
-        followerElection.doWork(++t1);
         verify(electionStateCounter, times(3)).setOrdered(ElectionState.CANVASS.code());
-    }
-
-    @Test
-    void followerShouldTimeoutLeaderIfReplicateLogPositionIsNotCommittedByLeader()
-    {
-        final long term1Id = 1;
-        final long term2Id = 2;
-        final long term1BaseLogPosition = 60;
-        final long term2BaseLogPosition = 120;
-        final long localRecordingId = 2390485;
-        final ClusterMember[] clusterMembers = prepareClusterMembers();
-        final ClusterMember thisMember = clusterMembers[1];
-        final ClusterMember liveLeader = clusterMembers[0];
-        final int leaderId = liveLeader.id();
-        final LogReplication logReplication = mock(LogReplication.class);
-
-        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
-        when(consensusModuleAgent.prepareForNewLeadership(anyLong(), anyLong())).thenReturn(term1BaseLogPosition);
-
-        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
-        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
-
-        final Election election = new Election(
-            true,
-            term1Id,
-            term1BaseLogPosition,
-            term1BaseLogPosition,
-            clusterMembers,
-            clusterMemberByIdMap,
-            thisMember,
-            consensusPublisher,
-            ctx,
-            consensusModuleAgent);
-
-        election.doWork(clock.increment(1));
-        verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
-
-        election.onRequestVote(term1Id, term2BaseLogPosition, term2Id, leaderId);
-        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_BALLOT.code());
-
-        election.onNewLeadershipTerm(
-            term1Id,
-            term2Id,
-            term2BaseLogPosition,
-            term2BaseLogPosition,
-            term2Id,
-            term2BaseLogPosition,
-            term2BaseLogPosition,
-            RECORDING_ID,
-            clock.nanoTime(),
-            leaderId,
-            0,
-            true);
-
-        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
-
-        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
-        election.doWork(clock.increment(1));
-
-        verify(consensusModuleAgent, times(1)).newLogReplication(
-            liveLeader.archiveEndpoint(), RECORDING_ID, term2BaseLogPosition, clock.nanoTime());
-
-        when(logReplication.isDone(anyLong())).thenReturn(true);
-        when(logReplication.position()).thenReturn(term2BaseLogPosition);
-        when(logReplication.recordingId()).thenReturn(localRecordingId);
-        when(consensusPublisher.appendPosition(
-            liveLeader.publication(), term1Id, term2BaseLogPosition, thisMember.id(), APPEND_POSITION_FLAG_NONE))
-            .thenReturn(true);
-        clock.increment(ctx.leaderHeartbeatIntervalNs());
-        election.doWork(clock.nanoTime());
-
-        verify(consensusModuleAgent, atLeastOnce()).pollArchiveEvents();
-        verify(consensusPublisher).appendPosition(
-            liveLeader.publication(), term2Id, term2BaseLogPosition, thisMember.id(), APPEND_POSITION_FLAG_NONE);
-        verify(electionStateCounter, never()).setOrdered(ElectionState.FOLLOWER_REPLAY.code());
-        reset(countedErrorHandler);
-
-        clock.increment(ctx.leaderHeartbeatTimeoutNs());
-        assertThrows(TimeoutException.class, () -> election.doWork(clock.nanoTime()));
     }
 
     @Test

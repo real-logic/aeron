@@ -2833,6 +2833,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 consensusPublisher.commitPosition(member.publication(), leadershipTermId, commitPosition, memberId);
             }
         }
+
+        for (final ClusterMember member : passiveMembers)
+        {
+            if (member.id() != memberId && member.hasRequestedJoin())
+            {
+                consensusPublisher.commitPosition(member.publication(), leadershipTermId, commitPosition, memberId);
+            }
+        }
     }
 
     LogReplication newLogReplication(

@@ -80,6 +80,8 @@ class Election
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
     private LogReplication logReplication = null;
+    private long replicationCommitPosition = 0;
+    private long replicationDeadlineNs = 0;
     private long replicationTermBaseLogPosition;
     private long lastPublishedCommitPosition;
 
@@ -477,6 +479,11 @@ class Election
                 state(CANVASS, ctx.clusterClock().timeNanos());
             }
         }
+
+        if (state == FOLLOWER_LOG_REPLICATION && leaderMemberId == this.leaderMember.id())
+        {
+            replicationDeadlineNs = ctx.clusterClock().timeNanos() + ctx.leaderHeartbeatTimeoutNs();
+        }
     }
 
     void onAppendPosition(
@@ -519,10 +526,11 @@ class Election
         {
             catchupCommitPosition = max(catchupCommitPosition, logPosition);
         }
-//        else if (FOLLOWER_LOG_REPLICATION == state && leaderMemberId == leaderMember.id())
-//        {
-//            // No-op
-//        }
+        else if (FOLLOWER_LOG_REPLICATION == state && leaderMemberId == leaderMember.id())
+        {
+            replicationCommitPosition = max(replicationCommitPosition, logPosition);
+            replicationDeadlineNs = ctx.clusterClock().timeNanos() + ctx.leaderHeartbeatTimeoutNs();
+        }
         else if (leadershipTermId > this.leadershipTermId && LEADER_READY == state)
         {
             throw new ClusterEvent("new leader detected due to commit position");
@@ -832,6 +840,7 @@ class Election
             {
                 logReplication = consensusModuleAgent.newLogReplication(
                     leaderMember.archiveEndpoint(), leaderRecordingId, replicationStopPosition, nowNs);
+                replicationDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
                 workCount++;
             }
             else
@@ -851,12 +860,19 @@ class Election
 
             if (replicationDone)
             {
-                appendPosition = logReplication.position();
-                cleanupLogReplication();
-                updateRecordingLogForReplication(
-                    replicationLeadershipTermId, replicationTermBaseLogPosition, replicationStopPosition, nowNs);
-                state(CANVASS, nowNs);
-                workCount++;
+                if (replicationCommitPosition >= appendPosition)
+                {
+                    appendPosition = logReplication.position();
+                    cleanupLogReplication();
+                    updateRecordingLogForReplication(
+                        replicationLeadershipTermId, replicationTermBaseLogPosition, replicationStopPosition, nowNs);
+                    state(CANVASS, nowNs);
+                    workCount++;
+                }
+                else if (nowNs >= replicationDeadlineNs)
+                {
+                    throw new TimeoutException("timeout awaiting commit position", AeronException.Category.WARN);
+                }
             }
         }
 
@@ -1282,6 +1298,8 @@ class Election
             logReplication.close();
             logReplication = null;
         }
+        replicationCommitPosition = 0;
+        replicationDeadlineNs = 0;
         lastPublishedCommitPosition = 0;
     }
 
@@ -1403,7 +1421,6 @@ class Election
         return (nowNs - previousTimestampForIntervalNs) >= intervalNs;
     }
 
-    @SuppressWarnings("unused")
     private void logStateChange(
         final ElectionState oldState,
         final ElectionState newState,

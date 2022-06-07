@@ -367,7 +367,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @InterruptAfter(30)
+    @InterruptAfter(40)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithLogReplicationAndCatchup()
     {
         final int messageCount = 10;

@@ -39,6 +39,7 @@ typedef std::array<std::uint8_t, ODD_BUFFER_SZ> odd_sized_buffer_t;
 
 const static std::int32_t MSG_TYPE_ID = 101;
 const static util::index_t HEAD_COUNTER_INDEX = 1024 + RingBufferDescriptor::HEAD_POSITION_OFFSET;
+const static util::index_t HEAD_COUNTER_CACHE_INDEX = 1024 + RingBufferDescriptor::HEAD_CACHE_POSITION_OFFSET;
 const static util::index_t TAIL_COUNTER_INDEX = 1024 + RingBufferDescriptor::TAIL_POSITION_OFFSET;
 
 class ManyToOneRingBufferTest : public testing::Test
@@ -485,6 +486,206 @@ TEST_F(ManyToOneRingBufferTest, shouldNotUnblockGapWithMessageRaceWhenScanForwar
         .WillOnce(testing::Return(7));
 
     EXPECT_FALSE(m_mockRingBuffer.unblock());
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldThrowIllegalArgumentExceptionOnTryClaimIfMessageTypeIdIsInvalid)
+{
+    ASSERT_THROW(
+        {
+            m_ringBuffer.tryClaim(0, 10);
+        }, util::IllegalArgumentException);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldThrowIllegalArgumentExceptionOnTryClaimIfLengthIsBiggerThanMaxMessageLength)
+{
+    ASSERT_THROW(
+        {
+            m_ringBuffer.tryClaim(MSG_TYPE_ID, 2000);
+        }, util::IllegalArgumentException);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldThrowIllegalArgumentExceptionOnTryClaimIfLengthIsNegative)
+{
+    ASSERT_THROW(
+        {
+            m_ringBuffer.tryClaim(MSG_TYPE_ID, -5);
+        }, util::IllegalArgumentException);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldReturnOffsetAtWhichMessageBodyCanBeWrittenOnTryClaim)
+{
+    util::index_t length = 8;
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+
+    util::index_t index = m_ringBuffer.tryClaim(MSG_TYPE_ID, length);
+
+    EXPECT_EQ(RecordDescriptor::HEADER_LENGTH, index);
+    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), alignedRecordLength);
+    EXPECT_EQ(m_ab.getInt64(alignedRecordLength), 0);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(0)), -recordLength);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(0)), MSG_TYPE_ID);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldReturnOffsetAtWhichMessageBodyCanBeWrittenOnTryClaimAfterPadding)
+{
+    util::index_t length = 20;
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+    util::index_t head = 248;
+    util::index_t paddingLength = 22;
+    util::index_t tail = CAPACITY - paddingLength;
+    util::index_t paddingIndex = tail;
+
+    m_ab.putInt64(HEAD_COUNTER_INDEX, head);
+    m_ab.putInt64(TAIL_COUNTER_INDEX, tail);
+
+    util::index_t index = m_ringBuffer.tryClaim(MSG_TYPE_ID, length);
+
+    EXPECT_EQ(RecordDescriptor::HEADER_LENGTH, index);
+    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), tail + alignedRecordLength + paddingLength);
+    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_CACHE_INDEX), head);
+    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_INDEX), head);
+
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(0)), -recordLength);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(0)), MSG_TYPE_ID);
+
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(paddingIndex)), paddingLength);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(paddingIndex)), RecordDescriptor::PADDING_MSG_TYPE_ID);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldReturnInsufficientCapacityOnTryClaimIfThereIsNotEnoughSpaceInTheBuffer)
+{
+    util::index_t length = 10;
+    util::index_t head = 0;
+    util::index_t tail = CAPACITY - length;
+
+    m_ab.putInt64(HEAD_COUNTER_INDEX, head);
+    m_ab.putInt64(HEAD_COUNTER_CACHE_INDEX, head);
+    m_ab.putInt64(TAIL_COUNTER_INDEX, tail);
+
+    util::index_t index = m_ringBuffer.tryClaim(MSG_TYPE_ID, length);
+
+    ASSERT_TRUE(index < 0);
+
+    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_INDEX), head);
+    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_CACHE_INDEX), head);
+    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), tail);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldThrowIllegalArgumentExceptionOnCommitIfIndexIsInvalid)
+{
+    ASSERT_THROW(
+        {
+            m_ringBuffer.commit(-1);
+        }, util::IllegalArgumentException);
+    ASSERT_THROW(
+        {
+            m_ringBuffer.commit(0);
+        }, util::IllegalArgumentException);
+    ASSERT_THROW(
+        {
+            m_ringBuffer.commit(7);
+        }, util::IllegalArgumentException);
+    ASSERT_THROW(
+        {
+            m_ringBuffer.commit(CAPACITY + 1);
+        }, util::IllegalArgumentException);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldThrowIllegalStateExceptionOnCommitIfSpaceWasAlreadyCommitted)
+{
+    util::index_t index = RecordDescriptor::HEADER_LENGTH;
+    util::index_t recordIndex = index - RecordDescriptor::HEADER_LENGTH;
+
+    m_ab.putInt32(RecordDescriptor::lengthOffset(recordIndex), 0);
+
+    ASSERT_THROW(
+        {
+            m_ringBuffer.commit(index);
+        }, util::IllegalStateException);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldThrowIllegalStateExceptionOnCommitIfSpaceWasAlreadyAborted)
+{
+    util::index_t index = RecordDescriptor::HEADER_LENGTH;
+    util::index_t recordIndex = index - RecordDescriptor::HEADER_LENGTH;
+
+    m_ab.putInt64(recordIndex, RecordDescriptor::makeHeader(10, RecordDescriptor::PADDING_MSG_TYPE_ID));
+
+    ASSERT_THROW(
+        {
+            m_ringBuffer.commit(index); 
+        }, util::IllegalStateException);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldCommitByInvertingTheLengthValue)
+{
+    util::index_t index = 32;
+    util::index_t recordIndex = index - RecordDescriptor::HEADER_LENGTH;
+
+    m_ab.putInt32(RecordDescriptor::lengthOffset(recordIndex), -19);
+    m_ringBuffer.commit(index);
+    
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(recordIndex)), 19);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldThrowIllegalArgumentExceptionOnAbortIfIndexIsInvalid)
+{
+    ASSERT_THROW(
+        {
+            m_ringBuffer.abort(-1);
+        }, util::IllegalArgumentException);
+    ASSERT_THROW(
+        {
+            m_ringBuffer.abort(0);
+        }, util::IllegalArgumentException);
+    ASSERT_THROW(
+        {
+            m_ringBuffer.abort(7);
+        }, util::IllegalArgumentException);
+    ASSERT_THROW(
+        {
+            m_ringBuffer.abort(CAPACITY + 1);
+        }, util::IllegalArgumentException);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldThrowIllegalStateExceptionOnAbortIfSpaceWasAlreadyCommitted)
+{
+    util::index_t index = RecordDescriptor::HEADER_LENGTH;
+    util::index_t recordIndex = index - RecordDescriptor::HEADER_LENGTH;
+
+    m_ab.putInt32(RecordDescriptor::lengthOffset(recordIndex), 0);
+
+    ASSERT_THROW(
+        {
+            m_ringBuffer.abort(index);
+        }, util::IllegalStateException);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldThrowIllegalStateExceptionOnAbortIfSpaceWasAlreadyAborted)
+{
+    util::index_t index = RecordDescriptor::HEADER_LENGTH;
+    util::index_t recordIndex = index - RecordDescriptor::HEADER_LENGTH;
+
+    m_ab.putInt64(recordIndex, RecordDescriptor::makeHeader(10, RecordDescriptor::PADDING_MSG_TYPE_ID));
+
+    ASSERT_THROW(
+        {
+            m_ringBuffer.abort(index); 
+        }, util::IllegalStateException);
+}
+
+TEST_F(ManyToOneRingBufferTest, shouldMarkUnusedSpaceAsPaddingOnAbort)
+{
+    util::index_t index = 100;
+    util::index_t recordIndex = index - RecordDescriptor::HEADER_LENGTH;
+
+    m_ab.putInt32(RecordDescriptor::lengthOffset(recordIndex), -11111);
+    m_ringBuffer.abort(index);
+    
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(recordIndex)), 11111);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(recordIndex)), RecordDescriptor::PADDING_MSG_TYPE_ID);
 }
 
 #define NUM_MESSAGES_PER_PUBLISHER (10 * 1000 * 1000)

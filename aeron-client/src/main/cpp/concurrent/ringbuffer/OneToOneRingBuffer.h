@@ -83,16 +83,16 @@ public:
         checkMsgLength(length);
 
         const util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
-        const util::index_t recordIndex = claimCapacity(recordLength);
+        util::index_t recordIndex = claimCapacity(recordLength);
 
-        if (INSUFFICIENT_CAPACITY == recordIndex)
+        if (INSUFFICIENT_CAPACITY != recordIndex)
         {
-            return recordIndex;
+            m_buffer.putInt64Ordered(recordIndex, RecordDescriptor::makeHeader(-recordLength, msgTypeId));
+
+            recordIndex = RecordDescriptor::encodedMsgOffset(recordIndex);
         }
 
-        m_buffer.putInt64Ordered(recordIndex, RecordDescriptor::makeHeader(-recordLength, msgTypeId));
-
-        return RecordDescriptor::encodedMsgOffset(recordIndex);
+        return recordIndex;
     }
 
     void commit(util::index_t index)
@@ -317,7 +317,7 @@ private:
         }
 
         const bool isPadding = RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::typeOffset(recordIndex));
-        throw util::IllegalArgumentException("claimed space previously " + isPadding ? "aborted" : "committed", SOURCEINFO);
+        throw util::IllegalStateException("claimed space previously " + isPadding ? "aborted" : "committed", SOURCEINFO);
     }
 
     inline void checkMsgLength(util::index_t length) const

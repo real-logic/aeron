@@ -289,10 +289,10 @@ public class ArchiveMarkFile implements AutoCloseable
     }
 
     /**
-     * Determine if the path matches the archive mark file name
+     * Determine if the path matches the archive mark file name.
      *
-     * @param path       to match
-     * @param attributes ignored, only needed for BiPredicate signature matching
+     * @param path       to match.
+     * @param attributes ignored, only needed for BiPredicate signature matching.
      * @return true if the filename matches.
      */
     public static boolean isArchiveMarkFile(final Path path, final BasicFileAttributes attributes)

@@ -80,6 +80,7 @@ int aeron_udp_destination_tracker_send(
     const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;
     int min_bytes_sent = (int)iov->iov_len;
 
+    *bytes_sent = (int64_t)iov->iov_len;
     for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
@@ -93,6 +94,8 @@ int aeron_udp_destination_tracker_send(
                 (size_t)last_index);
             last_index--;
             tracker->destinations.length--;
+
+            aeron_counter_set_ordered(tracker->num_destinations_addr, (int64_t)tracker->destinations.length);
         }
         else if (entry->addr.ss_family != AF_UNSPEC)
         {
@@ -172,6 +175,8 @@ int aeron_udp_destination_tracker_add_destination(
         entry->uri = uri;
         memcpy(&entry->addr, addr, sizeof(struct sockaddr_storage));
     }
+
+    aeron_counter_set_ordered(tracker->num_destinations_addr, (int64_t)tracker->destinations.length);
 
     return result;
 }
@@ -268,6 +273,8 @@ int aeron_udp_destination_tracker_remove_destination(
         }
     }
 
+    aeron_counter_set_ordered(tracker->num_destinations_addr, (int64_t)tracker->destinations.length);
+
     return 0;
 }
 
@@ -312,3 +319,6 @@ void aeron_udp_destination_tracker_resolution_change(
         }
     }
 }
+
+extern void aeron_udp_destination_tracker_set_counter(
+    aeron_udp_destination_tracker_t *tracker, aeron_atomic_counter_t *counter);

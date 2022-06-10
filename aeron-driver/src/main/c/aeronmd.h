@@ -251,13 +251,16 @@ uint64_t aeron_driver_context_get_rcv_status_message_timeout_ns(aeron_driver_con
 
 typedef struct aeron_flow_control_strategy_stct aeron_flow_control_strategy_t;
 
+typedef struct aeron_counters_manager_stct aeron_counters_manager_t;
 typedef struct aeron_udp_channel_stct aeron_udp_channel_t;
 
 typedef int (*aeron_flow_control_strategy_supplier_func_t)(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length);

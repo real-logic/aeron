@@ -22,6 +22,9 @@ env:
   CMAKE_VERSION: '3.14.7'
   INSTALL_COMPILER_RETRIES: '5'
 
+permissions:
+  contents: read
+
 jobs:
   java-build:
     name: Java ${{ matrix.java }} (${{ matrix.os }})

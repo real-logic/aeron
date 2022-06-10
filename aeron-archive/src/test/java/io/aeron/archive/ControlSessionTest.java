@@ -47,7 +47,7 @@ class ControlSessionTest
     private ControlSession session;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         session = new ControlSession(
             1,
@@ -67,7 +67,7 @@ class ControlSessionTest
     }
 
     @Test
-    public void shouldTimeoutIfConnectSentButPublicationNotConnected()
+    void shouldTimeoutIfConnectSentButPublicationNotConnected()
     {
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(false);
@@ -83,7 +83,7 @@ class ControlSessionTest
     }
 
     @Test
-    public void shouldTimeoutIfConnectSentButPublicationFailsToSend()
+    void shouldTimeoutIfConnectSentButPublicationFailsToSend()
     {
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(true);

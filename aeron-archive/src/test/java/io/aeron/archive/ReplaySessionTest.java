@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Publication.BACK_PRESSURED;
@@ -57,7 +56,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class ReplaySessionTest
+class ReplaySessionTest
 {
     private static final int RECORDING_ID = 0;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
@@ -74,7 +73,6 @@ public class ReplaySessionTest
     private static final int FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 1001;
-    private static final FileChannel ARCHIVE_DIR_CHANNEL = null;
 
     private final Image mockImage = mock(Image.class);
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
@@ -96,7 +94,7 @@ public class ReplaySessionTest
     private long recordingPosition;
 
     @BeforeEach
-    public void before() throws IOException
+    void before() throws IOException
     {
         context = new Archive.Context()
             .segmentFileLength(SEGMENT_LENGTH)
@@ -150,13 +148,13 @@ public class ReplaySessionTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         IoUtil.delete(archiveDir, false);
     }
 
     @Test
-    public void verifyRecordingFile()
+    void verifyRecordingFile()
     {
         try (RecordingReader reader = new RecordingReader(
             recordingSummary, archiveDir, NULL_POSITION, AeronArchive.NULL_LENGTH))
@@ -216,7 +214,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldReplayPartialDataFromFile()
+    void shouldReplayPartialDataFromFile()
     {
         final long correlationId = 1L;
         final int sessionId = Integer.MAX_VALUE;
@@ -253,7 +251,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldNotReplayPartialUnalignedDataFromFile()
+    void shouldNotReplayPartialUnalignedDataFromFile()
     {
         final long correlationId = 1L;
         final ReplaySession replaySession = replaySession(
@@ -274,7 +272,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldReplayFullDataFromFile()
+    void shouldReplayFullDataFromFile()
     {
         final long length = 4 * FRAME_LENGTH;
         final long correlationId = 1L;
@@ -312,7 +310,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldGiveUpIfPublishersAreNotConnectedAfterTimeout()
+    void shouldGiveUpIfPublishersAreNotConnectedAfterTimeout()
     {
         final long length = 1024L;
         final long correlationId = 1L;
@@ -337,7 +335,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldReplayFromActiveRecording() throws IOException
+    void shouldReplayFromActiveRecording() throws IOException
     {
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
 
@@ -419,7 +417,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldThrowArchiveExceptionIfCrcFails()
+    void shouldThrowArchiveExceptionIfCrcFails()
     {
         final long length = 4 * FRAME_LENGTH;
         final long correlationId = 1L;
@@ -450,7 +448,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldDoCrcForEachDataFrame() throws IOException
+    void shouldDoCrcForEachDataFrame() throws IOException
     {
         context.recordChecksum(crc32());
         context.recordChecksumBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
@@ -515,7 +513,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldNotWritePaddingIfOfferBlockFails()
+    void shouldNotWritePaddingIfOfferBlockFails()
     {
         try (ReplaySession replaySession = replaySession(
             RECORDING_POSITION,
@@ -538,7 +536,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldNotWritePaddingIfReplayLimitReached()
+    void shouldNotWritePaddingIfReplayLimitReached()
     {
         try (ReplaySession replaySession = replaySession(
             RECORDING_POSITION,
@@ -565,7 +563,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldCalculateBlockSizeBasedOnFullFragments() throws IOException
+    void shouldCalculateBlockSizeBasedOnFullFragments() throws IOException
     {
         context.recordChecksumBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
         final RecordingWriter writer = new RecordingWriter(

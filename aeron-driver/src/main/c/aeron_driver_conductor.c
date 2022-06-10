@@ -1632,8 +1632,10 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 if (aeron_default_multicast_flow_control_strategy_supplier(
                     &flow_control_strategy,
                     conductor->context,
+                    &conductor->counters_manager,
                     udp_channel,
                     stream_id,
+                    session_id,
                     registration_id,
                     initial_term_id,
                     params->term_length) < 0)

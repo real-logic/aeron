@@ -1150,6 +1150,92 @@ public class ElectionTest
     }
 
     @Test
+    void followerShouldReplicateAndSendAppendPositionWhenLogReplicationDone()
+    {
+        final long leadershipTermId = 1;
+        final long leaderLogPosition = 120;
+        final long termBaseLogPosition = 60;
+        final long nextTermBaseLogPosition = 60;
+        final long localRecordingId = 2390485;
+        final MutableLong replicationPosition = new MutableLong(0);
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+        final ClusterMember thisMember = clusterMembers[1];
+        final ClusterMember liveLeader = clusterMembers[0];
+        final int leaderId = liveLeader.id();
+        final LogReplication logReplication = mock(LogReplication.class);
+
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
+
+        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+
+        final Election election = new Election(
+            true,
+            0,
+            0,
+            0,
+            clusterMembers,
+            clusterMemberByIdMap,
+            thisMember,
+            consensusPublisher,
+            ctx,
+            consensusModuleAgent);
+
+        long t1 = 0;
+        election.doWork(++t1);
+        verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
+
+        election.onNewLeadershipTerm(
+            0,
+            1,
+            nextTermBaseLogPosition,
+            NULL_POSITION,
+            leadershipTermId,
+            termBaseLogPosition,
+            leaderLogPosition,
+            RECORDING_ID,
+            t1,
+            leaderId,
+            0,
+            false);
+        verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
+
+        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
+        election.doWork(++t1);
+
+        verify(consensusModuleAgent, times(1)).newLogReplication(
+            liveLeader.archiveEndpoint(), RECORDING_ID, termBaseLogPosition, t1);
+
+        when(logReplication.recordingId()).thenReturn(localRecordingId);
+
+        when(logReplication.position()).then((invocation) -> replicationPosition.get());
+        // When replication is done we move the replication position.
+        when(logReplication.isDone(anyLong())).thenAnswer(
+            (invocation) ->
+            {
+                replicationPosition.set(nextTermBaseLogPosition);
+                return true;
+            });
+
+        when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt(), anyShort()))
+            .thenReturn(true);
+
+        t1 += ctx.leaderHeartbeatIntervalNs();
+        election.doWork(++t1);
+
+        verify(consensusPublisher).appendPosition(
+            liveLeader.publication(),
+            leadershipTermId,
+            nextTermBaseLogPosition, // Expect to be the position after the replication has completed.
+            thisMember.id(),
+            APPEND_POSITION_FLAG_NONE);
+
+        election.onCommitPosition(leadershipTermId, leaderLogPosition, leaderId);
+        election.doWork(++t1);
+        verify(electionStateCounter, times(2)).setOrdered(ElectionState.CANVASS.code());
+    }
+
+    @Test
     void leaderShouldMoveToLogReplicationThenWaitForCommitPosition()
     {
         final long leadershipTermId = 1;

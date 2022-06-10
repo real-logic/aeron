@@ -77,7 +77,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private long serviceAckId = 0;
     private long terminationPosition = NULL_POSITION;
     private long notifiedCommitPosition = 0;
-    private long lastAppendPosition = 0;
+    private long lastAppendPosition = NULL_POSITION;
     private long timeOfLastLogUpdateNs = 0;
     private long timeOfLastAppendPositionUpdateNs = 0;
     private long timeOfLastAppendPositionSendNs = 0;
@@ -300,6 +300,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             election = new Election(
                 true,
                 recoveryPlan.lastLeadershipTermId,
+                recoveryPlan.lastTermBaseLogPosition,
                 commitPosition.getWeak(),
                 recoveryPlan.appendedLogPosition,
                 activeMembers,
@@ -1744,9 +1745,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         dynamicJoin = null;
 
+        assert recoveryPlan.lastLeadershipTermId == leadershipTermId;
+
         election = new Election(
             false,
             leadershipTermId,
+            recoveryPlan.lastTermBaseLogPosition,
             commitPosition.getWeak(),
             recoveryPlan.appendedLogPosition,
             activeMembers,
@@ -2951,9 +2955,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         role(Cluster.Role.FOLLOWER);
 
+        final RecordingLog.Entry termEntry = recordingLog.findTermEntry(leadershipTermId);
+        final long termBaseLogPosition = null != termEntry ?
+            termEntry.termBaseLogPosition : recoveryPlan.lastTermBaseLogPosition;
+
         election = new Election(
             false,
             leadershipTermId,
+            termBaseLogPosition,
             commitPosition.getWeak(),
             null != appendPosition ? appendPosition.get() : recoveryPlan.appendedLogPosition,
             activeMembers,

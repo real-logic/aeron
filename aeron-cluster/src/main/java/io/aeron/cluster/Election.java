@@ -1328,6 +1328,31 @@ class Election
         final long nowNs)
     {
         final long recordingId = consensusModuleAgent.logRecordingId();
+        final long initialTermBaseLogPosition = this.initialTermBaseLogPosition;
+        final long initialLogLeadershipTermId = this.initialLogLeadershipTermId;
+        final ConsensusModule.Context ctx = this.ctx;
+
+        ensureRecordingLogCoherent(
+            ctx,
+            recordingId,
+            initialLogLeadershipTermId,
+            initialTermBaseLogPosition,
+            leadershipTermId,
+            logTermBasePosition,
+            logPosition,
+            nowNs);
+    }
+
+    static void ensureRecordingLogCoherent(
+        final ConsensusModule.Context ctx,
+        final long recordingId,
+        final long initialLogLeadershipTermId,
+        final long initialTermBaseLogPosition,
+        final long leadershipTermId,
+        final long logTermBasePosition,
+        final long logPosition,
+        final long nowNs)
+    {
         if (NULL_VALUE == recordingId)
         {
             if (0 == logPosition)

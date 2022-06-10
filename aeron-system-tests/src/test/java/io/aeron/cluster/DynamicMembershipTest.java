@@ -367,7 +367,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @InterruptAfter(40)
+    @InterruptAfter(60)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithLogReplicationAndCatchup()
     {
         final int messageCount = 10;
@@ -408,7 +408,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @InterruptAfter(30)
+    @InterruptAfter(60)
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshotWithDynamicLeader(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(3).start();
@@ -627,7 +627,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    @InterruptAfter(40)
+    @InterruptAfter(60)
     public void shouldDynamicallyJoinMemberAfterSnapshotOnNonZeroTermAndSubsequentLeadershipTerms()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();

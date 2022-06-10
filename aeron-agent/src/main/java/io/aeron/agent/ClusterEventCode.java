@@ -96,7 +96,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when a session is closed
      */
-    APPEND_SESSION_CLOSE(14, ClusterEventDissector::dissectAppendCloseSession);
+    APPEND_SESSION_CLOSE(14, ClusterEventDissector::dissectAppendCloseSession),
+
+    /**
+     * Event when the DynamicJoin changes state
+     */
+    DYNAMIC_JOIN_STATE_CHANGE(15, ClusterEventDissector::dissectStateChange);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

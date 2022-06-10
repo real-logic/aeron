@@ -32,7 +32,7 @@ import java.io.File;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class ListRecordingsSessionTest
+class ListRecordingsSessionTest
 {
     private static final long CAPACITY = 1024 * 1024;
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
@@ -48,7 +48,7 @@ public class ListRecordingsSessionTest
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
 
     @BeforeEach
-    public void before()
+    void before()
     {
         catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null);
         recordingIds[0] = catalog.addNewRecording(
@@ -60,14 +60,14 @@ public class ListRecordingsSessionTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.close(catalog);
         IoUtil.delete(archiveDir, false);
     }
 
     @Test
-    public void shouldSendAllDescriptors()
+    void shouldSendAllDescriptors()
     {
         final ListRecordingsSession session = new ListRecordingsSession(
             correlationId,
@@ -88,7 +88,7 @@ public class ListRecordingsSessionTest
     }
 
     @Test
-    public void shouldSend2Descriptors()
+    void shouldSend2Descriptors()
     {
         final int fromId = 1;
         final ListRecordingsSession session = new ListRecordingsSession(
@@ -109,7 +109,7 @@ public class ListRecordingsSessionTest
     }
 
     @Test
-    public void shouldResendDescriptorWhenSendFails()
+    void shouldResendDescriptorWhenSendFails()
     {
         final long fromRecordingId = 1;
         final ListRecordingsSession session = new ListRecordingsSession(
@@ -134,7 +134,7 @@ public class ListRecordingsSessionTest
     }
 
     @Test
-    public void shouldSendTwoDescriptorsThenRecordingUnknown()
+    void shouldSendTwoDescriptorsThenRecordingUnknown()
     {
         final ListRecordingsSession session = new ListRecordingsSession(
             correlationId,
@@ -156,7 +156,7 @@ public class ListRecordingsSessionTest
     }
 
     @Test
-    public void shouldSendRecordingUnknownOnFirst()
+    void shouldSendRecordingUnknownOnFirst()
     {
         final ListRecordingsSession session = new ListRecordingsSession(
             correlationId,

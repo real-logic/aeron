@@ -44,7 +44,7 @@ public class ClusterBackupTest
     void setUp()
     {
         systemTestWatcher.ignoreErrorsMatching(
-            s -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
+            (s) -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
     }
 
     @Test

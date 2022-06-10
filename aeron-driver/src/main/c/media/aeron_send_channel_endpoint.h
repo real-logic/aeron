@@ -54,6 +54,7 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_udp_channel_transport_t transport;
     aeron_atomic_counter_t channel_status;
     aeron_atomic_counter_t local_sockaddr_indicator;
+    aeron_atomic_counter_t tracker_num_destinations;
     aeron_udp_destination_tracker_t *destination_tracker;
     aeron_driver_sender_proxy_t *sender_proxy;
     aeron_int64_to_ptr_hash_map_t publication_dispatch_map;

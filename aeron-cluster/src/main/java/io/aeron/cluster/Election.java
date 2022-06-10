@@ -438,7 +438,7 @@ class Election
                             replicationLeadershipTermId = logLeadershipTermId;
                             replicationStopPosition = nextTermBaseLogPosition;
                             // Here we should have an open, but uncommitted term so the base position
-                            // is already known. We could look it up from the recording log only to not right
+                            // is already known. We could look it up from the recording log only to write
                             // it back again...
                             replicationTermBaseLogPosition = NULL_VALUE;
                             state(FOLLOWER_LOG_REPLICATION, ctx.clusterClock().timeNanos());
@@ -853,9 +853,12 @@ class Election
         else
         {
             workCount += consensusModuleAgent.pollArchiveEvents();
+            final boolean replicationDone = logReplication.isDone(nowNs);
+            // Log replication runs concurrently, calling this after the check for completion ensures that the
+            // last position at the end of the leadership is published as an appendPosition event.
             workCount += publishFollowerReplicationPosition(nowNs);
 
-            if (logReplication.isDone(nowNs))
+            if (replicationDone)
             {
                 if (replicationCommitPosition >= appendPosition)
                 {
@@ -1461,7 +1464,7 @@ class Election
             ", appendPosition=" + appendPosition +
             ", catchupJoinPosition=" + catchupJoinPosition +
             ", catchupCommitPosition=" + catchupCommitPosition +
-            ", logReplicationPosition=" + replicationStopPosition +
+            ", replicationStopPosition=" + replicationStopPosition +
             ", leaderRecordingId=" + leaderRecordingId +
             ", leadershipTermId=" + leadershipTermId +
             ", logLeadershipTermId=" + logLeadershipTermId +

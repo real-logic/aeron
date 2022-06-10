@@ -1693,6 +1693,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         if (Cluster.Role.LEADER == role)
         {
             timeOfLastLogUpdateNs = nowNs - leaderHeartbeatIntervalNs;
+            highMemberId = Math.max(
+                ClusterMember.highMemberId(activeMembers), ClusterMember.highMemberId(passiveMembers));
             timerService.currentTime(clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
             ClusterControl.ToggleState.activate(controlToggle);
             prepareSessionsForNewTerm(election.isLeaderStartup());

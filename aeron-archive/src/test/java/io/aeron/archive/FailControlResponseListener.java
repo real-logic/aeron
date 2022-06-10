@@ -20,7 +20,7 @@ import io.aeron.archive.codecs.ControlResponseCode;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class FailControlResponseListener implements ControlResponseListener
+class FailControlResponseListener implements ControlResponseListener
 {
     public void onResponse(
         final long controlSessionId,

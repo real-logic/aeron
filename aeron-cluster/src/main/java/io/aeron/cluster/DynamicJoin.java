@@ -375,8 +375,13 @@ final class DynamicJoin
 
     private void state(final State newState)
     {
-        //System.out.println("DynamicJoin: memberId=" + memberId + " " + state + " -> " + newState);
+        logStateChange(state, newState, memberId);
         state = newState;
         correlationId = NULL_VALUE;
+    }
+
+    private void logStateChange(final State oldState, final State newState, final int memberId)
+    {
+        //System.out.println("DynamicJoin: memberId=" + memberId + " " + oldState + " -> " + newState);
     }
 }

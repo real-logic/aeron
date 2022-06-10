@@ -19,7 +19,7 @@ import io.aeron.archive.client.RecordingEventsListener;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class FailRecordingEventsListener implements RecordingEventsListener
+class FailRecordingEventsListener implements RecordingEventsListener
 {
     public void onStart(
         final long recordingId,

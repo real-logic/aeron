@@ -2559,7 +2559,7 @@ public final class Archive implements AutoCloseable
      *
      * @param directory     which will store the files created by the archive.
      * @param fileSyncLevel to be applied for file updates, {@link Archive.Configuration#FILE_SYNC_LEVEL_PROP_NAME}.
-     * @return the the {@link FileChannel} for the parent directory for the recordings and catalog if fileSyncLevel
+     * @return the {@link FileChannel} for the parent directory for the recordings and catalog if fileSyncLevel
      * greater than zero otherwise null.
      */
     static FileChannel channelForDirectorySync(final File directory, final int fileSyncLevel)

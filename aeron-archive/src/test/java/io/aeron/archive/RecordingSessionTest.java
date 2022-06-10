@@ -41,7 +41,7 @@ import static java.nio.file.StandardOpenOption.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class RecordingSessionTest
+class RecordingSessionTest
 {
     private static final int RECORDED_BLOCK_LENGTH = 100;
     private static final long RECORDING_ID = 12345;
@@ -57,7 +57,6 @@ public class RecordingSessionTest
     private static final int MTU_LENGTH = 1024;
     private static final long START_POSITION = TERM_OFFSET;
     private static final int INITIAL_TERM_ID = 0;
-    private static final FileChannel ARCHIVE_CHANNEL = null;
     private static final ControlSession CONTROL_SESSION = null;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
@@ -72,7 +71,7 @@ public class RecordingSessionTest
     private long positionLong;
 
     @BeforeEach
-    public void before() throws Exception
+    void before() throws Exception
     {
         when(mockPosition.getWeak()).then((invocation) -> positionLong);
         when(mockPosition.get()).then((invocation) -> positionLong);
@@ -106,7 +105,7 @@ public class RecordingSessionTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         IoUtil.unmap(mockLogBufferMapped.byteBuffer());
         CloseHelper.close(mockLogBufferChannel);
@@ -115,7 +114,7 @@ public class RecordingSessionTest
     }
 
     @Test
-    public void shouldRecordFragmentsFromImage()
+    void shouldRecordFragmentsFromImage()
     {
         final RecordingSession session = new RecordingSession(
             NULL_VALUE,

@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class ListRecordingsForUriSessionTest
+class ListRecordingsForUriSessionTest
 {
     private static final long CAPACITY = 1024 * 1024;
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
@@ -50,7 +50,7 @@ public class ListRecordingsForUriSessionTest
     private final ControlSession controlSession = mock(ControlSession.class);
 
     @BeforeEach
-    public void before()
+    void before()
     {
         catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, null);
         matchingRecordingIds[0] = catalog.addNewRecording(
@@ -66,14 +66,14 @@ public class ListRecordingsForUriSessionTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.close(catalog);
         IoUtil.delete(archiveDir, false);
     }
 
     @Test
-    public void shouldSendAllDescriptors()
+    void shouldSendAllDescriptors()
     {
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
@@ -96,7 +96,7 @@ public class ListRecordingsForUriSessionTest
     }
 
     @Test
-    public void shouldSend2Descriptors()
+    void shouldSend2Descriptors()
     {
         final long fromRecordingId = 1;
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
@@ -120,7 +120,7 @@ public class ListRecordingsForUriSessionTest
     }
 
     @Test
-    public void shouldResendDescriptorWhenSendFails()
+    void shouldResendDescriptorWhenSendFails()
     {
         final long fromRecordingId = 1;
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
@@ -148,7 +148,7 @@ public class ListRecordingsForUriSessionTest
     }
 
     @Test
-    public void shouldSend2DescriptorsAndRecordingUnknown()
+    void shouldSend2DescriptorsAndRecordingUnknown()
     {
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
@@ -172,7 +172,7 @@ public class ListRecordingsForUriSessionTest
     }
 
     @Test
-    public void shouldSendRecordingUnknown()
+    void shouldSendRecordingUnknown()
     {
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
@@ -193,7 +193,7 @@ public class ListRecordingsForUriSessionTest
     }
 
     @Test
-    public void shouldSendUnknownOnFirst()
+    void shouldSendUnknownOnFirst()
     {
         when(controlSession.maxPayloadLength()).thenReturn(4096 - 32);
 

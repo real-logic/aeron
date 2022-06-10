@@ -676,6 +676,7 @@ public class ElectionTest
             term0Id,
             term1BaseLogPosition,
             term1BaseLogPosition,
+            term1BaseLogPosition,
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
@@ -788,6 +789,7 @@ public class ElectionTest
             term1Id,
             term1BaseLogPosition,
             term1BaseLogPosition,
+            term1BaseLogPosition,
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
@@ -866,6 +868,7 @@ public class ElectionTest
             term1Id,
             term1BaseLogPosition,
             term1BaseLogPosition,
+            term1BaseLogPosition,
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
@@ -925,6 +928,7 @@ public class ElectionTest
 
         final Election election = new Election(
             true,
+            0,
             0,
             0,
             0,
@@ -1041,6 +1045,7 @@ public class ElectionTest
             1,
             followerLogPosition,
             followerLogPosition,
+            followerLogPosition,
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
@@ -1098,6 +1103,7 @@ public class ElectionTest
             0,
             0,
             0,
+            0,
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,
@@ -1150,6 +1156,74 @@ public class ElectionTest
     }
 
     @Test
+    void followerShouldUseInitialLeadershipTermIdAndInitialTermBaseLogPositionWhenRecordingLogIsEmpty()
+    {
+        final long initialLeadershipTermId = 2;
+        final long initialTermBaseLogPosition = 120;
+        final long snapshotLogPosition = 150;
+        final long leaderLeadershipTermId = 3;
+        final long leaderTermBaseLogPosition = 500;
+        final long leaderLogPosition = 600;
+        final long localRecordingId = 2390485;
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+        final ClusterMember thisMember = clusterMembers[1];
+        final ClusterMember liveLeader = clusterMembers[0];
+        final int leaderId = liveLeader.id();
+        final LogReplication logReplication = mock(LogReplication.class);
+
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
+
+        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+
+        final Election election = new Election(
+            false,
+            initialLeadershipTermId,
+            initialTermBaseLogPosition,
+            snapshotLogPosition,
+            snapshotLogPosition,
+            clusterMembers,
+            clusterMemberByIdMap,
+            thisMember,
+            consensusPublisher,
+            ctx,
+            consensusModuleAgent);
+
+        long t1 = 0;
+        election.doWork(++t1);
+        verify(electionStateCounter).setOrdered(ElectionState.CANVASS.code());
+
+        when(logReplication.isDone(anyLong())).thenReturn(true);
+        when(logReplication.recordingId()).thenReturn(localRecordingId);
+        when(consensusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt(), anyShort())).thenReturn(true);
+
+        election.onNewLeadershipTerm(
+            initialLeadershipTermId,
+            leaderLeadershipTermId,
+            leaderTermBaseLogPosition,
+            leaderLogPosition,
+            leaderLeadershipTermId,
+            leaderTermBaseLogPosition,
+            leaderLogPosition,
+            RECORDING_ID,
+            t1,
+            leaderId,
+            0,
+            false);
+
+        doReturn(logReplication).when(consensusModuleAgent)
+            .newLogReplication(any(), anyLong(), anyLong(), anyLong());
+        doReturn(leaderTermBaseLogPosition).when(logReplication).position();
+
+        election.doWork(++t1);
+        election.onCommitPosition(leaderLeadershipTermId, leaderTermBaseLogPosition, leaderId);
+        election.doWork(++t1);
+
+        verify(recordingLog).appendTerm(RECORDING_ID, initialLeadershipTermId, initialTermBaseLogPosition, t1);
+        verify(recordingLog).commitLogPosition(initialLeadershipTermId, leaderTermBaseLogPosition);
+    }
+
+    @Test
     void followerShouldReplicateAndSendAppendPositionWhenLogReplicationDone()
     {
         final long leadershipTermId = 1;
@@ -1171,6 +1245,7 @@ public class ElectionTest
 
         final Election election = new Election(
             true,
+            0,
             0,
             0,
             0,
@@ -1257,6 +1332,7 @@ public class ElectionTest
         final Election election = new Election(
             true,
             leadershipTermId,
+            leaderLogPosition,
             leaderLogPosition,
             leaderLogPosition,
             clusterMembers,
@@ -1347,6 +1423,7 @@ public class ElectionTest
             logLeadershipTermId,
             logPosition,
             logPosition,
+            logPosition,
             clusterMembers,
             idToClusterMemberMap,
             thisMember,
@@ -1368,6 +1445,7 @@ public class ElectionTest
         return new Election(
             true,
             logLeadershipTermId,
+            logPosition,
             logPosition,
             logPosition,
             clusterMembers,

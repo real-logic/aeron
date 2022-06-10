@@ -353,7 +353,7 @@ private:
         const util::index_t recordIndex = index - RecordDescriptor::HEADER_LENGTH;
         if (recordIndex < 0 || recordIndex > (m_capacity - RecordDescriptor::HEADER_LENGTH))
         {
-            throw util::IllegalArgumentException("invalid message index " + index, SOURCEINFO);
+            throw util::IllegalArgumentException("invalid message index=" + std::to_string(index), SOURCEINFO);
         }
 
         return recordIndex;
@@ -375,7 +375,7 @@ private:
     {
         if (length < 0)
         {
-            throw util::IllegalArgumentException("invalid message length=" + length, SOURCEINFO);
+            throw util::IllegalArgumentException("invalid message length=" + std::to_string(length), SOURCEINFO);
         }
         else if (length > m_maxMsgLength)
         {

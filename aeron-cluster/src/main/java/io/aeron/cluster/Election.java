@@ -1327,14 +1327,9 @@ class Election
         final long logPosition,
         final long nowNs)
     {
-        final long recordingId = consensusModuleAgent.logRecordingId();
-        final long initialTermBaseLogPosition = this.initialTermBaseLogPosition;
-        final long initialLogLeadershipTermId = this.initialLogLeadershipTermId;
-        final ConsensusModule.Context ctx = this.ctx;
-
         ensureRecordingLogCoherent(
             ctx,
-            recordingId,
+            consensusModuleAgent.logRecordingId(),
             initialLogLeadershipTermId,
             initialTermBaseLogPosition,
             leadershipTermId,

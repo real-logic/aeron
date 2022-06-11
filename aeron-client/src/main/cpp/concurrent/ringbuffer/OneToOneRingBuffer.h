@@ -175,6 +175,11 @@ public:
         return m_buffer.getAndAddInt64(m_correlationIdCounterIndex, 1);
     }
 
+    inline concurrent::AtomicBuffer &buffer()
+    {
+        return m_buffer;
+    }
+
     inline void consumerHeartbeatTime(std::int64_t time)
     {
         m_buffer.putInt64Ordered(m_consumerHeartbeatIndex, time);

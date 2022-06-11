@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ typedef std::function<void(
     concurrent::AtomicBuffer &buffer,
     util::index_t offset,
     util::index_t length,
-    Header& header)> fragment_handler_t;
+    Header &header)> fragment_handler_t;
 
 
 namespace TermReader {
@@ -55,7 +55,7 @@ inline void read(
     ReadOutcome &outcome,
     AtomicBuffer &termBuffer,
     std::int32_t termOffset,
-    F&& handler,
+    F &&handler,
     int fragmentsLimit,
     Header &header,
     const util::exception_handler_t &exceptionHandler)

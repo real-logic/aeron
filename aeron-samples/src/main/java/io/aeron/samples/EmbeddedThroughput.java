@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,8 +66,8 @@ public class EmbeddedThroughput
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        try (MediaDriver ignore = MediaDriver.launch();
-            Aeron aeron = Aeron.connect();
+        try (MediaDriver mediaDriver = MediaDriver.launch();
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {

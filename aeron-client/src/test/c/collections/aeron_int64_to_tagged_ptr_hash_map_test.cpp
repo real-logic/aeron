@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,14 +34,14 @@ public:
 protected:
     static void for_each(void *clientd, int64_t key, uint32_t tag, void *value)
     {
-        Int64ToTaggedPtrHashMapTest *t = (Int64ToTaggedPtrHashMapTest *)clientd;
+        auto t = (Int64ToTaggedPtrHashMapTest *)clientd;
 
         t->m_for_each(key, tag, value);
     }
 
     static bool remove_if(void *clientd, int64_t key, uint32_t tag, void *value)
     {
-        Int64ToTaggedPtrHashMapTest *t = (Int64ToTaggedPtrHashMapTest *)clientd;
+        auto t = (Int64ToTaggedPtrHashMapTest *)clientd;
 
         return t->m_remove_if(key, tag, value);
     }
@@ -149,7 +149,7 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldHandleCollisionAndThenLinearProbe)
     ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 32, 0.5f), 0);
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, key, tag, &value), 0);
 
-    int64_t collision_key = (int64_t)(key + m_map.capacity);
+    auto collision_key = (int64_t)(key + m_map.capacity);
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, collision_key, collision_tag, &collision_value), 0);
 
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_get(&m_map, key, &tag_out, &value_out), true);
@@ -186,7 +186,7 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldRemoveEntryAndCompactCollisionChain)
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, 12, 0, (void *)&value_12), 0);
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, 13, 0, (void *)&value_13), 0);
 
-    int64_t collision_key = (int64_t)(12 + m_map.capacity);
+    auto collision_key = (int64_t)(12 + m_map.capacity);
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, collision_key, 0, &collision_value), 0);
     EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, 14, 0, (void *)&value_14), 0);
 

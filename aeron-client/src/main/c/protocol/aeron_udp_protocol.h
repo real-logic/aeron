@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -181,6 +181,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_OPT_HDR_TYPE_ATS_EC_KEY (UINT16_C(0x0004))
 #define AERON_OPT_HDR_TYPE_ATS_EC_SIG (UINT16_C(0x0005))
 #define AERON_OPT_HDR_TYPE_ATS_SECRET (UINT16_C(0x0006))
+#define AERON_OPT_HDR_TYPE_ATS_GROUP_TAG (UINT16_C(0x0007))
 
 #define AERON_OPT_HDR_ALIGNMENT (4u)
 

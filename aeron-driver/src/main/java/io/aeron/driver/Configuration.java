@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -292,7 +292,7 @@ public final class Configuration
     public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
 
     /**
-     * Default timeout for {@link Image} liveness timeout..
+     * Default timeout for {@link Image} liveness timeout.
      */
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
@@ -435,7 +435,7 @@ public final class Configuration
      * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
      * <p>
      * Max length is 65,507 bytes as 65,535 minus 8 byte UDP header then minus 20 byte IP header.
-     * Then round down to nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} giving 65,504.
+     * Then round down to the nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} giving 65,504.
      */
     public static final int MAX_UDP_PAYLOAD_LENGTH = 65504;
 
@@ -640,7 +640,7 @@ public final class Configuration
     public static final String TERMINATION_VALIDATOR_PROP_NAME = "aeron.driver.termination.validator";
 
     /**
-     * Property name for default boolean value for if a stream can be rejoined. True to allow rejoin, false to not.
+     * Property name for default boolean value for if a stream can be rejoined. True to allow stream rejoin.
      */
     public static final String REJOIN_STREAM_PROP_NAME = "aeron.rejoin.stream";
 
@@ -989,9 +989,9 @@ public final class Configuration
     }
 
     /**
-     * Default boolean value for if a stream can be rejoined. True to allow rejoin, false to not.
+     * Default boolean value for if a stream can be rejoined. True to allow stream rejoin, false to not.
      *
-     * @return boolean value for if a stream can be rejoined. True to allow rejoin, false to not.
+     * @return boolean value for if a stream can be rejoined. True to allow stream rejoin, false to not.
      * @see #REJOIN_STREAM_PROP_NAME
      */
     public static boolean rejoinStream()

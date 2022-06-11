@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -295,6 +295,8 @@ public class UdpChannelTest
     public void shouldHandleIpV6CanonicalFormForUnicastCorrectly(
         final String endpointKey, final String interfaceKey)
     {
+        assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
+
         final UdpChannel udpChannelLocal =
             UdpChannel.parse(uri(endpointKey, "192.168.0.1:40456", interfaceKey, "[::1]"));
         final UdpChannel udpChannelLocalPort =
@@ -337,6 +339,8 @@ public class UdpChannelTest
     @Test
     public void shouldGetProtocolFamilyForIpV6()
     {
+        assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
+
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=[::1]:12345|interface=[::1]");
         assertThat(udpChannel.protocolFamily(), is(StandardProtocolFamily.INET6));
     }
@@ -351,6 +355,8 @@ public class UdpChannelTest
     @Test
     public void shouldGetProtocolFamilyForIpV6WithoutLocalSpecified()
     {
+        assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
+
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=[::1]:12345");
         assertThat(udpChannel.protocolFamily(), is(StandardProtocolFamily.INET6));
     }

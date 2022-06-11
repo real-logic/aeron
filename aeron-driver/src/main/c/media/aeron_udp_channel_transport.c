@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,15 +73,18 @@ static int aeron_udp_channel_transport_setup_media_rcv_timestamps(aeron_udp_chan
 
     // The kernel does both falling back when required.  Essentially we just need a non-zero value for normal UDP.
     transport->timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_MEDIA_RCV_TIMESTAMP;
+    return 0;
 #endif
 
-    return 0;
+    AERON_SET_ERR(EINVAL, "%s", "Timestamps are not supported on this platform");
+    return -1;
 }
 
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *bind_addr,
     struct sockaddr_storage *multicast_if_addr,
+    struct sockaddr_storage *connect_addr,
     unsigned int multicast_if_index,
     uint8_t ttl,
     size_t socket_rcvbuf,
@@ -107,6 +110,7 @@ int aeron_udp_channel_transport_init(
         AERON_APPEND_ERR("%s", "");
         goto error;
     }
+    transport->recv_fd = transport->fd;
 
     is_ipv6 = AF_INET6 == bind_addr->ss_family;
     is_multicast = aeron_is_addr_multicast(bind_addr);
@@ -114,20 +118,27 @@ int aeron_udp_channel_transport_init(
 
     if (!is_multicast)
     {
-        if (bind(transport->fd, (struct sockaddr *)bind_addr, bind_addr_len) < 0)
+        if (aeron_bind(transport->recv_fd, (struct sockaddr *)bind_addr, bind_addr_len) < 0)
         {
-            char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
-            aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
-            AERON_SET_ERR(errno, "unicast bind(%s)", buffer);
+            AERON_APPEND_ERR("%s", "unicast bind, affinity=%d", affinity);
             goto error;
         }
     }
     else
     {
+        if (NULL != connect_addr)
+        {
+            if ((transport->recv_fd = aeron_socket(bind_addr->ss_family, SOCK_DGRAM, 0)) < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+                goto error;
+            }
+        }
+
         int reuse = 1;
 
 #if defined(SO_REUSEADDR)
-        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+        if (aeron_setsockopt(transport->recv_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
         {
             AERON_APPEND_ERR("failed to set SOL_SOCKET/SO_REUSEADDR option to: %d", reuse);
             goto error;
@@ -135,7 +146,7 @@ int aeron_udp_channel_transport_init(
 #endif
 
 #if defined(SO_REUSEPORT)
-        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0)
+        if (aeron_setsockopt(transport->recv_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0)
         {
             AERON_SET_ERR(errno, "%s", "setsockopt(SO_REUSEPORT)");
             goto error;
@@ -148,11 +159,9 @@ int aeron_udp_channel_transport_init(
             memcpy(&addr, bind_addr, sizeof(addr));
             addr.sin6_addr = in6addr_any;
 
-            if (bind(transport->fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
+            if (aeron_bind(transport->recv_fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
-                char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
-                aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
-                AERON_SET_ERR(errno, "multicast IPv6 bind(%s)", buffer);
+                AERON_APPEND_ERR("%s", "multicast IPv6 bind, affinity=%d", affinity);
                 goto error;
             }
 
@@ -161,7 +170,7 @@ int aeron_udp_channel_transport_init(
             memcpy(&mreq.ipv6mr_multiaddr, &in6->sin6_addr, sizeof(in6->sin6_addr));
             mreq.ipv6mr_interface = multicast_if_index;
 
-            if (aeron_setsockopt(transport->fd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0)
+            if (aeron_setsockopt(transport->recv_fd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0)
             {
                 char addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
                 inet_ntop(AF_INET6, &mreq.ipv6mr_multiaddr, addr_buf, sizeof(addr_buf));
@@ -195,11 +204,9 @@ int aeron_udp_channel_transport_init(
             memcpy(&addr, bind_addr, sizeof(addr));
             addr.sin_addr.s_addr = INADDR_ANY;
 
-            if (bind(transport->fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
+            if (aeron_bind(transport->recv_fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
-                char bind_addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
-                aeron_format_source_identity(bind_addr_str, AERON_NETUTIL_FORMATTED_MAX_LENGTH, bind_addr);
-                AERON_SET_ERR(errno, "multicast IPv4 bind(%s)", bind_addr_str);
+                AERON_APPEND_ERR("multicast IPv4 bind, affinity=%d", affinity);
                 goto error;
             }
 
@@ -209,7 +216,7 @@ int aeron_udp_channel_transport_init(
             mreq.imr_multiaddr.s_addr = in4->sin_addr.s_addr;
             mreq.imr_interface.s_addr = interface_addr->sin_addr.s_addr;
 
-            if (aeron_setsockopt(transport->fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+            if (aeron_setsockopt(transport->recv_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
             {
                 char addr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
                 char intr_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
@@ -244,9 +251,19 @@ int aeron_udp_channel_transport_init(
         }
     }
 
+    if (NULL != connect_addr)
+    {
+        if (aeron_connect(transport->fd, (struct sockaddr *)connect_addr, AERON_ADDR_LEN(connect_addr)) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
+        transport->connected_address = connect_addr;
+    }
+
     if (socket_rcvbuf > 0)
     {
-        if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
+        if (aeron_setsockopt(transport->recv_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
             AERON_APPEND_ERR(
                 "failed to set SOL_SOCKET/SO_RCVBUF option to: %" PRIu64, (uint64_t)socket_rcvbuf);
@@ -268,16 +285,24 @@ int aeron_udp_channel_transport_init(
     {
         if (aeron_udp_channel_transport_setup_media_rcv_timestamps(transport) < 0)
         {
-            AERON_APPEND_ERR("%s", "");
-            goto error;
+            AERON_APPEND_ERR("%s", "WARNING, unable to setup media timestamping");
+            aeron_distinct_error_log_record(context->error_log, aeron_errcode(), aeron_errmsg());
+            aeron_err_clear();
         }
     }
 
     if (aeron_set_socket_non_blocking(transport->fd) < 0)
     {
-        AERON_APPEND_ERR("%", "");
+        AERON_APPEND_ERR("%", "failed to set transport->fd to be non-blocking");
         goto error;
     }
+
+    if (aeron_set_socket_non_blocking(transport->recv_fd) < 0)
+    {
+        AERON_APPEND_ERR("%", "failed to set transport->recv_fd to be non-blocking");
+        goto error;
+    }
+
 
     return 0;
 
@@ -291,11 +316,33 @@ error:
     return -1;
 }
 
+int aeron_udp_channel_transport_reconnect(
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *connect_addr)
+{
+    if (NULL != connect_addr && NULL != transport->connected_address)
+    {
+        if (aeron_connect(transport->fd, (struct sockaddr *)connect_addr, AERON_ADDR_LEN(connect_addr)) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+
+        transport->connected_address = connect_addr;
+    }
+
+    return 0;
+}
+
 int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport)
 {
     if (transport->fd != -1)
     {
         aeron_close_socket(transport->fd);
+    }
+    if (transport->recv_fd != transport->fd)
+    {
+        aeron_close_socket(transport->recv_fd);
     }
 
     return 0;
@@ -313,29 +360,37 @@ int aeron_udp_channel_transport_recvmmsg(
     struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
     struct timespec *media_rcv_timestamp = NULL;
     AERON_DECL_ALIGNED(
-        char buf[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS][CMSG_SPACE(sizeof(struct timespec))],
+        char buf[AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX][CMSG_SPACE(sizeof(struct timespec))],
         sizeof(struct cmsghdr));
 
     if (transport->timestamp_flags)
     {
-        for (int i = 0; i < (int)vlen && i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
+        for (int i = 0; i < (int)vlen; i++)
         {
             msgvec[i].msg_hdr.msg_control = (void *)buf[i];
             msgvec[i].msg_hdr.msg_controllen = CMSG_LEN(sizeof(buf[i]));
         }
     }
 
-    int result = recvmmsg(transport->fd, msgvec, vlen, 0, &tv);
+    int result = recvmmsg(transport->recv_fd, msgvec, vlen, 0, &tv);
     if (result < 0)
     {
         int err = errno;
 
-        if (EINTR == err || EAGAIN == err)
+        // ECONNREFUSED can sometimes occur with connected UDP sockets if ICMP traffic is able to indicate that the
+        // remote end had closed on a previous send.
+        if (EINTR == err || EAGAIN == err || ECONNREFUSED == err)
         {
             return 0;
         }
 
-        AERON_SET_ERR(err, "Failed to recvmmsg, fd: %d", transport->fd);
+        AERON_SET_ERR(
+            err,
+            "Failed to recvmmsg, fd=%d, recv_fd=%d, connected=%s",
+            transport->fd,
+            transport->recv_fd,
+            NULL != transport->connected_address ? "true" : "false");
+
         return -1;
     }
     else if (0 == result)
@@ -375,7 +430,7 @@ int aeron_udp_channel_transport_recvmmsg(
 
     for (size_t i = 0, length = vlen; i < length; i++)
     {
-        ssize_t result = aeron_recvmsg(transport->fd, &msgvec[i].msg_hdr, 0);
+        ssize_t result = aeron_recvmsg(transport->recv_fd, &msgvec[i].msg_hdr, 0);
 
         if (result < 0)
         {
@@ -407,69 +462,180 @@ int aeron_udp_channel_transport_recvmmsg(
 #endif
 }
 
-int aeron_udp_channel_transport_sendmmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
+static int aeron_udp_channel_transport_send_connected(
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
+    struct iovec *iov,
+    int64_t *bytes_sent)
 {
-#if defined(HAVE_SENDMMSG)
-    int sendmmsg_result = sendmmsg(transport->fd, msgvec, vlen, 0);
-    if (sendmmsg_result < 0)
+    ssize_t send_result = aeron_send(transport->fd, iov->iov_base, iov->iov_len, 0);
+    if (send_result < 0)
     {
-        AERON_SET_ERR(errno, "Failed to sendmmsg, fd: %d", transport->fd);
-        return -1;
-    }
-
-    return sendmmsg_result;
-#else
-    int result = 0;
-
-    for (size_t i = 0, length = vlen; i < length; i++)
-    {
-        ssize_t sendmsg_result = aeron_sendmsg(transport->fd, &msgvec[i].msg_hdr, 0);
-        if (sendmsg_result < 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-            return -1;
-        }
-
-        msgvec[i].msg_len = (unsigned int)sendmsg_result;
-
-        if (0 == sendmsg_result)
-        {
-            break;
-        }
-
-        result++;
-    }
-
-    return result;
-#endif
-}
-
-int aeron_udp_channel_transport_sendmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    ssize_t sendmsg_result = aeron_sendmsg(transport->fd, message, 0);
-    if (sendmsg_result < 0)
-    {
+        *bytes_sent = 0;
         char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
-        aeron_format_source_identity(addr, sizeof(addr), (struct sockaddr_storage *)message->msg_name);
+        aeron_format_source_identity(addr, sizeof(addr), transport->connected_address);
         AERON_APPEND_ERR("message->msg_name=%s", addr);
         return -1;
     }
+    else
+    {
+        *bytes_sent += send_result;
+        return 0 == send_result ? 0 : 1;
+    }
+}
 
-    return (int)sendmsg_result;
+#if !defined(HAVE_SENDMMSG)
+static int aeron_udp_channel_transport_send_unconnected(
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *address,
+    struct iovec *iov,
+    int64_t *bytes_sent)
+{
+    struct msghdr msg;
+    msg.msg_control = NULL;
+    msg.msg_controllen = 0;
+    msg.msg_name = address;
+    msg.msg_namelen = AERON_ADDR_LEN(address);
+    msg.msg_iovlen = 1;
+    msg.msg_flags = 0;
+    msg.msg_iov = iov;
+
+    ssize_t send_result = aeron_sendmsg(transport->fd, &msg, 0);
+    if (send_result < 0)
+    {
+        char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+        aeron_format_source_identity(addr, sizeof(addr), address);
+        AERON_APPEND_ERR("message->msg_name=%s", addr);
+        return -1;
+    }
+    else
+    {
+        *bytes_sent += send_result;
+        return (int)send_result;
+    }
+}
+#endif
+
+#if defined(HAVE_SENDMMSG)
+
+static int aeron_udp_channel_transport_sendv(
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *address,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent)
+{
+    struct mmsghdr msg[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
+    size_t msg_i;
+
+    for (msg_i = 0; msg_i < iov_length && msg_i < AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND; msg_i++)
+    {
+        msg[msg_i].msg_hdr.msg_control = NULL;
+        msg[msg_i].msg_hdr.msg_controllen = 0;
+        msg[msg_i].msg_hdr.msg_name = address;
+        msg[msg_i].msg_hdr.msg_namelen = AERON_ADDR_LEN(address);
+        msg[msg_i].msg_hdr.msg_flags = 0;
+        msg[msg_i].msg_hdr.msg_iov = &iov[msg_i];
+        msg[msg_i].msg_hdr.msg_iovlen = 1;
+        msg[msg_i].msg_len = 0;
+    }
+
+    int num_sent = sendmmsg(transport->fd, msg, msg_i, 0);
+    if (num_sent < 0)
+    {
+        if (EAGAIN == errno || EWOULDBLOCK == errno || EINTR == errno)
+        {
+            return 0;
+        }
+        else
+        {
+            char address_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+            aeron_format_source_identity(address_str, AERON_NETUTIL_FORMATTED_MAX_LENGTH, address);
+            AERON_SET_ERR(errno, "%s", "failed to sendmmsg");
+            return -1;
+        }
+    }
+    else
+    {
+        for (int i = 0; i < num_sent; i++)
+        {
+            *bytes_sent += msg[i].msg_len;
+        }
+
+        return num_sent;
+    }
+}
+
+#endif
+
+
+int aeron_udp_channel_transport_send(
+    aeron_udp_channel_data_paths_t *data_paths,
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *address,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent)
+{
+#if defined(HAVE_SENDMMSG)
+    if (1 == iov_length && NULL != transport->connected_address)
+    {
+        return aeron_udp_channel_transport_send_connected(transport, iov, bytes_sent);
+    }
+    else
+    {
+        return aeron_udp_channel_transport_sendv(transport, address, iov, iov_length, bytes_sent);
+    }
+#else
+    int result = 0;
+    if (NULL != transport->connected_address)
+    {
+        for (size_t i = 0; i < iov_length; i++)
+        {
+            int send_result = aeron_udp_channel_transport_send_connected(transport, &iov[i], bytes_sent);
+            if (send_result < 0)
+            {
+                result = -1;
+                break;
+            }
+            else if (0 == send_result)
+            {
+                break;
+            }
+            else
+            {
+                result++;
+            }
+        }
+    }
+    else
+    {
+        for (size_t i = 0; i < iov_length; i++)
+        {
+            int send_result = aeron_udp_channel_transport_send_unconnected(transport, address, &iov[i], bytes_sent);
+            if (send_result < 0)
+            {
+                result = -1;
+                break;
+            }
+            else if (0 == send_result)
+            {
+                break;
+            }
+            else
+            {
+                result++;
+            }
+        }
+    }
+    return result;
+#endif
 }
 
 int aeron_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf)
 {
     socklen_t len = sizeof(size_t);
 
-    if (aeron_getsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, so_rcvbuf, &len) < 0)
+    if (aeron_getsockopt(transport->recv_fd, SOL_SOCKET, SO_RCVBUF, so_rcvbuf, &len) < 0)
     {
         AERON_APPEND_ERR("%s", "failed to get SOL_SOCKET/SO_RCVBUF option");
         return -1;
@@ -484,7 +650,7 @@ int aeron_udp_channel_transport_bind_addr_and_port(
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
 
-    if (getsockname(transport->fd, (struct sockaddr *)&addr, &addr_len) < 0)
+    if (getsockname(transport->recv_fd, (struct sockaddr *)&addr, &addr_len) < 0)
     {
         AERON_SET_ERR(errno, "Failed to get socket name for fd: %d", transport->fd);
         return -1;

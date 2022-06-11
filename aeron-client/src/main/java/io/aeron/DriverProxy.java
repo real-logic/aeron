@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 /**
  * Separates the concern of communicating with the client conductor away from the rest of the client.
  * <p>
- * Writes commands into the client conductor buffer.
+ * For writing commands into the client conductor buffer.
  * <p>
  * <b>Note:</b> this class is not thread safe and is expecting to be called within {@link Aeron.Context#clientLock()}.
  */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,11 +93,16 @@ int aeron_receive_channel_endpoint_delete(
 
 int aeron_receive_channel_endpoint_close(aeron_receive_channel_endpoint_t *endpoint);
 
-int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr);
+int aeron_receive_channel_endpoint_send(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *address,
+    struct iovec *iov);
 
 int aeron_receive_channel_endpoint_send_sm(
     aeron_receive_channel_endpoint_t *endpoint,
-    struct sockaddr_storage *addr,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *control_addr,
     int32_t stream_id,
     int32_t session_id,
     int32_t term_id,
@@ -107,6 +112,7 @@ int aeron_receive_channel_endpoint_send_sm(
 
 int aeron_receive_channel_endpoint_send_nak(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id,
@@ -116,6 +122,7 @@ int aeron_receive_channel_endpoint_send_nak(
 
 int aeron_receive_channel_endpoint_send_rttm(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id,

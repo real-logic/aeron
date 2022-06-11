@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,8 @@ int aeron_driver_sender_init(
         return -1;
     }
 
-    for (size_t i = 0; i < AERON_DRIVER_SENDER_NUM_RECV_BUFFERS; i++)
+    sender->recv_buffers.vector_capacity = context->sender_io_vector_capacity;
+    for (size_t i = 0; i < sender->recv_buffers.vector_capacity; i++)
     {
         size_t offset = 0;
         if (aeron_alloc_aligned(
@@ -130,6 +131,8 @@ int aeron_driver_sender_do_work(void *clientd)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
 
+    const size_t vlen = sender->recv_buffers.vector_capacity;
+
     int64_t now_ns = sender->context->nano_clock();
     aeron_clock_update_cached_nano_time(sender->context->sender_cached_clock, now_ns);
 
@@ -143,9 +146,9 @@ int aeron_driver_sender_do_work(void *clientd)
         ++sender->duty_cycle_counter >= sender->duty_cycle_ratio ||
         now_ns > sender->control_poll_timeout_ns)
     {
-        struct mmsghdr mmsghdr[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
+        struct mmsghdr mmsghdr[AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX];
 
-        for (size_t i = 0; i < AERON_DRIVER_SENDER_NUM_RECV_BUFFERS; i++)
+        for (size_t i = 0; i < vlen; i++)
         {
             mmsghdr[i].msg_hdr.msg_name = &sender->recv_buffers.addrs[i];
             mmsghdr[i].msg_hdr.msg_namelen = sizeof(sender->recv_buffers.addrs[i]);
@@ -160,7 +163,7 @@ int aeron_driver_sender_do_work(void *clientd)
         int poll_result = sender->poller_poll_func(
             &sender->poller,
             mmsghdr,
-            AERON_DRIVER_SENDER_NUM_RECV_BUFFERS,
+            vlen,
             &bytes_received,
             sender->data_paths.recv_func,
             sender->recvmmsg_func,
@@ -192,7 +195,7 @@ void aeron_driver_sender_on_close(void *clientd)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
 
-    for (size_t i = 0; i < AERON_DRIVER_SENDER_NUM_RECV_BUFFERS; i++)
+    for (size_t i = 0; i < sender->recv_buffers.vector_capacity; i++)
     {
         aeron_free(sender->recv_buffers.buffers[i]);
     }
@@ -359,8 +362,13 @@ void aeron_driver_sender_on_resolution_change(void *clientd, void *command)
     aeron_command_sender_resolution_change_t *resolution_change = (aeron_command_sender_resolution_change_t *)command;
     aeron_send_channel_endpoint_t *endpoint = resolution_change->endpoint;
 
-    aeron_send_channel_endpoint_resolution_change(
-        endpoint, resolution_change->endpoint_name, &resolution_change->new_addr);
+    if (aeron_send_channel_endpoint_resolution_change(
+        sender->context, endpoint, resolution_change->endpoint_name, &resolution_change->new_addr) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        aeron_driver_sender_log_error(sender);
+    }
+
     aeron_counter_add_ordered(sender->resolution_changes_counter, 1);
 }
 

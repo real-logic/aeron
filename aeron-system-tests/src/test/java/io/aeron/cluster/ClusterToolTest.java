@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,10 +156,8 @@ class ClusterToolTest
     void sortRecordingLogIsANoOpIfRecordLogIsEmpty(final @TempDir Path emptyClusterDir) throws IOException
     {
         final File clusterDir = emptyClusterDir.toFile();
-        //noinspection EmptyTryBlock
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
-        {
-        }
+        final RecordingLog recordingLog = new RecordingLog(clusterDir, true);
+        recordingLog.close();
 
         final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);
 
@@ -170,7 +168,7 @@ class ClusterToolTest
     }
 
     @Test
-    void sortRecordingLogIsANoOpIfRecordDoesNotExist(final @TempDir Path emptyClusterDir) throws IOException
+    void sortRecordingLogIsANoOpIfRecordDoesNotExist(final @TempDir Path emptyClusterDir)
     {
         final File clusterDir = emptyClusterDir.toFile();
         final Path logFile = emptyClusterDir.resolve(RecordingLog.RECORDING_LOG_FILE_NAME);

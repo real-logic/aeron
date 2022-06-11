@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -480,7 +480,14 @@ int aeron_data_packet_dispatcher_on_rttm(
                     &endpoint->conductor_fields.udp_channel->remote_control : addr;
 
                 return aeron_receive_channel_endpoint_send_rttm(
-                    endpoint, control_addr, header->stream_id, header->session_id, header->echo_timestamp, 0, false);
+                    endpoint,
+                    destination,
+                    control_addr,
+                    header->stream_id,
+                    header->session_id,
+                    header->echo_timestamp,
+                    0,
+                    false);
             }
             else
             {
@@ -501,8 +508,8 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     int32_t stream_id,
     int32_t session_id)
 {
-    struct sockaddr_storage *control_addr = endpoint->conductor_fields.udp_channel->is_multicast ?
-        &endpoint->conductor_fields.udp_channel->remote_control : addr;
+    struct sockaddr_storage *control_addr = destination->conductor_fields.udp_channel->is_multicast ?
+        &destination->conductor_fields.udp_channel->remote_control : addr;
 
     if (aeron_int64_to_tagged_ptr_hash_map_put(
         &stream_interest->image_by_session_id_map,
@@ -517,7 +524,8 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     }
 
     if (aeron_receive_channel_endpoint_send_sm(
-        endpoint, control_addr, stream_id, session_id, 0, 0, 0, AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
+        endpoint, destination, control_addr, stream_id, session_id, 0, 0, 0,
+        AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
     {
         return -1;
     }

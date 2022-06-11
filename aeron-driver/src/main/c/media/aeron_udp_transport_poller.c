@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,13 +90,13 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
 
     struct epoll_event event;
 
-    event.data.fd = transport->fd;
+    event.data.fd = transport->recv_fd;
     event.data.ptr = transport;
     event.events = EPOLLIN;
-    int result = epoll_ctl(poller->fd, EPOLL_CTL_ADD, transport->fd, &event);
+    int result = epoll_ctl(poller->fd, EPOLL_CTL_ADD, transport->recv_fd, &event);
     if (result < 0)
     {
-        AERON_SET_ERR(errno, "Failed to epoll_ctl(EPOLL_CTL_ADD), fd: %d", transport->fd);
+        AERON_SET_ERR(errno, "Failed to epoll_ctl(EPOLL_CTL_ADD), fd: %d", transport->recv_fd);
         return -1;
     }
 
@@ -113,7 +113,7 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
     }
 
     struct pollfd *pollfds = (struct pollfd *)poller->bindings_clientd;
-    pollfds[index].fd = transport->fd;
+    pollfds[index].fd = transport->recv_fd;
     pollfds[index].events = POLLIN;
     pollfds[index].revents = 0;
 #endif
@@ -153,10 +153,10 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
 
         struct epoll_event event;
 
-        event.data.fd = transport->fd;
+        event.data.fd = transport->recv_fd;
         event.data.ptr = transport;
         event.events = EPOLLIN;
-        int result = epoll_ctl(poller->fd, EPOLL_CTL_DEL, transport->fd, &event);
+        int result = epoll_ctl(poller->fd, EPOLL_CTL_DEL, transport->recv_fd, &event);
         if (result < 0)
         {
             AERON_SET_ERR(errno, "%s", "epoll_ctl(EPOLL_CTL_DEL)");
@@ -195,6 +195,7 @@ int aeron_udp_transport_poller_poll(
                 poller->transports.array[i].transport, msgvec, vlen, bytes_rcved, recv_func, clientd);
             if (recv_result < 0)
             {
+                AERON_APPEND_ERR("%s", "");
                 return recv_result;
             }
 

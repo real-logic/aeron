@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.agrona.UnsafeAccess.UNSAFE;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 class ImageRateSubscriberLhsPadding
 {
@@ -34,19 +33,8 @@ class ImageRateSubscriberLhsPadding
 
 class ImageRateSubscriberValues extends ImageRateSubscriberLhsPadding
 {
-    static final long TOTAL_BYTES_OFFSET;
-
-    static
-    {
-        try
-        {
-            TOTAL_BYTES_OFFSET = UNSAFE.objectFieldOffset(RateReporterValues.class.getDeclaredField("totalBytes"));
-        }
-        catch (final Exception ex)
-        {
-            throw new RuntimeException(ex);
-        }
-    }
+    static final AtomicLongFieldUpdater<ImageRateSubscriberValues> TOTAL_BYTES_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(ImageRateSubscriberValues.class, "totalBytes");
 
     volatile long totalBytes;
 }
@@ -132,6 +120,6 @@ public final class ImageRateSubscriber extends ImageRateSubscriberRhsPadding imp
 
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        UNSAFE.putOrderedLong(this, TOTAL_BYTES_OFFSET, totalBytes + length);
+        TOTAL_BYTES_UPDATER.lazySet(this, totalBytes + length);
     }
 }

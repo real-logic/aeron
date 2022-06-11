@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,35 +121,36 @@ int aeron_network_publication_create(
 
     if (params->has_position)
     {
-        int64_t term_id = params->term_id;
-        int32_t term_count = params->term_id - initial_term_id;
+        int32_t term_id = params->term_id;
+        int32_t term_count = aeron_logbuffer_compute_term_count(term_id, initial_term_id);
         size_t active_index = aeron_logbuffer_index_by_term_count(term_count);
 
         _pub->log_meta_data->term_tail_counters[active_index] =
-            (term_id * ((int64_t)1 << 32)) | params->term_offset;
+            (term_id * (INT64_C(1) << 32)) | (int64_t)params->term_offset;
 
         for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
         {
-            int64_t expected_term_id = (term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
+            int32_t expected_term_id = (term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
             active_index = (active_index + 1) % AERON_LOGBUFFER_PARTITION_COUNT;
-            _pub->log_meta_data->term_tail_counters[active_index] = expected_term_id * ((int64_t)1 << 32);
+            _pub->log_meta_data->term_tail_counters[active_index] = expected_term_id * (INT64_C(1) << 32);
         }
 
         _pub->log_meta_data->active_term_count = term_count;
     }
     else
     {
-        _pub->log_meta_data->term_tail_counters[0] = initial_term_id * ((int64_t)1 << 32);
+        _pub->log_meta_data->term_tail_counters[0] = initial_term_id * (INT64_C(1) << 32);
         for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
         {
-            int64_t expected_term_id = (initial_term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
-            _pub->log_meta_data->term_tail_counters[i] = expected_term_id * ((int64_t)1 << 32);
+            int32_t expected_term_id = (initial_term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
+            _pub->log_meta_data->term_tail_counters[i] = expected_term_id * (INT64_C(1) << 32);
         }
 
         _pub->log_meta_data->active_term_count = 0;
     }
 
-    int64_t now_ns = aeron_clock_cached_nano_time(context->sender_cached_clock);
+    // Called from conductor thread...
+    int64_t now_ns = aeron_clock_cached_nano_time(context->cached_clock);
 
     _pub->log_meta_data->initial_term_id = initial_term_id;
     _pub->log_meta_data->mtu_length = (int32_t)params->mtu_length;
@@ -164,6 +165,7 @@ int aeron_network_publication_create(
 
     _pub->endpoint = endpoint;
     _pub->flow_control = flow_control_strategy;
+    // Will be called from sender thread.
     _pub->cached_clock = context->sender_cached_clock;
     _pub->conductor_fields.subscribable.array = NULL;
     _pub->conductor_fields.subscribable.length = 0;
@@ -195,10 +197,13 @@ int aeron_network_publication_create(
     _pub->snd_bpe_counter.value_addr = snd_bpe_counter->value_addr;
     _pub->tag = params->entity_tag;
     _pub->initial_term_id = initial_term_id;
+    _pub->starting_term_id = params->has_position ? params->term_id : initial_term_id;
+    _pub->starting_term_offset = params->has_position ? params->term_offset : 0;
     _pub->term_buffer_length = _pub->log_meta_data->term_length;
     _pub->term_length_mask = (int32_t)params->term_length - 1;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
     _pub->mtu_length = params->mtu_length;
+    _pub->max_messages_per_send = context->network_publication_max_messages_per_send;
     _pub->term_window_length = (int64_t)aeron_producer_window_length(
         context->publication_window_length, params->term_length);
     _pub->linger_timeout_ns = (int64_t)params->linger_timeout_ns;
@@ -269,13 +274,13 @@ int aeron_network_publication_setup_message_check(
     aeron_network_publication_t *publication, int64_t now_ns, int32_t active_term_id, int32_t term_offset)
 {
     int result = 0;
+    int64_t bytes_sent = 0;
 
     if (now_ns > (publication->time_of_last_setup_ns + AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS))
     {
         uint8_t setup_buffer[sizeof(aeron_setup_header_t)];
         aeron_setup_header_t *setup_header = (aeron_setup_header_t *)setup_buffer;
-        struct iovec iov[1];
-        struct msghdr msghdr;
+        struct iovec iov;
 
         setup_header->frame_header.frame_length = sizeof(aeron_setup_header_t);
         setup_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -290,17 +295,24 @@ int aeron_network_publication_setup_message_check(
         setup_header->mtu = (int32_t)publication->mtu_length;
         setup_header->ttl = publication->endpoint->conductor_fields.udp_channel->multicast_ttl;
 
-        iov[0].iov_base = setup_buffer;
-        iov[0].iov_len = sizeof(aeron_setup_header_t);
-        msghdr.msg_iov = iov;
-        msghdr.msg_iovlen = 1;
-        msghdr.msg_flags = 0;
-        msghdr.msg_control = NULL;
-        msghdr.msg_controllen = 0;
+        iov.iov_base = setup_buffer;
+        iov.iov_len = sizeof(aeron_setup_header_t);
 
-        if ((result = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
+        if (publication->is_setup_elicited)
         {
-            if (result >= 0)
+            publication->flow_control->on_setup(
+                publication->flow_control->state,
+                setup_buffer,
+                sizeof(aeron_setup_header_t),
+                now_ns,
+                *publication->snd_lmt_position.value_addr,
+                publication->position_bits_to_shift,
+                *publication->snd_pos_position.value_addr);
+        }
+
+        if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
+        {
+            if (bytes_sent < (int64_t)iov.iov_len)
             {
                 aeron_counter_increment(publication->short_sends_counter, 1);
             }
@@ -324,15 +336,15 @@ int aeron_network_publication_heartbeat_message_check(
     int32_t term_offset,
     bool signal_end_of_stream)
 {
-    int bytes_sent = 0;
+    int result = 0;
+    int64_t bytes_sent = 0;
 
     if (publication->has_initial_connection &&
         now_ns > (publication->time_of_last_data_or_heartbeat_ns + AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS))
     {
         uint8_t heartbeat_buffer[sizeof(aeron_data_header_t)];
         aeron_data_header_t *data_header = (aeron_data_header_t *)heartbeat_buffer;
-        struct iovec iov[1];
-        struct msghdr msghdr;
+        struct iovec iov;
 
         data_header->frame_header.frame_length = 0;
         data_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -350,17 +362,13 @@ int aeron_network_publication_heartbeat_message_check(
                 AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_EOS_FLAG;
         }
 
-        iov[0].iov_base = heartbeat_buffer;
-        iov[0].iov_len = sizeof(aeron_data_header_t);
-        msghdr.msg_iov = iov;
-        msghdr.msg_iovlen = 1;
-        msghdr.msg_flags = 0;
-        msghdr.msg_control = NULL;
-        msghdr.msg_controllen = 0;
+        iov.iov_base = heartbeat_buffer;
+        iov.iov_len = sizeof(aeron_data_header_t);
 
-        if ((bytes_sent = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
+        if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
         {
-            if (bytes_sent >= 0)
+            result = (int)bytes_sent;
+            if (bytes_sent < (int64_t)iov.iov_len)
             {
                 aeron_counter_increment(publication->short_sends_counter, 1);
             }
@@ -370,20 +378,21 @@ int aeron_network_publication_heartbeat_message_check(
         publication->time_of_last_data_or_heartbeat_ns = now_ns;
     }
 
-    return bytes_sent;
+    return result;
 }
 
 int aeron_network_publication_send_data(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos, int32_t term_offset)
 {
     const size_t term_length = (size_t)publication->term_length_mask + 1;
-    int result = 0, vlen = 0, bytes_sent = 0;
+    const size_t max_vlen = publication->max_messages_per_send;
+    int result = 0, vlen = 0;
+    int64_t bytes_sent = 0;
     int32_t available_window = (int32_t)(aeron_counter_get(publication->snd_lmt_position.value_addr) - snd_pos);
     int64_t highest_pos = snd_pos;
     struct iovec iov[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
-    struct mmsghdr mmsghdr[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
 
-    for (size_t i = 0; i < AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND && available_window > 0; i++)
+    for (size_t i = 0; i < max_vlen && available_window > 0; i++)
     {
         size_t scan_limit = (size_t)available_window < publication->mtu_length ?
             (size_t)available_window : publication->mtu_length;
@@ -398,15 +407,8 @@ int aeron_network_publication_send_data(
         {
             iov[i].iov_base = ptr;
             iov[i].iov_len = (uint32_t)available;
-            mmsghdr[i].msg_hdr.msg_iov = &iov[i];
-            mmsghdr[i].msg_hdr.msg_iovlen = 1;
-            mmsghdr[i].msg_hdr.msg_flags = 0;
-            mmsghdr[i].msg_len = 0;
-            mmsghdr[i].msg_hdr.msg_control = NULL;
-            mmsghdr[i].msg_hdr.msg_controllen = 0;
             vlen++;
 
-            bytes_sent += (int)available;
             int32_t total_available = (int32_t)(available + padding);
             available_window -= total_available;
             term_offset += total_available;
@@ -421,7 +423,7 @@ int aeron_network_publication_send_data(
 
     if (vlen > 0)
     {
-        result = aeron_send_channel_sendmmsg(publication->endpoint, mmsghdr, (size_t)vlen);
+        result = aeron_send_channel_send(publication->endpoint, iov, vlen, &bytes_sent);
         if (result != vlen)
         {
             if (result >= 0)
@@ -441,7 +443,7 @@ int aeron_network_publication_send_data(
         publication->track_sender_limits = false;
     }
 
-    return result < 0 ? result : bytes_sent;
+    return result < 0 ? result : (int)bytes_sent;
 }
 
 int aeron_network_publication_send(aeron_network_publication_t *publication, int64_t now_ns)
@@ -516,7 +518,8 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     int64_t resend_position = aeron_logbuffer_compute_position(
         term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
     size_t term_length = (size_t)publication->term_length_mask + 1;
-    int64_t bottom_resend_window = sender_position - (term_length / 2);
+    int64_t bottom_resend_window =
+        sender_position - (int64_t)(term_length / 2) - (int64_t)aeron_compute_max_message_length(term_length);
     int result = 0;
 
     if (bottom_resend_window <= resend_position && resend_position < sender_position)
@@ -542,30 +545,24 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
                 break;
             }
 
-            struct iovec iov[1];
-            struct msghdr msghdr;
+            struct iovec iov;
+            iov.iov_base = ptr;
+            iov.iov_len = (uint32_t)available;
+            int64_t msg_bytes_sent = 0;
 
-            iov[0].iov_base = ptr;
-            iov[0].iov_len = (uint32_t)available;
-            msghdr.msg_iov = iov;
-            msghdr.msg_iovlen = 1;
-            msghdr.msg_control = NULL;
-            msghdr.msg_controllen = 0;
-            msghdr.msg_flags = 0;
-
-            int sendmsg_result = aeron_send_channel_sendmsg(publication->endpoint, &msghdr);
-            if (sendmsg_result != (int)iov[0].iov_len)
+            int sendmsg_result = aeron_send_channel_send(publication->endpoint, &iov, 1, &msg_bytes_sent);
+            if (0 <= sendmsg_result)
             {
-                if (sendmsg_result >= 0)
+                if (msg_bytes_sent < (int64_t)iov.iov_len)
                 {
                     aeron_counter_increment(publication->short_sends_counter, 1);
                     break;
                 }
-                else
-                {
-                    result = -1;
-                    break;
-                }
+            }
+            else
+            {
+                result = -1;
+                break;
             }
 
             bytes_sent = (int32_t)(available + padding);
@@ -657,9 +654,9 @@ void aeron_network_publication_on_rttm(
     {
         uint8_t rttm_reply_buffer[sizeof(aeron_rttm_header_t)];
         aeron_rttm_header_t *rttm_out_header = (aeron_rttm_header_t *)rttm_reply_buffer;
-        struct iovec iov[1];
-        struct msghdr msghdr;
+        struct iovec iov;
         int result;
+        int64_t bytes_sent;
 
         rttm_out_header->frame_header.frame_length = sizeof(aeron_rttm_header_t);
         rttm_out_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -671,17 +668,13 @@ void aeron_network_publication_on_rttm(
         rttm_out_header->reception_delta = 0;
         rttm_out_header->receiver_id = rttm_in_header->receiver_id;
 
-        iov[0].iov_base = rttm_reply_buffer;
-        iov[0].iov_len = sizeof(aeron_rttm_header_t);
-        msghdr.msg_iov = iov;
-        msghdr.msg_iovlen = 1;
-        msghdr.msg_flags = 0;
-        msghdr.msg_control = NULL;
-        msghdr.msg_controllen = 0;
+        iov.iov_base = rttm_reply_buffer;
+        iov.iov_len = sizeof(aeron_rttm_header_t);
 
-        if ((result = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
+
+        if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
         {
-            if (result >= 0)
+            if (bytes_sent < (int64_t)iov.iov_len)
             {
                 aeron_counter_increment(publication->short_sends_counter, 1);
             }
@@ -709,7 +702,7 @@ void aeron_network_publication_clean_buffer(aeron_network_publication_t *publica
         uint64_t *ptr = (uint64_t *)(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset);
         AERON_PUT_ORDERED(*ptr, (uint64_t)0);
 
-        publication->conductor_fields.clean_position = clean_position + length;
+        publication->conductor_fields.clean_position = clean_position + (int64_t)length;
     }
 }
 
@@ -744,7 +737,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
             if (proposed_pub_lmt > publication_limit)
             {
                 size_t term_length = (size_t)publication->term_length_mask + 1;
-                aeron_network_publication_clean_buffer(publication, min_consumer_position - term_length);
+                aeron_network_publication_clean_buffer(publication, min_consumer_position - (int64_t)term_length);
                 aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, proposed_pub_lmt);
                 work_count = 1;
             }
@@ -753,7 +746,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
         {
             size_t term_length = (size_t)publication->term_length_mask + 1;
             aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, snd_pos);
-            aeron_network_publication_clean_buffer(publication, snd_pos - term_length);
+            aeron_network_publication_clean_buffer(publication, snd_pos - (int64_t)term_length);
             work_count = 1;
         }
     }
@@ -860,8 +853,8 @@ void aeron_network_publication_check_untethered_subscriptions(
         }
         else
         {
-            int64_t window_limit_timeout_ns = conductor->context->untethered_window_limit_timeout_ns;
-            int64_t resting_timeout_ns = conductor->context->untethered_resting_timeout_ns;
+            int64_t window_limit_timeout_ns = (int64_t)conductor->context->untethered_window_limit_timeout_ns;
+            int64_t resting_timeout_ns = (int64_t)conductor->context->untethered_resting_timeout_ns;
 
             switch (tetherable_position->state)
             {

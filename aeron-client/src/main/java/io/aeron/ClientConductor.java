@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -561,7 +561,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    void releasePublication(final Publication publication)
+    void removePublication(final Publication publication)
     {
         clientLock.lock();
         try
@@ -582,6 +582,45 @@ final class ClientConductor implements Agent
                         publication.logBuffers(), publication.originalRegistrationId(), EXPLICIT_CLOSE_LINGER_NS);
                     asyncCommandIdSet.add(driverProxy.removePublication(publication.registrationId()));
                 }
+            }
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void removePublication(final long publicationRegistrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            if (NULL_VALUE == publicationRegistrationId || isTerminating || isClosed)
+            {
+                return;
+            }
+
+            ensureNotReentrant();
+
+            final Object resource = resourceByRegIdMap.get(publicationRegistrationId);
+            if (null != resource && !(resource instanceof Publication))
+            {
+                throw new AeronException("registration id is not a Publication");
+            }
+
+            final Publication publication = (Publication)resource;
+            if (null != publication)
+            {
+                resourceByRegIdMap.remove(publicationRegistrationId);
+                publication.internalClose();
+                releaseLogBuffers(
+                    publication.logBuffers(), publication.originalRegistrationId(), EXPLICIT_CLOSE_LINGER_NS);
+            }
+
+            if (asyncCommandIdSet.remove(publicationRegistrationId) || null != publication)
+            {
+                driverProxy.removePublication(publicationRegistrationId);
+                stashedChannelByRegistrationId.remove(publicationRegistrationId);
             }
         }
         finally
@@ -627,7 +666,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    void releaseSubscription(final Subscription subscription)
+    void removeSubscription(final Subscription subscription)
     {
         clientLock.lock();
         try

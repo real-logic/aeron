@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 plugins {
     id 'java-library'
-    id 'com.github.johnrengelman.shadow' version '7.1.1' apply false
-    id 'biz.aQute.bnd.builder' version '6.1.0' apply false
-    id "com.github.ben-manes.versions" version "0.39.0"
+    id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
+    id 'biz.aQute.bnd.builder' version '6.3.1' apply false
+    id "com.github.ben-manes.versions" version "0.42.0"
 }
 
 defaultTasks 'clean', 'build'
@@ -45,14 +45,15 @@ def toolchainLauncher = javaToolchains.launcherFor {
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '1.14.0'
-def agronaVersionRange = '[1.14,1.15[' // allow any patch release of 1.14.x
-def sbeVersion = '1.25.1'
-def checkstyleVersion = '9.2'
+def agronaVersion = '1.15.2'
+def agronaVersionRange = '[1.15.2,2.0[' // allow any release >= 1.15.2 and < 2.0.0
+def sbeVersion = '1.25.3'
+def checkstyleVersion = '9.3'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.8.2'
-def mockitoVersion = '4.2.0'
-def byteBuddyVersion = '1.12.5'
+def mockitoVersion = '4.6.1'
+def byteBuddyVersion = '1.12.10'
+def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.1.12'
 
 ext {
@@ -187,6 +188,7 @@ subprojects {
     tasks.withType(JavaCompile) {
         options.encoding = 'UTF-8'
         options.deprecation = true
+        options.compilerArgs.addAll(['-Xlint:all', '-Werror']) // Enable all warnings and treat them as errors
     }
 
     tasks.withType(Test) {
@@ -237,10 +239,31 @@ subprojects {
 
         jvmArgs '-javaagent:' + agentFilename()
         systemProperty "aeron.event.cluster.log", "all"
+        systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION"
+        systemProperty "aeron.debug.timeout", "3600s"
+        systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
+        systemProperty "aeron.fallback.logger", "no_op"
+    }
+
+    task bindingsTest(type: Test, group: 'verification') {
+        dependsOn ":aeron-agent:jar"
+
+        maxParallelForks = 1
+        useJUnitPlatform {
+            includeTags 'bindings'
+        }
+
+        ext.agentFilename = {
+            project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
+        }
+
+        jvmArgs '-javaagent:' + agentFilename()
+        systemProperty "aeron.event.cluster.log", "all"
         systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION"
         systemProperty "aeron.debug.timeout", "3600s"
         systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
     }
+
 
     task topologyTest(type: Test, group: 'verification') {
         maxParallelForks = 1
@@ -252,12 +275,13 @@ subprojects {
     javadoc {
         failOnError false
         title = '<h1>Aeron Message Transport</h1>'
-        options.bottom = '<i>Copyright &#169; 2014-2021 Real Logic Limited. All Rights Reserved.</i>'
+        options.bottom = '<i>Copyright &#169; 2014-2022 Real Logic Limited. All Rights Reserved.</i>'
         options.encoding = 'UTF-8'
         options.docEncoding = 'UTF-8'
         options.charSet = 'UTF-8'
         options.links("https://www.javadoc.io/doc/org.agrona/agrona/${agronaVersion}/")
-        if (buildJavaVersion >= 18) { // early access JavaDoc location is different
+
+        if (buildJavaVersion >= 19) { // early access JavaDoc location is different
             options.links("https://download.java.net/java/early_access/jdk${buildJavaVersion}/docs/api/")
         }
         else if (buildJavaVersion >= 11) {
@@ -266,6 +290,7 @@ subprojects {
         else {
             options.links("https://docs.oracle.com/javase/${buildJavaVersion}/docs/api/")
         }
+
         if (buildJavaVersion >= 10) {
             options.addBooleanOption 'html5', true
         }
@@ -660,6 +685,8 @@ project(':aeron-agent') {
         implementation aeronClusterProject
         implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         implementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+        compileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
+        testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
         testImplementation project(':aeron-test-support')
     }
 
@@ -796,6 +823,8 @@ project(':aeron-samples') {
 }
 
 project(':aeron-system-tests') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+
     dependencies {
         testImplementation project(':aeron-archive')
         testImplementation project(':aeron-test-support')
@@ -805,6 +834,8 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-cluster')
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testImplementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        testRuntimeOnly "org.junit.platform:junit-platform-console-standalone:1.8.2"
+        testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
         if (buildJavaVersion == 8) {
             def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
             testImplementation files(jdkHome.resolve("lib/tools.jar").toFile())
@@ -813,7 +844,20 @@ project(':aeron-system-tests') {
 
     tasks.withType(Test) {
         systemProperty('java.net.preferIPv4Stack', 'true')
+        systemProperty('aeron.fallback.logger', 'no_op')
         systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
+        systemProperty('aeron.test.system.binding.remote.host', System.getProperty('aeron.test.system.binding.remote.host'))
+        systemProperty('aeron.test.system.binding.local.host', System.getProperty('aeron.test.system.binding.local.host'))
+        systemProperty('aeron.test.system.aeron.dir', System.getProperty('aeron.test.system.aeron.dir'))
+        systemProperty('aeron.test.system.ats.path', System.getProperty('aeron.test.system.ats.path'))
+        systemProperty('aeron.test.system.ats.conf.dir', System.getProperty('aeron.test.system.ats.conf.dir'))
+        systemProperty('aeron.test.system.ats.conf.file', System.getProperty('aeron.test.system.ats.conf.file'))
+    }
+
+    shadowJar {
+        archiveClassifier.set("tests")
+        from sourceSets.test.output
+        configurations = [project.configurations.testRuntimeClasspath]
     }
 
     javadoc.enabled = false
@@ -917,9 +961,9 @@ project(':aeron-all') {
 }
 
 task testReport(type: TestReport) {
-    destinationDir = file("${buildDir}/reports/allTests")
+    destinationDirectory = file("${buildDir}/reports/allTests")
     // Include the results from the `test` task in all sub-projects
-    reportOn subprojects*.test
+    testResults.setFrom(subprojects*.test)
 }
 
 task copyTestLogs(type: Copy) {
@@ -948,6 +992,6 @@ tasks.named("dependencyUpdates").configure {
 }
 
 wrapper {
-    gradleVersion = '7.3.2'
+    gradleVersion = '7.4.2'
     distributionType = 'ALL'
 }

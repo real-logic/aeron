@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,12 +83,13 @@ int aeron_logbuffer_check_page_size(uint64_t page_size)
     return 0;
 }
 
+extern int32_t aeron_logbuffer_compute_term_count(int32_t term_id, int32_t initial_term_id);
 extern uint64_t aeron_logbuffer_compute_log_length(uint64_t term_length, uint64_t page_size);
 extern int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length);
 extern int32_t aeron_logbuffer_term_id(int64_t raw_tail);
 extern size_t aeron_logbuffer_index_by_position(int64_t position, size_t position_bits_to_shift);
 extern size_t aeron_logbuffer_index_by_term(int32_t initial_term_id, int32_t active_term_id);
-extern size_t aeron_logbuffer_index_by_term_count(int64_t term_count);
+extern size_t aeron_logbuffer_index_by_term_count(int32_t term_count);
 extern int64_t aeron_logbuffer_compute_position(
     int32_t active_term_id, int32_t term_offset, size_t position_bits_to_shift, int32_t initial_term_id);
 extern int64_t aeron_logbuffer_compute_term_begin_position(

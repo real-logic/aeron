@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,12 +146,9 @@ public class DriverLoggingAgentTest
             .publicationLingerTimeoutNs(0)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(1));
 
-        try (MediaDriver ignore = MediaDriver.launch(driverCtx))
+        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx))
         {
-            final Aeron.Context clientCtx = new Aeron.Context()
-                .aeronDirectoryName(driverCtx.aeronDirectoryName());
-
-            try (Aeron aeron = Aeron.connect(clientCtx);
+            try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
                 Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
                 Publication publication = aeron.addPublication(channel, STREAM_ID))
             {

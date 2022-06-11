@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,11 @@
 #define AERON_COMMAND_QUEUE_CAPACITY (128)
 #define AERON_COMMAND_DRAIN_LIMIT (2)
 
-#define AERON_DRIVER_SENDER_NUM_RECV_BUFFERS (2)
+#define AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX (16)
 
-#define AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND (2)
+#define AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND (16)
 
-#define AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS (2)
+#define AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX (16)
 #define AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
 
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
@@ -92,6 +92,7 @@ typedef struct aeron_driver_context_stct
     bool tether_subscriptions;                              /* aeron.tether.subscriptions = true */
     bool rejoin_stream;                                     /* aeron.rejoin.stream = true */
     bool ats_enabled;
+    bool connect_enabled;                                   /* aeron.driver.connect = true */
     uint64_t driver_timeout_ms;                             /* aeron.driver.timeout = 10s */
     uint64_t client_liveness_timeout_ns;                    /* aeron.client.liveness.timeout = 10s */
     uint64_t publication_linger_timeout_ns;                 /* aeron.publication.linger.timeout = 5s */
@@ -108,7 +109,7 @@ typedef struct aeron_driver_context_stct
     uint64_t nak_unicast_delay_ns;                          /* aeron.nak.unicast.delay = 60ms */
     uint64_t nak_multicast_max_backoff_ns;                  /* aeron.nak.multicast.max.backoff = 60ms */
     uint64_t re_resolution_check_interval_ns;               /* aeron.driver.reresolution.check.interval = 1s */
-    uint64_t conductor_cycle_threshold_ns;                  /* aeron.driver.conductor.cycle.threshold = 1000 * 1000 * 1000 */
+    uint64_t conductor_cycle_threshold_ns;                  /* aeron.driver.conductor.cycle.threshold = 1s */
     size_t to_driver_buffer_length;                         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;                        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;                   /* aeron.counters.buffer.length = 1MB */
@@ -121,7 +122,7 @@ typedef struct aeron_driver_context_stct
     size_t publication_window_length;                       /* aeron.publication.term.window.length = 0 */
     size_t socket_rcvbuf;                                   /* aeron.socket.so_rcvbuf = 128 * 1024 */
     size_t socket_sndbuf;                                   /* aeron.socket.so_sndbuf = 0 */
-    size_t send_to_sm_poll_ratio;                           /* aeron.send.to.status.poll.ratio = 4 */
+    size_t send_to_sm_poll_ratio;                           /* aeron.send.to.status.poll.ratio = 6 */
     size_t initial_window_length;                           /* aeron.rcv.initial.window.length = 128KB */
     size_t loss_report_length;                              /* aeron.loss.report.buffer.length = 1MB */
     size_t file_page_size;                                  /* aeron.file.page.size = 4KB */
@@ -129,6 +130,13 @@ typedef struct aeron_driver_context_stct
     int32_t publication_reserved_session_id_low;            /* aeron.publication.reserved.session.id.low = -1 */
     int32_t publication_reserved_session_id_high;           /* aeron.publication.reserved.session.id.high = 1000 */
     uint8_t multicast_ttl;                                  /* aeron.socket.multicast.ttl = 0 */
+    uint32_t receiver_io_vector_capacity;                   /* aeron.receiver.io.vector.capacity = 2 */
+    uint32_t sender_io_vector_capacity;                     /* aeron.sender.io.vector.capacity = 2 */
+    uint32_t network_publication_max_messages_per_send;     /* aeron.network.publication.max.messages.per.send = 2 */
+
+    int32_t conductor_cpu_affinity_no;                      /* aeron.conductor.cpu.affinity = -1 */
+    int32_t receiver_cpu_affinity_no;                       /* aeron.receiver.cpu.affinity = -1 */
+    int32_t sender_cpu_affinity_no;                         /* aeron.conductor.cpu.affinity = -1 */
 
     struct                                                  /* aeron.receiver.receiver.tag = <unset> */
     {
@@ -286,6 +294,9 @@ int aeron_driver_context_bindings_clientd_create_entries(aeron_driver_context_t 
 int aeron_driver_context_bindings_clientd_delete_entries(aeron_driver_context_t *context);
 int aeron_driver_context_bindings_clientd_find_first_free_index(aeron_driver_context_t *context);
 int aeron_driver_context_bindings_clientd_find(aeron_driver_context_t *context, const char *name);
+
+aeron_driver_context_bindings_clientd_entry_t *aeron_driver_context_bindings_clientd_get_or_find_first_free_entry(
+    aeron_driver_context_t *context, const char *name);
 
 inline void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, int32_t cnc_version)
 {

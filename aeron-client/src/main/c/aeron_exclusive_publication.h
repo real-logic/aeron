@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,16 +81,16 @@ void aeron_exclusive_publication_force_close(aeron_exclusive_publication_t *publ
 
 inline void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_t *publication)
 {
-    const int32_t next_term_id = publication->term_id + 1;
-    const int32_t next_term_count = next_term_id - publication->initial_term_id;
-    const size_t next_index = aeron_logbuffer_index_by_term(publication->initial_term_id, next_term_id);
+    int32_t next_term_id = publication->term_id + 1;
+    int32_t next_term_count = aeron_logbuffer_compute_term_count(next_term_id, publication->initial_term_id);
+    size_t next_index = aeron_logbuffer_index_by_term(publication->initial_term_id, next_term_id);
 
     publication->active_partition_index = next_index;
     publication->term_offset = 0;
     publication->term_id = next_term_id;
     publication->term_begin_position += publication->term_buffer_length;
 
-    publication->log_meta_data->term_tail_counters[next_index] = (int64_t)next_term_id << 32;
+    publication->log_meta_data->term_tail_counters[next_index] = (int64_t)((uint64_t)next_term_id << 32);
     AERON_PUT_ORDERED(publication->log_meta_data->active_term_count, next_term_count);
 }
 

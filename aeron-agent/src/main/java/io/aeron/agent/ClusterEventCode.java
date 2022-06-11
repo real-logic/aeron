@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,52 @@ public enum ClusterEventCode implements EventCode
     /**
      * A vote request for new leadership.
      */
-    REQUEST_VOTE(6, ClusterEventDissector::dissectRequestVote);
+    REQUEST_VOTE(6, ClusterEventDissector::dissectRequestVote),
+
+    /**
+     * Notification of a follower's catchup position
+     */
+    CATCHUP_POSITION(7, ClusterEventDissector::dissectCatchupPosition),
+
+    /**
+     * A request to stop follower catchup
+     */
+    STOP_CATCHUP(8, ClusterEventDissector::dissectStopCatchup),
+
+    /**
+     * Event when a RecordingLog entry is being truncated.
+     */
+    TRUNCATE_LOG_ENTRY(9, ClusterEventDissector::dissectTruncateLogEntry),
+
+    /**
+     * Event when a new leadership term is replayed
+     */
+    REPLAY_NEW_LEADERSHIP_TERM(10, ClusterEventDissector::dissectReplayNewLeadershipTerm),
+
+    /**
+     * Event when an append position is received
+     */
+    APPEND_POSITION(11, ClusterEventDissector::dissectAppendPosition),
+
+    /**
+     * Event when a commit position is received
+     */
+    COMMIT_POSITION(12, ClusterEventDissector::dissectCommitPosition),
+
+    /**
+     * Event when an event to add a new passive member is received
+     */
+    ADD_PASSIVE_MEMBER(13, ClusterEventDissector::dissectAddPassiveMember),
+
+    /**
+     * Event when a session is closed
+     */
+    APPEND_SESSION_CLOSE(14, ClusterEventDissector::dissectAppendCloseSession),
+
+    /**
+     * Event when the DynamicJoin changes state
+     */
+    DYNAMIC_JOIN_STATE_CHANGE(15, ClusterEventDissector::dissectStateChange);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;
@@ -119,7 +164,7 @@ public enum ClusterEventCode implements EventCode
      */
     public int toEventCodeId()
     {
-        return EVENT_CODE_TYPE << 16 | (id() & 0xFFFF);
+        return EVENT_CODE_TYPE << 16 | (id & 0xFFFF);
     }
 
     /**

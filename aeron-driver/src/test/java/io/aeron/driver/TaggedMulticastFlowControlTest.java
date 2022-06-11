@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,6 +135,24 @@ class TaggedMulticastFlowControlTest
         assertEquals(
             termOffset1 + WINDOW_LENGTH, onStatusMessage(flowControl, 1, termOffset1, senderLimit, groupTag));
         assertEquals(termOffset1 + WINDOW_LENGTH, onStatusMessage(flowControl, 0, termOffset0, senderLimit, null));
+    }
+
+    @Test
+    void shouldNotIncludeReceiverMoreThanWindowSizeBehindMinPosition()
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(
+            "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min,g:123/2");
+
+        flowControl.initialize(new MediaDriver.Context(), udpChannel, 0, 0);
+
+        final int senderLimit = 5000;
+        final int termOffset0 = WINDOW_LENGTH * 2;
+        final int termOffset1 = termOffset0 - (WINDOW_LENGTH + 1);
+        final int termOffset2 = termOffset0 - (WINDOW_LENGTH);
+
+        assertEquals(senderLimit, onStatusMessage(flowControl, 1, termOffset0, senderLimit, 123L));
+        assertEquals(senderLimit, onStatusMessage(flowControl, 2, termOffset1, senderLimit, 123L));
+        assertEquals(termOffset2 + WINDOW_LENGTH, onStatusMessage(flowControl, 3, termOffset2, senderLimit, 123L));
     }
 
     private long onStatusMessage(

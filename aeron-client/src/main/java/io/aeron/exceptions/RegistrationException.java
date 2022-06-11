@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import io.aeron.*;
  */
 public class RegistrationException extends AeronException
 {
+    private static final long serialVersionUID = 9076689715024983035L;
+
     /**
      * The correlation id of the command to register the resource action.
      */

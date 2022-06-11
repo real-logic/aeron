@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 #include <math.h>
 #include "util/aeron_parse_util.h"
 #include "util/aeron_error.h"
-#include "util/aeron_dlopen.h"
+#include "util/aeron_symbol_table.h"
 #include "aeron_congestion_control.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
@@ -38,27 +38,33 @@
 #define AERON_CUBICCONGESTIONCONTROL_B (0.2)
 #define AERON_CUBICCONGESTIONCONTROL_RTT_TIMEOUT_MULTIPLE (4)
 
+static const aeron_symbol_table_func_t aeron_congestion_control_table[] =
+    {
+        {
+            "default",
+            "aeron_congestion_control_default_strategy_supplier",
+            (aeron_fptr_t)aeron_congestion_control_default_strategy_supplier
+        },
+        {
+            "static",
+            "aeron_static_window_congestion_control_strategy_supplier",
+            (aeron_fptr_t)aeron_static_window_congestion_control_strategy_supplier
+        },
+        {
+            "cubic",
+            "aeron_cubic_congestion_control_strategy_supplier",
+            (aeron_fptr_t)aeron_cubic_congestion_control_strategy_supplier
+        },
+    };
+
+static const size_t aeron_congestion_control_table_length =
+    sizeof(aeron_congestion_control_table) / sizeof(aeron_symbol_table_func_t);
+
 aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strategy_supplier_load(
     const char *strategy_name)
 {
-    aeron_congestion_control_strategy_supplier_func_t func = NULL;
-
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-    if ((func = (aeron_congestion_control_strategy_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, strategy_name)) == NULL)
-    {
-        AERON_SET_ERR(
-            EINVAL, "could not find congestion control strategy %s: dlsym - %s", strategy_name, aeron_dlerror());
-
-        return NULL;
-    }
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
-
-    return func;
+    return (aeron_congestion_control_strategy_supplier_func_t)aeron_symbol_table_func_load(
+        aeron_congestion_control_table, aeron_congestion_control_table_length, strategy_name, "congestion control");
 }
 
 struct aeron_static_window_congestion_control_strategy_state_stct

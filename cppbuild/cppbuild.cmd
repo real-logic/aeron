@@ -7,6 +7,11 @@ set "BUILD_DIR=%DIR%\Release"
 set "BUILD_CONFIG=Release"
 set "EXTRA_CMAKE_ARGS="
 set "AERON_SKIP_RMDIR="
+if "%NUMBER_OF_PROCESSORS%"=="" (
+    set "CMAKE_BUILD_PARALLEL_LEVEL=1"
+) else (
+    set "CMAKE_BUILD_PARALLEL_LEVEL=%NUMBER_OF_PROCESSORS%"
+)
 
 :loop
 if not "%1"=="" (
@@ -48,6 +53,13 @@ if not "%1"=="" (
     ) else if "%1"=="--gradle-wrapper" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DGRADLE_WRAPPER=%2"
         echo "Setting -DGRADLE_WRAPPER=%2"
+        shift
+    ) else if "%1"=="--no-parallel" (
+        set "CMAKE_BUILD_PARALLEL_LEVEL=1"
+        echo "Disabling parallel build"
+    ) else if "%1"=="--parallel-cpus" (
+        set CMAKE_BUILD_PARALLEL_LEVEL=%2
+        echo Using %CMAKE_BUILD_PARALLEL_LEVEL% cpus
         shift
     ) else (
         echo "Unknown option %%o"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,7 +136,7 @@ int aeron_context_init(aeron_context_t **context)
         getenv(AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY_ENV_VAR), AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT);
 
     if ((_context->idle_strategy_func = aeron_idle_strategy_load(
-        "sleeping", &_context->idle_strategy_state, NULL,"1ms")) == NULL)
+        "sleep-ns", &_context->idle_strategy_state, NULL, "1ms")) == NULL)
     {
         return -1;
     }
@@ -171,6 +171,7 @@ do \
     } \
 } \
 while (false) \
+
 
 int aeron_context_set_dir(aeron_context_t *context, const char *value)
 {
@@ -412,7 +413,7 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
         AERON_SET_ERR(EINVAL, "%s", "Invalid file length");
         return -1;
     }
-    
+
     size_t file_length = (size_t)file_length_result;
     if (file_length > min_length)
     {
@@ -429,12 +430,21 @@ int aeron_context_request_driver_termination(const char *directory, const uint8_
 
             aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap.addr;
             int32_t cnc_version = aeron_cnc_version_volatile(metadata);
+
+            if (cnc_version <= 0)
+            {
+                AERON_SET_ERR(EINVAL, "%s", "Aeron CnC not initialised");
+
+                result = -1;
+                goto cleanup;
+            }
+
             if (aeron_semantic_version_major(cnc_version) != aeron_semantic_version_major(AERON_CNC_VERSION))
             {
                 AERON_SET_ERR(
                     EINVAL,
                     "Aeron CnC version does not match: client=%" PRId32 ", file=%" PRId32,
-                    AERON_CNC_VERSION, 
+                    AERON_CNC_VERSION,
                     cnc_version);
 
                 result = -1;

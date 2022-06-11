@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,7 @@ class DeleteSegmentsSession implements Session
 {
     private final long recordingId;
     private final long correlationId;
-    private final ArrayDeque<String> files;
-    private final File archiveDir;
+    private final ArrayDeque<File> files;
     private final ControlSession controlSession;
     private final ControlResponseProxy controlResponseProxy;
     private final ErrorHandler errorHandler;
@@ -36,8 +35,7 @@ class DeleteSegmentsSession implements Session
     DeleteSegmentsSession(
         final long recordingId,
         final long correlationId,
-        final ArrayDeque<String> files,
-        final File archiveDir,
+        final ArrayDeque<File> files,
         final ControlSession controlSession,
         final ControlResponseProxy controlResponseProxy,
         final ErrorHandler errorHandler)
@@ -45,7 +43,6 @@ class DeleteSegmentsSession implements Session
         this.recordingId = recordingId;
         this.correlationId = correlationId;
         this.files = files;
-        this.archiveDir = archiveDir;
         this.controlSession = controlSession;
         this.controlResponseProxy = controlResponseProxy;
         this.errorHandler = errorHandler;
@@ -58,14 +55,10 @@ class DeleteSegmentsSession implements Session
     {
         while (!files.isEmpty())
         {
-            final String fileName = files.pollFirst();
-            if (null != fileName)
+            final File file = files.pollFirst();
+            if (null != file && file.exists() && !file.delete())
             {
-                final File file = new File(archiveDir, fileName);
-                if (file.exists() && !file.delete())
-                {
-                    errorHandler.onError(new ArchiveEvent("segment delete failed for recording: " + recordingId));
-                }
+                errorHandler.onError(new ArchiveEvent("segment delete failed for recording: " + recordingId));
             }
         }
     }
@@ -99,11 +92,9 @@ class DeleteSegmentsSession implements Session
     public int doWork()
     {
         int workCount = 0;
-        final String fileName = files.pollFirst();
-
-        if (null != fileName)
+        final File file = files.pollFirst();
+        if (null != file)
         {
-            final File file = new File(archiveDir, fileName);
             if (file.exists() && !file.delete())
             {
                 final String errorMessage = "unable to delete segment file: " + file;
@@ -113,7 +104,7 @@ class DeleteSegmentsSession implements Session
 
             if (files.isEmpty())
             {
-                controlSession.attemptSignal(
+                controlSession.sendSignal(
                     correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
             }
 

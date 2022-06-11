@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
@@ -81,7 +82,7 @@ public class ArchiveTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    public final TestWatcher randomSeedWatcher = ArchiveTests.newWatcher(seed);
+    public final TestWatcher randomSeedWatcher = Tests.seedWatcher(seed);
 
     @RegisterExtension
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
@@ -408,6 +409,7 @@ public class ArchiveTest
     {
         Tests.awaitConnected(controlPublication);
         Tests.awaitConnected(recordingEvents);
+        Tests.awaitCounterDelta(client.countersReader(), SystemCounterDescriptor.HEARTBEATS_RECEIVED.id(), 2);
 
         controlResponse = client.addSubscription(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
         final long connectCorrelationId = client.nextCorrelationId();

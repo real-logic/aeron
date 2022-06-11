@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,7 +228,8 @@ final class ConsensusPublisher
         final ExclusivePublication publication,
         final long leadershipTermId,
         final long logPosition,
-        final int followerMemberId)
+        final int followerMemberId,
+        final short flags)
     {
         if (null == publication)
         {
@@ -247,7 +248,8 @@ final class ConsensusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
-                    .followerMemberId(followerMemberId);
+                    .followerMemberId(followerMemberId)
+                    .flags(flags);
 
                 bufferClaim.commit();
 

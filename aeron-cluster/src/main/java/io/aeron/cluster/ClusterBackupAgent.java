@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -827,7 +827,7 @@ public final class ClusterBackupAgent implements Agent
         catch (final Exception ex)
         {
             ctx.countedErrorHandler().onError(ex);
-            throw new AgentTerminationException("failed to update recording log", ex);
+            throw new AgentTerminationException("failed to update recording log");
         }
 
         if (wasRecordingLogUpdated && null != eventsListener)
@@ -877,7 +877,7 @@ public final class ClusterBackupAgent implements Agent
 
     private void state(final ClusterBackup.State newState, final long nowMs)
     {
-        stateChange(state, newState, nowMs);
+        logStateChange(state, newState, nowMs);
 
         if (BACKUP_QUERY == newState && null != eventsListener)
         {
@@ -893,7 +893,8 @@ public final class ClusterBackupAgent implements Agent
         correlationId = NULL_VALUE;
     }
 
-    private void stateChange(final ClusterBackup.State oldState, final ClusterBackup.State newState, final long nowMs)
+    private void logStateChange(
+        final ClusterBackup.State oldState, final ClusterBackup.State newState, final long nowMs)
     {
         //System.out.println("ClusterBackup: " + oldState + " -> " + newState + " nowMs=" + nowMs);
     }

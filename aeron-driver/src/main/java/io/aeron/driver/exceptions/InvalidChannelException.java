@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import io.aeron.exceptions.ControlProtocolException;
  */
 public class InvalidChannelException extends ControlProtocolException
 {
+    private static final long serialVersionUID = 8395688431913848255L;
+
     /**
      * Exception with provided message and {@link io.aeron.exceptions.AeronException.Category#ERROR} and
      * {@link ErrorCode#INVALID_CHANNEL}.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.*;
@@ -57,6 +58,7 @@ import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
@@ -90,14 +92,13 @@ public final class MediaDriver implements AutoCloseable
      *
      * @param args passed to the process.
      */
+    @SuppressWarnings("try")
     public static void main(final String[] args)
     {
         loadPropertiesFiles(args);
 
         final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-
-        ctx.terminationHook(barrier::signal);
+        final MediaDriver.Context ctx = new MediaDriver.Context().terminationHook(barrier::signal);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx))
         {
@@ -318,13 +319,18 @@ public final class MediaDriver implements AutoCloseable
      */
     public void close()
     {
-        if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows() && !wasHighResTimerEnabled)
+        try
         {
-            HighResolutionTimer.disable();
+            CloseHelper.closeAll(
+                sharedRunner, sharedNetworkRunner, receiverRunner, senderRunner, conductorRunner, sharedInvoker);
         }
-
-        CloseHelper.closeAll(
-            sharedRunner, sharedNetworkRunner, receiverRunner, senderRunner, conductorRunner, sharedInvoker);
+        finally
+        {
+            if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows() && !wasHighResTimerEnabled)
+            {
+                HighResolutionTimer.disable();
+            }
+        }
     }
 
     /**
@@ -410,7 +416,10 @@ public final class MediaDriver implements AutoCloseable
      */
     public static final class Context extends CommonContext
     {
-        private boolean isClosed = false;
+        private static final AtomicIntegerFieldUpdater<MediaDriver.Context> IS_CLOSED_UPDATER = newUpdater(
+            MediaDriver.Context.class, "isClosed");
+
+        private volatile int isClosed;
         private boolean printConfigurationOnStart = Configuration.printConfigurationOnStart();
         private boolean useWindowsHighResTimer = Configuration.useWindowsHighResTimer();
         private boolean warnIfDirectoryExists = Configuration.warnIfDirExists();
@@ -550,10 +559,8 @@ public final class MediaDriver implements AutoCloseable
          */
         public void close()
         {
-            if (!isClosed)
+            if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
             {
-                isClosed = true;
-
                 CloseHelper.close(errorHandler, logFactory);
 
                 final AtomicCounter errorCounter = systemCounters.get(ERRORS);
@@ -2661,9 +2668,9 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit.
+         * {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit frame.
          *
-         * @return {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit.
+         * @return {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit frame.
          * @see Configuration#RETRANSMIT_UNICAST_DELAY_PROP_NAME
          */
         public FeedbackDelayGenerator retransmitUnicastDelayGenerator()
@@ -2672,9 +2679,9 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Set the {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit.
+         * Set the {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit frame.
          *
-         * @param feedbackDelayGenerator for controlling the delay before sending a retransmit.
+         * @param feedbackDelayGenerator for controlling the delay before sending a retransmit frame.
          * @return this for a fluent API
          * @see Configuration#RETRANSMIT_UNICAST_DELAY_PROP_NAME
          */
@@ -2696,7 +2703,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Set the {@link FeedbackDelayGenerator} for controlling the linger after a retransmit.
+         * Set the {@link FeedbackDelayGenerator} for controlling the linger after a retransmit frame.
          *
          * @param feedbackDelayGenerator for controlling the linger after a retransmit.
          * @return this for a fluent API
@@ -3557,7 +3564,7 @@ public final class MediaDriver implements AutoCloseable
             return "MediaDriver.Context" +
                 "\n{" +
                 "\n    isConcluded=" + isConcluded() +
-                "\n    isClosed=" + isClosed +
+                "\n    isClosed=" + (1 == isClosed) +
                 "\n    cncVersion=" + SemanticVersion.toString(CNC_VERSION) +
                 "\n    aeronDirectory=" + aeronDirectory() +
                 "\n    aeronDirectoryName='" + aeronDirectoryName() + '\'' +

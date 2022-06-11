@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ abstract class SubscriptionFields extends SubscriptionLhsPadding
  * {@link Subscription}s are created via an {@link Aeron} object, and received messages are delivered
  * to the {@link FragmentHandler}.
  * <p>
- * By default fragmented messages are not reassembled before delivery. If an application must
+ * By default, fragmented messages are not reassembled before delivery. If an application must
  * receive whole messages, whether or not they were fragmented, then the Subscriber
  * should be created with a {@link FragmentAssembler} or a custom implementation.
  * <p>
@@ -387,7 +387,7 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
     {
         if (!isClosed)
         {
-            conductor.releaseSubscription(this);
+            conductor.removeSubscription(this);
         }
     }
 

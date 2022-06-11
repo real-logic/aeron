@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,7 +153,7 @@ protected:
             &m_counters_manager, snd_bpe_counter.counter_id);
 
         aeron_flow_control_strategy_t *flow_control;
-        aeron_unicast_flow_control_strategy_supplier(&flow_control, nullptr, nullptr, 0, 0, 0, 0);
+        aeron_unicast_flow_control_strategy_supplier(&flow_control, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0);
 
         aeron_driver_uri_publication_params_t params = {};
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public:
     }
 
 protected:
-    buffer_t m_term_buffer;
+    buffer_t m_term_buffer = {};
     log_meta_data_buffer_t m_log_meta_data_buffer = {};
     uint8_t *m_buffer = nullptr;
     aeron_logbuffer_metadata_t *m_log_meta_data = nullptr;

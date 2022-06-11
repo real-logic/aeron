@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -272,7 +272,7 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
-     * Release resources used by this Publication when there are no more references.
+     * Remove resources used by this Publication when there are no more references.
      * <p>
      * Publications are reference counted and are only truly closed when the ref count reaches zero.
      */
@@ -280,7 +280,7 @@ public abstract class Publication implements AutoCloseable
     {
         if (!isClosed)
         {
-            conductor.releasePublication(this);
+            conductor.removePublication(this);
         }
     }
 
@@ -687,6 +687,45 @@ public abstract class Publication implements AutoCloseable
         }
 
         return totalLength;
+    }
+
+    /**
+     * Returns a string representation of a position.  Generally used for errors.  If the position is a valid error then
+     * String name of the error will be returned.  If the value is 0 or greater the text will be "NONE". If the position
+     * is negative, but not a known error code then "UNKNOWN" will be returned.
+     *
+     * @param position position value returned from a call to offer.
+     * @return String representation of the error.
+     */
+    public static String errorString(final long position)
+    {
+        if (MAX_POSITION_EXCEEDED <= position && position < 0)
+        {
+            final int errorCode = (int)position;
+            switch (errorCode)
+            {
+                case (int)NOT_CONNECTED:
+                    return "NOT_CONNECTED";
+                case (int)BACK_PRESSURED:
+                    return "BACK_PRESSURED";
+                case (int)ADMIN_ACTION:
+                    return "ADMIN_ACTION";
+                case (int)CLOSED:
+                    return "CLOSED";
+                case (int)MAX_POSITION_EXCEEDED:
+                    return "MAX_POSITION_EXCEEDED";
+                default:
+                    return "UNKNOWN";
+            }
+        }
+        else if (0 <= position)
+        {
+            return "NONE";
+        }
+        else
+        {
+            return "UNKNOWN";
+        }
     }
 
     /**

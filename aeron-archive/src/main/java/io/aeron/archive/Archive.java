@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,7 @@ public final class Archive implements AutoCloseable
      *
      * @param args command line argument which is a list for properties files as URLs or filenames.
      */
+    @SuppressWarnings("try")
     public static void main(final String[] args)
     {
         loadPropertiesFiles(args);
@@ -2558,7 +2559,7 @@ public final class Archive implements AutoCloseable
      *
      * @param directory     which will store the files created by the archive.
      * @param fileSyncLevel to be applied for file updates, {@link Archive.Configuration#FILE_SYNC_LEVEL_PROP_NAME}.
-     * @return the the {@link FileChannel} for the parent directory for the recordings and catalog if fileSyncLevel
+     * @return the {@link FileChannel} for the parent directory for the recordings and catalog if fileSyncLevel
      * greater than zero otherwise null.
      */
     static FileChannel channelForDirectorySync(final File directory, final int fileSyncLevel)

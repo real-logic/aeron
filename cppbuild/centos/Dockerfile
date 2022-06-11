@@ -2,7 +2,7 @@ FROM centos:7
 
 ARG USER_ID
 ARG GROUP_ID
-ARG CMAKE_VERSION=3.6.1
+ARG CMAKE_VERSION=3.14.7
 ARG GCC_VERSION
 
 RUN groupadd --gid $GROUP_ID --system athena
@@ -32,4 +32,4 @@ ENV PATH="$PATH:/opt/tools/cmake-${CMAKE_VERSION}-Linux-x86_64/bin" \
 USER athena
 
 WORKDIR /opt/aeron
-ENTRYPOINT scl enable "devtoolset-${GCC_VERSION}" -- cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+ENTRYPOINT scl enable "devtoolset-${GCC_VERSION}" -- cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --package

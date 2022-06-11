@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,8 @@ int aeron_driver_receiver_init(
         return -1;
     }
 
-    for (size_t i = 0; i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
+    receiver->recv_buffers.vector_capacity = context->receiver_io_vector_capacity;
+    for (size_t i = 0; i < receiver->recv_buffers.vector_capacity; i++)
     {
         size_t offset = 0;
         if (aeron_alloc_aligned(
@@ -123,16 +124,17 @@ void aeron_driver_receiver_on_command(void *clientd, void *item)
 
 int aeron_driver_receiver_do_work(void *clientd)
 {
-    struct mmsghdr mmsghdr[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
+    struct mmsghdr mmsghdr[AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX];
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
 
+    const size_t vlen = receiver->recv_buffers.vector_capacity;
     int64_t now_ns = receiver->context->nano_clock();
     aeron_clock_update_cached_nano_time(receiver->context->receiver_cached_clock, now_ns);
 
     int work_count = (int)aeron_spsc_concurrent_array_queue_drain(
         receiver->receiver_proxy.command_queue, aeron_driver_receiver_on_command, receiver, AERON_COMMAND_DRAIN_LIMIT);
 
-    for (size_t i = 0; i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
+    for (size_t i = 0; i < vlen; i++)
     {
         mmsghdr[i].msg_hdr.msg_name = &receiver->recv_buffers.addrs[i];
         mmsghdr[i].msg_hdr.msg_namelen = sizeof(receiver->recv_buffers.addrs[i]);
@@ -148,7 +150,7 @@ int aeron_driver_receiver_do_work(void *clientd)
     int poll_result = receiver->poller_poll_func(
         &receiver->poller,
         mmsghdr,
-        AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS,
+        vlen,
         &bytes_received,
         receiver->data_paths.recv_func,
         receiver->recvmmsg_func,
@@ -168,32 +170,36 @@ int aeron_driver_receiver_do_work(void *clientd)
     {
         aeron_publication_image_t *image = receiver->images.array[i].image;
 
-        int send_sm_result = aeron_publication_image_send_pending_status_message(image, now_ns);
-        if (send_sm_result < 0)
+        if (NULL != image->endpoint && AERON_PUBLICATION_IMAGE_STATE_ACTIVE == image->conductor_fields.state)
         {
-            AERON_APPEND_ERR("%s", "receiver send SM");
-            aeron_driver_receiver_log_error(receiver);
+            int send_sm_result = aeron_publication_image_send_pending_status_message(image, now_ns);
+            if (send_sm_result < 0)
+            {
+                AERON_APPEND_ERR("%s", "receiver send SM");
+                aeron_driver_receiver_log_error(receiver);
+            }
+
+            work_count += send_sm_result < 0 ? 0 : send_sm_result;
+
+            int send_nak_result = aeron_publication_image_send_pending_loss(image);
+            if (send_nak_result < 0)
+            {
+                AERON_APPEND_ERR("%s", "receiver send NAK");
+                aeron_driver_receiver_log_error(receiver);
+            }
+
+            work_count += send_nak_result < 0 ? 0 : send_nak_result;
+
+            int initiate_rttm_result = aeron_publication_image_initiate_rttm(image, now_ns);
+            if (send_nak_result < 0)
+            {
+                AERON_APPEND_ERR("%s", "receiver send RTTM");
+                aeron_driver_receiver_log_error(receiver);
+            }
+
+            work_count += initiate_rttm_result < 0 ? 0 : initiate_rttm_result;
         }
 
-        work_count += send_sm_result < 0 ? 0 : send_sm_result;
-
-        int send_nak_result = aeron_publication_image_send_pending_loss(image);
-        if (send_nak_result < 0)
-        {
-            AERON_APPEND_ERR("%s", "receiver send NAK");
-            aeron_driver_receiver_log_error(receiver);
-        }
-
-        work_count += send_nak_result < 0 ? 0 : send_nak_result;
-
-        int initiate_rttm_result = aeron_publication_image_initiate_rttm(image, now_ns);
-        if (send_nak_result < 0)
-        {
-            AERON_APPEND_ERR("%s", "receiver send RTTM");
-            aeron_driver_receiver_log_error(receiver);
-        }
-
-        work_count += initiate_rttm_result < 0 ? 0 : initiate_rttm_result;
     }
 
     for (int last_index = (int)receiver->pending_setups.length - 1, i = last_index; i >= 0; i--)
@@ -223,6 +229,7 @@ int aeron_driver_receiver_do_work(void *clientd)
             {
                 if (aeron_receive_channel_endpoint_send_sm(
                     entry->endpoint,
+                    entry->destination,
                     &entry->control_addr,
                     entry->stream_id,
                     entry->session_id,
@@ -254,7 +261,7 @@ void aeron_driver_receiver_on_close(void *clientd)
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
 
-    for (size_t i = 0; i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
+    for (size_t i = 0; i < receiver->recv_buffers.vector_capacity; i++)
     {
         aeron_free(receiver->recv_buffers.buffers[i]);
     }
@@ -473,12 +480,13 @@ void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
     aeron_command_publication_image_t *cmd = (aeron_command_publication_image_t *)item;
-    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
+    aeron_publication_image_t *image = cmd->image;
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, receiver->images, aeron_driver_receiver_image_entry_t)
 
-    if (ensure_capacity_result < 0 || aeron_receive_channel_endpoint_on_add_publication_image(endpoint, cmd->image) < 0)
+    if (ensure_capacity_result < 0 ||
+        aeron_receive_channel_endpoint_on_add_publication_image(image->endpoint, image) < 0)
     {
         AERON_APPEND_ERR("%s", "receiver on_add_publication_image");
         aeron_driver_receiver_log_error(receiver);
@@ -493,9 +501,10 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
     aeron_command_publication_image_t *cmd = (aeron_command_publication_image_t *)item;
-    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
+    aeron_publication_image_t *image = (aeron_publication_image_t *)cmd->image;
 
-    if (NULL != endpoint && aeron_receive_channel_endpoint_on_remove_publication_image(endpoint, cmd->image) < 0)
+    if (NULL != image->endpoint &&
+        aeron_receive_channel_endpoint_on_remove_publication_image(image->endpoint, image) < 0)
     {
         AERON_APPEND_ERR("%s", "receiver on_remove_publication_image");
         aeron_driver_receiver_log_error(receiver);
@@ -503,7 +512,7 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
 
     for (size_t i = 0, size = receiver->images.length, last_index = size - 1; i < size; i++)
     {
-        if (cmd->image == receiver->images.array[i].image)
+        if (image == receiver->images.array[i].image)
         {
             aeron_array_fast_unordered_remove(
                 (uint8_t *)receiver->images.array, sizeof(aeron_driver_receiver_image_entry_t), i, last_index);
@@ -511,6 +520,8 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
             break;
         }
     }
+
+    aeron_publication_image_receiver_release(image);
 }
 
 void aeron_driver_receiver_on_remove_cool_down(void *clientd, void *item)
@@ -574,7 +585,7 @@ int aeron_driver_receiver_add_pending_setup(
     entry->destination = destination;
     entry->session_id = session_id;
     entry->stream_id = stream_id;
-    entry->time_of_status_message_ns = aeron_clock_cached_nano_time(receiver->context->cached_clock);
+    entry->time_of_status_message_ns = aeron_clock_cached_nano_time(receiver->context->receiver_cached_clock);
     entry->is_periodic = false;
     if (NULL != control_addr)
     {

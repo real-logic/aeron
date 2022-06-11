@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,10 @@ import org.agrona.AsciiEncoding;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Object2ObjectHashMap;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 import static io.aeron.CommonContext.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -36,6 +39,7 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
  * </pre>
  * <p>
  * Multiple params with the same key are allowed, the last value specified takes precedence.
+ *
  * @see ChannelUriStringBuilder
  */
 public final class ChannelUri
@@ -505,6 +509,30 @@ public final class ChannelUri
     {
         return isTagged(paramValue) ?
             AsciiEncoding.parseLongAscii(paramValue, 4, paramValue.length() - 4) : INVALID_TAG;
+    }
+
+    /**
+     * Create a channel URI for a destination, i.e. a channel that uses {@code media} and {@code interface} parameters
+     * of the original channel and adds specified {@code endpoint} to it. For example given the input channel is
+     * {@code aeron:udp?mtu=1440|ttl=0|endpoint=localhost:8090|term-length=128k|interface=eth0} and the endpoint is
+     * {@code 192.168.0.14} the output of this method will be {@code aeron:udp?endpoint=192.168.0.14|interface=eth0}.
+     *
+     * @param channel  for which the destination is being added.
+     * @param endpoint for the target destination.
+     * @return new channel URI for a destination.
+     */
+    public static String createDestinationUri(final String channel, final String endpoint)
+    {
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+        final String uri = AERON_PREFIX + channelUri.media() + "?" + ENDPOINT_PARAM_NAME + "=" + endpoint;
+        final String networkInterface = channelUri.get(INTERFACE_PARAM_NAME);
+
+        if (null != networkInterface)
+        {
+            return uri + "|" + INTERFACE_PARAM_NAME + "=" + networkInterface;
+        }
+
+        return uri;
     }
 
     private static void validateMedia(final String media)

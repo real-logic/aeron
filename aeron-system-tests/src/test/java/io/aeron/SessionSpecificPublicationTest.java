@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,22 +84,21 @@ class SessionSpecificPublicationTest
     void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication(
         final ChannelUriStringBuilder channelBuilder)
     {
-        try (Subscription ignored = aeron.addSubscription(channelBuilder.build(), STREAM_ID);
-            Publication publication = aeron.addExclusivePublication(channelBuilder.build(), STREAM_ID))
+        final String channel = channelBuilder.build();
+        aeron.addSubscription(channel, STREAM_ID);
+
+        final Publication publication = aeron.addExclusivePublication(channel, STREAM_ID);
+        Tests.awaitConnected(publication);
+
+        final int existingSessionId = publication.sessionId();
+        final String invalidChannel = channelBuilder.sessionId(existingSessionId).build();
+
+        assertThrows(RegistrationException.class, () ->
         {
-            Tests.awaitConnected(publication);
+            aeron.addExclusivePublication(invalidChannel, STREAM_ID);
 
-            final int existingSessionId = publication.sessionId();
-            final String invalidChannel = channelBuilder.sessionId(existingSessionId).build();
-
-            assertThrows(RegistrationException.class, () ->
-            {
-                try (Publication ignored1 = aeron.addExclusivePublication(invalidChannel, STREAM_ID))
-                {
-                    fail("Exception should have been thrown due to duplicate session id");
-                }
-            });
-        }
+            fail("Exception should have been thrown due to duplicate session id");
+        });
     }
 
     @ParameterizedTest
@@ -111,11 +110,10 @@ class SessionSpecificPublicationTest
 
         assertThrows(RegistrationException.class, () ->
         {
-            try (Publication ignored1 = aeron.addPublication(channelBuilder.mtu(MTU_1).build(), STREAM_ID);
-                Publication ignored2 = aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID))
-            {
-                fail("Exception should have been thrown due to non-matching mtu");
-            }
+            aeron.addPublication(channelBuilder.mtu(MTU_1).build(), STREAM_ID);
+            aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID);
+
+            fail("Exception should have been thrown due to non-matching mtu");
         });
     }
 
@@ -131,11 +129,10 @@ class SessionSpecificPublicationTest
 
         assertThrows(RegistrationException.class, () ->
         {
-            try (Publication ignored1 = aeron.addPublication(channelOne, STREAM_ID);
-                Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
-            {
-                fail("Exception should have been thrown due to non-matching term length");
-            }
+            aeron.addPublication(channelOne, STREAM_ID);
+            aeron.addPublication(channelTwo, STREAM_ID);
+
+            fail("Exception should have been thrown due to non-matching term length");
         });
     }
 
@@ -151,11 +148,10 @@ class SessionSpecificPublicationTest
 
         assertThrows(RegistrationException.class, () ->
         {
-            try (Publication ignored1 = aeron.addPublication(channelOne, STREAM_ID);
-                Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
-            {
-                fail("Exception should have been thrown due using different session ids");
-            }
+            aeron.addPublication(channelOne, STREAM_ID);
+            aeron.addPublication(channelTwo, STREAM_ID);
+
+            fail("Exception should have been thrown due using different session ids");
         });
     }
 
@@ -184,10 +180,9 @@ class SessionSpecificPublicationTest
 
         assertThrows(RegistrationException.class, () ->
         {
-            try (Publication ignore = aeron.addPublication(channel, STREAM_ID))
-            {
-                fail("Exception should have been thrown due lingering publication keeping session id active");
-            }
+            aeron.addPublication(channel, STREAM_ID);
+
+            fail("Exception should have been thrown due lingering publication keeping session id active");
         });
 
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};

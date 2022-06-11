@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
@@ -802,7 +803,6 @@ final class Catalog implements AutoCloseable
 
     void updateChecksum(final int recordingDescriptorOffset)
     {
-        final Checksum checksum = this.checksum;
         if (null != checksum)
         {
             final UnsafeBuffer headerBuffer = this.headerAccessBuffer;
@@ -819,7 +819,6 @@ final class Catalog implements AutoCloseable
 
     int computeRecordingDescriptorChecksum(final int recordingDescriptorOffset, final int recordingLength)
     {
-        final Checksum checksum = this.checksum;
         if (null != checksum)
         {
             return checksum.compute(
@@ -827,6 +826,7 @@ final class Catalog implements AutoCloseable
                 DESCRIPTOR_HEADER_LENGTH + recordingDescriptorOffset,
                 recordingLength);
         }
+
         return 0;
     }
 
@@ -953,7 +953,7 @@ final class Catalog implements AutoCloseable
         final long recordingId = decoder.recordingId();
         if (VALID == headerDecoder.state() && NULL_POSITION == decoder.stopPosition())
         {
-            final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
+            final ArrayList<String> segmentFiles = listSegmentFiles(archiveDir, recordingId);
             final String maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
 
             encoder.stopPosition(computeStopPosition(
@@ -991,20 +991,29 @@ final class Catalog implements AutoCloseable
         }
     }
 
-    static String[] listSegmentFiles(final File archiveDir, final long recordingId)
+    static ArrayList<String> listSegmentFiles(final File archiveDir, final long recordingId)
     {
-        final String prefix = recordingId + "-";
+        final ArrayList<String> segmentFiles = new ArrayList<>();
+        final String[] files = archiveDir.list();
 
-        return archiveDir.list((dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
-    }
-
-    static String findSegmentFileWithHighestPosition(final String[] segmentFiles)
-    {
-        if (null == segmentFiles || 0 == segmentFiles.length)
+        if (null != files)
         {
-            return null;
+            final String prefix = recordingId + "-";
+
+            for (final String file : files)
+            {
+                if (file.startsWith(prefix) && file.endsWith(RECORDING_SEGMENT_SUFFIX))
+                {
+                    segmentFiles.add(file);
+                }
+            }
         }
 
+        return segmentFiles;
+    }
+
+    static String findSegmentFileWithHighestPosition(final ArrayList<String> segmentFiles)
+    {
         long maxSegmentPosition = NULL_POSITION;
         String maxFileName = null;
 

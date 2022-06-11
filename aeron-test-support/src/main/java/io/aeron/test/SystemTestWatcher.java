@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -316,7 +316,16 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             }
             catch (final Exception t)
             {
-                error = t;
+                error = setOrUpdateError(error, t);
+            }
+
+            try
+            {
+                CloseHelper.close(closeable);
+            }
+            catch (final Exception t)
+            {
+                error = setOrUpdateError(error, t);
             }
 
             try
@@ -325,30 +334,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             }
             catch (final Exception t)
             {
-                if (null != error)
-                {
-                    error.addSuppressed(t);
-                }
-                else
-                {
-                    error = t;
-                }
-            }
-        }
-
-        try
-        {
-            CloseHelper.close(closeable);
-        }
-        catch (final Exception t)
-        {
-            if (null != error)
-            {
-                error.addSuppressed(t);
-            }
-            else
-            {
-                error = t;
+                error = setOrUpdateError(error, t);
             }
         }
 
@@ -356,6 +342,17 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         {
             LangUtil.rethrowUnchecked(error);
         }
+    }
+
+    Throwable setOrUpdateError(final Throwable existingError, final Throwable newError)
+    {
+        if (null == existingError)
+        {
+            return newError;
+        }
+
+        existingError.addSuppressed(newError);
+        return existingError;
     }
 
     private void printCncErrors(

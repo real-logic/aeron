@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package io.aeron.security;
 
 /**
- * Interface for an authorisation service to handle authorisation checks of clients in a system.
+ * Interface for an authorisation service to handle authorisation checks of clients performing actions on a system.
  *
  * @see AuthorisationServiceSupplier
  */
@@ -24,25 +24,26 @@ package io.aeron.security;
 public interface AuthorisationService
 {
     /**
-     * An {@link AuthorisationService} instance that allows every command.
+     * An {@link AuthorisationService} instance that allows every action.
      */
-    AuthorisationService ALLOW_ALL = (templateId, type, encodedPrincipal) -> true;
+    AuthorisationService ALLOW_ALL = (protocolId, actionId, type, encodedPrincipal) -> true;
 
     /**
-     * An {@link AuthorisationService} instance that forbids all commands.
+     * An {@link AuthorisationService} instance that forbids all actions.
      */
-    AuthorisationService DENY_ALL = (templateId, type, encodedPrincipal) -> false;
+    AuthorisationService DENY_ALL = (protocolId, actionId, type, encodedPrincipal) -> false;
 
     /**
-     * Checks if the client with the specified credentials is allowed to perform an operation indicated by the
-     * given {@code templateId}.
+     * Checks if the client with authenticated credentials is allowed to perform an operation indicated by the
+     * given {@code actionId}.
      *
-     * @param templateId       of the command being checked, i.e. an SBE message id.
+     * @param protocolId       of the protocol to which the action belongs, e.g. a SBE schema id.
+     * @param actionId         of the command being checked, e.g. a SBE message template id.
      * @param type             optional type for the command being checked, may be {@code null}. For example for
      *                         an admin request in the cluster it will contain {@code AdminRequestType} value which
      *                         denotes the exact kind of the request.
-     * @param encodedPrincipal that has passed authentication.
-     * @return {@code true} if the client is authorised to execute the command or {@code false} otherwise.
+     * @param encodedPrincipal that has been authenticated.
+     * @return {@code true} if the client is authorised to execute the action or {@code false} otherwise.
      */
-    boolean isAuthorised(int templateId, Object type, byte[] encodedPrincipal);
+    boolean isAuthorised(int protocolId, int actionId, Object type, byte[] encodedPrincipal);
 }

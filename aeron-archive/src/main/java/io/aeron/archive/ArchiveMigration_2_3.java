@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,9 +58,11 @@ class ArchiveMigration_2_3 implements ArchiveMigrationStep
         final File archiveDir)
     {
         final int version = minimumVersion();
-        try (FileChannel ignore = MigrationUtils.createMigrationTimestampFile(
+        try (FileChannel timestampFile = MigrationUtils.createMigrationTimestampFile(
             archiveDir, markFile.decoder().version(), version))
         {
+            assert null != timestampFile;
+
             final File newFile = new File(archiveDir, CATALOG_FILE_NAME + ".updated");
             IoUtil.deleteIfExists(newFile);
             final Path updatedCatalogFile = newFile.toPath();
@@ -78,6 +80,7 @@ class ArchiveMigration_2_3 implements ArchiveMigrationStep
                 {
                     BufferUtil.free(mappedByteBuffer);
                 }
+
                 channel.truncate(offset); // trim file to actual length used
             }
 

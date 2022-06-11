@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ public class NetworkTestingUtil
      * @param address The address to attempt to bind to.
      * @return null if successful, error message otherwise.
      */
+    @SuppressWarnings("try")
     public static String isBindAddressAvailable(final String address)
     {
         try (ServerSocket ignored = new ServerSocket(0, 1024, InetAddress.getByName(address)))

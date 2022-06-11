@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,7 +140,7 @@ class ControlResponseProxy
         return send(session, buffer, MESSAGE_HEADER_LENGTH + challengeEncoder.encodedLength());
     }
 
-    void attemptSendSignal(
+    boolean sendSignal(
         final long controlSessionId,
         final long correlationId,
         final long recordingId,
@@ -170,10 +170,12 @@ class ControlResponseProxy
                     .signal(recordingSignal);
 
                 bufferClaim.commit();
-                break;
+                return true;
             }
         }
         while (--attempts > 0);
+
+        return false;
     }
 
     private boolean sendResponseHook(final ControlSession session, final DirectBuffer buffer, final int length)

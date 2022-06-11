@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -296,7 +296,7 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT (-1)
 #define AERON_FLOW_CONTROL_GROUP_MIN_SIZE_DEFAULT (0)
 #define AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
-#define AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT (4)
+#define AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT (6)
 #define AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT (200 * 1000 * 1000LL)
 #define AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_max_multicast_flow_control_strategy_supplier")
 #define AERON_UNICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_unicast_flow_control_strategy_supplier")
@@ -328,6 +328,11 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT (1000)
 #define AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT (1 * 1000 * 1000 * INT64_C(1000))
 #define AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_NS_DEFAULT (1 * 1000 * 1000 * INT64_C(1000))
+#define AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
+#define AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
+#define AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT UINT32_C(2)
+#define AERON_CPU_AFFINITY_DEFAULT (-1)
+#define AERON_DRIVER_CONNECT_DEFAULT true
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -469,6 +474,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->name_resolver_init_args = NULL;
     _context->re_resolution_check_interval_ns = AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT;
     _context->conductor_cycle_threshold_ns = AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_NS_DEFAULT;
+    _context->receiver_io_vector_capacity = AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT;
+    _context->sender_io_vector_capacity = AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT;
+    _context->network_publication_max_messages_per_send = AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
+    _context->connect_enabled = AERON_DRIVER_CONNECT_DEFAULT;
+    _context->conductor_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
+    _context->sender_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
+    _context->receiver_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
 
     char *value = NULL;
 
@@ -560,6 +572,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->rejoin_stream = aeron_parse_bool(
         getenv(AERON_REJOIN_STREAM_ENV_VAR), _context->rejoin_stream);
+
+    _context->connect_enabled = aeron_parse_bool(getenv(AERON_DRIVER_CONNECT_ENV_VAR), _context->connect_enabled);
 
     _context->to_driver_buffer_length = aeron_config_parse_size64(
         AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR,
@@ -664,6 +678,25 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_SOCKET_MULTICAST_TTL_ENV_VAR),
         _context->multicast_ttl,
         0,
+        255);
+
+    _context->conductor_cpu_affinity_no = aeron_config_parse_int32(
+        AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR),
+        _context->conductor_cpu_affinity_no,
+        -1,
+        255);
+    _context->receiver_cpu_affinity_no = aeron_config_parse_int32(
+        AERON_RECEIVER_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_RECEIVER_CPU_AFFINITY_ENV_VAR),
+        _context->receiver_cpu_affinity_no,
+        -1,
+        255);
+    _context->sender_cpu_affinity_no = aeron_config_parse_int32(
+        AERON_SENDER_CPU_AFFINITY_ENV_VAR,
+        getenv(AERON_SENDER_CPU_AFFINITY_ENV_VAR),
+        _context->sender_cpu_affinity_no,
+        -1,
         255);
 
     _context->send_to_sm_poll_ratio = (uint8_t)aeron_config_parse_uint64(
@@ -852,6 +885,27 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         _context->conductor_cycle_threshold_ns,
         0,
         UINT64_C(60) * 60 * 1000 * 1000 * 1000);
+
+    _context->receiver_io_vector_capacity = aeron_config_parse_uint32(
+        AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR,
+        getenv(AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR),
+        (int32_t)_context->receiver_io_vector_capacity,
+        1,
+        AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX);
+
+    _context->sender_io_vector_capacity = aeron_config_parse_uint32(
+        AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR,
+        getenv(AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR),
+        (int32_t)_context->sender_io_vector_capacity,
+        1,
+        AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX);
+
+    _context->network_publication_max_messages_per_send = aeron_config_parse_uint32(
+        AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND_ENV_VAR,
+        getenv(AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND_ENV_VAR),
+        (int32_t)_context->network_publication_max_messages_per_send,
+        1,
+        AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
@@ -2447,6 +2501,19 @@ bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context)
     return NULL != context ? context->rejoin_stream : AERON_REJOIN_STREAM_DEFAULT;
 }
 
+int aeron_driver_context_set_connect_enabled(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->connect_enabled = value;
+    return 0;
+}
+
+int aeron_driver_context_get_connect_enabled(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->connect_enabled : AERON_DRIVER_CONNECT_DEFAULT;
+}
+
 int aeron_driver_context_set_resolver_name(aeron_driver_context_t *context, const char *value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
@@ -2568,4 +2635,119 @@ int aeron_driver_context_bindings_clientd_find(aeron_driver_context_t *context, 
     }
 
     return -1;
+}
+
+aeron_driver_context_bindings_clientd_entry_t *aeron_driver_context_bindings_clientd_get_or_find_first_free_entry(
+    aeron_driver_context_t *context, const char *name)
+{
+    int index = aeron_driver_context_bindings_clientd_find(context, name);
+    if (-1 == index)
+    {
+        index = aeron_driver_context_bindings_clientd_find_first_free_index(context);
+        if (-1 == index)
+        {
+            return NULL;
+        }
+
+        context->bindings_clientd_entries[index].name = name;
+    }
+
+    return &context->bindings_clientd_entries[index];
+}
+
+
+static uint32_t aeron_driver_context_clamp_value(uint32_t value, uint32_t min, uint32_t max)
+{
+    uint32_t clamped_value;
+    clamped_value = value > max ? max : value;
+    clamped_value = clamped_value < min ? min : clamped_value;
+
+    return clamped_value;
+}
+
+int aeron_driver_context_set_receiver_io_vector_capacity(aeron_driver_context_t *context, uint32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->receiver_io_vector_capacity = aeron_driver_context_clamp_value(
+        value, 1, AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX);
+
+    return 0;
+}
+
+uint32_t aeron_driver_context_get_receiver_io_vector_capacity(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->receiver_io_vector_capacity : AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT;
+}
+
+int aeron_driver_context_set_sender_io_vector_capacity(aeron_driver_context_t *context, uint32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->sender_io_vector_capacity = aeron_driver_context_clamp_value(
+        value, 1, AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX);
+
+    return 0;
+}
+
+uint32_t aeron_driver_context_get_sender_io_vector_capacity(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->sender_io_vector_capacity : AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT;
+}
+
+int aeron_driver_context_set_network_publication_max_messages_per_send(aeron_driver_context_t *context, uint32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->network_publication_max_messages_per_send = aeron_driver_context_clamp_value(
+        value, 1, AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND);
+    return 0;
+}
+
+uint32_t aeron_driver_context_get_network_publication_max_messages_per_send(aeron_driver_context_t *context)
+{
+    return NULL != context ?
+        context->network_publication_max_messages_per_send : AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
+}
+
+void aeron_set_thread_affinity_on_start(void *state, const char *role_name)
+{
+    aeron_driver_context_t *context = (aeron_driver_context_t *)state;
+    int result = 0;
+    if (0 == strcmp("conductor", role_name) && 0 <= context->conductor_cpu_affinity_no)
+    {
+        result = aeron_thread_set_affinity(role_name, (uint8_t)context->conductor_cpu_affinity_no);
+    }
+    else if (0 == strcmp("sender", role_name) && 0 <= context->sender_cpu_affinity_no)
+    {
+        result = aeron_thread_set_affinity(role_name, (uint8_t)context->sender_cpu_affinity_no);
+    }
+    else if (0 == strcmp("receiver", role_name) && 0 <= context->receiver_cpu_affinity_no)
+    {
+        result = aeron_thread_set_affinity(role_name, (uint8_t)context->receiver_cpu_affinity_no);
+    }
+
+    if (result < 0)
+    {
+        AERON_APPEND_ERR("%s", "WARNING: unable to apply affinity");
+        // Just in case the error log is not initialised, but it should be by this point.
+        if (NULL != context->error_log)
+        {
+            aeron_distinct_error_log_record(context->error_log, aeron_errcode(), aeron_errmsg());
+        }
+        else
+        {
+            fprintf(stderr, "%s", aeron_errmsg());
+        }
+        aeron_err_clear();
+    }
 }

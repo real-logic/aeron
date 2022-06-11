@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,6 +108,38 @@ public final class NetworkUtil
         }
     }
 
+    /**
+     * Scans through to the local interfaces and returns the first bound InetAddress that matches the locally
+     * defined address and network mask. Useful for determining a return path network address for machines with
+     * a simple network topology. May not give the ideal result when a machine has multiple interfaces that match
+     * an outgoing network address.
+     *
+     * @param address used to scan for a matching local address
+     * @return first matching address bound to a local interface or null if none match.
+     * @throws SocketException if an underlying SocketException is thrown, e.g. when getting the network interfaces.
+     */
+    public static InetAddress findFirstMatchingLocalAddress(final InetAddress address) throws SocketException
+    {
+        final Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+        while (networkInterfaces.hasMoreElements())
+        {
+            final NetworkInterface networkInterface = networkInterfaces.nextElement();
+            for (final InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses())
+            {
+                if (NetworkUtil.isMatchWithPrefix(
+                    address.getAddress(),
+                    interfaceAddress.getAddress().getAddress(),
+                    interfaceAddress.getNetworkPrefixLength()))
+                {
+                    return interfaceAddress.getAddress();
+                }
+            }
+        }
+
+        return null;
+    }
+
+
     static NetworkInterface[] filterBySubnet(
         final NetworkInterfaceShim shim, final InetAddress address, final int subnetPrefix)
         throws SocketException
@@ -174,7 +206,15 @@ public final class NetworkUtil
         return null;
     }
 
-    static boolean isMatchWithPrefix(final byte[] candidate, final byte[] expected, final int prefixLength)
+    /**
+     * Matches to network address with the specified prefix length.  Only works with 4 and 16 byte addresses.
+     *
+     * @param candidate address to be matched
+     * @param expected address to match against (could be a network address - with 0s at the end)
+     * @param prefixLength the number of bit required to match.
+     * @return true if the leading prefixLength number of bits of the two addresses match.
+     */
+    public static boolean isMatchWithPrefix(final byte[] candidate, final byte[] expected, final int prefixLength)
     {
         if (candidate.length != expected.length)
         {

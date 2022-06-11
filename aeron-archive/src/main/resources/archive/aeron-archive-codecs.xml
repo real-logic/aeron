@@ -47,6 +47,7 @@
             <validValue name="MERGE" description="Recording merged with live stream after replay.">4</validValue>
             <validValue name="SYNC" description="Recording synchronised with source archive.">5</validValue>
             <validValue name="DELETE" description="Recording has deleted segments.">6</validValue>
+            <validValue name="REPLICATE_END" description="Recording replication has ended.">7</validValue>
         </enum>
         <enum name="RecordingState" encodingType="int32" description="State of a recording in the Catalog.">
             <validValue name="INVALID" description="Recording is invalid.">0</validValue>

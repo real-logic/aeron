@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * Represents a replicated {@link Publication} from a which matches a {@link Subscription}.
  * Each {@link Image} identifies a source {@link Publication} by {@link #sessionId()}.
  * <p>
- * By default fragmented messages are not reassembled before delivery. If an application must
+ * By default, fragmented messages are not reassembled before delivery. If an application must
  * receive whole messages, whether or not they were fragmented, then the Subscriber
  * should be created with a {@link FragmentAssembler} or a custom implementation.
  * <p>

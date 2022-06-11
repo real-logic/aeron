@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 #include "aeron_driver_context.h"
 #include "util/aeron_properties_util.h"
 #include "util/aeron_strutil.h"
+#include "util/aeron_error.h"
 
 volatile bool running = true;
 
@@ -114,6 +115,12 @@ int main(int argc, char **argv)
     if (aeron_driver_context_set_driver_termination_hook(context, termination_hook, NULL) < 0)
     {
         fprintf(stderr, "ERROR: context set termination hook (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        goto cleanup;
+    }
+
+    if (aeron_driver_context_set_agent_on_start_function(context, aeron_set_thread_affinity_on_start, context))
+    {
+        fprintf(stderr, "ERROR: unable to set on_start function(%d) %s\n", aeron_errcode(), aeron_errmsg());
         goto cleanup;
     }
 

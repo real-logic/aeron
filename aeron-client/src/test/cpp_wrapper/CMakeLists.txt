@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2021 Real Logic Limited.
+# Copyright 2014-2022 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,18 +24,18 @@ endif ()
 
 function(aeron_client_native_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
-    target_link_libraries(${name} aeron_client aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-    target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_dependencies(${name} gmock)
+    target_link_libraries(${name} aeron_client aeron_driver gmock_main ${CMAKE_THREAD_LIBS_INIT})
+    target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
 function(aeron_client_wrapper_test name file)
     set(wrapper_name "${name}W")
     add_executable(${wrapper_name} ${file} ${TEST_HEADERS})
-    target_link_libraries(${wrapper_name} aeron_client_wrapper aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-    target_compile_definitions(${wrapper_name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_dependencies(${wrapper_name} gmock)
+    target_link_libraries(${wrapper_name} aeron_client_wrapper aeron_driver gmock_main ${CMAKE_THREAD_LIBS_INIT})
+    target_compile_definitions(${wrapper_name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_test(NAME ${wrapper_name} COMMAND ${wrapper_name})
 endfunction()
 

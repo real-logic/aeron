@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import java.util.function.Consumer;
  * and timers. Sending messages and timers should not happen from cluster lifecycle methods like
  * {@link ClusteredService#onStart(Cluster, Image)}, {@link ClusteredService#onRoleChange(Cluster.Role)} or
  * {@link ClusteredService#onTakeSnapshot(ExclusivePublication)}, or {@link ClusteredService#onTerminate(Cluster)},
- * with the exception of the session lifecycle methods {@link ClusteredService#onSessionOpen(ClientSession, long)},
+ * except the session lifecycle methods {@link ClusteredService#onSessionOpen(ClientSession, long)},
  * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)},
  * and {@link ClusteredService#onNewLeadershipTermEvent(long, long, long, long, int, int, TimeUnit, int)}.
  */

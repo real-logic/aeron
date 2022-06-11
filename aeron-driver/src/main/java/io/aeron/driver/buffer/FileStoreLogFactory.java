@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public class FileStoreLogFactory implements LogFactory
     }
 
     /**
-     * Create new {@link RawLog} in the publications directory for the supplied triplet.
+     * Create new {@link RawLog} in the publications' directory for the supplied triplet.
      *
      * @param correlationId    to use to distinguish this publication
      * @param termBufferLength length of each term

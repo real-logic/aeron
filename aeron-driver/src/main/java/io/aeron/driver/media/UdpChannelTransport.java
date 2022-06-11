@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final int socketRcvbufLength;
 
     /**
-     * Construct a transport for a given channel.
+     * Construct transport for a given channel.
      *
      * @param udpChannel         configuration for the media.
      * @param endPointAddress    to which data will be sent.
@@ -123,7 +123,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Construct a transport for a given channel.
+     * Construct transport for a given channel.
      *
      * @param udpChannel      configuration for the media.
      * @param endPointAddress to which data will be sent.

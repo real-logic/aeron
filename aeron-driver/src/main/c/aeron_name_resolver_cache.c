@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ int aeron_name_resolver_cache_add_or_update(
 
         cache->entries.length++;
 
-        aeron_counter_set_ordered(cache_entries_counter, cache->entries.length);
+        aeron_counter_set_ordered(cache_entries_counter, (int64_t)cache->entries.length);
     }
     else
     {
@@ -154,7 +154,7 @@ int aeron_name_resolver_cache_timeout_old_entries(
 
     if (0 != num_removed)
     {
-        aeron_counter_set_ordered(cache_entries_counter, cache->entries.length);
+        aeron_counter_set_ordered(cache_entries_counter, (int64_t)cache->entries.length);
     }
 
     return num_removed;

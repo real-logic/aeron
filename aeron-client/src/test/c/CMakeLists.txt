@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2021 Real Logic Limited.
+# Copyright 2014-2022 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@ set(TEST_HEADERS
 
 function(aeron_c_client_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
-    target_link_libraries(${name} aeron ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})
-    target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_dependencies(${name} gmock)
+    target_link_libraries(${name} aeron gmock_main ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})
+    target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
@@ -63,3 +63,5 @@ aeron_c_client_test(math_test util/aeron_math_test.cpp)
 aeron_c_client_test(strutil_test util/aeron_strutil_test.cpp)
 aeron_c_client_test(error_test util/aeron_error_test.cpp)
 aeron_c_client_test(netutil_test util/aeron_netutil_test.cpp)
+aeron_c_client_test(symbol_table_test util/aeron_symbol_table_test.cpp)
+aeron_c_client_test(http_util_test util/aeron_httputil_test.cpp)

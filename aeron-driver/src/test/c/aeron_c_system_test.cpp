@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,16 @@ extern "C"
 
 class CSystemTest : public CSystemTestBase, public testing::TestWithParam<std::tuple<const char *>>
 {
+protected:
+    CSystemTest() : CSystemTestBase(
+        std::vector<std::pair<std::string, std::string>>
+            {
+                { AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR, "17" },
+                { AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR, "17" },
+                { AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND_ENV_VAR, "17" }
+            })
+    {
+    }
 };
 
 INSTANTIATE_TEST_SUITE_P(
@@ -554,5 +564,29 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableWithPollAfter)
 
     poll(subscription, handler, 1);
 
+    EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
+}
+
+TEST_P(CSystemTest, shouldAddMdsSubscription)
+{
+    aeron_async_add_publication_t *async_pub = nullptr;
+    aeron_async_add_subscription_t *async_sub = nullptr;
+
+    ASSERT_TRUE(connect());
+
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, std::get<0>(GetParam()), STREAM_ID), 0);
+
+    aeron_publication_t *publication = awaitPublicationOrError(async_pub);
+    ASSERT_TRUE(publication) << aeron_errmsg();
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, std::get<0>(GetParam()), STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+
+    aeron_subscription_t *subscription = awaitSubscriptionOrError(async_sub);
+    ASSERT_TRUE(subscription) << aeron_errmsg();
+
+    awaitConnected(subscription);
+
+    EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,7 @@ import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
@@ -356,6 +353,40 @@ public class CommonContext implements Cloneable
     public static final String RESERVED_OFFSET = "reserved";
 
     /**
+     * Property name for a fallback PrintStream based logger when it is not possible to use the error logging
+     * callback.  Supported values are stdout, stderr, no_op (stderr is the default).
+     */
+    public static final String FALLBACK_LOGGER_PROP_NAME = "aeron.fallback.logger";
+
+    /**
+     * Get the current fallback logger based on the supplied property.
+     *
+     * @return the configured PrintStream.
+     */
+    public static PrintStream fallbackLogger()
+    {
+        final String fallbackLoggerName = getProperty(FALLBACK_LOGGER_PROP_NAME, "stderr");
+        switch (fallbackLoggerName)
+        {
+            case "stdout":
+                return System.out;
+
+            case "no_op":
+                return new PrintStream(new OutputStream()
+                {
+                    public void write(final int b)
+                    {
+                        // No-op
+                    }
+                });
+
+            case "stderr":
+            default:
+                return System.err;
+        }
+    }
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(
@@ -668,7 +699,7 @@ public class CommonContext implements Cloneable
     {
         final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
-        if (cncFile.exists() && cncFile.length() > 0)
+        if (cncFile.exists() && cncFile.length() > CncFileDescriptor.END_OF_METADATA_OFFSET)
         {
             if (null != logger)
             {
@@ -694,7 +725,7 @@ public class CommonContext implements Cloneable
     {
         final File cncFile = new File(directory, CncFileDescriptor.CNC_FILE);
 
-        if (cncFile.exists() && cncFile.length() > 0)
+        if (cncFile.exists() && cncFile.length() > CncFileDescriptor.END_OF_METADATA_OFFSET)
         {
             logger.accept("INFO: Aeron CnC file exists: " + cncFile);
 
@@ -794,7 +825,7 @@ public class CommonContext implements Cloneable
     {
         final File cncFile = new File(directory, CncFileDescriptor.CNC_FILE);
 
-        if (cncFile.exists() && cncFile.length() > 0)
+        if (cncFile.exists() && cncFile.length() > CncFileDescriptor.END_OF_METADATA_OFFSET)
         {
             final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "CnC file");
             try
@@ -802,14 +833,17 @@ public class CommonContext implements Cloneable
                 final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 final int cncVersion = cncMetaDataBuffer.getIntVolatile(cncVersionOffset(0));
 
-                CncFileDescriptor.checkVersion(cncVersion);
+                if (cncVersion > 0)
+                {
+                    CncFileDescriptor.checkVersion(cncVersion);
 
-                final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
-                    CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
-                final long clientId = toDriverBuffer.nextCorrelationId();
-                final DriverProxy driverProxy = new DriverProxy(toDriverBuffer, clientId);
+                    final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
+                        CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    final long clientId = toDriverBuffer.nextCorrelationId();
+                    final DriverProxy driverProxy = new DriverProxy(toDriverBuffer, clientId);
 
-                return driverProxy.terminateDriver(tokenBuffer, tokenOffset, tokenLength);
+                    return driverProxy.terminateDriver(tokenBuffer, tokenOffset, tokenLength);
+                }
             }
             finally
             {
@@ -874,7 +908,7 @@ public class CommonContext implements Cloneable
     {
         int distinctErrorCount = 0;
 
-        if (errorBuffer.capacity() > 0 && ErrorLogReader.hasErrors(errorBuffer))
+        if (ErrorLogReader.hasErrors(errorBuffer))
         {
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
             final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->

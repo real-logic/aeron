@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ final class LogReplication
         final long srcRecordingId,
         final long dstRecordingId,
         final long stopPosition,
-        final String srcArchiveEndpoint,
+        final String srcArchiveChannel,
         final String replicationChannel,
         final long progressCheckTimeoutNs,
         final long progressCheckIntervalNs,
@@ -61,14 +61,11 @@ final class LogReplication
         this.progressDeadlineNs = nowNs + progressCheckTimeoutNs;
         this.progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
 
-        final String srcArchiveChannel = "aeron:udp?endpoint=" + srcArchiveEndpoint;
-        final int srcControlStreamId = archive.context().controlRequestStreamId();
-
         replicationId = archive.replicate(
             srcRecordingId,
             dstRecordingId,
             stopPosition,
-            srcControlStreamId,
+            archive.context().controlRequestStreamId(),
             srcArchiveChannel,
             null,
             replicationChannel);
@@ -165,8 +162,12 @@ final class LogReplication
             }
 
             this.recordingId = recordingId;
-            this.position = position;
             this.lastRecordingSignal = signal;
+
+            if (NULL_POSITION != position)
+            {
+                this.position = position;
+            }
         }
     }
 

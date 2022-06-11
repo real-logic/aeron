@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ int aeron_broadcast_transmitter_transmit(
         insert_padding_record(
             (aeron_broadcast_record_descriptor_t *)(transmitter->buffer + record_offset), (int32_t)to_end_of_buffer);
 
-        current_tail += to_end_of_buffer;
+        current_tail += (int64_t)to_end_of_buffer;
         record_offset = 0;
     }
     else

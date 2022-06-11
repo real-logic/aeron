@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2021 Real Logic Limited.
+# Copyright 2014-2022 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,16 +39,26 @@ set(HEADERS
 
 add_executable(basic_publisher basic_publisher.c ${HEADERS} ${SOURCES})
 add_executable(basic_subscriber basic_subscriber.c ${HEADERS} ${SOURCES})
+add_executable(basic_mds_subscriber basic_mds_subscriber.c ${HEADERS} ${SOURCES})
 add_executable(rate_subscriber rate_subscriber.c ${HEADERS} ${SOURCES})
 add_executable(streaming_publisher streaming_publisher.c ${HEADERS} ${SOURCES})
 add_executable(streaming_exclusive_publisher streaming_exclusive_publisher.c ${HEADERS} ${SOURCES})
 add_executable(cpong cpong.c ${HEADERS} ${SOURCES})
 add_executable(cping cping.c ${HEADERS} ${SOURCES})
 
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+    add_executable(ping_pong_raw raw/ping_pong_raw.c)
+    add_dependencies(ping_pong_raw hdr_histogram)
+    target_link_libraries(ping_pong_raw m hdr_histogram_static)
+endif ()
+
 target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})
 
 target_link_libraries(basic_subscriber
+    ${CLIENT_LINK_LIB})
+
+target_link_libraries(basic_mds_subscriber
     ${CLIENT_LINK_LIB})
 
 target_link_libraries(rate_subscriber
@@ -65,7 +75,7 @@ target_link_libraries(cpong
 
 target_link_libraries(cping
     ${CLIENT_LINK_LIB}
-    ${HDRHISTOGRAM_LIBS})
+    hdr_histogram_static)
 
 add_dependencies(cping hdr_histogram)
 

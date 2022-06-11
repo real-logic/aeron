@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ class ImageAvailabilityTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
+    @SuppressWarnings("try")
     void shouldCallImageHandlers(final String channel)
     {
         final AtomicInteger unavailableImageCount = new AtomicInteger();
@@ -124,6 +125,7 @@ class ImageAvailabilityTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
+    @SuppressWarnings("try")
     void shouldCallImageHandlersWithPublisherOnDifferentClient(final String channel)
     {
         final AtomicInteger unavailableImageCount = new AtomicInteger();

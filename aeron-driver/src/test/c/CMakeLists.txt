@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2021 Real Logic Limited.
+# Copyright 2014-2022 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,12 +32,12 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 
 function(aeron_driver_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
-    target_link_libraries(${name} aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})
+    add_dependencies(${name} gmock)
+    target_link_libraries(${name} aeron_driver gmock_main ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})
     target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     if (STRUCT_MMSGHDR_TYPE_EXISTS)
         target_compile_definitions(${name} PUBLIC -DHAVE_STRUCT_MMSGHDR)
     endif ()
-    add_dependencies(${name} gmock)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
@@ -61,7 +61,6 @@ aeron_driver_test(properties_test aeron_properties_test.cpp)
 aeron_driver_test(driver_configuration_test aeron_driver_configuration_test.cpp)
 aeron_driver_test(driver_agent_test agent/aeron_driver_agent_test.cpp)
 aeron_driver_test(udp_channel_transport_loss_test media/aeron_udp_channel_transport_loss_test.cpp)
-aeron_driver_test(udp_channel_transport_test media/aeron_udp_channel_transport_test.cpp)
 aeron_driver_test(flow_control_test aeron_flow_control_test.cpp)
 aeron_driver_test(name_resolver_test aeron_name_resolver_test.cpp)
 aeron_driver_test(name_resolver_cache_test aeron_name_resolver_cache_test.cpp)
@@ -76,6 +75,10 @@ set_tests_properties(c_terminate_test PROPERTIES RUN_SERIAL TRUE)
 aeron_driver_test(c_system_test aeron_c_system_test.cpp)
 set_tests_properties(c_system_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_system_test PROPERTIES RUN_SERIAL TRUE)
+
+aeron_driver_test(c_multi_destination_test aeron_c_multi_destination_test.cpp)
+set_tests_properties(c_multi_destination_test PROPERTIES TIMEOUT 60)
+set_tests_properties(c_multi_destination_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(c_local_addresses_test aeron_c_local_addresses_test.cpp)
 set_tests_properties(c_local_addresses_test PROPERTIES TIMEOUT 60)
@@ -94,3 +97,4 @@ aeron_driver_test(congestion_control_test aeron_congestion_control_test.cpp)
 aeron_driver_test(network_publication_test aeron_network_publication_test.cpp)
 aeron_driver_test(timestamps_test aeron_timestamps_test.cpp)
 aeron_driver_test(position_test aeron_position_test.cpp)
+aeron_driver_test(driver_context_config_test aeron_driver_context_config_test.cpp)

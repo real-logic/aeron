@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 class ExclusiveTermAppender
 {
 public:
-    ExclusiveTermAppender(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer, const int partitionIndex) :
+    ExclusiveTermAppender(AtomicBuffer &termBuffer, AtomicBuffer &metaDataBuffer, const int partitionIndex) :
         m_termBuffer(termBuffer),
         m_tailAddr(
             reinterpret_cast<std::int64_t *>(
@@ -42,7 +42,7 @@ public:
             sizeof(std::int64_t));
     }
 
-    inline AtomicBuffer& termBuffer()
+    inline AtomicBuffer &termBuffer()
     {
         return m_termBuffer;
     }
@@ -55,9 +55,9 @@ public:
     inline std::int32_t claim(
         std::int32_t termId,
         std::int32_t termOffset,
-        const HeaderWriter& header,
+        const HeaderWriter &header,
         util::index_t length,
-        BufferClaim& bufferClaim)
+        BufferClaim &bufferClaim)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
@@ -82,11 +82,11 @@ public:
     inline std::int32_t appendUnfragmentedMessage(
         std::int32_t termId,
         std::int32_t termOffset,
-        const HeaderWriter& header,
-        const AtomicBuffer& srcBuffer,
+        const HeaderWriter &header,
+        const AtomicBuffer &srcBuffer,
         util::index_t srcOffset,
         util::index_t length,
-        const on_reserved_value_supplier_t& reservedValueSupplier)
+        const on_reserved_value_supplier_t &reservedValueSupplier)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
@@ -117,10 +117,10 @@ public:
     template <class BufferIterator> inline std::int32_t appendUnfragmentedMessage(
         std::int32_t termId,
         std::int32_t termOffset,
-        const HeaderWriter& header,
+        const HeaderWriter &header,
         BufferIterator bufferIt,
         util::index_t length,
-        const on_reserved_value_supplier_t& reservedValueSupplier)
+        const on_reserved_value_supplier_t &reservedValueSupplier)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
@@ -159,12 +159,12 @@ public:
     std::int32_t appendFragmentedMessage(
         std::int32_t termId,
         std::int32_t termOffset,
-        const HeaderWriter& header,
-        const AtomicBuffer& srcBuffer,
+        const HeaderWriter &header,
+        const AtomicBuffer &srcBuffer,
         util::index_t srcOffset,
         util::index_t length,
         util::index_t maxPayloadLength,
-        const on_reserved_value_supplier_t& reservedValueSupplier)
+        const on_reserved_value_supplier_t &reservedValueSupplier)
     {
         const int numMaxPayloads = length / maxPayloadLength;
         const util::index_t remainingPayload = length % maxPayloadLength;
@@ -226,11 +226,11 @@ public:
     template <class BufferIterator> std::int32_t appendFragmentedMessage(
         std::int32_t termId,
         std::int32_t termOffset,
-        const HeaderWriter& header,
+        const HeaderWriter &header,
         BufferIterator bufferIt,
         util::index_t length,
         util::index_t maxPayloadLength,
-        const on_reserved_value_supplier_t& reservedValueSupplier)
+        const on_reserved_value_supplier_t &reservedValueSupplier)
     {
         const int numMaxPayloads = length / maxPayloadLength;
         const util::index_t remainingPayload = length % maxPayloadLength;
@@ -307,14 +307,14 @@ public:
     }
 
 private:
-    AtomicBuffer& m_termBuffer;
+    AtomicBuffer &m_termBuffer;
     std::int64_t *const m_tailAddr;
 
     inline static std::int32_t handleEndOfLogCondition(
-        AtomicBuffer& termBuffer,
+        AtomicBuffer &termBuffer,
         std::int32_t termId,
         std::int32_t termOffset,
-        const HeaderWriter& header,
+        const HeaderWriter &header,
         util::index_t termLength)
     {
         if (termOffset < termLength)

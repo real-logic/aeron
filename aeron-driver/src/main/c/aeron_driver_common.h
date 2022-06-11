@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,6 +83,7 @@ void aeron_untethered_subscription_state_change(
 
 typedef struct aeron_subscribable_stct
 {
+    int64_t correlation_id;
     size_t length;
     size_t capacity;
     aeron_tetherable_position_t *array;

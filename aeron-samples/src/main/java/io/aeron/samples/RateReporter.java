@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
  */
 package io.aeron.samples;
 
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
-
-import static org.agrona.UnsafeAccess.UNSAFE;
 
 class RateReporterLhsPadding
 {
@@ -29,23 +28,10 @@ class RateReporterLhsPadding
 
 class RateReporterValues extends RateReporterLhsPadding
 {
-    static final long TOTAL_BYTES_OFFSET;
-    static final long TOTAL_MESSAGES_OFFSET;
-
-    static
-    {
-        try
-        {
-            TOTAL_BYTES_OFFSET = UNSAFE.objectFieldOffset(
-                RateReporterValues.class.getDeclaredField("totalBytes"));
-            TOTAL_MESSAGES_OFFSET = UNSAFE.objectFieldOffset(
-                RateReporterValues.class.getDeclaredField("totalMessages"));
-        }
-        catch (final Exception ex)
-        {
-            throw new RuntimeException(ex);
-        }
-    }
+    static final AtomicLongFieldUpdater<RateReporterValues> TOTAL_BYTES_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(RateReporterValues.class, "totalBytes");
+    static final AtomicLongFieldUpdater<RateReporterValues> TOTAL_MESSAGES_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(RateReporterValues.class, "totalMessages");
 
     volatile long totalBytes;
     volatile long totalMessages;
@@ -146,7 +132,7 @@ public final class RateReporter extends RateReporterRhsPadding implements Runnab
      */
     public void onMessage(final long length)
     {
-        UNSAFE.putOrderedLong(this, TOTAL_BYTES_OFFSET, totalBytes + length);
-        UNSAFE.putOrderedLong(this, TOTAL_MESSAGES_OFFSET, totalMessages + 1);
+        TOTAL_BYTES_UPDATER.lazySet(this, totalBytes + length);
+        TOTAL_MESSAGES_UPDATER.lazySet(this, totalMessages + 1);
     }
 }

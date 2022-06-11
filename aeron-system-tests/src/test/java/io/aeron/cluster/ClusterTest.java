@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.Counter;
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.ControlledEgressListener;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.*;
@@ -33,6 +35,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -64,6 +68,13 @@ public class ClusterTest
     public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private TestCluster cluster = null;
+
+    @BeforeEach
+    void setUp()
+    {
+        systemTestWatcher.ignoreErrorsMatching(
+            (s) -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
+    }
 
     @Test
     @InterruptAfter(30)
@@ -458,7 +469,6 @@ public class ClusterTest
         assertEquals(FOLLOWER, followerB.role());
 
         cluster.awaitServiceMessageCount(followerB, messageCount);
-        assertEquals(0L, followerB.errors());
     }
 
     @Test
@@ -740,6 +750,9 @@ public class ClusterTest
 
         final TestNode leader = cluster.awaitLeader();
         cluster.connectClient();
+        cluster.sendMessages(1);
+        cluster.awaitResponseMessageCount(1);
+        cluster.awaitServicesMessageCount(1);
 
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .controlRequestChannel(leader.archive().context().localControlChannel())
@@ -788,7 +801,7 @@ public class ClusterTest
     }
 
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(30)
     public void shouldCloseClientOnTimeout()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -798,7 +811,9 @@ public class ClusterTest
 
         final AeronCluster client = cluster.connectClient();
         final ConsensusModule.Context context = leader.consensusModule().context();
-        assertEquals(0, context.timedOutClientCounter().get());
+        final Counter timedOutClientCounter = context.timedOutClientCounter();
+
+        assertEquals(0, timedOutClientCounter.get());
         assertFalse(client.isClosed());
 
         Tests.sleep(NANOSECONDS.toMillis(context.sessionTimeoutNs()));
@@ -810,7 +825,7 @@ public class ClusterTest
             client.pollEgress();
         }
 
-        assertEquals(1, context.timedOutClientCounter().get());
+        assertEquals(1, timedOutClientCounter.get());
     }
 
     @Test
@@ -945,6 +960,7 @@ public class ClusterTest
             cluster.pollUntilMessageSent(NO_OP_MSG.length());
         }
         cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount);
 
         cluster.terminationsExpected(true);
         cluster.abortCluster(leader);
@@ -1129,7 +1145,6 @@ public class ClusterTest
         }
     }
 
-
     @Test
     @InterruptAfter(40)
     public void shouldRecoverWhenFollowerIsMultipleTermsBehindFromEmptyLog()
@@ -1164,6 +1179,72 @@ public class ClusterTest
         final TestNode lateJoiningNode = cluster.node(originalLeader.index());
 
         cluster.awaitServiceMessageCount(lateJoiningNode, messageCount * 3);
+    }
+
+    @Test
+    @InterruptAfter(40)
+    @Disabled
+    public void shouldHandleManyLargeMessages()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+
+        systemTestWatcher.cluster(cluster);
+
+        cluster.awaitLeader();
+        awaitElectionState(cluster.node(0), ElectionState.CLOSED);
+        awaitElectionState(cluster.node(1), ElectionState.CLOSED);
+        awaitElectionState(cluster.node(2), ElectionState.CLOSED);
+
+        final int largeMessageCount = 256_000;
+
+        cluster.connectClient();
+        cluster.sendLargeMessages(largeMessageCount);
+        cluster.awaitResponseMessageCount(largeMessageCount);
+        cluster.awaitServicesMessageCount(largeMessageCount);
+    }
+
+    @Test
+    @InterruptAfter(40)
+    @Disabled
+    public void shouldRecoverWhenFollowerWithInitialSnapshotAndArchivePurgeThenIsMultipleTermsBehind()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode originalLeader = cluster.awaitLeader();
+
+        final int largeMessageCount = 128_000;
+        final int messageCount = 10;
+
+        cluster.connectClient();
+        cluster.sendLargeMessages(largeMessageCount);
+        cluster.awaitResponseMessageCount(largeMessageCount);
+        cluster.awaitServicesMessageCount(largeMessageCount);
+
+        cluster.takeSnapshot(originalLeader);
+        cluster.awaitSnapshotCount(1);
+        cluster.purgeLogToLastSnapshot();
+
+        cluster.stopNode(originalLeader);
+        final TestNode newLeader = cluster.awaitLeader();
+
+        cluster.reconnectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(largeMessageCount + messageCount);
+
+        cluster.stopNode(newLeader);
+        cluster.startStaticNode(newLeader.index(), false);
+        cluster.awaitLeader();
+
+        cluster.reconnectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(largeMessageCount + (messageCount * 2));
+
+        cluster.startStaticNode(originalLeader.index(), false);
+        final TestNode lateJoiningNode = cluster.node(originalLeader.index());
+
+        cluster.awaitServiceMessageCount(lateJoiningNode, largeMessageCount + (messageCount * 2));
     }
 
     @Test
@@ -1332,6 +1413,7 @@ public class ClusterTest
         cluster.startStaticNode(leader0.index(), false);
         awaitElectionClosed(cluster.node(leader0.index()));
 
+        cluster.connectClient();
         cluster.sendMessages(numMessages);
         cluster.awaitResponseMessageCount(numMessages * 2);
         cluster.awaitServicesMessageCount(numMessages * 2);
@@ -1344,6 +1426,7 @@ public class ClusterTest
         cluster.startStaticNode(leader1.index(), false);
         awaitElectionClosed(cluster.node(leader1.index()));
 
+        cluster.connectClient();
         cluster.sendMessages(numMessages);
         cluster.awaitResponseMessageCount(numMessages * 3);
         cluster.awaitServicesMessageCount(numMessages * 3);
@@ -1531,9 +1614,17 @@ public class ClusterTest
         msgChecksum = (int)crc32.getValue();
         cluster.msgBuffer().putInt(payloadLength, msgChecksum, LITTLE_ENDIAN);
         final int secondBatch = 11;
+        cluster.reconnectClient();
         for (int i = 0; i < secondBatch; i++)
         {
-            cluster.pollUntilMessageSent(messageLength);
+            try
+            {
+                cluster.pollUntilMessageSent(messageLength);
+            }
+            catch (final ClusterException ex)
+            {
+                throw new RuntimeException("i=" + i, ex);
+            }
         }
         cluster.awaitResponseMessageCount(firstBatch + secondBatch);
 
@@ -1577,7 +1668,7 @@ public class ClusterTest
         final int finalMessageCount = firstBatch + thirdBatch;
         final long finalChecksum = checksum;
         final Predicate<TestNode> finalServiceState =
-            node ->
+            (node) ->
             {
                 final TestNode.TestService[] services = node.services();
                 return finalMessageCount == services[0].messageCount() &&
@@ -1592,7 +1683,7 @@ public class ClusterTest
     }
 
     @Test
-    @InterruptAfter(40)
+    @InterruptAfter(60)
     public void shouldRecoverWhenFollowersIsMultipleTermsBehindFromEmptyLogAndPartialLogWithoutCommittedLogEntry()
     {
         cluster = aCluster().withStaticNodes(5).start(4);
@@ -1654,7 +1745,7 @@ public class ClusterTest
         final List<TestNode> followers = cluster.followers();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean responseReceived = injectAdminResponseEgressListener(
+        final MutableBoolean hasResponse = injectAdminResponseEgressListener(
             requestCorrelationId,
             AdminRequestType.SNAPSHOT,
             AdminResponseCode.UNAUTHORISED_ACCESS,
@@ -1666,7 +1757,7 @@ public class ClusterTest
             Tests.yield();
         }
 
-        while (!responseReceived.get())
+        while (!hasResponse.get())
         {
             client.pollEgress();
             Tests.yield();
@@ -1692,13 +1783,15 @@ public class ClusterTest
     void shouldRejectAnInvalidAdminRequest()
     {
         final AdminRequestType invalidRequestType = AdminRequestType.NULL_VAL;
-        final AtomicBoolean authorisationServiceCalled = new AtomicBoolean();
+        final AtomicBoolean isAuthorisedInvoked = new AtomicBoolean();
         cluster = aCluster()
             .withStaticNodes(3)
             .withAuthorisationServiceSupplier(() ->
-                (templateId, type, encodedPrincipal) ->
+                (protocolId, actionId, type, encodedPrincipal) ->
                 {
-                    authorisationServiceCalled.set(true);
+                    isAuthorisedInvoked.set(true);
+                    assertEquals(MessageHeaderDecoder.SCHEMA_ID, protocolId);
+                    assertEquals(AdminRequestEncoder.TEMPLATE_ID, actionId);
                     assertEquals(invalidRequestType, type);
                     return true;
                 })
@@ -1708,7 +1801,7 @@ public class ClusterTest
         cluster.awaitLeader();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean responseReceived = injectAdminResponseEgressListener(
+        final MutableBoolean hasResponse = injectAdminResponseEgressListener(
             requestCorrelationId,
             invalidRequestType,
             AdminResponseCode.ERROR,
@@ -1731,9 +1824,9 @@ public class ClusterTest
             Tests.yield();
         }
 
-        Tests.await(authorisationServiceCalled::get);
+        Tests.await(isAuthorisedInvoked::get);
 
-        while (!responseReceived.get())
+        while (!hasResponse.get())
         {
             client.pollEgress();
             Tests.yield();
@@ -1754,7 +1847,7 @@ public class ClusterTest
         final long expectedLeadershipTermId = client.leadershipTermId();
         final long invalidLeadershipTermId = expectedLeadershipTermId - 1000;
         final AdminRequestType requestType = AdminRequestType.NULL_VAL;
-        final MutableBoolean responseReceived = injectAdminResponseEgressListener(
+        final MutableBoolean hasResponse = injectAdminResponseEgressListener(
             requestCorrelationId,
             requestType,
             AdminResponseCode.ERROR,
@@ -1777,7 +1870,7 @@ public class ClusterTest
             Tests.yield();
         }
 
-        while (!responseReceived.get())
+        while (!hasResponse.get())
         {
             client.pollEgress();
             Tests.yield();
@@ -1797,7 +1890,7 @@ public class ClusterTest
         final TestNode leader = cluster.awaitLeader();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean responseReceived = injectAdminResponseEgressListener(
+        final MutableBoolean hasResponse = injectAdminResponseEgressListener(
             requestCorrelationId, AdminRequestType.SNAPSHOT, AdminResponseCode.OK, "");
 
         final AeronCluster client = cluster.connectClient();
@@ -1806,7 +1899,7 @@ public class ClusterTest
             Tests.yield();
         }
 
-        while (!responseReceived.get())
+        while (!hasResponse.get())
         {
             client.pollEgress();
             Tests.yield();
@@ -1823,8 +1916,10 @@ public class ClusterTest
         cluster = aCluster()
             .withStaticNodes(3)
             .withAuthorisationServiceSupplier(() ->
-                (templateId, type, encodedPrincipal) ->
+                (protocolId, actionId, type, encodedPrincipal) ->
                 {
+                    assertEquals(MessageHeaderDecoder.SCHEMA_ID, protocolId);
+                    assertEquals(AdminRequestEncoder.TEMPLATE_ID, actionId);
                     assertEquals(AdminRequestType.SNAPSHOT, type);
                     return true;
                 })
@@ -1834,7 +1929,7 @@ public class ClusterTest
         final TestNode leader = cluster.awaitLeader();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean responseReceived = injectAdminRequestControlledEgressListener(
+        final MutableBoolean hasResponse = injectAdminRequestControlledEgressListener(
             requestCorrelationId, AdminRequestType.SNAPSHOT, AdminResponseCode.OK, "");
 
         final AeronCluster client = cluster.connectClient();
@@ -1843,7 +1938,7 @@ public class ClusterTest
             Tests.yield();
         }
 
-        while (!responseReceived.get())
+        while (!hasResponse.get())
         {
             client.controlledPollEgress();
             Tests.yield();
@@ -1880,46 +1975,49 @@ public class ClusterTest
         final AdminResponseCode expectedResponseCode,
         final String expectedMessage)
     {
-        final MutableBoolean responseReceived = new MutableBoolean();
-        cluster.egressListener(new EgressListener()
-        {
-            public void onMessage(
-                final long clusterSessionId,
-                final long timestamp,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length,
-                final Header header)
-            {
-            }
+        final MutableBoolean hasResponse = new MutableBoolean();
 
-            public void onAdminResponse(
-                final long clusterSessionId,
-                final long correlationId,
-                final AdminRequestType requestType,
-                final AdminResponseCode responseCode,
-                final String message,
-                final DirectBuffer payload,
-                final int payloadOffset,
-                final int payloadLength)
+        cluster.egressListener(
+            new EgressListener()
             {
-                responseReceived.set(true);
-                assertEquals(expectedCorrelationId, correlationId);
-                assertEquals(expectedRequestType, requestType);
-                assertEquals(expectedResponseCode, responseCode);
-                assertEquals(expectedMessage, message);
-                assertNotNull(payload);
-                final int minPayloadOffset =
-                    MessageHeaderEncoder.ENCODED_LENGTH +
-                    AdminResponseEncoder.BLOCK_LENGTH +
-                    AdminResponseEncoder.messageHeaderLength() +
-                    message.length() +
-                    AdminResponseEncoder.payloadHeaderLength();
-                assertTrue(payloadOffset > minPayloadOffset);
-                assertEquals(0, payloadLength);
-            }
-        });
-        return responseReceived;
+                public void onMessage(
+                    final long clusterSessionId,
+                    final long timestamp,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length,
+                    final Header header)
+                {
+                }
+
+                public void onAdminResponse(
+                    final long clusterSessionId,
+                    final long correlationId,
+                    final AdminRequestType requestType,
+                    final AdminResponseCode responseCode,
+                    final String message,
+                    final DirectBuffer payload,
+                    final int payloadOffset,
+                    final int payloadLength)
+                {
+                    hasResponse.set(true);
+                    assertEquals(expectedCorrelationId, correlationId);
+                    assertEquals(expectedRequestType, requestType);
+                    assertEquals(expectedResponseCode, responseCode);
+                    assertEquals(expectedMessage, message);
+                    assertNotNull(payload);
+                    final int minPayloadOffset =
+                        MessageHeaderEncoder.ENCODED_LENGTH +
+                        AdminResponseEncoder.BLOCK_LENGTH +
+                        AdminResponseEncoder.messageHeaderLength() +
+                        message.length() +
+                        AdminResponseEncoder.payloadHeaderLength();
+                    assertTrue(payloadOffset > minPayloadOffset);
+                    assertEquals(0, payloadLength);
+                }
+            });
+
+        return hasResponse;
     }
 
     private MutableBoolean injectAdminRequestControlledEgressListener(
@@ -1928,46 +2026,49 @@ public class ClusterTest
         final AdminResponseCode expectedResponseCode,
         final String expectedMessage)
     {
-        final MutableBoolean responseReceived = new MutableBoolean();
-        cluster.controlledEgressListener(new ControlledEgressListener()
-        {
-            public ControlledFragmentHandler.Action onMessage(
-                final long clusterSessionId,
-                final long timestamp,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length,
-                final Header header)
-            {
-                return ControlledFragmentHandler.Action.ABORT;
-            }
+        final MutableBoolean hasResponse = new MutableBoolean();
 
-            public void onAdminResponse(
-                final long clusterSessionId,
-                final long correlationId,
-                final AdminRequestType requestType,
-                final AdminResponseCode responseCode,
-                final String message,
-                final DirectBuffer payload,
-                final int payloadOffset,
-                final int payloadLength)
+        cluster.controlledEgressListener(
+            new ControlledEgressListener()
             {
-                responseReceived.set(true);
-                assertEquals(expectedCorrelationId, correlationId);
-                assertEquals(expectedRequestType, requestType);
-                assertEquals(expectedResponseCode, responseCode);
-                assertEquals(expectedMessage, message);
-                assertNotNull(payload);
-                final int minPayloadOffset =
-                    MessageHeaderEncoder.ENCODED_LENGTH +
-                    AdminResponseEncoder.BLOCK_LENGTH +
-                    AdminResponseEncoder.messageHeaderLength() +
-                    message.length() +
-                    AdminResponseEncoder.payloadHeaderLength();
-                assertTrue(payloadOffset > minPayloadOffset);
-                assertEquals(0, payloadLength);
-            }
-        });
-        return responseReceived;
+                public ControlledFragmentHandler.Action onMessage(
+                    final long clusterSessionId,
+                    final long timestamp,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length,
+                    final Header header)
+                {
+                    return ControlledFragmentHandler.Action.ABORT;
+                }
+
+                public void onAdminResponse(
+                    final long clusterSessionId,
+                    final long correlationId,
+                    final AdminRequestType requestType,
+                    final AdminResponseCode responseCode,
+                    final String message,
+                    final DirectBuffer payload,
+                    final int payloadOffset,
+                    final int payloadLength)
+                {
+                    hasResponse.set(true);
+                    assertEquals(expectedCorrelationId, correlationId);
+                    assertEquals(expectedRequestType, requestType);
+                    assertEquals(expectedResponseCode, responseCode);
+                    assertEquals(expectedMessage, message);
+                    assertNotNull(payload);
+                    final int minPayloadOffset =
+                        MessageHeaderEncoder.ENCODED_LENGTH +
+                        AdminResponseEncoder.BLOCK_LENGTH +
+                        AdminResponseEncoder.messageHeaderLength() +
+                        message.length() +
+                        AdminResponseEncoder.payloadHeaderLength();
+                    assertTrue(payloadOffset > minPayloadOffset);
+                    assertEquals(0, payloadLength);
+                }
+            });
+
+        return hasResponse;
     }
 }

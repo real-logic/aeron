@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,19 +36,16 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
-import io.aeron.test.driver.DriverOutputConsumer;
 import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
 import org.agrona.collections.Hashing;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -78,25 +75,7 @@ public class TestNode implements AutoCloseable
         try
         {
             mediaDriver = TestMediaDriver.launch(
-                context.mediaDriverContext,
-                TestMediaDriver.shouldRunCMediaDriver() ? new DriverOutputConsumer()
-                {
-                    public void outputFiles(
-                        final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
-                    {
-                        dataCollector.add(stdoutFile.toPath());
-                        dataCollector.add(stderrFile.toPath());
-                    }
-
-                    public void exitCode(final String aeronDirectoryName, final int exitValue)
-                    {
-                    }
-
-                    public void environmentVariables(
-                        final String aeronDirectoryName, final Map<String, String> environment)
-                    {
-                    }
-                } : null);
+                context.mediaDriverContext, TestCluster.clientDriverOutputConsumer(dataCollector));
 
             final String aeronDirectoryName = mediaDriver.context().aeronDirectoryName();
             archive = Archive.launch(context.archiveContext.aeronDirectoryName(aeronDirectoryName));
@@ -106,6 +85,7 @@ public class TestNode implements AutoCloseable
             context.consensusModuleContext
                 .serviceCount(services.length)
                 .aeronDirectoryName(aeronDirectoryName)
+                .isIpcIngressAllowed(true)
                 .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
 
@@ -138,7 +118,7 @@ public class TestNode implements AutoCloseable
         {
             try
             {
-                closeAndDelete();
+                close();
             }
             catch (final Exception e)
             {
@@ -192,45 +172,6 @@ public class TestNode implements AutoCloseable
         {
             isClosed = true;
             CloseHelper.closeAll(consensusModule, () -> CloseHelper.closeAll(containers), archive, mediaDriver);
-        }
-    }
-
-    void closeAndDelete()
-    {
-        Throwable error = null;
-
-        try
-        {
-            CloseHelper.closeAll(
-                this,
-                () ->
-                {
-                    for (final ClusteredServiceContainer c : containers)
-                    {
-                        c.context().deleteDirectory();
-                    }
-                },
-                context.consensusModuleContext::deleteDirectory,
-                context.archiveContext::deleteDirectory,
-                context.mediaDriverContext::deleteDirectory,
-                this::cleanup);
-        }
-        catch (final Exception ex)
-        {
-            error = ex;
-        }
-
-        if (null != error)
-        {
-            LangUtil.rethrowUnchecked(error);
-        }
-    }
-
-    void cleanup()
-    {
-        if (null != mediaDriver)
-        {
-            mediaDriver.cleanup();
         }
     }
 

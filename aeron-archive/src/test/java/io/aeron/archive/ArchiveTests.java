@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,16 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
-public class ArchiveTests
+class ArchiveTests
 {
     private static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
-    public static File makeTestDirectory()
+    static File makeTestDirectory()
     {
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive-test");
         if (archiveDir.exists())
@@ -49,7 +47,7 @@ public class ArchiveTests
         return archiveDir;
     }
 
-    public static void awaitConnectedReply(
+    static void awaitConnectedReply(
         final Subscription controlResponse, final long expectedCorrelationId, final LongConsumer receiveSessionId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
@@ -84,7 +82,7 @@ public class ArchiveTests
         Tests.await(() -> controlResponseAdapter.poll() != 0, TIMEOUT_NS);
     }
 
-    public static void awaitOk(final Subscription controlResponse, final long expectedCorrelationId)
+    static void awaitOk(final Subscription controlResponse, final long expectedCorrelationId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -141,16 +139,5 @@ public class ArchiveTests
         );
 
         Tests.await(() -> controlResponseAdapter.poll() != 0, TIMEOUT_NS);
-    }
-
-    public static TestWatcher newWatcher(final long seed)
-    {
-        return new TestWatcher()
-        {
-            public void testFailed(final ExtensionContext context, final Throwable cause)
-            {
-                System.err.println(context.getDisplayName() + " failed with random seed: " + seed);
-            }
-        };
     }
 }

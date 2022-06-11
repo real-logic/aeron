@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static io.aeron.test.Tests.awaitAvailableWindow;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
@@ -75,7 +73,7 @@ public class StalledLeaderLogReplicationClusterTest
     }
 
     @Test
-    @InterruptAfter(60)
+    @InterruptAfter(120)
     void shouldHandleMultipleElections()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -91,24 +89,21 @@ public class StalledLeaderLogReplicationClusterTest
 
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader(leader0.index());
-        cluster.awaitNewLeadershipEvent(1);
-        awaitAvailableWindow(cluster.client().ingressPublication());
-        assertTrue(cluster.client().sendKeepAlive());
+        cluster.connectClient();
         cluster.startStaticNode(leader0.index(), false);
         awaitElectionClosed(cluster.node(leader0.index()));
 
+        cluster.connectClient();
         cluster.sendMessages(numMessages);
         cluster.awaitResponseMessageCount(numMessages * 2);
         cluster.awaitServicesMessageCount(numMessages * 2);
 
         cluster.stopNode(leader1);
         cluster.awaitLeader(leader1.index());
-        cluster.awaitNewLeadershipEvent(2);
-        awaitAvailableWindow(cluster.client().ingressPublication());
-        assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader1.index(), false);
         awaitElectionClosed(cluster.node(leader1.index()));
 
+        cluster.connectClient();
         cluster.sendMessages(numMessages);
         cluster.awaitResponseMessageCount(numMessages * 3);
         cluster.awaitServicesMessageCount(numMessages * 3);

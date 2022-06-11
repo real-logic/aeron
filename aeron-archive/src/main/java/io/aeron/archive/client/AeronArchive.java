@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,6 +85,7 @@ public final class AeronArchive implements AutoCloseable
     private final Lock lock;
     private final NanoClock nanoClock;
     private final AgentInvoker aeronClientInvoker;
+    private final AgentInvoker agentInvoker;
     private RecordingDescriptorPoller recordingDescriptorPoller;
     private RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller;
 
@@ -97,6 +98,7 @@ public final class AeronArchive implements AutoCloseable
         this.context = context;
         aeron = context.aeron();
         aeronClientInvoker = aeron.conductorAgentInvoker();
+        agentInvoker = context.agentInvoker();
         idleStrategy = context.idleStrategy();
         messageTimeoutNs = context.messageTimeoutNs();
         lock = context.lock();
@@ -204,15 +206,31 @@ public final class AeronArchive implements AutoCloseable
             asyncConnect = new AsyncConnect(ctx, controlResponsePoller, archiveProxy);
             final IdleStrategy idleStrategy = ctx.idleStrategy();
             final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
+            final AgentInvoker delegatingInvoker = ctx.agentInvoker();
+            int previousStep = asyncConnect.step();
 
             AeronArchive aeronArchive;
             while (null == (aeronArchive = asyncConnect.poll()))
             {
+                if (asyncConnect.step() == previousStep)
+                {
+                    idleStrategy.idle();
+                }
+                else
+                {
+                    idleStrategy.reset();
+                    previousStep = asyncConnect.step();
+                }
+
                 if (null != aeronClientInvoker)
                 {
                     aeronClientInvoker.invoke();
                 }
-                idleStrategy.idle();
+
+                if (null != delegatingInvoker)
+                {
+                    delegatingInvoker.invoke();
+                }
             }
 
             return aeronArchive;
@@ -1433,14 +1451,11 @@ public final class AeronArchive implements AutoCloseable
      * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
      * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
      *
-     * If the truncate operation will result in deleting segments then this will occur asynchronously. Before extending
-     * a truncated recording which has segments being asynchronously being deleted then you should await completion
-     * on the {@link io.aeron.archive.codecs.RecordingSignal#DELETE}.
-     *
      * @param recordingId of the stopped recording to be truncated.
      * @param position    to which the recording will be truncated.
+     * @return count of deleted segment files.
      */
-    public void truncateRecording(final long recordingId, final long position)
+    public long truncateRecording(final long recordingId, final long position)
     {
         lock.lock();
         try
@@ -1455,7 +1470,7 @@ public final class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send truncate recording request");
             }
 
-            pollForResponse(lastCorrelationId);
+            return pollForResponse(lastCorrelationId);
         }
         finally
         {
@@ -1469,8 +1484,9 @@ public final class AeronArchive implements AutoCloseable
      * and delete the corresponding segment files. The space in the Catalog will be reclaimed upon compaction.
      *
      * @param recordingId of the stopped recording to be purged.
+     * @return count of deleted segment files.
      */
-    public void purgeRecording(final long recordingId)
+    public long purgeRecording(final long recordingId)
     {
         lock.lock();
         try
@@ -1485,7 +1501,7 @@ public final class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send invalidate recording request");
             }
 
-            pollForResponse(lastCorrelationId);
+            return pollForResponse(lastCorrelationId);
         }
         finally
         {
@@ -2068,7 +2084,7 @@ public final class AeronArchive implements AutoCloseable
 
             checkDeadline(deadlineNs, "awaiting response", correlationId);
             idleStrategy.idle();
-            invokeAeronClient();
+            invokeInvokers();
         }
     }
 
@@ -2083,7 +2099,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (poller.controlSessionId() != controlSessionId)
             {
-                invokeAeronClient();
+                invokeInvokers();
                 continue;
             }
 
@@ -2127,7 +2143,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (poller.controlSessionId() != controlSessionId)
             {
-                invokeAeronClient();
+                invokeInvokers();
                 continue;
             }
 
@@ -2192,7 +2208,7 @@ public final class AeronArchive implements AutoCloseable
                 deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
             }
 
-            invokeAeronClient();
+            invokeInvokers();
 
             if (fragments > 0)
             {
@@ -2234,7 +2250,7 @@ public final class AeronArchive implements AutoCloseable
                 deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
             }
 
-            invokeAeronClient();
+            invokeInvokers();
 
             if (fragments > 0)
             {
@@ -2262,11 +2278,16 @@ public final class AeronArchive implements AutoCloseable
             controlResponsePoller.recordingSignal());
     }
 
-    private void invokeAeronClient()
+    private void invokeInvokers()
     {
         if (null != aeronClientInvoker)
         {
             aeronClientInvoker.invoke();
+        }
+
+        if (null != agentInvoker)
+        {
+            agentInvoker.invoke();
         }
     }
 
@@ -2301,7 +2322,7 @@ public final class AeronArchive implements AutoCloseable
          * Minor version of the network protocol from client to archive. If these don't match then some features may
          * not be available.
          */
-        public static final int PROTOCOL_MINOR_VERSION = 7;
+        public static final int PROTOCOL_MINOR_VERSION = 9;
 
         /**
          * Patch version of the network protocol from client to archive. If these don't match then bug fixes may not
@@ -2406,7 +2427,7 @@ public final class AeronArchive implements AutoCloseable
 
         /**
          * Channel for receiving progress events of recordings from an archive.
-         * For production it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
+         * For production, it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
          * for dynamic subscribers, an endpoint can be added to the subscription side for controlling port usage.
          */
         public static final String RECORDING_EVENTS_CHANNEL_DEFAULT =
@@ -2655,6 +2676,7 @@ public final class AeronArchive implements AutoCloseable
         private ErrorHandler errorHandler;
         private CredentialsSupplier credentialsSupplier;
         private RecordingSignalConsumer recordingSignalConsumer = Configuration.NO_OP_RECORDING_SIGNAL_CONSUMER;
+        private AgentInvoker agentInvoker;
         private boolean ownsAeronClient = false;
 
         /**
@@ -3118,7 +3140,7 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Set the {@link RecordingSignalConsumer} to will be called  when polling for responses from an Archive.
+         * Set the {@link RecordingSignalConsumer} to will be called when polling for responses from an Archive.
          *
          * @param recordingSignalConsumer to called with recording signal events.
          * @return this for a fluent API.
@@ -3130,13 +3152,37 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Set the {@link RecordingSignalConsumer} to will be called  when polling for responses from an Archive.
+         * Set the {@link RecordingSignalConsumer} to will be called when polling for responses from an Archive.
          *
          * @return a recording signal consumer.
          */
         public RecordingSignalConsumer recordingSignalConsumer()
         {
             return recordingSignalConsumer;
+        }
+
+        /**
+         * Set the {@link AgentInvoker} to be invoked in addition to any invoker used by the {@link #aeron()} instance.
+         * <p>
+         * Useful for when running on a low thread count scenario.
+         *
+         * @param agentInvoker to be invoked while awaiting a response in the client.
+         * @return this for a fluent API.
+         */
+        public Context agentInvoker(final AgentInvoker agentInvoker)
+        {
+            this.agentInvoker = agentInvoker;
+            return this;
+        }
+
+        /**
+         * Get the {@link AgentInvoker} to be invoked in addition to any invoker used by the {@link #aeron()} instance.
+         *
+         * @return the {@link AgentInvoker} that is used.
+         */
+        public AgentInvoker agentInvoker()
+        {
+            return agentInvoker;
         }
 
         /**
@@ -3188,10 +3234,12 @@ public final class AeronArchive implements AutoCloseable
             {
                 channelUri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
             }
+
             if (!channelUri.containsKey(CommonContext.MTU_LENGTH_PARAM_NAME))
             {
                 channelUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
             }
+
             if (!channelUri.containsKey(CommonContext.SPARSE_PARAM_NAME))
             {
                 channelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
@@ -3208,9 +3256,9 @@ public final class AeronArchive implements AutoCloseable
     {
         private final Context ctx;
         private final ControlResponsePoller controlResponsePoller;
-        private final NanoClock nanoClock;
         private ArchiveProxy archiveProxy;
         private final long deadlineNs;
+        private long publicationRegistrationId = Aeron.NULL_VALUE;
         private long correlationId = Aeron.NULL_VALUE;
         private long challengeControlSessionId = Aeron.NULL_VALUE;
         private byte[] encodedCredentialsFromChallenge = null;
@@ -3221,13 +3269,12 @@ public final class AeronArchive implements AutoCloseable
             this.ctx = ctx;
 
             final Aeron aeron = ctx.aeron();
-            nanoClock = aeron.context().nanoClock();
             controlResponsePoller = new ControlResponsePoller(
                 aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId()));
 
-            correlationId = aeron.asyncAddExclusivePublication(
+            publicationRegistrationId = aeron.asyncAddExclusivePublication(
                 ctx.controlRequestChannel(), ctx.controlRequestStreamId());
-            deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
+            deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
         }
 
         AsyncConnect(
@@ -3236,9 +3283,8 @@ public final class AeronArchive implements AutoCloseable
             this.ctx = ctx;
             this.controlResponsePoller = controlResponsePoller;
             this.archiveProxy = archiveProxy;
-            this.nanoClock = ctx.aeron().context().nanoClock();
 
-            deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
+            deadlineNs = ctx.aeron().context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
             step = 1;
         }
 
@@ -3251,10 +3297,16 @@ public final class AeronArchive implements AutoCloseable
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
                 CloseHelper.close(errorHandler, controlResponsePoller.subscription());
+
                 if (null != archiveProxy)
                 {
                     CloseHelper.close(errorHandler, archiveProxy.publication());
                 }
+                else if (Aeron.NULL_VALUE != publicationRegistrationId)
+                {
+                    ctx.aeron().asyncRemovePublication(publicationRegistrationId);
+                }
+
                 ctx.close();
             }
         }
@@ -3292,9 +3344,10 @@ public final class AeronArchive implements AutoCloseable
 
             if (0 == step)
             {
-                final ExclusivePublication publication = ctx.aeron().getExclusivePublication(correlationId);
+                final ExclusivePublication publication = ctx.aeron().getExclusivePublication(publicationRegistrationId);
                 if (null != publication)
                 {
+                    publicationRegistrationId = Aeron.NULL_VALUE;
                     archiveProxy = new ArchiveProxy(
                         publication,
                         ctx.idleStrategy(),
@@ -3387,7 +3440,11 @@ public final class AeronArchive implements AutoCloseable
                         throw new ArchiveException("unexpected response: code=" + code);
                     }
 
-                    archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE);
+                    if (!archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE))
+                    {
+                        throw new ArchiveException("failed to send keep alive after archive connect");
+                    }
+
                     aeronArchive = new AeronArchive(ctx, controlResponsePoller, archiveProxy, controlSessionId);
 
                     step(5);
@@ -3405,7 +3462,7 @@ public final class AeronArchive implements AutoCloseable
 
         private void checkDeadline()
         {
-            if (deadlineNs - nanoClock.nanoTime() < 0)
+            if (deadlineNs - ctx.aeron().context().nanoClock().nanoTime() < 0)
             {
                 throw new TimeoutException("Archive connect timeout: step=" + step +
                     (step < 3 ?

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,8 +196,8 @@ public class ClusterLoggingAgentTest
                 case ROLE_CHANGE:
                 {
                     final int offset = index + LOG_HEADER_LENGTH + SIZE_OF_INT;
-                    final String roleChange = buffer.getStringAscii(offset);
-                    if (roleChange.contains("LEADER"))
+                    final String role = buffer.getStringAscii(offset);
+                    if (role.contains("LEADER"))
                     {
                         WAIT_LIST.remove(eventCode);
                     }
@@ -207,8 +207,8 @@ public class ClusterLoggingAgentTest
                 case STATE_CHANGE:
                 {
                     final int offset = index + LOG_HEADER_LENGTH + SIZE_OF_INT;
-                    final String stateChange = buffer.getStringAscii(offset);
-                    if (stateChange.contains("ACTIVE"))
+                    final String state = buffer.getStringAscii(offset);
+                    if (state.contains("ACTIVE"))
                     {
                         WAIT_LIST.remove(eventCode);
                     }
@@ -218,8 +218,8 @@ public class ClusterLoggingAgentTest
                 case ELECTION_STATE_CHANGE:
                 {
                     final int offset = index + LOG_HEADER_LENGTH + 2 * SIZE_OF_INT + 6 * SIZE_OF_LONG;
-                    final String stateChange = buffer.getStringAscii(offset);
-                    if (stateChange.contains("CLOSED"))
+                    final String state = buffer.getStringAscii(offset);
+                    if (state.contains("CLOSED"))
                     {
                         WAIT_LIST.remove(eventCode);
                     }

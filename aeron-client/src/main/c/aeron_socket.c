@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include "util/aeron_error.h"
 #include "command/aeron_control_protocol.h"
 #include "aeron_alloc.h"
+#include "util/aeron_netutil.h"
 
 #if defined(AERON_COMPILER_GCC)
 
@@ -69,6 +70,34 @@ void aeron_close_socket(aeron_socket_t socket)
     close(socket);
 }
 
+int aeron_connect(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length)
+{
+    if (connect(fd, address, address_length) < 0)
+    {
+        char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+        aeron_format_source_identity(addr_str, sizeof(addr_str), (struct sockaddr_storage *)address);
+        AERON_SET_ERR(errno, "failed to connect to address: %s", addr_str);
+
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_bind(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length)
+{
+    if (bind(fd, address, address_length) < 0)
+    {
+        char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
+        aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, (struct sockaddr_storage *)address);
+        AERON_SET_ERR(errno, "failed to bind(%d, %s)", fd, buffer);
+        return -1;
+    }
+
+    return 0;
+}
+
+
 int aeron_getifaddrs(struct ifaddrs **ifap)
 {
     if (getifaddrs(ifap) < 0)
@@ -91,8 +120,35 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
     if (result < 0)
     {
-        AERON_SET_ERR(errno, "failed sendmsg(fd=%d,...)", fd);
-        return -1;
+        if (EAGAIN == errno || EWOULDBLOCK == errno || ECONNREFUSED == errno || EINTR == errno)
+        {
+            return 0;
+        }
+        else
+        {
+            AERON_SET_ERR(errno, "failed sendmsg(fd=%d,...)", fd);
+            return -1;
+        }
+    }
+
+    return result;
+}
+
+ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
+{
+    ssize_t result = send(fd, buf, len, flags);
+
+    if (result < 0)
+    {
+        if (EAGAIN == errno || EWOULDBLOCK == errno || ECONNREFUSED == errno || EINTR == errno)
+        {
+            return 0;
+        }
+        else
+        {
+            AERON_SET_ERR(errno, "failed send(fd=%d,...)", fd);
+            return -1;
+        }
     }
 
     return result;
@@ -104,7 +160,7 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
     if (result < 0)
     {
-        if (EINTR == errno || EAGAIN == errno || EWOULDBLOCK == errno)
+        if (EAGAIN == errno || EWOULDBLOCK == errno || ECONNREFUSED == errno || EINTR == errno)
         {
             return 0;
         }
@@ -169,7 +225,6 @@ int aeron_setsockopt(aeron_socket_t fd, int level, int optname, const void *optv
 
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
-#include <stdio.h>
 
 int aeron_net_init()
 {
@@ -410,6 +465,25 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
     return size;
 }
 
+ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
+{
+    const DWORD size = send(fd, (const char *)buf, (int)len, flags);
+
+    if (SOCKET_ERROR == size)
+    {
+        const int err = WSAGetLastError();
+        if (WSAEWOULDBLOCK == err || WSAECONNREFUSED == err)
+        {
+            return 0;
+        }
+
+        AERON_SET_ERR_WIN(err, "WSASendTo(fd=%d,...)", fd);
+        return -1;
+    }
+
+    return size;
+}
+
 ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 {
     DWORD size = 0;
@@ -471,6 +545,36 @@ aeron_socket_t aeron_socket(int domain, int type, int protocol)
 void aeron_close_socket(aeron_socket_t socket)
 {
     closesocket(socket);
+}
+
+int aeron_connect(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length)
+{
+    if (SOCKET_ERROR == connect(fd, address, address_length))
+    {
+        char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+        aeron_format_source_identity(addr_str, sizeof(addr_str), (struct sockaddr_storage *)address);
+        struct sockaddr_in *a = (struct sockaddr_in *) address;
+        printf("addr: %lu, %d\n", a->sin_addr.s_addr, a->sin_port);
+        AERON_SET_ERR_WIN(WSAGetLastError(), "failed to connect to address: %s", addr_str);
+
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_bind(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length)
+{
+    if (SOCKET_ERROR == bind(fd, address, address_length))
+    {
+        char addr_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+        aeron_format_source_identity(addr_str, sizeof(addr_str), (struct sockaddr_storage *)address);
+        AERON_SET_ERR_WIN(WSAGetLastError(), "failed to bind to address: %s", addr_str);
+
+        return -1;
+    }
+
+    return 0;
 }
 
 /* aeron_getsockopt and aeron_setsockopt ensure a consistent signature between platforms

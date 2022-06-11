@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1563,9 +1563,14 @@ public final class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder initialPosition(final long position, final int initialTermId, final int termLength)
     {
-        if (position < 0 || 0 != (position & (FRAME_ALIGNMENT - 1)))
+        if (position < 0)
         {
-            throw new IllegalArgumentException("invalid position: " + position);
+            throw new IllegalArgumentException("invalid position=" + position + " < 0");
+        }
+        if (0 != (position & (FRAME_ALIGNMENT - 1)))
+        {
+            throw new IllegalArgumentException(
+                "invalid position=" + position + " does not have frame alignment=" + FRAME_ALIGNMENT);
         }
 
         final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);

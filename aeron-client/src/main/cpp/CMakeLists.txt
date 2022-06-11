@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2021 Real Logic Limited.
+# Copyright 2014-2022 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUriStringBuilder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ClientConductor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/CncFileDescriptor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/CncFileReader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Context.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ControlledFragmentAssembler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Counter.h

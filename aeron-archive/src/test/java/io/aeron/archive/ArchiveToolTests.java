@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,6 @@ import static java.nio.file.Files.createTempDirectory;
 import static java.nio.file.Files.deleteIfExists;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.Collections.addAll;
 import static java.util.Collections.emptySet;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.of;
@@ -1196,10 +1195,10 @@ class ArchiveToolTests
         }
 
         final List<String> segmentFiles = new ArrayList<>();
-        addAll(segmentFiles, listSegmentFiles(archiveDir, validRecording3));
-        addAll(segmentFiles, listSegmentFiles(archiveDir, validRecording6));
+        segmentFiles.addAll(listSegmentFiles(archiveDir, validRecording3));
+        segmentFiles.addAll(listSegmentFiles(archiveDir, validRecording6));
 
-        assertTrue(segmentFiles.stream().allMatch(file -> new File(archiveDir, file).exists()),
+        assertTrue(segmentFiles.stream().allMatch((file) -> new File(archiveDir, file).exists()),
             "Non-existing segment files");
 
         compact(out, archiveDir, epochClock);

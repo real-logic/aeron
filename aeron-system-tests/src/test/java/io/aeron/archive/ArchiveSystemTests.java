@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,6 +131,17 @@ class ArchiveSystemTests
     static void pollForSignal(final RecordingSignalAdapter recordingSignalAdapter)
     {
         while (0 == recordingSignalAdapter.poll())
+        {
+            Tests.yield();
+        }
+    }
+
+    static void awaitSignal(
+        final MutableReference<RecordingSignal> signalRef,
+        final RecordingSignalAdapter adapter,
+        final RecordingSignal expectedSignal)
+    {
+        while (expectedSignal != awaitSignal(signalRef, adapter))
         {
             Tests.yield();
         }

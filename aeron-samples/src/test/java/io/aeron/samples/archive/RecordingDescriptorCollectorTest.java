@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
 @SlowTest
+@SuppressWarnings("try")
 public class RecordingDescriptorCollectorTest
 {
     @Test
@@ -46,7 +47,7 @@ public class RecordingDescriptorCollectorTest
     void shouldCollectPagesOfRecordingDescriptors(@TempDir final Path tempDir)
     {
         try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));
-            Archive archive = Archive.launch(new Archive.Context()
+            Archive ignore = Archive.launch(new Archive.Context()
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .archiveDir(tempDir.resolve("archive").toFile())
                 .deleteArchiveOnStart(true));
@@ -82,7 +83,7 @@ public class RecordingDescriptorCollectorTest
     void shouldAllowUserToRetainDescriptorsToPreventReuse(@TempDir final Path tempDir)
     {
         try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));
-            Archive archive = Archive.launch(new Archive.Context()
+            Archive ignore = Archive.launch(new Archive.Context()
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .archiveDir(tempDir.resolve("archive").toFile())
                 .deleteArchiveOnStart(true));
@@ -123,7 +124,7 @@ public class RecordingDescriptorCollectorTest
     void shouldShouldNotReuseDescriptorIfPoolSizeIsZero(@TempDir final Path tempDir)
     {
         try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));
-            Archive archive = Archive.launch(new Archive.Context()
+            Archive ignore = Archive.launch(new Archive.Context()
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .archiveDir(tempDir.resolve("archive").toFile())
                 .deleteArchiveOnStart(true));

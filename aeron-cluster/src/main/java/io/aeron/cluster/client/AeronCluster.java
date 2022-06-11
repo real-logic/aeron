@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,6 +110,7 @@ public final class AeronCluster implements AutoCloseable
             final long deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
             asyncConnect = new AsyncConnect(ctx, subscription, deadlineNs);
             final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
+            final AgentInvoker agentInvoker = ctx.agentInvoker();
             final IdleStrategy idleStrategy = ctx.idleStrategy();
 
             AeronCluster aeronCluster;
@@ -119,6 +120,11 @@ public final class AeronCluster implements AutoCloseable
                 if (null != aeronClientInvoker)
                 {
                     aeronClientInvoker.invoke();
+                }
+
+                if (null != agentInvoker)
+                {
+                    agentInvoker.invoke();
                 }
 
                 if (step != asyncConnect.step())
@@ -445,6 +451,7 @@ public final class AeronCluster implements AutoCloseable
             }
 
             idleStrategy.idle();
+            invokeInvokers();
         }
 
         return false;
@@ -502,6 +509,7 @@ public final class AeronCluster implements AutoCloseable
             }
 
             idleStrategy.idle();
+            invokeInvokers();
         }
 
         return false;
@@ -623,7 +631,11 @@ public final class AeronCluster implements AutoCloseable
         if (null == newLeader.publication)
         {
             final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
-            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, newLeader.endpoint);
+            if (channelUri.isUdp())
+            {
+                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, newLeader.endpoint);
+            }
+
             publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
             newLeader.publication = publication;
         }
@@ -872,6 +884,20 @@ public final class AeronCluster implements AutoCloseable
             }
 
             idleStrategy.idle();
+            invokeInvokers();
+        }
+    }
+
+    private void invokeInvokers()
+    {
+        if (null != ctx.aeron().conductorAgentInvoker())
+        {
+            ctx.aeron().conductorAgentInvoker().invoke();
+        }
+
+        if (null != ctx.agentInvoker())
+        {
+            ctx.agentInvoker().invoke();
         }
     }
 
@@ -902,13 +928,13 @@ public final class AeronCluster implements AutoCloseable
          * Minor version of the network protocol from client to consensus module. If these don't match then some
          * features may not be available.
          */
-        public static final int PROTOCOL_MINOR_VERSION = 1;
+        public static final int PROTOCOL_MINOR_VERSION = 2;
 
         /**
          * Patch version of the network protocol from client to consensus module. If these don't match then bug fixes
          * may not have been applied.
          */
-        public static final int PROTOCOL_PATCH_VERSION = 1;
+        public static final int PROTOCOL_PATCH_VERSION = 0;
 
         /**
          * Combined semantic version for the client to consensus module protocol.
@@ -1087,6 +1113,7 @@ public final class AeronCluster implements AutoCloseable
         private boolean isDirectAssemblers = false;
         private EgressListener egressListener;
         private ControlledEgressListener controlledEgressListener;
+        private AgentInvoker agentInvoker;
 
         /**
          * Perform a shallow copy of the object.
@@ -1153,6 +1180,15 @@ public final class AeronCluster implements AutoCloseable
                         throw new ConfigurationException(
                             "controlledEgressListener must be specified on AeronCluster.Context");
                     };
+            }
+
+            if (ingressChannel.startsWith(CommonContext.IPC_CHANNEL))
+            {
+                if (null != ingressEndpoints)
+                {
+                    throw new ConfigurationException(
+                        "AeronCluster.Context ingressEndpoints must be null when using IPC ingress");
+                }
             }
         }
 
@@ -1554,6 +1590,30 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
+         * Set the {@link AgentInvoker} to be invoked in addition to any invoker used by the {@link #aeron()} instance.
+         * <p>
+         * Useful for when running on a low thread count scenario.
+         *
+         * @param agentInvoker to be invoked while awaiting a response in the client or when awaiting completion.
+         * @return this for a fluent API.
+         */
+        public Context agentInvoker(final AgentInvoker agentInvoker)
+        {
+            this.agentInvoker = agentInvoker;
+            return this;
+        }
+
+        /**
+         * Get the {@link AgentInvoker} to be invoked in addition to any invoker used by the {@link #aeron()} instance.
+         *
+         * @return the {@link AgentInvoker} that is used.
+         */
+        public AgentInvoker agentInvoker()
+        {
+            return agentInvoker;
+        }
+
+        /**
          * Close the context and free applicable resources.
          * <p>
          * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
@@ -1744,7 +1804,11 @@ public final class AeronCluster implements AutoCloseable
                 {
                     try
                     {
-                        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+                        if (channelUri.isUdp())
+                        {
+                            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+                        }
+
                         member.publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
                         ++publicationCount;
                     }
@@ -1885,7 +1949,12 @@ public final class AeronCluster implements AutoCloseable
             {
                 final MemberIngress member = memberByIdMap.get(leaderMemberId);
                 final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
-                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+
+                if (channelUri.isUdp())
+                {
+                    channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+                }
+
                 ingressPublication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
             }
 

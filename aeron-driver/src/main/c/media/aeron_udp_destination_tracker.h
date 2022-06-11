@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ typedef struct aeron_udp_destination_tracker_stct
     aeron_clock_cache_t *cached_clock;
     int64_t destination_timeout_ns;
     aeron_udp_channel_data_paths_t *data_paths;
+    int64_t *num_destinations_addr;
 }
 aeron_udp_destination_tracker_t;
 
@@ -61,13 +62,12 @@ int aeron_udp_destination_tracker_init(
     int64_t timeout_ns);
 int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker);
 
-int aeron_udp_destination_tracker_sendmmsg(
+int aeron_udp_destination_tracker_send(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *mmsghdr,
-    size_t vlen);
-int aeron_udp_destination_tracker_sendmsg(
-    aeron_udp_destination_tracker_t *tracker, aeron_udp_channel_transport_t *transport, struct msghdr *msghdr);
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent);
 
 int aeron_udp_destination_tracker_on_status_message(
     aeron_udp_destination_tracker_t *tracker, const uint8_t *buffer, size_t len, struct sockaddr_storage *addr);
@@ -91,5 +91,11 @@ void aeron_udp_destination_tracker_check_for_re_resolution(
 
 void aeron_udp_destination_tracker_resolution_change(
     aeron_udp_destination_tracker_t *tracker, const char *endpoint_name, struct sockaddr_storage *addr);
+
+inline void aeron_udp_destination_tracker_set_counter(
+    aeron_udp_destination_tracker_t *tracker, aeron_atomic_counter_t *counter)
+{
+    tracker->num_destinations_addr = counter->value_addr;
+}
 
 #endif //AERON_UDP_DESTINATION_TRACKER_H

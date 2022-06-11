@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ public class CubicCongestionControlConfiguration
     /**
      * Property name for accounting for TCP behavior in low RTT values after a loss.
      * <p>
-     * <b>WARNING:</b> Be aware that throughput utilization becomes important. Turning this on may drastically be off
-     * the necessary throughput if utilization is low.
+     * <b>WARNING:</b> Be aware that throughput utilization becomes important. Turning this on can result in being
+     * drastically be off the necessary throughput if utilization is low.
      */
     public static final String TCP_MODE_PROP_NAME = "aeron.CubicCongestionControl.tcpMode";
 

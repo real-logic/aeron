@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,12 +48,12 @@ typedef struct aeron_driver_receiver_stct
 {
     aeron_driver_receiver_proxy_t receiver_proxy;
     aeron_udp_transport_poller_t poller;
-
     struct aeron_driver_receiver_buffers_stct
     {
-        uint8_t *buffers[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
-        struct iovec iov[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
-        struct sockaddr_storage addrs[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
+        size_t vector_capacity;
+        uint8_t *buffers[AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX];
+        struct iovec iov[AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX];
+        struct sockaddr_storage addrs[AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX];
     }
     recv_buffers;
 

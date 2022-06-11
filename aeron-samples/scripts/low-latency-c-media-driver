@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ##
-## Copyright 2014-2021 Real Logic Limited.
+## Copyright 2014-2022 Real Logic Limited.
 ##
 ## Licensed under the Apache License, Version 2.0 (the "License");
 ## you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 AERON_BUILD_DIR=../../cppbuild/Release
 
 export AERON_TERM_BUFFER_SPARSE_FILE="0"
-export AERON_MTU_LENGTH="8k"
 export AERON_SOCKET_SO_RCVBUF="2m"
 export AERON_SOCKET_SO_SNDBUF="2m"
 export AERON_RCV_INITIAL_WINDOW_LENGTH="2m"
@@ -26,5 +25,7 @@ export AERON_THREADING_MODE="DEDICATED"
 export AERON_CONDUCTOR_IDLE_STRATEGY="spin"
 export AERON_SENDER_IDLE_STRATEGY="noop"
 export AERON_RECEIVER_IDLE_STRATEGY="noop"
+export AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND="2"
+export AERON_PRINT_CONFIGURATION="1"
 
 ${AERON_BUILD_DIR}/binaries/aeronmd

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ class DriverInterceptor
     static class UntetheredSubscriptionStateChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void stateChange(
+        static <E extends Enum<E>> void logStateChange(
             final E oldState, final E newState, final long subscriptionId, final int streamId, final int sessionId)
         {
             LOGGER.logUntetheredSubscriptionStateChange(oldState, newState, subscriptionId, streamId, sessionId);

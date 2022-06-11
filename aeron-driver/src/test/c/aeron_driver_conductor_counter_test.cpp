@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
 
     testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
-    doWorkForNs((m_context.m_context->client_liveness_timeout_ns * 2));
+    doWorkForNs((int64_t)(m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
 
     EXPECT_CALL(m_mockCallbacks, onCounter(_, _, _, _, _, _)).Times(testing::AnyNumber());
@@ -133,7 +133,7 @@ TEST_F(DriverConductorCounterTest, shouldRemoveMultipleCountersOnClientTimeout)
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(3);
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 
-    doWorkForNs((m_context.m_context->client_liveness_timeout_ns * 2));
+    doWorkForNs((int64_t)(m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
 }
 
@@ -152,7 +152,7 @@ TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
         .WillOnce(CaptureCounterId(&counter_id));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 
-    int64_t timeout = m_context.m_context->client_liveness_timeout_ns * 2;
+    int64_t timeout = (int64_t)m_context.m_context->client_liveness_timeout_ns * 2;
 
     doWorkForNs(
         timeout,

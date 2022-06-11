@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -422,8 +422,7 @@ public:
     inline std::string getStringWithoutLength(util::index_t offset, std::size_t length) const
     {
         boundsCheck(offset, length);
-        return std::string(
-            m_buffer + static_cast<std::size_t>(offset), m_buffer + static_cast<std::size_t>(offset) + length);
+        return { m_buffer + static_cast<std::size_t>(offset), m_buffer + static_cast<std::size_t>(offset) + length };
     }
 
     inline std::int32_t getStringLength(util::index_t offset) const

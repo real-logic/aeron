@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -239,8 +239,9 @@ class CatalogTest
     @Test
     void shouldAllowMultipleInstancesForSameStream()
     {
-        try (Catalog ignore = new Catalog(archiveDir, clock))
+        try (Catalog catalog = new Catalog(archiveDir, clock))
         {
+            assertEquals(CAPACITY, catalog.capacity());
             final long newRecordingId = newRecording();
             assertNotEquals(recordingOneId, newRecordingId);
         }
@@ -414,10 +415,9 @@ class CatalogTest
 
     private long newRecording()
     {
-        final long newRecordingId;
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
-            newRecordingId = catalog.addNewRecording(
+            return catalog.addNewRecording(
                 0L,
                 0L,
                 0,
@@ -430,8 +430,6 @@ class CatalogTest
                 "channelG?tag=f",
                 "sourceA");
         }
-
-        return newRecordingId;
     }
 
     @Test

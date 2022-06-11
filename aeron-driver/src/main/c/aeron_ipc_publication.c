@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,29 +100,29 @@ int aeron_ipc_publication_create(
 
     if (params->has_position)
     {
-        int64_t term_id = params->term_id;
-        int32_t term_count = params->term_id - initial_term_id;
+        int32_t term_id = params->term_id;
+        int32_t term_count = aeron_logbuffer_compute_term_count(params->term_id, initial_term_id);
         size_t active_index = aeron_logbuffer_index_by_term_count(term_count);
 
         _pub->log_meta_data->term_tail_counters[active_index] =
-            (term_id * ((int64_t)1 << 32)) | params->term_offset;
+            (term_id * (INT64_C(1) << 32)) | (int64_t)params->term_offset;
 
         for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
         {
-            int64_t expected_term_id = (term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
+            int32_t expected_term_id = (term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
             active_index = (active_index + 1) % AERON_LOGBUFFER_PARTITION_COUNT;
-            _pub->log_meta_data->term_tail_counters[active_index] = expected_term_id * ((int64_t)1 << 32);
+            _pub->log_meta_data->term_tail_counters[active_index] = expected_term_id * (INT64_C(1) << 32);
         }
 
         _pub->log_meta_data->active_term_count = term_count;
     }
     else
     {
-        _pub->log_meta_data->term_tail_counters[0] = initial_term_id * ((int64_t)1 << 32);
+        _pub->log_meta_data->term_tail_counters[0] = initial_term_id * (INT64_C(1) << 32);
         for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
         {
-            int64_t expected_term_id = (initial_term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
-            _pub->log_meta_data->term_tail_counters[i] = expected_term_id * ((int64_t)1 << 32);
+            int32_t expected_term_id = (initial_term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
+            _pub->log_meta_data->term_tail_counters[i] = expected_term_id * (INT64_C(1) << 32);
         }
 
         _pub->log_meta_data->active_term_count = 0;
@@ -141,6 +141,7 @@ int aeron_ipc_publication_create(
     aeron_logbuffer_fill_default_header(
         _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
+    _pub->conductor_fields.subscribable.correlation_id = registration_id;
     _pub->conductor_fields.subscribable.array = NULL;
     _pub->conductor_fields.subscribable.length = 0;
     _pub->conductor_fields.subscribable.capacity = 0;
@@ -163,6 +164,8 @@ int aeron_ipc_publication_create(
     _pub->pub_pos_position.counter_id = pub_pos_position->counter_id;
     _pub->pub_pos_position.value_addr = pub_pos_position->value_addr;
     _pub->initial_term_id = initial_term_id;
+    _pub->starting_term_id = params->has_position ? params->term_id : initial_term_id;
+    _pub->starting_term_offset = params->has_position ? params->term_offset : 0;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
     _pub->term_window_length = (int64_t)aeron_producer_window_length(
         context->ipc_publication_window_length, params->term_length);
@@ -273,7 +276,7 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
         uint64_t *ptr = (uint64_t *)(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset);
         AERON_PUT_ORDERED(*ptr, (uint64_t)0);
 
-        publication->conductor_fields.clean_position = clean_position + length;
+        publication->conductor_fields.clean_position = (int64_t)(clean_position + length);
     }
 }
 
@@ -294,8 +297,8 @@ void aeron_ipc_publication_check_untethered_subscriptions(
         }
         else
         {
-            int64_t window_limit_timeout_ns = conductor->context->untethered_window_limit_timeout_ns;
-            int64_t resting_timeout_ns = conductor->context->untethered_resting_timeout_ns;
+            int64_t window_limit_timeout_ns = (int64_t)conductor->context->untethered_window_limit_timeout_ns;
+            int64_t resting_timeout_ns = (int64_t)conductor->context->untethered_resting_timeout_ns;
 
             switch (tetherable_position->state)
             {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -375,4 +375,11 @@ TEST_F(CExclusiveTermAppenderTest, shouldAppendFragmentedFromVectorsToEmptyLog)
         iov[1].iov_base + (maxPayloadLength - iov[0].iov_len),
         iov[1].iov_len - (maxPayloadLength - iov[0].iov_len)),
         0);
+}
+
+TEST_F(CExclusiveTermAppenderTest, shouldHandleNegativeTermIdInPutRawTailOrdered)
+{
+    int64_t p;
+    aeron_exclusive_term_appender_put_raw_tail_ordered(&p, -1, 0);
+    std::cout << p << std::endl;
 }

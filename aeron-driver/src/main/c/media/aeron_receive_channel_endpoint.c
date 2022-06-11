@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,25 +182,34 @@ int aeron_receive_channel_endpoint_close(aeron_receive_channel_endpoint_t *endpo
     return 0;
 }
 
-int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr)
+int aeron_receive_channel_endpoint_send(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *address,
+    struct iovec *iov)
 {
-    int min_bytes_sent = msghdr->msg_iov->iov_len;
+    int64_t min_bytes_sent = (int64_t)iov->iov_len;
+    int64_t bytes_sent = 0;
 
-    for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
+    const int sendmsg_result = destination->data_paths->send_func(
+        destination->data_paths, &destination->transport, address, iov, 1, &bytes_sent);
+
+    if (0 <= sendmsg_result)
     {
-        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
-        const int sendmsg_result = destination->data_paths->sendmsg_func(
-            destination->data_paths, &destination->transport, msghdr);
-
-        min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
+        min_bytes_sent = bytes_sent < min_bytes_sent ? bytes_sent : min_bytes_sent;
+    }
+    else
+    {
+        min_bytes_sent = sendmsg_result;
     }
 
-    return min_bytes_sent;
+    return (int)min_bytes_sent;
 }
 
 int aeron_receive_channel_endpoint_send_sm(
     aeron_receive_channel_endpoint_t *endpoint,
-    struct sockaddr_storage *addr,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *control_addr,
     int32_t stream_id,
     int32_t session_id,
     int32_t term_id,
@@ -213,8 +222,7 @@ int aeron_receive_channel_endpoint_send_sm(
     aeron_status_message_optional_header_t *sm_optional_header =
         (aeron_status_message_optional_header_t *)(buffer + sizeof(aeron_status_message_header_t));
 
-    struct iovec iov[1];
-    struct msghdr msghdr;
+    struct iovec iov;
 
     const int32_t frame_length = endpoint->group_tag.is_present ?
         sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t) :
@@ -232,18 +240,11 @@ int aeron_receive_channel_endpoint_send_sm(
     sm_header->receiver_id = endpoint->receiver_id;
     sm_optional_header->group_tag = endpoint->group_tag.value;
 
-    iov[0].iov_base = buffer;
-    iov[0].iov_len = (size_t)frame_length;
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = addr;
-    msghdr.msg_namelen = AERON_ADDR_LEN(addr);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
+    iov.iov_base = buffer;
+    iov.iov_len = (size_t)frame_length;
 
-    int bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr);
-    if (bytes_sent != (int)iov[0].iov_len)
+    int bytes_sent = aeron_receive_channel_endpoint_send(endpoint, destination, control_addr, &iov);
+    if (bytes_sent != (int)iov.iov_len)
     {
         if (bytes_sent >= 0)
         {
@@ -256,6 +257,7 @@ int aeron_receive_channel_endpoint_send_sm(
 
 int aeron_receive_channel_endpoint_send_nak(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id,
@@ -265,8 +267,7 @@ int aeron_receive_channel_endpoint_send_nak(
 {
     uint8_t buffer[sizeof(aeron_nak_header_t)];
     aeron_nak_header_t *nak_header = (aeron_nak_header_t *)buffer;
-    struct iovec iov[1];
-    struct msghdr msghdr;
+    struct iovec iov;
 
     nak_header->frame_header.frame_length = sizeof(aeron_nak_header_t);
     nak_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -278,18 +279,11 @@ int aeron_receive_channel_endpoint_send_nak(
     nak_header->term_offset = term_offset;
     nak_header->length = length;
 
-    iov[0].iov_base = buffer;
-    iov[0].iov_len = sizeof(aeron_nak_header_t);
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = addr;
-    msghdr.msg_namelen = AERON_ADDR_LEN(addr);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
+    iov.iov_base = buffer;
+    iov.iov_len = sizeof(aeron_nak_header_t);
 
-    int bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr);
-    if (bytes_sent != (int)iov[0].iov_len)
+    int bytes_sent = aeron_receive_channel_endpoint_send(endpoint, destination, addr, &iov);
+    if (bytes_sent != (int)iov.iov_len)
     {
         if (bytes_sent >= 0)
         {
@@ -302,6 +296,7 @@ int aeron_receive_channel_endpoint_send_nak(
 
 int aeron_receive_channel_endpoint_send_rttm(
     aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
     struct sockaddr_storage *addr,
     int32_t stream_id,
     int32_t session_id,
@@ -311,8 +306,7 @@ int aeron_receive_channel_endpoint_send_rttm(
 {
     uint8_t buffer[sizeof(aeron_rttm_header_t)];
     aeron_rttm_header_t *rttm_header = (aeron_rttm_header_t *)buffer;
-    struct iovec iov[1];
-    struct msghdr msghdr;
+    struct iovec iov;
 
     rttm_header->frame_header.frame_length = sizeof(aeron_rttm_header_t);
     rttm_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -324,18 +318,11 @@ int aeron_receive_channel_endpoint_send_rttm(
     rttm_header->reception_delta = reception_delta;
     rttm_header->receiver_id = endpoint->receiver_id;
 
-    iov[0].iov_base = buffer;
-    iov[0].iov_len = sizeof(aeron_rttm_header_t);
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = addr;
-    msghdr.msg_namelen = AERON_ADDR_LEN(addr);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
+    iov.iov_base = buffer;
+    iov.iov_len = sizeof(aeron_rttm_header_t);
 
-    int bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr);
-    if (bytes_sent != (int)iov[0].iov_len)
+    int bytes_sent = aeron_receive_channel_endpoint_send(endpoint, destination, addr, &iov);
+    if (bytes_sent != (int)iov.iov_len)
     {
         if (bytes_sent >= 0)
         {
@@ -429,10 +416,7 @@ static void aeron_receive_channel_endpoint_apply_timestamps(
     uint8_t *buffer,
     size_t length)
 {
-    aeron_data_header_t *data_header = (aeron_data_header_t *)buffer;
-
-    if (AERON_HDR_TYPE_DATA == data_header->frame_header.type &&
-        !aeron_publication_image_is_heartbeat(buffer, length))
+    if (!aeron_publication_image_is_heartbeat(buffer, length))
     {
         if (NULL != media_receive_timestamp)
         {
@@ -942,7 +926,8 @@ int aeron_receive_channel_endpoint_add_pending_setup_destination(
         }
 
         if (aeron_receive_channel_endpoint_send_sm(
-            endpoint, &destination->current_control_addr, 0, 0, 0, 0, 0, AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
+            endpoint, destination, &destination->current_control_addr, 0, 0, 0, 0, 0,
+            AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
         {
             AERON_APPEND_ERR("%s", "Failed to send sm for receiver");
             return -1;
@@ -959,7 +944,7 @@ int aeron_receive_channel_endpoint_add_pending_setup(
 {
     for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
     {
-        aeron_receive_destination_t *destination = endpoint->destinations.array[0].destination;
+        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
         if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination) < 0)
         {
             AERON_APPEND_ERR("%s", "");

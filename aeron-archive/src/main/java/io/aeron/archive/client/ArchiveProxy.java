@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -740,10 +740,6 @@ public final class ArchiveProxy
     /**
      * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
      * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
-     *
-     * If the truncate operation will result in deleting segments then this will occur asynchronously. Before extending
-     * a truncated recording which has segments being asynchronously being deleted then you should await completion
-     * on the {@link io.aeron.archive.codecs.RecordingSignal#DELETE}.
      *
      * @param recordingId      of the stopped recording to be truncated.
      * @param position         to which the recording will be truncated.

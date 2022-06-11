@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
@@ -44,7 +45,6 @@ import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermGapFiller.tryFillGap;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.UnsafeAccess.UNSAFE;
 
 class PublicationImagePadding1
 {
@@ -87,33 +87,22 @@ class PublicationImagePadding3 extends PublicationImageReceiverFields
 }
 
 /**
- * State maintained for active sessionIds within a channel for receiver processing
+ * State maintained for active sessionIds within a channel for receiver processing.
  */
 public final class PublicationImage
     extends PublicationImagePadding3
     implements LossHandler, DriverManagedResource, Subscribable
 {
-    private static final long BEGIN_SM_CHANGE_OFFSET;
-    private static final long END_SM_CHANGE_OFFSET;
-
-    static
-    {
-        try
-        {
-            BEGIN_SM_CHANGE_OFFSET = UNSAFE.objectFieldOffset(
-                PublicationImage.class.getDeclaredField("beginSmChange"));
-            END_SM_CHANGE_OFFSET = UNSAFE.objectFieldOffset(PublicationImage.class.getDeclaredField("endSmChange"));
-        }
-        catch (final Exception ex)
-        {
-            throw new RuntimeException(ex);
-        }
-    }
-
     enum State
     {
         INIT, ACTIVE, DRAINING, LINGER, DONE
     }
+
+    private static final AtomicLongFieldUpdater<PublicationImage> BEGIN_SM_CHANGE_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(PublicationImage.class, "beginSmChange");
+
+    private static final AtomicLongFieldUpdater<PublicationImage> END_SM_CHANGE_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(PublicationImage.class, "endSmChange");
 
     private volatile long beginSmChange = Aeron.NULL_VALUE;
     private volatile long endSmChange = Aeron.NULL_VALUE;
@@ -315,6 +304,14 @@ public final class PublicationImage
     public String channel()
     {
         return channelEndpoint.originalUriString();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long subscribableRegistrationId()
+    {
+        return correlationId;
     }
 
     /**
@@ -624,7 +621,7 @@ public final class PublicationImage
             final long smPosition = nextSmPosition;
             final int receiverWindowLength = nextSmReceiverWindowLength;
 
-            UNSAFE.loadFence();
+            MemoryAccess.acquireFence();
 
             if (changeNumber == beginSmChange)
             {
@@ -666,7 +663,7 @@ public final class PublicationImage
             final int termOffset = lossTermOffset;
             final int length = lossLength;
 
-            UNSAFE.loadFence();
+            MemoryAccess.acquireFence();
 
             if (changeNumber == beginLossChange)
             {
@@ -889,11 +886,13 @@ public final class PublicationImage
     {
         final long changeNumber = beginSmChange + 1;
 
-        UNSAFE.putOrderedLong(this, BEGIN_SM_CHANGE_OFFSET, changeNumber);
-        UNSAFE.storeFence();
+        BEGIN_SM_CHANGE_UPDATER.lazySet(this, changeNumber);
+        MemoryAccess.releaseFence();
+
         nextSmPosition = smPosition;
         nextSmReceiverWindowLength = receiverWindowLength;
-        UNSAFE.putOrderedLong(this, END_SM_CHANGE_OFFSET, changeNumber);
+
+        END_SM_CHANGE_UPDATER.lazySet(this, changeNumber);
     }
 
     private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)

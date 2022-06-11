@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ int aeron_receive_destination_create(
         &_destination->transport,
         &destination_channel->remote_data,
         &destination_channel->local_data,
+        NULL,
         destination_channel->interface_index,
         0 != destination_channel->multicast_ttl ? destination_channel->multicast_ttl : context->multicast_ttl,
         socket_rcvbuf,

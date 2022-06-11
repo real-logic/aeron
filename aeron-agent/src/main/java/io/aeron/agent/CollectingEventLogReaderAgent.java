@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import javax.management.*;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
@@ -43,6 +44,7 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
      * MBean name for this logging agent.
      */
     public static final String LOGGING_MBEAN_NAME = "io.aeron:type=logging";
+    private static final double NANOS_PER_SECOND = 1_000_000_000.0;
 
     enum State
     {
@@ -180,9 +182,20 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
 
     private void writeLogStartMessage(final String name)
     {
+        final StringBuilder builder = new StringBuilder();
+        final long timestampNs = System.nanoTime();
+        final String message = builder
+            .append('[')
+            .append(((double)timestampNs) / NANOS_PER_SECOND)
+            .append(", ")
+            .append(LocalDateTime.now())
+            .append("] ")
+            .append(name)
+            .toString();
+
         collectingBuffer.putInt(bufferPosition, infoMessageTypeId);
         bufferPosition += SIZE_OF_INT;
-        final int strLength = collectingBuffer.putStringAscii(bufferPosition, name);
+        final int strLength = collectingBuffer.putStringAscii(bufferPosition, message);
         bufferPosition += strLength;
     }
 

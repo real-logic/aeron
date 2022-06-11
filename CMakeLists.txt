@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2021 Real Logic Limited.
+# Copyright 2014-2022 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.6.1 FATAL_ERROR)
-cmake_policy(VERSION 3.6.1)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_policy(VERSION 3.14)
+
+include(FetchContent)
 
 file(STRINGS version.txt AERON_VERSION_TXT LIMIT_COUNT 1 REGEX "^[0-9]+(\\.[0-9]+)+")
 string(REGEX REPLACE "^([0-9]+(\\.[0-9]+)+).*$" "\\1" AERON_VERSION_FROM_FILE "${AERON_VERSION_TXT}")
@@ -66,68 +68,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif (NOT CMAKE_BUILD_TYPE)
 
-set(AERON_THIRDPARTY_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/thirdparty")
-
-##########################################################
-# gmock usage
-
-if (AERON_TESTS)
-    ExternalProject_Add(
-        gmock
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.11.0.zip
-        URL_MD5 52943a59cefce0ae0491d4d2412c120b
-        PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/gmock"
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};-DCMAKE_CXX_FLAGS=-D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
-        BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX};${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        INSTALL_COMMAND "")
-
-    ExternalProject_Get_Property(gmock source_dir)
-    set(GMOCK_SOURCE_DIR ${source_dir})
-    ExternalProject_Get_Property(gmock binary_dir)
-    set(GMOCK_BINARY_DIR ${binary_dir})
-
-    if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(GMOCK_POSTFIX "d")
-    else ()
-        set(GMOCK_POSTFIX "")
-    endif ()
-
-    set(GMOCK_LIBS
-        ${GMOCK_BINARY_DIR}/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${GMOCK_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${GMOCK_BINARY_DIR}/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${GMOCK_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-        ${GMOCK_BINARY_DIR}/lib/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest_main${GMOCK_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
-endif ()
-
-##########################################################
-# HdrHistogram usage - use MD5 as means to identify snapshot
-
-if (AERON_BUILD_SAMPLES)
-
-    if (MSVC)
-        SET(HDR_HISTOGRAM_CMAKE_C_FLAGS "-DCMAKE_C_FLAGS_DEBUG=/MTd;-DCMAKE_C_FLAGS_RELEASE=/MT")
-    endif()
-
-    ExternalProject_Add(
-        hdr_histogram
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.2.zip
-        URL_MD5 6050b8c88a2979545522e9fcb17da9bb
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};-DCMAKE_C_STANDARD=99;-DHDR_LOG_REQUIRED=OFF;-DCMAKE_IGNORE_PATH="optimized;C:/Program Files/PostgreSQL/12/lib;${HDR_HISTOGRAM_CMAKE_C_FLAGS}"
-        PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
-        BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram/src/hdr_histogram-build/src/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        INSTALL_COMMAND "")
-
-    ExternalProject_Get_Property(hdr_histogram source_dir)
-    set(HDRHISTOGRAM_SOURCE_DIR ${source_dir})
-    ExternalProject_Get_Property(hdr_histogram binary_dir)
-    set(HDRHISTOGRAM_BINARY_DIR ${binary_dir})
-
-    set(HDRHISTOGRAM_LIBS
-        ${HDRHISTOGRAM_BINARY_DIR}/src/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif ()
-
-unset(AERON_THIRDPARTY_BINARY_DIR)
-
 ##########################################################
 # Platform flags, etc.
 
@@ -178,12 +118,12 @@ if (UNIX)
     endif (CXX_WARNINGS_AS_ERRORS)
 
     if (SANITISE_BUILD)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer -g -O2 -DAERON_SANITIZE_ENABLED")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer -g -O2 -DAERON_SANITIZE_ENABLED")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer -DAERON_SANITIZE_ENABLED")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer -DAERON_SANITIZE_ENABLED")
     endif (SANITISE_BUILD)
 
     if (COVERAGE_BUILD)
-        add_compile_options(-O0 -fno-inline --coverage -g)
+        add_compile_options(-fno-inline --coverage)
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     endif (COVERAGE_BUILD)
 
@@ -216,6 +156,8 @@ elseif (MSVC)
 
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP /wd4251")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP /wd4251")
+    set(CMAKE_C_FLAGS_DEBUG "/MTd")
+    set(CMAKE_C_FLAGS_RELEASE "/MT")
 
     unset(CMAKE_C_STANDARD) # To avoid `/std:c11` in the compiler options
 
@@ -272,20 +214,53 @@ if (AERON_TESTS)
     set(AERON_CLIENT_WRAPPER_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp_wrapper")
     set(AERON_ARCHIVE_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/test/cpp")
     set(AERON_SYSTEM_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-system-tests")
-
-    # gmock - includes gtest
-    include_directories(${GMOCK_SOURCE_DIR}/googletest/include)
-    include_directories(${GMOCK_SOURCE_DIR}/googlemock/include)
 endif ()
 
 if (AERON_BUILD_SAMPLES)
     # hdr_histogram
-    include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
+    include_directories(${HDRHISTOGRAM_SOURCE_DIR}/include)
 endif ()
 
 ##########################################################
 
 add_definitions(-D_FILE_OFFSET_BITS=64)
+
+##########################################################
+# gmock usage
+
+if (AERON_TESTS)
+    set(INSTALL_GMOCK OFF CACHE INTERNAL "Install Googletest's GMock?")
+    set(INSTALL_GTEST OFF CACHE INTERNAL "Install Googletest's GTest?" )
+
+    FetchContent_Declare(
+        gmock
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.11.0.zip
+        URL_MD5 52943a59cefce0ae0491d4d2412c120b)
+
+    FetchContent_MakeAvailable(gmock)
+endif ()
+
+##########################################################
+# HdrHistogram usage - use MD5 as means to identify snapshot
+
+if (AERON_BUILD_SAMPLES)
+    set(HDR_LOG_REQUIRED "OFF" CACHE INTERNAL "Set log required option")
+    set(HDR_HISTOGRAM_BUILD_PROGRAMS "OFF" CACHE INTERNAL "Set build programs option")
+    FetchContent_Declare(
+        hdr_histogram
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.4.zip
+        URL_MD5 4d8f8ed3fe69422cf6b44fdabd98d462
+    )
+
+
+    FetchContent_GetProperties(hdr_histogram)
+    if(NOT hdr_histogram_POPULATED)
+        FetchContent_Populate(hdr_histogram)
+        add_subdirectory(${hdr_histogram_SOURCE_DIR} ${hdr_histogram_BINARY_DIR} EXCLUDE_FROM_ALL)
+    endif()
+#    FetchContent_MakeAvailable(hdr_histogram)
+endif ()
+
 
 add_subdirectory(${AERON_C_CLIENT_SOURCE_PATH})
 

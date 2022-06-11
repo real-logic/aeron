@@ -39,9 +39,10 @@ For the latest version information and changes see the [Change Log](https://gith
 with Java **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Caeron).
 
 Commercial support, training, and development on Aeron is available from
-[sales@real-logic.co.uk](mailto:sales@real-logic.co.uk?subject=Aeron). Premium features such as Solarflare ef_vi
-transport bindings for a further 20-60% reduction in latency depending on usage and configuration, and security with
-ATS (Aeron Transport Security) for encrypted communications is available to customers on commercial support.
+[sales@real-logic.co.uk](mailto:sales@real-logic.co.uk?subject=Aeron). Premium features are available which include
+Solarflare/Xilinx ef_vi and AWS DPDK transport bindings for a further reduction in latency with increased throughput,
+and security with ATS (Aeron Transport Security) for encrypted communications is available to customers on commercial
+support.
 
 ### How do I use Aeron?
 
@@ -110,7 +111,7 @@ For those comfortable with CMake - then a clean, build, and test looks like:
 ```shell
     $ mkdir -p cppbuild/Debug
     $ cd cppbuild/Debug
-    $ cmake ../..
+    $ cmake -DCMAKE_BUILD_TYPE=Debug ../..
     $ cmake --build . --clean-first
     $ ctest
 ```
@@ -214,7 +215,7 @@ Troubleshooting
 
 License (See LICENSE file for full license)
 -------------------------------------------
-Copyright 2014-2021 Real Logic Limited.
+Copyright 2014-2022 Real Logic Limited.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

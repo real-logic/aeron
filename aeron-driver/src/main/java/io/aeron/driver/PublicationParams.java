@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ final class PublicationParams
         final ChannelUri channelUri,
         final MediaDriver.Context ctx,
         final DriverConductor driverConductor,
-        final boolean isExclusive,
         final boolean isIpc)
     {
         final PublicationParams params = new PublicationParams(ctx, isIpc);
@@ -76,12 +75,6 @@ final class PublicationParams
 
         if (count > 0)
         {
-            if (!isExclusive)
-            {
-                throw new IllegalArgumentException("params: " + INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME +
-                    " " + TERM_OFFSET_PARAM_NAME + " are not supported for concurrent publications: channel=" +
-                    channelUri);
-            }
             if (count < 3)
             {
                 throw new IllegalArgumentException("params must be used as a complete set: " +
@@ -110,8 +103,7 @@ final class PublicationParams
             {
                 throw new IllegalArgumentException(
                     TERM_OFFSET_PARAM_NAME + "=" + params.termOffset +
-                    " must be a multiple of FRAME_ALIGNMENT: channel=" +
-                    channelUri);
+                    " must be a multiple of FRAME_ALIGNMENT: channel=" + channelUri);
             }
 
             if (params.termId - params.initialTermId < 0)
@@ -206,33 +198,87 @@ final class PublicationParams
         }
     }
 
+    private static String formatMatchError(
+        final String paramName,
+        final String existingValue,
+        final String newValue,
+        final String existingChannelUri,
+        final String newChannelUri)
+    {
+        return "existing publication has different '" + paramName + "': existing=" +
+            existingValue + " requested=" + newValue + " existingChannel=" + existingChannelUri +
+            " channel=" + newChannelUri;
+    }
+
     static void confirmMatch(
         final ChannelUri channelUri,
         final PublicationParams params,
         final RawLog rawLog,
         final int existingSessionId,
-        final String existingChannel)
+        final String existingChannel,
+        final int existingInitialTermId,
+        final int existingTermId,
+        final int existingTermOffset)
     {
         final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
         if (channelUri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
         {
-            throw new IllegalStateException("existing publication has different MTU length: existing=" +
-                mtuLength + " requested=" + params.mtuLength + " existingChannel=" + existingChannel +
-                " channel=" + channelUri);
+            throw new IllegalStateException(formatMatchError(
+                MTU_LENGTH_PARAM_NAME,
+                String.valueOf(mtuLength),
+                String.valueOf(params.mtuLength),
+                existingChannel,
+                channelUri.toString()));
         }
 
         if (channelUri.containsKey(TERM_LENGTH_PARAM_NAME) && rawLog.termLength() != params.termLength)
         {
-            throw new IllegalStateException("existing publication has different term length: existing=" +
-                rawLog.termLength() + " requested=" + params.termLength + " existingChannel=" + existingChannel +
-                " channel=" + channelUri);
+            throw new IllegalStateException(formatMatchError(
+                TERM_LENGTH_PARAM_NAME,
+                String.valueOf(rawLog.termLength()),
+                String.valueOf(params.termLength),
+                existingChannel,
+                channelUri.toString()));
         }
 
         if (channelUri.containsKey(SESSION_ID_PARAM_NAME) && params.sessionId != existingSessionId)
         {
-            throw new IllegalStateException("existing publication has different session id: existing=" +
-                existingSessionId + " requested=" + params.sessionId + " existingChannel=" + existingChannel +
-                " channel=" + channelUri);
+            throw new IllegalStateException(formatMatchError(
+                SESSION_ID_PARAM_NAME,
+                String.valueOf(existingSessionId),
+                String.valueOf(params.sessionId),
+                existingChannel,
+                channelUri.toString()));
+        }
+
+        if (channelUri.containsKey(INITIAL_TERM_ID_PARAM_NAME) && params.initialTermId != existingInitialTermId)
+        {
+            throw new IllegalStateException(formatMatchError(
+                INITIAL_TERM_ID_PARAM_NAME,
+                String.valueOf(existingInitialTermId),
+                String.valueOf(params.initialTermId),
+                existingChannel,
+                channelUri.toString()));
+        }
+
+        if (channelUri.containsKey(TERM_ID_PARAM_NAME) && params.termId != existingTermId)
+        {
+            throw new IllegalStateException(formatMatchError(
+                TERM_ID_PARAM_NAME,
+                String.valueOf(existingTermId),
+                String.valueOf(params.termId),
+                existingChannel,
+                channelUri.toString()));
+        }
+
+        if (channelUri.containsKey(TERM_OFFSET_PARAM_NAME) && params.termOffset != existingTermOffset)
+        {
+            throw new IllegalStateException(formatMatchError(
+                TERM_OFFSET_PARAM_NAME,
+                String.valueOf(existingTermOffset),
+                String.valueOf(params.termOffset),
+                existingChannel,
+                channelUri.toString()));
         }
     }
 

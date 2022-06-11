@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,8 +176,8 @@ final class CommonEventEncoder
             LITTLE_ENDIAN);
         encodedLength += SIZE_OF_INT;
 
-        final String fromName = null == from ? "null" : from.name();
-        final String toName = null == to ? "null" : to.name();
+        final String fromName = stateName(from);
+        final String toName = stateName(to);
         encodedLength += encodingBuffer.putStringWithoutLengthAscii(offset + encodedLength, fromName);
         encodedLength += encodingBuffer.putStringWithoutLengthAscii(offset + encodedLength, STATE_SEPARATOR);
         encodedLength += encodingBuffer.putStringWithoutLengthAscii(offset + encodedLength, toName);
@@ -212,9 +212,12 @@ final class CommonEventEncoder
 
     static <E extends Enum<E>> int stateTransitionStringLength(final E from, final E to)
     {
-        final int fromLength = null == from ? "null".length() : from.name().length();
-        final int toLength = null == to ? "null".length() : to.name().length();
-
-        return SIZE_OF_INT + fromLength + STATE_SEPARATOR.length() + toLength;
+        return SIZE_OF_INT + stateName(from).length() + STATE_SEPARATOR.length() + stateName(to).length();
     }
+
+    static <E extends Enum<E>> String stateName(final E state)
+    {
+        return null == state ? "null" : state.name();
+    }
+
 }

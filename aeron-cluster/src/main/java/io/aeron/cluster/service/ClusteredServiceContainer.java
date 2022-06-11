@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -911,7 +911,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for bi-directional communications between the consensus module and services.
+         * Set the channel parameter for bidirectional communications between the consensus module and services.
          *
          * @param channel parameter for sending messages to the Consensus Module.
          * @return this for a fluent API.
@@ -924,7 +924,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Get the channel parameter for bi-directional communications between the consensus module and services.
+         * Get the channel parameter for bidirectional communications between the consensus module and services.
          *
          * @return the channel parameter for sending messages to the Consensus Module.
          * @see Configuration#CONTROL_CHANNEL_PROP_NAME

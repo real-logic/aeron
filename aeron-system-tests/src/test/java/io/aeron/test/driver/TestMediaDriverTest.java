@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,12 +56,13 @@ class TestMediaDriverTest
 
         final MediaDriver.Context context = new MediaDriver.Context().dirDeleteOnStart(true).dirDeleteOnShutdown(false);
         assertEquals(CommonContext.getAeronDirectoryName(), context.aeronDirectoryName());
-        try (TestMediaDriver ignore = CTestMediaDriver.launch(context, false, null);
+        try (TestMediaDriver mediaDriver = CTestMediaDriver.launch(context, false, null);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName())))
         {
             final File aeronDirectory = aeron.context().aeronDirectory();
             assertNotNull(aeronDirectory);
             assertTrue(aeronDirectory.exists());
+            assertNotNull(mediaDriver);
         }
         finally
         {

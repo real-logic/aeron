@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2021 Real Logic Limited.
+# Copyright 2014-2022 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUri.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUriStringBuilder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/CncFileDescriptor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/CncFileReader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Context.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ControlledFragmentAssembler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Counter.h
@@ -49,6 +50,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/atomic/Atomic64_gcc_cpp11.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/atomic/Atomic64_gcc_x86_64.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/atomic/Atomic64_msvc.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/errors/ErrorLogReader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/BufferClaim.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/DataFrameHeader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/FrameDescriptor.h

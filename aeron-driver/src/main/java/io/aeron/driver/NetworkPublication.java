@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,6 +115,8 @@ public final class NetworkPublication
     private final long tag;
     private final int positionBitsToShift;
     private final int initialTermId;
+    private final int startingTermId;
+    private final int startingTermOffset;
     private final int termBufferLength;
     private final int termLengthMask;
     private final int mtuLength;
@@ -200,6 +202,8 @@ public final class NetworkPublication
         this.spiesSimulateConnection = params.spiesSimulateConnection;
         this.signalEos = params.signalEos;
         this.isExclusive = isExclusive;
+        this.startingTermId = params.hasPosition ? params.termId : initialTermId;
+        this.startingTermOffset = params.hasPosition ? params.termOffset : 0;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
@@ -320,6 +324,14 @@ public final class NetworkPublication
             timeOfLastStatusMessageNs = cachedNanoClock.nanoTime();
             isSetupElicited = true;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long subscribableRegistrationId()
+    {
+        return registrationId;
     }
 
     /**
@@ -566,6 +578,21 @@ public final class NetworkPublication
     boolean spiesSimulateConnection()
     {
         return spiesSimulateConnection;
+    }
+
+    int initialTermId()
+    {
+        return initialTermId;
+    }
+
+    int startingTermId()
+    {
+        return startingTermId;
+    }
+
+    int startingTermOffset()
+    {
+        return startingTermOffset;
     }
 
     boolean isAcceptingSubscriptions()

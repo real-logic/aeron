@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_parse_util.h"
+#include "util/aeron_symbol_table.h"
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
 
@@ -95,7 +96,7 @@ void aeron_idle_strategy_noop_idle(void *state, int work_count)
 
 typedef struct aeron_idle_strategy_backoff_state_stct
 {
-    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH];
+    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH - sizeof(uint64_t)];
     uint64_t max_spins;
     uint64_t max_yields;
     uint64_t min_park_period_ns;
@@ -282,6 +283,19 @@ aeron_idle_strategy_t aeron_idle_strategy_backoff =
         aeron_idle_strategy_backoff_state_init_args
     };
 
+static const aeron_symbol_table_obj_t aeron_idle_strategy_table[] =
+    {
+        { "sleeping", "aeron_idle_strategy_sleeping", &aeron_idle_strategy_sleeping },
+        { "sleep-ns", "aeron_idle_strategy_sleeping", &aeron_idle_strategy_sleeping },
+        { "yield", "aeron_idle_strategy_yielding", &aeron_idle_strategy_yielding },
+        { "spin", "aeron_idle_strategy_busy_spinning", &aeron_idle_strategy_busy_spinning },
+        { "noop", "aeron_idle_strategy_noop", &aeron_idle_strategy_noop },
+        { "backoff", "aeron_idle_strategy_backoff", &aeron_idle_strategy_backoff },
+    };
+
+static const size_t aeron_idle_strategy_table_length =
+    sizeof(aeron_idle_strategy_table) / sizeof (aeron_symbol_table_obj_t);
+
 aeron_idle_strategy_func_t aeron_idle_strategy_load(
     const char *idle_strategy_name,
     void **idle_strategy_state,
@@ -292,55 +306,30 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 
     if (NULL == idle_strategy_name || NULL == idle_strategy_state)
     {
-        AERON_SET_ERR(EINVAL, "%s", "invalid idle strategy name or state");
+        AERON_SET_ERR(EINVAL, "%s", "invalid idle object name or state");
+        return NULL;
+    }
+
+    aeron_idle_strategy_t *idle_strategy = aeron_symbol_table_obj_load(
+        aeron_idle_strategy_table, aeron_idle_strategy_table_length, idle_strategy_name, "idle strategy");
+
+    if (NULL == idle_strategy)
+    {
+        AERON_APPEND_ERR("%s", "");
         return NULL;
     }
 
     *idle_strategy_state = NULL;
+    idle_func = idle_strategy->idle;
+    aeron_idle_strategy_init_func_t idle_init_func = idle_strategy->init;
 
-    if (strncmp(idle_strategy_name, "sleep-ns", strlen("sleep-ns")) == 0 ||
-        strncmp(idle_strategy_name, "sleeping", strlen("sleeping")) == 0)
+    void *idle_state = NULL;
+    if (idle_init_func(&idle_state, env_var, init_args) < 0)
     {
-        return aeron_idle_strategy_load("aeron_idle_strategy_sleeping", idle_strategy_state, env_var, init_args);
+        return NULL;
     }
-    else if (strncmp(idle_strategy_name, "yield", strlen("yield")) == 0)
-    {
-        return aeron_idle_strategy_load("aeron_idle_strategy_yielding", idle_strategy_state, env_var, init_args);
-    }
-    else if (strncmp(idle_strategy_name, "spin", strlen("spin")) == 0)
-    {
-        return aeron_idle_strategy_load("aeron_idle_strategy_busy_spinning", idle_strategy_state, env_var, init_args);
-    }
-    else if (strncmp(idle_strategy_name, "noop", strlen("noop")) == 0)
-    {
-        return aeron_idle_strategy_load("aeron_idle_strategy_noop", idle_strategy_state, env_var, init_args);
-    }
-    else if (strncmp(idle_strategy_name, "backoff", strlen("backoff")) == 0)
-    {
-        return aeron_idle_strategy_load("aeron_idle_strategy_backoff", idle_strategy_state, env_var, init_args);
-    }
-    else
-    {
-        char idle_func_name[AERON_MAX_PATH] = { 0 };
-        aeron_idle_strategy_t *idle_strategy = NULL;
 
-        snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s", idle_strategy_name);
-        if ((idle_strategy = (aeron_idle_strategy_t *)aeron_dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
-        {
-            AERON_SET_ERR(EINVAL, "could not find idle strategy %s: dlsym - %s", idle_func_name, aeron_dlerror());
-            return NULL;
-        }
-        idle_func = idle_strategy->idle;
-        aeron_idle_strategy_init_func_t idle_init_func = idle_strategy->init;
-
-        void *idle_state = NULL;
-        if (idle_init_func(&idle_state, env_var, init_args) < 0)
-        {
-            return NULL;
-        }
-
-        *idle_strategy_state = idle_state;
-    }
+    *idle_strategy_state = idle_state;
 
     return idle_func;
 }
@@ -348,18 +337,12 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name)
 {
     aeron_agent_on_start_func_t func = NULL;
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-    if ((func = (aeron_agent_on_start_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
+
+    if ((*(void **)(&func) = aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
     {
         AERON_SET_ERR(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, aeron_dlerror());
         return NULL;
     }
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
 
     return func;
 }

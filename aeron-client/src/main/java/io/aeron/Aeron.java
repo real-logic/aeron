@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -311,6 +311,18 @@ public class Aeron implements AutoCloseable
     public long asyncAddExclusivePublication(final String channel, final int streamId)
     {
         return conductor.asyncAddExclusivePublication(channel, streamId);
+    }
+
+    /**
+     * Asynchronously remove a {@link Publication}.
+     *
+     * @param registrationId to be of the publication removed.
+     * @see #asyncAddPublication(String, int)
+     * @see #asyncAddExclusivePublication(String, int)
+     */
+    public void asyncRemovePublication(final long registrationId)
+    {
+        conductor.removePublication(registrationId);
     }
 
     /**
@@ -1576,6 +1588,7 @@ public class Aeron implements AutoCloseable
         }
     }
 
+    @SuppressWarnings("try")
     private static MappedByteBuffer waitForFileMapping(final File file, final EpochClock clock, final long deadlineMs)
     {
         while (true)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import io.aeron.exceptions.AeronException;
  */
 public class ClusterException extends AeronException
 {
+    private static final long serialVersionUID = -2688245045186545277L;
+
     /**
      * Default Cluster exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      */
@@ -95,7 +97,7 @@ public class ClusterException extends AeronException
     }
 
     /**
-     * Constructs a new Cluster exception with the a detail message, cause, suppression enabled or disabled,
+     * Constructs a new Cluster exception with a detail message, cause, suppression enabled or disabled,
      * and writable stack trace enabled or disabled, in the category
      * {@link io.aeron.exceptions.AeronException.Category#ERROR}.
      *

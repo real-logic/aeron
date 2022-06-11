@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ public:
         return true;
     }
 
-    virtual void channelWithParams(char *path, size_t len, int32_t session_id, int32_t mtu = 0, int32_t term_length = 0)
+    virtual void channelWithParams(char *path, size_t len, int32_t session_id, int32_t mtu, int32_t term_length)
     {
         int offset = snprintf(path, len - 1, "%s%csession-id=%" PRId32, m_channel, m_initial_separator_char, session_id);
         if (0 != mtu)
@@ -281,7 +281,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscri
 TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscriptionBySession)
 {
     char channel_with_session[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel_with_session, AERON_MAX_PATH, SESSION_ID_1);
+    GetParam()->channelWithParams(channel_with_session, AERON_MAX_PATH, SESSION_ID_1, 0, 0);
 
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -422,7 +422,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddMultipleExclusiveNetworkPubli
 TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublicationWithExplicitSessionId)
 {
     char channel_with_session_id[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1);
+    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1, 0, 0);
 
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -454,7 +454,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublica
 TEST_P(DriverConductorPubSubTest, shouldAddSecondNetworkPublicationWithSpecifiedSessionIdAndSameMtu)
 {
     char channel[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel, AERON_MAX_PATH, SESSION_ID_1, MTU_1);
+    GetParam()->channelWithParams(channel, AERON_MAX_PATH, SESSION_ID_1, MTU_1, 0);
 
     int64_t client_id1 = nextCorrelationId();
     int64_t pub_id1 = nextCorrelationId();
@@ -482,8 +482,8 @@ TEST_P(DriverConductorPubSubTest, shouldFailToAddSecondNetworkPublicationWithSpe
 {
     char channel1[AERON_MAX_PATH];
     char channel2[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1, MTU_1);
-    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_1, MTU_2);
+    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1, MTU_1, 0);
+    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_1, MTU_2, 0);
 
     int64_t client_id1 = nextCorrelationId();
     int64_t pub_id1 = nextCorrelationId();
@@ -565,7 +565,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddSingleNetworkPublicationThatA
     int32_t next_session_id = SESSION_ID_1;
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
-    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, next_session_id);
+    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, next_session_id, 0, 0);
 
     m_conductor.manuallySetNextSessionId(next_session_id);
 
@@ -588,7 +588,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddSingleNetworkPublicationThatA
 TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateExclusivePublicationWithSameSessionId)
 {
     char channel_with_session_id[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1);
+    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1, 0, 0);
 
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -611,8 +611,8 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateSharedPublicationWithDif
 {
     char channel1[AERON_MAX_PATH];
     char channel2[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1);
-    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_3);
+    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_1, 0, 0);
+    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_3, 0, 0);
 
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -633,7 +633,7 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateSharedPublicationWithDif
 TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateSharedPublicationWithExclusivePublicationWithSameSessionId)
 {
     char channel_with_session_id[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1);
+    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1, 0, 0);
 
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -655,7 +655,7 @@ TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateSharedPublicationWithExc
 TEST_P(DriverConductorPubSubTest, shouldErrorOnDuplicateExclusivePublicationWithSharedPublicationWithSameSessionId)
 {
     char channel_with_session_id[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1);
+    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1, 0, 0);
 
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -998,9 +998,9 @@ TEST_P(DriverConductorPubSubTest, shouldNotAccidentallyBumpIntoExistingSessionId
     char channel1[AERON_MAX_PATH];
     char channel2[AERON_MAX_PATH];
     char channel3[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_3);
-    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_4);
-    GetParam()->channelWithParams(channel3, AERON_MAX_PATH, SESSION_ID_5);
+    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, SESSION_ID_3, 0, 0);
+    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, SESSION_ID_4, 0, 0);
+    GetParam()->channelWithParams(channel3, AERON_MAX_PATH, SESSION_ID_5, 0, 0);
 
     int next_session_id = SESSION_ID_3;
     m_conductor.manuallySetNextSessionId(next_session_id);
@@ -1048,10 +1048,10 @@ TEST_P(DriverConductorPubSubTest, shouldNotAccidentallyBumpIntoExistingSessionId
     char channel2[AERON_MAX_PATH];
     char channel3[AERON_MAX_PATH];
     char channel4[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, session_id_1);
-    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, session_id_2);
-    GetParam()->channelWithParams(channel3, AERON_MAX_PATH, session_id_3);
-    GetParam()->channelWithParams(channel4, AERON_MAX_PATH, session_id_4);
+    GetParam()->channelWithParams(channel1, AERON_MAX_PATH, session_id_1, 0, 0);
+    GetParam()->channelWithParams(channel2, AERON_MAX_PATH, session_id_2, 0, 0);
+    GetParam()->channelWithParams(channel3, AERON_MAX_PATH, session_id_3, 0, 0);
+    GetParam()->channelWithParams(channel4, AERON_MAX_PATH, session_id_4, 0, 0);
 
     m_conductor.manuallySetNextSessionId(session_id_1);
 
@@ -1093,7 +1093,7 @@ TEST_P(DriverConductorPubSubTest, shouldNotAccidentallyBumpIntoExistingSessionId
 TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddSingleNetworkSubscriptionWithSpecifiedSessionId)
 {
     char channel_with_session_id[AERON_MAX_PATH];
-    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1);
+    GetParam()->channelWithParams(channel_with_session_id, AERON_MAX_PATH, SESSION_ID_1, 0, 0);
 
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();

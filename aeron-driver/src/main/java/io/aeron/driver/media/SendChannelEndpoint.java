@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,9 @@ import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.LocalSocketAddressStatus;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.EpochNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -38,8 +40,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.driver.media.SendChannelEndpoint.DESTINATION_TIMEOUT;
+import static io.aeron.driver.media.UdpChannelTransport.sendError;
 import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
 import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
@@ -494,5 +500,376 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 }
             }
         }
+    }
+}
+
+abstract class MultiSndDestination
+{
+    static final Destination[] EMPTY_DESTINATIONS = new Destination[0];
+
+    Destination[] destinations = EMPTY_DESTINATIONS;
+    final CachedNanoClock nanoClock;
+    int roundRobinIndex = 0;
+
+    MultiSndDestination(final CachedNanoClock nanoClock)
+    {
+        this.nanoClock = nanoClock;
+    }
+
+    abstract int send(DatagramChannel channel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
+
+    abstract void onStatusMessage(StatusMessageFlyweight msg, InetSocketAddress address);
+
+    void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
+    {
+    }
+
+    void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
+    {
+    }
+
+    void checkForReResolution(
+        final SendChannelEndpoint channelEndpoint, final long nowNs, final DriverConductorProxy conductorProxy)
+    {
+    }
+
+    void updateDestination(final String endpoint, final InetSocketAddress newAddress)
+    {
+    }
+
+    static int send(
+        final DatagramChannel datagramChannel,
+        final ByteBuffer buffer,
+        final SendChannelEndpoint channelEndpoint,
+        final int bytesToSend,
+        final int position,
+        final InetSocketAddress destination)
+    {
+        int bytesSent = 0;
+        try
+        {
+            if (destination.isUnresolved())
+            {
+                bytesSent = bytesToSend;
+            }
+            else if (datagramChannel.isOpen())
+            {
+                buffer.position(position);
+                channelEndpoint.sendHook(buffer, destination);
+                bytesSent = datagramChannel.send(buffer, destination);
+            }
+        }
+        catch (final PortUnreachableException ignore)
+        {
+        }
+        catch (final IOException ex)
+        {
+            sendError(bytesToSend, ex, destination);
+        }
+
+        return bytesSent;
+    }
+}
+
+class ManualSndMultiDestination extends MultiSndDestination
+{
+    ManualSndMultiDestination(final CachedNanoClock nanoClock)
+    {
+        super(nanoClock);
+    }
+
+    void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
+    {
+        final long receiverId = msg.receiverId();
+        final long nowNs = nanoClock.nanoTime();
+
+        for (final Destination destination : destinations)
+        {
+            if (destination.isReceiverIdValid &&
+                receiverId == destination.receiverId &&
+                address.getPort() == destination.port)
+            {
+                destination.timeOfLastActivityNs = nowNs;
+                break;
+            }
+            else if (!destination.isReceiverIdValid &&
+                address.getPort() == destination.port &&
+                address.getAddress().equals(destination.address.getAddress()))
+            {
+                destination.timeOfLastActivityNs = nowNs;
+                destination.receiverId = receiverId;
+                destination.isReceiverIdValid = true;
+                break;
+            }
+        }
+    }
+
+    int send(
+        final DatagramChannel channel,
+        final ByteBuffer buffer,
+        final SendChannelEndpoint channelEndpoint,
+        final int bytesToSend)
+    {
+        final int position = buffer.position();
+        final int length = destinations.length;
+
+        int startingIndex = roundRobinIndex++;
+        if (startingIndex >= length)
+        {
+            roundRobinIndex = startingIndex = 0;
+        }
+
+        for (int i = startingIndex; i < length; i++)
+        {
+            final Destination destination = destinations[i];
+
+            final int bytesSent = send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+            if (bytesSent < bytesToSend)
+            {
+                roundRobinIndex = i;
+                return bytesSent;
+            }
+        }
+
+        for (int i = 0; i < startingIndex; i++)
+        {
+            final Destination destination = destinations[i];
+
+            final int bytesSent = send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+            if (bytesSent < bytesToSend)
+            {
+                roundRobinIndex = i;
+                return bytesSent;
+            }
+        }
+
+        return bytesToSend;
+    }
+
+    void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
+    {
+        destinations = ArrayUtil.add(destinations, new Destination(nanoClock.nanoTime(), channelUri, address));
+    }
+
+    void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
+    {
+        boolean found = false;
+        int index = 0;
+        for (final Destination destination : destinations)
+        {
+            if (destination.address.equals(address))
+            {
+                found = true;
+                break;
+            }
+
+            index++;
+        }
+
+        if (found)
+        {
+            if (1 == destinations.length)
+            {
+                destinations = EMPTY_DESTINATIONS;
+            }
+            else
+            {
+                destinations = ArrayUtil.remove(destinations, index);
+            }
+        }
+    }
+
+    void checkForReResolution(
+        final SendChannelEndpoint channelEndpoint, final long nowNs, final DriverConductorProxy conductorProxy)
+    {
+        for (final Destination destination : destinations)
+        {
+            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs < 0)
+            {
+                destination.timeOfLastActivityNs = nowNs;
+                final String endpoint = destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+                conductorProxy.reResolveEndpoint(endpoint, channelEndpoint, destination.address);
+            }
+        }
+    }
+
+    void updateDestination(final String endpoint, final InetSocketAddress newAddress)
+    {
+        for (final Destination destination : destinations)
+        {
+            if (endpoint.equals(destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME)))
+            {
+                destination.address = newAddress;
+                destination.port = newAddress.getPort();
+            }
+        }
+    }
+}
+
+class DynamicSndMultiDestination extends MultiSndDestination
+{
+    DynamicSndMultiDestination(final CachedNanoClock nanoClock)
+    {
+        super(nanoClock);
+    }
+
+    void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
+    {
+        final long receiverId = msg.receiverId();
+        final long nowNs = nanoClock.nanoTime();
+        boolean isExisting = false;
+
+        for (final Destination destination : destinations)
+        {
+            if (receiverId == destination.receiverId && address.getPort() == destination.port)
+            {
+                destination.timeOfLastActivityNs = nowNs;
+                isExisting = true;
+                break;
+            }
+        }
+
+        if (!isExisting)
+        {
+            add(new Destination(nowNs, receiverId, address));
+        }
+    }
+
+    int send(
+        final DatagramChannel channel,
+        final ByteBuffer buffer,
+        final SendChannelEndpoint channelEndpoint,
+        final int bytesToSend)
+    {
+        final long nowNs = nanoClock.nanoTime();
+        final int position = buffer.position();
+        final int length = destinations.length;
+        int toBeRemoved = 0;
+
+        int startingIndex = roundRobinIndex++;
+        if (startingIndex >= length)
+        {
+            roundRobinIndex = startingIndex = 0;
+        }
+
+        for (int i = startingIndex; i < length; i++)
+        {
+            final Destination destination = destinations[i];
+
+            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs >= 0)
+            {
+                final int bytesSent = send(
+                    channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+                if (bytesSent < bytesToSend)
+                {
+                    roundRobinIndex = i;
+                    return bytesSent;
+                }
+            }
+            else
+            {
+                toBeRemoved++;
+            }
+        }
+
+        for (int i = 0; i < startingIndex; i++)
+        {
+            final Destination destination = destinations[i];
+
+            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs >= 0)
+            {
+                final int bytesSent = send(
+                    channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+                if (bytesSent < bytesToSend)
+                {
+                    roundRobinIndex = i;
+                    return bytesSent;
+                }
+            }
+            else
+            {
+                toBeRemoved++;
+            }
+        }
+
+        if (toBeRemoved > 0)
+        {
+            removeInactiveDestinations(nowNs);
+        }
+
+        return bytesToSend;
+    }
+
+    private void add(final Destination destination)
+    {
+        destinations = ArrayUtil.add(destinations, destination);
+    }
+
+    private void truncateDestinations(final int removed)
+    {
+        final int length = destinations.length;
+        final int newLength = length - removed;
+
+        if (0 == newLength)
+        {
+            destinations = EMPTY_DESTINATIONS;
+        }
+        else
+        {
+            destinations = Arrays.copyOf(destinations, newLength);
+        }
+    }
+
+    private void removeInactiveDestinations(final long nowNs)
+    {
+        int removed = 0;
+
+        for (int lastIndex = destinations.length - 1, i = lastIndex; i >= 0; i--)
+        {
+            final Destination destination = destinations[i];
+            if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs < 0)
+            {
+                if (i != lastIndex)
+                {
+                    destinations[i] = destinations[lastIndex--];
+                }
+                removed++;
+            }
+        }
+
+        if (removed > 0)
+        {
+            truncateDestinations(removed);
+        }
+    }
+}
+
+final class Destination
+{
+    long receiverId;
+    long timeOfLastActivityNs;
+    boolean isReceiverIdValid;
+    int port;
+    InetSocketAddress address;
+    final ChannelUri channelUri;
+
+    Destination(final long nowNs, final long receiverId, final InetSocketAddress address)
+    {
+        this.timeOfLastActivityNs = nowNs;
+        this.receiverId = receiverId;
+        this.isReceiverIdValid = true;
+        this.channelUri = null;
+        this.address = address;
+        this.port = address.getPort();
+    }
+
+    Destination(final long nowMs, final ChannelUri channelUri, final InetSocketAddress address)
+    {
+        this.timeOfLastActivityNs = nowMs;
+        this.receiverId = 0;
+        this.isReceiverIdValid = false;
+        this.channelUri = channelUri;
+        this.address = address;
+        this.port = address.getPort();
     }
 }

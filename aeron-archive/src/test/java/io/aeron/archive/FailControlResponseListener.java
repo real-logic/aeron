@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import io.aeron.archive.codecs.ControlResponseCode;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class FailControlResponseListener implements ControlResponseListener
+class FailControlResponseListener implements ControlResponseListener
 {
     public void onResponse(
         final long controlSessionId,

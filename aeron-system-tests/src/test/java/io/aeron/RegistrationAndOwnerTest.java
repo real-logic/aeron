@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,8 @@ class RegistrationAndOwnerTest
             .dirDeleteOnStart(true);
 
         try (
-            TestMediaDriver ignore = TestMediaDriver.launch(ctx, testWatcher);
-            Aeron aeron = Aeron.connect();
+            TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, testWatcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
             Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             Publication publication = aeron.addPublication(channel, STREAM_ID);
             Counter userCounter = aeron.addCounter(1002, "Test Counter"))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.*;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
@@ -34,11 +35,18 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
+import io.aeron.samples.archive.RecordingDescriptor;
+import io.aeron.samples.archive.RecordingDescriptorCollector;
 import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.DriverOutputConsumer;
 import io.aeron.test.driver.RedirectingNameResolver;
-import org.agrona.*;
+import io.aeron.test.driver.TestMediaDriver;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
@@ -62,6 +70,7 @@ import java.util.stream.Stream;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
+import static io.aeron.test.cluster.ClusterTests.LARGE_MSG;
 import static io.aeron.test.cluster.ClusterTests.errorHandler;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -78,7 +87,7 @@ public class TestCluster implements AutoCloseable
     private static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
     private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
-    private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k";
+    private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";
     private static final long STARTUP_CANVASS_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
     public static final String DEFAULT_NODE_MAPPINGS =
@@ -117,11 +126,7 @@ public class TestCluster implements AutoCloseable
             }
             else if (EventCode.CLOSED == code && shouldErrorOnClientClose)
             {
-                final String msg = "session closed due to " + detail;
-
-                System.err.println("*** " + msg);
-                System.err.println(SystemUtil.threadDump());
-
+                final String msg = "[" + System.nanoTime() / 1_000_000_000.0 + "] session closed due to " + detail;
                 throw new ClusterException(msg);
             }
         }
@@ -154,7 +159,7 @@ public class TestCluster implements AutoCloseable
     private String egressChannel;
     private AuthorisationServiceSupplier authorisationServiceSupplier;
 
-    private MediaDriver clientMediaDriver;
+    private TestMediaDriver clientMediaDriver;
     private AeronCluster client;
     private TestBackupNode backupNode;
 
@@ -177,7 +182,7 @@ public class TestCluster implements AutoCloseable
         this.staticClusterMembers = clusterMembers(0, staticMemberCount);
         this.staticClusterMemberEndpoints = ingressEndpoints(0, staticMemberCount);
         this.clusterMembersEndpoints = clusterMembersEndpoints(0, memberCount);
-        this.clusterConsensusEndpoints = clusterConsensusEndpoints(0, staticMemberCount);
+        this.clusterConsensusEndpoints = clusterConsensusEndpoints(0, 0, staticMemberCount);
         this.staticMemberCount = staticMemberCount;
         this.dynamicMemberCount = dynamicMemberCount;
         this.appointedLeaderId = appointedLeaderId;
@@ -230,9 +235,8 @@ public class TestCluster implements AutoCloseable
             CloseHelper.closeAll(
                 client,
                 clientMediaDriver,
-                null != clientMediaDriver ? () -> clientMediaDriver.context().deleteDirectory() : null,
-                () -> CloseHelper.closeAll(Stream.of(nodes).map(TestCluster::closeAndDeleteNode).collect(toList())),
-                null != backupNode ? () -> backupNode.closeAndDelete() : null);
+                () -> CloseHelper.closeAll(Stream.of(nodes).filter(Objects::nonNull).collect(toList())),
+                null != backupNode ? () -> backupNode.close() : null);
         }
         finally
         {
@@ -243,16 +247,6 @@ public class TestCluster implements AutoCloseable
         }
 
         ClusterTests.failOnClusterError();
-    }
-
-    public static AutoCloseable closeAndDeleteNode(final TestNode node)
-    {
-        if (node == null)
-        {
-            return null;
-        }
-
-        return node::closeAndDelete;
     }
 
     public TestNode startStaticNode(final int index, final boolean cleanStart)
@@ -350,6 +344,64 @@ public class TestCluster implements AutoCloseable
             .clusterMemberId(NULL_VALUE)
             .clusterMembers("")
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
+            .memberEndpoints(clusterMembersEndpoints[index])
+            .clusterDir(new File(baseDirName, "consensus-module"))
+            .ingressChannel(ingressChannel)
+            .logChannel(logChannel)
+            .replicationChannel(REPLICATION_CHANNEL)
+            .archiveContext(context.aeronArchiveContext.clone()
+                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
+            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authorisationServiceSupplier(authorisationServiceSupplier)
+            .deleteDirOnStart(cleanStart);
+
+        nodes[index] = new TestNode(context, dataCollector);
+
+        return nodes[index];
+    }
+
+    public TestNode startDynamicNodeConsensusEndpoints(final int index, final boolean cleanStart)
+    {
+        return startDynamicNodeConsensusEndpoints(index, cleanStart, serviceSupplier);
+    }
+
+    public TestNode startDynamicNodeConsensusEndpoints(
+        final int index, final boolean cleanStart, final IntFunction<TestNode.TestService[]> serviceSupplier)
+    {
+        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
+        final TestNode.Context context = new TestNode.Context(serviceSupplier.apply(index), nodeNameMappings());
+
+        context.aeronArchiveContext
+            .lock(NoOpLock.INSTANCE)
+            .controlRequestChannel(archiveControlRequestChannel(index))
+            .controlResponseChannel(archiveControlResponseChannel(index))
+            .aeronDirectoryName(aeronDirName);
+
+        context.mediaDriverContext
+            .aeronDirectoryName(aeronDirName)
+            .threadingMode(ThreadingMode.SHARED)
+            .termBufferSparseFile(true)
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(false);
+
+        context.archiveContext
+            .catalogCapacity(CATALOG_CAPACITY)
+            .segmentFileLength(SEGMENT_FILE_LENGTH)
+            .archiveDir(new File(baseDirName, "archive"))
+            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
+            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+            .recordingEventsEnabled(false)
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .deleteArchiveOnStart(cleanStart);
+
+        final String dynamicOnlyConsensusEndpoints = clusterConsensusEndpoints(0, 3, index);
+
+        context.consensusModuleContext
+            .clusterMemberId(NULL_VALUE)
+            .clusterMembers("")
+            .clusterConsensusEndpoints(dynamicOnlyConsensusEndpoints)
             .memberEndpoints(clusterMembersEndpoints[index])
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(ingressChannel)
@@ -541,20 +593,12 @@ public class TestCluster implements AutoCloseable
     public void stopNode(final TestNode testNode)
     {
         testNode.close();
-        testNode.cleanup();
     }
 
     public void stopAllNodes()
     {
         CloseHelper.close(backupNode);
         CloseHelper.closeAll(nodes);
-        for (final TestNode node : nodes)
-        {
-            if (null != node)
-            {
-                node.cleanup();
-            }
-        }
     }
 
     public void restartAllNodes(final boolean cleanStart)
@@ -645,7 +689,7 @@ public class TestCluster implements AutoCloseable
                 .aeronDirectoryName(aeronDirName)
                 .nameResolver(new RedirectingNameResolver(nodeNameMappings()));
 
-            clientMediaDriver = MediaDriver.launch(ctx);
+            clientMediaDriver = TestMediaDriver.launch(ctx, clientDriverOutputConsumer(dataCollector));
         }
 
         clientCtx
@@ -654,6 +698,34 @@ public class TestCluster implements AutoCloseable
             .egressListener(egressListener)
             .controlledEgressListener(controlledEgressListener)
             .ingressEndpoints(staticClusterMemberEndpoints);
+
+        try
+        {
+            CloseHelper.close(client);
+            client = AeronCluster.connect(clientCtx.clone());
+        }
+        catch (final TimeoutException ex)
+        {
+            System.out.println("Warning: " + ex);
+
+            CloseHelper.close(client);
+            client = AeronCluster.connect(clientCtx);
+        }
+
+        return client;
+    }
+
+    public AeronCluster connectIpcClient(final AeronCluster.Context clientCtx, final String aeronDirName)
+    {
+
+        clientCtx
+            .aeronDirectoryName(aeronDirName)
+            .isIngressExclusive(true)
+            .ingressChannel("aeron:ipc")
+            .egressChannel("aeron:ipc")
+            .egressListener(egressListener)
+            .controlledEgressListener(controlledEgressListener)
+            .ingressEndpoints(null);
 
         try
         {
@@ -684,6 +756,22 @@ public class TestCluster implements AutoCloseable
             try
             {
                 pollUntilMessageSent(BitUtil.SIZE_OF_INT);
+            }
+            catch (final Exception ex)
+            {
+                throw new ClusterException("failed to send message " + i + " of " + messageCount, ex);
+            }
+        }
+    }
+
+    public void sendLargeMessages(final int messageCount)
+    {
+        for (int i = 0; i < messageCount; i++)
+        {
+            msgBuffer.putStringWithoutLengthAscii(0, LARGE_MSG);
+            try
+            {
+                pollUntilMessageSent(LARGE_MSG.length());
             }
             catch (final Exception ex)
             {
@@ -744,19 +832,27 @@ public class TestCluster implements AutoCloseable
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long heartbeatDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
         long count;
+        final Supplier<String> msg = () -> "expected=" + messageCount + " responseCount=" + responseCount.get();
 
         while ((count = responseCount.get()) < messageCount)
         {
-            Tests.sleep(1, "count=%d awaiting=%d", count, messageCount);
-
             client.pollEgress();
 
             final long nowMs = epochClock.time();
             if (nowMs > heartbeatDeadlineMs)
             {
-                client.sendKeepAlive();
+                try
+                {
+                    client.sendKeepAlive();
+                }
+                catch (final ClusterException e)
+                {
+                    throw new RuntimeException("count=" + count + " awaiting=" + messageCount, e);
+                }
                 heartbeatDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
             }
+
+            Tests.yieldingIdle(msg);
         }
     }
 
@@ -971,6 +1067,8 @@ public class TestCluster implements AutoCloseable
     public void awaitSnapshotCount(final TestNode node, final long value)
     {
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
+        final Supplier<String> msg =
+            () -> "Node=" + node.index() + " expected=" + value + " snapshotCount=" + snapshotCounter.get();
         while (true)
         {
             if (snapshotCounter.isClosed())
@@ -983,7 +1081,7 @@ public class TestCluster implements AutoCloseable
                 break;
             }
 
-            Tests.yield();
+            Tests.yieldingIdle(msg);
         }
     }
 
@@ -1177,6 +1275,56 @@ public class TestCluster implements AutoCloseable
         return builder.toString();
     }
 
+    public void purgeLogToLastSnapshot()
+    {
+        for (final TestNode testNode : nodes)
+        {
+            purgeLogToLastSnapshot(testNode);
+        }
+    }
+
+    public void purgeLogToLastSnapshot(final TestNode node)
+    {
+        if (null == node || node.isClosed())
+        {
+            return;
+        }
+
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
+        final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir(), false);
+        final RecordingLog.Entry latestSnapshot = Objects.requireNonNull(
+            recordingLog.getLatestSnapshot(ConsensusModule.Configuration.SERVICE_ID));
+        final long recordingId = recordingLog.findLastTermRecordingId();
+        if (RecordingPos.NULL_RECORDING_ID == recordingId)
+        {
+            throw new RuntimeException("Unable to find log recording");
+        }
+
+        try (Aeron aeron = Aeron.connect(
+            new Aeron.Context().aeronDirectoryName(node.mediaDriver().aeronDirectoryName())))
+        {
+            final AeronArchive.Context aeronArchiveCtx = node
+                .consensusModule()
+                .context()
+                .archiveContext()
+                .clone()
+                .aeron(aeron).ownsAeronClient(false);
+
+            try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveCtx))
+            {
+                aeronArchive.listRecording(recordingId, collector.reset());
+                final RecordingDescriptor recordingDescriptor = collector.descriptors().get(0);
+
+                final long newStartPosition = AeronArchive.segmentFileBasePosition(
+                    recordingDescriptor.startPosition(),
+                    latestSnapshot.logPosition,
+                    recordingDescriptor.termBufferLength(),
+                    recordingDescriptor.segmentFileLength());
+                aeronArchive.purgeSegments(recordingId, newStartPosition);
+            }
+        }
+    }
+
     private static String[] clusterMembersEndpoints(final int clusterId, final int maxMemberCount)
     {
         final String[] clusterMembersEndpoints = new String[maxMemberCount];
@@ -1194,11 +1342,11 @@ public class TestCluster implements AutoCloseable
         return clusterMembersEndpoints;
     }
 
-    private static String clusterConsensusEndpoints(final int clusterId, final int staticMemberCount)
+    private static String clusterConsensusEndpoints(final int clusterId, final int beginIndex, final int endIndex)
     {
         final StringBuilder builder = new StringBuilder();
 
-        for (int i = 0; i < staticMemberCount; i++)
+        for (int i = beginIndex; i < endIndex; i++)
         {
             builder.append(hostname(i)).append(":2").append(clusterId).append("22").append(i).append(',');
         }
@@ -1608,5 +1756,23 @@ public class TestCluster implements AutoCloseable
 
             return testCluster;
         }
+    }
+
+    public static DriverOutputConsumer clientDriverOutputConsumer(final DataCollector dataCollector)
+    {
+        if (TestMediaDriver.shouldRunJavaMediaDriver())
+        {
+            return null;
+        }
+
+        return new DriverOutputConsumer()
+        {
+            public void outputFiles(
+                final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
+            {
+                dataCollector.add(stdoutFile.toPath());
+                dataCollector.add(stderrFile.toPath());
+            }
+        };
     }
 }

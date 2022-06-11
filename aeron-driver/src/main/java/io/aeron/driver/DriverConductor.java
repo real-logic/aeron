@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -449,7 +449,7 @@ public final class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
         final ChannelUri channelUri = udpChannel.channelUri();
-        final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, false);
+        final PublicationParams params = getPublicationParams(channelUri, ctx, this, false);
         validateEndpointForPublication(udpChannel);
         validateMtuForMaxMessage(params, channel);
 
@@ -476,7 +476,16 @@ public final class DriverConductor implements Agent
         }
         else
         {
-            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId(), publication.channel());
+            confirmMatch(
+                channelUri,
+                params,
+                publication.rawLog(),
+                publication.sessionId(),
+                publication.channel(),
+                publication.initialTermId(),
+                publication.startingTermId(),
+                publication.startingTermOffset());
+
             validateSpiesSimulateConnection(
                 params, publication.spiesSimulateConnection(), channel, publication.channel());
         }
@@ -653,7 +662,7 @@ public final class DriverConductor implements Agent
     {
         IpcPublication publication = null;
         final ChannelUri channelUri = ChannelUri.parse(channel);
-        final PublicationParams params = getPublicationParams(channelUri, ctx, this, isExclusive, true);
+        final PublicationParams params = getPublicationParams(channelUri, ctx, this, true);
 
         if (!isExclusive)
         {
@@ -674,7 +683,15 @@ public final class DriverConductor implements Agent
         }
         else
         {
-            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId(), publication.channel());
+            confirmMatch(
+                channelUri,
+                params,
+                publication.rawLog(),
+                publication.sessionId(),
+                publication.channel(),
+                publication.initialTermId(),
+                publication.startingTermId(),
+                publication.startingTermOffset());
         }
 
         publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), publication));
@@ -1096,6 +1113,7 @@ public final class DriverConductor implements Agent
         subscription.close();
         cleanupSubscriptionLink(subscription);
         clientProxy.operationSucceeded(correlationId);
+        subscription.notifyUnavailableImages(this);
     }
 
     void onRemoveRcvNetworkDestination(
@@ -1797,7 +1815,8 @@ public final class DriverConductor implements Agent
                 publisherLimit,
                 rawLog,
                 Configuration.producerWindowLength(params.termLength, ctx.ipcPublicationTermWindowLength()),
-                isExclusive);
+                isExclusive,
+                params);
 
             ipcPublications.add(publication);
             activeSessionSet.add(new SessionKey(sessionId, streamId, IPC_MEDIA));

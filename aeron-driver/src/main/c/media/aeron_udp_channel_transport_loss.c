@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,8 +60,7 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_loss_loa
 
     interceptor_bindings->incoming_init_func = aeron_udp_channel_interceptor_loss_init_incoming;
     interceptor_bindings->outgoing_init_func = NULL;
-    interceptor_bindings->outgoing_mmsg_func = NULL;
-    interceptor_bindings->outgoing_msg_func = NULL;
+    interceptor_bindings->outgoing_send_func = NULL;
     interceptor_bindings->incoming_func = aeron_udp_channel_interceptor_loss_incoming;
     interceptor_bindings->outgoing_close_func = NULL;
     interceptor_bindings->incoming_close_func = NULL;

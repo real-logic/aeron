@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,6 +82,7 @@ class MinPositionSubscriptionTest
         shouldJoinAtSamePosition(channel, SPY_PREFIX + channel);
     }
 
+    @SuppressWarnings("try")
     private void shouldJoinAtSamePosition(final String publicationChannel, final String subscriptionChannel)
     {
         try (Subscription subscriptionOne = aeron.addSubscription(subscriptionChannel, STREAM_ID);

@@ -6,9 +6,16 @@ on:
   schedule:
     - cron: '0 0,12 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail"
-  INSTALL_COMPILER_RETRIES: "5"
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail'
+  INSTALL_COMPILER_RETRIES: '5'
+
+permissions:
+  contents: read
 
 jobs:
   java-slow-tests:
@@ -17,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11', '17', '18-ea' ]
+        java: [ '8', '11', '17', '18' ]
         os: [ 'ubuntu-20.04', 'windows-latest' ]
     steps:
       - name: Checkout code
@@ -134,7 +141,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13' ]
+        version: [ '14' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}
@@ -272,7 +279,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
       - name: Build
-        run: cppbuild/cppbuild --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
+        run: cppbuild/cppbuild --relwithdebinfo-build --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -292,7 +299,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13' ]
+        version: [ '14' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}

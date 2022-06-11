@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,19 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 
     snprintf(buffer, max_buffer_length - 1, "(%s:%s)", info.dli_fname, info.dli_sname);
     return buffer;
+}
+
+const char *aeron_dlinfo_func(void (*func)(void), char *buffer, size_t max_buffer_length)
+{
+#if defined(AERON_COMPILER_GCC)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+    void *addr = (void *)func;
+#if defined(AERON_COMPILER_GCC)
+#pragma GCC diagnostic pop
+#endif
+    return aeron_dlinfo(addr, buffer, max_buffer_length);
 }
 
 #elif defined(AERON_COMPILER_MSVC)
@@ -158,6 +171,12 @@ char *aeron_dlerror()
     return messageBuffer;
 }
 
+const char *aeron_dlinfo_func(void (*func)(void), char *buffer, size_t max_buffer_length)
+{
+    buffer[0] = '\0';
+    return buffer;
+}
+
 const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length)
 {
     buffer[0] = '\0';
@@ -179,6 +198,12 @@ int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
     const size_t libs_length = strlen(libs);
 
     *state = NULL;
+
+    if (NULL == aeron_dlsym(RTLD_DEFAULT, "aeron_driver_context_init"))
+    {
+        AERON_SET_ERR(EPERM, "%s", "dynamic loading of libraries not supported with a statically link driver");
+        return -1;
+    }
 
     if (libs_length >= (size_t)AERON_MAX_DL_LIBS_LEN)
     {

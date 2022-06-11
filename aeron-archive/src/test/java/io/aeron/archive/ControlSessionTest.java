@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ class ControlSessionTest
     private ControlSession session;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         session = new ControlSession(
             1,
@@ -67,7 +67,7 @@ class ControlSessionTest
     }
 
     @Test
-    public void shouldTimeoutIfConnectSentButPublicationNotConnected()
+    void shouldTimeoutIfConnectSentButPublicationNotConnected()
     {
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(false);
@@ -83,7 +83,7 @@ class ControlSessionTest
     }
 
     @Test
-    public void shouldTimeoutIfConnectSentButPublicationFailsToSend()
+    void shouldTimeoutIfConnectSentButPublicationFailsToSend()
     {
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(true);

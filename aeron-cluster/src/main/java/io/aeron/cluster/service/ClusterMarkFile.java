@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public final class ClusterMarkFile implements AutoCloseable
                 else if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
                     throw new ClusterException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software:" + MAJOR_VERSION);
+                        " does not match software: " + MAJOR_VERSION);
                 }
             },
             null);
@@ -113,7 +113,7 @@ public final class ClusterMarkFile implements AutoCloseable
             final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
                 buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
 
-            saveExistingErrors(file, existingErrorBuffer, type, System.err);
+            saveExistingErrors(file, existingErrorBuffer, type, CommonContext.fallbackLogger());
             existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
         }
         else
@@ -167,7 +167,7 @@ public final class ClusterMarkFile implements AutoCloseable
                 if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
                     throw new ClusterException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software:" + MAJOR_VERSION);
+                        " does not match software: " + MAJOR_VERSION);
                 }
             },
             logger);

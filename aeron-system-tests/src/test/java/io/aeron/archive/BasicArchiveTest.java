@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
+import java.util.ArrayList;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.ArchiveSystemTests.*;
@@ -312,9 +313,9 @@ public class BasicArchiveTest
         assertEquals(recordingIdFromCounter, recordingId);
         assertEquals(stopPosition, aeronArchive.getStopPosition(recordingId));
 
-        final String[] segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
-        assertNotNull(segmentFiles);
-        assertNotEquals(0, segmentFiles.length);
+        final ArrayList<String> segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
+
+        assertNotEquals(0, segmentFiles.size());
 
         aeronArchive.purgeRecording(recordingId);
 
@@ -338,7 +339,7 @@ public class BasicArchiveTest
             sourceIdentity) -> fail("Recording was not purged!"));
 
         assertEquals(0, count);
-        Tests.await(() -> 0 == Catalog.listSegmentFiles(archiveDir, recordingId).length);
+        Tests.await(() -> Catalog.listSegmentFiles(archiveDir, recordingId).isEmpty());
 
         for (final String segmentFile : segmentFiles)
         {
@@ -390,9 +391,8 @@ public class BasicArchiveTest
                     ArchiveException.class, () -> aeronArchive.purgeRecording(recordingId));
                 assertThat(exception.getMessage(), endsWith("error: cannot purge active recording " + recordingId));
 
-                final String[] segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
-                assertNotNull(segmentFiles);
-                assertNotEquals(0, segmentFiles.length);
+                final ArrayList<String> segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
+                assertNotEquals(0, segmentFiles.size());
 
                 for (final String segmentFile : segmentFiles)
                 {
@@ -408,6 +408,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
+    @SuppressWarnings("try")
     public void purgeRecordingFailsIfThereAreActiveReplays()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -459,9 +460,8 @@ public class BasicArchiveTest
             assertThat(exception.getMessage(),
                 endsWith("error: cannot purge recording with active replay " + recordingId));
 
-            final String[] segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
-            assertNotNull(segmentFiles);
-            assertNotEquals(0, segmentFiles.length);
+            final ArrayList<String> segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
+            assertNotEquals(0, segmentFiles.size());
 
             for (final String segmentFile : segmentFiles)
             {

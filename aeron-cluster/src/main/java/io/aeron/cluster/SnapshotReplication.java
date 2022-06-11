@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,10 +67,13 @@ final class SnapshotReplication
     {
         if (correlationId == replicationId)
         {
-            if (RecordingSignal.EXTEND == signal)
+            if (RecordingPos.NULL_RECORDING_ID != recordingId)
             {
                 this.recordingId = recordingId;
+            }
 
+            if (RecordingSignal.EXTEND == signal)
+            {
                 if (isNew && 0 != position)
                 {
                     throw new ClusterException("expected new extend signal at 0: position=" + position);
@@ -80,7 +83,7 @@ final class SnapshotReplication
             {
                 hasSync = true;
             }
-            else if (RecordingSignal.STOP == signal)
+            else if (RecordingSignal.REPLICATE_END == signal)
             {
                 isDone = true;
             }

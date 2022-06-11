@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,6 +114,23 @@ public class MultiNodeTest
 
         cluster.awaitLeader();
         cluster.awaitServicesMessageCount(totalMessageCount);
+    }
+
+    @Test
+    @InterruptAfter(20)
+    void shouldConnectClientOverIpc()
+    {
+        final AeronCluster.Context clientCtx = new AeronCluster.Context();
+
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+
+        final int numMessages = 10;
+        cluster.connectIpcClient(clientCtx, leader.mediaDriver().aeronDirectoryName());
+        cluster.sendMessages(numMessages);
+        cluster.awaitResponseMessageCount(numMessages);
     }
 
     @ParameterizedTest

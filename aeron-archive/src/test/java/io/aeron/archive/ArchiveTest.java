@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,18 @@ import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingSubscriptionDescriptorConsumer;
+import io.aeron.archive.codecs.TruncateRecordingRequestDecoder;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.SystemEpochClock;
@@ -66,10 +69,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ArchiveTest
+@SuppressWarnings("try")
+class ArchiveTest
 {
     @Test
-    public void shouldGenerateRecordingName()
+    void shouldGenerateRecordingName()
     {
         final long recordingId = 1L;
         final long segmentPosition = 2 * 64 * 1024;
@@ -81,7 +85,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldCalculateCorrectSegmentFilePosition()
+    void shouldCalculateCorrectSegmentFilePosition()
     {
         final int termLength = LogBufferDescriptor.TERM_MIN_LENGTH;
         final int segmentLength = termLength * 8;
@@ -122,7 +126,7 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldAllowMultipleConnectionsInParallel() throws InterruptedException
+    void shouldAllowMultipleConnectionsInParallel() throws InterruptedException
     {
         final int numberOfArchiveClients = 5;
         final long connectTimeoutNs = TimeUnit.SECONDS.toNanos(10);
@@ -135,7 +139,7 @@ public class ArchiveTest
             .dirDeleteOnStart(true)
             .publicationUnblockTimeoutNs(connectTimeoutNs * 2)
             .threadingMode(ThreadingMode.SHARED);
-        final Context archiveCtx = new Context()
+        final Archive.Context archiveCtx = new Archive.Context()
             .threadingMode(SHARED)
             .connectTimeoutNs(connectTimeoutNs);
         executor.prestartAllCoreThreads();
@@ -159,7 +163,7 @@ public class ArchiveTest
             AeronArchive archiveClient;
             while (null != (archiveClient = archiveClientQueue.poll()))
             {
-                archiveClient.close();
+                CloseHelper.quietClose(archiveClient);
             }
         }
         finally
@@ -171,12 +175,12 @@ public class ArchiveTest
     }
 
     @Test
-    public void shouldRecoverRecordingWithNonZeroStartPosition()
+    void shouldRecoverRecordingWithNonZeroStartPosition()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Context archiveCtx = new Context().threadingMode(SHARED);
+        final Archive.Context archiveCtx = new Archive.Context().threadingMode(SHARED);
 
         long resultingPosition;
         final int initialPosition = DataHeaderFlyweight.HEADER_LENGTH * 9;
@@ -219,7 +223,7 @@ public class ArchiveTest
             }
         }
 
-        try (Catalog catalog = openCatalog(archiveCtx))
+        try (Catalog catalog = openCatalog(archiveCtx.archiveDirectoryName()))
         {
             final Catalog.CatalogEntryProcessor catalogEntryProcessor =
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
@@ -228,7 +232,7 @@ public class ArchiveTest
             assertTrue(catalog.forEntry(recordingId, catalogEntryProcessor));
         }
 
-        final Context archiveCtxClone = archiveCtx.clone();
+        final Archive.Context archiveCtxClone = archiveCtx.clone();
         final MediaDriver.Context driverCtxClone = driverCtx.clone();
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtxClone, archiveCtxClone);
             AeronArchive archive = AeronArchive.connect())
@@ -243,21 +247,9 @@ public class ArchiveTest
         }
     }
 
-    private static Catalog openCatalog(final Context archiveCtx)
-    {
-        final IntConsumer intConsumer = (version) -> {};
-        return new Catalog(
-            new File(archiveCtx.archiveDirectoryName()),
-            new SystemEpochClock(),
-            MIN_CAPACITY,
-            true,
-            null,
-            intConsumer);
-    }
-
     @Test
     @InterruptAfter(10)
-    public void shouldListRegisteredRecordingSubscriptions()
+    void shouldListRegisteredRecordingSubscriptions()
     {
         final int expectedStreamId = 7;
         final String channelOne = "aeron:ipc";
@@ -273,7 +265,7 @@ public class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Context archiveCtx = new Context().threadingMode(SHARED);
+        final Archive.Context archiveCtx = new Archive.Context().threadingMode(SHARED);
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
             AeronArchive archive = AeronArchive.connect())
@@ -316,7 +308,7 @@ public class ArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldErrorOnLowSpace() throws IOException
+    void shouldErrorOnLowSpace() throws IOException
     {
         final int streamId = 7;
         final String channel = "aeron:ipc";
@@ -328,7 +320,7 @@ public class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Context archiveCtx = new Context()
+        final Archive.Context archiveCtx = new Archive.Context()
             .archiveFileStore(fileStore)
             .lowStorageSpaceThreshold(threshold)
             .deleteArchiveOnStart(true)
@@ -344,6 +336,47 @@ public class ArchiveTest
             catch (final ArchiveException ex)
             {
                 assertEquals(ArchiveException.STORAGE_SPACE, ex.errorCode());
+                return;
+            }
+
+            fail("Expected exception");
+        }
+        finally
+        {
+            archiveCtx.deleteDirectory();
+            driverCtx.deleteDirectory();
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldErrorWhenUnauthorised()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED);
+
+        final AuthorisationServiceSupplier authorisationServiceSupplier = () ->
+            (protocolId, actionId, type, encodedPrincipal) ->
+            {
+                return actionId != TruncateRecordingRequestDecoder.TEMPLATE_ID;
+            };
+
+        final Archive.Context archiveCtx = new Archive.Context()
+            .deleteArchiveOnStart(true)
+            .authorisationServiceSupplier(authorisationServiceSupplier)
+            .threadingMode(SHARED);
+
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
+            AeronArchive archive = AeronArchive.connect())
+        {
+            try
+            {
+                archive.truncateRecording(0, 0);
+            }
+            catch (final ArchiveException ex)
+            {
+                assertEquals(ArchiveException.UNAUTHORISED_ACTION, ex.errorCode());
                 return;
             }
 
@@ -395,7 +428,7 @@ public class ArchiveTest
     void replayBufferReturnsValueAssignedIfThreadingModeIsDEDICATED()
     {
         final UnsafeBuffer buffer = mock(UnsafeBuffer.class);
-        final Context context = new Context().threadingMode(DEDICATED);
+        final Archive.Context context = new Archive.Context().threadingMode(DEDICATED);
         context.replayBuffer(buffer);
 
         assertSame(buffer, context.replayBuffer());
@@ -405,7 +438,7 @@ public class ArchiveTest
     @EnumSource(value = ArchiveThreadingMode.class, mode = EXCLUDE, names = "DEDICATED")
     void replayBufferReturnsDataBufferIfThreadingModeIsNotDEDICATED(final ArchiveThreadingMode threadingMode)
     {
-        final Context context = new Context().threadingMode(threadingMode);
+        final Archive.Context context = new Archive.Context().threadingMode(threadingMode);
 
         final UnsafeBuffer buffer = context.replayBuffer();
 
@@ -415,7 +448,7 @@ public class ArchiveTest
     @Test
     void recordChecksumBufferReturnsNullIfRecordChecksumIsNull()
     {
-        final Context context = new Context();
+        final Archive.Context context = new Archive.Context();
         assertNull(context.recordChecksumBuffer());
     }
 
@@ -423,7 +456,7 @@ public class ArchiveTest
     void recordChecksumBufferIsAllocatedOnDemandIfThreadingModeIsDEDICATED()
     {
         final Checksum recordChecksum = mock(Checksum.class);
-        final Context context = new Context().recordChecksum(recordChecksum).threadingMode(DEDICATED);
+        final Archive.Context context = new Archive.Context().recordChecksum(recordChecksum).threadingMode(DEDICATED);
 
         final UnsafeBuffer buffer = context.recordChecksumBuffer();
 
@@ -438,7 +471,7 @@ public class ArchiveTest
     {
         final UnsafeBuffer buffer = mock(UnsafeBuffer.class);
         final Checksum recordChecksum = mock(Checksum.class);
-        final Context context = new Context().recordChecksum(recordChecksum).threadingMode(DEDICATED);
+        final Archive.Context context = new Archive.Context().recordChecksum(recordChecksum).threadingMode(DEDICATED);
         context.recordChecksumBuffer(buffer);
 
         assertSame(buffer, context.recordChecksumBuffer());
@@ -449,7 +482,9 @@ public class ArchiveTest
     void recordChecksumBufferReturnsDataBufferIfThreadingModeIsNotDEDICATED(final ArchiveThreadingMode threadingMode)
     {
         final Checksum recordChecksum = mock(Checksum.class);
-        final Context context = new Context().recordChecksum(recordChecksum).threadingMode(threadingMode);
+        final Archive.Context context = new Archive.Context()
+            .recordChecksum(recordChecksum)
+            .threadingMode(threadingMode);
 
         final UnsafeBuffer buffer = context.recordChecksumBuffer();
 
@@ -458,12 +493,12 @@ public class ArchiveTest
 
     @ParameterizedTest
     @ValueSource(strings = { "localhost:0", "localhost:8888" })
-    public void shouldResolveControlResponseEndpointAddress(final String endpoint)
+    void shouldResolveControlResponseEndpointAddress(final String endpoint)
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Context archiveCtx = new Context().threadingMode(SHARED);
+        final Archive.Context archiveCtx = new Archive.Context().threadingMode(SHARED);
         final String controlResponseChannel = "aeron:udp?endpoint=" + endpoint;
         final AeronArchive.Context clientContext = new AeronArchive.Context()
             .controlResponseChannel(controlResponseChannel);
@@ -498,6 +533,18 @@ public class ArchiveTest
         }
     }
 
+    private static Catalog openCatalog(final String archiveDirectoryName)
+    {
+        final IntConsumer intConsumer = (version) -> {};
+        return new Catalog(
+            new File(archiveDirectoryName),
+            new SystemEpochClock(),
+            MIN_CAPACITY,
+            true,
+            null,
+            intConsumer);
+    }
+
     static final class SubscriptionDescriptor
     {
         final long controlSessionId;
@@ -506,7 +553,7 @@ public class ArchiveTest
         final int streamId;
         final String strippedChannel;
 
-        private SubscriptionDescriptor(
+        SubscriptionDescriptor(
             final long controlSessionId,
             final long correlationId,
             final long subscriptionId,

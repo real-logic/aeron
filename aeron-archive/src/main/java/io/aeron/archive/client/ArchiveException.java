@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,6 +87,13 @@ public class ArchiveException extends AeronException
      * The replication identity for this operation is not known to the archive.
      */
     public static final int UNKNOWN_REPLICATION = 12;
+
+    /**
+     * The principle was not authorised to take the requested action.
+     */
+    public static final int UNAUTHORISED_ACTION = 13;
+
+    private static final long serialVersionUID = 386758252787901080L;
 
     private final int errorCode;
     private final long correlationId;

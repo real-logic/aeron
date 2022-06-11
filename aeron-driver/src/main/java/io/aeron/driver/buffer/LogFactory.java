@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,11 @@ package io.aeron.driver.buffer;
  */
 public interface LogFactory extends AutoCloseable
 {
+    /**
+     * {@inheritDoc}
+     */
+    void close();
+
     /**
      * Create a new {@link RawLog} for a publication.
      *

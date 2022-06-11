@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -249,12 +249,13 @@ class TaggedFlowControlSystemTest
 
         launch();
 
-        subscriptionA = clientA.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
         publication = clientA.addPublication(MULTICAST_URI + "|fc=tagged,g:123,t:1s", STREAM_ID);
 
+        subscriptionA = clientA.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
         Tests.awaitConnected(subscriptionA);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI + "|gtag=123", STREAM_ID);
         Tests.awaitConnected(subscriptionB);
+
         Tests.awaitConnected(publication);
 
         while (state.numFragmentsReadFromA < state.numMessagesToSend)

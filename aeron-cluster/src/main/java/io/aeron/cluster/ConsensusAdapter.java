@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,10 +159,16 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                final short flagsDecodedValue = appendPositionDecoder.flags();
+                final short flags = AppendPositionDecoder.flagsNullValue() == flagsDecodedValue ?
+                    ConsensusModuleAgent.APPEND_POSITION_FLAG_NONE : flagsDecodedValue;
+
                 consensusModuleAgent.onAppendPosition(
                     appendPositionDecoder.leadershipTermId(),
                     appendPositionDecoder.logPosition(),
-                    appendPositionDecoder.followerMemberId());
+                    appendPositionDecoder.followerMemberId(),
+                    flags);
+
                 break;
 
             case CommitPositionDecoder.TEMPLATE_ID:

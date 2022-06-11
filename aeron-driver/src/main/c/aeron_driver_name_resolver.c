@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -292,6 +292,7 @@ int aeron_driver_name_resolver_init(
         &_driver_resolver->transport,
         &_driver_resolver->local_socket_addr,
         NULL, // Unicast only.
+        NULL, // No connected
         _driver_resolver->interface_index,
         0,
         context->socket_rcvbuf,
@@ -760,23 +761,17 @@ static int aeron_driver_name_resolver_do_send(
     ssize_t length,
     struct sockaddr_storage *neighbor_address)
 {
-    struct iovec iov[1];
-    struct msghdr msghdr;
+    struct iovec iov;
+    int64_t bytes_sent = 0;
 
-    iov[0].iov_base = frame_header;
-    iov[0].iov_len = (uint32_t)length;
-    msghdr.msg_iov = iov;
-    msghdr.msg_iovlen = 1;
-    msghdr.msg_flags = 0;
-    msghdr.msg_name = neighbor_address;
-    msghdr.msg_namelen = AERON_ADDR_LEN(neighbor_address);
-    msghdr.msg_control = NULL;
-    msghdr.msg_controllen = 0;
+    iov.iov_base = frame_header;
+    iov.iov_len = (uint32_t)length;
 
-    int send_result = resolver->data_paths.sendmsg_func(&resolver->data_paths, &resolver->transport, &msghdr);
-    if (send_result >= 0)
+    int send_result = resolver->data_paths.send_func(
+        &resolver->data_paths, &resolver->transport, neighbor_address, &iov, 1, &bytes_sent);
+    if (0 <= send_result)
     {
-        if ((size_t)send_result != iov[0].iov_len)
+        if (bytes_sent < (int64_t)iov.iov_len)
         {
             aeron_counter_increment(resolver->short_sends_counter, 1);
         }
@@ -828,7 +823,7 @@ static int aeron_driver_name_resolver_send_self_resolutions(
 
     bool send_to_bootstrap = driver_resolver->bootstrap_neighbors_length > 0;
     int work_count = 0;
-    // TODO: Optimise with sendmmsg
+
     for (size_t k = 0; k < driver_resolver->neighbors.length; k++)
     {
         aeron_driver_name_resolver_neighbor_t *neighbor = &driver_resolver->neighbors.array[k];
@@ -952,7 +947,6 @@ static int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_nam
 
         frame_header->frame_length = (int32_t)entry_offset;
 
-        // TODO: Optimise with sendmmsg
         for (size_t k = 0; k < resolver->neighbors.length; k++)
         {
             aeron_driver_name_resolver_neighbor_t *neighbor = &resolver->neighbors.array[k];

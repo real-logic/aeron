@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ public class ArchiveMarkFile implements AutoCloseable
                 if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
                     throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software:" + MAJOR_VERSION);
+                        " does not match software: " + MAJOR_VERSION);
                 }
             },
             null);
@@ -131,7 +131,7 @@ public class ArchiveMarkFile implements AutoCloseable
             final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
                 buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
 
-            saveExistingErrors(file, existingErrorBuffer, System.err);
+            saveExistingErrors(file, existingErrorBuffer, CommonContext.fallbackLogger());
             existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
         }
 
@@ -164,7 +164,7 @@ public class ArchiveMarkFile implements AutoCloseable
                 if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
                     throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software:" + MAJOR_VERSION);
+                        " does not match software: " + MAJOR_VERSION);
                 }
             },
             logger);
@@ -289,10 +289,10 @@ public class ArchiveMarkFile implements AutoCloseable
     }
 
     /**
-     * Determine if the path matches the archive mark file name
+     * Determine if the path matches the archive mark file name.
      *
-     * @param path       to match
-     * @param attributes ignored, only needed for BiPredicate signature matching
+     * @param path       to match.
+     * @param attributes ignored, only needed for BiPredicate signature matching.
      * @return true if the filename matches.
      */
     public static boolean isArchiveMarkFile(final Path path, final BasicFileAttributes attributes)

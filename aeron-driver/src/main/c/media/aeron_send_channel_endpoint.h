@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_udp_channel_transport_t transport;
     aeron_atomic_counter_t channel_status;
     aeron_atomic_counter_t local_sockaddr_indicator;
+    aeron_atomic_counter_t tracker_num_destinations;
     aeron_udp_destination_tracker_t *destination_tracker;
     aeron_driver_sender_proxy_t *sender_proxy;
     aeron_int64_to_ptr_hash_map_t publication_dispatch_map;
@@ -79,8 +80,11 @@ int aeron_send_channel_endpoint_delete(
 void aeron_send_channel_endpoint_incref(void *clientd);
 void aeron_send_channel_endpoint_decref(void *clientd);
 
-int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen);
-int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr);
+int aeron_send_channel_send(
+    aeron_send_channel_endpoint_t *endpoint,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent);
 
 int aeron_send_channel_endpoint_add_publication(
     aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication);
@@ -111,8 +115,11 @@ void aeron_send_channel_endpoint_on_rttm(
 int aeron_send_channel_endpoint_check_for_re_resolution(
     aeron_send_channel_endpoint_t *endpoint, int64_t now_ns, aeron_driver_conductor_proxy_t *conductor_proxy);
 
-void aeron_send_channel_endpoint_resolution_change(
-    aeron_send_channel_endpoint_t *endpoint, const char *endpoint_name, struct sockaddr_storage *new_addr);
+int aeron_send_channel_endpoint_resolution_change(
+    aeron_driver_context_t *context,
+    aeron_send_channel_endpoint_t *endpoint,
+    const char *endpoint_name,
+    struct sockaddr_storage *new_addr);
 
 inline void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint)
 {

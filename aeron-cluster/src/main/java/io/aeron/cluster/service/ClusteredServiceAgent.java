@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.driver.Configuration;
@@ -69,8 +70,12 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private final ConsensusModuleProxy consensusModuleProxy;
     private final ServiceAdapter serviceAdapter;
     private final EpochClock epochClock;
+    private final UnsafeBuffer messageBuffer = new UnsafeBuffer(
+        new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH]);
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(
-        new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH]);
+        messageBuffer,
+        DataHeaderFlyweight.HEADER_LENGTH,
+        Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH);
     private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
     private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
     private final Long2ObjectHashMap<ContainerClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
@@ -489,7 +494,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         if (memberId == this.memberId && changeType == ChangeType.QUIT)
         {
-            terminate();
+            terminate(true);
         }
     }
 
@@ -574,7 +579,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                     "claim exceeds maxPayloadLength=" + maxPayloadLength + ", length=" + length);
             }
 
-            bufferClaim.wrap(headerBuffer, 0, length + SESSION_HEADER_LENGTH);
+            bufferClaim.wrap(
+                messageBuffer, 0, DataHeaderFlyweight.HEADER_LENGTH + SESSION_HEADER_LENGTH + length);
             return ClientSession.MOCKED_OFFER;
         }
 
@@ -583,7 +589,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             return Publication.NOT_CONNECTED;
         }
 
-        final long offset = publication.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim);
+        final long offset = publication.tryClaim(SESSION_HEADER_LENGTH + length, bufferClaim);
         if (offset > 0)
         {
             sessionMessageHeaderEncoder
@@ -948,11 +954,17 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         if (NULL_POSITION != terminationPosition && logPosition >= terminationPosition)
         {
-            terminate();
+            if (logPosition > terminationPosition)
+            {
+                ctx.countedErrorHandler().onError(new ClusterEvent(
+                    "service terminate: logPosition=" + logPosition + " > terminationPosition=" + terminationPosition));
+            }
+
+            terminate(logPosition == terminationPosition);
         }
     }
 
-    private void terminate()
+    private void terminate(final boolean isTerminationExpected)
     {
         isServiceActive = false;
         activeLifecycleCallbackName = "onTerminate";
@@ -988,7 +1000,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         terminationPosition = NULL_VALUE;
-        throw new ClusterTerminationException();
+        throw new ClusterTerminationException(isTerminationExpected);
     }
 
     private void checkForLifecycleCallback()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.aeron;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
@@ -176,6 +177,20 @@ public class ChannelUriTest
         {
             assertNotEquals(parsedUri1.hashCode(), parsedUri2.hashCode());
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+        "aeron:udp?endpoint=poison|interface=iface|mtu=4444, dest1, aeron:udp?endpoint=dest1|interface=iface",
+        "aeron:ipc, dest2, aeron:ipc?endpoint=dest2",
+        "aeron:udp, localhost, aeron:udp?endpoint=localhost",
+        "aeron:ipc?interface=here, there, aeron:ipc?endpoint=there|interface=here",
+        "aeron-spy:aeron:udp?eol=true|interface=none, abc, aeron:udp?endpoint=abc|interface=none",
+        "aeron:udp?interface=eth0|term-length=64k|ttl=0|endpoint=some, vm1, aeron:udp?endpoint=vm1|interface=eth0" })
+    void createDestinationUriTest(final String channel, final String endpoint, final String expected)
+    {
+        final String destinationUri = ChannelUri.createDestinationUri(channel, endpoint);
+        assertEquals(expected, destinationUri);
     }
 
     private static List<Arguments> equalityValues()

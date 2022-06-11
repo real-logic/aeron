@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ void aeron_thread_set_name(const char *role_name);
 
 void aeron_nano_sleep(uint64_t nanoseconds);
 void aeron_micro_sleep(unsigned int microseconds);
+int aeron_thread_set_affinity(const char *role_name, uint8_t cpu_affinity_no);
 
 #if defined(AERON_COMPILER_GCC)
 

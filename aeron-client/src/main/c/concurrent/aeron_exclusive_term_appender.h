@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
 inline void aeron_exclusive_term_appender_put_raw_tail_ordered(
     volatile int64_t *addr, int32_t term_id, int32_t term_offset)
 {
-    AERON_PUT_ORDERED(*addr, ((int64_t)term_id << 32 | term_offset));
+    AERON_PUT_ORDERED(*addr, ((uint64_t)term_id << 32 | term_offset));
 }
 
 inline void aeron_exclusive_term_appender_header_write(
@@ -219,7 +219,7 @@ inline int32_t aeron_exclusive_term_appender_append_unfragmented_messagev(
             term_buffer, term_offset, frame_length, term_id, session_id, stream_id);
 
         aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
-        int32_t offset = term_offset + AERON_DATA_HEADER_LENGTH;
+        int32_t offset = (int32_t)(term_offset + AERON_DATA_HEADER_LENGTH);
         size_t i = 0;
 
         for (int32_t ending_offset = offset + (int32_t)length;
@@ -363,7 +363,7 @@ inline int32_t aeron_exclusive_term_appender_append_fragmented_messagev(
                 term_buffer, frame_offset, frame_length, term_id, session_id, stream_id);
 
             int32_t bytes_written = 0;
-            int32_t payload_offset = frame_offset + AERON_DATA_HEADER_LENGTH;
+            int32_t payload_offset = (int32_t)(frame_offset + AERON_DATA_HEADER_LENGTH);
 
             do
             {

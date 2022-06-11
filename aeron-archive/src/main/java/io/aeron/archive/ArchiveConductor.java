@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveEvent;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
@@ -26,8 +27,12 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.security.Authenticator;
+import io.aeron.security.AuthorisationService;
 import org.agrona.*;
-import org.agrona.collections.*;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2LongCounterMap;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -36,7 +41,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -45,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.*;
+import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
@@ -63,7 +68,7 @@ abstract class ArchiveConductor
 {
     private static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
-    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
+    private static final String DELETE_SUFFIX = ".del";
 
     private final long closeHandlerRegistrationId;
     private final long unavailableCounterHandlerRegistrationId;
@@ -84,7 +89,6 @@ abstract class ArchiveConductor
         new Object2ObjectHashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
     private final Long2LongCounterMap subscriptionRefCountMap = new Long2LongCounterMap(0L);
 
@@ -100,7 +104,9 @@ abstract class ArchiveConductor
     private final ArchiveMarkFile markFile;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Authenticator authenticator;
-    private final ControlSessionProxy controlSessionProxy;
+    private final AuthorisationService authorisationService;
+    private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
+    private final ControlSessionProxy controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     final Archive.Context ctx;
     SessionWorker<RecordingSession> recorder;
     SessionWorker<ReplaySession> replayer;
@@ -117,25 +123,33 @@ abstract class ArchiveConductor
         epochClock = ctx.epochClock();
         archiveDir = ctx.archiveDir();
         connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
+        catalog = ctx.catalog();
+        markFile = ctx.archiveMarkFile();
+        cachedEpochClock.update(epochClock.time());
+
+        authenticator = ctx.authenticatorSupplier().get();
+        if (null == authenticator)
+        {
+            throw new ArchiveException("authenticator cannot be null");
+        }
+
+        authorisationService = ctx.authorisationServiceSupplier().get();
+        if (null == authorisationService)
+        {
+            throw new ArchiveException("authorisation service cannot be null");
+        }
 
         unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this);
         closeHandlerRegistrationId = aeron.addCloseHandler(this::abort);
 
-        final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
-        controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
-        controlSubscription = aeron.addSubscription(controlChannelUri.toString(), ctx.controlStreamId(), this, null);
-
-        localControlSubscription = aeron.addSubscription(
-            ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
-
         recordingEventsProxy = ctx.recordingEventsEnabled() ? new RecordingEventsProxy(
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId())) : null;
 
-        catalog = ctx.catalog();
-        markFile = ctx.archiveMarkFile();
-        cachedEpochClock.update(epochClock.time());
-        authenticator = ctx.authenticatorSupplier().get();
-        controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
+        final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
+        controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
+        controlSubscription = aeron.addSubscription(controlChannelUri.toString(), ctx.controlStreamId(), this, null);
+        localControlSubscription = aeron.addSubscription(
+            ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
     }
 
     public void onStart()
@@ -146,7 +160,7 @@ abstract class ArchiveConductor
 
     public void onAvailableImage(final Image image)
     {
-        addSession(new ControlSessionDemuxer(decoders, image, this));
+        addSession(new ControlSessionDemuxer(decoders, image, this, authorisationService));
     }
 
     public void onUnavailableCounter(
@@ -282,6 +296,11 @@ abstract class ArchiveConductor
         return ctx;
     }
 
+    ControlResponseProxy controlResponseProxy()
+    {
+        return controlResponseProxy;
+    }
+
     final int invokeAeronInvoker()
     {
         int workCount = 0;
@@ -320,6 +339,11 @@ abstract class ArchiveConductor
     Catalog catalog()
     {
         return catalog;
+    }
+
+    void logWarning(final String message)
+    {
+        errorHandler.onError(new ArchiveEvent(message));
     }
 
     ControlSession newControlSession(
@@ -587,7 +611,7 @@ abstract class ArchiveConductor
     {
         if (minRecordingId < 0)
         {
-            final String msg = "minRecordingId=" + minRecordingId + " is < 0";
+            final String msg = "minRecordingId=" + minRecordingId + " < 0";
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
         }
         else
@@ -635,20 +659,61 @@ abstract class ArchiveConductor
             replayPosition = position;
         }
 
-        final ExclusivePublication replayPublication = newReplayPublication(
-            correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
+        final ChannelUri channelUri = ChannelUri.parse(replayChannel);
+        final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
+            .initialPosition(replayPosition, recordingSummary.initialTermId, recordingSummary.termBufferLength)
+            .ttl(channelUri)
+            .eos(channelUri)
+            .sparse(channelUri)
+            .mtu(recordingSummary.mtuLength);
+
+        final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);
+        channelBuilder.linger(null != lingerValue ? Long.parseLong(lingerValue) : ctx.replayLingerTimeoutNs());
+
+        try
+        {
+            addSession(new CreateReplayPublicationSession(
+                correlationId,
+                recordingId,
+                replayPosition,
+                length,
+                aeron.asyncAddExclusivePublication(channelBuilder.build(), replayStreamId),
+                limitPosition,
+                aeron,
+                controlSession,
+                this));
+        }
+        catch (final Exception ex)
+        {
+            final String msg = "failed to create replay publication - " + ex;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            throw ex;
+        }
+    }
+
+    void newReplaySession(
+        final long recordingId,
+        final long replayPosition,
+        final long replayLength,
+        final long correlationId,
+        final ControlSession controlSession,
+        final Counter limitPositionCounter,
+        final ExclusivePublication replayPublication)
+    {
         final long replaySessionId = ((long)(replayId++) << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
 
-        Counter replayLimitPosition = limitPosition;
+        Counter replayLimitPosition = limitPositionCounter;
         if (null == replayLimitPosition)
         {
             final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
             replayLimitPosition = null == recordingSession ? null : recordingSession.recordingPosition();
         }
 
+        catalog.recordingSummary(recordingId, recordingSummary);
+
         final ReplaySession replaySession = new ReplaySession(
             replayPosition,
-            length,
+            replayLength,
             replaySessionId,
             connectTimeoutMs,
             correlationId,
@@ -882,18 +947,7 @@ abstract class ArchiveConductor
                 files.addLast(segmentFileName(recordingId, p));
             }
 
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
-
-            if (!files.isEmpty())
-            {
-                addSession(new DeleteSegmentsSession(
-                    recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy, errorHandler));
-            }
-            else
-            {
-                controlSession.attemptSignal(
-                    correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
-            }
+            deleteSegments(correlationId, recordingId, controlSession, files);
         }
     }
 
@@ -906,29 +960,22 @@ abstract class ArchiveConductor
 
             if (catalog.invalidateRecording(recordingId))
             {
-                final String[] segmentFiles = Catalog.listSegmentFiles(archiveDir, recordingId);
+                final String[] segmentFiles = archiveDir.list();
                 if (null != segmentFiles)
                 {
+                    final String prefix = recordingId + "-";
                     for (final String segmentFile : segmentFiles)
                     {
-                        files.addLast(segmentFile);
+                        if (segmentFile.startsWith(prefix) &&
+                            (segmentFile.endsWith(RECORDING_SEGMENT_SUFFIX) || segmentFile.endsWith(DELETE_SUFFIX)))
+                        {
+                            files.addLast(segmentFile);
+                        }
                     }
                 }
             }
 
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
-
-            if (!files.isEmpty())
-            {
-                addSession(new DeleteSegmentsSession(
-                    recordingId,
-                    correlationId,
-                    files,
-                    archiveDir,
-                    controlSession,
-                    controlResponseProxy,
-                    errorHandler));
-            }
+            deleteSegments(correlationId, recordingId, controlSession, files);
         }
     }
 
@@ -1018,7 +1065,7 @@ abstract class ArchiveConductor
                 recordingSessionByIdMap.remove(recordingId);
                 catalog.recordingStopped(recordingId, position, epochClock.time());
                 session.sendPendingError(controlResponseProxy);
-                session.controlSession().attemptSignal(
+                session.controlSession().sendSignal(
                     session.correlationId(),
                     recordingId,
                     subscriptionId,
@@ -1151,15 +1198,7 @@ abstract class ArchiveConductor
         {
             final ArrayDeque<String> files = new ArrayDeque<>();
             findDetachedSegments(recordingId, files);
-
-            final int count = files.size();
-            if (count > 0)
-            {
-                addSession(new DeleteSegmentsSession(
-                    recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy, errorHandler));
-            }
-
-            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
+            deleteSegments(correlationId, recordingId, controlSession, files);
         }
     }
 
@@ -1176,15 +1215,7 @@ abstract class ArchiveConductor
 
             final ArrayDeque<String> files = new ArrayDeque<>();
             findDetachedSegments(recordingId, files);
-
-            final int count = files.size();
-            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
-
-            if (count > 0)
-            {
-                addSession(new DeleteSegmentsSession(
-                    recordingId, correlationId, files, archiveDir, controlSession, controlResponseProxy, errorHandler));
-            }
+            deleteSegments(correlationId, recordingId, controlSession, files);
         }
     }
 
@@ -1216,7 +1247,7 @@ abstract class ArchiveConductor
                     return;
                 }
 
-                try (FileChannel fileChannel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
+                try (FileChannel fileChannel = FileChannel.open(file.toPath(), FILE_OPTIONS))
                 {
                     final int termCount = (int)(position >> bitsToShift);
                     final int termId = recordingSummary.initialTermId + termCount;
@@ -1296,20 +1327,17 @@ abstract class ArchiveConductor
                 position -= segmentLength;
             }
 
-            catalog.startPosition(dstRecordingId, startPosition);
-            catalog.stopPosition(srcRecordingId, startPosition);
-            controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
-
-            if (!files.isEmpty())
+            if (addDeleteSegmentsSession(correlationId, srcRecordingId, controlSession, files) >= 0)
             {
-                addSession(new DeleteSegmentsSession(
-                    srcRecordingId,
-                    correlationId,
-                    files,
-                    archiveDir,
-                    controlSession,
-                    controlResponseProxy,
-                    errorHandler));
+                catalog.startPosition(dstRecordingId, startPosition);
+                catalog.stopPosition(srcRecordingId, startPosition);
+                controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
+
+                if (files.isEmpty())
+                {
+                    controlSession.sendSignal(
+                        correlationId, srcRecordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
+                }
             }
         }
     }
@@ -1328,15 +1356,60 @@ abstract class ArchiveConductor
         while (filenamePosition >= 0)
         {
             final String segmentFileName = segmentFileName(recordingId, filenamePosition);
-            final File file = new File(archiveDir, segmentFileName);
-            if (!file.exists())
-            {
-                break;
-            }
-
             files.addFirst(segmentFileName);
             filenamePosition -= segmentFile;
         }
+    }
+
+    private int addDeleteSegmentsSession(
+        final long correlationId,
+        final long recordingId,
+        final ControlSession controlSession,
+        final ArrayDeque<String> files)
+    {
+        if (files.isEmpty())
+        {
+            return 0;
+        }
+
+        final ArrayDeque<File> deleteList = new ArrayDeque<>(files.size());
+        for (final String name : files)
+        {
+            final File file = new File(archiveDir, name);
+            if (file.exists())
+            {
+                if (!name.endsWith(DELETE_SUFFIX))
+                {
+                    final File toDelete = new File(archiveDir, name + DELETE_SUFFIX);
+                    if (!file.renameTo(toDelete))
+                    {
+                        final String msg = "failed to rename " + file + " to " + toDelete;
+                        controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+                        return -1;
+                    }
+                    deleteList.addLast(toDelete);
+                }
+                else
+                {
+                    deleteList.addLast(file);
+                }
+            }
+            else if (!name.endsWith(DELETE_SUFFIX))
+            {
+                final File toDelete = new File(archiveDir, name + DELETE_SUFFIX);
+                if (toDelete.exists())
+                {
+                    deleteList.addLast(toDelete);
+                }
+            }
+        }
+
+        final int count = deleteList.size();
+
+        addSession(new DeleteSegmentsSession(
+            recordingId, correlationId, deleteList, controlSession, controlResponseProxy, errorHandler));
+
+        return count;
     }
 
     private int findTermOffsetForStart(
@@ -1437,7 +1510,7 @@ abstract class ArchiveConductor
     private static ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
     {
         return new ChannelUriStringBuilder()
-            .media(channelUri.media())
+            .media(channelUri)
             .endpoint(channelUri)
             .networkInterface(channelUri)
             .controlEndpoint(channelUri)
@@ -1556,16 +1629,16 @@ abstract class ArchiveConductor
             controlSession,
             autoStop);
 
-        subscriptionRefCountMap.incrementAndGet(image.subscription().registrationId());
-        recordingSessionByIdMap.put(recordingId, session);
-        recorder.addSession(session);
-
-        controlSession.attemptSignal(
+        controlSession.sendSignal(
             correlationId,
             recordingId,
             image.subscription().registrationId(),
             image.joinPosition(),
             RecordingSignal.START);
+
+        subscriptionRefCountMap.incrementAndGet(image.subscription().registrationId());
+        recordingSessionByIdMap.put(recordingId, session);
+        recorder.addSession(session);
     }
 
     private void extendRecordingSession(
@@ -1615,13 +1688,13 @@ abstract class ArchiveConductor
                 controlSession,
                 autoStop);
 
+            catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
+            controlSession.sendSignal(
+                correlationId, recordingId, subscriptionId, image.joinPosition(), RecordingSignal.EXTEND);
+
             subscriptionRefCountMap.incrementAndGet(subscriptionId);
             recordingSessionByIdMap.put(recordingId, session);
-            catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
             recorder.addSession(session);
-
-            controlSession.attemptSignal(
-                correlationId, recordingId, subscriptionId, image.joinPosition(), RecordingSignal.EXTEND);
         }
         catch (final Exception ex)
         {
@@ -1647,37 +1720,6 @@ abstract class ArchiveConductor
         }
 
         return null;
-    }
-
-    private ExclusivePublication newReplayPublication(
-        final long correlationId,
-        final ControlSession controlSession,
-        final String replayChannel,
-        final int replayStreamId,
-        final long position,
-        final RecordingSummary recording)
-    {
-        final ChannelUri channelUri = ChannelUri.parse(replayChannel);
-        final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
-            .initialPosition(position, recording.initialTermId, recording.termBufferLength)
-            .ttl(channelUri)
-            .eos(channelUri)
-            .sparse(channelUri)
-            .mtu(recording.mtuLength);
-
-        final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);
-        channelBuilder.linger(null != lingerValue ? Long.parseLong(lingerValue) : ctx.replayLingerTimeoutNs());
-
-        try
-        {
-            return aeron.addExclusivePublication(channelBuilder.build(), replayStreamId);
-        }
-        catch (final Exception ex)
-        {
-            final String msg = "failed to create replay publication - " + ex;
-            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-            throw ex;
-        }
     }
 
     private void validateImageForExtendRecording(
@@ -1854,19 +1896,26 @@ abstract class ArchiveConductor
             return false;
         }
 
-        long replayBasePosition = Long.MAX_VALUE;
+        ReplaySession minReplaySession = null;
         for (final ReplaySession replaySession : replaySessionByIdMap.values())
         {
-            if (replaySession.recordingId() == recordingId)
+            final long replayPos = replaySession.segmentFileBasePosition();
+            if (recordingId == replaySession.recordingId() && position > replayPos &&
+                (null == minReplaySession || replayPos < minReplaySession.segmentFileBasePosition()))
             {
-                replayBasePosition = min(replayBasePosition, replaySession.segmentFileBasePosition());
+                minReplaySession = replaySession;
             }
         }
 
-        if (position > replayBasePosition)
+        if (null != minReplaySession)
         {
-            final String msg = "invalid detach: replay in progress, newStartPosition=" + position +
-                " upperBound=" + replayBasePosition;
+            final String msg = "invalid detach: replay in progress - " +
+                " state=" + minReplaySession.state() +
+                " newStartPosition=" + position +
+                " upperBound=" + minReplaySession.segmentFileBasePosition() +
+                " sessionId=" + (int)minReplaySession.sessionId() +
+                " streamId=" + minReplaySession.replayStreamId() +
+                " channel=" + minReplaySession.replayChannel();
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return false;
         }
@@ -1962,7 +2011,7 @@ abstract class ArchiveConductor
         final int termLength,
         final File file)
     {
-        try (FileChannel channel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
+        try (FileChannel channel = FileChannel.open(file.toPath(), FILE_OPTIONS))
         {
             final int termOffset = (int)(position & (termLength - 1));
             final int termCount = (int)(position >> LogBufferDescriptor.positionBitsToShift(termLength));
@@ -2027,5 +2076,24 @@ abstract class ArchiveConductor
         }
 
         return false;
+    }
+
+    private void deleteSegments(
+        final long correlationId,
+        final long recordingId,
+        final ControlSession controlSession,
+        final ArrayDeque<String> files)
+    {
+        final int count = addDeleteSegmentsSession(correlationId, recordingId, controlSession, files);
+        if (count >= 0)
+        {
+            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
+
+            if (0 == count)
+            {
+                controlSession.sendSignal(
+                    correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
+            }
+        }
     }
 }

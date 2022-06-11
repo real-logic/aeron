@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,7 +168,9 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
             minPosition = Math.min(minPosition, receiver.lastPositionPlusWindow);
         }
 
-        if (matchesTag && !isExisting)
+        if (!isExisting &&
+            matchesTag &&
+            (0 == receivers.length || lastPositionPlusWindow >= minPosition - windowLength))
         {
             final Receiver receiver = new Receiver(
                 receiverId, flyweight.sessionId(), flyweight.streamId(), position, lastPositionPlusWindow, timeNs);
@@ -183,7 +185,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         {
             return senderLimit;
         }
-        else if (receivers.length == 0)
+        else if (0 == receivers.length)
         {
             return Math.max(senderLimit, lastPositionPlusWindow);
         }

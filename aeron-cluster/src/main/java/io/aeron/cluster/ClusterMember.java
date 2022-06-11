@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public final class ClusterMember
      * @param ingressEndpoint   address and port endpoint to which cluster clients send ingress.
      * @param consensusEndpoint address and port endpoint to which other cluster members connect.
      * @param logEndpoint       address and port endpoint to which the log is replicated.
-     * @param catchupEndpoint   address and port endpoint to which a stream is replayed to catchup to the leader.
+     * @param catchupEndpoint   address and port endpoint to which a stream is replayed for catchup to the leader.
      * @param archiveEndpoint   address and port endpoint to which the archive control channel can be reached.
      * @param endpoints         comma separated list of endpoints.
      */

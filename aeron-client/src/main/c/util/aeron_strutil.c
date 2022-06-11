@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -263,3 +263,4 @@ int getopt(int argc, char *const argv[], const char *opt_string)
 #endif
 
 extern uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len);
+extern bool aeron_str_length(const char *str, size_t length_bound, size_t *length);

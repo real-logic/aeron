@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 #include "util/aeron_strutil.h"
+#include "util/aeron_symbol_table.h"
+#include "aeron_udp_channel_transport_loss.h"
 #include "aeron_udp_channel_transport_bindings.h"
 #include "aeron_udp_channel_transport.h"
 #include "aeron_udp_transport_poller.h"
@@ -34,10 +36,10 @@
 aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_default =
     {
         aeron_udp_channel_transport_init,
+        aeron_udp_channel_transport_reconnect,
         aeron_udp_channel_transport_close,
         aeron_udp_channel_transport_recvmmsg,
-        aeron_udp_channel_transport_sendmmsg,
-        aeron_udp_channel_transport_sendmsg,
+        aeron_udp_channel_transport_send,
         aeron_udp_channel_transport_get_so_rcvbuf,
         aeron_udp_channel_transport_bind_addr_and_port,
         aeron_udp_transport_poller_init,
@@ -52,9 +54,37 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_defa
         }
     };
 
+static const aeron_symbol_table_obj_t aeron_udp_channel_transport_bindings_table[] =
+    {
+        {
+            "default",
+            "aeron_udp_channel_transport_bindings_default",
+            (void *)&aeron_udp_channel_transport_bindings_default
+        },
+    };
+
+static const size_t aeron_udp_channel_transport_bindings_table_length =
+    sizeof(aeron_udp_channel_transport_bindings_table) / sizeof (aeron_symbol_table_obj_t);
+
+static const aeron_symbol_table_func_t aeron_udp_channel_interceptor_table[] =
+    {
+        {
+            "loss",
+            "aeron_udp_channel_interceptor_loss_load",
+            (aeron_fptr_t)aeron_udp_channel_interceptor_loss_load
+        }
+    };
+
+static const size_t aeron_udp_channel_interceptor_table_length =
+    sizeof(aeron_udp_channel_transport_bindings_table) / sizeof(aeron_symbol_table_func_t);
+
 aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_media(const char *bindings_name)
 {
-    aeron_udp_channel_transport_bindings_t *bindings = NULL;
+    aeron_udp_channel_transport_bindings_t *bindings = aeron_symbol_table_obj_load(
+        aeron_udp_channel_transport_bindings_table,
+        aeron_udp_channel_transport_bindings_table_length,
+        bindings_name,
+        "udp channel bindings");
 
     if (NULL == bindings_name)
     {
@@ -62,20 +92,7 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
         return NULL;
     }
 
-    if (strncmp(bindings_name, "default", sizeof("default")) == 0)
-    {
-        return aeron_udp_channel_transport_bindings_load_media("aeron_udp_channel_transport_bindings_default");
-    }
-    else
-    {
-        if ((bindings = (aeron_udp_channel_transport_bindings_t *)aeron_dlsym(RTLD_DEFAULT, bindings_name)) == NULL)
-        {
-            AERON_SET_ERR(
-                EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s", bindings_name, aeron_dlerror());
-            return NULL;
-        }
-        bindings->meta_info.source_symbol = bindings;
-    }
+    bindings->meta_info.source_symbol = bindings;
 
     return bindings;
 }
@@ -83,38 +100,11 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
 static aeron_udp_channel_interceptor_bindings_load_func_t *aeron_udp_channel_interceptor_bindings_load_interceptor(
     const char *interceptor_name)
 {
-    aeron_udp_channel_interceptor_bindings_load_func_t *load_interceptor = NULL;
-
-    if (NULL == interceptor_name)
-    {
-        return NULL;
-    }
-
-    if (strncmp(interceptor_name, "loss", sizeof("loss")) == 0)
-    {
-        return aeron_udp_channel_interceptor_bindings_load_interceptor("aeron_udp_channel_interceptor_loss_load");
-    }
-    else
-    {
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-        if ((load_interceptor = (aeron_udp_channel_interceptor_bindings_load_func_t *)aeron_dlsym(
-            RTLD_DEFAULT, interceptor_name)) == NULL)
-        {
-            AERON_SET_ERR(EINVAL,
-                "could not find interceptor bindings %s: dlsym - %s",
-                interceptor_name,
-                aeron_dlerror());
-            return NULL;
-        }
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
-    }
-
-    return load_interceptor;
+    return (aeron_udp_channel_interceptor_bindings_load_func_t *)aeron_symbol_table_func_load(
+        aeron_udp_channel_interceptor_table,
+        aeron_udp_channel_interceptor_table_length,
+        interceptor_name,
+        "interceptor bindings");
 }
 
 #define AERON_MAX_INTERCEPTORS_LEN (4094)
@@ -177,14 +167,7 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
             return NULL;
         }
 
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-        current_bindings->meta_info.source_symbol = (const void *)interceptor_load_func;
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
+        current_bindings->meta_info.source_symbol = (aeron_fptr_t)interceptor_load_func;
     }
 
     return current_bindings;
@@ -203,8 +186,7 @@ int aeron_udp_channel_data_paths_init(
     data_paths->incoming_interceptors = NULL;
 
     /* if no interceptors, then use sendmmsg_func from transport bindings. */
-    data_paths->sendmmsg_func = media_bindings->sendmmsg_func;
-    data_paths->sendmsg_func = media_bindings->sendmsg_func;
+    data_paths->send_func = media_bindings->send_func;
     /* if no interceptors, then use passed in recv_func */
     data_paths->recv_func = recv_func;
 
@@ -227,8 +209,7 @@ int aeron_udp_channel_data_paths_init(
             }
 
             interceptor->interceptor_state = NULL;
-            interceptor->outgoing_mmsg_func = binding->outgoing_mmsg_func;
-            interceptor->outgoing_msg_func = binding->outgoing_msg_func;
+            interceptor->outgoing_send_func = binding->outgoing_send_func;
             interceptor->close_func = binding->outgoing_close_func;
             interceptor->outgoing_transport_notification_func = binding->outgoing_transport_notification_func;
             interceptor->outgoing_publication_notification_func = binding->outgoing_publication_notification_func;
@@ -258,24 +239,15 @@ int aeron_udp_channel_data_paths_init(
             return -1;
         }
 
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
         outgoing_transport_interceptor->interceptor_state = media_bindings;
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
 
         /* last interceptor calls sendmmsg_func/sendmsg_func from transport bindings */
-        outgoing_transport_interceptor->outgoing_mmsg_func = aeron_udp_channel_outgoing_interceptor_mmsg_to_transport;
-        outgoing_transport_interceptor->outgoing_msg_func = aeron_udp_channel_outgoing_interceptor_msg_to_transport;
+        outgoing_transport_interceptor->outgoing_send_func = aeron_udp_channel_outgoing_interceptor_send_to_transport;
         outgoing_transport_interceptor->close_func = NULL;
         outgoing_transport_interceptor->next_interceptor = NULL;
         last_outgoing_interceptor->next_interceptor = outgoing_transport_interceptor;
         /* set up to pass into interceptors */
-        data_paths->sendmmsg_func = aeron_udp_channel_outgoing_interceptor_sendmmsg;
-        data_paths->sendmsg_func = aeron_udp_channel_outgoing_interceptor_sendmsg;
+        data_paths->send_func = aeron_udp_channel_outgoing_interceptor_send;
     }
 
     if (NULL != incoming_interceptor_bindings)
@@ -328,16 +300,18 @@ int aeron_udp_channel_data_paths_init(
             return -1;
         }
 
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-        incoming_transport_interceptor->interceptor_state = (void *)recv_func;
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
+        aeron_udp_channel_transport_recv_func_holder_t *recv_function_holder = NULL;
+        if (aeron_alloc(
+            (void **)&recv_function_holder, sizeof(aeron_udp_channel_transport_recv_func_holder_t)) < 0)
+        {
+            AERON_APPEND_ERR("%s", "Function holder for last incoming interceptor for UDP transport bindings");
+            return -1;
+        }
+        recv_function_holder->func = recv_func;
+
+        incoming_transport_interceptor->interceptor_state = recv_function_holder;
         incoming_transport_interceptor->incoming_func = aeron_udp_channel_incoming_interceptor_to_endpoint;
-        incoming_transport_interceptor->close_func = NULL;
+        incoming_transport_interceptor->close_func = aeron_udp_channel_transport_recv_func_holder_close;
         incoming_transport_interceptor->next_interceptor = NULL;
         last_incoming_interceptor->next_interceptor = incoming_transport_interceptor;
         data_paths->recv_func = aeron_udp_channel_incoming_interceptor_recv_func;
@@ -383,16 +357,19 @@ int aeron_udp_channel_data_paths_delete(aeron_udp_channel_data_paths_t *data_pat
     return 0;
 }
 
-extern int aeron_udp_channel_outgoing_interceptor_sendmmsg(
-    aeron_udp_channel_data_paths_t *data_paths,
-    aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen);
+int aeron_udp_channel_transport_recv_func_holder_close(void *holder)
+{
+    aeron_free(holder);
+    return 0;
+}
 
-extern int aeron_udp_channel_outgoing_interceptor_sendmsg(
+extern int aeron_udp_channel_outgoing_interceptor_send(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
-    struct msghdr *message);
+    struct sockaddr_storage *address,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent);
 
 extern int aeron_udp_channel_outgoing_interceptor_mmsg_to_transport(
     void *interceptor_state,
@@ -406,6 +383,16 @@ extern int aeron_udp_channel_outgoing_interceptor_msg_to_transport(
     aeron_udp_channel_outgoing_interceptor_t *delegate,
     aeron_udp_channel_transport_t *transport,
     struct msghdr *message);
+
+extern int aeron_udp_channel_outgoing_interceptor_send_to_transport(
+    void *interceptor_state,
+    aeron_udp_channel_outgoing_interceptor_t *delegate,
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *address,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent);
+
 
 extern void aeron_udp_channel_incoming_interceptor_recv_func(
     aeron_udp_channel_data_paths_t *data_paths,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ protected:
         aeron_driver_context_set_threading_mode(m_context, AERON_THREADING_MODE_SHARED);
         aeron_driver_context_set_dir_delete_on_start(m_context, true);
         aeron_driver_context_set_dir_delete_on_shutdown(m_context, true);
-        aeron_driver_context_set_shared_idle_strategy(m_context, "sleeping");
+        aeron_driver_context_set_shared_idle_strategy(m_context, "sleep-ns");
         aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
         aeron_driver_context_set_timer_interval_ns(m_context, m_livenessTimeoutNs / 10);

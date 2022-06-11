@@ -29,7 +29,7 @@
     </module>
 
     <module name="Header">
-        <property name="header" value="/*\n * Copyright 2014-2021 Real Logic Limited."/>
+        <property name="header" value="/*\n * Copyright 2014-2022 Real Logic Limited."/>
         <property name="fileExtensions" value="java"/>
     </module>
 

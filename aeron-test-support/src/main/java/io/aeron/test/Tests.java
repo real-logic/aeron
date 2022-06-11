@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
@@ -548,7 +550,7 @@ public class Tests
     {
         while (!subscription.isConnected())
         {
-            Tests.yield();
+            Tests.yieldingIdle(subscription.channel());
         }
     }
 
@@ -562,7 +564,7 @@ public class Tests
     {
         while (subscription.imageCount() < connectionCount)
         {
-            Tests.yield();
+            Tests.yieldingIdle(subscription.channel());
         }
     }
 
@@ -667,5 +669,16 @@ public class Tests
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    public static TestWatcher seedWatcher(final long seed)
+    {
+        return new TestWatcher()
+        {
+            public void testFailed(final ExtensionContext context, final Throwable cause)
+            {
+                System.err.println(context.getDisplayName() + " failed with random seed: " + seed);
+            }
+        };
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Ping component of Ping-Pong latency test recorded to a histogram to capture full distribution.
  * <p>
- * Initiates messages sent to {@link Pong} and records times.
+ * Sends message to {@link Pong} for echoing and records times on return.
  * @see Pong
  */
 public class Ping

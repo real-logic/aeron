@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
-import io.aeron.archive.client.*;
+import io.aeron.ChannelUri;
+import io.aeron.Counter;
+import io.aeron.ExclusivePublication;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
@@ -283,7 +285,7 @@ final class DynamicJoin
                 RecordingPos.NULL_RECORDING_ID,
                 AeronArchive.NULL_LENGTH,
                 ctx.archiveContext().controlRequestStreamId(),
-                "aeron:udp?term-length=64k|endpoint=" + leaderMember.archiveEndpoint(),
+                leaderArchiveControlRequestChannel(),
                 null,
                 ctx.replicationChannel());
 
@@ -315,7 +317,7 @@ final class DynamicJoin
                         snapshotReplication.recordingId(),
                         AeronArchive.NULL_LENGTH,
                         ctx.archiveContext().controlRequestStreamId(),
-                        "aeron:udp?term-length=64k|endpoint=" + leaderMember.archiveEndpoint(),
+                        leaderArchiveControlRequestChannel(),
                         null,
                         ctx.replicationChannel());
 
@@ -326,6 +328,11 @@ final class DynamicJoin
         }
 
         return workCount;
+    }
+
+    private String leaderArchiveControlRequestChannel()
+    {
+        return ChannelUri.createDestinationUri(ctx.leaderArchiveControlChannel(), leaderMember.archiveEndpoint());
     }
 
     private int snapshotLoad(final long nowNs)
@@ -368,8 +375,13 @@ final class DynamicJoin
 
     private void state(final State newState)
     {
-        //System.out.println("DynamicJoin: memberId=" + memberId + " " + state + " -> " + newState);
+        logStateChange(state, newState, memberId);
         state = newState;
         correlationId = NULL_VALUE;
+    }
+
+    private void logStateChange(final State oldState, final State newState, final int memberId)
+    {
+        //System.out.println("DynamicJoin: memberId=" + memberId + " " + oldState + " -> " + newState);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.util.RuntimeUtils;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -27,13 +28,15 @@ import java.util.concurrent.ScheduledFuture;
 public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCallback
 {
     private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor(
-        r ->
+        (runnable) ->
         {
-            final Thread thread = new Thread(r);
+            final Thread thread = new Thread(runnable);
             thread.setDaemon(true);
             thread.setName("interrupting-test-callback");
+
             return thread;
         });
+
     private ScheduledFuture<?> timer = null;
 
     public void afterEach(final ExtensionContext context)
@@ -41,6 +44,17 @@ public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCa
         if (null != timer)
         {
             timer.cancel(false);
+            if (!timer.isDone())
+            {
+                try
+                {
+                    timer.get();
+                }
+                catch (final InterruptedException | ExecutionException ignore)
+                {
+                }
+            }
+
             timer = null;
         }
     }
@@ -53,6 +67,7 @@ public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCa
         if (null != annotation && !RuntimeUtils.isDebugMode())
         {
             final Thread testThread = Thread.currentThread();
+
             timer = SCHEDULER.schedule(testThread::interrupt, annotation.value(), annotation.unit());
         }
     }

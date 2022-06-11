@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -469,7 +469,7 @@ TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE);
@@ -509,7 +509,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommand)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION);
@@ -557,7 +557,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommandBigMessage)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER);
@@ -606,7 +606,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommand)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS);
@@ -654,7 +654,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommandBigMessage)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_CMD_OUT_EXCLUSIVE_PUBLICATION_READY);
@@ -709,7 +709,7 @@ TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, 22);
@@ -757,7 +757,7 @@ TEST_F(DriverAgentTest, shouldLogAgentLogFramesAndCopyUpToMaxFrameLengthMessage)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, 13);
@@ -833,7 +833,7 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborAdded)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED);
@@ -867,7 +867,7 @@ TEST_F(DriverAgentTest, shouldLogNameResolutionNeighborRemoved)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED);
@@ -906,7 +906,7 @@ TEST_F(DriverAgentTest, shouldLogRemovePublicationCleanup)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP);
@@ -946,7 +946,7 @@ TEST_F(DriverAgentTest, shouldLogRemoveSubscriptionCleanup)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP);
@@ -991,7 +991,7 @@ TEST_F(DriverAgentTest, shouldLogRemoveImageCleanup)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP);
@@ -1081,7 +1081,7 @@ TEST_F(DriverAgentTest, shouldLogSendChannelCreation)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION);
@@ -1177,7 +1177,7 @@ TEST_F(DriverAgentTest, shouldLogReceiveChannelCreation)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION);
@@ -1225,7 +1225,7 @@ TEST_F(DriverAgentTest, shouldLogReceiveChannelClose)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE);
@@ -1267,7 +1267,7 @@ TEST_F(DriverAgentTest, shouldNotAddDynamicDissectorIfDynamicDissectorEventIsDis
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
         };
 
@@ -1296,7 +1296,7 @@ TEST_F(DriverAgentTest, shouldAddDynamicDissectorIfDynamicDissectorEventIsEnable
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR);
@@ -1326,7 +1326,7 @@ TEST_F(DriverAgentTest, shouldNotLogDynamicEventIfDisabled)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
         };
 
@@ -1351,7 +1351,7 @@ TEST_F(DriverAgentTest, shouldLogDynamicEventSmallMessage)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT);
@@ -1385,7 +1385,7 @@ TEST_F(DriverAgentTest, shouldLogDynamicEventBigMessage)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT);
@@ -1432,7 +1432,7 @@ TEST_F(DriverAgentTest, shouldLogFlowControlReceiverAdded)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_ADDED);
@@ -1481,7 +1481,7 @@ TEST_F(DriverAgentTest, shouldLogFlowControlReceiverRemoved)
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
         {
-            size_t *count = (size_t *)clientd;
+            auto *count = (size_t *)clientd;
             (*count)++;
 
             EXPECT_EQ(msg_type_id, AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_REMOVED);

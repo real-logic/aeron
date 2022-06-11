@@ -1,4 +1,4 @@
-# Copyright 2014-2021 Real Logic Limited.
+# Copyright 2014-2022 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -155,6 +155,7 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_parse_util.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_properties_util.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_strutil.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_symbol_table.c
     ${AERON_C_CLIENT_SOURCE_PATH}/uri/aeron_uri.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.c
@@ -224,6 +225,7 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_platform.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_properties_util.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_strutil.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_symbol_table.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_agent.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_alloc.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_client.h
@@ -335,6 +337,10 @@ add_executable(aeronmd aeronmd.c)
 target_include_directories(aeronmd
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
 
+add_executable(aeronmd_s aeronmd.c)
+target_include_directories(aeronmd_s
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
+
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
@@ -347,6 +353,10 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     endif ()
 
     set(AERON_LIB_M_LIBS m)
+
+    if ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "aarch64")
+        set(AERON_LIB_ATOMIC_LIBS atomic)
+    endif ()
 endif ()
 
 if (CYGWIN)
@@ -361,6 +371,7 @@ target_link_libraries(
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
     ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})
 
@@ -371,6 +382,18 @@ target_link_libraries(
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
     ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${AERON_LIB_WINSOCK_LIBS})
+
+target_link_libraries(
+    aeronmd_s
+    aeron_driver_static
+    ${CMAKE_DL_LIBS}
+    ${AERON_LIB_BSD_LIBS}
+    ${AERON_LIB_UUID_LIBS}
+    ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})
 
@@ -383,6 +406,6 @@ if (AERON_INSTALL_TARGETS)
         RUNTIME DESTINATION lib
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
-    install(TARGETS aeronmd DESTINATION bin)
+    install(TARGETS aeronmd aeronmd_s DESTINATION bin)
     install(DIRECTORY . DESTINATION include/aeronmd FILES_MATCHING PATTERN "*.h")
 endif ()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
 import static io.aeron.archive.Archive.segmentFileName;
@@ -68,7 +67,6 @@ class ReplaySession implements Session, AutoCloseable
     }
 
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ);
-    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
     private final long connectDeadlineMs;
     private final long correlationId;
@@ -253,6 +251,16 @@ class ReplaySession implements Session, AutoCloseable
     State state()
     {
         return state;
+    }
+
+    String replayChannel()
+    {
+        return publication.channel();
+    }
+
+    int replayStreamId()
+    {
+        return publication.streamId();
     }
 
     long segmentFileBasePosition()
@@ -569,7 +577,7 @@ class ReplaySession implements Session, AutoCloseable
             }
         }
 
-        fileChannel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES);
+        fileChannel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS);
     }
 
     static boolean notHeaderAligned(

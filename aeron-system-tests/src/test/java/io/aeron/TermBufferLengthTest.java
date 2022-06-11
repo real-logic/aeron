@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,8 +48,8 @@ class TermBufferLengthTest
             .ipcTermBufferLength(TEST_TERM_LENGTH * 2);
 
         try (
-            TestMediaDriver ignore = TestMediaDriver.launch(ctx, testWatcher);
-            Aeron aeron = Aeron.connect();
+            TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, testWatcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
             Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
             assertEquals(TEST_TERM_LENGTH, publication.termBufferLength());

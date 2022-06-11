@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 public interface TestMediaDriver extends AutoCloseable
 {
     String AERONMD_PATH_PROP_NAME = "aeron.test.system.aeronmd.path";
+    String ATS_LIBRARY_PATH_PROP_NAME = "aeron.test.system.ats.path";
+    String ATS_LIBRARY_CONF_PATH_PROP_NAME = "aeron.test.system.ats.conf.dir";
+    String ATS_LIBRARY_CONF_FILE_PROP_NAME = "aeron.test.system.ats.conf.file";
     String DRIVER_AGENT_PATH_PROP_NAME = "aeron.test.system.driver.agent.path";
 
     static boolean shouldRunCMediaDriver()

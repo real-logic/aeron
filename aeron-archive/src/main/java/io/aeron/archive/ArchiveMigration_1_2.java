@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,9 +57,11 @@ class ArchiveMigration_1_2 implements ArchiveMigrationStep
         final Catalog catalog,
         final File archiveDir)
     {
-        try (FileChannel ignore = MigrationUtils.createMigrationTimestampFile(
+        try (FileChannel timestampFile = MigrationUtils.createMigrationTimestampFile(
             archiveDir, markFile.decoder().version(), minimumVersion()))
         {
+            assert null != timestampFile;
+
             catalog.forEach(
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, encoder, decoder) ->
                 {

@@ -11,6 +11,7 @@
     <option name="FUNCTION_PARAMETERS_WRAP" value="5" />
     <option name="FUNCTION_PARAMETERS_ALIGN_MULTILINE" value="false" />
     <option name="FUNCTION_PARAMETERS_NEW_LINE_AFTER_LPAR" value="true" />
+    <option name="FUNCTION_CALL_ARGUMENTS_WRAP" value="5" />
     <option name="FUNCTION_CALL_ARGUMENTS_ALIGN_MULTILINE" value="false" />
     <option name="FUNCTION_CALL_ARGUMENTS_NEW_LINE_AFTER_LPAR" value="true" />
     <option name="SHIFT_OPERATION_WRAP" value="0" />
@@ -34,6 +35,8 @@
   </codeStyleSettings>
   <codeStyleSettings language="ObjectiveC">
     <option name="KEEP_CONTROL_STATEMENT_IN_ONE_LINE" value="false" />
+    <option name="BLANK_LINES_BEFORE_IMPORTS" value="0" />
+    <option name="BLANK_LINES_AFTER_IMPORTS" value="0" />
     <option name="BRACE_STYLE" value="2" />
     <option name="CLASS_BRACE_STYLE" value="2" />
     <option name="ELSE_ON_NEW_LINE" value="true" />
@@ -58,6 +61,7 @@
     <option name="FOR_BRACE_FORCE" value="3" />
     <indentOptions>
       <option name="CONTINUATION_INDENT_SIZE" value="4" />
+      <option name="LABEL_INDENT_ABSOLUTE" value="true" />
     </indentOptions>
   </codeStyleSettings>
   <codeStyleSettings language="XML">

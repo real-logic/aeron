@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
 #include "ChannelUriStringBuilder.h"
+#include "CncFileReader.h"
 
 #if defined(__linux__) || defined(Darwin)
 #include <unistd.h>
@@ -38,7 +39,7 @@
 #include <windows.h>
 typedef intptr_t pid_t;
 #else
-#error "must spawn Java archive per test"
+#error "must spawn Java Archive per test"
 #endif
 
 using namespace aeron;
@@ -142,6 +143,7 @@ public:
             "-Daeron.term.buffer.sparse.file=true",
             "-Daeron.perform.storage.checks=false",
             "-Daeron.term.buffer.length=64k",
+            "-Daeron.ipc.term.buffer.length=64k",
             "-Daeron.threading.mode=SHARED",
             "-Daeron.shared.idle.strategy=yield",
             "-Daeron.archive.threading.mode=SHARED",
@@ -187,8 +189,12 @@ public:
             };
 
         m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
+        m_context.messageTimeoutNs(m_context.messageTimeoutNs());
 
         m_stream << currentTimeMillis() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
+
+        const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
+        std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
     }
 
     void TearDown() final
@@ -200,6 +206,8 @@ public:
             const std::string cncFilename = m_context.aeron()->context().cncFileName();
             const std::string aeronPath = aeron::Context::defaultAeronPath();
             m_context.aeron(nullptr);
+
+            printErrors(aeronPath);
 
             if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             {
@@ -238,14 +246,33 @@ public:
         }
     }
 
+    void printErrors(const std::string &aeronPath)
+    {
+        const CncFileReader reader = aeron::CncFileReader::mapExisting(aeronPath.c_str());
+
+        int count = reader.readErrorLog(
+            [&](
+                std::int32_t observationCount,
+                std::int64_t firstObservationTimestamp,
+                std::int64_t lastObservationTimestamp,
+                const std::string &encodedException)
+            {
+                m_stream << "***\n" << observationCount
+                         << " observations for:\n " << encodedException.c_str() << std::endl;
+            },
+            0);
+
+        m_stream << currentTimeMillis() << " [TearDown] " << count << " distinct errors observed." << std::endl;
+    }
+
     static std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string &channel, std::int32_t streamId)
     {
         std::int64_t publicationId = aeron.addPublication(channel, streamId);
         std::shared_ptr<Publication> publication = aeron.findPublication(publicationId);
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
         while (!publication)
         {
-            idle.idle();
+            idleStrategy.idle();
             publication = aeron.findPublication(publicationId);
         }
 
@@ -391,7 +418,7 @@ protected:
     const std::string m_aeronAllJar = AERON_ALL_JAR;
     const std::string m_archiveDir = ARCHIVE_DIR;
 
-    const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333|term-length=64k";
+    const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333";
     const std::int32_t m_recordingStreamId = 33;
     const std::string m_replayChannel = "aeron:udp?endpoint=localhost:6666";
     const std::int32_t m_replayStreamId = 66;
@@ -406,7 +433,7 @@ protected:
 TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
 {
     std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
-    aeron::concurrent::YieldingIdleStrategy idle;
+    aeron::concurrent::YieldingIdleStrategy idleStrategy;
     std::uint8_t previousStep = asyncConnect->step();
 
     std::shared_ptr<AeronArchive> aeronArchive = asyncConnect->poll();
@@ -414,11 +441,11 @@ TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
     {
         if (asyncConnect->step() == previousStep)
         {
-            idle.idle();
+            idleStrategy.idle();
         }
         else
         {
-            idle.reset();
+            idleStrategy.reset();
             previousStep = asyncConnect->step();
         }
 
@@ -465,10 +492,10 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
-            idle.idle();
+            idleStrategy.idle();
         }
 
         EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
@@ -540,18 +567,20 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplay)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
-            idle.idle();
+            idleStrategy.idle();
         }
-
-        EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
     }
 
     aeronArchive->stopRecording(subscriptionId);
 
-    EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), stopPosition);
+    aeron::concurrent::YieldingIdleStrategy idleStrategy;
+    while (aeronArchive->getStopPosition(recordingIdFromCounter) != stopPosition)
+    {
+        idleStrategy.idle();
+    }
 
     {
         const std::int64_t position = 0L;
@@ -596,10 +625,10 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
-            idle.idle();
+            idleStrategy.idle();
         }
 
         EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
@@ -677,19 +706,20 @@ TEST_F(AeronArchiveTest, shouldRecordAndCancelReplayEarly)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
-            idle.idle();
+            idleStrategy.idle();
         }
 
         EXPECT_EQ(aeronArchive->getRecordingPosition(recordingId), stopPosition);
 
         aeronArchive->stopRecording(publication);
 
+        idleStrategy.reset();
         while (NULL_POSITION != aeronArchive->getRecordingPosition(recordingId))
         {
-            idle.idle();
+            idleStrategy.idle();
         }
     }
 
@@ -727,10 +757,10 @@ TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
 
         const std::int64_t currentPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
         while (countersReader.getCounterValue(counterId) < currentPosition)
         {
-            idle.idle();
+            idleStrategy.idle();
         }
 
         {
@@ -945,6 +975,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
             break;
         }
 
+        idleStrategy.reset();
         idleStrategy.idle();
     }
 
@@ -1074,10 +1105,10 @@ TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
-            idle.idle();
+            idleStrategy.idle();
         }
 
         EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
@@ -1152,10 +1183,10 @@ TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
 
         stopPosition = publication->position();
 
-        aeron::concurrent::YieldingIdleStrategy idle;
+        aeron::concurrent::YieldingIdleStrategy idleStrategy;
         while (countersReader.getCounterValue(counterId) < stopPosition)
         {
-            idle.idle();
+            idleStrategy.idle();
         }
 
         EXPECT_EQ(aeronArchive->getRecordingPosition(recordingId), stopPosition);

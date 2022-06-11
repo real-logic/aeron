@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ typedef std::function<std::int64_t(
     util::index_t termOffset,
     util::index_t length)> on_reserved_value_supplier_t;
 
-#define TERM_APPENDER_FAILED ((std::int32_t)-2)
+#define TERM_APPENDER_FAILED ((std::int32_t) - 2)
 
 static const on_reserved_value_supplier_t DEFAULT_RESERVED_VALUE_SUPPLIER =
     [](AtomicBuffer &, util::index_t, util::index_t) -> std::int64_t { return 0; };
@@ -360,7 +360,7 @@ private:
     inline static std::int32_t handleEndOfLogCondition(
         AtomicBuffer &termBuffer,
         std::int64_t termOffset,
-        const HeaderWriter& header,
+        const HeaderWriter &header,
         std::int32_t termLength,
         std::int32_t termId)
     {

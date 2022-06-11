@@ -1,4 +1,4 @@
-# Copyright 2014-2021 Real Logic Limited.
+# Copyright 2014-2022 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -81,6 +81,7 @@ set(SOURCE
     util/aeron_parse_util.c
     util/aeron_properties_util.c
     util/aeron_strutil.c
+    util/aeron_symbol_table.c
     uri/aeron_uri.c
     aeron_agent.c
     aeron_alloc.c
@@ -152,6 +153,7 @@ set(HEADERS
     util/aeron_platform.h
     util/aeron_properties_util.h
     util/aeron_strutil.h
+    util/aeron_symbol_table.h
     uri/aeron_uri.h
     aeron_agent.h
     aeron_alloc.h
@@ -184,12 +186,16 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(AERON_LIB_M_LIBS m)
+    if ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "aarch64")
+        set(AERON_LIB_ATOMIC_LIBS atomic)
+    endif ()
 endif ()
 
 target_link_libraries(
     aeron
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})
 
@@ -197,6 +203,7 @@ target_link_libraries(
     aeron_static INTERFACE
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS}
     ${AERON_STATIC_LIB_LINK_OPTS}

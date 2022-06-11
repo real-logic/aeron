@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,22 @@ using testing::AnyNumber;
 
 class DriverConductorNetworkTest : public DriverConductorTest, public testing::Test
 {
+protected:
+    aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
+        aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+    {
+        for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
+        {
+            aeron_publication_image_t *image = conductor->publication_images.array[i].image;
+
+            if (endpoint == image->endpoint && stream_id == image->stream_id)
+            {
+                return image;
+            }
+        }
+
+        return NULL;
+    }
 };
 
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithDifferentChannelSameStreamId)

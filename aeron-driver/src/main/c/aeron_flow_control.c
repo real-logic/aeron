@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,29 +23,42 @@
 #include <errno.h>
 #include "media/aeron_udp_channel.h"
 #include "util/aeron_error.h"
-#include "util/aeron_dlopen.h"
 #include "util/aeron_parse_util.h"
+#include "util/aeron_symbol_table.h"
 #include "aeron_alloc.h"
 #include "aeron_flow_control.h"
 
+aeron_symbol_table_func_t aeron_flow_control_strategy_table[] =
+    {
+        {
+            AERON_UNICAST_MAX_FLOW_CONTROL_STRATEGY_NAME,
+            "aeron_unicast_flow_control_strategy_supplier",
+            (aeron_fptr_t)aeron_unicast_flow_control_strategy_supplier
+        },
+        {
+            AERON_MULTICAST_MAX_FLOW_CONTROL_STRATEGY_NAME,
+            "aeron_max_multicast_flow_control_strategy_supplier",
+            (aeron_fptr_t)aeron_max_multicast_flow_control_strategy_supplier
+        },
+        {
+            AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME,
+            "aeron_min_flow_control_strategy_supplier",
+            (aeron_fptr_t)aeron_min_flow_control_strategy_supplier
+        },
+        {
+            AERON_MULTICAST_TAGGED_FLOW_CONTROL_STRATEGY_NAME,
+            "aeron_tagged_flow_control_strategy_supplier",
+            (aeron_fptr_t)aeron_tagged_flow_control_strategy_supplier
+        }
+    };
+
+static const size_t aeron_flow_control_strategy_table_length =
+    sizeof(aeron_flow_control_strategy_table) / sizeof(aeron_symbol_table_func_t);
+
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_load(const char *strategy_name)
 {
-    aeron_flow_control_strategy_supplier_func_t func = NULL;
-
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-    if ((func = (aeron_flow_control_strategy_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, strategy_name)) == NULL)
-    {
-        AERON_SET_ERR(EINVAL, "could not find flow control strategy %s: dlsym - %s", strategy_name, aeron_dlerror());
-        return NULL;
-    }
-#if defined(AERON_COMPILER_GCC)
-#pragma GCC diagnostic pop
-#endif
-
-    return func;
+    return (aeron_flow_control_strategy_supplier_func_t)aeron_symbol_table_func_load(
+        aeron_flow_control_strategy_table, aeron_flow_control_strategy_table_length, strategy_name, "flow control");
 }
 
 bool aeron_flow_control_strategy_has_required_receivers_default(aeron_flow_control_strategy_t *strategy)
@@ -59,6 +72,18 @@ int64_t aeron_max_flow_control_strategy_on_idle(
     int64_t snd_lmt,
     int64_t snd_pos,
     bool is_end_of_stream)
+{
+    return snd_lmt;
+}
+
+int64_t aeron_max_flow_control_strategy_on_setup(
+    void *state,
+    const uint8_t *setup,
+    size_t length,
+    int64_t now_ns,
+    int64_t snd_lmt,
+    size_t position_bits_to_shift,
+    int64_t snd_pos)
 {
     return snd_lmt;
 }
@@ -95,8 +120,10 @@ int aeron_max_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy
 int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length)
@@ -111,6 +138,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     _strategy->state = NULL;  // Max does not require any state.
     _strategy->on_idle = aeron_max_flow_control_strategy_on_idle;
     _strategy->on_status_message = aeron_max_flow_control_strategy_on_sm;
+    _strategy->on_setup = aeron_max_flow_control_strategy_on_setup;
     _strategy->fini = aeron_max_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_flow_control_strategy_has_required_receivers_default;
 
@@ -122,14 +150,17 @@ int aeron_max_multicast_flow_control_strategy_supplier(
 int aeron_unicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length)
 {
     return aeron_max_multicast_flow_control_strategy_supplier(
-        strategy, context, channel, stream_id, registration_id, initial_term_id, term_length);
+        strategy, context, counters_manager, channel,
+        stream_id, session_id, registration_id, initial_term_id, term_length);
 }
 
 aeron_flow_control_strategy_supplier_func_table_entry_t aeron_flow_control_strategy_supplier_table[] =
@@ -168,8 +199,10 @@ void aeron_flow_control_extract_strategy_name_length(
 int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager,
     const aeron_udp_channel_t *channel,
     int32_t stream_id,
+    int32_t session_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_length)
@@ -239,7 +272,8 @@ int aeron_default_multicast_flow_control_strategy_supplier(
     }
 
     int rc = flow_control_strategy_supplier_func(
-        strategy, context, channel, stream_id, registration_id, initial_term_id, term_length);
+        strategy, context, counters_manager, channel, stream_id, session_id,
+        registration_id, initial_term_id, term_length);
 
     if (0 <= rc && NULL != *strategy && NULL == (*strategy)->has_required_receivers)
     {

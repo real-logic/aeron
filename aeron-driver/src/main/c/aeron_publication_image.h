@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ typedef struct aeron_publication_image_stct
         int64_t time_of_last_state_change_ns;
         int64_t liveness_timeout_ns;
         int64_t clean_position;
+        aeron_receive_channel_endpoint_t *endpoint;
     }
     conductor_fields;
 
@@ -122,6 +123,7 @@ typedef struct aeron_publication_image_stct
     int64_t time_of_last_packet_ns;
 
     bool is_end_of_stream;
+    volatile bool has_receiver_released;
 
     int64_t *heartbeats_received_counter;
     int64_t *flow_control_under_runs_counter;
@@ -191,6 +193,8 @@ void aeron_publication_image_add_connection_if_unknown(
 
 void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms);
+
+void aeron_publication_image_receiver_release(aeron_publication_image_t *image);
 
 inline bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length)
 {
@@ -272,6 +276,11 @@ inline bool aeron_publication_image_is_accepting_subscriptions(aeron_publication
 inline void aeron_publication_image_disconnect_endpoint(aeron_publication_image_t *image)
 {
     image->endpoint = NULL;
+}
+
+inline void aeron_publication_image_conductor_disconnect_endpoint(aeron_publication_image_t *image)
+{
+    image->conductor_fields.endpoint = NULL;
 }
 
 inline const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
  * The {@code cluster} object should only be used to send messages to the cluster or schedule timers in
  * response to other messages and timers. Sending messages and timers should not happen from cluster lifecycle
  * methods like {@link #onStart(Cluster, Image)}, {@link #onRoleChange(Cluster.Role)} or
- * {@link #onTakeSnapshot(ExclusivePublication)}, or {@link #onTerminate(Cluster)}, with the exception of
- * the session lifecycle methods.
+ * {@link #onTakeSnapshot(ExclusivePublication)}, or {@link #onTerminate(Cluster)}, except the session lifecycle
+ * methods.
  */
 public interface ClusteredService
 {

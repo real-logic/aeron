@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,7 +164,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         CloseHelper.close(countedErrorHandler, asyncConnect);
         CloseHelper.close(countedErrorHandler, srcArchive);
+
         archiveConductor.removeReplicationSession(this);
+        signal(NULL_POSITION, REPLICATE_END);
     }
 
     /**
@@ -291,7 +293,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             nextState = State.SRC_RECORDING_POSITION;
         }
 
-        if (startPosition == stopPosition)
+        if (startPosition == stopPosition ||
+            (NULL_VALUE != dstRecordingId && stopPosition == catalog.stopPosition(dstRecordingId)))
         {
             signal(stopPosition, SYNC);
             nextState = State.DONE;
@@ -440,7 +443,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             if (isMds)
             {
-                replayDestination = "aeron:udp?endpoint=" + endpoint;
+                replayDestination = ChannelUri.createDestinationUri(replicationChannel, endpoint);
                 recordingSubscription.asyncAddDestination(replayDestination);
             }
 
@@ -553,7 +556,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             (NULL_POSITION != dstStopPosition && position >= dstStopPosition) ||
             isEndOfStream || isClosed)
         {
-            if ((NULL_POSITION != srcStopPosition && position >= srcStopPosition))
+            if (NULL_POSITION != srcStopPosition && position >= srcStopPosition)
             {
                 signal(position, SYNC);
             }
@@ -678,7 +681,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private void signal(final long position, final RecordingSignal recordingSignal)
     {
         final long subscriptionId = null != recordingSubscription ? recordingSubscription.registrationId() : NULL_VALUE;
-        controlSession.attemptSignal(replicationId, dstRecordingId, subscriptionId, position, recordingSignal);
+        controlSession.sendSignal(replicationId, dstRecordingId, subscriptionId, position, recordingSignal);
     }
 
     private void stopReplaySession(final CountedErrorHandler countedErrorHandler)
@@ -729,13 +732,13 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private void state(final State newState)
     {
-        stateChange(state, newState, replicationId);
+        logStateChange(state, newState, replicationId);
         state = newState;
         activeCorrelationId = NULL_VALUE;
         timeOfLastActionMs = epochClock.time();
     }
 
-    void stateChange(final State oldState, final State newState, final long replicationId)
+    private void logStateChange(final State oldState, final State newState, final long replicationId)
     {
         //System.out.println("ReplicationSession: " + oldState + " -> " + newState + " replicationId=" + replicationId);
     }

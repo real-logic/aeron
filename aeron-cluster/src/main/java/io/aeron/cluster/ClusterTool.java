@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -426,7 +426,12 @@ public class ClusterTool
         }
 
         final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println);
-        errors(out, serviceMarkFiles);
+        for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
+        {
+            printTypeAndActivityTimestamp(out, serviceMarkFile);
+            printErrors(out, serviceMarkFile);
+            serviceMarkFile.close();
+        }
     }
 
     /**
@@ -572,22 +577,6 @@ public class ClusterTool
     }
 
     /**
-     * Print out the errors in the error logs for the cluster components.
-     *
-     * @param out              to print the output to.
-     * @param serviceMarkFiles to query.
-     */
-    public static void errors(final PrintStream out, final ClusterMarkFile[] serviceMarkFiles)
-    {
-        for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
-        {
-            printTypeAndActivityTimestamp(out, serviceMarkFile);
-            printErrors(out, serviceMarkFile);
-            serviceMarkFile.close();
-        }
-    }
-
-    /**
      * Does a {@link ClusterMarkFile} exist in the cluster directory.
      *
      * @param clusterDir to check for if a mark file exists.
@@ -698,12 +687,12 @@ public class ClusterTool
             id.set(aeron.nextCorrelationId());
             if (consensusModuleProxy.clusterMembersQuery(id.get()))
             {
-                final long startTime = System.currentTimeMillis();
+                final long deadlineMs = System.currentTimeMillis() + timeoutMs;
                 do
                 {
                     if (clusterControlAdapter.poll() == 0)
                     {
-                        if ((System.currentTimeMillis() - startTime) > timeoutMs)
+                        if (System.currentTimeMillis() > deadlineMs)
                         {
                             break;
                         }
@@ -1053,13 +1042,13 @@ public class ClusterTool
             if (waitForToggleToComplete)
             {
                 final long toggleTimeoutMs = Math.max(defaultTimeoutMs, TIMEOUT_MS);
-                final long startTime = System.currentTimeMillis();
+                final long deadlineMs = System.currentTimeMillis() + toggleTimeoutMs;
                 ClusterControl.ToggleState currentState = null;
 
                 do
                 {
                     Thread.yield();
-                    if ((System.currentTimeMillis() - startTime) > toggleTimeoutMs)
+                    if (System.currentTimeMillis() > deadlineMs)
                     {
                         break;
                     }

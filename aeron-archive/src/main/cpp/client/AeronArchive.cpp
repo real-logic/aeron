@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,7 +158,10 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
                         SOURCEINFO);
                 }
 
-                m_archiveProxy->keepAlive(aeron::NULL_VALUE, sessionId);
+                if (!m_archiveProxy->keepAlive(aeron::NULL_VALUE, sessionId))
+                {
+                    throw ArchiveException("failed to send keep alive after archive connect",SOURCEINFO);
+                }
 
                 std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
                     new RecordingDescriptorPoller(

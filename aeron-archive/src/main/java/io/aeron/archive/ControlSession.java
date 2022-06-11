@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ final class ControlSession implements Session
     private long activityDeadlineMs;
     private Session activeListing = null;
     private ExclusivePublication controlPublication;
+    private byte[] encodedPrincipal;
     private final Aeron aeron;
     private final ArchiveConductor conductor;
     private final CachedEpochClock cachedEpochClock;
@@ -125,9 +126,16 @@ final class ControlSession implements Session
             activeListing.abort();
         }
 
-        CloseHelper.close(conductor.context().countedErrorHandler(), controlPublication);
+        if (null == controlPublication)
+        {
+            aeron.asyncRemovePublication(controlPublicationId);
+        }
+        else
+        {
+            CloseHelper.close(conductor.context().countedErrorHandler(), controlPublication);
+        }
 
-        demuxer.removeControlSession(this);
+        demuxer.removeControlSession(controlSessionId);
         if (!conductor.context().controlSessionsCounter().isClosed())
         {
             conductor.context().controlSessionsCounter().decrementOrdered();
@@ -186,6 +194,11 @@ final class ControlSession implements Session
         }
 
         return workCount;
+    }
+
+    byte[] encodedPrincipal()
+    {
+        return encodedPrincipal;
     }
 
     long correlationId()
@@ -593,7 +606,8 @@ final class ControlSession implements Session
         final String errorMessage,
         final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, this))
+        if (!queuedResponses.isEmpty() ||
+            !proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, this))
         {
             queueResponse(correlationId, relevantId, code, errorMessage);
         }
@@ -621,21 +635,34 @@ final class ControlSession implements Session
         return proxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
     }
 
-    void attemptSignal(
+    void sendSignal(
         final long correlationId,
         final long recordingId,
         final long subscriptionId,
         final long position,
         final RecordingSignal recordingSignal)
     {
-        controlResponseProxy.attemptSendSignal(
+        if (!queuedResponses.isEmpty() || !controlResponseProxy.sendSignal(
             controlSessionId,
             correlationId,
             recordingId,
             subscriptionId,
             position,
             recordingSignal,
-            controlPublication);
+            controlPublication))
+        {
+            if (controlPublication.isConnected())
+            {
+                queuedResponses.offer(() -> controlResponseProxy.sendSignal(
+                    controlSessionId,
+                    correlationId,
+                    recordingId,
+                    subscriptionId,
+                    position,
+                    recordingSignal,
+                    controlPublication));
+            }
+        }
     }
 
     int maxPayloadLength()
@@ -648,8 +675,9 @@ final class ControlSession implements Session
         state(State.CHALLENGED);
     }
 
-    void authenticate(@SuppressWarnings("unused") final byte[] encodedPrincipal)
+    void authenticate(final byte[] encodedPrincipal)
     {
+        this.encodedPrincipal = encodedPrincipal;
         activityDeadlineMs = Aeron.NULL_VALUE;
         state(State.AUTHENTICATED);
     }
@@ -852,12 +880,11 @@ final class ControlSession implements Session
 
     private void state(final State state)
     {
-        stateChange(this.state, state, controlSessionId);
+        logStateChange(this.state, state, controlSessionId);
         this.state = state;
     }
 
-    @SuppressWarnings("unused")
-    void stateChange(final State oldState, final State newState, final long controlSessionId)
+    private void logStateChange(final State oldState, final State newState, final long controlSessionId)
     {
 //        System.out.println(controlSessionId + ": " + oldState + " -> " + newState);
     }

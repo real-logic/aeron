@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ public class PublicationTest
             {
                 publication.internalClose();
                 return null;
-            }).when(conductor).releasePublication(publication);
+            }).when(conductor).removePublication(publication);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class PublicationTest
         publication.close();
         assertEquals(Publication.CLOSED, publication.position());
 
-        verify(conductor).releasePublication(publication);
+        verify(conductor).removePublication(publication);
     }
 
     @Test
@@ -145,10 +145,24 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldReleasePublicationOnClose()
+    public void shouldRemovePublicationOnClose()
     {
         publication.close();
 
-        verify(conductor).releasePublication(publication);
+        verify(conductor).removePublication(publication);
+    }
+
+    @Test
+    void shouldReturnErrorMessages()
+    {
+        assertEquals("NOT_CONNECTED", Publication.errorString(-1L));
+        assertEquals("BACK_PRESSURED", Publication.errorString(-2L));
+        assertEquals("ADMIN_ACTION", Publication.errorString(-3L));
+        assertEquals("CLOSED", Publication.errorString(-4L));
+        assertEquals("MAX_POSITION_EXCEEDED", Publication.errorString(-5L));
+        assertEquals("NONE", Publication.errorString(0L));
+        assertEquals("NONE", Publication.errorString(1L));
+        assertEquals("UNKNOWN", Publication.errorString(-6L));
+        assertEquals("UNKNOWN", Publication.errorString(Long.MIN_VALUE));
     }
 }

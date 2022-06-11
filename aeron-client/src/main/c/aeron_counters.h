@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,13 @@
 #define AERON_COUNTER_RCV_LOCAL_SOCKADDR_NAME "rcv-local-sockaddr"
 #define AERON_COUNTER_SND_LOCAL_SOCKADDR_NAME "snd-local-sockaddr"
 #define AERON_COUNTER_LOCAL_SOCKADDR_TYPE_ID (14)
+
+// Name Resolver 15-16
+
+#define AERON_COUNTER_MIN_FC_NUM_RECEIVERS_TYPE_ID (17)
+
+#define AERON_COUNTER_CHANNEL_MDC_NUM_DESTINATIONS_NAME "mdc-num-dest"
+#define AERON_COUNTER_CHANNEL_NUM_DESTINATIONS_TYPE_ID (18)
 
 // AERON_EF_VI reserved range 50-74
 // AERON_DPDK reserved range 75-99

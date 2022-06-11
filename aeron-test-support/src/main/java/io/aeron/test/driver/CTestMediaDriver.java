@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,20 +28,23 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyMap;
 
 public final class CTestMediaDriver implements TestMediaDriver
 {
+    private static final String UDP_CHANNEL_OUTGOING_INTERCEPTORS_ENV_VAR = "AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS";
+    private static final String UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR = "AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS";
+
     private static final File NULL_FILE = SystemUtil.isWindows() ? new File("NUL") : new File("/dev/null");
     private static final Map<Class<? extends FlowControlSupplier>, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE =
         new IdentityHashMap<>();
     private static final ThreadLocal<Map<MediaDriver.Context, Map<String, String>>> C_DRIVER_ADDITIONAL_ENV_VARS =
         ThreadLocal.withInitial(IdentityHashMap::new);
+    private static final Collection<String> JOINABLE_ENV_VARS = Arrays.asList(
+        UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR, UDP_CHANNEL_OUTGOING_INTERCEPTORS_ENV_VAR);
 
     static
     {
@@ -235,7 +238,8 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         setFlowControlStrategy(environment, context);
         setLogging(environment);
-        environment.putAll(C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()));
+        setTransportSecurity(environment);
+        setAdditionalEnvVars(environment, C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()));
 
         try
         {
@@ -301,7 +305,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             "|seed=" + seed +
             "|recv-msg-mask=0x" + Integer.toHexString(receiveMessageTypeMask);
 
-        lossTransportEnv.put("AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", interceptor);
+        lossTransportEnv.put(UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR, interceptor);
         lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
 
         // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
@@ -310,7 +314,9 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     private static void setLogging(final Map<String, String> environment)
     {
-        environment.put("AERON_EVENT_LOG", System.getProperty("aeron.event.log", "admin,NAME_RESOLUTION_RESOLVE"));
+        environment.put("AERON_EVENT_LOG", System.getProperty(
+            "aeron.event.log",
+            "admin,NAME_RESOLUTION_RESOLVE,FLOW_CONTROL_RECEIVER_ADDED,FLOW_CONTROL_RECEIVER_REMOVED"));
         environment.put("AERON_EVENT_LOG_DISABLE", System.getProperty("aeron.event.log.disable", ""));
 
         final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH_PROP_NAME);
@@ -325,8 +331,55 @@ public final class CTestMediaDriver implements TestMediaDriver
             throw new RuntimeException(
                 "Unable to find driver agent file at: " + DRIVER_AGENT_PATH_PROP_NAME + "=" + driverAgentPath);
         }
+    }
 
-        environment.put("LD_PRELOAD", driverAgent.getAbsolutePath());
+    private static void setTransportSecurity(final HashMap<String, String> environment)
+    {
+        final String atsLibPath = (String)System.getProperties().get(ATS_LIBRARY_PATH_PROP_NAME);
+        if (null != atsLibPath && !atsLibPath.isEmpty())
+        {
+            IoUtil.checkFileExists(new File(atsLibPath), ATS_LIBRARY_PATH_PROP_NAME);
+
+            environment.put("AERON_DRIVER_DYNAMIC_LIBRARIES", atsLibPath);
+            environment.put(
+                UDP_CHANNEL_OUTGOING_INTERCEPTORS_ENV_VAR, "aeron_transport_security_channel_interceptor_load");
+            environment.put(
+                UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR, "aeron_transport_security_channel_interceptor_load");
+
+            final String atsConfDir = System.getProperty(ATS_LIBRARY_CONF_PATH_PROP_NAME);
+            if (null != atsConfDir)
+            {
+                environment.put("AERON_TRANSPORT_SECURITY_CONF_DIR", atsConfDir);
+            }
+            final String atsConfFile = System.getProperty(ATS_LIBRARY_CONF_FILE_PROP_NAME);
+            if (null != atsConfFile)
+            {
+                environment.put("AERON_TRANSPORT_SECURITY_CONF_FILE", atsConfFile);
+            }
+        }
+    }
+
+    private static void setAdditionalEnvVars(
+        final HashMap<String, String> environment,
+        final Map<String, String> additionalEnvVars)
+    {
+        additionalEnvVars.forEach(
+            (k, v) ->
+            {
+                final String existingValue = environment.putIfAbsent(k, v);
+                if (null != existingValue)
+                {
+                    if (JOINABLE_ENV_VARS.contains(k))
+                    {
+                        environment.put(k, existingValue + "," + v);
+                    }
+                    else
+                    {
+                        throw new RuntimeException(
+                            "Variable: " + k + " is already specified as: " + existingValue + " cannot set to: " + v);
+                    }
+                }
+            });
     }
 
     private static void setFlowControlStrategy(final Map<String, String> environment, final MediaDriver.Context context)

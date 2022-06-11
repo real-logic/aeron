@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2021 Real Logic Limited.
+ * Copyright 2014-2022 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,8 @@ typedef struct aeron_ipc_publication_stct
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;
+    int32_t starting_term_id;
+    size_t starting_term_offset;
     size_t log_file_name_length;
     size_t position_bits_to_shift;
     bool is_exclusive;

@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
-import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
@@ -30,13 +29,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Random;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -1538,7 +1535,6 @@ public class ElectionTest
     void shouldThrowIfLastTermIsUnfinishedAndTermBaseLogPositionIsNotSpecified(@TempDir final Path tempDir)
     {
         final long leadershipTermId = 4;
-        final long termBaseLogPosition = 100;
         final long logPosition = 500;
         final long nowNs = 1_000_000;
 
@@ -1559,7 +1555,7 @@ public class ElectionTest
     }
 
     @Test
-    void shouldThrowNonZeroLogPositionAndNullRecordingIdSpecifed(@TempDir final Path tempDir)
+    void shouldThrowNonZeroLogPositionAndNullRecordingIdSpecified()
     {
         Election.ensureRecordingLogCoherent(ctx, NULL_POSITION, 0, 0, 0, 0, 0, 1);
 

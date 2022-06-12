@@ -16,28 +16,34 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
+import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Random;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModuleAgent.APPEND_POSITION_FLAG_NONE;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class ElectionTest
@@ -1405,6 +1411,161 @@ public class ElectionTest
         when(consensusModuleAgent.quorumPosition()).thenReturn(leaderLogPosition);
         election.doWork(clock.increment(1));
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_REPLAY.code());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "0, 0, 4",
+        "2, 500, 4",
+        "100, 1000000, 200"
+    })
+    void shouldCreateInitialEmptyTermsWithAnEmptyRecordingLog(
+        final long initialLogLeadershipTermId,
+        final long initialTermBaseLogPosition,
+        final long leadershipTermId)
+    {
+        final long logPosition = initialTermBaseLogPosition + 500;
+        final long nowNs = 1_000_000;
+
+        doReturn(null).when(recordingLog).findLastTerm();
+
+        Election.ensureRecordingLogCoherent(
+            ctx,
+            RECORDING_ID,
+            initialLogLeadershipTermId,
+            initialTermBaseLogPosition,
+            leadershipTermId,
+            initialTermBaseLogPosition,
+            logPosition,
+            nowNs);
+
+        for (long termId = initialLogLeadershipTermId; termId < leadershipTermId; termId++)
+        {
+            verify(recordingLog).appendTerm(RECORDING_ID, termId, initialTermBaseLogPosition, nowNs);
+            verify(recordingLog).commitLogPosition(termId, initialTermBaseLogPosition);
+        }
+
+        verify(recordingLog).appendTerm(RECORDING_ID, leadershipTermId, initialTermBaseLogPosition, nowNs);
+        verify(recordingLog).commitLogPosition(leadershipTermId, logPosition);
+
+        verify(recordingLog, times(1)).force(ctx.fileSyncLevel());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "0, 0, 4",
+        "2, 500, 4",
+        "100, 1000000, 200"
+    })
+    void shouldBackFillEmptyLeadershipTermsInANonemptyRecordingLog(
+        final long initialLogLeadershipTermId,
+        final long initialTermBaseLogPosition,
+        final long leadershipTermId,
+        @TempDir final Path tempDir)
+    {
+        final long termBaseLogPosition = initialTermBaseLogPosition + 100;
+        final long logPosition = initialTermBaseLogPosition + 500;
+        final long nowNs = 1_000_000;
+
+        final RecordingLog log = new RecordingLog(tempDir.toFile(), true);
+        ctx.recordingLog(log);
+
+        log.appendTerm(RECORDING_ID, initialLogLeadershipTermId, initialTermBaseLogPosition, nowNs);
+
+        Election.ensureRecordingLogCoherent(
+            ctx,
+            RECORDING_ID,
+            initialLogLeadershipTermId,
+            initialTermBaseLogPosition,
+            leadershipTermId,
+            termBaseLogPosition,
+            logPosition,
+            nowNs);
+
+        for (long termId = initialLogLeadershipTermId + 1; termId < leadershipTermId; termId++)
+        {
+            final RecordingLog.Entry termEntry = log.findTermEntry(termId);
+            assertNotNull(termEntry);
+            assertEquals(termBaseLogPosition, termEntry.termBaseLogPosition);
+            assertEquals(termBaseLogPosition, termEntry.logPosition);
+        }
+
+        final RecordingLog.Entry termEntry = log.findTermEntry(leadershipTermId);
+        assertNotNull(termEntry);
+        assertEquals(termBaseLogPosition, termEntry.termBaseLogPosition);
+        assertEquals(logPosition, termEntry.logPosition);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "0, 0, 4",
+        "2, 500, 4",
+        "100, 1000000, 200"
+    })
+    void shouldCompleteExistingTerm(
+        final long initialLogLeadershipTermId,
+        final long initialTermBaseLogPosition,
+        final long leadershipTermId,
+        @TempDir final Path tempDir)
+    {
+        final long termBaseLogPosition = initialTermBaseLogPosition + 100;
+        final long logPosition = initialTermBaseLogPosition + 500;
+        final long nowNs = 1_000_000;
+
+        final RecordingLog log = new RecordingLog(tempDir.toFile(), true);
+        ctx.recordingLog(log);
+
+        log.appendTerm(RECORDING_ID, leadershipTermId, termBaseLogPosition, nowNs);
+
+        Election.ensureRecordingLogCoherent(
+            ctx,
+            RECORDING_ID,
+            initialLogLeadershipTermId,
+            initialTermBaseLogPosition,
+            leadershipTermId,
+            termBaseLogPosition,
+            logPosition,
+            nowNs);
+
+        final RecordingLog.Entry termEntry = log.findTermEntry(leadershipTermId);
+        assertEquals(termBaseLogPosition, termEntry.termBaseLogPosition);
+        assertEquals(logPosition, termEntry.logPosition);
+
+        assertEquals(1, log.entries().size());
+    }
+
+    @Test
+    void shouldThrowIfLastTermIsUnfinishedAndTermBaseLogPositionIsNotSpecified(@TempDir final Path tempDir)
+    {
+        final long leadershipTermId = 4;
+        final long termBaseLogPosition = 100;
+        final long logPosition = 500;
+        final long nowNs = 1_000_000;
+
+        final RecordingLog log = new RecordingLog(tempDir.toFile(), true);
+        ctx.recordingLog(log);
+
+        log.appendTerm(RECORDING_ID, leadershipTermId - 1, 0, nowNs);
+
+        assertThrows(ClusterException.class, () -> Election.ensureRecordingLogCoherent(
+            ctx,
+            RECORDING_ID,
+            0,
+            0,
+            leadershipTermId,
+            NULL_POSITION,
+            logPosition,
+            nowNs));
+    }
+
+    @Test
+    void shouldThrowNonZeroLogPositionAndNullRecordingIdSpecifed(@TempDir final Path tempDir)
+    {
+        Election.ensureRecordingLogCoherent(ctx, NULL_POSITION, 0, 0, 0, 0, 0, 1);
+
+        assertThrows(
+            AgentTerminationException.class,
+            () -> Election.ensureRecordingLogCoherent(ctx, NULL_POSITION, 0, 0, 0, 0, 1000, 1));
     }
 
     private Election newElection(

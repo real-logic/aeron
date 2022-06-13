@@ -267,6 +267,48 @@ class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
+    void shouldReplicateWithOlderVersion()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            final CountersReader counters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(counters, counterId, publication.position());
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        final MutableLong dstRecordingId = new MutableLong();
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
+
+        dstAeronArchive.replicate(
+            srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+
+        awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE);
+        awaitSignal(signalRef, adapter, RecordingSignal.EXTEND);
+
+        final ObjectHashSet<RecordingSignal> transitionEventsSet = new ObjectHashSet<>();
+        transitionEventsSet.add(awaitSignal(signalRef, adapter));
+        transitionEventsSet.add(awaitSignal(signalRef, adapter));
+        transitionEventsSet.add(awaitSignal(signalRef, adapter));
+
+        assertTrue(transitionEventsSet.contains(RecordingSignal.STOP));
+        assertTrue(transitionEventsSet.contains(RecordingSignal.SYNC));
+        assertTrue(transitionEventsSet.contains(RecordingSignal.REPLICATE_END));
+    }
+
+    @Test
+    @InterruptAfter(10)
     void shouldReplicateStoppedRecordingsConcurrently()
     {
         final String messagePrefix = "Message-Prefix-";

@@ -485,7 +485,8 @@ final class ControlSession implements Session
         final int srcControlStreamId,
         final String srcControlChannel,
         final String liveDestination,
-        final String replicationChannel)
+        final String replicationChannel,
+        final int fileIoMaxLength)
     {
         attemptToActivate();
         if (State.ACTIVE == state)

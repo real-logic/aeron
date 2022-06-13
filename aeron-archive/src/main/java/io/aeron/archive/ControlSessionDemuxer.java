@@ -31,6 +31,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 class ControlSessionDemuxer implements Session, FragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 10;
+    private static final int FILE_IO_MAX_LENGTH_VERSION = 7;
 
     private final ControlRequestDecoders decoders;
     private final Image image;
@@ -557,7 +558,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.srcControlStreamId(),
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
-                        "");
+                        "",
+                        -1);
                 }
                 break;
             }
@@ -812,7 +814,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.srcControlStreamId(),
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
-                        "");
+                        "",
+                        Aeron.NULL_VALUE);
                 }
                 break;
             }
@@ -901,6 +904,9 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final long correlationId = decoder.correlationId();
                 final ControlSession controlSession = getControlSession(correlationId, controlSessionId, templateId);
 
+                final int fileIoMaxLength = FILE_IO_MAX_LENGTH_VERSION <= headerDecoder.version() ?
+                    decoder.fileIoMaxLength() : Aeron.NULL_VALUE;
+
                 if (null != controlSession)
                 {
                     controlSession.onReplicate(
@@ -913,7 +919,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.srcControlStreamId(),
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
-                        decoder.replicationChannel());
+                        decoder.replicationChannel(),
+                        fileIoMaxLength);
                 }
                 break;
             }

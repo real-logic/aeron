@@ -49,32 +49,47 @@ class ControlSessionDemuxerV6Test
         controlSessionDemuxer.onFragment(buffer, 0, connectRequestLength, mockHeader);
 
         replicateRequest2Encoder.wrapAndApplyHeader(buffer, 0, headerEncoder);
+
+        final long correlationId = 9382475L;
+        final long srcRecordingId = 1234234L;
+        final long dstRecordingId = 2532453245L;
+        final long stopPosition = 2315345L;
+        final long channelTagId = 234L;
+        final long subscriptionTagId = 235L;
+        final int fileIoMaxLength = Aeron.NULL_VALUE; // Since v7
+        final int srcControlStreamId = 982374;
+        final String srcControlChannel = "src";
+        final String liveDestination = "live";
+        final String replicationChannel = "replication";
+
         replicateRequest2Encoder
             .controlSessionId(sessionId)
-            .correlationId(9382475)
-            .srcRecordingId(1234234)
-            .dstRecordingId(2532453245L)
-            .stopPosition(235345)
-            .channelTagId(234)
-            .subscriptionTagId(235)
-            .srcControlChannel("foo")
-            .liveDestination("bar");
+            .correlationId(correlationId)
+            .srcRecordingId(srcRecordingId)
+            .dstRecordingId(dstRecordingId)
+            .stopPosition(stopPosition)
+            .channelTagId(channelTagId)
+            .subscriptionTagId(subscriptionTagId)
+            .srcControlStreamId(srcControlStreamId)
+            .srcControlChannel(srcControlChannel)
+            .liveDestination(liveDestination)
+            .replicationChannel(replicationChannel);
 
         final int replicateRequestLength = replicateRequest2Encoder.encodedLength();
 
         controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
 
         verify(mockSession).onReplicate(
-            anyLong(),
-            anyLong(),
-            anyLong(),
-            anyLong(),
-            anyLong(),
-            anyLong(),
-            anyInt(),
-            any(),
-            any(),
-            any(),
-            eq(Aeron.NULL_VALUE));
+            correlationId,
+            srcRecordingId,
+            dstRecordingId,
+            stopPosition,
+            channelTagId,
+            subscriptionTagId,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            replicationChannel,
+            fileIoMaxLength);
     }
 }

@@ -24,7 +24,7 @@ class ControlSessionDemuxerTest
     public static final int SCHEMA_VERSION_6 = 6;
 
     @Test
-    void shouldHandleVersion6ReplicationRequest2()
+    void shouldHandleReplicationRequest2()
     {
         final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
             new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
@@ -51,35 +51,47 @@ class ControlSessionDemuxerTest
 
         replicateRequest2Encoder.wrapAndApplyHeader(buffer, 0, headerEncoder);
 
+        final long correlationId = 9382475L;
+        final long srcRecordingId = 1234234L;
+        final long dstRecordingId = 2532453245L;
+        final long stopPosition = 2315345L;
+        final long channelTagId = 234L;
+        final long subscriptionTagId = 235L;
         final int fileIoMaxLength = 4096;
+        final int srcControlStreamId = 982374;
+        final String srcControlChannel = "src";
+        final String liveDestination = "live";
+        final String replicationChannel = "replication";
 
         replicateRequest2Encoder
             .controlSessionId(sessionId)
-            .correlationId(9382475)
-            .srcRecordingId(1234234)
-            .dstRecordingId(2532453245L)
-            .stopPosition(235345)
-            .channelTagId(234)
-            .subscriptionTagId(235)
+            .correlationId(correlationId)
+            .srcRecordingId(srcRecordingId)
+            .dstRecordingId(dstRecordingId)
+            .stopPosition(stopPosition)
+            .channelTagId(channelTagId)
+            .subscriptionTagId(subscriptionTagId)
             .fileIoMaxLength(fileIoMaxLength)
-            .srcControlChannel("foo")
-            .liveDestination("bar");
+            .srcControlStreamId(srcControlStreamId)
+            .srcControlChannel(srcControlChannel)
+            .liveDestination(liveDestination)
+            .replicationChannel(replicationChannel);
 
         final int replicateRequestLength = replicateRequest2Encoder.encodedLength();
 
         controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
 
         verify(mockSession).onReplicate(
-            anyLong(),
-            anyLong(),
-            anyLong(),
-            anyLong(),
-            anyLong(),
-            anyLong(),
-            anyInt(),
-            any(),
-            any(),
-            any(),
-            eq(fileIoMaxLength));
+            correlationId,
+            srcRecordingId,
+            dstRecordingId,
+            stopPosition,
+            channelTagId,
+            subscriptionTagId,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            replicationChannel,
+            fileIoMaxLength);
     }
 }

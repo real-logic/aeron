@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ArchiveTest
+public class ArchiveSystemTest
 {
     private static Stream<Arguments> threadingModes()
     {
@@ -334,7 +334,7 @@ public class ArchiveTest
                     final String channel,
                     final String sourceIdentity)
                 {
-                    ArchiveTest.this.recordingId = recordingId;
+                    ArchiveSystemTest.this.recordingId = recordingId;
                     assertEquals(PUBLISH_STREAM_ID, streamId);
                     assertEquals(sessionId, sessionId0);
                     assertEquals(startPosition, startPosition0);
@@ -468,7 +468,7 @@ public class ArchiveTest
                     final String sourceIdentity)
                 {
                     assertEquals(requestCorrelationId, correlationId);
-                    assertEquals(ArchiveTest.this.recordingId, recordingId);
+                    assertEquals(ArchiveSystemTest.this.recordingId, recordingId);
                     assertEquals(publicationTermBufferLength, termBufferLength);
                     assertEquals(PUBLISH_STREAM_ID, streamId);
                     assertEquals(publishUri, originalChannel);

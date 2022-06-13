@@ -47,6 +47,7 @@ final class ClusterEventEncoder
         final int memberId,
         final int leaderId,
         final int logSessionId,
+        final int appVersion,
         final boolean isStartup)
     {
         int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
@@ -87,6 +88,9 @@ final class ClusterEventEncoder
         encodingBuffer.putInt(offset + encodedLength, logSessionId, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_INT;
 
+        encodingBuffer.putInt(offset + encodedLength, appVersion, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+
         encodingBuffer.putByte(offset + encodedLength, (byte)(isStartup ? 1 : 0));
         encodedLength += SIZE_OF_BYTE;
 
@@ -95,7 +99,7 @@ final class ClusterEventEncoder
 
     static int newLeaderShipTermLength()
     {
-        return (SIZE_OF_LONG * 9) + (SIZE_OF_INT * 3) + SIZE_OF_BYTE;
+        return (SIZE_OF_LONG * 9) + (SIZE_OF_INT * 4) + SIZE_OF_BYTE;
     }
 
     static <E extends Enum<E>> int encodeStateChange(

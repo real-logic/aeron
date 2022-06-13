@@ -64,6 +64,7 @@ class ClusterEventLoggerTest
         final int memberId = 19;
         final int leaderId = -1;
         final int logSessionId = 3;
+        final int appVersion = 777;
         final int captureLength = newLeaderShipTermLength();
         final boolean isStartup = true;
         final long termBaseLogPosition = 982734;
@@ -82,6 +83,7 @@ class ClusterEventLoggerTest
             memberId,
             leaderId,
             logSessionId,
+            appVersion,
             isStartup);
 
         verifyLogHeader(logBuffer, offset, NEW_LEADERSHIP_TERM.toEventCodeId(), captureLength, captureLength);
@@ -111,6 +113,9 @@ class ClusterEventLoggerTest
         index += SIZE_OF_INT;
         assertEquals(logSessionId, logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
+        assertEquals(appVersion, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+
         assertEquals(isStartup, 1 == logBuffer.getByte(index));
     }
 

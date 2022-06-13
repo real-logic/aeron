@@ -70,6 +70,7 @@ class ClusterInterceptor
             final int memberId,
             final int leaderId,
             final int logSessionId,
+            final int appVersion,
             final boolean isStartup)
         {
             LOGGER.logNewLeadershipTerm(
@@ -85,6 +86,7 @@ class ClusterInterceptor
                 memberId,
                 leaderId,
                 logSessionId,
+                appVersion,
                 isStartup);
         }
     }

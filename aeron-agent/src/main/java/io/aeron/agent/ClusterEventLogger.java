@@ -62,6 +62,7 @@ public final class ClusterEventLogger
      * @param memberId                of the current cluster node.
      * @param leaderId                member id for the new leader.
      * @param logSessionId            session id of the log extension.
+     * @param appVersion              associated with the recorded state.
      * @param isStartup               is the leader starting up fresh.
      */
     public void logNewLeadershipTerm(
@@ -77,6 +78,7 @@ public final class ClusterEventLogger
         final int memberId,
         final int leaderId,
         final int logSessionId,
+        final int appVersion,
         final boolean isStartup)
     {
         final int length = newLeaderShipTermLength();
@@ -106,6 +108,7 @@ public final class ClusterEventLogger
                     memberId,
                     leaderId,
                     logSessionId,
+                    appVersion,
                     isStartup);
             }
             finally

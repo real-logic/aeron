@@ -671,6 +671,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long timestamp,
         final int leaderId,
         final int logSessionId,
+        final int appVersion,
         final boolean isStartup)
     {
         logNewLeadershipTerm(
@@ -686,7 +687,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             memberId,
             leaderId,
             logSessionId,
+            appVersion,
             isStartup);
+
+        if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
+        {
+            ctx.errorHandler().onError(new ClusterException(
+                "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
+                " log=" + SemanticVersion.toString(appVersion)));
+            throw new AgentTerminationException();
+        }
 
         if (null != election)
         {
@@ -1999,6 +2009,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final int memberId,
         final int leaderId,
         final int logSessionId,
+        final int appVersion,
         final boolean isStartup)
     {
     }

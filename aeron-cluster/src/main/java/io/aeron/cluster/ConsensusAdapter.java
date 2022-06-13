@@ -149,6 +149,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     newLeadershipTermDecoder.timestamp(),
                     newLeadershipTermDecoder.leaderMemberId(),
                     newLeadershipTermDecoder.logSessionId(),
+                    newLeadershipTermDecoder.appVersion(),
                     newLeadershipTermDecoder.isStartup() == BooleanType.TRUE);
                 break;
 

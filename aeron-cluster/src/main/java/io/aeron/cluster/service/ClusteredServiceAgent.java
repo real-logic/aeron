@@ -467,23 +467,21 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 " log=" + SemanticVersion.toString(appVersion)));
             throw new AgentTerminationException();
         }
-        else
-        {
-            sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
-            this.logPosition = logPosition;
-            clusterTime = timestamp;
-            this.timeUnit = timeUnit;
 
-            service.onNewLeadershipTermEvent(
-                leadershipTermId,
-                logPosition,
-                timestamp,
-                termBaseLogPosition,
-                leaderMemberId,
-                logSessionId,
-                timeUnit,
-                appVersion);
-        }
+        sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
+        this.logPosition = logPosition;
+        clusterTime = timestamp;
+        this.timeUnit = timeUnit;
+
+        service.onNewLeadershipTermEvent(
+            leadershipTermId,
+            logPosition,
+            timestamp,
+            termBaseLogPosition,
+            leaderMemberId,
+            logSessionId,
+            timeUnit,
+            appVersion);
     }
 
     void onMembershipChange(

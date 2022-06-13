@@ -75,6 +75,9 @@ final class ClusterEventDissector
         final int logSessionId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_INT;
 
+        final int appVersion = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
         final boolean isStartup = 1 == buffer.getByte(absoluteOffset);
 
         builder.append(": memberId=").append(memberId)
@@ -89,6 +92,7 @@ final class ClusterEventDissector
             .append(" timestamp=").append(timestamp)
             .append(" leaderId=").append(leaderId)
             .append(" logSessionId=").append(logSessionId)
+            .append(" appVersion=").append(appVersion)
             .append(" isStartup=").append(isStartup);
     }
 

@@ -74,7 +74,7 @@ jobs:
           echo "::set-output name=file::build/distribution/test_logs.tbz2"
           ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/distribution/test_logs.tbz2'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distribution/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}

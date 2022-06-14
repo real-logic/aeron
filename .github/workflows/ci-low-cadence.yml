@@ -71,14 +71,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
+          echo "::set-output name=file::build/distribution/test_logs.tbz2"
           ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.dir == 'build/distribution/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-slow-tests-gcc:
     name: C++ Slow System Tests GCC ${{ matrix.version }}

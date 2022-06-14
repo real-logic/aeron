@@ -1834,9 +1834,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             throw new ClusterEvent(
                 "no catchup progress commitPosition=" + commitPosition.getWeak() + " limitPosition=" + limitPosition +
-                    " lastAppendPosition=" + lastAppendPosition +
-                    " appendPosition=" + (null != appendPosition ? appendPosition.get() : -1) +
-                    " logPosition=" + election.logPosition());
+                " lastAppendPosition=" + lastAppendPosition +
+                " appendPosition=" + (null != appendPosition ? appendPosition.get() : -1) +
+                " logPosition=" + election.logPosition());
         }
 
         workCount += consensusModuleAdapter.poll();
@@ -1872,7 +1872,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     }
                     catch (final Exception ex)
                     {
-                        ctx.countedErrorHandler().onError(new ClusterException("catchup already stopped", ex, WARN));
+                        ctx.countedErrorHandler().onError(new ClusterEvent("replay already stopped for catchup"));
                     }
                 }
 

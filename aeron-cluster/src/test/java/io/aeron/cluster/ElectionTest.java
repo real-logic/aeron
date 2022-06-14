@@ -23,7 +23,6 @@ import io.aeron.exceptions.TimeoutException;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1558,10 +1557,9 @@ public class ElectionTest
     void shouldThrowNonZeroLogPositionAndNullRecordingIdSpecified()
     {
         Election.ensureRecordingLogCoherent(ctx, NULL_POSITION, 0, 0, 0, 0, 0, 1);
+        Election.ensureRecordingLogCoherent(ctx, NULL_POSITION, 0, 0, 0, 0, 1000, 1);
 
-        assertThrows(
-            AgentTerminationException.class,
-            () -> Election.ensureRecordingLogCoherent(ctx, NULL_POSITION, 0, 0, 0, 0, 1000, 1));
+        verifyNoInteractions(recordingLog);
     }
 
     private Election newElection(

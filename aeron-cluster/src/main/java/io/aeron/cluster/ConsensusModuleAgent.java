@@ -268,7 +268,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
             if (null != recoveryPlan.log)
             {
-                logRecordingId = recoveryPlan.log.recordingId;
+                logRecordingId(recoveryPlan.log.recordingId);
             }
 
             try (Counter counter = addRecoveryStateCounter(recoveryPlan))
@@ -2619,7 +2619,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             return false;
         }
 
-        logRecordingId = recordingId;
+        logRecordingId(recordingId);
         appendPosition = new ReadableCounter(counters, registrationId, counterId);
         logRecordedPosition = NULL_POSITION;
 

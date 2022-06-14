@@ -1350,12 +1350,9 @@ class Election
     {
         if (NULL_VALUE == recordingId)
         {
-            if (0 == logPosition)
-            {
-                return;
-            }
-
-            throw new AgentTerminationException("log recording id not found");
+            // This can happen during a dynamic join/log replication if the initial appendPosition != 0 and
+            // nextTermLogPosition == appendPosition.
+            return;
         }
 
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);

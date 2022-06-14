@@ -590,6 +590,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && logLeadershipTermId <= this.leadershipTermId)
             {
+                stopExistingCatchupReplay(follower);
+
                 final RecordingLog.Entry currentTermEntry = recordingLog.getTermEntry(this.leadershipTermId);
                 final long termBaseLogPosition = currentTermEntry.termBaseLogPosition;
                 final long nextLogLeadershipTermId;
@@ -3493,6 +3495,19 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         else
         {
             return egressChannel;
+        }
+    }
+
+    private void stopExistingCatchupReplay(final ClusterMember follower)
+    {
+        if (NULL_VALUE != follower.catchupReplaySessionId())
+        {
+            if (archive.archiveProxy().stopReplay(
+                follower.catchupReplaySessionId(), aeron.nextCorrelationId(), archive.controlSessionId()))
+            {
+                follower.catchupReplaySessionId(NULL_VALUE);
+                follower.catchupReplayCorrelationId(NULL_VALUE);
+            }
         }
     }
 

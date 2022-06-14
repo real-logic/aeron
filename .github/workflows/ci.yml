@@ -78,9 +78,9 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
@@ -138,9 +138,9 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.dir == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-topology-${{ matrix.os }}-java-${{ matrix.java }}

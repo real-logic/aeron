@@ -405,7 +405,6 @@ public class DynamicMembershipTest
 
         final TestNode dynamicMember = cluster.startDynamicNode(3, true);
         cluster.awaitServiceMessageCount(dynamicMember, 3 * messageCount);
-        fail();
     }
 
     @Test

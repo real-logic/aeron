@@ -978,6 +978,12 @@ task copyTestLogs(type: Copy) {
     includeEmptyDirs = false
 }
 
+task tarTestLogs(type: Tar, dependsOn: copyTestLogs) {
+    archiveBaseName = 'test_logs'
+    from 'build/test_logs'
+    compression Compression.BZIP2
+}
+
 def isNonStable = { String version ->
     def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
     def regex = /^[0-9,.v-]+(-r)?$/

@@ -28,6 +28,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -45,8 +46,15 @@ public final class DataCollector
 {
     static final String THREAD_DUMP_FILE_NAME = "thread_dump.txt";
     static final AtomicInteger UNIQUE_ID = new AtomicInteger(0);
+    static final Predicate<Path> BLANK_TEMPLATE_FILTER =
+        (path) -> "blank.template".equals(path.getFileName().toString());
+    static final Predicate<Path> RECORDING_FILE_FILTER =
+        (path) -> path.getFileName().toString().endsWith(".rec");
+    private static final Predicate<Path> DATA_COLLECTED_DEFAULT_FILE_FILTER =
+        BLANK_TEMPLATE_FILTER.negate();
     private final Path rootDir;
     private final Set<Path> locations = new LinkedHashSet<>();
+    private Predicate<Path> fileFilter = DATA_COLLECTED_DEFAULT_FILE_FILTER;
 
     public DataCollector()
     {
@@ -197,6 +205,25 @@ public final class DataCollector
             "rootDir=" + rootDir +
             ", locations=" + locations +
             '}';
+    }
+
+    /**
+     * Reset the capture filter so all files are captured.
+     */
+    public void captureAllFiles()
+    {
+        fileFilter = (file) -> true;
+    }
+
+    /**
+     * Add a specific exclusion for a file to be captured.
+     *
+     * @param fileExclusion predicate that returns true of a specific file should
+     *                      not be captured.
+     */
+    public void addFileExclusion(final Predicate<Path> fileExclusion)
+    {
+        fileFilter = fileFilter.and(fileExclusion.negate());
     }
 
     private Path copyData(final String destinationDir)
@@ -358,7 +385,10 @@ public final class DataCollector
         {
             ensurePathExists(dst);
 
-            Files.copy(src, dst, COPY_ATTRIBUTES, REPLACE_EXISTING);
+            if (fileFilter.test(src))
+            {
+                Files.copy(src, dst, COPY_ATTRIBUTES, REPLACE_EXISTING);
+            }
         }
         else
         {
@@ -379,7 +409,10 @@ public final class DataCollector
                     public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
                         throws IOException
                     {
-                        Files.copy(file, dst.resolve(src.relativize(file)), COPY_ATTRIBUTES);
+                        if (fileFilter.test(file))
+                        {
+                            Files.copy(file, dst.resolve(src.relativize(file)), COPY_ATTRIBUTES);
+                        }
 
                         return FileVisitResult.CONTINUE;
                     }

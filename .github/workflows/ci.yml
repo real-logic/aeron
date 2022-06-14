@@ -77,14 +77,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   java-topology-build:
     name: Java Topology Tests (JDK ${{ matrix.java }}, ${{ matrix.os }})
@@ -137,14 +137,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-topology-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}
@@ -196,14 +196,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-gcc-${{ matrix.version }}
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-gcc-centos-build:
     name: C++ CentOS devtoolset-${{ matrix.version }}
@@ -233,14 +233,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-gcc-centos-${{ matrix.version }}
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-gcc-rhel-build:
     name: C++ RHEL 8
@@ -270,14 +270,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-gcc-rhel-${{ matrix.version }}
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-clang-ubuntu-1804-build:
     name: C++ Clang ${{ matrix.version }} (Ubuntu 18.04)
@@ -330,14 +330,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-clang-${{ matrix.version }}
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-clang-ubuntu-2004-build:
     name: C++ Clang ${{ matrix.version }} (Ubuntu 20.04)
@@ -390,14 +390,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-clang-${{ matrix.version }}
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-clang-debug-build:
     name: C++ Clang ${{ matrix.version }} debug build
@@ -450,14 +450,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-clang-debug-${{ matrix.version }}
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-xcode-build:
     name: C++ Xcode (macOS)
@@ -501,14 +501,14 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-xcode-latest
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-msvc-build:
     name: C++ MSVC (Windows)
@@ -553,11 +553,11 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "::set-output name=dir::build/test_logs"
-          ./gradlew copyTestLogs
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
       - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.dir == 'build/test_logs'
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
         with:
           name: crash-logs-msvc-latest
-          path: ${{ steps.copy_test_logs.outputs.dir }}
+          path: ${{ steps.copy_test_logs.outputs.file }}

@@ -979,7 +979,7 @@ task copyTestLogs(type: Copy) {
 }
 
 task tarTestLogs(type: Tar, dependsOn: copyTestLogs) {
-    baseName 'test_logs'
+    archiveBaseName = 'test_logs'
     from 'build/test_logs'
     compression Compression.BZIP2
 }

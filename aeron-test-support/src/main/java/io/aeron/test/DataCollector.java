@@ -51,7 +51,7 @@ public final class DataCollector
     static final Predicate<Path> RECORDING_FILE_FILTER =
         (path) -> path.getFileName().toString().endsWith(".rec");
     private static final Predicate<Path> DATA_COLLECTED_DEFAULT_FILE_FILTER =
-        BLANK_TEMPLATE_FILTER.negate().and(RECORDING_FILE_FILTER.negate());
+        BLANK_TEMPLATE_FILTER.negate();
     private final Path rootDir;
     private final Set<Path> locations = new LinkedHashSet<>();
     private Predicate<Path> fileFilter = DATA_COLLECTED_DEFAULT_FILE_FILTER;

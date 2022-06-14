@@ -127,7 +127,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=file::build/distributions/test_logs.tbz2"
-          ./gradlew copyTestLogs
+          ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
@@ -184,7 +184,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=file::build/distributions/test_logs.tbz2"
-          ./gradlew copyTestLogs
+          ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
@@ -230,7 +230,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=file::build/distributions/test_logs.tbz2"
-          ./gradlew copyTestLogs
+          ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
@@ -285,7 +285,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=file::build/distributions/test_logs.tbz2"
-          ./gradlew copyTestLogs
+          ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2
@@ -342,7 +342,7 @@ jobs:
         if: failure()
         run: |
           echo "::set-output name=file::build/distributions/test_logs.tbz2"
-          ./gradlew copyTestLogs
+          ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v2

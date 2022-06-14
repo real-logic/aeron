@@ -556,10 +556,11 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         Aeron.NULL_VALUE,
                         Aeron.NULL_VALUE,
                         decoder.srcControlStreamId(),
+                        Aeron.NULL_VALUE,
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
-                        "",
-                        -1);
+                        ""
+                    );
                 }
                 break;
             }
@@ -812,10 +813,11 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.channelTagId(),
                         decoder.subscriptionTagId(),
                         decoder.srcControlStreamId(),
+                        Aeron.NULL_VALUE,
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
-                        "",
-                        Aeron.NULL_VALUE);
+                        ""
+                    );
                 }
                 break;
             }
@@ -917,10 +919,11 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.channelTagId(),
                         decoder.subscriptionTagId(),
                         decoder.srcControlStreamId(),
+                        fileIoMaxLength,
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
-                        decoder.replicationChannel(),
-                        fileIoMaxLength);
+                        decoder.replicationChannel()
+                    );
                 }
                 break;
             }

@@ -89,9 +89,9 @@ class ControlSessionDemuxerTest
             channelTagId,
             subscriptionTagId,
             srcControlStreamId,
-            srcControlChannel,
+            fileIoMaxLength, srcControlChannel,
             liveDestination,
-            replicationChannel,
-            fileIoMaxLength);
+            replicationChannel
+        );
     }
 }

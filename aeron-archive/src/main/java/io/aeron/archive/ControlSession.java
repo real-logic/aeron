@@ -483,10 +483,10 @@ final class ControlSession implements Session
         final long channelTagId,
         final long subscriptionTagId,
         final int srcControlStreamId,
+        final int fileIoMaxLength,
         final String srcControlChannel,
         final String liveDestination,
-        final String replicationChannel,
-        final int fileIoMaxLength)
+        final String replicationChannel)
     {
         attemptToActivate();
         if (State.ACTIVE == state)

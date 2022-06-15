@@ -48,6 +48,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.ArchiveException.UNKNOWN_REPLAY;
 import static io.aeron.archive.client.ReplayMerge.LIVE_ADD_MAX_WINDOW;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
@@ -1950,6 +1951,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                                 "catchup replay failed - " + poller.errorMessage()));
                             return workCount;
                         }
+                    }
+
+                    if (UNKNOWN_REPLAY == poller.relevantId())
+                    {
+                        ctx.countedErrorHandler().onError(new ClusterEvent(
+                            "replay no longer relevant - " + poller.errorMessage()));
+                        return workCount;
                     }
 
                     final ArchiveException ex = new ArchiveException(

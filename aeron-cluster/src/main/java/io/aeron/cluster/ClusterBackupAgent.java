@@ -16,20 +16,26 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
-import io.aeron.archive.client.*;
-import io.aeron.archive.codecs.*;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
+import io.aeron.archive.client.ControlResponsePoller;
+import io.aeron.archive.client.RecordingSignalPoller;
+import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.archive.codecs.ControlResponseDecoder;
+import io.aeron.archive.codecs.RecordingSignalEventDecoder;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BackupResponseDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import org.agrona.collections.*;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
@@ -546,7 +552,16 @@ public final class ClusterBackupAgent implements Agent
 
             final ChannelUri uri = ChannelUri.parse(ctx.consensusChannel());
             uri.put(ENDPOINT_PARAM_NAME, clusterConsensusEndpoints[cursor]);
-            consensusPublication = aeron.addExclusivePublication(uri.toString(), ctx.consensusStreamId());
+
+            try
+            {
+                consensusPublication = aeron.addExclusivePublication(uri.toString(), ctx.consensusStreamId());
+            }
+            catch (final RegistrationException ex)
+            {
+                ctx.countedErrorHandler().onError(new ClusterException(
+                    "failed to add publication for backup query", ex, WARN));
+            }
             correlationId = NULL_VALUE;
             timeOfLastBackupQueryMs = nowMs;
 

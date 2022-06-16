@@ -724,6 +724,16 @@ abstract class ArchiveConductor
 
         catalog.recordingSummary(recordingId, recordingSummary);
 
+        final UnsafeBuffer replayBuffer;
+        if (0 < fileIoMaxLength && fileIoMaxLength < ctx.replayBuffer().capacity())
+        {
+            replayBuffer = new UnsafeBuffer(ctx.replayBuffer(), 0, fileIoMaxLength);
+        }
+        else
+        {
+            replayBuffer = ctx.replayBuffer();
+        }
+
         final ReplaySession replaySession = new ReplaySession(
             replayPosition,
             replayLength,
@@ -732,7 +742,7 @@ abstract class ArchiveConductor
             correlationId,
             controlSession,
             controlResponseProxy,
-            ctx.replayBuffer(),
+            replayBuffer,
             catalog,
             archiveDir,
             cachedEpochClock,

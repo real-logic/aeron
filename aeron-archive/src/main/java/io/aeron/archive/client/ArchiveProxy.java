@@ -415,6 +415,58 @@ public final class ArchiveProxy
     }
 
     /**
+     * Replay a recording from a given position. Support specifing {@link ReplayParams} to change the behaviour of the
+     * replay. E.g a bounded replay can be requested by specifying the boundingLimitCounterId.
+     *
+     * @param recordingId      to be replayed.
+     * @param position         from which the replay should be started.
+     * @param length           of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live stream.
+     * @param replayChannel    to which the replay should be sent.
+     * @param replayStreamId   to which the replay should be sent.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @param replayParams     optional parameters change the behaviour of the replay.
+     * @return true if successfully offered otherwise false.
+     * @see ReplayParams
+     */
+    public boolean replay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final String replayChannel,
+        final int replayStreamId,
+        final long correlationId,
+        final long controlSessionId,
+        final ReplayParams replayParams)
+    {
+        if (replayParams.isBounded())
+        {
+            return boundedReplay(
+                recordingId,
+                position,
+                length,
+                replayParams.boundingLimitCounterId(),
+                replayChannel,
+                replayStreamId,
+                correlationId,
+                controlSessionId,
+                replayParams.maxFileIoLength());
+        }
+        else
+        {
+            return replay(
+                recordingId,
+                position,
+                length,
+                replayChannel,
+                replayStreamId,
+                correlationId,
+                controlSessionId,
+                replayParams.maxFileIoLength());
+        }
+    }
+
+    /**
      * Replay a recording from a given position.
      *
      * @param recordingId      to be replayed.
@@ -435,22 +487,15 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replayRequest)
-        {
-            replayRequest = new ReplayRequestEncoder();
-        }
-
-        replayRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .recordingId(recordingId)
-            .position(position)
-            .length(length)
-            .replayStreamId(replayStreamId)
-            .replayChannel(replayChannel);
-
-        return offer(replayRequest.encodedLength());
+        return replay(
+            recordingId,
+            position,
+            length,
+            replayChannel,
+            replayStreamId,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -476,23 +521,16 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == boundedReplayRequest)
-        {
-            boundedReplayRequest = new BoundedReplayRequestEncoder();
-        }
-
-        boundedReplayRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .recordingId(recordingId)
-            .position(position)
-            .length(length)
-            .limitCounterId(limitCounterId)
-            .replayStreamId(replayStreamId)
-            .replayChannel(replayChannel);
-
-        return offer(boundedReplayRequest.encodedLength());
+        return boundedReplay(
+            recordingId,
+            position,
+            length,
+            limitCounterId,
+            replayChannel,
+            replayStreamId,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -1392,5 +1430,65 @@ public final class ArchiveProxy
 
             retryIdleStrategy.idle();
         }
+    }
+
+    private boolean replay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final String replayChannel,
+        final int replayStreamId,
+        final long correlationId,
+        final long controlSessionId,
+        final int fileIoMaxLength)
+    {
+        if (null == replayRequest)
+        {
+            replayRequest = new ReplayRequestEncoder();
+        }
+
+        replayRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .position(position)
+            .length(length)
+            .replayStreamId(replayStreamId)
+            .fileIoMaxLength(fileIoMaxLength)
+            .replayChannel(replayChannel);
+
+        return offer(replayRequest.encodedLength());
+    }
+
+    private boolean boundedReplay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final int limitCounterId,
+        final String replayChannel,
+        final int replayStreamId,
+        final long correlationId,
+        final long controlSessionId,
+        final int fileIoMaxLength)
+    {
+        if (null == boundedReplayRequest)
+        {
+            boundedReplayRequest = new BoundedReplayRequestEncoder();
+        }
+
+        boundedReplayRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .position(position)
+            .length(length)
+            .limitCounterId(limitCounterId)
+            .replayStreamId(replayStreamId)
+            .fileIoMaxLength(fileIoMaxLength)
+            .replayChannel(replayChannel);
+
+        return offer(boundedReplayRequest.encodedLength());
     }
 }

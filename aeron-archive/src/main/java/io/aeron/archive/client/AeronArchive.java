@@ -1044,6 +1044,134 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Fluent API for setting optional replay parameters. Not threadsafe.
+     */
+    public static class ReplayParams
+    {
+        private int boundingLimitCounterId;
+        private int maxFileIoLength;
+
+        /**
+         * Default, initialise all values to "null"
+         */
+        public ReplayParams()
+        {
+            reset();
+        }
+
+        /**
+         * reset all value to "null", allows for an instance to be reused
+         * @return this for a fluent API
+         */
+        public ReplayParams reset()
+        {
+            boundingLimitCounterId = Aeron.NULL_VALUE;
+            maxFileIoLength = Aeron.NULL_VALUE;
+            return this;
+        }
+
+        /**
+         * Sets the counter id to be used for bounding the replay. Setting this value will trigger the sending of a
+         * bounded replay request instead of a normal replay.
+         *
+         * @param boundingLimitCounterId counter to use to bound the replay
+         * @return this for a fluent API
+         */
+        public ReplayParams boundingLimitCounterId(final int boundingLimitCounterId)
+        {
+            this.boundingLimitCounterId = boundingLimitCounterId;
+            return this;
+        }
+
+        /**
+         * The maximum size of a file operation when reading from the archive to execute the replay. Will use the value
+         * defined in the context otherwise. This can be used reduce the size of file IO operations to lower the
+         * priority of some replays. Setting it to a value larger than the context value will have no affect.
+         *
+         * @param maxFileIoLength maximum length of a replay file operation
+         * @return this for a fluent API
+         */
+        public ReplayParams maxFileIoLength(final int maxFileIoLength)
+        {
+            this.maxFileIoLength = maxFileIoLength;
+            return this;
+        }
+    }
+
+    /**
+     * Start a replay for a length in bytes of a recording from a position bounded by a position counter.
+     * If the position is {@link #NULL_POSITION} then the stream will be replayed from the start.
+     * <p>
+     * The lower 32-bits of the returned value contains the {@link Image#sessionId()} of the received replay. All
+     * 64-bits are required to uniquely identify the replay when calling {@link #stopReplay(long)}. The lower 32-bits
+     * can be obtained by casting the {@code long} value to an {@code int}.
+     *
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should begin or {@link #NULL_POSITION} if from the start.
+     * @param length         of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live recording or
+     *                       {@link #NULL_LENGTH} to replay the whole stream of unknown length.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @param replayParams   optional parameters for the replay
+     * @return the id of the replay session which will be the same as the {@link Image#sessionId()} of the received
+     * replay for correlation with the matching channel and stream id in the lower 32 bits.
+     * @see ReplayParams
+     */
+    public long startBoundedReplay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final String replayChannel,
+        final int replayStreamId,
+        final ReplayParams replayParams)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (Aeron.NULL_VALUE != replayParams.boundingLimitCounterId)
+            {
+                if (!archiveProxy.boundedReplay(
+                    recordingId,
+                    position,
+                    length,
+                    replayParams.boundingLimitCounterId,
+                    replayChannel,
+                    replayStreamId,
+                    lastCorrelationId,
+                    controlSessionId))
+                {
+                    throw new ArchiveException("failed to send bounded replay request");
+                }
+            }
+            else
+            {
+                if (!archiveProxy.replay(
+                    recordingId,
+                    position,
+                    length,
+                    replayChannel,
+                    replayStreamId,
+                    lastCorrelationId,
+                    controlSessionId))
+                {
+                    throw new ArchiveException("failed to send replay request");
+                }
+            }
+
+            return pollForResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Stop a replay session.
      *
      * @param replaySessionId to stop replay for.

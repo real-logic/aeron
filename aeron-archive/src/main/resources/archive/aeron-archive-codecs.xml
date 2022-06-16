@@ -194,6 +194,7 @@
         <field name="position"             id="4" type="int64"/>
         <field name="length"               id="5" type="int64"/>
         <field name="replayStreamId"       id="6" type="int32"/>
+        <field name="fileIoMaxLength"      id="8" type="int32" sinceVersion="7"/>
         <data  name="replayChannel"        id="7" type="varAsciiEncoding"/>
     </sbe:message>
 
@@ -310,6 +311,7 @@
         <field name="length"               id="5" type="int64"/>
         <field name="limitCounterId"       id="6" type="int32"/>
         <field name="replayStreamId"       id="7" type="int32"/>
+        <field name="fileIoMaxLength"      id="9" type="int32" sinceVersion="7"/>
         <data  name="replayChannel"        id="8" type="varAsciiEncoding"/>
     </sbe:message>
 

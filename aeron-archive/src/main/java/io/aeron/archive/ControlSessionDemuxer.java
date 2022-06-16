@@ -222,6 +222,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final long controlSessionId = decoder.controlSessionId();
                 final long correlationId = decoder.correlationId();
                 final ControlSession controlSession = getControlSession(correlationId, controlSessionId, templateId);
+                final int fileIoMaxLength = FILE_IO_MAX_LENGTH_VERSION <= headerDecoder.version() ?
+                    decoder.fileIoMaxLength() : Aeron.NULL_VALUE;
 
                 if (null != controlSession)
                 {
@@ -230,6 +232,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.recordingId(),
                         decoder.position(),
                         decoder.length(),
+                        fileIoMaxLength,
                         decoder.replayStreamId(),
                         decoder.replayChannel());
                 }
@@ -499,6 +502,9 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final long correlationId = decoder.correlationId();
                 final ControlSession controlSession = getControlSession(correlationId, controlSessionId, templateId);
 
+                final int fileIoMaxLength = FILE_IO_MAX_LENGTH_VERSION <= headerDecoder.version() ?
+                    decoder.fileIoMaxLength() : Aeron.NULL_VALUE;
+
                 if (null != controlSession)
                 {
                     controlSession.onStartBoundedReplay(
@@ -507,6 +513,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.position(),
                         decoder.length(),
                         decoder.limitCounterId(),
+                        fileIoMaxLength,
                         decoder.replayStreamId(),
                         decoder.replayChannel());
                 }

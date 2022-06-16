@@ -4,5 +4,6 @@
         "https://checkstyle.org/dtds/suppressions_1_0.dtd">
 <suppressions>
     <suppress files=".*generated-src.*" checks="."/>
+    <suppress files=".*generated-test.*" checks="."/>
     <suppress files="[\\/]test[\\/]" checks="MissingJavadoc.*"/>
 </suppressions>

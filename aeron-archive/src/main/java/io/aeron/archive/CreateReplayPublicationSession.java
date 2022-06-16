@@ -31,6 +31,7 @@ class CreateReplayPublicationSession implements Session
     private final Counter limitPositionCounter;
     private final ControlSession controlSession;
     private final ArchiveConductor conductor;
+    private final int fileIoMaxLength;
 
     CreateReplayPublicationSession(
         final long correlationId,
@@ -38,6 +39,7 @@ class CreateReplayPublicationSession implements Session
         final long replayPosition,
         final long replayLength,
         final long publicationRegistrationId,
+        final int fileIoMaxLength,
         final Counter limitPositionCounter,
         final Aeron aeron,
         final ControlSession controlSession,
@@ -48,6 +50,7 @@ class CreateReplayPublicationSession implements Session
         this.replayPosition = replayPosition;
         this.replayLength = replayLength;
         this.publicationRegistrationId = publicationRegistrationId;
+        this.fileIoMaxLength = fileIoMaxLength;
         this.limitPositionCounter = limitPositionCounter;
         this.aeron = aeron;
         this.controlSession = controlSession;
@@ -110,6 +113,7 @@ class CreateReplayPublicationSession implements Session
                     replayPosition,
                     replayLength,
                     correlationId,
+                    fileIoMaxLength,
                     controlSession,
                     limitPositionCounter,
                     publication);

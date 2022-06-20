@@ -42,6 +42,7 @@ import java.util.ArrayList;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.ArchiveSystemTests.*;
+import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.CoreMatchers.endsWith;
@@ -721,5 +722,64 @@ class BasicArchiveTest
 
             assertThat(subscriptionPosition, Matchers.greaterThan(halfPosition));
         }
+    }
+
+    @Test
+    @InterruptAfter(5)
+    void shouldErrorReplayFileIoMaxLengthLessThanMtu()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 100;
+        final long stopPosition;
+        final int timeout = 3_000;
+
+        final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
+        final long recordingIdFromCounter;
+        final int sessionId;
+
+        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+            Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
+        {
+            sessionId = publication.sessionId();
+
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, sessionId);
+            recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
+
+            assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
+
+            offer(publication, messageCount, messagePrefix);
+            consume(subscription, messageCount, messagePrefix);
+
+            stopPosition = publication.position();
+            awaitPosition(counters, counterId, stopPosition);
+        }
+
+        aeronArchive.stopRecording(subscriptionId);
+
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(1);
+        assertEquals(1, aeronArchive.listRecording(recordingIdFromCounter, collector.reset()));
+
+        final int invalidFileIoMaxLength = collector.descriptors().get(0).mtuLength() - 1;
+
+        final long correlationId = aeron.nextCorrelationId();
+        assertTrue(aeronArchive.archiveProxy().replay(
+            recordingIdFromCounter,
+            NULL_POSITION,
+            NULL_LENGTH,
+            REPLAY_CHANNEL,
+            REPLAY_STREAM_ID,
+            new ReplayParams().fileIoMaxLength(invalidFileIoMaxLength),
+            correlationId,
+            aeronArchive.controlSessionId()));
+
+        String error;
+        while (null == (error = aeronArchive.pollForErrorResponse()))
+        {
+            Tests.yieldingIdle("Error not reported");
+        }
+
+        assertThat(error, Matchers.containsString("mtuLength"));
+        assertThat(error, Matchers.containsString("fileIoMaxLength"));
     }
 }

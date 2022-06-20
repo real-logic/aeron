@@ -508,9 +508,10 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 NULL_POSITION == dstStopPosition ? AeronArchive.NULL_LENGTH : dstStopPosition - replayPosition,
                 channelUri.toString(),
                 replayStreamId,
+                new ReplayParams().fileIoMaxLength(fileIoMaxLength),
                 correlationId,
-                srcArchive.controlSessionId(),
-                new ReplayParams().fileIoMaxLength(fileIoMaxLength)))
+                srcArchive.controlSessionId()
+            ))
             {
                 workCount += trackAction(correlationId);
             }

@@ -1084,9 +1084,10 @@ public final class AeronArchive implements AutoCloseable
                 length,
                 replayChannel,
                 replayStreamId,
+                replayParams,
                 lastCorrelationId,
-                controlSessionId,
-                replayParams))
+                controlSessionId
+            ))
             {
                 throw new ArchiveException("failed to send bounded replay request");
             }

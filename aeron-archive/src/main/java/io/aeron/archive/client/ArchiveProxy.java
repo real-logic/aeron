@@ -423,9 +423,9 @@ public final class ArchiveProxy
      * @param length           of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live stream.
      * @param replayChannel    to which the replay should be sent.
      * @param replayStreamId   to which the replay should be sent.
+     * @param replayParams     optional parameters change the behaviour of the replay.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
-     * @param replayParams     optional parameters change the behaviour of the replay.
      * @return true if successfully offered otherwise false.
      * @see ReplayParams
      */
@@ -435,9 +435,9 @@ public final class ArchiveProxy
         final long length,
         final String replayChannel,
         final int replayStreamId,
+        final ReplayParams replayParams,
         final long correlationId,
-        final long controlSessionId,
-        final ReplayParams replayParams)
+        final long controlSessionId)
     {
         if (replayParams.isBounded())
         {

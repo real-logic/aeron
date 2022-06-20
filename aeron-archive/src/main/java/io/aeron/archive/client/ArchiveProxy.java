@@ -983,26 +983,19 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequest)
-        {
-            replicateRequest = new ReplicateRequest2Encoder();
-        }
-
-        replicateRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .srcRecordingId(srcRecordingId)
-            .dstRecordingId(dstRecordingId)
-            .stopPosition(AeronArchive.NULL_POSITION)
-            .channelTagId(Aeron.NULL_VALUE)
-            .subscriptionTagId(Aeron.NULL_VALUE)
-            .srcControlStreamId(srcControlStreamId)
-            .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination)
-            .replicationChannel(null);
-
-        return offer(replicateRequest.encodedLength());
+        return replicate(
+            srcRecordingId,
+            dstRecordingId,
+            AeronArchive.NULL_POSITION,
+            Aeron.NULL_VALUE,
+            Aeron.NULL_VALUE,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            null,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -1041,26 +1034,19 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequest)
-        {
-            replicateRequest = new ReplicateRequest2Encoder();
-        }
-
-        replicateRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .srcRecordingId(srcRecordingId)
-            .dstRecordingId(dstRecordingId)
-            .stopPosition(stopPosition)
-            .channelTagId(Aeron.NULL_VALUE)
-            .subscriptionTagId(Aeron.NULL_VALUE)
-            .srcControlStreamId(srcControlStreamId)
-            .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination)
-            .replicationChannel(replicationChannel);
-
-        return offer(replicateRequest.encodedLength());
+        return replicate(
+            srcRecordingId,
+            dstRecordingId,
+            stopPosition,
+            Aeron.NULL_VALUE,
+            Aeron.NULL_VALUE,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            replicationChannel,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -1098,26 +1084,19 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequest)
-        {
-            replicateRequest = new ReplicateRequest2Encoder();
-        }
-
-        replicateRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .srcRecordingId(srcRecordingId)
-            .dstRecordingId(dstRecordingId)
-            .stopPosition(AeronArchive.NULL_POSITION)
-            .channelTagId(channelTagId)
-            .subscriptionTagId(subscriptionTagId)
-            .srcControlStreamId(srcControlStreamId)
-            .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination)
-            .replicationChannel(null);
-
-        return offer(replicateRequest.encodedLength());
+        return replicate(
+            srcRecordingId,
+            dstRecordingId,
+            AeronArchive.NULL_POSITION,
+            channelTagId,
+            subscriptionTagId,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            null,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -1160,26 +1139,19 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequest)
-        {
-            replicateRequest = new ReplicateRequest2Encoder();
-        }
-
-        replicateRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .srcRecordingId(srcRecordingId)
-            .dstRecordingId(dstRecordingId)
-            .stopPosition(stopPosition)
-            .channelTagId(channelTagId)
-            .subscriptionTagId(subscriptionTagId)
-            .srcControlStreamId(srcControlStreamId)
-            .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination)
-            .replicationChannel(replicationChannel);
-
-        return offer(replicateRequest.encodedLength());
+        return replicate(
+            srcRecordingId,
+            dstRecordingId,
+            stopPosition,
+            channelTagId,
+            subscriptionTagId,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            replicationChannel,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -1211,26 +1183,19 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequest)
-        {
-            replicateRequest = new ReplicateRequest2Encoder();
-        }
-
-        replicateRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .srcRecordingId(srcRecordingId)
-            .dstRecordingId(replicationParams.dstRecordingId())
-            .stopPosition(replicationParams.stopPosition())
-            .channelTagId(replicationParams.channelTagId())
-            .subscriptionTagId(replicationParams.subscriptionTagId())
-            .srcControlStreamId(srcControlStreamId)
-            .srcControlChannel(srcControlChannel)
-            .liveDestination(replicationParams.liveChannel())
-            .replicationChannel(null);
-
-        return offer(replicateRequest.encodedLength());
+        return replicate(
+            srcRecordingId,
+            replicationParams.dstRecordingId(),
+            replicationParams.stopPosition(),
+            replicationParams.channelTagId(),
+            replicationParams.subscriptionTagId(),
+            srcControlStreamId,
+            srcControlChannel,
+            replicationParams.liveChannel(),
+            null,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -1541,5 +1506,42 @@ public final class ArchiveProxy
             .replayChannel(replayChannel);
 
         return offer(boundedReplayRequest.encodedLength());
+    }
+
+    private boolean replicate(
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final long stopPosition,
+        final long channelTagId,
+        final long subscriptionTagId,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String liveDestination,
+        final String replicationChannel,
+        final long correlationId,
+        final long controlSessionId,
+        final int fileIoMaxLength)
+    {
+        if (null == replicateRequest)
+        {
+            replicateRequest = new ReplicateRequest2Encoder();
+        }
+
+        replicateRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .srcRecordingId(srcRecordingId)
+            .dstRecordingId(dstRecordingId)
+            .stopPosition(stopPosition)
+            .channelTagId(channelTagId)
+            .subscriptionTagId(subscriptionTagId)
+            .srcControlStreamId(srcControlStreamId)
+            .fileIoMaxLength(fileIoMaxLength)
+            .srcControlChannel(srcControlChannel)
+            .liveDestination(liveDestination)
+            .replicationChannel(replicationChannel);
+
+        return offer(replicateRequest.encodedLength());
     }
 }

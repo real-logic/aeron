@@ -751,7 +751,7 @@ class ArchiveSystemTest
                         REPLAY_STREAM_ID,
                         replayCorrelationId,
                         controlSessionId,
-                        new ReplayParams().maxFileIoLength(4096)))
+                        new ReplayParams().fileIoMaxLength(4096)))
                     {
                         throw new IllegalStateException("failed to start replay");
                     }

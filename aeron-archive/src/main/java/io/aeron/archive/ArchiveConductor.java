@@ -1139,6 +1139,7 @@ abstract class ArchiveConductor
         final String srcControlChannel,
         final String liveDestination,
         final String replicationChannel,
+        final int fileIoMaxLength,
         final ControlSession controlSession)
     {
         final boolean hasRecording = catalog.hasRecording(dstRecordingId);
@@ -1175,6 +1176,7 @@ abstract class ArchiveConductor
             stopPosition,
             liveDestination,
             Strings.isEmpty(replicationChannel) ? ctx.replicationChannel() : replicationChannel,
+            fileIoMaxLength,
             hasRecording ? recordingSummary : null,
             remoteArchiveContext,
             cachedEpochClock,

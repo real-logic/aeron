@@ -450,7 +450,7 @@ public final class ArchiveProxy
                 replayStreamId,
                 correlationId,
                 controlSessionId,
-                replayParams.maxFileIoLength());
+                replayParams.fileIoMaxLength());
         }
         else
         {
@@ -462,7 +462,7 @@ public final class ArchiveProxy
                 replayStreamId,
                 correlationId,
                 controlSessionId,
-                replayParams.maxFileIoLength());
+                replayParams.fileIoMaxLength());
         }
     }
 
@@ -1195,7 +1195,7 @@ public final class ArchiveProxy
             null,
             correlationId,
             controlSessionId,
-            Aeron.NULL_VALUE);
+            replicationParams.fileIoMaxLength());
     }
 
     /**

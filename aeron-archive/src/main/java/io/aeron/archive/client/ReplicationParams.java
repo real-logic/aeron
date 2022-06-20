@@ -27,6 +27,7 @@ public class ReplicationParams
     private String liveChannel;
     private long channelTagId;
     private long subscriptionTagId;
+    private int fileIoMaxLength;
 
     /**
      * Initialise all parameters to defaults.
@@ -48,6 +49,7 @@ public class ReplicationParams
         liveChannel = null;
         channelTagId = Aeron.NULL_VALUE;
         subscriptionTagId = Aeron.NULL_VALUE;
+        fileIoMaxLength = Aeron.NULL_VALUE;
         return this;
     }
 
@@ -162,5 +164,30 @@ public class ReplicationParams
     public long subscriptionTagId()
     {
         return subscriptionTagId;
+    }
+
+    /**
+     * The maximum size of a file operation when reading from the archive to execute the replication. Will use the value
+     * defined in the context otherwise. This can be used reduce the size of file IO operations to lower the
+     * priority of some replays. Setting it to a value larger than the context value will have no affect.
+     *
+     * @param fileIoMaxLength maximum length of a file I/O operation.
+     * @return this for a fluent API
+     */
+    public ReplicationParams fileIoMaxLength(final int fileIoMaxLength)
+    {
+        this.fileIoMaxLength = fileIoMaxLength;
+        return this;
+    }
+
+    /**
+     * Gets the maximum length for file IO operations in the replay. Defaults to {@link Aeron#NULL_VALUE} if not
+     * set, which will trigger the use of the Archive.Context default.
+     *
+     * @return maximum length of a file I/O operation.
+     */
+    public int fileIoMaxLength()
+    {
+        return this.fileIoMaxLength;
     }
 }

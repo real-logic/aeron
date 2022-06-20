@@ -34,6 +34,7 @@ import org.agrona.collections.MutableReference;
 import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -855,6 +856,51 @@ class ReplicateRecordingTest
 
         srcAeronArchive.stopRecording(subscriptionId);
         awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE_END);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    public void shouldReplicateStoppedRecordingWithFileIoMaxLength()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            final CountersReader counters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(counters, counterId, publication.position());
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        final MutableLong dstRecordingId = new MutableLong();
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
+
+        dstAeronArchive.replicate(
+            srcRecordingId,
+            SRC_CONTROL_STREAM_ID,
+            SRC_CONTROL_REQUEST_CHANNEL,
+            new ReplicationParams().fileIoMaxLength(4096));
+
+        awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE);
+        awaitSignal(signalRef, adapter, RecordingSignal.EXTEND);
+
+        final ObjectHashSet<RecordingSignal> transitionEventsSet = new ObjectHashSet<>();
+        transitionEventsSet.add(awaitSignal(signalRef, adapter));
+        transitionEventsSet.add(awaitSignal(signalRef, adapter));
+        transitionEventsSet.add(awaitSignal(signalRef, adapter));
+
+        assertTrue(transitionEventsSet.contains(RecordingSignal.STOP));
+        assertTrue(transitionEventsSet.contains(RecordingSignal.SYNC));
+        assertTrue(transitionEventsSet.contains(RecordingSignal.REPLICATE_END));
     }
 
     private RecordingSignalAdapter newRecordingSignalAdapter(

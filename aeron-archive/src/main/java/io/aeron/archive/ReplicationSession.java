@@ -77,6 +77,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private final ControlSession controlSession;
     private final ControlResponseProxy controlResponseProxy;
     private final Catalog catalog;
+    private int fileIoMaxLength;
     private final Aeron aeron;
     private final AeronArchive.Context context;
     private AeronArchive.AsyncConnect asyncConnect;
@@ -94,6 +95,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final long stopPosition,
         final String liveDestination,
         final String replicationChannel,
+        final int fileIoMaxLength,
         final RecordingSummary recordingSummary,
         final AeronArchive.Context context,
         final CachedEpochClock epochClock,
@@ -106,6 +108,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.dstRecordingId = dstRecordingId;
         this.liveDestination = "".equals(liveDestination) ? null : liveDestination;
         this.replicationChannel = replicationChannel;
+        this.fileIoMaxLength = fileIoMaxLength;
         this.aeron = context.aeron();
         this.context = context;
         this.catalog = catalog;
@@ -489,6 +492,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             }
 
             final long correlationId = aeron.nextCorrelationId();
+
+            new ReplayParams().fileIoMaxLength(fileIoMaxLength);
+
             if (srcArchive.archiveProxy().replay(
                 srcRecordingId,
                 replayPosition,
@@ -496,7 +502,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 channelUri.toString(),
                 replayStreamId,
                 correlationId,
-                srcArchive.controlSessionId()))
+                srcArchive.controlSessionId(),
+                new ReplayParams().fileIoMaxLength(fileIoMaxLength)))
             {
                 workCount += trackAction(correlationId);
             }

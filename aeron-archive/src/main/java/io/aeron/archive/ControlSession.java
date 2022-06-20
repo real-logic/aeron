@@ -513,6 +513,7 @@ final class ControlSession implements Session
                 srcControlChannel,
                 liveDestination,
                 replicationChannel,
+                fileIoMaxLength,
                 this);
         }
     }

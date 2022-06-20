@@ -23,7 +23,7 @@ import io.aeron.Aeron;
 public class ReplayParams
 {
     private int boundingLimitCounterId;
-    private int maxFileIoLength;
+    private int fileIoMaxLength;
 
     /**
      * Default, initialise all values to "null"
@@ -41,7 +41,7 @@ public class ReplayParams
     public ReplayParams reset()
     {
         boundingLimitCounterId = Aeron.NULL_VALUE;
-        maxFileIoLength = Aeron.NULL_VALUE;
+        fileIoMaxLength = Aeron.NULL_VALUE;
         return this;
     }
 
@@ -73,12 +73,12 @@ public class ReplayParams
      * defined in the context otherwise. This can be used reduce the size of file IO operations to lower the
      * priority of some replays. Setting it to a value larger than the context value will have no affect.
      *
-     * @param maxFileIoLength maximum length of a replay file operation
+     * @param fileIoMaxLength maximum length of a replay file operation
      * @return this for a fluent API
      */
-    public ReplayParams maxFileIoLength(final int maxFileIoLength)
+    public ReplayParams fileIoMaxLength(final int fileIoMaxLength)
     {
-        this.maxFileIoLength = maxFileIoLength;
+        this.fileIoMaxLength = fileIoMaxLength;
         return this;
     }
 
@@ -88,9 +88,9 @@ public class ReplayParams
      *
      * @return maximum file length for IO operations during replay.
      */
-    public int maxFileIoLength()
+    public int fileIoMaxLength()
     {
-        return this.maxFileIoLength;
+        return this.fileIoMaxLength;
     }
 
     /**

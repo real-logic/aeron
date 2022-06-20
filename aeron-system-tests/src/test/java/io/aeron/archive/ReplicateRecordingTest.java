@@ -22,18 +22,20 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.samples.archive.RecordingDescriptor;
+import io.aeron.samples.archive.RecordingDescriptorCollector;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
-import org.agrona.collections.MutableLong;
-import org.agrona.collections.MutableReference;
-import org.agrona.collections.ObjectHashSet;
+import org.agrona.collections.*;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +52,7 @@ import static io.aeron.CommonContext.generateRandomDirName;
 import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -66,6 +69,8 @@ class ReplicateRecordingTest
     private static final String DST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String SRC_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
+    private static final String REPLAY_CHANNEL = "aeron:udp?endpoint=localhost:6666";
+    private static final int REPLAY_STREAM_ID = 101;
     private static final long TIMER_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(15);
 
     private static final int LIVE_STREAM_ID = 1033;
@@ -863,6 +868,17 @@ class ReplicateRecordingTest
     public void shouldReplicateStoppedRecordingWithFileIoMaxLength()
     {
         final String messagePrefix = "Message-Prefix-";
+        final int fileIoMaxLength = 1500;
+        final int longMessagePadding = (2 * fileIoMaxLength) + 1000;
+
+        final StringBuilder longMessagePrefix = new StringBuilder();
+        longMessagePrefix.append(messagePrefix);
+        while (longMessagePrefix.length() < longMessagePadding)
+        {
+            longMessagePrefix.append('X');
+        }
+        longMessagePrefix.append('-');
+
         final int messageCount = 10;
         final long srcRecordingId;
 
@@ -874,13 +890,13 @@ class ReplicateRecordingTest
             final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
             srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
-            offer(publication, messageCount, messagePrefix);
+            offer(publication, messageCount, longMessagePrefix.toString());
             awaitPosition(counters, counterId, publication.position());
         }
 
         srcAeronArchive.stopRecording(subscriptionId);
 
-        final MutableLong dstRecordingId = new MutableLong();
+        final MutableLong dstRecordingId = new MutableLong(NULL_VALUE);
         final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
         final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
@@ -888,7 +904,7 @@ class ReplicateRecordingTest
             srcRecordingId,
             SRC_CONTROL_STREAM_ID,
             SRC_CONTROL_REQUEST_CHANNEL,
-            new ReplicationParams().fileIoMaxLength(4096));
+            new ReplicationParams().fileIoMaxLength(fileIoMaxLength));
 
         awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE);
         awaitSignal(signalRef, adapter, RecordingSignal.EXTEND);
@@ -901,6 +917,107 @@ class ReplicateRecordingTest
         assertTrue(transitionEventsSet.contains(RecordingSignal.STOP));
         assertTrue(transitionEventsSet.contains(RecordingSignal.SYNC));
         assertTrue(transitionEventsSet.contains(RecordingSignal.REPLICATE_END));
+
+        assertNotEquals(NULL_VALUE, dstRecordingId.get());
+
+        validateRecordingAreEqual(srcRecordingId, dstRecordingId.get());
+    }
+
+    @Test
+    @InterruptAfter(10)
+    public void shouldErrorReplicateIfFileIoMaxLengthIsLessThanMtu()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int fileIoMaxLength = 1500;
+        final int longMessagePadding = (2 * fileIoMaxLength) + 1000;
+
+        final StringBuilder longMessagePrefix = new StringBuilder();
+        longMessagePrefix.append(messagePrefix);
+        while (longMessagePrefix.length() < longMessagePadding)
+        {
+            longMessagePrefix.append('X');
+        }
+        longMessagePrefix.append('-');
+
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            final CountersReader counters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, longMessagePrefix.toString());
+            awaitPosition(counters, counterId, publication.position());
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
+        final int i = srcAeronArchive.listRecording(srcRecordingId, collector.reset());
+        assertEquals(1, i);
+
+        final RecordingDescriptor descriptor = collector.descriptors().get(0);
+        final int mtu = descriptor.mtuLength();
+
+        dstAeronArchive.replicate(
+            srcRecordingId,
+            SRC_CONTROL_STREAM_ID,
+            SRC_CONTROL_REQUEST_CHANNEL,
+            new ReplicationParams().fileIoMaxLength(mtu - 1));
+
+        String error;
+        while (null == (error = dstAeronArchive.pollForErrorResponse()))
+        {
+            Tests.yield();
+        }
+
+        assertThat(error, Matchers.containsString("mtuLength"));
+        assertThat(error, Matchers.containsString("fileIoMaxLength"));
+    }
+
+    private void validateRecordingAreEqual(final long srcRecordingId, final long dstRecordingId)
+    {
+        final ExpandableArrayBuffer srcRecordingData = new ExpandableArrayBuffer();
+        readRecordingIntoBuffer(srcRecordingId, srcRecordingData);
+
+        final ExpandableArrayBuffer dstRecordingData = new ExpandableArrayBuffer();
+        readRecordingIntoBuffer(dstRecordingId, dstRecordingData);
+
+        assertEquals(srcRecordingData, dstRecordingData);
+    }
+
+    private void readRecordingIntoBuffer(final long srcRecordingId, final ExpandableArrayBuffer srcRecordingData)
+    {
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
+        final int i = srcAeronArchive.listRecording(srcRecordingId, collector.reset());
+        assertEquals(1, i);
+        final RecordingDescriptor descriptor = collector.descriptors().get(0);
+        final long length = descriptor.stopPosition() - descriptor.startPosition();
+
+        try (Subscription replay = srcAeronArchive.replay(
+            srcRecordingId, descriptor.startPosition(), length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+        {
+            final MutableInteger position = new MutableInteger(0);
+            Tests.awaitConnected(replay);
+
+            // Assumes session specific subscription used for replay.
+            final Image image = replay.imageAtIndex(0);
+
+            while (!image.isEndOfStream())
+            {
+                image.poll(
+                    (buffer, offset, len, header) ->
+                    {
+                        srcRecordingData.putBytes(position.get(), buffer, offset, len);
+                        position.addAndGet(len);
+                    },
+                    10);
+            }
+        }
     }
 
     private RecordingSignalAdapter newRecordingSignalAdapter(

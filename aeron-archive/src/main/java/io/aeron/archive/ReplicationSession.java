@@ -261,6 +261,13 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         replayStreamId = streamId;
         replaySessionId = sessionId;
 
+        if (Aeron.NULL_VALUE != fileIoMaxLength && fileIoMaxLength < mtuLength)
+        {
+            state(State.DONE);
+            error("Replication fileIoMaxLength is less than than the recording mtuLength", ArchiveException.GENERIC);
+            return;
+        }
+
         if (NULL_VALUE == dstRecordingId)
         {
             replayPosition = startPosition;

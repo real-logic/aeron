@@ -72,7 +72,7 @@ jobs:
           distribution: 'zulu'
           java-version: 8
       - name: Build with Gradle
-        run: ./gradlew
+        run: ./gradlew -x javadoc
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

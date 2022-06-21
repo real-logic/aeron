@@ -42,7 +42,6 @@ import java.util.ArrayList;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.ArchiveSystemTests.*;
-import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.CoreMatchers.endsWith;
@@ -671,13 +670,13 @@ class BasicArchiveTest
 
         boundingCounter.setOrdered(0);
 
+        final ReplayParams replayParams = new ReplayParams()
+            .position(recordingDescriptor.startPosition())
+            .length(Long.MAX_VALUE)
+            .boundingLimitCounterId(boundingCounter.id());
+
         final long replaySessionId = aeronArchive.startReplay(
-            recordingId,
-            recordingDescriptor.startPosition(),
-            Long.MAX_VALUE,
-            REPLAY_CHANNEL,
-            REPLAY_STREAM_ID,
-            new ReplayParams().boundingLimitCounterId(boundingCounter.id()));
+            recordingId, REPLAY_CHANNEL, REPLAY_STREAM_ID, replayParams);
 
         final String channel = new ChannelUriStringBuilder(REPLAY_CHANNEL).sessionId((int)replaySessionId).build();
 
@@ -731,7 +730,6 @@ class BasicArchiveTest
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 100;
         final long stopPosition;
-        final int timeout = 3_000;
 
         final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
         final long recordingIdFromCounter;
@@ -765,8 +763,6 @@ class BasicArchiveTest
         final long correlationId = aeron.nextCorrelationId();
         assertTrue(aeronArchive.archiveProxy().replay(
             recordingIdFromCounter,
-            NULL_POSITION,
-            NULL_LENGTH,
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
             new ReplayParams().fileIoMaxLength(invalidFileIoMaxLength),

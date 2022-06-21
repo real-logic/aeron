@@ -419,8 +419,6 @@ public final class ArchiveProxy
      * replay. E.g a bounded replay can be requested by specifying the boundingLimitCounterId.
      *
      * @param recordingId      to be replayed.
-     * @param position         from which the replay should be started.
-     * @param length           of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live stream.
      * @param replayChannel    to which the replay should be sent.
      * @param replayStreamId   to which the replay should be sent.
      * @param replayParams     optional parameters change the behaviour of the replay.
@@ -431,8 +429,6 @@ public final class ArchiveProxy
      */
     public boolean replay(
         final long recordingId,
-        final long position,
-        final long length,
         final String replayChannel,
         final int replayStreamId,
         final ReplayParams replayParams,
@@ -443,8 +439,8 @@ public final class ArchiveProxy
         {
             return boundedReplay(
                 recordingId,
-                position,
-                length,
+                replayParams.position(),
+                replayParams.length(),
                 replayParams.boundingLimitCounterId(),
                 replayChannel,
                 replayStreamId,
@@ -456,8 +452,8 @@ public final class ArchiveProxy
         {
             return replay(
                 recordingId,
-                position,
-                length,
+                replayParams.position(),
+                replayParams.length(),
                 replayChannel,
                 replayStreamId,
                 correlationId,

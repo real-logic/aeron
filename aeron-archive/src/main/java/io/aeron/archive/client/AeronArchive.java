@@ -1044,17 +1044,10 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Start a replay for a length in bytes of a recording from a position bounded by a position counter.
-     * If the position is {@link #NULL_POSITION} then the stream will be replayed from the start.
-     * <p>
-     * The lower 32-bits of the returned value contains the {@link Image#sessionId()} of the received replay. All
-     * 64-bits are required to uniquely identify the replay when calling {@link #stopReplay(long)}. The lower 32-bits
-     * can be obtained by casting the {@code long} value to an {@code int}.
+     * Start a replay for a recording based upon the parameters set in ReplayParams. By default, it will replay
+     * all the recording from the start.
      *
      * @param recordingId    to be replayed.
-     * @param position       from which the replay should begin or {@link #NULL_POSITION} if from the start.
-     * @param length         of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live recording or
-     *                       {@link #NULL_LENGTH} to replay the whole stream of unknown length.
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @param replayParams   optional parameters for the replay
@@ -1064,8 +1057,6 @@ public final class AeronArchive implements AutoCloseable
      */
     public long startReplay(
         final long recordingId,
-        final long position,
-        final long length,
         final String replayChannel,
         final int replayStreamId,
         final ReplayParams replayParams)
@@ -1080,8 +1071,6 @@ public final class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.replay(
                 recordingId,
-                position,
-                length,
                 replayChannel,
                 replayStreamId,
                 replayParams,

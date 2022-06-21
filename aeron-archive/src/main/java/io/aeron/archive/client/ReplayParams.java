@@ -24,6 +24,8 @@ public class ReplayParams
 {
     private int boundingLimitCounterId;
     private int fileIoMaxLength;
+    private long position;
+    private long length;
 
     /**
      * Default, initialise all values to "null"
@@ -42,7 +44,57 @@ public class ReplayParams
     {
         boundingLimitCounterId = Aeron.NULL_VALUE;
         fileIoMaxLength = Aeron.NULL_VALUE;
+        position = AeronArchive.NULL_POSITION;
+        length = AeronArchive.NULL_LENGTH;
         return this;
+    }
+
+    /**
+     * Set the position to start the replay. If set to {@link AeronArchive#NULL_POSITION} (which is the default) then
+     * the stream will be replayed from the start.
+     *
+     * @param position to start the replay from.
+     * @return this for a fluent API.
+     */
+    public ReplayParams position(final long position)
+    {
+        this.position = position;
+        return this;
+    }
+
+    /**
+     * Position to start the replay at.
+     *
+     * @return position for the start of the replay.
+     * @see ReplayParams#position(long)
+     */
+    public long position()
+    {
+        return position;
+    }
+
+    /**
+     * The length of the recorded stream to replay. If set to {@link AeronArchive#NULL_POSITION} (the default) will
+     * replay a whole stream of unknown length. If set to {@link Long#MAX_VALUE} it will follow a live recording.
+     *
+     * @param length of the recording to be replayed.
+     * @return this for a fluent API.
+     */
+    public ReplayParams length(final long length)
+    {
+        this.length = length;
+        return this;
+    }
+
+    /**
+     * Length of the recording to replay.
+     *
+     * @return length of the recording to replay.
+     * @see ReplayParams#length(long)
+     */
+    public long length()
+    {
+        return length;
     }
 
     /**

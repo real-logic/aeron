@@ -77,7 +77,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private final ControlSession controlSession;
     private final ControlResponseProxy controlResponseProxy;
     private final Catalog catalog;
-    private int fileIoMaxLength;
+    private final int fileIoMaxLength;
     private final Aeron aeron;
     private final AeronArchive.Context context;
     private AeronArchive.AsyncConnect asyncConnect;
@@ -500,15 +500,16 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
             final long correlationId = aeron.nextCorrelationId();
 
-            new ReplayParams().fileIoMaxLength(fileIoMaxLength);
+            final ReplayParams replayParams = new ReplayParams()
+                .position(replayPosition)
+                .length(NULL_POSITION == dstStopPosition ? AeronArchive.NULL_LENGTH : dstStopPosition - replayPosition)
+                .fileIoMaxLength(fileIoMaxLength);
 
             if (srcArchive.archiveProxy().replay(
                 srcRecordingId,
-                replayPosition,
-                NULL_POSITION == dstStopPosition ? AeronArchive.NULL_LENGTH : dstStopPosition - replayPosition,
                 channelUri.toString(),
                 replayStreamId,
-                new ReplayParams().fileIoMaxLength(fileIoMaxLength),
+                replayParams,
                 correlationId,
                 srcArchive.controlSessionId()
             ))
@@ -753,6 +754,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         timeOfLastActionMs = epochClock.time();
     }
 
+    @SuppressWarnings("unused")
     private void logStateChange(final State oldState, final State newState, final long replicationId)
     {
         //System.out.println("ReplicationSession: " + oldState + " -> " + newState + " replicationId=" + replicationId);

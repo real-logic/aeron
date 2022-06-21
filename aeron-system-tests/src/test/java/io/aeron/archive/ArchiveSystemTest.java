@@ -743,16 +743,13 @@ class ArchiveSystemTest
                 {
                     final long replayCorrelationId = client.nextCorrelationId();
 
+                    final ReplayParams replayParams = new ReplayParams()
+                        .position(startPosition)
+                        .length(Long.MAX_VALUE)
+                        .fileIoMaxLength(4096);
+
                     if (!archiveProxy.replay(
-                        recordingId,
-                        startPosition,
-                        Long.MAX_VALUE,
-                        REPLAY_URI,
-                        REPLAY_STREAM_ID,
-                        new ReplayParams().fileIoMaxLength(4096),
-                        replayCorrelationId,
-                        controlSessionId
-                    ))
+                        recordingId, REPLAY_URI, REPLAY_STREAM_ID, replayParams, replayCorrelationId, controlSessionId))
                     {
                         throw new IllegalStateException("failed to start replay");
                     }

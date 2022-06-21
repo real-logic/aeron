@@ -1045,7 +1045,7 @@ public final class AeronArchive implements AutoCloseable
 
     /**
      * Start a replay for a recording based upon the parameters set in ReplayParams. By default, it will replay
-     * all the recording from the start.
+     * all the recording from the start. The ReplayParams is free to be reused when this call completes.
      *
      * @param recordingId    to be replayed.
      * @param replayChannel  to which the replay should be sent.
@@ -1243,6 +1243,54 @@ public final class AeronArchive implements AutoCloseable
 
             return aeron.addSubscription(
                 replayChannelUri.toString(), replayStreamId, availableImageHandler, unavailableImageHandler);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Replay a recording based upon the parameters set in ReplayParams. By default, it will replay all the recording
+     * from the start. The ReplayParams is free to be reused when this call completes.
+     *
+     * @param recordingId    to be replayed.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @param replayParams   optional parameters for the replay
+     * @return the {@link Subscription} for consuming the replay.
+     * @see ReplayParams
+     */
+    public Subscription replay(
+        final long recordingId,
+        final String replayChannel,
+        final int replayStreamId,
+        final ReplayParams replayParams)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.replay(
+                recordingId,
+                replayChannel,
+                replayStreamId,
+                replayParams,
+                lastCorrelationId,
+                controlSessionId))
+            {
+                throw new ArchiveException("failed to send replay request");
+            }
+
+            final int replaySessionId = (int)pollForResponse(lastCorrelationId);
+            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
+
+            return aeron.addSubscription(replayChannelUri.toString(), replayStreamId);
         }
         finally
         {
@@ -1857,16 +1905,15 @@ public final class AeronArchive implements AutoCloseable
 
     /**
      * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
-     * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
-     * If the destination recording id is {@link io.aeron.Aeron#NULL_VALUE} then a new destination recording is created,
-     * otherwise the provided destination recording id will be extended. The details of the source recording
-     * descriptor will be replicated.
+     * archive. The behaviour of the replication is controlled through the {@link ReplicationParams}.
      * <p>
      * For a source recording that is still active the replay can merge with the live stream and then follow it
      * directly and no longer require the replay from the source. This would require a multicast live destination.
      * <p>
      * Errors will be reported asynchronously and can be checked for with {@link AeronArchive#pollForErrorResponse()}
      * or {@link AeronArchive#checkForErrorResponse()}. Follow progress with {@link RecordingSignalAdapter}.
+     * <p>
+     * The ReplicationParams is free to be reused when this call completes.
      *
      * @param srcRecordingId     recording id which must exist in the source archive.
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.

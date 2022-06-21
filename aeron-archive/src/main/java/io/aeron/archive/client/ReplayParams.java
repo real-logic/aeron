@@ -18,7 +18,10 @@ package io.aeron.archive.client;
 import io.aeron.Aeron;
 
 /**
- * Fluent API for setting optional replay parameters. Not threadsafe.
+ * Fluent API for setting optional replay parameters. Not threadsafe. Allows the user to configure starting position,
+ * replay length, bounding counter (for a bounded replay) and the max length for file I/O operations.
+ * <p>
+ * Not threadsafe
  */
 public class ReplayParams
 {

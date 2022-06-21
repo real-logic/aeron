@@ -711,7 +711,7 @@ class ReplicateRecordingTest
                     srcRecordingId,
                     SRC_CONTROL_STREAM_ID,
                     SRC_CONTROL_REQUEST_CHANNEL,
-                    new ReplicationParams().liveChannel(LIVE_CHANNEL));
+                    new ReplicationParams().liveDestination(LIVE_CHANNEL));
             }
             else
             {
@@ -764,7 +764,7 @@ class ReplicateRecordingTest
                     srcRecordingId,
                     SRC_CONTROL_STREAM_ID,
                     SRC_CONTROL_REQUEST_CHANNEL,
-                    new ReplicationParams().liveChannel(LIVE_CHANNEL));
+                    new ReplicationParams().liveDestination(LIVE_CHANNEL));
             }
             else
             {
@@ -820,7 +820,7 @@ class ReplicateRecordingTest
             if (useParams)
             {
                 final ReplicationParams replicationParams = new ReplicationParams()
-                    .liveChannel(LIVE_CHANNEL)
+                    .liveDestination(LIVE_CHANNEL)
                     .channelTagId(channelTagId)
                     .subscriptionTagId(subscriptionTagId);
 

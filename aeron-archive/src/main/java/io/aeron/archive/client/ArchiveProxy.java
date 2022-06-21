@@ -415,8 +415,9 @@ public final class ArchiveProxy
     }
 
     /**
-     * Replay a recording from a given position. Support specifing {@link ReplayParams} to change the behaviour of the
-     * replay. E.g a bounded replay can be requested by specifying the boundingLimitCounterId.
+     * Replay a recording from a given position. Supports specifying {@link ReplayParams} to change the behaviour of the
+     * replay. For example a bounded replay can be requested by specifying the boundingLimitCounterId. The ReplayParams
+     * is free to be reused after this call completes.
      *
      * @param recordingId      to be replayed.
      * @param replayChannel    to which the replay should be sent.
@@ -1152,16 +1153,15 @@ public final class ArchiveProxy
 
     /**
      * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
-     * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
-     * If the destination recording id is {@link io.aeron.Aeron#NULL_VALUE} then a new destination recording is created,
-     * otherwise the provided destination recording id will be extended. The details of the source recording
-     * descriptor will be replicated.
+     * archive. The behaviour of the replication is controlled through the {@link ReplicationParams}.
      * <p>
      * For a source recording that is still active the replay can merge with the live stream and then follow it
      * directly and no longer require the replay from the source. This would require a multicast live destination.
      * <p>
      * Errors will be reported asynchronously and can be checked for with {@link AeronArchive#pollForErrorResponse()}
      * or {@link AeronArchive#checkForErrorResponse()}.
+     * <p>
+     * The ReplicationParams is free to be reused when this call completes.
      *
      * @param srcRecordingId     recording id which must exist in the source archive.
      * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
@@ -1170,6 +1170,7 @@ public final class ArchiveProxy
      * @param correlationId      for this request.
      * @param controlSessionId   for this request.
      * @return true if successfully offered otherwise false.
+     * @see ReplicationParams
      */
     public boolean replicate(
         final long srcRecordingId,
@@ -1187,7 +1188,7 @@ public final class ArchiveProxy
             replicationParams.subscriptionTagId(),
             srcControlStreamId,
             srcControlChannel,
-            replicationParams.liveChannel(),
+            replicationParams.liveDestination(),
             null,
             correlationId,
             controlSessionId,

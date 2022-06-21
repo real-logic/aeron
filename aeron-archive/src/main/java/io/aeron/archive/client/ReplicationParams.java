@@ -18,13 +18,15 @@ package io.aeron.archive.client;
 import io.aeron.Aeron;
 
 /**
- * Contains the optional parameters that can be passed to a Replication Request.
+ * Contains the optional parameters that can be passed to a Replication Request. Controls the behaviour of the
+ * replication including tagging, stop position, extending destination recordings, live merging, and setting the
+ * maximum length of the file I/O operations.
  */
 public class ReplicationParams
 {
     private long stopPosition;
     private long dstRecordingId;
-    private String liveChannel;
+    private String liveDestination;
     private long channelTagId;
     private long subscriptionTagId;
     private int fileIoMaxLength;
@@ -46,7 +48,7 @@ public class ReplicationParams
     {
         stopPosition = AeronArchive.NULL_POSITION;
         dstRecordingId = Aeron.NULL_VALUE;
-        liveChannel = null;
+        liveDestination = null;
         channelTagId = Aeron.NULL_VALUE;
         subscriptionTagId = Aeron.NULL_VALUE;
         fileIoMaxLength = Aeron.NULL_VALUE;
@@ -76,8 +78,8 @@ public class ReplicationParams
     }
 
     /**
-     * The recording in the local archive to extend. Default is {@link Aeron#NULL_VALUE} which will replicate into a
-     * new recording.
+     * The recording in the local archive to extend. Default is {@link Aeron#NULL_VALUE} which will trigger the creation
+     * of a new recording in the destination archive.
      *
      * @param dstRecordingId destination recording to extend.
      * @return this for a fluent API.
@@ -104,9 +106,9 @@ public class ReplicationParams
      * @param liveChannel for the live stream merge
      * @return this for a fluent API.
      */
-    public ReplicationParams liveChannel(final String liveChannel)
+    public ReplicationParams liveDestination(final String liveChannel)
     {
-        this.liveChannel = liveChannel;
+        this.liveDestination = liveChannel;
         return this;
     }
 
@@ -115,9 +117,9 @@ public class ReplicationParams
      *
      * @return destination for live stream merge.
      */
-    public String liveChannel()
+    public String liveDestination()
     {
-        return liveChannel;
+        return liveDestination;
     }
 
     /**

@@ -19,6 +19,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
@@ -56,6 +57,7 @@ public class MultiNodeTest
 
     @Test
     @InterruptAfter(20)
+    @SlowTest
     public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
@@ -83,6 +85,7 @@ public class MultiNodeTest
 
     @Test
     @InterruptAfter(20)
+    @SlowTest
     public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         final int appointedLeaderIndex = 1;

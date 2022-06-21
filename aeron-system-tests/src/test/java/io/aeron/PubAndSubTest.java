@@ -23,10 +23,7 @@ import io.aeron.driver.ext.LossGenerator;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -264,6 +261,7 @@ class PubAndSubTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(20)
+    @SlowTest
     void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws IOException
     {
         assumeFalse(IPC_URI.equals(channel));

@@ -131,6 +131,11 @@ int aeron_udp_destination_tracker_send(
                 tracker->data_paths, transport, &entry->addr, iov, iov_length, bytes_sent);
 
             min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
+            if (aeron_udp_destination_tracker_should_abort_send(iov, iov_length, sendmsg_result, bytes_sent))
+            {
+                tracker->round_robin_index = i;
+                return min_bytes_sent;
+            }
         }
     }
 
@@ -148,6 +153,11 @@ int aeron_udp_destination_tracker_send(
                 tracker->data_paths, transport, &entry->addr, iov, iov_length, bytes_sent);
 
             min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
+            if (aeron_udp_destination_tracker_should_abort_send(iov, iov_length, sendmsg_result, bytes_sent))
+            {
+                tracker->round_robin_index = i;
+                return min_bytes_sent;
+            }
         }
     }
 
@@ -372,3 +382,6 @@ void aeron_udp_destination_tracker_resolution_change(
 
 extern void aeron_udp_destination_tracker_set_counter(
     aeron_udp_destination_tracker_t *tracker, aeron_atomic_counter_t *counter);
+
+extern bool aeron_udp_destination_tracker_should_abort_send(
+    struct iovec *iov, size_t iov_length, int send_result, const int64_t *bytes_sent);

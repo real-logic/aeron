@@ -424,17 +424,16 @@ int aeron_network_publication_send_data(
     if (vlen > 0)
     {
         result = aeron_send_channel_send(publication->endpoint, iov, vlen, &bytes_sent);
-        if (result != vlen)
+        if (result == vlen) /* assume that a partial send from a broken stack will also move the snd-pos */
         {
-            if (result >= 0)
-            {
-                aeron_counter_increment(publication->short_sends_counter, 1);
-            }
+            publication->time_of_last_data_or_heartbeat_ns = now_ns;
+            publication->track_sender_limits = true;
+            aeron_counter_set_ordered(publication->snd_pos_position.value_addr, highest_pos);
         }
-
-        publication->time_of_last_data_or_heartbeat_ns = now_ns;
-        publication->track_sender_limits = true;
-        aeron_counter_set_ordered(publication->snd_pos_position.value_addr, highest_pos);
+        else if (result >= 0)
+        {
+            aeron_counter_increment(publication->short_sends_counter, 1);
+        }
     }
     else if (publication->track_sender_limits && available_window <= 0)
     {

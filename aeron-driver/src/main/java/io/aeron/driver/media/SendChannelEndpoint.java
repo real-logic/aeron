@@ -22,6 +22,7 @@ import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.NetworkPublication;
 import io.aeron.driver.Sender;
+import io.aeron.driver.status.MdcDestinations;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.NakFlyweight;
@@ -29,12 +30,14 @@ import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.LocalSocketAddressStatus;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.EpochNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -74,6 +77,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final EpochNanoClock sendTimestampClock;
     private final UnsafeBuffer bufferForTimestamping = new UnsafeBuffer();
     private AtomicCounter localSocketAddressIndicator;
+    private AtomicCounter mdcDestinationsCounter;
 
     /**
      * Construct the sender end for data streams.
@@ -215,6 +219,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             localSocketAddressIndicator.close();
         }
+
+        if (null != mdcDestinationsCounter)
+        {
+            mdcDestinationsCounter.close();
+        }
     }
 
     /**
@@ -334,19 +343,19 @@ public class SendChannelEndpoint extends UdpChannelTransport
         final int sessionId = msg.sessionId();
         final int streamId = msg.streamId();
 
+        statusMessagesReceived.incrementOrdered();
+
         if (null != multiSndDestination)
         {
             multiSndDestination.onStatusMessage(msg, srcAddress);
 
-            if (0 == sessionId && 0 == streamId && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
-            {
-                for (final NetworkPublication publication : publicationBySessionAndStreamId.values())
-                {
-                    publication.triggerSendSetupFrame();
-                }
-
-                statusMessagesReceived.incrementOrdered();
-            }
+//            if (0 == sessionId && 0 == streamId && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
+//            {
+//                for (final NetworkPublication publication : publicationBySessionAndStreamId.values())
+//                {
+//                    publication.triggerSendSetupFrame();
+//                }
+//            }
         }
 
         final NetworkPublication publication = publicationBySessionAndStreamId.get(compoundKey(sessionId, streamId));
@@ -360,8 +369,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
             {
                 publication.onStatusMessage(msg, srcAddress);
             }
-
-            statusMessagesReceived.incrementOrdered();
         }
     }
 
@@ -464,6 +471,28 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
+    /**
+     * Allocate a destinations counter if the channel uses multiple destinations.
+     *
+     * @param tempBuffer to use for metadata formatting
+     * @param countersManager for the driver
+     * @param registrationId of the endpoint
+     * @param originalUriString of the channel
+     */
+    public void allocateDestinationsCounterForMdc(
+        final MutableDirectBuffer tempBuffer,
+        final CountersManager countersManager,
+        final long registrationId,
+        final String originalUriString)
+    {
+        if (null != multiSndDestination)
+        {
+            mdcDestinationsCounter = MdcDestinations.allocate(
+                tempBuffer, countersManager, registrationId, originalUriString);
+            multiSndDestination.numDestinationsCounter(mdcDestinationsCounter);
+        }
+    }
+
     private boolean statusMessageTimeout(final long nowNs)
     {
         for (final NetworkPublication publication : publicationBySessionAndStreamId.values())
@@ -510,6 +539,7 @@ abstract class MultiSndDestination
     Destination[] destinations = EMPTY_DESTINATIONS;
     final CachedNanoClock nanoClock;
     int roundRobinIndex = 0;
+    AtomicCounter numDestinationsCounter;
 
     MultiSndDestination(final CachedNanoClock nanoClock)
     {
@@ -535,6 +565,11 @@ abstract class MultiSndDestination
 
     void updateDestination(final String endpoint, final InetSocketAddress newAddress)
     {
+    }
+
+    void numDestinationsCounter(final AtomicCounter numDestinationsCounter)
+    {
+        this.numDestinationsCounter = numDestinationsCounter;
     }
 
     static int send(
@@ -649,6 +684,7 @@ class ManualSndMultiDestination extends MultiSndDestination
     void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
         destinations = ArrayUtil.add(destinations, new Destination(nanoClock.nanoTime(), channelUri, address));
+        numDestinationsCounter.setOrdered(destinations.length);
     }
 
     void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
@@ -677,6 +713,8 @@ class ManualSndMultiDestination extends MultiSndDestination
                 destinations = ArrayUtil.remove(destinations, index);
             }
         }
+
+        numDestinationsCounter.setOrdered(destinations.length);
     }
 
     void checkForReResolution(
@@ -803,6 +841,7 @@ class DynamicSndMultiDestination extends MultiSndDestination
     private void add(final Destination destination)
     {
         destinations = ArrayUtil.add(destinations, destination);
+        numDestinationsCounter.setOrdered(destinations.length);
     }
 
     private void truncateDestinations(final int removed)
@@ -818,6 +857,8 @@ class DynamicSndMultiDestination extends MultiSndDestination
         {
             destinations = Arrays.copyOf(destinations, newLength);
         }
+
+        numDestinationsCounter.setOrdered(destinations.length);
     }
 
     private void removeInactiveDestinations(final long nowNs)

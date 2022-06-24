@@ -16,14 +16,16 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
+import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.net.InetSocketAddress;
 
 /**
  * Strategy for applying flow control to the {@link Sender} on each stream.
  */
-public interface FlowControl
+public interface FlowControl extends AutoCloseable
 {
     /**
      * Update the sender flow control strategy based on a status message from the receiver.
@@ -45,14 +47,43 @@ public interface FlowControl
         long timeNs);
 
     /**
+     * Update the sender flow control strategy based on an elicited setup message being sent out.
+     *
+     * @param flyweight             over the setup to be sent.
+     * @param senderLimit           for the current sender position.
+     * @param senderPosition        which has been sent.
+     * @param positionBitsToShift   in use for the length of each term buffer.
+     * @param timeNs                current time in nanoseconds.
+     * @return the new position limit to be employed by the sender.
+     */
+    long onSetup(
+        SetupFlyweight flyweight,
+        long senderLimit,
+        long senderPosition,
+        int positionBitsToShift,
+        long timeNs);
+
+    /**
      * Initialize the flow control strategy for a stream.
      *
      * @param context          to allow access to media driver configuration
+     * @param countersManager  to use for any counters in use by the strategy
+     * @param streamId         for the stream.
+     * @param sessionId        for the stream.
+     * @param registrationId   for the stream.
      * @param udpChannel       for the stream.
      * @param initialTermId    at which the stream started.
      * @param termBufferLength to use as the length of each term buffer.
      */
-    void initialize(MediaDriver.Context context, UdpChannel udpChannel, int initialTermId, int termBufferLength);
+    void initialize(
+        MediaDriver.Context context,
+        CountersManager countersManager,
+        UdpChannel udpChannel,
+        int streamId,
+        int sessionId,
+        long registrationId,
+        int initialTermId,
+        int termBufferLength);
 
     /**
      * Perform any maintenance needed by the flow control strategy and return current sender limit position.
@@ -72,4 +103,9 @@ public interface FlowControl
      * @return true if the required group of receivers is connected, otherwise false.
      */
     boolean hasRequiredReceivers();
+
+    /**
+     * {@inheritDoc}
+     */
+    void close();
 }

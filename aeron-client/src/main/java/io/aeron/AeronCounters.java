@@ -121,6 +121,16 @@ public final class AeronCounters
      */
     public static final int DRIVER_LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID = 14;
 
+    /*
+     * Count of number of active receivers for flow control strategy.
+     */
+    public static final int FLOW_CONTROL_RECEIVERS_COUNTER_TYPE_ID = 17;
+
+    /*
+     * Count of number of destinations for multi-destination cast channels.
+     */
+    public static final int MDC_DESTINATIONS_COUNTER_TYPE_ID = 18;
+
     // Archive counters
     /**
      * The position a recording has reached when being archived.

@@ -17,12 +17,16 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,8 +38,16 @@ class TaggedMulticastFlowControlTest
     private static final long DEFAULT_GROUP_TAG = Configuration.flowControlGroupTag();
     private static final long DEFAULT_TIMEOUT = Configuration.flowControlReceiverTimeoutNs();
     private static final int WINDOW_LENGTH = 16 * 1024;
+    private static final int COUNTERS_BUFFER_LENGTH = 16 * 1024;
+
+    private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[8192]);
+    private final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocate(COUNTERS_BUFFER_LENGTH));
+    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(
+        ByteBuffer.allocate(Configuration.countersMetadataBufferLength(COUNTERS_BUFFER_LENGTH)));
 
     private final TaggedMulticastFlowControl flowControl = new TaggedMulticastFlowControl();
+    private final CountersManager countersManager = new CountersManager(
+        metaDataBuffer, counterBuffer, StandardCharsets.US_ASCII);
 
     private static Stream<Arguments> validUris()
     {
@@ -66,12 +78,18 @@ class TaggedMulticastFlowControlTest
                 100, 10, 100_000_000));
     }
 
+    MediaDriver.Context newContext()
+    {
+        return new MediaDriver.Context().tempBuffer(tempBuffer);
+    }
+
     @ParameterizedTest
     @MethodSource("validUris")
     void shouldParseValidFlowControlConfiguration(
         final String uri, final long groupTag, final int groupSize, final long timeout)
     {
-        flowControl.initialize(new MediaDriver.Context(), UdpChannel.parse(uri), 0, 0);
+        flowControl.initialize(
+            newContext(), countersManager, UdpChannel.parse(uri), 0, 0, 0, 0, 0);
 
         assertEquals(groupTag, flowControl.groupTag());
         assertEquals(groupSize, flowControl.groupMinSize());
@@ -91,7 +109,8 @@ class TaggedMulticastFlowControlTest
     {
         assertThrows(
             Exception.class,
-            () -> flowControl.initialize(new MediaDriver.Context(), UdpChannel.parse(uri), 0, 0));
+            () -> flowControl.initialize(
+            newContext(), countersManager, UdpChannel.parse(uri), 0, 0, 0, 0, 0));
     }
 
     @Test
@@ -100,7 +119,8 @@ class TaggedMulticastFlowControlTest
         final UdpChannel channelGroupSizeThree = UdpChannel.parse(
             "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/3");
 
-        flowControl.initialize(new MediaDriver.Context(), channelGroupSizeThree, 0, 0);
+        flowControl.initialize(
+            newContext(), countersManager, channelGroupSizeThree, 0, 0, 0, 0, 0);
         final long groupTag = 123L;
 
         final long senderLimit = 5000L;
@@ -124,7 +144,8 @@ class TaggedMulticastFlowControlTest
         final UdpChannel channelGroupSizeThree = UdpChannel.parse(
             "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123");
 
-        flowControl.initialize(new MediaDriver.Context(), channelGroupSizeThree, 0, 0);
+        flowControl.initialize(
+            newContext(), countersManager, channelGroupSizeThree, 0, 0, 0, 0, 0);
         final long groupTag = 123L;
 
         final long senderLimit = 5000L;
@@ -143,7 +164,8 @@ class TaggedMulticastFlowControlTest
         final UdpChannel udpChannel = UdpChannel.parse(
             "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min,g:123/2");
 
-        flowControl.initialize(new MediaDriver.Context(), udpChannel, 0, 0);
+        flowControl.initialize(
+            newContext(), countersManager, udpChannel, 0, 0, 0, 0, 0);
 
         final int senderLimit = 5000;
         final int termOffset0 = WINDOW_LENGTH * 2;

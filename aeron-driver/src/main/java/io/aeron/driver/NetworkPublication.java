@@ -271,6 +271,7 @@ public final class NetworkPublication
             }
         }
 
+        CloseHelper.close(flowControl);
         CloseHelper.close(errorHandler, rawLog);
     }
 
@@ -710,6 +711,11 @@ public final class NetworkPublication
                 .termLength(termBufferLength)
                 .mtuLength(mtuLength)
                 .ttl(channelEndpoint.multicastTtl());
+
+            if (isSetupElicited)
+            {
+                flowControl.onSetup(setupHeader, senderLimit.get(), senderPosition.get(), positionBitsToShift, nowNs);
+            }
 
             if (SetupFlyweight.HEADER_LENGTH != channelEndpoint.send(setupBuffer))
             {

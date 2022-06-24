@@ -16,7 +16,9 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
+import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.net.InetSocketAddress;
 
@@ -45,9 +47,20 @@ public class MaxMulticastFlowControl implements FlowControl
      */
     public void initialize(
         final MediaDriver.Context context,
+        final CountersManager countersManager,
         final UdpChannel udpChannel,
+        final int streamId,
+        final int sessionId,
+        final long registrationId,
         final int initialTermId,
         final int termBufferLength)
+    {
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
     {
     }
 
@@ -69,6 +82,19 @@ public class MaxMulticastFlowControl implements FlowControl
             initialTermId);
 
         return Math.max(senderLimit, position + flyweight.receiverWindowLength());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long onSetup(
+        final SetupFlyweight flyweight,
+        final long senderLimit,
+        final long senderPosition,
+        final int positionBitsToShift,
+        final long timeNs)
+    {
+        return senderLimit;
     }
 
     /**

@@ -1252,7 +1252,15 @@ public final class DriverConductor implements Agent
         final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.isMultiDestination() ?
             ctx.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
             ctx.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
-        flowControl.initialize(ctx, udpChannel, initialTermId, params.termLength);
+        flowControl.initialize(
+            ctx,
+            countersManager,
+            udpChannel,
+            streamId,
+            sessionId,
+            registrationId,
+            initialTermId,
+            params.termLength);
 
         final RawLog rawLog = newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
         UnsafeBufferPosition publisherPos = null;
@@ -1438,6 +1446,8 @@ public final class DriverConductor implements Agent
                     tempBuffer, countersManager, registrationId, channelEndpoint.statusIndicatorCounterId());
 
                 channelEndpoint.localSocketAddressIndicator(localSocketAddressIndicator);
+                channelEndpoint.allocateDestinationsCounterForMdc(
+                    tempBuffer, countersManager, registrationId, udpChannel.originalUriString());
 
                 validateMtuForSndbuf(
                     params, channelEndpoint.socketSndbufLength(), ctx, udpChannel.originalUriString(), null);

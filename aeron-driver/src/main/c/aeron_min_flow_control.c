@@ -376,7 +376,7 @@ int aeron_tagged_flow_control_strategy_allocate_receiver_counter(
     const int32_t counter_id = aeron_stream_counter_allocate(
         counters_manager,
         AERON_MIN_FLOW_CONTROL_RECEIVERS_COUNTER_NAME,
-        AERON_COUNTER_MIN_FC_NUM_RECEIVERS_TYPE_ID,
+        AERON_COUNTER_FC_NUM_RECEIVERS_TYPE_ID,
         registration_id,
         session_id,
         stream_id,

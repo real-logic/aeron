@@ -425,16 +425,6 @@ void aeron_send_channel_endpoint_on_status_message(
     if (NULL != endpoint->destination_tracker)
     {
         aeron_udp_destination_tracker_on_status_message(endpoint->destination_tracker, buffer, length, addr);
-
-//        if (0 == sm_header->session_id &&
-//            0 == sm_header->stream_id &&
-//            (sm_header->frame_header.flags & AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG))
-//        {
-//            aeron_int64_to_ptr_hash_map_for_each(
-//                &endpoint->publication_dispatch_map,
-//                aeron_send_channel_endpoint_publication_trigger_send_setup_frame,
-//                endpoint);
-//        }
     }
 
     if (NULL != publication)

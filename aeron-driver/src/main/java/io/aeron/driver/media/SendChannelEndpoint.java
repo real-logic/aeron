@@ -348,14 +348,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
         if (null != multiSndDestination)
         {
             multiSndDestination.onStatusMessage(msg, srcAddress);
-
-//            if (0 == sessionId && 0 == streamId && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
-//            {
-//                for (final NetworkPublication publication : publicationBySessionAndStreamId.values())
-//                {
-//                    publication.triggerSendSetupFrame();
-//                }
-//            }
         }
 
         final NetworkPublication publication = publicationBySessionAndStreamId.get(compoundKey(sessionId, streamId));

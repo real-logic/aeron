@@ -32,7 +32,7 @@ import static io.aeron.logbuffer.TermUnblocker.Status.UNBLOCKED_TO_END;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
-public class TermUnblockerTest
+class TermUnblockerTest
 {
     private static final int TERM_BUFFER_CAPACITY = 64 * 1014;
     private static final int TERM_ID = 7;
@@ -41,13 +41,13 @@ public class TermUnblockerTest
     private final UnsafeBuffer mockLogMetaDataBuffer = mock(UnsafeBuffer.class);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when(mockTermBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
     }
 
     @Test
-    public void shouldTakeNoActionWhenMessageIsComplete()
+    void shouldTakeNoActionWhenMessageIsComplete()
     {
         final int termOffset = 0;
         final int tailOffset = TERM_BUFFER_CAPACITY;
@@ -58,7 +58,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldTakeNoActionWhenNoUnblockedMessage()
+    void shouldTakeNoActionWhenNoUnblockedMessage()
     {
         final int termOffset = 0;
         final int tailOffset = TERM_BUFFER_CAPACITY / 2;
@@ -68,7 +68,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldPatchNonCommittedMessage()
+    void shouldPatchNonCommittedMessage()
     {
         final int termOffset = 0;
         final int messageLength = HEADER_LENGTH * 4;
@@ -86,7 +86,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldPatchToEndOfPartition()
+    void shouldPatchToEndOfPartition()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = TERM_BUFFER_CAPACITY - messageLength;
@@ -105,7 +105,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldScanForwardForNextCompleteMessage()
+    void shouldScanForwardForNextCompleteMessage()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = 0;
@@ -123,7 +123,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldScanForwardForNextNonCommittedMessage()
+    void shouldScanForwardForNextNonCommittedMessage()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = 0;
@@ -141,7 +141,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldTakeNoActionIfMessageCompleteAfterScan()
+    void shouldTakeNoActionIfMessageCompleteAfterScan()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = 0;
@@ -159,7 +159,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldTakeNoActionIfMessageNonCommittedAfterScan()
+    void shouldTakeNoActionIfMessageNonCommittedAfterScan()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = 0;
@@ -177,7 +177,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldTakeNoActionToEndOfPartitionIfMessageCompleteAfterScan()
+    void shouldTakeNoActionToEndOfPartitionIfMessageCompleteAfterScan()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = TERM_BUFFER_CAPACITY - messageLength;
@@ -192,7 +192,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldTakeNoActionToEndOfPartitionIfMessageNonCommittedAfterScan()
+    void shouldTakeNoActionToEndOfPartitionIfMessageNonCommittedAfterScan()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = TERM_BUFFER_CAPACITY - messageLength;
@@ -207,7 +207,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldNotUnblockGapWithMessageRaceOnSecondMessageIncreasingTailThenInterrupting()
+    void shouldNotUnblockGapWithMessageRaceOnSecondMessageIncreasingTailThenInterrupting()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = 0;
@@ -225,7 +225,7 @@ public class TermUnblockerTest
     }
 
     @Test
-    public void shouldNotUnblockGapWithMessageRaceWhenScanForwardTakesAnInterrupt()
+    void shouldNotUnblockGapWithMessageRaceWhenScanForwardTakesAnInterrupt()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = 0;

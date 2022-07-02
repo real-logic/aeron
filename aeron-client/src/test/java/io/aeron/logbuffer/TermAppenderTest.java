@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-public class TermAppenderTest
+class TermAppenderTest
 {
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int META_DATA_BUFFER_LENGTH = LogBufferDescriptor.LOG_META_DATA_LENGTH;
@@ -55,7 +55,7 @@ public class TermAppenderTest
     private final TermAppender termAppender = new TermAppender(termBuffer, logMetaDataBuffer, PARTITION_INDEX);
 
     @Test
-    public void shouldAppendFrameToEmptyLog()
+    void shouldAppendFrameToEmptyLog()
     {
         final int headerLength = DEFAULT_HEADER.capacity();
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
@@ -81,7 +81,7 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldAppendFrameTwiceToLog()
+    void shouldAppendFrameTwiceToLog()
     {
         final int headerLength = DEFAULT_HEADER.capacity();
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
@@ -117,7 +117,7 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldPadLogWhenAppendingWithInsufficientRemainingCapacity()
+    void shouldPadLogWhenAppendingWithInsufficientRemainingCapacity()
     {
         final int msgLength = 120;
         final int headerLength = DEFAULT_HEADER.capacity();
@@ -139,7 +139,7 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldFragmentMessageOverTwoFrames()
+    void shouldFragmentMessageOverTwoFrames()
     {
         final int msgLength = MAX_PAYLOAD_LENGTH + 1;
         final int headerLength = DEFAULT_HEADER.capacity();
@@ -172,7 +172,7 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldClaimRegionForZeroCopyEncoding()
+    void shouldClaimRegionForZeroCopyEncoding()
     {
         final int headerLength = DEFAULT_HEADER.capacity();
         final int msgLength = 20;
@@ -199,7 +199,7 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldAppendUnfragmentedFromVectorsToEmptyLog()
+    void shouldAppendUnfragmentedFromVectorsToEmptyLog()
     {
         final int headerLength = DEFAULT_HEADER.capacity();
         final UnsafeBuffer bufferOne = new UnsafeBuffer(new byte[64]);
@@ -234,7 +234,7 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldAppendFragmentedFromVectorsToEmptyLog()
+    void shouldAppendFragmentedFromVectorsToEmptyLog()
     {
         final int mtu = 2048;
         final int headerLength = DEFAULT_HEADER.capacity();
@@ -284,7 +284,7 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldAppendFragmentedFromVectorsWithNonZeroOffsetToEmptyLog()
+    void shouldAppendFragmentedFromVectorsWithNonZeroOffsetToEmptyLog()
     {
         final int mtu = 2048;
         final int headerLength = DEFAULT_HEADER.capacity();
@@ -336,7 +336,7 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldDetectInvalidTerm()
+    void shouldDetectInvalidTerm()
     {
         final int length = 128;
         final int srcOffset = 0;

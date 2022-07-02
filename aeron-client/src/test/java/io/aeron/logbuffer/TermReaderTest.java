@@ -29,7 +29,7 @@ import static org.agrona.BitUtil.align;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class TermReaderTest
+class TermReaderTest
 {
     private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
@@ -43,13 +43,13 @@ public class TermReaderTest
     private final Position subscriberPosition = mock(Position.class);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
     }
 
     @Test
-    public void shouldReadFirstMessage()
+    void shouldReadFirstMessage()
     {
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
@@ -70,7 +70,7 @@ public class TermReaderTest
     }
 
     @Test
-    public void shouldNotReadPastTail()
+    void shouldNotReadPastTail()
     {
         final int termOffset = 0;
 
@@ -84,7 +84,7 @@ public class TermReaderTest
     }
 
     @Test
-    public void shouldReadOneLimitedMessage()
+    void shouldReadOneLimitedMessage()
     {
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
@@ -106,7 +106,7 @@ public class TermReaderTest
     }
 
     @Test
-    public void shouldReadMultipleMessages()
+    void shouldReadMultipleMessages()
     {
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
@@ -133,7 +133,7 @@ public class TermReaderTest
     }
 
     @Test
-    public void shouldReadLastMessage()
+    void shouldReadLastMessage()
     {
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
@@ -165,7 +165,7 @@ public class TermReaderTest
     }
 
     @Test
-    public void shouldNotReadLastMessageWhenPadding()
+    void shouldNotReadLastMessageWhenPadding()
     {
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;

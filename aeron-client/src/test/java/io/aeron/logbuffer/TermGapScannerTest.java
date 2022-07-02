@@ -25,7 +25,7 @@ import static org.agrona.BitUtil.align;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class TermGapScannerTest
+class TermGapScannerTest
 {
     private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int TERM_ID = 1;
@@ -35,13 +35,13 @@ public class TermGapScannerTest
     private final TermGapScanner.GapHandler gapHandler = mock(TermGapScanner.GapHandler.class);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when(termBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);
     }
 
     @Test
-    public void shouldReportGapAtBeginningOfBuffer()
+    void shouldReportGapAtBeginningOfBuffer()
     {
         final int frameOffset = align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
         final int highWaterMark = frameOffset + align(HEADER_LENGTH, FRAME_ALIGNMENT);
@@ -54,7 +54,7 @@ public class TermGapScannerTest
     }
 
     @Test
-    public void shouldReportSingleGapWhenBufferNotFull()
+    void shouldReportSingleGapWhenBufferNotFull()
     {
         final int tail = align(HEADER_LENGTH, FRAME_ALIGNMENT);
         final int highWaterMark = FRAME_ALIGNMENT * 3;
@@ -70,7 +70,7 @@ public class TermGapScannerTest
     }
 
     @Test
-    public void shouldReportSingleGapWhenBufferIsFull()
+    void shouldReportSingleGapWhenBufferIsFull()
     {
         final int tail = LOG_BUFFER_CAPACITY - (align(HEADER_LENGTH, FRAME_ALIGNMENT) * 2);
         final int highWaterMark = LOG_BUFFER_CAPACITY;
@@ -86,7 +86,7 @@ public class TermGapScannerTest
     }
 
     @Test
-    public void shouldReportNoGapWhenHwmIsInPadding()
+    void shouldReportNoGapWhenHwmIsInPadding()
     {
         final int paddingLength = align(HEADER_LENGTH, FRAME_ALIGNMENT) * 2;
         final int tail = LOG_BUFFER_CAPACITY - paddingLength;

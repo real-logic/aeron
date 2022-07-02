@@ -102,7 +102,7 @@ class FragmentedMessageTest
             }
 
             final int expectedFragmentsBecauseOfHeader = 5;
-            int numFragments = 0;
+            int fragmentCount = 0;
             do
             {
                 final int fragments = subscription.poll(assembler, FRAGMENT_COUNT_LIMIT);
@@ -110,9 +110,9 @@ class FragmentedMessageTest
                 {
                     Tests.yield();
                 }
-                numFragments += fragments;
+                fragmentCount += fragments;
             }
-            while (numFragments < expectedFragmentsBecauseOfHeader);
+            while (fragmentCount < expectedFragmentsBecauseOfHeader);
 
             final ArgumentCaptor<DirectBuffer> bufferArg = ArgumentCaptor.forClass(DirectBuffer.class);
             final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);

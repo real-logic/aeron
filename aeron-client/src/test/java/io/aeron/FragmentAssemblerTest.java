@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import org.agrona.BitUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -26,10 +27,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class FragmentAssemblerTest
+class FragmentAssemblerTest
 {
     private static final int SESSION_ID = 777;
     private static final int INITIAL_TERM_ID = 3;
@@ -40,14 +43,14 @@ public class FragmentAssemblerTest
     private final FragmentAssembler adapter = new FragmentAssembler(delegateFragmentHandler);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         header.buffer(termBuffer);
         when(termBuffer.getInt(anyInt(), any(ByteOrder.class))).thenReturn(SESSION_ID);
     }
 
     @Test
-    public void shouldPassThroughUnfragmentedMessage()
+    void shouldPassThroughUnfragmentedMessage()
     {
         when(header.flags()).thenReturn(FrameDescriptor.UNFRAGMENTED);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[128]);
@@ -60,33 +63,24 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldAssembleTwoPartMessage()
+    void shouldAssembleTwoPartMessage()
     {
         when(header.flags())
             .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
             .thenReturn(FrameDescriptor.END_FRAG_FLAG);
 
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
-        final int offset = 0;
-        final int length = srcBuffer.capacity() / 2;
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024 + (2 * HEADER_LENGTH)]);
+        final int length = 512;
 
-        srcBuffer.setMemory(0, length, (byte)65);
-        srcBuffer.setMemory(length, length, (byte)66);
-
+        int offset = HEADER_LENGTH;
         adapter.onFragment(srcBuffer, offset, length, header);
-        adapter.onFragment(srcBuffer, length, length, header);
+        offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
+        adapter.onFragment(srcBuffer, offset, length, header);
 
-        final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
         final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
         verify(delegateFragmentHandler, times(1)).onFragment(
-            bufferArg.capture(), eq(offset), eq(length * 2), headerArg.capture());
-
-        final UnsafeBuffer capturedBuffer = bufferArg.getValue();
-        for (int i = 0; i < srcBuffer.capacity(); i++)
-        {
-            assertEquals(srcBuffer.getByte(i), capturedBuffer.getByte(i), "same at i=" + i);
-        }
+            any(), eq(0), eq(length * 2), headerArg.capture());
 
         final Header capturedHeader = headerArg.getValue();
         assertEquals(SESSION_ID, capturedHeader.sessionId());
@@ -94,7 +88,7 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldAssembleFourPartMessage()
+    void shouldAssembleFourPartMessage()
     {
         when(header.flags())
             .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
@@ -102,31 +96,22 @@ public class FragmentAssemblerTest
             .thenReturn((byte)0)
             .thenReturn(FrameDescriptor.END_FRAG_FLAG);
 
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
-        final int offset = 0;
-        final int length = srcBuffer.capacity() / 4;
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024 + (4 * HEADER_LENGTH)]);
+        final int length = 256;
 
-        for (int i = 0; i < 4; i++)
-        {
-            srcBuffer.setMemory(i * length, length, (byte)(65 + i));
-        }
-
+        int offset = HEADER_LENGTH;
         adapter.onFragment(srcBuffer, offset, length, header);
-        adapter.onFragment(srcBuffer, offset + length, length, header);
-        adapter.onFragment(srcBuffer, offset + (length * 2), length, header);
-        adapter.onFragment(srcBuffer, offset + (length * 3), length, header);
+        offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
+        adapter.onFragment(srcBuffer, offset, length, header);
+        offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
+        adapter.onFragment(srcBuffer, offset, length, header);
+        offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
+        adapter.onFragment(srcBuffer, offset, length, header);
 
-        final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
         final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
         verify(delegateFragmentHandler, times(1)).onFragment(
-            bufferArg.capture(), eq(offset), eq(length * 4), headerArg.capture());
-
-        final UnsafeBuffer capturedBuffer = bufferArg.getValue();
-        for (int i = 0; i < srcBuffer.capacity(); i++)
-        {
-            assertEquals(srcBuffer.getByte(i), capturedBuffer.getByte(i), "same at i=" + i);
-        }
+            any(), eq(0), eq(length * 4), headerArg.capture());
 
         final Header capturedHeader = headerArg.getValue();
         assertEquals(SESSION_ID, capturedHeader.sessionId());
@@ -134,7 +119,7 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldFreeSessionBuffer()
+    void shouldFreeSessionBuffer()
     {
         when(header.flags())
             .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
@@ -157,7 +142,7 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldDoNotingIfEndArrivesWithoutBegin()
+    void shouldDoNotingIfEndArrivesWithoutBegin()
     {
         when(header.flags()).thenReturn(FrameDescriptor.END_FRAG_FLAG);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
@@ -170,7 +155,7 @@ public class FragmentAssemblerTest
     }
 
     @Test
-    public void shouldDoNotingIfMidArrivesWithoutBegin()
+    void shouldDoNotingIfMidArrivesWithoutBegin()
     {
         when(header.flags())
             .thenReturn((byte)0)
@@ -184,5 +169,35 @@ public class FragmentAssemblerTest
         adapter.onFragment(srcBuffer, offset, length, header);
 
         verify(delegateFragmentHandler, never()).onFragment(any(), anyInt(), anyInt(), any());
+    }
+
+    @Test
+    void shouldSkipOverMessagesWithLoss()
+    {
+        when(header.flags())
+            .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
+            .thenReturn(FrameDescriptor.END_FRAG_FLAG)
+            .thenReturn(FrameDescriptor.UNFRAGMENTED);
+
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[2048]);
+        final int length = 256;
+
+        int offset = HEADER_LENGTH;
+        adapter.onFragment(srcBuffer, offset, length, header);
+        offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
+        offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
+        offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
+        adapter.onFragment(srcBuffer, offset, length, header);
+        offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
+        adapter.onFragment(srcBuffer, offset, length, header);
+
+        final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
+
+        verify(delegateFragmentHandler, times(1)).onFragment(
+            any(), eq(offset), eq(length), headerArg.capture());
+
+        final Header capturedHeader = headerArg.getValue();
+        assertEquals(SESSION_ID, capturedHeader.sessionId());
+        assertEquals(FrameDescriptor.UNFRAGMENTED, capturedHeader.flags());
     }
 }

@@ -36,7 +36,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class SubscriptionTest
+class SubscriptionTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40124";
     private static final int STREAM_ID_1 = 1002;
@@ -65,7 +65,7 @@ public class SubscriptionTest
     private Subscription subscription;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when(imageOneMock.correlationId()).thenReturn(1L);
         when(imageTwoMock.correlationId()).thenReturn(2L);
@@ -89,7 +89,7 @@ public class SubscriptionTest
     }
 
     @Test
-    public void shouldEnsureTheSubscriptionIsOpenWhenPolling()
+    void shouldEnsureTheSubscriptionIsOpenWhenPolling()
     {
         subscription.close();
         assertTrue(subscription.isClosed());
@@ -98,13 +98,13 @@ public class SubscriptionTest
     }
 
     @Test
-    public void shouldReadNothingWhenNoImages()
+    void shouldReadNothingWhenNoImages()
     {
         assertEquals(0, subscription.poll(fragmentHandler, 1));
     }
 
     @Test
-    public void shouldReadNothingWhenThereIsNoData()
+    void shouldReadNothingWhenThereIsNoData()
     {
         subscription.addImage(imageOneMock);
 
@@ -112,7 +112,7 @@ public class SubscriptionTest
     }
 
     @Test
-    public void shouldReadData()
+    void shouldReadData()
     {
         subscription.addImage(imageOneMock);
 
@@ -134,7 +134,7 @@ public class SubscriptionTest
     }
 
     @Test
-    public void shouldReadDataFromMultipleSources()
+    void shouldReadDataFromMultipleSources()
     {
         subscription.addImage(imageOneMock);
         subscription.addImage(imageTwoMock);

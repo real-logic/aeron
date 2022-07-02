@@ -27,7 +27,7 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static org.agrona.BitUtil.align;
 
-public class TermScannerTest
+class TermScannerTest
 {
     private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MTU_LENGTH = 1024;
@@ -36,13 +36,13 @@ public class TermScannerTest
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
     }
 
     @Test
-    public void shouldPackPaddingAndOffsetIntoResultingStatus()
+    void shouldPackPaddingAndOffsetIntoResultingStatus()
     {
         final int padding = 77;
         final int available = 65000;
@@ -54,7 +54,7 @@ public class TermScannerTest
     }
 
     @Test
-    public void shouldReturnZeroOnEmptyLog()
+    void shouldReturnZeroOnEmptyLog()
     {
         final long scanOutcome = TermScanner.scanForAvailability(termBuffer, 0, MTU_LENGTH);
         assertEquals(0, TermScanner.available(scanOutcome));
@@ -62,7 +62,7 @@ public class TermScannerTest
     }
 
     @Test
-    public void shouldScanSingleMessage()
+    void shouldScanSingleMessage()
     {
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
@@ -82,7 +82,7 @@ public class TermScannerTest
     }
 
     @Test
-    public void shouldFailToScanMessageLargerThanMaxLength()
+    void shouldFailToScanMessageLargerThanMaxLength()
     {
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
@@ -103,7 +103,7 @@ public class TermScannerTest
     }
 
     @Test
-    public void shouldScanTwoMessagesThatFitInSingleMtu()
+    void shouldScanTwoMessagesThatFitInSingleMtu()
     {
         final int msgLength = 100;
         final int frameLength = HEADER_LENGTH + msgLength;
@@ -129,7 +129,7 @@ public class TermScannerTest
     }
 
     @Test
-    public void shouldScanTwoMessagesAndStopAtMtuBoundary()
+    void shouldScanTwoMessagesAndStopAtMtuBoundary()
     {
         final int frameTwoLength = align(HEADER_LENGTH + 1, FRAME_ALIGNMENT);
         final int frameOneLength = MTU_LENGTH - frameTwoLength;
@@ -155,7 +155,7 @@ public class TermScannerTest
     }
 
     @Test
-    public void shouldScanTwoMessagesAndStopAtSecondThatSpansMtu()
+    void shouldScanTwoMessagesAndStopAtSecondThatSpansMtu()
     {
         final int frameTwoLength = align(HEADER_LENGTH * 2, FRAME_ALIGNMENT);
         final int frameOneLength = MTU_LENGTH - (frameTwoLength / 2);
@@ -180,7 +180,7 @@ public class TermScannerTest
     }
 
     @Test
-    public void shouldScanLastFrameInBuffer()
+    void shouldScanLastFrameInBuffer()
     {
         final int alignedFrameLength = align(HEADER_LENGTH * 2, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
@@ -194,7 +194,7 @@ public class TermScannerTest
     }
 
     @Test
-    public void shouldScanLastMessageInBufferPlusPadding()
+    void shouldScanLastMessageInBufferPlusPadding()
     {
         final int alignedFrameLength = align(HEADER_LENGTH * 2, FRAME_ALIGNMENT);
         final int paddingFrameLength = align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
@@ -211,7 +211,7 @@ public class TermScannerTest
     }
 
     @Test
-    public void shouldScanLastMessageInBufferMinusPaddingLimitedByMtu()
+    void shouldScanLastMessageInBufferMinusPaddingLimitedByMtu()
     {
         final int alignedFrameLength = align(HEADER_LENGTH, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);

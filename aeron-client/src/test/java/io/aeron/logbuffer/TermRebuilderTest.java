@@ -28,20 +28,20 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.mockito.Mockito.*;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 
-public class TermRebuilderTest
+class TermRebuilderTest
 {
     private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
     }
 
     @Test
-    public void shouldInsertIntoEmptyBuffer()
+    void shouldInsertIntoEmptyBuffer()
     {
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
         final int termOffset = 0;
@@ -61,7 +61,7 @@ public class TermRebuilderTest
     }
 
     @Test
-    public void shouldInsertLastFrameIntoBuffer()
+    void shouldInsertLastFrameIntoBuffer()
     {
         final int frameLength = BitUtil.align(256, FRAME_ALIGNMENT);
         final int srcOffset = 0;
@@ -78,7 +78,7 @@ public class TermRebuilderTest
     }
 
     @Test
-    public void shouldFillSingleGap()
+    void shouldFillSingleGap()
     {
         final int frameLength = 50;
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
@@ -94,7 +94,7 @@ public class TermRebuilderTest
     }
 
     @Test
-    public void shouldFillAfterAGap()
+    void shouldFillAfterAGap()
     {
         final int frameLength = 50;
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
@@ -112,7 +112,7 @@ public class TermRebuilderTest
     }
 
     @Test
-    public void shouldFillGapButNotMoveTailOrHwm()
+    void shouldFillGapButNotMoveTailOrHwm()
     {
         final int frameLength = 50;
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);

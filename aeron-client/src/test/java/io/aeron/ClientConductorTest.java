@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ClientConductorTest
+class ClientConductorTest
 {
     private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
 
@@ -111,7 +111,7 @@ public class ClientConductorTest
     private boolean suppressPrintError = false;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         final Aeron.Context ctx = new Aeron.Context()
             .clientLock(mockClientLock)
@@ -196,7 +196,7 @@ public class ClientConductorTest
     // --------------------------------
 
     @Test
-    public void addPublicationShouldNotifyMediaDriver()
+    void addPublicationShouldNotifyMediaDriver()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY,
@@ -209,7 +209,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void addPublicationShouldMapLogFile()
+    void addPublicationShouldMapLogFile()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY,
@@ -223,13 +223,13 @@ public class ClientConductorTest
 
     @Test
     @InterruptAfter(5)
-    public void addPublicationShouldTimeoutWithoutReadyMessage()
+    void addPublicationShouldTimeoutWithoutReadyMessage()
     {
         assertThrows(DriverTimeoutException.class, () -> conductor.addPublication(CHANNEL, STREAM_ID_1));
     }
 
     @Test
-    public void closingPublicationShouldNotifyMediaDriver()
+    void closingPublicationShouldNotifyMediaDriver()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
@@ -247,7 +247,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void closingPublicationShouldPurgeCache()
+    void closingPublicationShouldPurgeCache()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
@@ -270,7 +270,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldFailToAddPublicationOnMediaDriverError()
+    void shouldFailToAddPublicationOnMediaDriverError()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_ERROR,
@@ -287,7 +287,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void closingPublicationDoesNotRemoveOtherPublications()
+    void closingPublicationDoesNotRemoveOtherPublications()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
@@ -321,7 +321,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldNotMapBuffersForUnknownCorrelationId()
+    void shouldNotMapBuffersForUnknownCorrelationId()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY,
@@ -349,12 +349,8 @@ public class ClientConductorTest
         assertThat(publication.registrationId(), is(CORRELATION_ID));
     }
 
-    // ---------------------------------
-    // Subscription related interactions
-    // ---------------------------------
-
     @Test
-    public void addSubscriptionShouldNotifyMediaDriver()
+    void addSubscriptionShouldNotifyMediaDriver()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_SUBSCRIPTION_READY,
@@ -371,7 +367,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void closingSubscriptionShouldNotifyMediaDriver()
+    void closingSubscriptionShouldNotifyMediaDriver()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_SUBSCRIPTION_READY,
@@ -400,13 +396,13 @@ public class ClientConductorTest
 
     @Test
     @InterruptAfter(5)
-    public void addSubscriptionShouldTimeoutWithoutOperationSuccessful()
+    void addSubscriptionShouldTimeoutWithoutOperationSuccessful()
     {
         assertThrows(DriverTimeoutException.class, () -> conductor.addSubscription(CHANNEL, STREAM_ID_1));
     }
 
     @Test
-    public void shouldFailToAddSubscriptionOnMediaDriverError()
+    void shouldFailToAddSubscriptionOnMediaDriverError()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_ERROR,
@@ -423,7 +419,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void clientNotifiedOfNewImageShouldMapLogFile()
+    void clientNotifiedOfNewImageShouldMapLogFile()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_SUBSCRIPTION_READY,
@@ -448,7 +444,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void clientNotifiedOfNewAndInactiveImages()
+    void clientNotifiedOfNewAndInactiveImages()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_SUBSCRIPTION_READY,
@@ -481,7 +477,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldIgnoreUnknownNewImage()
+    void shouldIgnoreUnknownNewImage()
     {
         conductor.onAvailableImage(
             CORRELATION_ID_2,
@@ -496,7 +492,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldIgnoreUnknownInactiveImage()
+    void shouldIgnoreUnknownInactiveImage()
     {
         conductor.onUnavailableImage(CORRELATION_ID_2, SUBSCRIPTION_POSITION_REGISTRATION_ID);
 
@@ -505,7 +501,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldTimeoutInterServiceIfTooLongBetweenDoWorkCalls()
+    void shouldTimeoutInterServiceIfTooLongBetweenDoWorkCalls()
     {
         suppressPrintError = true;
 
@@ -521,7 +517,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldTerminateAndErrorOnClientTimeoutFromDriver()
+    void shouldTerminateAndErrorOnClientTimeoutFromDriver()
     {
         suppressPrintError = true;
 
@@ -546,7 +542,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldNotCloseAndErrorOnClientTimeoutForAnotherClientIdFromDriver()
+    void shouldNotCloseAndErrorOnClientTimeoutForAnotherClientIdFromDriver()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_CLIENT_TIMEOUT,
@@ -564,7 +560,7 @@ public class ClientConductorTest
         assertFalse(conductor.isClosed());
     }
 
-    private void whenReceiveBroadcastOnMessage(
+    void whenReceiveBroadcastOnMessage(
         final int msgTypeId, final MutableDirectBuffer buffer, final ToIntFunction<MutableDirectBuffer> filler)
     {
         doAnswer(

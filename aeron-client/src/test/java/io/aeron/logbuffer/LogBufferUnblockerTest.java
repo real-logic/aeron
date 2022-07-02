@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
-public class LogBufferUnblockerTest
+class LogBufferUnblockerTest
 {
     private static final int TERM_LENGTH = TERM_MIN_LENGTH;
     private static final int TERM_ID_1 = 1;
@@ -39,7 +39,7 @@ public class LogBufferUnblockerTest
     private final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(TERM_LENGTH);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         initialTermId(logMetaDataBuffer, TERM_ID_1);
 
@@ -58,7 +58,7 @@ public class LogBufferUnblockerTest
     }
 
     @Test
-    public void shouldNotUnblockWhenPositionHasCompleteMessage()
+    void shouldNotUnblockWhenPositionHasCompleteMessage()
     {
         final int blockedOffset = HEADER_LENGTH * 4;
         final long blockedPosition = computePosition(TERM_ID_1, blockedOffset, positionBitsToShift, TERM_ID_1);
@@ -73,7 +73,7 @@ public class LogBufferUnblockerTest
     }
 
     @Test
-    public void shouldUnblockWhenPositionHasNonCommittedMessageAndTailWithinTerm()
+    void shouldUnblockWhenPositionHasNonCommittedMessageAndTailWithinTerm()
     {
         final int blockedOffset = HEADER_LENGTH * 4;
         final int messageLength = HEADER_LENGTH * 4;
@@ -91,7 +91,7 @@ public class LogBufferUnblockerTest
     }
 
     @Test
-    public void shouldUnblockWhenPositionHasNonCommittedMessageAndTailAtEndOfTerm()
+    void shouldUnblockWhenPositionHasNonCommittedMessageAndTailAtEndOfTerm()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int blockedOffset = TERM_LENGTH - messageLength;
@@ -113,7 +113,7 @@ public class LogBufferUnblockerTest
     }
 
     @Test
-    public void shouldUnblockWhenPositionHasCommittedMessageAndTailAtEndOfTermButNotRotated()
+    void shouldUnblockWhenPositionHasCommittedMessageAndTailAtEndOfTermButNotRotated()
     {
         final long blockedPosition = TERM_LENGTH;
 
@@ -134,7 +134,7 @@ public class LogBufferUnblockerTest
     }
 
     @Test
-    public void shouldUnblockWhenPositionHasNonCommittedMessageAndTailPastEndOfTerm()
+    void shouldUnblockWhenPositionHasNonCommittedMessageAndTailPastEndOfTerm()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int blockedOffset = TERM_LENGTH - messageLength;

@@ -22,31 +22,31 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ChannelUriStringBuilderTest
+class ChannelUriStringBuilderTest
 {
     @Test
-    public void shouldValidateMedia()
+    void shouldValidateMedia()
     {
         assertThrows(IllegalStateException.class,
             () -> new ChannelUriStringBuilder().validate());
     }
 
     @Test
-    public void shouldValidateEndpointOrControl()
+    void shouldValidateEndpointOrControl()
     {
         assertThrows(IllegalStateException.class,
             () -> new ChannelUriStringBuilder().media("udp").validate());
     }
 
     @Test
-    public void shouldValidateInitialPosition()
+    void shouldValidateInitialPosition()
     {
         assertThrows(IllegalStateException.class,
             () -> new ChannelUriStringBuilder().media("udp").endpoint("address:port").termId(999).validate());
     }
 
     @Test
-    public void shouldGenerateBasicIpcChannel()
+    void shouldGenerateBasicIpcChannel()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("ipc");
@@ -55,7 +55,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldGenerateBasicUdpChannel()
+    void shouldGenerateBasicUdpChannel()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
@@ -65,7 +65,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldGenerateBasicUdpChannelSpy()
+    void shouldGenerateBasicUdpChannelSpy()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .prefix("aeron-spy")
@@ -76,7 +76,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldGenerateComplexUdpChannel()
+    void shouldGenerateComplexUdpChannel()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
@@ -88,7 +88,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldGenerateReplayUdpChannel()
+    void shouldGenerateReplayUdpChannel()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
@@ -104,7 +104,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldGenerateChannelWithSocketParameters()
+    void shouldGenerateChannelWithSocketParameters()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
@@ -118,7 +118,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldGenerateChannelWithReceiverWindow()
+    void shouldGenerateChannelWithReceiverWindow()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
@@ -131,7 +131,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldGenerateChannelWithLingerTimeout()
+    void shouldGenerateChannelWithLingerTimeout()
     {
         final Long lingerNs = 987654321123456789L;
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
@@ -145,7 +145,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldGenerateChannelWithoutLingerTimeoutIfNullIsPassed()
+    void shouldGenerateChannelWithoutLingerTimeoutIfNullIsPassed()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
@@ -159,7 +159,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldRejectNegativeLingerTimeout()
+    void shouldRejectNegativeLingerTimeout()
     {
         final IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
@@ -169,7 +169,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldCopyLingerTimeoutFromChannelUriHumanForm()
+    void shouldCopyLingerTimeoutFromChannelUriHumanForm()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
         builder.linger(ChannelUri.parse("aeron:ipc?linger=7200s"));
@@ -178,7 +178,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldCopyLingerTimeoutFromChannelUriNanoseconds()
+    void shouldCopyLingerTimeoutFromChannelUriNanoseconds()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
         builder.linger(ChannelUri.parse("aeron:udp?linger=19191919191919191"));
@@ -187,7 +187,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldCopyLingerTimeoutFromChannelUriNoValue()
+    void shouldCopyLingerTimeoutFromChannelUriNoValue()
     {
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
         builder.linger(ChannelUri.parse("aeron:udp?endpoint=localhost:8080"));
@@ -196,7 +196,7 @@ public class ChannelUriStringBuilderTest
     }
 
     @Test
-    public void shouldCopyLingerTimeoutFromChannelUriNegativeValue()
+    void shouldCopyLingerTimeoutFromChannelUriNegativeValue()
     {
         final ChannelUri channelUri = ChannelUri.parse("aeron:udp?linger=-1000");
         assertThrows(IllegalArgumentException.class, () -> new ChannelUriStringBuilder().linger(channelUri));

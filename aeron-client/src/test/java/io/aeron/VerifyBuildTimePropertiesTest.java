@@ -21,7 +21,7 @@ import org.junit.jupiter.api.condition.JRE;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class VerifyBuildTimePropertiesTest
+class VerifyBuildTimePropertiesTest
 {
     private static final String BUILD_JAVA_VERSION_ENV_VAR = "BUILD_JAVA_VERSION";
 

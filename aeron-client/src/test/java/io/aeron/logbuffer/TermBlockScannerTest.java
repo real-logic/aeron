@@ -29,18 +29,18 @@ import static org.mockito.Mockito.when;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.lengthOffset;
 
-public class TermBlockScannerTest
+class TermBlockScannerTest
 {
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
     @BeforeEach
-    public void before()
+    void before()
     {
         when(termBuffer.capacity()).thenReturn(LogBufferDescriptor.TERM_MIN_LENGTH);
     }
 
     @Test
-    public void shouldScanEmptyBuffer()
+    void shouldScanEmptyBuffer()
     {
         final int offset = 0;
         final int limit = termBuffer.capacity();
@@ -50,7 +50,7 @@ public class TermBlockScannerTest
     }
 
     @Test
-    public void shouldReadFirstMessage()
+    void shouldReadFirstMessage()
     {
         final int offset = 0;
         final int limit = termBuffer.capacity();
@@ -65,7 +65,7 @@ public class TermBlockScannerTest
     }
 
     @Test
-    public void shouldReadBlockOfTwoMessages()
+    void shouldReadBlockOfTwoMessages()
     {
         final int offset = 0;
         final int limit = termBuffer.capacity();
@@ -82,7 +82,7 @@ public class TermBlockScannerTest
     }
 
     @Test
-    public void shouldReadBlockOfThreeMessagesThatFillBuffer()
+    void shouldReadBlockOfThreeMessagesThatFillBuffer()
     {
         final int offset = 0;
         final int limit = termBuffer.capacity();
@@ -102,7 +102,7 @@ public class TermBlockScannerTest
     }
 
     @Test
-    public void shouldReadBlockOfTwoMessagesBecauseOfLimit()
+    void shouldReadBlockOfTwoMessagesBecauseOfLimit()
     {
         final int offset = 0;
         final int messageLength = 50;
@@ -121,7 +121,7 @@ public class TermBlockScannerTest
     }
 
     @Test
-    public void shouldFailToReadFirstMessageBecauseOfLimit()
+    void shouldFailToReadFirstMessageBecauseOfLimit()
     {
         final int offset = 0;
         final int messageLength = 50;
@@ -136,7 +136,7 @@ public class TermBlockScannerTest
     }
 
     @Test
-    public void shouldReadOneMessageOnLimit()
+    void shouldReadOneMessageOnLimit()
     {
         final int offset = 0;
         final int messageLength = 50;
@@ -150,7 +150,7 @@ public class TermBlockScannerTest
     }
 
     @Test
-    public void shouldReadBlockOfOneMessageThenPadding()
+    void shouldReadBlockOfOneMessageThenPadding()
     {
         final int offset = 0;
         final int limit = termBuffer.capacity();

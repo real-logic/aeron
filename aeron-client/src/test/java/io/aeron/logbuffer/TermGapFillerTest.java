@@ -28,7 +28,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TermGapFillerTest
+class TermGapFillerTest
 {
     private static final int INITIAL_TERM_ID = 11;
     private static final int TERM_ID = 22;
@@ -40,14 +40,14 @@ public class TermGapFillerTest
     private final DataHeaderFlyweight dataFlyweight = new DataHeaderFlyweight(termBuffer);
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         initialTermId(metaDataBuffer, INITIAL_TERM_ID);
         storeDefaultFrameHeader(metaDataBuffer, createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID));
     }
 
     @Test
-    public void shouldFillGapAtBeginningOfTerm()
+    void shouldFillGapAtBeginningOfTerm()
     {
         final int gapOffset = 0;
         final int gapLength = 64;
@@ -64,7 +64,7 @@ public class TermGapFillerTest
     }
 
     @Test
-    public void shouldNotOverwriteExistingFrame()
+    void shouldNotOverwriteExistingFrame()
     {
         final int gapOffset = 0;
         final int gapLength = 64;
@@ -75,7 +75,7 @@ public class TermGapFillerTest
     }
 
     @Test
-    public void shouldFillGapAfterExistingFrame()
+    void shouldFillGapAfterExistingFrame()
     {
         final int gapOffset = 128;
         final int gapLength = 64;
@@ -100,7 +100,7 @@ public class TermGapFillerTest
     }
 
     @Test
-    public void shouldFillGapBetweenExistingFrames()
+    void shouldFillGapBetweenExistingFrames()
     {
         final int gapOffset = 128;
         final int gapLength = 64;
@@ -137,7 +137,7 @@ public class TermGapFillerTest
     }
 
     @Test
-    public void shouldFillGapAtEndOfTerm()
+    void shouldFillGapAtEndOfTerm()
     {
         final int gapOffset = termBuffer.capacity() - 64;
         final int gapLength = 64;

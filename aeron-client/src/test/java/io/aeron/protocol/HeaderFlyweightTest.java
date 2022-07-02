@@ -19,10 +19,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class HeaderFlyweightTest
+class HeaderFlyweightTest
 {
     @Test
-    public void shouldConvertFlags()
+    void shouldConvertFlags()
     {
         final short flags = 0b01101000;
 
@@ -31,7 +31,7 @@ public class HeaderFlyweightTest
     }
 
     @Test
-    public void shouldAppendFlags()
+    void shouldAppendFlags()
     {
         final short flags = 0b01100000;
         final StringBuilder builder = new StringBuilder();

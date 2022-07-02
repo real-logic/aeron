@@ -30,7 +30,7 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class PublicationTest
+class PublicationTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40124";
     private static final int STREAM_ID_1 = 1002;
@@ -53,7 +53,7 @@ public class PublicationTest
     private ConcurrentPublication publication;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when(publicationLimit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);
         when(logBuffers.duplicateTermBuffers()).thenReturn(termBuffers);
@@ -93,7 +93,7 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldEnsureThePublicationIsOpenBeforeReadingPosition()
+    void shouldEnsureThePublicationIsOpenBeforeReadingPosition()
     {
         publication.close();
         assertEquals(Publication.CLOSED, publication.position());
@@ -102,7 +102,7 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldEnsureThePublicationIsOpenBeforeOffer()
+    void shouldEnsureThePublicationIsOpenBeforeOffer()
     {
         publication.close();
         assertTrue(publication.isClosed());
@@ -110,7 +110,7 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldEnsureThePublicationIsOpenBeforeClaim()
+    void shouldEnsureThePublicationIsOpenBeforeClaim()
     {
         publication.close();
         final BufferClaim bufferClaim = new BufferClaim();
@@ -118,7 +118,7 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldReportThatPublicationHasNotBeenConnectedYet()
+    void shouldReportThatPublicationHasNotBeenConnectedYet()
     {
         when(publicationLimit.getVolatile()).thenReturn(0L);
         isConnected(logMetaDataBuffer, false);
@@ -126,26 +126,26 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldReportThatPublicationHasBeenConnectedYet()
+    void shouldReportThatPublicationHasBeenConnectedYet()
     {
         isConnected(logMetaDataBuffer, true);
         assertTrue(publication.isConnected());
     }
 
     @Test
-    public void shouldReportInitialPosition()
+    void shouldReportInitialPosition()
     {
         assertEquals(0L, publication.position());
     }
 
     @Test
-    public void shouldReportMaxMessageLength()
+    void shouldReportMaxMessageLength()
     {
         assertEquals(FrameDescriptor.computeMaxMessageLength(TERM_MIN_LENGTH), publication.maxMessageLength());
     }
 
     @Test
-    public void shouldRemovePublicationOnClose()
+    void shouldRemovePublicationOnClose()
     {
         publication.close();
 

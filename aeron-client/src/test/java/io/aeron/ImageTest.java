@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-public class ImageTest
+class ImageTest
 {
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
@@ -73,7 +73,7 @@ public class ImageTest
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         dataHeader.wrap(rcvBuffer);
 
@@ -90,7 +90,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldHandleClosedImage()
+    void shouldHandleClosedImage()
     {
         final Image image = createImage();
 
@@ -102,7 +102,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldAllowValidPosition()
+    void shouldAllowValidPosition()
     {
         final Image image = createImage();
         final long expectedPosition = TERM_BUFFER_LENGTH - 32;
@@ -115,7 +115,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldNotAdvancePastEndOfTerm()
+    void shouldNotAdvancePastEndOfTerm()
     {
         final Image image = createImage();
         final long expectedPosition = TERM_BUFFER_LENGTH - 32;
@@ -127,7 +127,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldReportCorrectPositionOnReception()
+    void shouldReportCorrectPositionOnReception()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         position.setOrdered(initialPosition);
@@ -150,7 +150,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldReportCorrectPositionOnReceptionWithNonZeroPositionInInitialTermId()
+    void shouldReportCorrectPositionOnReceptionWithNonZeroPositionInInitialTermId()
     {
         final int initialMessageIndex = 5;
         final int initialTermOffset = offsetForFrame(initialMessageIndex);
@@ -177,7 +177,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNonInitialTermId()
+    void shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNonInitialTermId()
     {
         final int activeTermId = INITIAL_TERM_ID + 1;
         final int initialMessageIndex = 5;
@@ -205,7 +205,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollNoFragmentsToControlledFragmentHandler()
+    void shouldPollNoFragmentsToControlledFragmentHandler()
     {
         final Image image = createImage();
         final int fragmentsRead = image.controlledPoll(mockControlledFragmentHandler, Integer.MAX_VALUE);
@@ -217,7 +217,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollOneFragmentToControlledFragmentHandlerOnContinue()
+    void shouldPollOneFragmentToControlledFragmentHandlerOnContinue()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         position.setOrdered(initialPosition);
@@ -239,7 +239,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldUpdatePositionOnRethrownExceptionInControlledPoll()
+    void shouldUpdatePositionOnRethrownExceptionInControlledPoll()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         position.setOrdered(initialPosition);
@@ -270,7 +270,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldUpdatePositionOnRethrownExceptionInPoll()
+    void shouldUpdatePositionOnRethrownExceptionInPoll()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         position.setOrdered(initialPosition);
@@ -301,7 +301,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldNotPollOneFragmentToControlledFragmentHandlerOnAbort()
+    void shouldNotPollOneFragmentToControlledFragmentHandlerOnAbort()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         position.setOrdered(initialPosition);
@@ -322,7 +322,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollOneFragmentToControlledFragmentHandlerOnBreak()
+    void shouldPollOneFragmentToControlledFragmentHandlerOnBreak()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         position.setOrdered(initialPosition);
@@ -345,7 +345,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollFragmentsToControlledFragmentHandlerOnCommit()
+    void shouldPollFragmentsToControlledFragmentHandlerOnCommit()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         position.setOrdered(initialPosition);
@@ -372,7 +372,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldUpdatePositionToEndOfCommittedFragmentOnCommit()
+    void shouldUpdatePositionToEndOfCommittedFragmentOnCommit()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         position.setOrdered(initialPosition);
@@ -412,7 +412,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollFragmentsToControlledFragmentHandlerOnContinue()
+    void shouldPollFragmentsToControlledFragmentHandlerOnContinue()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         position.setOrdered(initialPosition);
@@ -437,7 +437,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithMaxPositionBeforeInitialPosition()
+    void shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithMaxPositionBeforeInitialPosition()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         final long maxPosition = initialPosition - HEADER_LENGTH;
@@ -461,7 +461,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithInitialOffsetNotZero()
+    void shouldPollFragmentsToBoundedControlledFragmentHandlerWithInitialOffsetNotZero()
     {
         final long initialPosition = computePosition(
             INITIAL_TERM_ID, offsetForFrame(1), POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
@@ -486,7 +486,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionBeforeNextMessage()
+    void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionBeforeNextMessage()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         final long maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
@@ -511,7 +511,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionBeforeNextMessage()
+    void shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionBeforeNextMessage()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         final long maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
@@ -532,7 +532,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAfterEndOfTerm()
+    void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAfterEndOfTerm()
     {
         final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
         final long initialPosition = computePosition(
@@ -559,7 +559,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAboveIntMaxValue()
+    void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAboveIntMaxValue()
     {
         final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
         final long initialPosition = computePosition(
@@ -586,7 +586,7 @@ public class ImageTest
     }
 
     @Test
-    public void shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionAboveIntMaxValue()
+    void shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionAboveIntMaxValue()
     {
         final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
         final long initialPosition = computePosition(

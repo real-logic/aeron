@@ -29,7 +29,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DriverProxyTest
+class DriverProxyTest
 {
     public static final String CHANNEL = "aeron:udp?interface=localhost:40123|endpoint=localhost:40124";
 
@@ -41,13 +41,13 @@ public class DriverProxyTest
     private final DriverProxy conductor = new DriverProxy(conductorBuffer, CLIENT_ID);
 
     @Test
-    public void threadSendsAddChannelMessage()
+    void threadSendsAddChannelMessage()
     {
         threadSendsChannelMessage(() -> conductor.addPublication(CHANNEL, STREAM_ID), ADD_PUBLICATION);
     }
 
     @Test
-    public void threadSendsRemoveChannelMessage()
+    void threadSendsRemoveChannelMessage()
     {
         conductor.removePublication(CORRELATION_ID);
         assertReadsOneMessage(
@@ -58,6 +58,23 @@ public class DriverProxyTest
 
                 assertEquals(REMOVE_PUBLICATION, msgTypeId);
                 assertEquals(CORRELATION_ID, message.registrationId());
+            }
+        );
+    }
+
+    @Test
+    void threadSendsRemoveSubscriberMessage()
+    {
+        conductor.removeSubscription(CORRELATION_ID);
+
+        assertReadsOneMessage(
+            (msgTypeId, buffer, index, length) ->
+            {
+                final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
+                removeMessage.wrap(buffer, index);
+
+                assertEquals(REMOVE_SUBSCRIPTION, msgTypeId);
+                assertEquals(CORRELATION_ID, removeMessage.registrationId());
             }
         );
     }
@@ -75,23 +92,6 @@ public class DriverProxyTest
                 assertEquals(expectedMsgTypeId, msgTypeId);
                 assertEquals(CHANNEL, publicationMessage.channel());
                 assertEquals(STREAM_ID, publicationMessage.streamId());
-            }
-        );
-    }
-
-    @Test
-    public void threadSendsRemoveSubscriberMessage()
-    {
-        conductor.removeSubscription(CORRELATION_ID);
-
-        assertReadsOneMessage(
-            (msgTypeId, buffer, index, length) ->
-            {
-                final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
-                removeMessage.wrap(buffer, index);
-
-                assertEquals(REMOVE_SUBSCRIPTION, msgTypeId);
-                assertEquals(CORRELATION_ID, removeMessage.registrationId());
             }
         );
     }

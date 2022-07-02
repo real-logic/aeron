@@ -17,9 +17,11 @@ package io.aeron;
 
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * A {@link ControlledFragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented
@@ -116,27 +118,39 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
         {
             if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
             {
-                builder.reset().append(buffer, offset, length);
+                builder.reset()
+                    .append(buffer, offset, length)
+                    .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
             }
             else
             {
                 final int limit = builder.limit();
                 if (limit > 0)
                 {
-                    builder.append(buffer, offset, length);
-
-                    if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+                    if (offset == builder.nextTermOffset())
                     {
-                        action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
+                        builder
+                            .append(buffer, offset, length)
+                            .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
 
-                        if (Action.ABORT == action)
+                        if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                         {
-                            builder.limit(limit);
+                            final int msgLength = builder.limit();
+                            action = delegate.onFragment(builder.buffer(), 0, msgLength, header);
+
+                            if (Action.ABORT == action)
+                            {
+                                builder.limit(limit);
+                            }
+                            else
+                            {
+                                builder.reset();
+                            }
                         }
-                        else
-                        {
-                            builder.reset();
-                        }
+                    }
+                    else
+                    {
+                        builder.reset();
                     }
                 }
             }

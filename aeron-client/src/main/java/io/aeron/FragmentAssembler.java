@@ -17,10 +17,12 @@ package io.aeron;
 
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * A {@link FragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
@@ -129,19 +131,30 @@ public class FragmentAssembler implements FragmentHandler
         if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
         {
             final BufferBuilder builder = getBufferBuilder(header.sessionId());
-            builder.reset().append(buffer, offset, length);
+            builder.reset()
+                .append(buffer, offset, length)
+                .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
         }
         else
         {
             final BufferBuilder builder = builderBySessionIdMap.get(header.sessionId());
             if (null != builder && builder.limit() > 0)
             {
-                builder.append(buffer, offset, length);
-
-                if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+                if (offset == builder.nextTermOffset())
                 {
-                    final int msgLength = builder.limit();
-                    delegate.onFragment(builder.buffer(), 0, msgLength, header);
+                    builder
+                        .append(buffer, offset, length)
+                        .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+
+                    if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+                    {
+                        final int msgLength = builder.limit();
+                        delegate.onFragment(builder.buffer(), 0, msgLength, header);
+                        builder.reset();
+                    }
+                }
+                else
+                {
                     builder.reset();
                 }
             }

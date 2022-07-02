@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class FlyweightTest
+class FlyweightTest
 {
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(512);
 
@@ -41,7 +41,7 @@ public class FlyweightTest
     private final NakFlyweight decodeNakHeader = new NakFlyweight();
 
     @Test
-    public void shouldWriteCorrectValuesForGenericHeaderFields()
+    void shouldWriteCorrectValuesForGenericHeaderFields()
     {
         encodeHeader.wrap(aBuff);
 
@@ -62,7 +62,7 @@ public class FlyweightTest
     }
 
     @Test
-    public void shouldReadWhatIsWrittenToGenericHeaderFields()
+    void shouldReadWhatIsWrittenToGenericHeaderFields()
     {
         encodeHeader.wrap(aBuff);
 
@@ -78,7 +78,7 @@ public class FlyweightTest
     }
 
     @Test
-    public void shouldWriteAndReadMultipleFramesCorrectly()
+    void shouldWriteAndReadMultipleFramesCorrectly()
     {
         encodeHeader.wrap(aBuff);
 
@@ -107,7 +107,7 @@ public class FlyweightTest
     }
 
     @Test
-    public void shouldReadAndWriteDataHeaderCorrectly()
+    void shouldReadAndWriteDataHeaderCorrectly()
     {
         encodeDataHeader.wrap(aBuff);
 
@@ -131,7 +131,7 @@ public class FlyweightTest
     }
 
     @Test
-    public void shouldEncodeAndDecodeNakCorrectly()
+    void shouldEncodeAndDecodeNakCorrectly()
     {
         encodeNakHeader.wrap(aBuff);
         encodeNakHeader.version((short)1);
@@ -157,7 +157,7 @@ public class FlyweightTest
     }
 
     @Test
-    public void shouldEncodeAndDecodeChannelsCorrectly()
+    void shouldEncodeAndDecodeChannelsCorrectly()
     {
         encodePublication.wrap(aBuff, 0);
 

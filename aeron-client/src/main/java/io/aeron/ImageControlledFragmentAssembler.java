@@ -126,9 +126,7 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
             {
                 final int limit = builder.limit();
 
-                builder
-                    .append(buffer, offset, length)
-                    .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+                builder.append(buffer, offset, length);
 
                 if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                 {
@@ -142,6 +140,10 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
                     {
                         builder.reset();
                     }
+                }
+                else
+                {
+                    builder.nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
                 }
             }
             else

@@ -44,7 +44,7 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ArchiveDeleteAndRestartTest
+class ArchiveDeleteAndRestartTest
 {
     private static final int SYNC_LEVEL = 0;
     private static final int STREAM_ID = 1;
@@ -52,10 +52,10 @@ public class ArchiveDeleteAndRestartTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    public final TestWatcher randomSeedWatcher = Tests.seedWatcher(seed);
+    final TestWatcher randomSeedWatcher = Tests.seedWatcher(seed);
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private TestMediaDriver driver;
     private Archive archive;
@@ -64,9 +64,8 @@ public class ArchiveDeleteAndRestartTest
     private Archive.Context archiveContext;
 
     @BeforeEach
-    public void before()
+    void before()
     {
-
         final Random rnd = new Random();
         rnd.setSeed(seed);
 
@@ -103,14 +102,14 @@ public class ArchiveDeleteAndRestartTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(client, archive, driver);
     }
 
     @InterruptAfter(10)
     @Test
-    public void recordAndReplayExclusivePublication()
+    void recordAndReplayExclusivePublication()
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
         buffer.setMemory(0, buffer.capacity(), (byte)'z');

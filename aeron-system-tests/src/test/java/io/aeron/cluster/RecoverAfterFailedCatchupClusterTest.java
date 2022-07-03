@@ -37,12 +37,12 @@ import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
-public class RecoverAfterFailedCatchupClusterTest
+class RecoverAfterFailedCatchupClusterTest
 {
     private static ClusterInstrumentor clusterInstrumentor;
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeAll
     static void beforeAll()
@@ -50,8 +50,6 @@ public class RecoverAfterFailedCatchupClusterTest
         clusterInstrumentor = new ClusterInstrumentor(
             FailFirstFollowerCatchup.class, "Election", "state");
     }
-
-    private TestCluster cluster = null;
 
     @BeforeEach
     void setUp()
@@ -77,9 +75,9 @@ public class RecoverAfterFailedCatchupClusterTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldCatchupFromEmptyLog()
+    void shouldCatchupFromEmptyLog()
     {
-        cluster = aCluster().withStaticNodes(3).start();
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
         systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("For catchup failure"));
         systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("failed to join catchup log"));

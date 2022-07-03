@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class UntetheredSubscriptionTest
+class UntetheredSubscriptionTest
 {
     private static List<String> channels()
     {
@@ -58,7 +58,7 @@ public class UntetheredSubscriptionTest
     private static final int MESSAGE_LENGTH = 512 - DataHeaderFlyweight.HEADER_LENGTH;
 
     @RegisterExtension
-    public final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
@@ -74,7 +74,7 @@ public class UntetheredSubscriptionTest
         .useConductorAgentInvoker(true));
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeron, driver);
         driver.context().deleteDirectory();
@@ -83,7 +83,7 @@ public class UntetheredSubscriptionTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldBecomeUnavailableWhenNotKeepingUp(final String channel)
+    void shouldBecomeUnavailableWhenNotKeepingUp(final String channel)
     {
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
         final AtomicBoolean unavailableCalled = new AtomicBoolean();
@@ -139,7 +139,7 @@ public class UntetheredSubscriptionTest
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
-    public void shouldRejoinAfterResting(final String channel)
+    void shouldRejoinAfterResting(final String channel)
     {
         final AtomicInteger unavailableImageCount = new AtomicInteger();
         final AtomicInteger availableImageCount = new AtomicInteger();

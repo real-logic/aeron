@@ -47,7 +47,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class BasicArchiveTest
+class BasicArchiveTest
 {
     private static final String RECORDED_CHANNEL_ALIAS = "named-log";
     private static final int RECORDED_STREAM_ID = 33;
@@ -70,7 +70,7 @@ public class BasicArchiveTest
     private AeronArchive aeronArchive;
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private File archiveDir;
 
@@ -117,14 +117,14 @@ public class BasicArchiveTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
     }
 
     @Test
     @InterruptAfter(10)
-    public void shouldRecordThenReplayThenTruncate()
+    void shouldRecordThenReplayThenTruncate()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -203,7 +203,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void jumboRecordingDescriptorEndToEndTest()
+    void jumboRecordingDescriptorEndToEndTest()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -269,7 +269,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void purgeRecording()
+    void purgeRecording()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -349,7 +349,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void purgeRecordingFailsIfRecordingIsActive()
+    void purgeRecordingFailsIfRecordingIsActive()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -409,7 +409,7 @@ public class BasicArchiveTest
     @Test
     @InterruptAfter(10)
     @SuppressWarnings("try")
-    public void purgeRecordingFailsIfThereAreActiveReplays()
+    void purgeRecordingFailsIfThereAreActiveReplays()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -472,7 +472,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRecordReplayAndCancelReplayEarly()
+    void shouldRecordReplayAndCancelReplayEarly()
     {
         final String messagePrefix = "Message-Prefix-";
         final long stopPosition;
@@ -513,7 +513,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplayRecordingFromLateJoinPosition()
+    void shouldReplayRecordingFromLateJoinPosition()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -550,7 +550,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldFindLastMatchingRecordingIdWithFullUri()
+    void shouldFindLastMatchingRecordingIdWithFullUri()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -581,7 +581,7 @@ public class BasicArchiveTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReturnNullValueWithFindLastMatchingRecordingIdDoesNotFindTheRecording()
+    void shouldReturnNullValueWithFindLastMatchingRecordingIdDoesNotFindTheRecording()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;

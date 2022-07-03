@@ -37,7 +37,7 @@ import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
-public class StalledLeaderLogReplicationClusterTest
+class StalledLeaderLogReplicationClusterTest
 {
     private static ClusterInstrumentor clusterInstrumentor;
 
@@ -55,7 +55,7 @@ public class StalledLeaderLogReplicationClusterTest
     }
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     public static class StallLeaderLogReplicationIntercept
     {

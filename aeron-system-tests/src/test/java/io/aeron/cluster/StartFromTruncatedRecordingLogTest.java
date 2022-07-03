@@ -46,12 +46,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
 @ExtendWith({ InterruptingTestCallback.class, EventLogExtension.class })
-public class StartFromTruncatedRecordingLogTest
+class StartFromTruncatedRecordingLogTest
 {
     private static final int MESSAGE_COUNT = 10;
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private final MutableInteger responseCount = new MutableInteger();
     private TestCluster cluster;
@@ -65,7 +65,7 @@ public class StartFromTruncatedRecordingLogTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws IOException
+    void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws IOException
     {
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);

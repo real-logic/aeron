@@ -41,7 +41,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 class ErrorHandlerTest
 {
     @RegisterExtension
-    public final SystemTestWatcher watcher = new SystemTestWatcher();
+    final SystemTestWatcher watcher = new SystemTestWatcher();
 
     private final MediaDriver.Context context = new MediaDriver.Context();
     {

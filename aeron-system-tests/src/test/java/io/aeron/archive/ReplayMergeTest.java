@@ -49,7 +49,7 @@ import static io.aeron.archive.codecs.SourceLocation.REMOTE;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ReplayMergeTest
+class ReplayMergeTest
 {
     private static final String MESSAGE_PREFIX = "Message-Prefix-";
     private static final int MIN_MESSAGES_PER_TERM =
@@ -117,10 +117,10 @@ public class ReplayMergeTest
         });
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
-    public void before()
+    void before()
     {
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
@@ -160,7 +160,7 @@ public class ReplayMergeTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         if (receivedMessageCount.get() != MIN_MESSAGES_PER_TERM * 6L)
         {
@@ -174,7 +174,7 @@ public class ReplayMergeTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldMergeFromReplayToLive()
+    void shouldMergeFromReplayToLive()
     {
         try (Publication publication = aeron.addPublication(publicationChannel, STREAM_ID))
         {

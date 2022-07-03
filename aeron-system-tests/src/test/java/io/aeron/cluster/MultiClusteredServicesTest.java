@@ -39,10 +39,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MultiClusteredServicesTest
+class MultiClusteredServicesTest
 {
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     final AtomicLong serviceAMessageCount = new AtomicLong(0);
     final AtomicLong serviceBMessageCount = new AtomicLong(0);
@@ -82,7 +82,7 @@ public class MultiClusteredServicesTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldSupportMultipleServicesPerNode()
+    void shouldSupportMultipleServicesPerNode()
     {
         final List<TestCluster.NodeContext> nodeContexts = new ArrayList<>();
         final List<TestCluster.ServiceContext> serviceContexts = new ArrayList<>();

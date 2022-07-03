@@ -55,7 +55,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ReplicateRecordingTest
+class ReplicateRecordingTest
 {
     private static final int SRC_CONTROL_STREAM_ID = AeronArchive.Configuration.CONTROL_STREAM_ID_DEFAULT;
     private static final String SRC_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8090";
@@ -83,10 +83,10 @@ public class ReplicateRecordingTest
     private AeronArchive dstAeronArchive;
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
-    public void before()
+    void before()
     {
         final String srcAeronDirectoryName = generateRandomDirName();
         final String dstAeronDirectoryName = generateRandomDirName();
@@ -168,7 +168,7 @@ public class ReplicateRecordingTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(
             srcAeronArchive,
@@ -182,7 +182,7 @@ public class ReplicateRecordingTest
     }
 
     @Test
-    public void shouldThrowExceptionWhenDstRecordingIdUnknown()
+    void shouldThrowExceptionWhenDstRecordingIdUnknown()
     {
         final long unknownId = 7L;
         try
@@ -202,7 +202,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldThrowExceptionWhenSrcRecordingIdUnknown()
+    void shouldThrowExceptionWhenSrcRecordingIdUnknown()
     {
         final long unknownId = 7L;
         final ControlEventListener listener = mock(ControlEventListener.class);
@@ -225,7 +225,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplicateStoppedRecording()
+    void shouldReplicateStoppedRecording()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -267,7 +267,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplicateStoppedRecordingsConcurrently()
+    void shouldReplicateStoppedRecordingsConcurrently()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -321,7 +321,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplicateLiveWithoutMergingRecording()
+    void shouldReplicateLiveWithoutMergingRecording()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -365,7 +365,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplicateLiveRecordingAndStopAtSpecifiedPosition()
+    void shouldReplicateLiveRecordingAndStopAtSpecifiedPosition()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -421,7 +421,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplicateMoreThanOnce()
+    void shouldReplicateMoreThanOnce()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -475,7 +475,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplicateSyncedRecording()
+    void shouldReplicateSyncedRecording()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -518,7 +518,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplicateLiveRecordingAndMerge()
+    void shouldReplicateLiveRecordingAndMerge()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -562,7 +562,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplicateLiveRecordingAndMergeBeforeDataFlows()
+    void shouldReplicateLiveRecordingAndMergeBeforeDataFlows()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -601,7 +601,7 @@ public class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldReplicateLiveRecordingAndMergeWhileFollowingWithTaggedSubscription()
+    void shouldReplicateLiveRecordingAndMergeWhileFollowingWithTaggedSubscription()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;

@@ -37,7 +37,6 @@ import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestWatcher;
@@ -58,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ArchiveSystemTest
+class ArchiveSystemTest
 {
     private static Stream<Arguments> threadingModes()
     {
@@ -82,10 +81,10 @@ public class ArchiveSystemTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    public final TestWatcher randomSeedWatcher = Tests.seedWatcher(seed);
+    final TestWatcher randomSeedWatcher = Tests.seedWatcher(seed);
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private long controlSessionId;
     private String publishUri;
@@ -176,13 +175,8 @@ public class ArchiveSystemTest
             .build();
     }
 
-    @BeforeEach
-    void setUp()
-    {
-    }
-
     @AfterEach
-    public void after() throws Exception
+    void after() throws Exception
     {
         try
         {
@@ -207,7 +201,7 @@ public class ArchiveSystemTest
     @ParameterizedTest
     @MethodSource("threadingModes")
     @InterruptAfter(10)
-    public void recordAndReplayExclusivePublication(
+    void recordAndReplayExclusivePublication(
         final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
         before(threadingMode, archiveThreadingMode);
@@ -245,7 +239,7 @@ public class ArchiveSystemTest
     @ParameterizedTest
     @MethodSource("threadingModes")
     @InterruptAfter(10)
-    public void replayExclusivePublicationWhileRecording(
+    void replayExclusivePublicationWhileRecording(
         final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
         before(threadingMode, archiveThreadingMode);
@@ -287,7 +281,7 @@ public class ArchiveSystemTest
     @ParameterizedTest
     @MethodSource("threadingModes")
     @InterruptAfter(10)
-    public void recordAndReplayConcurrentPublication(
+    void recordAndReplayConcurrentPublication(
         final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
         before(threadingMode, archiveThreadingMode);

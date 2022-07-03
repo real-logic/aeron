@@ -30,16 +30,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class AppointedLeaderTest
+class AppointedLeaderTest
 {
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private static final int LEADER_ID = 1;
 
     @Test
     @InterruptAfter(20)
-    public void shouldConnectAndSendKeepAlive()
+    void shouldConnectAndSendKeepAlive()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start();
         systemTestWatcher.cluster(cluster);
@@ -54,7 +54,7 @@ public class AppointedLeaderTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldEchoMessagesViaService()
+    void shouldEchoMessagesViaService()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).withAppointedLeader(LEADER_ID).start();
         systemTestWatcher.cluster(cluster);

@@ -27,14 +27,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ServiceIpcIngressTest
+class ServiceIpcIngressTest
 {
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(20)
-    public void shouldEchoIpcMessages()
+    void shouldEchoIpcMessages()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);

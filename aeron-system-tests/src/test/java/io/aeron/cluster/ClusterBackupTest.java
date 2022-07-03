@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
 @ExtendWith(InterruptingTestCallback.class)
-public class ClusterBackupTest
+class ClusterBackupTest
 {
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
@@ -49,7 +49,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBackupClusterNoSnapshotsAndEmptyLog()
+    void shouldBackupClusterNoSnapshotsAndEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -70,7 +70,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLog()
+    void shouldBackupClusterNoSnapshotsAndNonEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -100,7 +100,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBackupClusterNoSnapshotsAndThenSendMessages()
+    void shouldBackupClusterNoSnapshotsAndThenSendMessages()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -130,7 +130,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBackupClusterWithSnapshot()
+    void shouldBackupClusterWithSnapshot()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -163,7 +163,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBackupClusterAfterCleanShutdown()
+    void shouldBackupClusterAfterCleanShutdown()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -200,7 +200,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBackupClusterWithSnapshotAndNonEmptyLog()
+    void shouldBackupClusterWithSnapshotAndNonEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -240,7 +240,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBackupClusterWithSnapshotThenSend()
+    void shouldBackupClusterWithSnapshotThenSend()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -280,7 +280,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBeAbleToGetTimeOfNextBackupQuery()
+    void shouldBeAbleToGetTimeOfNextBackupQuery()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -296,7 +296,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery()
+    void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -334,7 +334,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(40)
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure()
+    void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -366,7 +366,7 @@ public class ClusterBackupTest
 
     @Test
     @InterruptAfter(60)
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure()
+    void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);

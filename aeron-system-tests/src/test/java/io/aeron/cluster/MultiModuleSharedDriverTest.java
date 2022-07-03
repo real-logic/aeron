@@ -44,15 +44,15 @@ import java.io.File;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MultiModuleSharedDriverTest
+class MultiModuleSharedDriverTest
 {
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(20)
     @SuppressWarnings({ "try", "methodlength"})
-    public void shouldSupportTwoSingleNodeClusters()
+    void shouldSupportTwoSingleNodeClusters()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
@@ -152,7 +152,7 @@ public class MultiModuleSharedDriverTest
 
     @Test
     @InterruptAfter(30)
-    public void shouldSupportTwoMultiNodeClusters()
+    void shouldSupportTwoMultiNodeClusters()
     {
         try (MultiClusterNode node0 = new MultiClusterNode(0, systemTestWatcher.dataCollector());
             MultiClusterNode node1 = new MultiClusterNode(1, systemTestWatcher.dataCollector()))

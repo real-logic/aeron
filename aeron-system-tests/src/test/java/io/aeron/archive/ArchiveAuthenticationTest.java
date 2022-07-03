@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ArchiveAuthenticationTest
+class ArchiveAuthenticationTest
 {
     private static final int RECORDED_STREAM_ID = 1033;
     private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
@@ -72,7 +72,7 @@ public class ArchiveAuthenticationTest
     private final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
     void setUp()
@@ -80,14 +80,14 @@ public class ArchiveAuthenticationTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(aeronArchive, aeron, archive, driver);
     }
 
     @Test
     @InterruptAfter(10)
-    public void shouldBeAbleToRecordWithDefaultCredentialsAndAuthenticator()
+    void shouldBeAbleToRecordWithDefaultCredentialsAndAuthenticator()
     {
         launchArchivingMediaDriver(null);
         connectClient(null);
@@ -97,7 +97,7 @@ public class ArchiveAuthenticationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldBeAbleToRecordWithAuthenticateOnConnectRequestWithCredentials()
+    void shouldBeAbleToRecordWithAuthenticateOnConnectRequestWithCredentials()
     {
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
 
@@ -150,7 +150,7 @@ public class ArchiveAuthenticationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldBeAbleToRecordWithAuthenticateOnChallengeResponse()
+    void shouldBeAbleToRecordWithAuthenticateOnChallengeResponse()
     {
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
 
@@ -211,7 +211,7 @@ public class ArchiveAuthenticationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldNotBeAbleToConnectWithRejectOnConnectRequest()
+    void shouldNotBeAbleToConnectWithRejectOnConnectRequest()
     {
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
 
@@ -271,7 +271,7 @@ public class ArchiveAuthenticationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldNotBeAbleToConnectWithRejectOnChallengeResponse()
+    void shouldNotBeAbleToConnectWithRejectOnChallengeResponse()
     {
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
 
@@ -378,7 +378,6 @@ public class ArchiveAuthenticationTest
             systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
         }
     }
-
 
     private void createRecording()
     {

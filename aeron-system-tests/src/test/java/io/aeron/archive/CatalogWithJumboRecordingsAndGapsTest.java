@@ -78,7 +78,7 @@ class CatalogWithJumboRecordingsAndGapsTest
     private AeronArchive aeronArchive;
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
     void before()

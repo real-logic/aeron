@@ -28,12 +28,12 @@ import net.bytebuddy.utility.JavaModule;
 
 import java.lang.instrument.Instrumentation;
 
-public class ClusterInstrumentor
+class ClusterInstrumentor
 {
     private final ResettableClassFileTransformer resettableClassFileTransformer;
     private final Instrumentation instrumentation;
 
-    public ClusterInstrumentor(
+    ClusterInstrumentor(
         final Class<?> adviceClass,
         final String simpleClassName,
         final String methodName)
@@ -100,7 +100,7 @@ public class ClusterInstrumentor
         }
     }
 
-    public void reset()
+    void reset()
     {
         resettableClassFileTransformer.reset(instrumentation, AgentBuilder.RedefinitionStrategy.RETRANSFORMATION);
     }

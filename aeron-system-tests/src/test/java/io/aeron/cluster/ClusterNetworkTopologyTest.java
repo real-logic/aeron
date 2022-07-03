@@ -65,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TopologyTest
 @ExtendWith(InterruptingTestCallback.class)
-public class ClusterNetworkTopologyTest
+class ClusterNetworkTopologyTest
 {
     private static final int REMOTE_LAUNCH_PORT = 11112;
     private static final long CLUSTER_START_ELECTION_TIMEOUT_S = 10;
@@ -73,7 +73,7 @@ public class ClusterNetworkTopologyTest
     private static final List<String> INTERNAL_HOSTNAMES = Arrays.asList("10.42.1.10", "10.42.1.11", "10.42.1.12");
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private File baseDir;
 
@@ -360,7 +360,7 @@ public class ClusterNetworkTopologyTest
         private final CharBuffer textOutputDup = textOutput.duplicate();
         private final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
 
-        public void readChannel(final ReadableByteChannel channel) throws IOException
+        void readChannel(final ReadableByteChannel channel) throws IOException
         {
             final int read = channel.read(binaryOutput);
             if (read > 0)
@@ -381,7 +381,7 @@ public class ClusterNetworkTopologyTest
             }
         }
 
-        public boolean checkOutput(final String regexToMatch)
+        boolean checkOutput(final String regexToMatch)
         {
             final Pattern pattern = Pattern.compile(regexToMatch);
             final CharBuffer duplicate = textOutput.duplicate();

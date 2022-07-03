@@ -32,14 +32,14 @@ import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class SingleNodeTest
+class SingleNodeTest
 {
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(20)
-    public void shouldStartCluster()
+    void shouldStartCluster()
     {
         final TestCluster cluster = aCluster().withStaticNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -53,7 +53,7 @@ public class SingleNodeTest
     @ParameterizedTest
     @ValueSource(booleans = { false, true })
     @InterruptAfter(20)
-    public void shouldSendMessagesToCluster(final boolean preTouch)
+    void shouldSendMessagesToCluster(final boolean preTouch)
     {
         System.setProperty(PRE_TOUCH_MAPPED_MEMORY_PROP_NAME, Boolean.toString(preTouch));
         try
@@ -79,7 +79,7 @@ public class SingleNodeTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldReplayLog()
+    void shouldReplayLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(1).start();
         systemTestWatcher.cluster(cluster);

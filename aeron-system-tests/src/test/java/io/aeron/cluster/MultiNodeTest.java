@@ -33,14 +33,14 @@ import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MultiNodeTest
+class MultiNodeTest
 {
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(20)
-    public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot()
+    void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
 
@@ -58,7 +58,7 @@ public class MultiNodeTest
     @Test
     @InterruptAfter(20)
     @SlowTest
-    public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot()
+    void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
 
@@ -86,7 +86,7 @@ public class MultiNodeTest
     @Test
     @InterruptAfter(20)
     @SlowTest
-    public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot()
+    void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         final int appointedLeaderIndex = 1;
 

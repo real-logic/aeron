@@ -34,7 +34,7 @@ import static io.aeron.test.cluster.TestCluster.aCluster;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
-public class RacingCatchupClusterTest
+class RacingCatchupClusterTest
 {
     static final Exchanger<String> EXCHANGER = new Exchanger<>();
     private static ClusterInstrumentor clusterInstrumentor;
@@ -53,7 +53,7 @@ public class RacingCatchupClusterTest
     }
 
     @RegisterExtension
-    public final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     static void tagAndWaitForTag()
     {
@@ -92,7 +92,7 @@ public class RacingCatchupClusterTest
     @Test
     @InterruptAfter(40)
     @Disabled
-    public void shouldCatchupIfLogPositionMovesForwardBeforeFollowersCommitPositionWhenCatchingUpNodeIsOnlyFollower()
+    void shouldCatchupIfLogPositionMovesForwardBeforeFollowersCommitPositionWhenCatchingUpNodeIsOnlyFollower()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
 

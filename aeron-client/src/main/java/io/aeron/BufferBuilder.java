@@ -161,6 +161,7 @@ public final class BufferBuilder
     public BufferBuilder reset()
     {
         limit = 0;
+        nextTermOffset = 0;
         return this;
     }
 

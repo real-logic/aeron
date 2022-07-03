@@ -136,33 +136,31 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
                 final BufferBuilder builder = builderBySessionIdMap.get(header.sessionId());
                 if (null != builder)
                 {
-                    final int limit = builder.limit();
-                    if (limit > 0)
+                    if (offset == builder.nextTermOffset())
                     {
-                        if (offset == builder.nextTermOffset())
+                        final int limit = builder.limit();
+
+                        builder
+                            .append(buffer, offset, length)
+                            .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+
+                        if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                         {
-                            builder
-                                .append(buffer, offset, length)
-                                .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+                            action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
 
-                            if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+                            if (Action.ABORT == action)
                             {
-                                action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
-
-                                if (Action.ABORT == action)
-                                {
-                                    builder.limit(limit);
-                                }
-                                else
-                                {
-                                    builder.reset();
-                                }
+                                builder.limit(limit);
+                            }
+                            else
+                            {
+                                builder.reset();
                             }
                         }
-                        else
-                        {
-                            builder.reset();
-                        }
+                    }
+                    else
+                    {
+                        builder.reset();
                     }
                 }
             }

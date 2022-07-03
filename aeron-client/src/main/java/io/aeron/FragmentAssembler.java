@@ -138,7 +138,7 @@ public class FragmentAssembler implements FragmentHandler
         else
         {
             final BufferBuilder builder = builderBySessionIdMap.get(header.sessionId());
-            if (null != builder && builder.limit() > 0)
+            if (null != builder)
             {
                 if (offset == builder.nextTermOffset())
                 {

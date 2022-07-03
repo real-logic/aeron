@@ -125,24 +125,21 @@ public class ImageFragmentAssembler implements FragmentHandler
                 .append(buffer, offset, length)
                 .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
         }
-        else if (builder.limit() > 0)
+        else if (offset == builder.nextTermOffset())
         {
-            if (offset == builder.nextTermOffset())
-            {
-                builder
-                    .append(buffer, offset, length)
-                    .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+            builder
+                .append(buffer, offset, length)
+                .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
 
-                if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
-                {
-                    delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
-                    builder.reset();
-                }
-            }
-            else
+            if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
             {
+                delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
                 builder.reset();
             }
+        }
+        else
+        {
+            builder.reset();
         }
     }
 }

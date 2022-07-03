@@ -135,8 +135,7 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
 
                         if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                         {
-                            final int msgLength = builder.limit();
-                            action = delegate.onFragment(builder.buffer(), 0, msgLength, header);
+                            action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
 
                             if (Action.ABORT == action)
                             {

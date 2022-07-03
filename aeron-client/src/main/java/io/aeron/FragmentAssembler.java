@@ -148,8 +148,7 @@ public class FragmentAssembler implements FragmentHandler
 
                     if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                     {
-                        final int msgLength = builder.limit();
-                        delegate.onFragment(builder.buffer(), 0, msgLength, header);
+                        delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
                         builder.reset();
                     }
                 }

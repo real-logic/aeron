@@ -116,7 +116,6 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final byte flags = header.flags();
-
         Action action = Action.CONTINUE;
 
         if ((flags & UNFRAGMENTED) == UNFRAGMENTED)
@@ -148,8 +147,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
 
                             if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                             {
-                                final int msgLength = builder.limit();
-                                action = delegate.onFragment(builder.buffer(), 0, msgLength, header);
+                                action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
 
                                 if (Action.ABORT == action)
                                 {

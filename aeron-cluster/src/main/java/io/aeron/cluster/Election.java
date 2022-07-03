@@ -967,7 +967,7 @@ class Election
         final Image image = logSubscription.imageBySessionId(logSessionId);
         if (null != image)
         {
-            verifyLogImage(image);
+            verifyLogJoinPosition("followerCatchupAwait", image.joinPosition());
             if (consensusModuleAgent.tryJoinLogAsFollower(image, isLeaderStartup, nowNs))
             {
                 state(FOLLOWER_CATCHUP, nowNs);
@@ -1038,7 +1038,7 @@ class Election
         final Image image = logSubscription.imageBySessionId(logSessionId);
         if (null != image)
         {
-            verifyLogImage(image);
+            verifyLogJoinPosition("followerLogAwait", image.joinPosition());
             if (consensusModuleAgent.tryJoinLogAsFollower(image, isLeaderStartup, nowNs))
             {
                 appendPosition = image.joinPosition();
@@ -1430,13 +1430,12 @@ class Election
         logLeadershipTermId = leadershipTermId;
     }
 
-    private void verifyLogImage(final Image image)
+    private void verifyLogJoinPosition(final String state, final long joinPosition)
     {
-        if (image.joinPosition() != logPosition)
+        if (joinPosition != logPosition)
         {
-            throw new ClusterException(
-                "joinPosition=" + image.joinPosition() + " != logPosition=" + logPosition,
-                ClusterException.Category.WARN);
+            throw new ClusterEvent(
+                state + " - joinPosition " + (joinPosition < logPosition ? "less" : "greater") + " than logPosition");
         }
     }
 

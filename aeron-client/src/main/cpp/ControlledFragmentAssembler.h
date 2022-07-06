@@ -101,8 +101,10 @@ private:
                 auto result = m_builderBySessionIdMap.emplace(
                     header.sessionId(), BufferBuilder(static_cast<std::uint32_t>(m_initialBufferLength)));
                 BufferBuilder &builder = result.first->second;
+                auto nextOffset = BitUtil::align(
+                    offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
 
-                builder.reset().append(buffer, offset, length, header);
+                builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
             }
             else
             {
@@ -113,13 +115,14 @@ private:
                     BufferBuilder &builder = result->second;
                     const std::uint32_t limit = builder.limit();
 
-                    if (limit != DataFrameHeader::LENGTH)
+                    if (offset == builder.nextTermOffset())
                     {
                         builder.append(buffer, offset, length, header);
 
                         if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
                         {
-                            const util::index_t msgLength = builder.limit() - DataFrameHeader::LENGTH;
+                            util::index_t msgLength =
+                                static_cast<util::index_t>(builder.limit()) - DataFrameHeader::LENGTH;
                             AtomicBuffer msgBuffer(builder.buffer(), builder.limit());
 
                             action = m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
@@ -133,6 +136,16 @@ private:
                                 builder.reset();
                             }
                         }
+                        else
+                        {
+                            auto nextOffset = BitUtil::align(
+                                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+                            builder.nextTermOffset(nextOffset);
+                        }
+                    }
+                    else
+                    {
+                        builder.reset();
                     }
                 }
             }

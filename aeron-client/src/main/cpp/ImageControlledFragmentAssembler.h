@@ -83,21 +83,22 @@ private:
         {
             if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
             {
-                m_builder
-                    .reset()
-                    .append(buffer, offset, length, header);
+                auto nextOffset = BitUtil::align(
+                    offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+                m_builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
             }
             else
             {
                 const std::uint32_t limit = m_builder.limit();
 
-                if (limit != DataFrameHeader::LENGTH)
+                if (offset == m_builder.nextTermOffset())
                 {
                     m_builder.append(buffer, offset, length, header);
 
                     if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
                     {
-                        const util::index_t msgLength = m_builder.limit() - DataFrameHeader::LENGTH;
+                        util::index_t msgLength =
+                            static_cast<util::index_t>(m_builder.limit()) - DataFrameHeader::LENGTH;
                         AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
 
                         action = m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
@@ -111,6 +112,16 @@ private:
                             m_builder.reset();
                         }
                     }
+                    else
+                    {
+                        auto nextOffset = BitUtil::align(
+                            offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+                        m_builder.nextTermOffset(nextOffset);
+                    }
+                }
+                else
+                {
+                    m_builder.reset();
                 }
             }
         }

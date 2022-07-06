@@ -40,7 +40,7 @@ class FragmentAssemblerTest
     private final FragmentHandler delegateFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final Header header = spy(new Header(INITIAL_TERM_ID, LogBufferDescriptor.TERM_MIN_LENGTH));
-    private final FragmentAssembler adapter = new FragmentAssembler(delegateFragmentHandler);
+    private final FragmentAssembler assembler = new FragmentAssembler(delegateFragmentHandler);
 
     @BeforeEach
     void setUp()
@@ -57,7 +57,7 @@ class FragmentAssemblerTest
         final int offset = 8;
         final int length = 32;
 
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
 
         verify(delegateFragmentHandler, times(1)).onFragment(srcBuffer, offset, length, header);
     }
@@ -73,9 +73,9 @@ class FragmentAssemblerTest
         final int length = 512;
 
         int offset = HEADER_LENGTH;
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
         offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
 
         final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
@@ -100,13 +100,13 @@ class FragmentAssemblerTest
         final int length = 256;
 
         int offset = HEADER_LENGTH;
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
         offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
         offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
         offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
 
         final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
@@ -132,13 +132,13 @@ class FragmentAssemblerTest
         srcBuffer.setMemory(0, length, (byte)65);
         srcBuffer.setMemory(length, length, (byte)66);
 
-        assertFalse(adapter.freeSessionBuffer(SESSION_ID));
+        assertFalse(assembler.freeSessionBuffer(SESSION_ID));
 
-        adapter.onFragment(srcBuffer, offset, length, header);
-        adapter.onFragment(srcBuffer, length, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, length, length, header);
 
-        assertTrue(adapter.freeSessionBuffer(SESSION_ID));
-        assertFalse(adapter.freeSessionBuffer(SESSION_ID));
+        assertTrue(assembler.freeSessionBuffer(SESSION_ID));
+        assertFalse(assembler.freeSessionBuffer(SESSION_ID));
     }
 
     @Test
@@ -149,7 +149,7 @@ class FragmentAssemblerTest
         final int offset = 0;
         final int length = srcBuffer.capacity() / 2;
 
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
 
         verify(delegateFragmentHandler, never()).onFragment(any(), anyInt(), anyInt(), any());
     }
@@ -165,8 +165,8 @@ class FragmentAssemblerTest
         final int offset = 0;
         final int length = srcBuffer.capacity() / 2;
 
-        adapter.onFragment(srcBuffer, offset, length, header);
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
 
         verify(delegateFragmentHandler, never()).onFragment(any(), anyInt(), anyInt(), any());
     }
@@ -183,13 +183,13 @@ class FragmentAssemblerTest
         final int length = 256;
 
         int offset = HEADER_LENGTH;
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
         offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
         offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
         offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
         offset = BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT);
-        adapter.onFragment(srcBuffer, offset, length, header);
+        assembler.onFragment(srcBuffer, offset, length, header);
 
         final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 

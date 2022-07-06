@@ -78,7 +78,7 @@ int aeron_clock_gettime_realtime(struct timespec *tv)
     return 0;
 }
 
-static inline int aeron_clock_gettime_realtime_coarse(struct struct timespec *tv)
+static inline int aeron_clock_gettime_realtime_coarse(struct timespec *tv)
 {
     return aeron_clock_gettime_realtime(tv);
 }

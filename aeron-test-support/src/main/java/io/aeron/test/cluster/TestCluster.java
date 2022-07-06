@@ -796,6 +796,19 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    public void sendTerminateMessage()
+    {
+        final int length = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.TERMINATE_MSG);
+        try
+        {
+            pollUntilMessageSent(length);
+        }
+        catch (final Exception ex)
+        {
+            throw new ClusterException("failed to send message", ex);
+        }
+    }
+
     public void pollUntilMessageSent(final int messageLength)
     {
         while (true)

@@ -133,6 +133,21 @@ class ClusterTest
 
     @Test
     @InterruptAfter(30)
+    void shouldStopClusteredServicesOnAppropriateMessage()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+
+        cluster.terminationsExpected(true);
+        cluster.connectClient();
+        cluster.sendTerminateMessage();
+        cluster.awaitNodeTerminations();
+    }
+
+    @Test
+    @InterruptAfter(30)
     void shouldShutdownClusterAndRestartWithSnapshots()
     {
         cluster = aCluster().withStaticNodes(3).start();

@@ -44,6 +44,7 @@ public class ClusterTests
     public static final String UNEXPECTED_MSG =
         "Should never get this message because it is not going to be committed!";
     public static final String LARGE_MSG;
+    public static final String TERMINATE_MSG = "Please terminate the clustered service";
 
     static
     {

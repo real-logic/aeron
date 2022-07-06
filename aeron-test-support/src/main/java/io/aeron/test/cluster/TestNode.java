@@ -29,6 +29,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
@@ -433,6 +434,11 @@ public class TestNode implements AutoCloseable
             {
                 hasReceivedUnexpectedMessage = true;
                 throw new IllegalStateException("unexpected message received");
+            }
+
+            if (message.equals(ClusterTests.TERMINATE_MSG))
+            {
+                throw new ClusterTerminationException(false);
             }
 
             if (message.equals(ClusterTests.ECHO_IPC_INGRESS_MSG))

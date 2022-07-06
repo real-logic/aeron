@@ -3071,6 +3071,18 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Set the clock to be used to record channel receive timestamps.
+         *
+         * @param clock to provide ns-resolution timestamps since the epoch.
+         * @return this for a fluent API.
+         */
+        public Context channelReceiveTimestampClock(final EpochNanoClock clock)
+        {
+            channelReceiveTimestampClock = clock;
+            return this;
+        }
+
+        /**
          * Clock used record channel receive timestamps.
          *
          * @return a clock instance.
@@ -3078,6 +3090,18 @@ public final class MediaDriver implements AutoCloseable
         public EpochNanoClock channelReceiveTimestampClock()
         {
             return channelReceiveTimestampClock;
+        }
+
+        /**
+         * Set the clock to be used to record channel send timestamps.
+         *
+         * @param clock to provide ns-resolution timestamps since the epoch.
+         * @return this for a fluent API.
+         */
+        public Context channelSendTimestampClock(final EpochNanoClock clock)
+        {
+            channelSendTimestampClock = clock;
+            return this;
         }
 
         /**

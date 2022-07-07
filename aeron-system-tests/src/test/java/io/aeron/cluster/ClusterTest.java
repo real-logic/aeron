@@ -140,6 +140,10 @@ class ClusterTest
 
         final TestNode leader = cluster.awaitLeader();
 
+        TestCluster.awaitElectionClosed(leader);
+        TestCluster.awaitElectionClosed(cluster.followers().get(0));
+        TestCluster.awaitElectionClosed(cluster.followers().get(1));
+
         cluster.terminationsExpected(true);
         cluster.connectClient();
         cluster.sendTerminateMessage();

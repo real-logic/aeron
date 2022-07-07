@@ -1348,7 +1348,7 @@ public class TestCluster implements AutoCloseable
                 hostname(i) + ":2" + clusterId + "11" + i + ',' +
                 hostname(i) + ":2" + clusterId + "22" + i + ',' +
                 hostname(i) + ":2" + clusterId + "33" + i + ',' +
-                hostname(i) + ":0," +
+                hostname(i) + ":2" + clusterId + "44" + i + ',' +
                 hostname(i) + ":801" + i;
         }
 

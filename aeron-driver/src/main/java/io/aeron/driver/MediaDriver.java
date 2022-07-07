@@ -3703,6 +3703,8 @@ public final class MediaDriver implements AutoCloseable
                 "\n    lossReportBuffer=" + lossReportBuffer +
                 "\n    cncByteBuffer=" + cncByteBuffer +
                 "\n    cncMetaDataBuffer=" + cncMetaDataBuffer +
+                "\n    channelSendTimestampClock=" + channelSendTimestampClock +
+                "\n    channelReceiveTimestampClock=" + channelReceiveTimestampClock +
                 "\n}";
         }
     }

@@ -1113,9 +1113,10 @@ public class TestCluster implements AutoCloseable
 
     public void awaitNodeTermination(final TestNode node)
     {
+        final String msg = "Failed to see node=" + node.index() + " terminate";
         while (!node.hasMemberTerminated() || !node.hasServiceTerminated())
         {
-            Tests.yield();
+            Tests.yieldingIdle(msg);
         }
     }
 

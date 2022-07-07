@@ -69,11 +69,13 @@ int build_large_message(char *buf, size_t len)
         len = 2;
     }
 
-    int limit = len - 1;
+    int limit = (int)len;
     buf[0] = '\n';
-    char *current_buf = &buf[1];
+    len -= 1;
 
+    char *current_buf = &buf[1];
     int line_counter = 0;
+
     while (limit > 0)
     {
         int written = snprintf(
@@ -104,7 +106,7 @@ int main(int argc, char **argv)
     aeron_publication_t *publication = NULL;
     const char *channel = DEFAULT_CHANNEL;
     const char *aeron_dir = NULL;
-    uint64_t linger_ns = DEFAULT_LINGER_TIMEOUT_MS * 1000ul * 1000ul;
+    uint64_t linger_ns = DEFAULT_LINGER_TIMEOUT_MS * UINT64_C(1000) * UINT64_C(1000);
     uint64_t messages = DEFAULT_NUMBER_OF_MESSAGES;
     int32_t stream_id = DEFAULT_STREAM_ID;
 

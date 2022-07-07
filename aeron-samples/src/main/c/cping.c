@@ -325,7 +325,7 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
-    hdr_init(1, 10 * 1000 * 1000 * 1000LL, 3, &histogram);
+    hdr_init(1, 10 * 1000 * 1000 * INT64_C(1000), 3, &histogram);
 
     if (aeron_image_fragment_assembler_create(&fragment_assembler, pong_measuring_handler, histogram) < 0)
     {

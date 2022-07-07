@@ -38,8 +38,7 @@ typedef std::array<std::uint8_t, TERM_LENGTH> fragment_buffer_t;
 class CFragmentAssemblerTest : public testing::Test
 {
 public:
-    CFragmentAssemblerTest() :
-        m_fragment()
+    CFragmentAssemblerTest()
     {
         m_fragment.fill(0);
         m_header.frame = (aeron_data_header_t *)m_fragment.data();
@@ -101,7 +100,7 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(fragment_buffer_t m_fragment, 16);
+    AERON_DECL_ALIGNED(fragment_buffer_t m_fragment, 16) = {};
     aeron_header_t m_header = {};
     std::function<void(const uint8_t *, size_t, aeron_header_t *)> m_handler = nullptr;
     std::function<aeron_controlled_fragment_handler_action_t(const uint8_t *, size_t, aeron_header_t *)>
@@ -113,10 +112,10 @@ TEST_F(CFragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
 {
     size_t msgLength = 158;
     fillFrame(AERON_DATA_HEADER_UNFRAGMENTED, 0, msgLength, 0);
-    bool called = false;
+    bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        called = true;
+        isCalled = true;
         EXPECT_EQ(length, msgLength);
         aeron_header_values_t header_values;
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
@@ -125,16 +124,16 @@ TEST_F(CFragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
     };
 
     handle_fragment(handler, msgLength);
-    EXPECT_TRUE(called);
+    EXPECT_TRUE(isCalled);
 }
 
 TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
 {
     size_t msgLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
-    bool called = false;
+    bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        called = true;
+        isCalled = true;
         EXPECT_EQ(length, msgLength * 2);
         aeron_header_values_t header_values;
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
@@ -144,20 +143,20 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
 
     fillFrame(AERON_DATA_HEADER_BEGIN_FLAG, 0, msgLength, 0);
     handle_fragment(handler, msgLength);
-    EXPECT_FALSE(called);
+    EXPECT_FALSE(isCalled);
 
     fillFrame(AERON_DATA_HEADER_END_FLAG, 0, msgLength, msgLength % 256);
     handle_fragment(handler, msgLength);
-    EXPECT_TRUE(called);
+    EXPECT_TRUE(isCalled);
 }
 
 TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
 {
     size_t msgLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
-    bool called = false;
+    bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        called = true;
+        isCalled = true;
         EXPECT_EQ(length, msgLength * 3);
         aeron_header_values_t header_values;
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
@@ -167,45 +166,45 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
 
     fillFrame(AERON_DATA_HEADER_BEGIN_FLAG, 0, msgLength, 0);
     handle_fragment(handler, msgLength);
-    EXPECT_FALSE(called);
+    EXPECT_FALSE(isCalled);
 
     fillFrame(0, 0, msgLength, msgLength % 256);
     handle_fragment(handler, msgLength);
-    EXPECT_FALSE(called);
+    EXPECT_FALSE(isCalled);
 
     fillFrame(AERON_DATA_HEADER_END_FLAG, 0, msgLength, (msgLength * 2) % 256);
     handle_fragment(handler, msgLength);
-    EXPECT_TRUE(called);
+    EXPECT_TRUE(isCalled);
 }
 
 TEST_F(CFragmentAssemblerTest, shouldNotReassembleIfEndFirstFragment)
 {
     size_t msgLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
-    bool called = false;
+    bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        called = true;
+        isCalled = true;
     };
 
     fillFrame(AERON_DATA_HEADER_END_FLAG, 0, msgLength, 0);
     handle_fragment(handler, msgLength);
-    EXPECT_FALSE(called);
+    EXPECT_FALSE(isCalled);
 }
 
 TEST_F(CFragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
 {
     size_t msgLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
-    bool called = false;
+    bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        called = true;
+        isCalled = true;
     };
 
     fillFrame(0, 0, msgLength, 0);
     handle_fragment(handler, msgLength);
-    EXPECT_FALSE(called);
+    EXPECT_FALSE(isCalled);
 
     fillFrame(AERON_DATA_HEADER_END_FLAG, 0, msgLength, msgLength % 256);
     handle_fragment(handler, msgLength);
-    EXPECT_FALSE(called);
+    EXPECT_FALSE(isCalled);
 }

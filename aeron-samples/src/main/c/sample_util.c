@@ -63,7 +63,7 @@ void print_unavailable_image(void *clientd, aeron_subscription_t *subscription, 
 void print_rate_report(uint64_t duration_ns, double mps, double bps, uint64_t total_messages, uint64_t total_bytes)
 {
     printf("%" PRIu64 "ms, %.04g msgs/sec, %.04g bytes/sec, totals %" PRIu64 " messages %" PRIu64 " MB payloads\n",
-        duration_ns / (1000 * 1000), mps, bps, total_messages, total_bytes / (1024 * 1024));
+        duration_ns / (UINT64_C(1000) * UINT64_C(1000)), mps, bps, total_messages, total_bytes / (UINT64_C(1024) * UINT64_C(1024)));
 }
 
 int rate_reporter_do_work(void *state)
@@ -93,7 +93,7 @@ int rate_reporter_do_work(void *state)
 
 int rate_reporter_start(rate_reporter_t *reporter, on_rate_report_t on_report)
 {
-    reporter->idle_duration_ns = 1000ul * 1000ul * 1000ul;
+    reporter->idle_duration_ns = UINT64_C(1000) * UINT64_C(1000) * UINT64_C(1000);
     reporter->on_report = on_report;
     reporter->last_total_bytes = 0;
     reporter->last_total_messages = 0;

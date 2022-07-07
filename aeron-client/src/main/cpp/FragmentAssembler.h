@@ -97,9 +97,7 @@ private:
         {
             if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
             {
-                auto result = m_builderBySessionIdMap.emplace(
-                    header.sessionId(), BufferBuilder(static_cast<std::uint32_t>(m_initialBufferLength)));
-                BufferBuilder &builder = result.first->second;
+                BufferBuilder &builder = getBuffer(header.sessionId());
                 auto nextOffset = BitUtil::align(
                     offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
 
@@ -140,6 +138,21 @@ private:
                     }
                 }
             }
+        }
+    }
+
+    inline BufferBuilder &getBuffer(std::int32_t sessionId)
+    {
+        auto iter = m_builderBySessionIdMap.find(sessionId);
+        if (iter != m_builderBySessionIdMap.end())
+        {
+            return iter->second;
+        }
+        else
+        {
+            auto pair = m_builderBySessionIdMap.emplace(
+                sessionId, BufferBuilder(static_cast<std::uint32_t>(m_initialBufferLength)));
+            return pair.first->second;
         }
     }
 };

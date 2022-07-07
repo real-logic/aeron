@@ -33,7 +33,6 @@ public:
 
     explicit BufferBuilder(std::uint32_t initialLength) :
         m_capacity(BitUtil::findNextPowerOfTwo(initialLength)),
-        m_limit(static_cast<std::uint32_t>(DataFrameHeader::LENGTH)),
         m_buffer(new std::uint8_t[m_capacity])
     {
     }
@@ -41,6 +40,7 @@ public:
     BufferBuilder(BufferBuilder &&builder) noexcept:
         m_capacity(builder.m_capacity),
         m_limit(builder.m_limit),
+        m_nextTermOffset(builder.m_nextTermOffset),
         m_buffer(std::move(builder.m_buffer))
     {
     }
@@ -67,9 +67,20 @@ public:
         m_limit = limit;
     }
 
+    util::index_t nextTermOffset() const
+    {
+        return m_nextTermOffset;
+    }
+
+    void nextTermOffset(util::index_t offset)
+    {
+        m_nextTermOffset = offset;
+    }
+
     this_t &reset()
     {
         m_limit = static_cast<std::uint32_t>(DataFrameHeader::LENGTH);
+        m_nextTermOffset = 0;
         return *this;
     }
 
@@ -83,8 +94,9 @@ public:
     }
 
 private:
-    std::uint32_t m_capacity;
-    std::uint32_t m_limit = 0;
+    std::uint32_t m_capacity = 0;
+    std::uint32_t m_limit = static_cast<std::uint32_t>(DataFrameHeader::LENGTH);
+    util::index_t m_nextTermOffset = 0;
     std::unique_ptr<std::uint8_t[]> m_buffer;
 
     inline static std::uint32_t findSuitableCapacity(

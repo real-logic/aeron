@@ -27,6 +27,7 @@ typedef struct aeron_buffer_builder_stct
     uint8_t *buffer;
     size_t buffer_length;
     size_t limit;
+    int32_t next_term_offset;
 }
 aeron_buffer_builder_t;
 
@@ -70,6 +71,7 @@ void aeron_buffer_builder_delete(aeron_buffer_builder_t *buffer_builder);
 inline void aeron_buffer_builder_reset(aeron_buffer_builder_t *buffer_builder)
 {
     buffer_builder->limit = 0;
+    buffer_builder->next_term_offset = 0;
 }
 
 inline int aeron_buffer_builder_append(

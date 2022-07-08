@@ -122,48 +122,45 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
         {
             action = delegate.onFragment(buffer, offset, length, header);
         }
+        else if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
+        {
+            final BufferBuilder builder = getBufferBuilder(header.sessionId());
+            builder.reset()
+                .append(buffer, offset, length)
+                .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+        }
         else
         {
-            if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
+            final BufferBuilder builder = builderBySessionIdMap.get(header.sessionId());
+            if (null != builder)
             {
-                final BufferBuilder builder = getBufferBuilder(header.sessionId());
-                builder.reset()
-                    .append(buffer, offset, length)
-                    .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
-            }
-            else
-            {
-                final BufferBuilder builder = builderBySessionIdMap.get(header.sessionId());
-                if (null != builder)
+                if (offset == builder.nextTermOffset())
                 {
-                    if (offset == builder.nextTermOffset())
+                    final int limit = builder.limit();
+
+                    builder.append(buffer, offset, length);
+
+                    if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                     {
-                        final int limit = builder.limit();
+                        action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
 
-                        builder.append(buffer, offset, length);
-
-                        if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+                        if (Action.ABORT == action)
                         {
-                            action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
-
-                            if (Action.ABORT == action)
-                            {
-                                builder.limit(limit);
-                            }
-                            else
-                            {
-                                builder.reset();
-                            }
+                            builder.limit(limit);
                         }
                         else
                         {
-                            builder.nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+                            builder.reset();
                         }
                     }
                     else
                     {
-                        builder.reset();
+                        builder.nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
                     }
+                }
+                else
+                {
+                    builder.reset();
                 }
             }
         }

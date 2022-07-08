@@ -114,42 +114,39 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
         {
             action = delegate.onFragment(buffer, offset, length, header);
         }
-        else
+        else if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
         {
-            if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
-            {
-                builder.reset()
-                    .append(buffer, offset, length)
-                    .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
-            }
-            else if (offset == builder.nextTermOffset())
-            {
-                final int limit = builder.limit();
+            builder.reset()
+                .append(buffer, offset, length)
+                .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+        }
+        else if (offset == builder.nextTermOffset())
+        {
+            final int limit = builder.limit();
 
-                builder.append(buffer, offset, length);
+            builder.append(buffer, offset, length);
 
-                if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+            if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
+            {
+                action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
+
+                if (Action.ABORT == action)
                 {
-                    action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
-
-                    if (Action.ABORT == action)
-                    {
-                        builder.limit(limit);
-                    }
-                    else
-                    {
-                        builder.reset();
-                    }
+                    builder.limit(limit);
                 }
                 else
                 {
-                    builder.nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+                    builder.reset();
                 }
             }
             else
             {
-                builder.reset();
+                builder.nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
             }
+        }
+        else
+        {
+            builder.reset();
         }
 
         return action;

@@ -73,10 +73,10 @@ TEST_F(MpscRbTest, shouldErrorForCapacityLessThanTheMinCapacity)
     const size_t capacity = (AERON_MPSC_RB_MIN_CAPACITY / 2);
 
     ASSERT_EQ(aeron_mpsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + capacity), -1);
-    ASSERT_EQ(EINVAL, aeron_errcode());
+    ASSERT_EQ(aeron_errcode(), EINVAL);
     const std::string expected_err_msg = "Invalid capacity: " + std::to_string(capacity);
     const std::string actual_err_msg = std::string(aeron_errmsg());
-    ASSERT_NE(std::string::npos, actual_err_msg.find(expected_err_msg));
+    ASSERT_NE(actual_err_msg.find(expected_err_msg), std::string::npos);
 }
 
 TEST_F(MpscRbTest, shouldErrorWhenMaxMessageSizeExceeded)
@@ -92,8 +92,23 @@ TEST_F(MpscRbTest, shouldErrorWhenMinCapacityIsUsedAndMessageSizeIsNotZero)
     aeron_mpsc_rb_t rb;
     ASSERT_EQ(aeron_mpsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + AERON_MPSC_RB_MIN_CAPACITY), 0);
 
-    EXPECT_EQ(0, rb.max_message_length);
+    EXPECT_EQ(rb.max_message_length, 0);
     EXPECT_EQ(aeron_mpsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), 1), AERON_RB_ERROR);
+}
+
+TEST_F(MpscRbTest, shouldWriteAnEmptyMessageWhenMinCapacityIsUsed)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(aeron_mpsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + AERON_MPSC_RB_MIN_CAPACITY), 0);
+
+    EXPECT_EQ(0, rb.max_message_length);
+    EXPECT_EQ(aeron_mpsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), 0), AERON_RB_SUCCESS);
+
+    auto *record = (aeron_rb_record_descriptor_t *)(m_buffer.data());
+
+    EXPECT_EQ(record->length, (int32_t)AERON_RB_RECORD_HEADER_LENGTH);
+    EXPECT_EQ(record->msg_type_id, (int32_t)MSG_TYPE_ID);
+    EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(AERON_RB_ALIGNMENT));
 }
 
 TEST_F(MpscRbTest, shouldErrorWhenMessageTypeIsNegative)

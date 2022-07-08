@@ -714,6 +714,26 @@ public final class Configuration
     public static final long CONDUCTOR_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
     /**
+     * Property name for threshold value for the sender work cycle threshold to track for being exceeded.
+     */
+    public static final String SENDER_CYCLE_THRESHOLD_PROP_NAME = "aeron.driver.sender.cycle.threshold";
+
+    /**
+     * Default threshold value for the sender work cycle threshold to track for being exceeded.
+     */
+    public static final long SENDER_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
+
+    /**
+     * Property name for threshold value for the receiver work cycle threshold to track for being exceeded.
+     */
+    public static final String RECEIVER_CYCLE_THRESHOLD_PROP_NAME = "aeron.driver.receiver.cycle.threshold";
+
+    /**
+     * Default threshold value for the receiver work cycle threshold to track for being exceeded.
+     */
+    public static final long RECEIVER_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
+
+    /**
      * Should the driver configuration be printed on start.
      *
      * @return true if the driver configuration be printed on start.
@@ -1402,6 +1422,26 @@ public final class Configuration
     public static long conductorCycleThresholdNs()
     {
         return getDurationInNanos(CONDUCTOR_CYCLE_THRESHOLD_PROP_NAME, CONDUCTOR_CYCLE_THRESHOLD_DEFAULT_NS);
+    }
+
+    /**
+     * Get threshold value for the sender work cycle threshold to track for being exceeded.
+     *
+     * @return threshold value in nanoseconds.
+     */
+    public static long senderCycleThresholdNs()
+    {
+        return getDurationInNanos(SENDER_CYCLE_THRESHOLD_PROP_NAME, SENDER_CYCLE_THRESHOLD_DEFAULT_NS);
+    }
+
+    /**
+     * Get threshold value for the receiver work cycle threshold to track for being exceeded.
+     *
+     * @return threshold value in nanoseconds.
+     */
+    public static long receiverCycleThresholdNs()
+    {
+        return getDurationInNanos(RECEIVER_CYCLE_THRESHOLD_PROP_NAME, RECEIVER_CYCLE_THRESHOLD_DEFAULT_NS);
     }
 
     /**

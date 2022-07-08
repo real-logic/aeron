@@ -22,6 +22,8 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
+import io.aeron.driver.DutyCycleTracker;
+import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
@@ -530,6 +532,18 @@ public final class ConsensusModule implements AutoCloseable
             AeronCounters.CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID;
 
         /**
+         * Counter type id used for keeping track of the max duty cycle time of the agent.
+         */
+        public static final int CLUSTER_MAX_CYCLE_TIME_TYPE_ID =
+            AeronCounters.CLUSTER_MAX_CYCLE_TIME_TYPE_ID;
+
+        /**
+         * Counter type id used for keeping track of the count of cycle time threshold exceeded of an agent.
+         */
+        public static final int CLUSTER_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID =
+            AeronCounters.CLUSTER_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID;
+
+        /**
          * The number of services in this cluster instance.
          *
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
@@ -663,6 +677,17 @@ public final class ConsensusModule implements AutoCloseable
          * Timeout a leader will wait on getting termination ACKs from followers.
          */
         public static final String TERMINATION_TIMEOUT_PROP_NAME = "aeron.cluster.termination.timeout";
+
+        /**
+         * Property name for threshold value for the consensus module agent work cycle threshold to track
+         * for being exceeded.
+         */
+        public static final String CYCLE_THRESHOLD_PROP_NAME = "aeron.cluster.cycle.threshold";
+
+        /**
+         * Default threshold value for the consensus module agent work cycle threshold to track for being exceeded.
+         */
+        public static final long CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
          * Default timeout a leader will wait on getting termination ACKs from followers.
@@ -990,6 +1015,16 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Get threshold value for the consensus module agent work cycle threshold to track for being exceeded.
+         *
+         * @return threshold value in nanoseconds.
+         */
+        public static long cycleThresholdNs()
+        {
+            return getDurationInNanos(CYCLE_THRESHOLD_PROP_NAME, CYCLE_THRESHOLD_DEFAULT_NS);
+        }
+
+        /**
          * Size in bytes of the error buffer in the mark file.
          *
          * @return length of error buffer in bytes.
@@ -1240,6 +1275,7 @@ public final class ConsensusModule implements AutoCloseable
         private long electionStatusIntervalNs = Configuration.electionStatusIntervalNs();
         private long dynamicJoinIntervalNs = Configuration.dynamicJoinIntervalNs();
         private long terminationTimeoutNs = Configuration.terminationTimeoutNs();
+        private long cycleThresholdNs = Configuration.cycleThresholdNs();
 
         private String agentRoleName = Configuration.agentRoleName();
         private ThreadFactory threadFactory;
@@ -1270,6 +1306,7 @@ public final class ConsensusModule implements AutoCloseable
         private AuthorisationServiceSupplier authorisationServiceSupplier;
         private LogPublisher logPublisher;
         private EgressPublisher egressPublisher;
+        private DutyCycleTracker dutyCycleTracker;
         private boolean isLogMdc;
 
         /**
@@ -1452,6 +1489,18 @@ public final class ConsensusModule implements AutoCloseable
             {
                 timedOutClientCounter = ClusterCounters.allocate(
                     aeron, buffer, "Cluster timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
+            }
+
+            if (null == dutyCycleTracker)
+            {
+                dutyCycleTracker = new DutyCycleStallTracker(
+                    new CachedNanoClock(),
+                    ClusterCounters.allocate(
+                        aeron, buffer, "Cluster max cycle time (ns)", CLUSTER_MAX_CYCLE_TIME_TYPE_ID, clusterId),
+                    ClusterCounters.allocate(
+                        aeron, buffer, "Cluster work cycle time exceeded count: threshold=" + cycleThresholdNs + "ns",
+                        CLUSTER_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID, clusterId),
+                    cycleThresholdNs);
             }
 
             if (null == threadFactory)
@@ -2670,6 +2719,54 @@ public final class ConsensusModule implements AutoCloseable
         public long terminationTimeoutNs()
         {
             return terminationTimeoutNs;
+        }
+
+        /**
+         * Set a threshold for the consensus module agent work cycle time which when exceed it will increment the
+         * counter.
+         *
+         * @param thresholdNs value in nanoseconds
+         * @return this for fluent API.
+         * @see Configuration#CYCLE_THRESHOLD_PROP_NAME
+         * @see Configuration#CYCLE_THRESHOLD_DEFAULT_NS
+         */
+        public Context cycleThresholdNs(final long thresholdNs)
+        {
+            this.cycleThresholdNs = thresholdNs;
+            return this;
+        }
+
+        /**
+         * Threshold for the consensus module agent work cycle time which when exceed it will increment the
+         * counter.
+         *
+         * @return threshold to track for the consensus module agent work cycle time.
+         */
+        public long cycleThresholdNs()
+        {
+            return cycleThresholdNs;
+        }
+
+        /**
+         * Set a duty cycle tracker to be used for tracking the duty cycle time of the consensus module agent.
+         *
+         * @param dutyCycleTracker to use for tracking.
+         * @return this for fluent API.
+         */
+        public Context dutyCycleTracker(final DutyCycleTracker dutyCycleTracker)
+        {
+            this.dutyCycleTracker = dutyCycleTracker;
+            return this;
+        }
+
+        /**
+         * The duty cycle tracker used to track the consensus module agent duty cycle.
+         *
+         * @return the duty cycle tracker.
+         */
+        public DutyCycleTracker dutyCycleTracker()
+        {
+            return dutyCycleTracker;
         }
 
         /**

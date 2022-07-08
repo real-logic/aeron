@@ -19,10 +19,14 @@ import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.UdpChannel;
+import io.aeron.driver.status.DutyCycleStallTracker;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -30,8 +34,7 @@ import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 
 import static io.aeron.driver.Configuration.PENDING_SETUPS_TIMEOUT_NS;
-import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
-import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 
 /**
  * Agent that receives messages streams and rebuilds {@link PublicationImage}s, plus iterates over them sending status
@@ -52,6 +55,7 @@ public final class Receiver implements Agent
     private PublicationImage[] publicationImages = EMPTY_IMAGES;
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
     private final DriverConductorProxy conductorProxy;
+    private final DutyCycleTracker dutyCycleTracker;
 
     Receiver(final MediaDriver.Context ctx)
     {
@@ -63,6 +67,7 @@ public final class Receiver implements Agent
         cachedNanoClock = ctx.receiverCachedNanoClock();
         conductorProxy = ctx.driverConductorProxy();
         reResolutionCheckIntervalNs = ctx.reResolutionCheckIntervalNs();
+        dutyCycleTracker = ctx.receiverDutyCycleTracker();
     }
 
     /**
@@ -72,7 +77,18 @@ public final class Receiver implements Agent
     {
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
+        dutyCycleTracker.update(nowNs);
         reResolutionDeadlineNs = nowNs + reResolutionCheckIntervalNs;
+
+        if (dutyCycleTracker instanceof DutyCycleStallTracker)
+        {
+            final DutyCycleStallTracker dutyCycleStallTracker = (DutyCycleStallTracker)dutyCycleTracker;
+
+            dutyCycleStallTracker.maxCycleTime().appendToLabel(": " + conductorProxy.threadingMode().name());
+            dutyCycleStallTracker.cycleTimeThresholdExceededCount().appendToLabel(
+                ": threshold=" + dutyCycleStallTracker.cycleTimeThresholdNs() + "ns " +
+                conductorProxy.threadingMode().name());
+        }
     }
 
     /**
@@ -98,6 +114,7 @@ public final class Receiver implements Agent
     {
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
+        dutyCycleTracker.measureAndUpdateClock(nowNs);
 
         int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
 

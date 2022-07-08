@@ -23,6 +23,7 @@ import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.exceptions.ActiveDriverException;
 import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
+import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
@@ -450,6 +451,8 @@ public final class MediaDriver implements AutoCloseable
         private long flowControlReceiverTimeoutNs = Configuration.flowControlReceiverTimeoutNs();
         private long reResolutionCheckIntervalNs = Configuration.reResolutionCheckIntervalNs();
         private long conductorCycleThresholdNs = Configuration.conductorCycleThresholdNs();
+        private long senderCycleThresholdNs = Configuration.senderCycleThresholdNs();
+        private long receiverCycleThresholdNs = Configuration.receiverCycleThresholdNs();
 
         private int conductorBufferLength = Configuration.conductorBufferLength();
         private int toClientsBufferLength = Configuration.toClientsBufferLength();
@@ -542,6 +545,10 @@ public final class MediaDriver implements AutoCloseable
         private int osMaxSocketSndbufLength = Aeron.NULL_VALUE;
         private EpochNanoClock channelReceiveTimestampClock;
         private EpochNanoClock channelSendTimestampClock;
+
+        private DutyCycleTracker conductorDutyCycleTracker;
+        private DutyCycleTracker senderDutyCycleTracker;
+        private DutyCycleTracker receiverDutyCycleTracker;
 
         /**
          * Perform a shallow copy of the object.
@@ -3083,6 +3090,58 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Set a threshold for the sender work cycle time which when exceed it will increment the
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED} counter.
+         *
+         * @param thresholdNs value in nanoseconds
+         * @return this for fluent API.
+         * @see Configuration#SENDER_CYCLE_THRESHOLD_PROP_NAME
+         * @see Configuration#SENDER_CYCLE_THRESHOLD_DEFAULT_NS
+         */
+        public Context senderCycleThresholdNs(final long thresholdNs)
+        {
+            this.senderCycleThresholdNs = thresholdNs;
+            return this;
+        }
+
+        /**
+         * Threshold for the sender work cycle time which when exceed it will increment the
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED} counter.
+         *
+         * @return threshold to track for the sender work cycle time.
+         */
+        public long senderCycleThresholdNs()
+        {
+            return senderCycleThresholdNs;
+        }
+
+        /**
+         * Set a threshold for the receiver work cycle time which when exceed it will increment the
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED} counter.
+         *
+         * @param thresholdNs value in nanoseconds
+         * @return this for fluent API.
+         * @see Configuration#RECEIVER_CYCLE_THRESHOLD_PROP_NAME
+         * @see Configuration#RECEIVER_CYCLE_THRESHOLD_DEFAULT_NS
+         */
+        public Context receiverCycleThresholdNs(final long thresholdNs)
+        {
+            this.receiverCycleThresholdNs = thresholdNs;
+            return this;
+        }
+
+        /**
+         * Threshold for the receiver work cycle time which when exceed it will increment the
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED} counter.
+         *
+         * @return threshold to track for the receiver work cycle time.
+         */
+        public long receiverCycleThresholdNs()
+        {
+            return receiverCycleThresholdNs;
+        }
+
+        /**
          * Clock used record channel receive timestamps.
          *
          * @return a clock instance.
@@ -3101,6 +3160,72 @@ public final class MediaDriver implements AutoCloseable
         public Context channelSendTimestampClock(final EpochNanoClock clock)
         {
             channelSendTimestampClock = clock;
+            return this;
+        }
+
+        /**
+         * Duty cycle tracker used for the conductor.
+         *
+         * @return conductor duty cycle tracker.
+         */
+        public DutyCycleTracker conductorDutyCycleTracker()
+        {
+            return conductorDutyCycleTracker;
+        }
+
+        /**
+         * Set the duty cycle tracker used for the conductor.
+         *
+         * @param dutyCycleTracker for the ocnductor.
+         * @return this for a fluent API.
+         */
+        public Context conductorDutyCycleTracker(final DutyCycleTracker dutyCycleTracker)
+        {
+            this.conductorDutyCycleTracker = dutyCycleTracker;
+            return this;
+        }
+
+        /**
+         * Duty cycle tracker used for the sender.
+         *
+         * @return sender duty cycle tracker.
+         */
+        public DutyCycleTracker senderDutyCycleTracker()
+        {
+            return senderDutyCycleTracker;
+        }
+
+        /**
+         * Set the duty cycle tracker used for the sender.
+         *
+         * @param dutyCycleTracker for the sender.
+         * @return this for a fluent API.
+         */
+        public Context senderDutyCycleTracker(final DutyCycleTracker dutyCycleTracker)
+        {
+            this.senderDutyCycleTracker = dutyCycleTracker;
+            return this;
+        }
+
+        /**
+         * Duty cycle tracker used for the receiver.
+         *
+         * @return receiver duty cycle tracker.
+         */
+        public DutyCycleTracker receiverDutyCycleTracker()
+        {
+            return receiverDutyCycleTracker;
+        }
+
+        /**
+         * Set the duty cycle tracker used for the receiver.
+         *
+         * @param dutyCycleTracker for the receiver.
+         * @return this for a fluent API.
+         */
+        public Context receiverDutyCycleTracker(final DutyCycleTracker dutyCycleTracker)
+        {
+            this.receiverDutyCycleTracker = dutyCycleTracker;
             return this;
         }
 
@@ -3478,6 +3603,33 @@ public final class MediaDriver implements AutoCloseable
                 lossReportBuffer = mapLossReport(aeronDirectoryName(), align(lossReportBufferLength, filePageSize));
                 lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
             }
+
+            if (null == conductorDutyCycleTracker)
+            {
+                conductorDutyCycleTracker = new DutyCycleStallTracker(
+                    new CachedNanoClock(),
+                    systemCounters.get(CONDUCTOR_MAX_CYCLE_TIME),
+                    systemCounters.get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED),
+                    conductorCycleThresholdNs);
+            }
+
+            if (null == senderDutyCycleTracker)
+            {
+                senderDutyCycleTracker = new DutyCycleStallTracker(
+                    new CachedNanoClock(),
+                    systemCounters.get(SENDER_MAX_CYCLE_TIME),
+                    systemCounters.get(SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED),
+                    senderCycleThresholdNs);
+            }
+
+            if (null == receiverDutyCycleTracker)
+            {
+                receiverDutyCycleTracker = new DutyCycleStallTracker(
+                    new CachedNanoClock(),
+                    systemCounters.get(RECEIVER_MAX_CYCLE_TIME),
+                    systemCounters.get(RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED),
+                    receiverCycleThresholdNs);
+            }
         }
 
         private void concludeCounters()
@@ -3629,6 +3781,8 @@ public final class MediaDriver implements AutoCloseable
                 "\n    statusMessageTimeoutNs=" + statusMessageTimeoutNs +
                 "\n    counterFreeToReuseTimeoutNs=" + counterFreeToReuseTimeoutNs +
                 "\n    conductorCycleThresholdNs=" + conductorCycleThresholdNs +
+                "\n    senderCycleThresholdNs=" + senderCycleThresholdNs +
+                "\n    receiverCycleThresholdNs=" + receiverCycleThresholdNs +
                 "\n    publicationTermBufferLength=" + publicationTermBufferLength +
                 "\n    ipcTermBufferLength=" + ipcTermBufferLength +
                 "\n    publicationTermWindowLength=" + publicationTermWindowLength +
@@ -3705,6 +3859,9 @@ public final class MediaDriver implements AutoCloseable
                 "\n    cncMetaDataBuffer=" + cncMetaDataBuffer +
                 "\n    channelSendTimestampClock=" + channelSendTimestampClock +
                 "\n    channelReceiveTimestampClock=" + channelReceiveTimestampClock +
+                "\n    conductorDutyCycleTracker=" + conductorDutyCycleTracker +
+                "\n    senderDutyCycleTracker=" + senderDutyCycleTracker +
+                "\n    receiverDutyCycleTracker=" + receiverDutyCycleTracker +
                 "\n}";
         }
     }

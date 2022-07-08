@@ -162,7 +162,27 @@ public enum SystemCounterDescriptor
     /**
      * Count of the number of times the cycle time threshold has been exceeded by the conductor in its work cycle.
      */
-    CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED(27, "Conductor work cycle exceeded threshold count");
+    CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED(27, "Conductor work cycle exceeded threshold count"),
+
+    /**
+     * The maximum time spent by the sender between work cycles.
+     */
+    SENDER_MAX_CYCLE_TIME(28, "Sender max cycle time doing its work (ns)"),
+
+    /**
+     * Count of the number of times the cycle time threshold has been exceeded by the sender in its work cycle.
+     */
+    SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED(29, "Sender work cycle exceeded threshold count"),
+
+    /**
+     * The maximum time spent by the receiver between work cycles.
+     */
+    RECEIVER_MAX_CYCLE_TIME(30, "Receiver max cycle time doing its work (ns)"),
+
+    /**
+     * Count of the number of times the cycle time threshold has been exceeded by the receiver in its work cycle.
+     */
+    RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED(31, "Receiver work cycle exceeded threshold count");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

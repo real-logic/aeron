@@ -18,8 +18,12 @@ package io.aeron.driver;
 import io.aeron.ChannelUri;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.driver.status.DutyCycleStallTracker;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -69,6 +73,7 @@ public final class Sender extends SenderRhsPadding implements Agent
     private final NanoClock nanoClock;
     private final CachedNanoClock cachedNanoClock;
     private final DriverConductorProxy conductorProxy;
+    private final DutyCycleTracker dutyCycleTracker;
 
     Sender(final MediaDriver.Context ctx)
     {
@@ -82,6 +87,8 @@ public final class Sender extends SenderRhsPadding implements Agent
         this.reResolutionCheckIntervalNs = ctx.reResolutionCheckIntervalNs();
         this.dutyCycleRatio = ctx.sendToStatusMessagePollRatio();
         this.conductorProxy = ctx.driverConductorProxy();
+
+        this.dutyCycleTracker = ctx.senderDutyCycleTracker();
     }
 
     /**
@@ -91,7 +98,19 @@ public final class Sender extends SenderRhsPadding implements Agent
     {
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
+        dutyCycleTracker.update(nowNs);
         reResolutionDeadlineNs = nowNs + reResolutionCheckIntervalNs;
+
+        if (dutyCycleTracker instanceof DutyCycleStallTracker)
+        {
+            final DutyCycleStallTracker dutyCycleStallTracker = (DutyCycleStallTracker)dutyCycleTracker;
+
+            dutyCycleStallTracker.maxCycleTime().appendToLabel(
+                ": " + conductorProxy.threadingMode().name());
+            dutyCycleStallTracker.cycleTimeThresholdExceededCount().appendToLabel(
+                ": threshold=" + dutyCycleStallTracker.cycleTimeThresholdNs() + "ns " +
+                conductorProxy.threadingMode().name());
+        }
     }
 
     /**
@@ -109,6 +128,7 @@ public final class Sender extends SenderRhsPadding implements Agent
     {
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
+        dutyCycleTracker.measureAndUpdateClock(nowNs);
 
         final int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
         final int bytesSent = doSend(nowNs);

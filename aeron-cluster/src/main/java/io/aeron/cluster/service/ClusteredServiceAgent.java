@@ -23,6 +23,7 @@ import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.driver.Configuration;
+import io.aeron.driver.DutyCycleTracker;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
@@ -70,6 +71,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private final ConsensusModuleProxy consensusModuleProxy;
     private final ServiceAdapter serviceAdapter;
     private final EpochClock epochClock;
+    private final NanoClock nanoClock;
     private final UnsafeBuffer messageBuffer = new UnsafeBuffer(
         new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH]);
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(
@@ -82,6 +84,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private final Collection<ClientSession> unmodifiableClientSessions =
         new UnmodifiableClientSessionCollection(sessionByIdMap.values());
     private final BoundedLogAdapter logAdapter;
+    private final DutyCycleTracker dutyCycleTracker;
     private String activeLifecycleCallbackName;
     private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
@@ -100,6 +103,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         idleStrategy = ctx.idleStrategy();
         serviceId = ctx.serviceId();
         epochClock = ctx.epochClock();
+        nanoClock = ctx.nanoClock();
+        dutyCycleTracker = ctx.dutyCycleTracker();
 
         final String channel = ctx.controlChannel();
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
@@ -114,6 +119,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         commitPosition = awaitCommitPositionCounter(counters, ctx.clusterId());
 
         recoverState(counters);
+        dutyCycleTracker.update(nanoClock.nanoTime());
     }
 
     public void onClose()
@@ -160,6 +166,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     public int doWork()
     {
         int workCount = 0;
+
+        dutyCycleTracker.measureAndUpdateClock(nanoClock.nanoTime());
 
         try
         {

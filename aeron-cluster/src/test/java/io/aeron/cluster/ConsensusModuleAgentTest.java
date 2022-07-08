@@ -23,6 +23,7 @@ import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
+import io.aeron.driver.DutyCycleTracker;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.status.ReadableCounter;
@@ -30,6 +31,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -85,7 +87,8 @@ public class ConsensusModuleAgentTest
         .clusterMarkFile(mock(ClusterMarkFile.class))
         .archiveContext(new AeronArchive.Context())
         .logPublisher(mockLogPublisher)
-        .egressPublisher(mockEgressPublisher);
+        .egressPublisher(mockEgressPublisher)
+        .dutyCycleTracker(new DutyCycleTracker(new CachedNanoClock()));
 
     @BeforeEach
     public void before()

@@ -28,6 +28,7 @@ import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
 import io.aeron.driver.DefaultNameResolver;
+import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -141,6 +142,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private final ArrayList<RecordingLog.Snapshot> dynamicJoinSnapshots = new ArrayList<>();
+    private final DutyCycleTracker dutyCycleTracker;
     private RecordingLog.RecoveryPlan recoveryPlan;
     private AeronArchive archive;
     private RecordingSignalPoller recordingSignalPoller;
@@ -182,6 +184,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         Arrays.fill(serviceClientIds, NULL_VALUE);
         this.serviceAckQueues = ServiceAck.newArrayOfQueues(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(activeMembers);
+        this.dutyCycleTracker = ctx.dutyCycleTracker();
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -316,6 +319,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
+
+        dutyCycleTracker.update(clusterClock.timeNanos());
     }
 
     /**
@@ -326,6 +331,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long timestamp = clusterClock.time();
         final long nowNs = clusterTimeUnit.toNanos(timestamp);
         int workCount = 0;
+
+        dutyCycleTracker.measureAndUpdateClock(nowNs);
 
         try
         {

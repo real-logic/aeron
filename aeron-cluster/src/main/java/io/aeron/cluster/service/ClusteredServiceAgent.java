@@ -167,7 +167,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         int workCount = 0;
 
-        dutyCycleTracker.measureAndUpdateClock(nanoClock.nanoTime());
+        dutyCycleTracker.measureAndUpdate(nanoClock.nanoTime());
 
         try
         {

@@ -532,18 +532,6 @@ public final class ConsensusModule implements AutoCloseable
             AeronCounters.CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID;
 
         /**
-         * Counter type id used for keeping track of the max duty cycle time of the agent.
-         */
-        public static final int CLUSTER_MAX_CYCLE_TIME_TYPE_ID =
-            AeronCounters.CLUSTER_MAX_CYCLE_TIME_TYPE_ID;
-
-        /**
-         * Counter type id used for keeping track of the count of cycle time threshold exceeded of an agent.
-         */
-        public static final int CLUSTER_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID =
-            AeronCounters.CLUSTER_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID;
-
-        /**
          * The number of services in this cluster instance.
          *
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
@@ -1494,12 +1482,12 @@ public final class ConsensusModule implements AutoCloseable
             if (null == dutyCycleTracker)
             {
                 dutyCycleTracker = new DutyCycleStallTracker(
-                    new CachedNanoClock(),
                     ClusterCounters.allocate(
-                        aeron, buffer, "Cluster max cycle time (ns)", CLUSTER_MAX_CYCLE_TIME_TYPE_ID, clusterId),
+                        aeron, buffer, "Cluster max cycle time (ns)",
+                        AeronCounters.CLUSTER_MAX_CYCLE_TIME_TYPE_ID, clusterId),
                     ClusterCounters.allocate(
                         aeron, buffer, "Cluster work cycle time exceeded count: threshold=" + cycleThresholdNs + "ns",
-                        CLUSTER_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID, clusterId),
+                        AeronCounters.CLUSTER_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID, clusterId),
                     cycleThresholdNs);
             }
 

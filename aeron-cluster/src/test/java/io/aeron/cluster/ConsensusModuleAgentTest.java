@@ -31,7 +31,6 @@ import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -88,7 +87,7 @@ public class ConsensusModuleAgentTest
         .archiveContext(new AeronArchive.Context())
         .logPublisher(mockLogPublisher)
         .egressPublisher(mockEgressPublisher)
-        .dutyCycleTracker(new DutyCycleTracker(new CachedNanoClock()));
+        .dutyCycleTracker(new DutyCycleTracker());
 
     @BeforeEach
     public void before()

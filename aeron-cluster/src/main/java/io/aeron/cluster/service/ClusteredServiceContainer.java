@@ -330,19 +330,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
             AeronCounters.CLUSTER_CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID;
 
         /**
-         * The type id of the {@link Counter} used for keeping track of the max duty cycle time of the service container.
-         */
-        public static final int CLUSTER_CLUSTERED_SERVICE_MAX_CYCLE_TIME_TYPE_ID =
-            AeronCounters.CLUSTER_CLUSTERED_SERVICE_MAX_CYCLE_TIME_TYPE_ID;
-
-        /**
-         * The type id of the {@link Counter} used for keeping track of the count of cycle time threshold exceeded of
-         * the service container.
-         */
-        public static final int CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID =
-            AeronCounters.CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID;
-
-        /**
          * The value {@link #CLUSTER_ID_DEFAULT} or system property {@link #CLUSTER_ID_PROP_NAME} if set.
          *
          * @return {@link #CLUSTER_ID_DEFAULT} or system property {@link #CLUSTER_ID_PROP_NAME} if set.
@@ -765,11 +752,10 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == dutyCycleTracker)
             {
                 dutyCycleTracker = new DutyCycleStallTracker(
-                    new CachedNanoClock(),
-                    aeron.addCounter(CLUSTER_CLUSTERED_SERVICE_MAX_CYCLE_TIME_TYPE_ID,
+                    aeron.addCounter(AeronCounters.CLUSTER_CLUSTERED_SERVICE_MAX_CYCLE_TIME_TYPE_ID,
                         "Cluster container max cycle time (ns) - clusterId=" + clusterId +
                         " serviceId=" + serviceId),
-                    aeron.addCounter(CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
+                    aeron.addCounter(AeronCounters.CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                         "Cluster work cycle time exceeded count: threshold=" + cycleThresholdNs +
                         "ns - clusterId=" + clusterId + " serviceId=" + serviceId),
                     cycleThresholdNs);

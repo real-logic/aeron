@@ -16,7 +16,6 @@
 package io.aeron.driver.status;
 
 import io.aeron.driver.DutyCycleTracker;
-import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.status.AtomicCounter;
 
 /**
@@ -32,18 +31,15 @@ public class DutyCycleStallTracker extends DutyCycleTracker
     /**
      * Create a tracker to track max cycle time and excesses of a threshold.
      *
-     * @param cachedNanoClock to use for tracking.
      * @param maxCycleTime counter for tracking.
      * @param cycleTimeThresholdExceededCount counter for tracking.
      * @param cycleTimeThresholdNs to use for tracking excesses.
      */
     public DutyCycleStallTracker(
-        final CachedNanoClock cachedNanoClock,
         final AtomicCounter maxCycleTime,
         final AtomicCounter cycleTimeThresholdExceededCount,
         final long cycleTimeThresholdNs)
     {
-        super(cachedNanoClock);
         this.maxCycleTime = maxCycleTime;
         this.cycleTimeThresholdExceededCount = cycleTimeThresholdExceededCount;
         this.cycleTimeThresholdNs = cycleTimeThresholdNs;

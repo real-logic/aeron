@@ -125,7 +125,7 @@ public class SenderTest
             .senderCommandQueue(senderCommandQueue)
             .nanoClock(nanoClock)
             .errorHandler(errorHandler)
-            .senderDutyCycleTracker(new DutyCycleTracker(new CachedNanoClock()));
+            .senderDutyCycleTracker(new DutyCycleTracker());
         sender = new Sender(ctx);
 
         LogBufferDescriptor.initialiseTailWithTermId(rawLog.metaData(), 0, INITIAL_TERM_ID);

@@ -1993,7 +1993,7 @@ public final class DriverConductor implements Agent
     private void trackTime(final long nowNs)
     {
         cachedNanoClock.update(nowNs);
-        dutyCycleTracker.measureAndUpdateClock(nowNs);
+        dutyCycleTracker.measureAndUpdate(nowNs);
 
         if (clockUpdateDeadlineNs - nowNs < 0)
         {

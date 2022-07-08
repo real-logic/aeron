@@ -332,7 +332,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long nowNs = clusterTimeUnit.toNanos(timestamp);
         int workCount = 0;
 
-        dutyCycleTracker.measureAndUpdateClock(nowNs);
+        dutyCycleTracker.measureAndUpdate(nowNs);
 
         try
         {

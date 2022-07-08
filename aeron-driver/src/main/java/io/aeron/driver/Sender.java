@@ -128,7 +128,7 @@ public final class Sender extends SenderRhsPadding implements Agent
     {
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
-        dutyCycleTracker.measureAndUpdateClock(nowNs);
+        dutyCycleTracker.measureAndUpdate(nowNs);
 
         final int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
         final int bytesSent = doSend(nowNs);

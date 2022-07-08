@@ -151,7 +151,6 @@ public class DriverConductorTest
         when(mockErrorCounter.appendToLabel(any())).thenReturn(mockErrorCounter);
 
         final DutyCycleStallTracker conductorDutyCycleTracker = new DutyCycleStallTracker(
-            new CachedNanoClock(),
             spySystemCounters.get(CONDUCTOR_MAX_CYCLE_TIME),
             spySystemCounters.get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED),
             600_000_000);

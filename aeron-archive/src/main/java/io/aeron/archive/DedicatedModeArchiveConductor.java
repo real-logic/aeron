@@ -177,7 +177,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
                 throw new AgentTerminationException();
             }
 
-            dutyCycleTracker.measureAndUpdateClock(nanoClock.nanoTime());
+            dutyCycleTracker.measureAndUpdate(nanoClock.nanoTime());
 
             return drainSessionsQueue() + super.doWork();
         }
@@ -324,7 +324,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
                 throw new AgentTerminationException();
             }
 
-            dutyCycleTracker.measureAndUpdateClock(nanoClock.nanoTime());
+            dutyCycleTracker.measureAndUpdate(nanoClock.nanoTime());
 
             return drainSessionQueue() + super.doWork();
         }

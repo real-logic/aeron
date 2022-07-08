@@ -280,7 +280,7 @@ abstract class ArchiveConductor
             throw new AgentTerminationException("unexpected Aeron close");
         }
 
-        dutyCycleTracker.measureAndUpdateClock(nowNs);
+        dutyCycleTracker.measureAndUpdate(nowNs);
 
         final long nowMs = epochClock.time();
         if (cachedEpochClock.time() != nowMs)

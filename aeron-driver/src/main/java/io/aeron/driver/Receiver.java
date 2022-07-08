@@ -114,7 +114,7 @@ public final class Receiver implements Agent
     {
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
-        dutyCycleTracker.measureAndUpdateClock(nowNs);
+        dutyCycleTracker.measureAndUpdate(nowNs);
 
         int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
 

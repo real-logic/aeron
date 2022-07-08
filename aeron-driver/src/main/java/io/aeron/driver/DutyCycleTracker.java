@@ -15,47 +15,34 @@
  */
 package io.aeron.driver;
 
-import org.agrona.concurrent.CachedNanoClock;
-
 /**
  * Tracker to handle tracking the duration of a duty cycle.
  */
 public class DutyCycleTracker
 {
-    private final CachedNanoClock cachedNanoClock;
+    private long timeOfLastUpdateNs;
 
     /**
-     * Create a tracker using a given cached clock.
-     *
-     * @param cachedNanoClock to use.
-     */
-    public DutyCycleTracker(final CachedNanoClock cachedNanoClock)
-    {
-        this.cachedNanoClock = cachedNanoClock;
-    }
-
-    /**
-     * Update the cached clock time.
+     * Update the last known clock time.
      *
      * @param nowNs to update with.
-     * @see CachedNanoClock#update(long)
      */
-    public void update(final long nowNs)
+    public final void update(final long nowNs)
     {
-        cachedNanoClock.update(nowNs);
+        timeOfLastUpdateNs = nowNs;
     }
 
     /**
-     * Pass measurement to tracker and report updating cached nano clock with time.
+     * Pass measurement to tracker and report updating last known clock time with time.
      *
      * @param nowNs of the measurement.
      */
-    public void measureAndUpdateClock(final long nowNs)
+    public final void measureAndUpdate(final long nowNs)
     {
-        final long cycleTimeNs = nowNs - cachedNanoClock.nanoTime();
+        final long cycleTimeNs = nowNs - timeOfLastUpdateNs;
 
         reportMeasurement(cycleTimeNs);
-        cachedNanoClock.update(nowNs);
+        timeOfLastUpdateNs = nowNs;
     }
 
     /**

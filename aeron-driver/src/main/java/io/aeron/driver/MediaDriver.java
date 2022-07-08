@@ -3607,7 +3607,6 @@ public final class MediaDriver implements AutoCloseable
             if (null == conductorDutyCycleTracker)
             {
                 conductorDutyCycleTracker = new DutyCycleStallTracker(
-                    new CachedNanoClock(),
                     systemCounters.get(CONDUCTOR_MAX_CYCLE_TIME),
                     systemCounters.get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED),
                     conductorCycleThresholdNs);
@@ -3616,7 +3615,6 @@ public final class MediaDriver implements AutoCloseable
             if (null == senderDutyCycleTracker)
             {
                 senderDutyCycleTracker = new DutyCycleStallTracker(
-                    new CachedNanoClock(),
                     systemCounters.get(SENDER_MAX_CYCLE_TIME),
                     systemCounters.get(SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED),
                     senderCycleThresholdNs);
@@ -3625,7 +3623,6 @@ public final class MediaDriver implements AutoCloseable
             if (null == receiverDutyCycleTracker)
             {
                 receiverDutyCycleTracker = new DutyCycleStallTracker(
-                    new CachedNanoClock(),
                     systemCounters.get(RECEIVER_MAX_CYCLE_TIME),
                     systemCounters.get(RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED),
                     receiverCycleThresholdNs);

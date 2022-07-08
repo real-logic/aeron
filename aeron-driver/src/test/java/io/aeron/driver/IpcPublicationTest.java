@@ -15,19 +15,19 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
+import io.aeron.DriverProxy;
 import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import io.aeron.CommonContext;
-import io.aeron.DriverProxy;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -80,7 +80,7 @@ public class IpcPublicationTest
             .nameResolver(DefaultNameResolver.INSTANCE)
             .nanoClock(new CachedNanoClock())
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorDutyCycleTracker(new DutyCycleTracker(new CachedNanoClock()));
+            .conductorDutyCycleTracker(new DutyCycleTracker());
 
         ctx.countersValuesBuffer(counterBuffer);
 

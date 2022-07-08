@@ -24,6 +24,7 @@
 extern "C"
 {
 #include "concurrent/aeron_spsc_rb.h"
+#include "util/aeron_error.h"
 }
 #undef max
 
@@ -62,7 +63,19 @@ TEST_F(SpscRbTest, shouldErrorForCapacityNotPowerOfTwo)
 {
     aeron_spsc_rb_t rb;
 
-    EXPECT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size() - 1), -1);
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size() - 1), -1);
+}
+
+TEST_F(SpscRbTest, shouldErrorForCapacityLessThanTheMinCapacity)
+{
+    aeron_spsc_rb_t rb;
+    const size_t capacity = (ARON_SPSC_RB_MIN_CAPACITY / 2);
+
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + capacity), -1);
+    ASSERT_EQ(EINVAL, aeron_errcode());
+    const std::string expected_err_msg = "Invalid capacity: " + std::to_string(capacity);
+    const std::string actual_err_msg = std::string(aeron_errmsg());
+    ASSERT_NE(std::string::npos, actual_err_msg.find(expected_err_msg));
 }
 
 TEST_F(SpscRbTest, shouldErrorWhenMaxMessageSizeExceeded)

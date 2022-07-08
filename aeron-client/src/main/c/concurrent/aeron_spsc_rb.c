@@ -14,20 +14,27 @@
  * limitations under the License.
  */
 
+#include <errno.h>
+#include <inttypes.h>
 #include "aeron_spsc_rb.h"
+#include "util/aeron_error.h"
 
 int aeron_spsc_rb_init(aeron_spsc_rb_t *ring_buffer, void *buffer, size_t length)
 {
     const size_t capacity = length - AERON_RB_TRAILER_LENGTH;
     int result = -1;
 
-    if (AERON_RB_IS_CAPACITY_VALID(capacity))
+    if (AERON_RB_IS_CAPACITY_VALID(capacity, ARON_SPSC_RB_MIN_CAPACITY))
     {
         ring_buffer->buffer = buffer;
         ring_buffer->capacity = capacity;
         ring_buffer->descriptor = (aeron_rb_descriptor_t *)(ring_buffer->buffer + ring_buffer->capacity);
         ring_buffer->max_message_length = AERON_RB_MAX_MESSAGE_LENGTH(ring_buffer->capacity);
         result = 0;
+    }
+    else
+    {
+        AERON_SET_ERR(EINVAL, "Invalid capacity: %" PRIu64, (uint64_t)capacity);
     }
 
     return result;

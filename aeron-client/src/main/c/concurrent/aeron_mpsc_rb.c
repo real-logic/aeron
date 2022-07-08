@@ -24,7 +24,7 @@ int aeron_mpsc_rb_init(aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length
     const size_t capacity = length - AERON_RB_TRAILER_LENGTH;
     int result = -1;
 
-    if (AERON_RB_IS_CAPACITY_VALID(capacity))
+    if (AERON_RB_IS_CAPACITY_VALID(capacity, AERON_MPSC_RB_MIN_CAPACITY))
     {
         ring_buffer->buffer = buffer;
         ring_buffer->capacity = capacity;

@@ -86,22 +86,22 @@ protected:
 
 TEST_F(FragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
 {
-    std::int32_t msgLength = 158;
-    fillFrame(FrameDescriptor::UNFRAGMENTED, 0, msgLength, 0);
+    std::int32_t fragmentLength = 158;
+    fillFrame(FrameDescriptor::UNFRAGMENTED, 0, fragmentLength, 0);
     bool isCalled = false;
     auto handler =
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
             isCalled = true;
             EXPECT_EQ(offset, DataFrameHeader::LENGTH);
-            EXPECT_EQ(length, msgLength);
+            EXPECT_EQ(length, fragmentLength);
             EXPECT_EQ(header.positionBitsToShift(), POSITION_BITS_TO_SHIFT);
             EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
             EXPECT_EQ(header.sessionId(), SESSION_ID);
             EXPECT_EQ(header.streamId(), STREAM_ID);
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
             EXPECT_EQ(header.termOffset(), 0);
-            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + msgLength);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + fragmentLength);
             EXPECT_EQ(header.flags(), FrameDescriptor::UNFRAGMENTED);
             EXPECT_EQ(
                 header.position(),
@@ -114,26 +114,26 @@ TEST_F(FragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
         };
 
     FragmentAssembler assembler(handler);
-    assembler.handler()(m_buffer, 0 + DataFrameHeader::LENGTH, msgLength, m_header);
+    assembler.handler()(m_buffer, 0 + DataFrameHeader::LENGTH, fragmentLength, m_header);
     EXPECT_TRUE(isCalled);
 }
 
 TEST_F(FragmentAssemblerTest, shouldReassembleFromTwoFragments)
 {
-    util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
+    util::index_t fragmentLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool isCalled = false;
     auto handler =
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
             isCalled = true;
             EXPECT_EQ(offset, DataFrameHeader::LENGTH);
-            EXPECT_EQ(length, msgLength * 2);
+            EXPECT_EQ(length, fragmentLength * 2);
             EXPECT_EQ(header.sessionId(), SESSION_ID);
             EXPECT_EQ(header.streamId(), STREAM_ID);
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
             EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
             EXPECT_EQ(header.termOffset(), MTU_LENGTH);
-            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + msgLength);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + fragmentLength);
             EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
             EXPECT_EQ(
                 header.position(),
@@ -147,27 +147,27 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromTwoFragments)
 
     FragmentAssembler assembler(handler);
 
-    fillFrame(FrameDescriptor::BEGIN_FRAG, 0, msgLength, 0);
+    fillFrame(FrameDescriptor::BEGIN_FRAG, 0, fragmentLength, 0);
     m_header.offset(0);
-    assembler.handler()(m_buffer, 0 + DataFrameHeader::LENGTH, msgLength, m_header);
+    assembler.handler()(m_buffer, 0 + DataFrameHeader::LENGTH, fragmentLength, m_header);
     ASSERT_FALSE(isCalled);
 
     m_header.offset(MTU_LENGTH);
-    fillFrame(FrameDescriptor::END_FRAG, MTU_LENGTH, msgLength, msgLength % 256);
-    assembler.handler()(m_buffer, MTU_LENGTH + DataFrameHeader::LENGTH, msgLength, m_header);
+    fillFrame(FrameDescriptor::END_FRAG, MTU_LENGTH, fragmentLength, fragmentLength % 256);
+    assembler.handler()(m_buffer, MTU_LENGTH + DataFrameHeader::LENGTH, fragmentLength, m_header);
     ASSERT_TRUE(isCalled);
 }
 
 TEST_F(FragmentAssemblerTest, shouldReassembleFromThreeFragments)
 {
-    util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
+    util::index_t fragmentLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool isCalled = false;
     auto handler =
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
             isCalled = true;
             EXPECT_EQ(offset, DataFrameHeader::LENGTH);
-            EXPECT_EQ(length, msgLength * 3);
+            EXPECT_EQ(length, fragmentLength * 3);
             EXPECT_EQ(header.positionBitsToShift(), POSITION_BITS_TO_SHIFT);
             EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
             EXPECT_EQ(header.sessionId(), SESSION_ID);
@@ -175,7 +175,7 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromThreeFragments)
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
             EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
             EXPECT_EQ(header.termOffset(), MTU_LENGTH * 2);
-            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + msgLength);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + fragmentLength);
             EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
             EXPECT_EQ(
                 header.position(),
@@ -189,25 +189,25 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromThreeFragments)
 
     FragmentAssembler assembler(handler);
 
-    fillFrame(FrameDescriptor::BEGIN_FRAG, 0, msgLength, 0);
+    fillFrame(FrameDescriptor::BEGIN_FRAG, 0, fragmentLength, 0);
     m_header.offset(0);
-    assembler.handler()(m_buffer, 0 + DataFrameHeader::LENGTH, msgLength, m_header);
+    assembler.handler()(m_buffer, 0 + DataFrameHeader::LENGTH, fragmentLength, m_header);
     ASSERT_FALSE(isCalled);
 
     m_header.offset(MTU_LENGTH);
-    fillFrame(0, MTU_LENGTH, msgLength, msgLength % 256);
-    assembler.handler()(m_buffer, MTU_LENGTH + DataFrameHeader::LENGTH, msgLength, m_header);
+    fillFrame(0, MTU_LENGTH, fragmentLength, fragmentLength % 256);
+    assembler.handler()(m_buffer, MTU_LENGTH + DataFrameHeader::LENGTH, fragmentLength, m_header);
     ASSERT_FALSE(isCalled);
 
     m_header.offset(MTU_LENGTH * 2);
-    fillFrame(FrameDescriptor::END_FRAG, MTU_LENGTH * 2, msgLength, (msgLength * 2) % 256);
-    assembler.handler()(m_buffer, (MTU_LENGTH * 2) + DataFrameHeader::LENGTH, msgLength, m_header);
+    fillFrame(FrameDescriptor::END_FRAG, MTU_LENGTH * 2, fragmentLength, (fragmentLength * 2) % 256);
+    assembler.handler()(m_buffer, (MTU_LENGTH * 2) + DataFrameHeader::LENGTH, fragmentLength, m_header);
     ASSERT_TRUE(isCalled);
 }
 
 TEST_F(FragmentAssemblerTest, shouldNotReassembleIfEndFirstFragment)
 {
-    util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
+    util::index_t fragmentLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool isCalled = false;
     auto handler =
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
@@ -218,14 +218,14 @@ TEST_F(FragmentAssemblerTest, shouldNotReassembleIfEndFirstFragment)
     FragmentAssembler assembler(handler);
 
     m_header.offset(MTU_LENGTH);
-    fillFrame(FrameDescriptor::END_FRAG, MTU_LENGTH, msgLength, msgLength % 256);
-    assembler.handler()(m_buffer, MTU_LENGTH + DataFrameHeader::LENGTH, msgLength, m_header);
+    fillFrame(FrameDescriptor::END_FRAG, MTU_LENGTH, fragmentLength, fragmentLength % 256);
+    assembler.handler()(m_buffer, MTU_LENGTH + DataFrameHeader::LENGTH, fragmentLength, m_header);
     ASSERT_FALSE(isCalled);
 }
 
 TEST_F(FragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
 {
-    util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
+    util::index_t fragmentLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool isCalled = false;
     auto handler =
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
@@ -236,12 +236,66 @@ TEST_F(FragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
     FragmentAssembler assembler(handler);
 
     m_header.offset(MTU_LENGTH);
-    fillFrame(0, MTU_LENGTH, msgLength, msgLength % 256);
-    assembler.handler()(m_buffer, MTU_LENGTH + DataFrameHeader::LENGTH, msgLength, m_header);
+    fillFrame(0, MTU_LENGTH, fragmentLength, fragmentLength % 256);
+    assembler.handler()(m_buffer, MTU_LENGTH + DataFrameHeader::LENGTH, fragmentLength, m_header);
     ASSERT_FALSE(isCalled);
 
     m_header.offset(MTU_LENGTH * 2);
-    fillFrame(FrameDescriptor::END_FRAG, MTU_LENGTH * 2, msgLength, (msgLength * 2) % 256);
-    assembler.handler()(m_buffer, (MTU_LENGTH * 2) + DataFrameHeader::LENGTH, msgLength, m_header);
+    fillFrame(FrameDescriptor::END_FRAG, MTU_LENGTH * 2, fragmentLength, (fragmentLength * 2) % 256);
+    assembler.handler()(m_buffer, (MTU_LENGTH * 2) + DataFrameHeader::LENGTH, fragmentLength, m_header);
     ASSERT_FALSE(isCalled);
+}
+
+TEST_F(FragmentAssemblerTest, shouldReassembleTwoMessagesFromFourFrames)
+{
+    util::index_t termOffset = 0;
+    util::index_t fragmentLength = MTU_LENGTH - DataFrameHeader::LENGTH;
+    bool isCalled = false;
+    auto handler =
+        [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            isCalled = true;
+            EXPECT_EQ(offset, DataFrameHeader::LENGTH);
+            EXPECT_EQ(length, fragmentLength * 2);
+            EXPECT_EQ(header.sessionId(), SESSION_ID);
+            EXPECT_EQ(header.streamId(), STREAM_ID);
+            EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
+            EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
+            EXPECT_EQ(header.termOffset(), termOffset);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + fragmentLength);
+            EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
+            EXPECT_EQ(
+                header.position(),
+                LogBufferDescriptor::computePosition(
+                    ACTIVE_TERM_ID,
+                    BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
+                    POSITION_BITS_TO_SHIFT,
+                    INITIAL_TERM_ID));
+        };
+
+    FragmentAssembler assembler(handler);
+
+    fillFrame(FrameDescriptor::BEGIN_FRAG, termOffset, fragmentLength, 0);
+    m_header.offset(0);
+    assembler.handler()(m_buffer, termOffset + DataFrameHeader::LENGTH, fragmentLength, m_header);
+    ASSERT_FALSE(isCalled);
+
+    termOffset += MTU_LENGTH;
+    m_header.offset(termOffset);
+    fillFrame(FrameDescriptor::END_FRAG, termOffset, fragmentLength, 1);
+    assembler.handler()(m_buffer, termOffset + DataFrameHeader::LENGTH, fragmentLength, m_header);
+    ASSERT_TRUE(isCalled);
+
+    isCalled = false;
+    termOffset += MTU_LENGTH;
+    m_header.offset(termOffset);
+    fillFrame(FrameDescriptor::BEGIN_FRAG, termOffset, fragmentLength, 2);
+    assembler.handler()(m_buffer, termOffset + DataFrameHeader::LENGTH, fragmentLength, m_header);
+    ASSERT_FALSE(isCalled);
+
+    termOffset += MTU_LENGTH;
+    m_header.offset(termOffset);
+    fillFrame(FrameDescriptor::END_FRAG, termOffset, fragmentLength, 2);
+    assembler.handler()(m_buffer, termOffset + DataFrameHeader::LENGTH, fragmentLength, m_header);
+    ASSERT_TRUE(isCalled);
 }

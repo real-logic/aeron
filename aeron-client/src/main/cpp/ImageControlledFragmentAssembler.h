@@ -79,51 +79,44 @@ private:
         {
             action = m_delegate(buffer, offset, length, header);
         }
-        else
+        else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
         {
-            if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
-            {
-                auto nextOffset = BitUtil::align(
-                    offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                m_builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
-            }
-            else
-            {
-                const std::uint32_t limit = m_builder.limit();
+            auto nextOffset = BitUtil::align(
+                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+            m_builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
+        }
+        else if (offset == m_builder.nextTermOffset())
+        {
+            const std::uint32_t limit = m_builder.limit();
+            m_builder.append(buffer, offset, length, header);
 
-                if (offset == m_builder.nextTermOffset())
+            if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
+            {
+                util::index_t msgLength =
+                    static_cast<util::index_t>(m_builder.limit()) - DataFrameHeader::LENGTH;
+                AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
+
+                action = m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
+
+                if (ControlledPollAction::ABORT == action)
                 {
-                    m_builder.append(buffer, offset, length, header);
-
-                    if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
-                    {
-                        util::index_t msgLength =
-                            static_cast<util::index_t>(m_builder.limit()) - DataFrameHeader::LENGTH;
-                        AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
-
-                        action = m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
-
-                        if (ControlledPollAction::ABORT == action)
-                        {
-                            m_builder.limit(limit);
-                        }
-                        else
-                        {
-                            m_builder.reset();
-                        }
-                    }
-                    else
-                    {
-                        auto nextOffset = BitUtil::align(
-                            offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                        m_builder.nextTermOffset(nextOffset);
-                    }
+                    m_builder.limit(limit);
                 }
                 else
                 {
                     m_builder.reset();
                 }
             }
+            else
+            {
+                auto nextOffset = BitUtil::align(
+                    offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+                m_builder.nextTermOffset(nextOffset);
+            }
+        }
+        else
+        {
+            m_builder.reset();
         }
 
         return action;

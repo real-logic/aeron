@@ -93,49 +93,46 @@ private:
         {
             m_delegate(buffer, offset, length, header);
         }
+        else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
+        {
+            BufferBuilder &builder = getBuffer(header.sessionId());
+            auto nextOffset = BitUtil::align(
+                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+
+            builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
+        }
         else
         {
-            if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
-            {
-                BufferBuilder &builder = getBuffer(header.sessionId());
-                auto nextOffset = BitUtil::align(
-                    offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+            auto result = m_builderBySessionIdMap.find(header.sessionId());
 
-                builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
-            }
-            else
+            if (result != m_builderBySessionIdMap.end())
             {
-                auto result = m_builderBySessionIdMap.find(header.sessionId());
+                BufferBuilder &builder = result->second;
 
-                if (result != m_builderBySessionIdMap.end())
+                if (offset == builder.nextTermOffset())
                 {
-                    BufferBuilder &builder = result->second;
+                    builder.append(buffer, offset, length, header);
 
-                    if (offset == builder.nextTermOffset())
+                    if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
                     {
-                        builder.append(buffer, offset, length, header);
+                        util::index_t msgLength =
+                            static_cast<util::index_t>(builder.limit()) - DataFrameHeader::LENGTH;
+                        AtomicBuffer msgBuffer(builder.buffer(), builder.limit());
 
-                        if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
-                        {
-                            util::index_t msgLength =
-                                static_cast<util::index_t>(builder.limit()) - DataFrameHeader::LENGTH;
-                            AtomicBuffer msgBuffer(builder.buffer(), builder.limit());
+                        m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
 
-                            m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
-
-                            builder.reset();
-                        }
-                        else
-                        {
-                            auto nextOffset = BitUtil::align(
-                                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                            builder.nextTermOffset(nextOffset);
-                        }
+                        builder.reset();
                     }
                     else
                     {
-                        builder.reset();
+                        auto nextOffset = BitUtil::align(
+                            offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+                        builder.nextTermOffset(nextOffset);
                     }
+                }
+                else
+                {
+                    builder.reset();
                 }
             }
         }

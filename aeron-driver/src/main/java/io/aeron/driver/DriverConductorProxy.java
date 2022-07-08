@@ -118,6 +118,15 @@ public final class DriverConductorProxy
         return threadingMode == SHARED || threadingMode == INVOKER;
     }
 
+    /**
+     * Get the threading mode of the driver.
+     * @return ThreadingMode of the driver.
+     */
+    public ThreadingMode threadingMode()
+    {
+        return threadingMode;
+    }
+
     void driverConductor(final DriverConductor driverConductor)
     {
         this.driverConductor = driverConductor;

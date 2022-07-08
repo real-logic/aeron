@@ -119,7 +119,8 @@ public class ReceiverTest
         .cachedNanoClock(nanoClock)
         .senderCachedNanoClock(nanoClock)
         .receiverCachedNanoClock(nanoClock)
-        .lossReport(mockLossReport);
+        .lossReport(mockLossReport)
+        .receiverDutyCycleTracker(new DutyCycleTracker(new CachedNanoClock()));
 
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
@@ -154,7 +155,8 @@ public class ReceiverTest
             .senderCachedNanoClock(nanoClock)
             .receiverCachedNanoClock(nanoClock)
             .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals())
-            .driverConductorProxy(driverConductorProxy);
+            .driverConductorProxy(driverConductorProxy)
+            .receiverDutyCycleTracker(new DutyCycleTracker(new CachedNanoClock()));
 
         receiverProxy = new ReceiverProxy(
             ThreadingMode.DEDICATED, ctx.receiverCommandQueue(), mock(AtomicCounter.class));

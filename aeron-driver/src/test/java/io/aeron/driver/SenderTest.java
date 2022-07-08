@@ -124,7 +124,8 @@ public class SenderTest
             .systemCounters(mockSystemCounters)
             .senderCommandQueue(senderCommandQueue)
             .nanoClock(nanoClock)
-            .errorHandler(errorHandler);
+            .errorHandler(errorHandler)
+            .senderDutyCycleTracker(new DutyCycleTracker(new CachedNanoClock()));
         sender = new Sender(ctx);
 
         LogBufferDescriptor.initialiseTailWithTermId(rawLog.metaData(), 0, INITIAL_TERM_ID);

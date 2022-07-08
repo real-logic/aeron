@@ -147,6 +147,17 @@ public final class AeronCounters
      */
     public static final int ARCHIVE_CONTROL_SESSIONS_TYPE_ID = 102;
 
+    /**
+     * The type id of the {@link Counter} used for keeping track of the max duty cycle time of an archive agent.
+     */
+    public static final int ARCHIVE_MAX_CYCLE_TIME_TYPE_ID = 103;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the count of cycle time threshold exceeded of
+     * an archive agent.
+     */
+    public static final int ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 104;
+
     // Cluster counters
 
     /**
@@ -223,6 +234,28 @@ public final class AeronCounters
      * Counter type id for the clustered service error count.
      */
     public static final int CLUSTER_CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID = 215;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the max duty cycle time of the consensus module.
+     */
+    public static final int CLUSTER_MAX_CYCLE_TIME_TYPE_ID = 216;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the count of cycle time threshold exceeded of
+     * the consensus module.
+     */
+    public static final int CLUSTER_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 217;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the max duty cycle time of the service container.
+     */
+    public static final int CLUSTER_CLUSTERED_SERVICE_MAX_CYCLE_TIME_TYPE_ID = 218;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the count of cycle time threshold exceeded of
+     * the service container.
+     */
+    public static final int CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 219;
 
     private AeronCounters()
     {

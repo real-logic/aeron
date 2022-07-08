@@ -23,6 +23,7 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.driver.DutyCycleTracker;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -96,6 +97,7 @@ abstract class ArchiveConductor
     private final AgentInvoker aeronAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
     private final EpochClock epochClock;
+    private final NanoClock nanoClock;
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final File archiveDir;
     private final Subscription controlSubscription;
@@ -107,6 +109,7 @@ abstract class ArchiveConductor
     private final AuthorisationService authorisationService;
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final ControlSessionProxy controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
+    private final DutyCycleTracker dutyCycleTracker;
     final Archive.Context ctx;
     SessionWorker<RecordingSession> recorder;
     SessionWorker<ReplaySession> replayer;
@@ -121,10 +124,12 @@ abstract class ArchiveConductor
         aeronAgentInvoker = aeron.conductorAgentInvoker();
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
         epochClock = ctx.epochClock();
+        nanoClock = ctx.nanoClock();
         archiveDir = ctx.archiveDir();
         connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
         catalog = ctx.catalog();
         markFile = ctx.archiveMarkFile();
+        dutyCycleTracker = ctx.conductorDutyCycleTracker();
         cachedEpochClock.update(epochClock.time());
 
         authenticator = ctx.authenticatorSupplier().get();
@@ -156,6 +161,8 @@ abstract class ArchiveConductor
     {
         recorder = newRecorder();
         replayer = newReplayer();
+
+        dutyCycleTracker.update(nanoClock.nanoTime());
     }
 
     public void onAvailableImage(final Image image)
@@ -265,12 +272,15 @@ abstract class ArchiveConductor
      */
     public int doWork()
     {
+        final long nowNs = nanoClock.nanoTime();
         int workCount = 0;
 
         if (isAbort)
         {
             throw new AgentTerminationException("unexpected Aeron close");
         }
+
+        dutyCycleTracker.measureAndUpdateClock(nowNs);
 
         final long nowMs = epochClock.time();
         if (cachedEpochClock.time() != nowMs)

@@ -78,7 +78,9 @@ public class IpcPublicationTest
             .countersManager(countersManager)
             .systemCounters(systemCounters)
             .nameResolver(DefaultNameResolver.INSTANCE)
-            .nanoClock(new CachedNanoClock());
+            .nanoClock(new CachedNanoClock())
+            .threadingMode(ThreadingMode.DEDICATED)
+            .conductorDutyCycleTracker(new DutyCycleTracker(new CachedNanoClock()));
 
         ctx.countersValuesBuffer(counterBuffer);
 

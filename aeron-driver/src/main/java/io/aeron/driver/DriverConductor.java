@@ -114,8 +114,7 @@ public final class DriverConductor implements Agent
     private NameResolver nameResolver;
     private DriverNameResolver driverNameResolver;
     private final AtomicCounter errorCounter;
-    private final AtomicCounter maxCycleTime;
-    private final AtomicCounter cycleTimeThresholdExceededCount;
+    private final DutyCycleTracker dutyCycleTracker;
 
     DriverConductor(final MediaDriver.Context ctx)
     {
@@ -134,6 +133,7 @@ public final class DriverConductor implements Agent
         clientProxy = ctx.clientProxy();
         tempBuffer = ctx.tempBuffer();
         errorCounter = ctx.systemCounters().get(ERRORS);
+        dutyCycleTracker = ctx.conductorDutyCycleTracker();
 
         countersManager = ctx.countersManager();
 
@@ -145,8 +145,6 @@ public final class DriverConductor implements Agent
             this);
 
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();
-        maxCycleTime = ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME);
-        cycleTimeThresholdExceededCount = ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
     }
 
     /**
@@ -169,14 +167,16 @@ public final class DriverConductor implements Agent
             ": driverName=" + ctx.resolverName() +
             " hostname=" + DriverNameResolver.getCanonicalName("<unresolved>"));
 
+        ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME).appendToLabel(": " + ctx.threadingMode().name());
         ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED).appendToLabel(
-            ": threshold=" + ctx.conductorCycleThresholdNs() + "ns");
+            ": threshold=" + ctx.conductorCycleThresholdNs() + "ns " + ctx.threadingMode().name());
 
         nameResolver.init(ctx);
 
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
         cachedEpochClock.update(epochClock.time());
+        dutyCycleTracker.update(nowNs);
         timerCheckDeadlineNs = nowNs + timerIntervalNs;
         clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_INTERNAL_NS;
         timeOfLastToDriverPositionChangeNs = nowNs;
@@ -1992,20 +1992,13 @@ public final class DriverConductor implements Agent
 
     private void trackTime(final long nowNs)
     {
-        final long cycleTimeNs = nowNs - cachedNanoClock.nanoTime();
-
         cachedNanoClock.update(nowNs);
-        maxCycleTime.proposeMaxOrdered(cycleTimeNs);
+        dutyCycleTracker.measureAndUpdateClock(nowNs);
 
         if (clockUpdateDeadlineNs - nowNs < 0)
         {
             clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_INTERNAL_NS;
             cachedEpochClock.update(epochClock.time());
-        }
-
-        if (cycleTimeNs > ctx.conductorCycleThresholdNs())
-        {
-            cycleTimeThresholdExceededCount.incrementOrdered();
         }
     }
 

@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.driver.DutyCycleTracker;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -77,12 +78,24 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
     SessionWorker<RecordingSession> newRecorder()
     {
-        return new DedicatedModeRecorder(errorHandler, ctx.errorCounter(), closeQueue, ctx.abortLatch());
+        return new DedicatedModeRecorder(
+            errorHandler,
+            ctx.errorCounter(),
+            closeQueue,
+            ctx.abortLatch(),
+            ctx.recorderDutyCycleTracker(),
+            ctx.nanoClock());
     }
 
     SessionWorker<ReplaySession> newReplayer()
     {
-        return new DedicatedModeReplayer(errorHandler, ctx.errorCounter(), closeQueue, ctx.abortLatch());
+        return new DedicatedModeReplayer(
+            errorHandler,
+            ctx.errorCounter(),
+            closeQueue,
+            ctx.abortLatch(),
+            ctx.replayerDutyCycleTracker(),
+            ctx.nanoClock());
     }
 
     private int processCloseQueue()
@@ -114,13 +127,17 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private final ManyToOneConcurrentLinkedQueue<Session> closeQueue;
         private final AtomicCounter errorCounter;
         private final CountDownLatch abortLatch;
+        private final DutyCycleTracker dutyCycleTracker;
+        private final NanoClock nanoClock;
         private volatile boolean isAbort;
 
         DedicatedModeRecorder(
             final CountedErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentLinkedQueue<Session> closeQueue,
-            final CountDownLatch abortLatch)
+            final CountDownLatch abortLatch,
+            final DutyCycleTracker dutyCycleTracker,
+            final NanoClock nanoClock)
         {
             super("archive-recorder", errorHandler);
 
@@ -128,6 +145,8 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             this.errorCounter = errorCounter;
             this.sessionsQueue = new ManyToOneConcurrentLinkedQueue<>();
             this.abortLatch = abortLatch;
+            this.dutyCycleTracker = dutyCycleTracker;
+            this.nanoClock = nanoClock;
         }
 
         /**
@@ -141,12 +160,24 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         /**
          * {@inheritDoc}
          */
+        public void onStart()
+        {
+            super.onStart();
+
+            dutyCycleTracker.update(nanoClock.nanoTime());
+        }
+
+        /**
+         * {@inheritDoc}
+         */
         public int doWork()
         {
             if (isAbort)
             {
                 throw new AgentTerminationException();
             }
+
+            dutyCycleTracker.measureAndUpdateClock(nanoClock.nanoTime());
 
             return drainSessionsQueue() + super.doWork();
         }
@@ -236,13 +267,17 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private final ManyToOneConcurrentLinkedQueue<Session> closeQueue;
         private final AtomicCounter errorCounter;
         private final CountDownLatch abortLatch;
+        private final DutyCycleTracker dutyCycleTracker;
+        private final NanoClock nanoClock;
         private volatile boolean isAbort;
 
         DedicatedModeReplayer(
             final CountedErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentLinkedQueue<Session> closeQueue,
-            final CountDownLatch abortLatch)
+            final CountDownLatch abortLatch,
+            final DutyCycleTracker dutyCycleTracker,
+            final NanoClock nanoClock)
         {
             super("archive-replayer", errorHandler);
 
@@ -250,6 +285,8 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             this.errorCounter = errorCounter;
             this.sessionsQueue = new ManyToOneConcurrentLinkedQueue<>();
             this.abortLatch = abortLatch;
+            this.dutyCycleTracker = dutyCycleTracker;
+            this.nanoClock = nanoClock;
         }
 
         /**
@@ -271,12 +308,23 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         /**
          * {@inheritDoc}
          */
+        public void onStart()
+        {
+            super.onStart();
+            dutyCycleTracker.update(nanoClock.nanoTime());
+        }
+
+        /**
+         * {@inheritDoc}
+         */
         public int doWork()
         {
             if (isAbort)
             {
                 throw new AgentTerminationException();
             }
+
+            dutyCycleTracker.measureAndUpdateClock(nanoClock.nanoTime());
 
             return drainSessionQueue() + super.doWork();
         }

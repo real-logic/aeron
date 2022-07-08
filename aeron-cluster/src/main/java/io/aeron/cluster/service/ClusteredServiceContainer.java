@@ -756,7 +756,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                         "Cluster container max cycle time (ns) - clusterId=" + clusterId +
                         " serviceId=" + serviceId),
                     aeron.addCounter(AeronCounters.CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
-                        "Cluster work cycle time exceeded count: threshold=" + cycleThresholdNs +
+                        "Cluster container work cycle time exceeded count: threshold=" + cycleThresholdNs +
                         "ns - clusterId=" + clusterId + " serviceId=" + serviceId),
                     cycleThresholdNs);
             }

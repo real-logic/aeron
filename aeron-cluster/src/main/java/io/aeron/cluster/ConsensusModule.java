@@ -3638,6 +3638,8 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    logPublisher=" + logPublisher +
                 "\n    egressPublisher=" + egressPublisher +
                 "\n    isLogMdc=" + isLogMdc +
+                "\n    cycleThresholdNs=" + cycleThresholdNs +
+                "\n    dutyCyleTracker=" + dutyCycleTracker +
                 "\n}";
         }
     }

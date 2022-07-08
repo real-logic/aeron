@@ -1721,6 +1721,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 "\n    clusteredService=" + clusteredService +
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
                 "\n    terminationHook=" + terminationHook +
+                "\n    cycleThresholdNs=" + cycleThresholdNs +
+                "\n    dutyCyleTracker=" + dutyCycleTracker +
                 "\n    markFile=" + markFile +
                 "\n}";
         }

@@ -69,7 +69,7 @@ TEST_F(SpscRbTest, shouldErrorForCapacityNotPowerOfTwo)
 TEST_F(SpscRbTest, shouldErrorForCapacityLessThanTheMinCapacity)
 {
     aeron_spsc_rb_t rb;
-    const size_t capacity = (ARON_SPSC_RB_MIN_CAPACITY / 2);
+    const size_t capacity = (AERON_SPSC_RB_MIN_CAPACITY / 2);
 
     ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + capacity), -1);
     ASSERT_EQ(EINVAL, aeron_errcode());
@@ -84,6 +84,15 @@ TEST_F(SpscRbTest, shouldErrorWhenMaxMessageSizeExceeded)
     ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
 
     EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), rb.max_message_length + 1), AERON_RB_ERROR);
+}
+
+TEST_F(SpscRbTest, shouldErrorWhenMinCapacityIsUsedAndMessageSizeIsNotZero)
+{
+    aeron_spsc_rb_t rb;
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + AERON_SPSC_RB_MIN_CAPACITY), 0);
+
+    EXPECT_EQ(0, rb.max_message_length);
+    EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), 1), AERON_RB_ERROR);
 }
 
 TEST_F(SpscRbTest, shouldErrorWhenMessageTypeIsNegative)

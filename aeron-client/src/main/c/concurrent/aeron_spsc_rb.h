@@ -29,7 +29,7 @@ struct iovec
 };
 #endif
 
-#define ARON_SPSC_RB_MIN_CAPACITY (2 * AERON_RB_RECORD_HEADER_LENGTH)
+#define AERON_SPSC_RB_MIN_CAPACITY (2 * AERON_RB_RECORD_HEADER_LENGTH)
 
 typedef struct aeron_spsc_rb_stct
 {

@@ -54,7 +54,7 @@ aeron_rb_record_descriptor_t;
 #define AERON_RB_MESSAGE_OFFSET(index) ((index) + sizeof(aeron_rb_record_descriptor_t))
 #define AERON_RB_RECORD_HEADER_LENGTH (sizeof(aeron_rb_record_descriptor_t))
 
-#define AERON_RB_MAX_MESSAGE_LENGTH(capacity) ((capacity) / 8)
+#define AERON_RB_MAX_MESSAGE_LENGTH(capacity, min_capacity) (capacity) == (min_capacity) ? 0 : ((capacity) / 8)
 #define AERON_RB_INVALID_MSG_TYPE_ID(id) ((id) < 1)
 #define AERON_RB_PADDING_MSG_TYPE_ID (-1)
 

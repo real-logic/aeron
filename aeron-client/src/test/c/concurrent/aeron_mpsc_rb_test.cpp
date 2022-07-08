@@ -87,6 +87,15 @@ TEST_F(MpscRbTest, shouldErrorWhenMaxMessageSizeExceeded)
     EXPECT_EQ(aeron_mpsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), rb.max_message_length + 1), AERON_RB_ERROR);
 }
 
+TEST_F(MpscRbTest, shouldErrorWhenMinCapacityIsUsedAndMessageSizeIsNotZero)
+{
+    aeron_mpsc_rb_t rb;
+    ASSERT_EQ(aeron_mpsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + AERON_MPSC_RB_MIN_CAPACITY), 0);
+
+    EXPECT_EQ(0, rb.max_message_length);
+    EXPECT_EQ(aeron_mpsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), 1), AERON_RB_ERROR);
+}
+
 TEST_F(MpscRbTest, shouldErrorWhenMessageTypeIsNegative)
 {
     aeron_mpsc_rb_t rb;

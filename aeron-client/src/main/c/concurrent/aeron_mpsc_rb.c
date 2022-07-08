@@ -29,7 +29,7 @@ int aeron_mpsc_rb_init(aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length
         ring_buffer->buffer = buffer;
         ring_buffer->capacity = capacity;
         ring_buffer->descriptor = (aeron_rb_descriptor_t *)(ring_buffer->buffer + ring_buffer->capacity);
-        ring_buffer->max_message_length = AERON_RB_MAX_MESSAGE_LENGTH(ring_buffer->capacity);
+        ring_buffer->max_message_length = AERON_RB_MAX_MESSAGE_LENGTH(ring_buffer->capacity, AERON_MPSC_RB_MIN_CAPACITY);
         result = 0;
     }
     else

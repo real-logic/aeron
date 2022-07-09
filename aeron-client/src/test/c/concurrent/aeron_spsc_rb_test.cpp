@@ -420,6 +420,52 @@ TEST_F(SpscRbTest, shouldLimitReadOfMessages)
     EXPECT_EQ(rb.descriptor->head_position, (int64_t)(head + alignedRecordLength));
 }
 
+TEST_F(SpscRbTest, shouldPutMessageAtTheEndOfTheBufferWithoutPaddingAfterReadUnblocksZeroingOfTheNextHeader)
+{
+    aeron_spsc_rb_t rb;
+    const int32_t msgType = 555;
+    const size_t msgLength = (CAPACITY / 8) - AERON_RB_RECORD_HEADER_LENGTH;
+    const size_t alignedRecordLength = AERON_ALIGN(CAPACITY / 8, AERON_RB_ALIGNMENT);
+
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
+
+    m_srcBuffer.fill(7);
+    for (int i = 0; i < 7; i++)
+    {
+        EXPECT_EQ(aeron_spsc_rb_write(&rb, msgType, m_srcBuffer.data(), msgLength), AERON_RB_SUCCESS);
+    }
+    m_srcBuffer.fill(5);
+    EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), msgLength), AERON_RB_FULL);
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_spsc_rb_read(&rb, countTimesAsSizeT, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+
+    EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), msgLength), AERON_RB_SUCCESS);
+
+    EXPECT_EQ(rb.descriptor->head_position, (int64_t)alignedRecordLength);
+    EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(CAPACITY));
+
+    aeron_rb_record_descriptor_t *record;
+
+    // assert that the next message header was zeroed correctly
+    record = (aeron_rb_record_descriptor_t *)(rb.buffer);
+    EXPECT_EQ(record->msg_type_id, 0);
+    EXPECT_EQ(record->length, 0);
+
+    // second message
+    record = (aeron_rb_record_descriptor_t *)(rb.buffer + alignedRecordLength);
+    EXPECT_EQ(record->msg_type_id, msgType);
+    EXPECT_EQ(record->length, (int32_t)(msgLength + AERON_RB_RECORD_HEADER_LENGTH));
+
+    // last message
+    record = (aeron_rb_record_descriptor_t *)(rb.buffer + (CAPACITY - alignedRecordLength));
+    EXPECT_EQ(record->msg_type_id, MSG_TYPE_ID);
+    EXPECT_EQ(record->length, (int32_t)(msgLength + AERON_RB_RECORD_HEADER_LENGTH));
+}
+
 TEST_F(SpscRbTest, tryClaimShouldErrorWhenMessageTypeIsZero)
 {
     aeron_spsc_rb_t rb;

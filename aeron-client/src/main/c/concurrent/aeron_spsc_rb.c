@@ -77,8 +77,21 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
         ring_buffer->descriptor->head_cache_position = head;
     }
 
-    if (required_capacity > to_buffer_end_length)
+    int64_t next_tail = tail + (int64_t)aligned_record_length;
+    int32_t write_index = (int32_t)record_index;
+    if (aligned_record_length == to_buffer_end_length) // message fits within the end of the buffer
     {
+        AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, next_tail);
+        // pre-zero next message header
+        next_header = (aeron_rb_record_descriptor_t *)ring_buffer->buffer;
+
+        next_header->length = 0;
+        next_header->msg_type_id = 0;
+        return (int32_t)record_index;
+    }
+    else if (required_capacity > to_buffer_end_length)
+    {
+        write_index = 0;
         size_t head_index = (size_t)(head & mask);
 
         if (required_capacity > head_index)
@@ -88,16 +101,18 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
 
             if (required_capacity > head_index)
             {
-                return -1;
+                write_index = -1;
+                next_tail = tail;
             }
 
             ring_buffer->descriptor->head_cache_position = head;
         }
 
         padding = to_buffer_end_length;
+        next_tail += (int64_t)padding;
     }
 
-    AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, tail + aligned_record_length + padding);
+    AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, next_tail);
 
     if (0 != padding)
     {
@@ -112,10 +127,13 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
         record_index = 0;
     }
 
-    next_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index + aligned_record_length);
+    if (-1 != write_index)
+    {
+        next_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + write_index + aligned_record_length);
 
-    next_header->length = 0;
-    next_header->msg_type_id = 0;
+        next_header->length = 0;
+        next_header->msg_type_id = 0;
+    }
 
     return (int32_t)record_index;
 }

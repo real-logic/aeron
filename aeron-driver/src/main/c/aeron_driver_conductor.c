@@ -529,10 +529,6 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         &conductor->counters_manager, AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS);
     conductor->client_timeouts_counter = aeron_counters_manager_addr(
         &conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS);
-    conductor->max_cycle_time_counter = aeron_counters_manager_addr(
-        &conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_MAX_CYCLE_TIME);
-    conductor->cycle_time_threshold_exceeded_counter = aeron_counters_manager_addr(
-        &conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
 
     int64_t now_ns = context->nano_clock();
     aeron_clock_update_cached_time(context->cached_clock, context->epoch_clock(), now_ns);
@@ -544,6 +540,19 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->publication_reserved_session_id_low = context->publication_reserved_session_id_low;
     conductor->publication_reserved_session_id_high = context->publication_reserved_session_id_high;
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
+
+    context->conductor_duty_cycle_stall_tracker.max_cycle_time_counter = aeron_counters_manager_addr(
+        &conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_MAX_CYCLE_TIME);
+    context->conductor_duty_cycle_stall_tracker.cycle_time_threshold_exceeded_counter = aeron_counters_manager_addr(
+        &conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED);
+    context->sender_duty_cycle_stall_tracker.max_cycle_time_counter = aeron_counters_manager_addr(
+        &conductor->counters_manager, AERON_SYSTEM_COUNTER_SENDER_MAX_CYCLE_TIME);
+    context->sender_duty_cycle_stall_tracker.cycle_time_threshold_exceeded_counter = aeron_counters_manager_addr(
+        &conductor->counters_manager, AERON_SYSTEM_COUNTER_SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED);
+    context->receiver_duty_cycle_stall_tracker.max_cycle_time_counter = aeron_counters_manager_addr(
+        &conductor->counters_manager, AERON_SYSTEM_COUNTER_RECEIVER_MAX_CYCLE_TIME);
+    context->receiver_duty_cycle_stall_tracker.cycle_time_threshold_exceeded_counter = aeron_counters_manager_addr(
+        &conductor->counters_manager, AERON_SYSTEM_COUNTER_RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED);
 
     if (aeron_name_resolver_init(&conductor->name_resolver, context->name_resolver_init_args, context) < 0)
     {
@@ -567,7 +576,42 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
             &conductor->counters_manager, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES, (size_t)label_length, label);
     }
 
-    label_length = snprintf(label, sizeof(label), ": threshold=%" PRIu64 "ns", context->conductor_cycle_threshold_ns);
+    label_length = snprintf(label, sizeof(label), ": %s",
+        aeron_driver_threading_mode_to_string(context->threading_mode));
+    if (label_length > 0)
+    {
+        aeron_counters_manager_append_to_label(
+            &conductor->counters_manager,
+            AERON_SYSTEM_COUNTER_CONDUCTOR_MAX_CYCLE_TIME,
+            (size_t)label_length,
+            label);
+    }
+
+    label_length = snprintf(label, sizeof(label), ": %s",
+        aeron_driver_threading_mode_to_string(context->threading_mode));
+    if (label_length > 0)
+    {
+        aeron_counters_manager_append_to_label(
+            &conductor->counters_manager,
+            AERON_SYSTEM_COUNTER_SENDER_MAX_CYCLE_TIME,
+            (size_t)label_length,
+            label);
+    }
+
+    label_length = snprintf(label, sizeof(label), ": %s",
+        aeron_driver_threading_mode_to_string(context->threading_mode));
+    if (label_length > 0)
+    {
+        aeron_counters_manager_append_to_label(
+            &conductor->counters_manager,
+            AERON_SYSTEM_COUNTER_RECEIVER_MAX_CYCLE_TIME,
+            (size_t)label_length,
+            label);
+    }
+
+    label_length = snprintf(label, sizeof(label), ": threshold=%" PRIu64 "ns %s",
+        context->conductor_duty_cycle_stall_tracker.cycle_threshold_ns,
+        aeron_driver_threading_mode_to_string(context->threading_mode));
     if (label_length > 0)
     {
         aeron_counters_manager_append_to_label(
@@ -576,6 +620,32 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
             (size_t)label_length,
             label);
     }
+
+    label_length = snprintf(label, sizeof(label), ": threshold=%" PRIu64 "ns %s",
+        context->sender_duty_cycle_stall_tracker.cycle_threshold_ns,
+        aeron_driver_threading_mode_to_string(context->threading_mode));
+    if (label_length > 0)
+    {
+        aeron_counters_manager_append_to_label(
+            &conductor->counters_manager,
+            AERON_SYSTEM_COUNTER_SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED,
+            (size_t)label_length,
+            label);
+    }
+
+    label_length = snprintf(label, sizeof(label), ": threshold=%" PRIu64 "ns %s",
+        context->receiver_duty_cycle_stall_tracker.cycle_threshold_ns,
+        aeron_driver_threading_mode_to_string(context->threading_mode));
+    if (label_length > 0)
+    {
+        aeron_counters_manager_append_to_label(
+            &conductor->counters_manager,
+            AERON_SYSTEM_COUNTER_RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED,
+            (size_t)label_length,
+            label);
+    }
+
+    context->conductor_duty_cycle_tracker->update(context->conductor_duty_cycle_tracker->state, now_ns);
 
     conductor->context = context;
 
@@ -2701,14 +2771,10 @@ void aeron_driver_conductor_on_check_for_blocked_driver_commands(aeron_driver_co
 
 void aeron_driver_conductor_track_time(aeron_driver_conductor_t *conductor, int64_t now_ns)
 {
-    int64_t cycle_time_ns = now_ns - aeron_clock_cached_nano_time(conductor->context->cached_clock);
     aeron_clock_update_cached_nano_time(conductor->context->cached_clock, now_ns);
+    aeron_duty_cycle_tracker_t *tracker = conductor->context->conductor_duty_cycle_tracker;
 
-    aeron_counter_propose_max_ordered(conductor->max_cycle_time_counter, cycle_time_ns);
-    if (cycle_time_ns > (int64_t)(conductor->context->conductor_cycle_threshold_ns))
-    {
-        aeron_counter_ordered_increment(conductor->cycle_time_threshold_exceeded_counter, 1);
-    }
+    tracker->measure_and_update(tracker->state, now_ns);
 
     if (now_ns >= conductor->clock_update_deadline_ns)
     {
@@ -4667,3 +4733,6 @@ extern void aeron_driver_conductor_on_unavailable_image(
     int32_t stream_id,
     const char *channel,
     size_t channel_length);
+
+extern void aeron_duty_cycle_stall_tracker_update(void *state, int64_t now_ns);
+extern void aeron_duty_cycle_stall_tracker_measure_and_update(void *state, int64_t now_ns);

@@ -774,6 +774,20 @@ const char *aeron_driver_context_get_name_resolver_init_args(aeron_driver_contex
 int aeron_driver_context_set_re_resolution_check_interval_ns(aeron_driver_context_t *context, uint64_t value);
 uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_context_t *context);
 
+typedef struct aeron_duty_cycle_tracker_stct aeron_duty_cycle_tracker_t;
+
+int aeron_driver_context_set_conductor_duty_cycle_tracker(
+    aeron_driver_context_t *context, aeron_duty_cycle_tracker_t *value);
+aeron_duty_cycle_tracker_t *aeron_driver_context_get_conductor_duty_cycle_tracker(aeron_driver_context_t *context);
+
+int aeron_driver_context_set_sender_duty_cycle_tracker(
+    aeron_driver_context_t *context, aeron_duty_cycle_tracker_t *value);
+aeron_duty_cycle_tracker_t *aeron_driver_context_get_sender_duty_cycle_tracker(aeron_driver_context_t *context);
+
+int aeron_driver_context_set_receiver_duty_cycle_tracker(
+    aeron_driver_context_t *context, aeron_duty_cycle_tracker_t *value);
+aeron_duty_cycle_tracker_t *aeron_driver_context_get_receiver_duty_cycle_tracker(aeron_driver_context_t *context);
+
 /**
  * Specify the duty cycle time threshold for the conductor.
  */
@@ -781,6 +795,22 @@ uint64_t aeron_driver_context_get_re_resolution_check_interval_ns(aeron_driver_c
 
 int64_t aeron_driver_context_set_conductor_cycle_threshold_ns(aeron_driver_context_t *context, uint64_t value);
 int64_t aeron_driver_context_get_conductor_cycle_threshold_ns(aeron_driver_context_t *context);
+
+/**
+ * Specify the duty cycle time threshold for the sender.
+ */
+#define AERON_DRIVER_SENDER_CYCLE_THRESHOLD_ENV_VAR "AERON_DRIVER_SENDER_CYCLE_THRESHOLD"
+
+int64_t aeron_driver_context_set_sender_cycle_threshold_ns(aeron_driver_context_t *context, uint64_t value);
+int64_t aeron_driver_context_get_sender_cycle_threshold_ns(aeron_driver_context_t *context);
+
+/**
+ * Specify the duty cycle time threshold for the receiver.
+ */
+#define AERON_DRIVER_RECEIVER_CYCLE_THRESHOLD_ENV_VAR "AERON_DRIVER_RECEIVER_CYCLE_THRESHOLD"
+
+int64_t aeron_driver_context_set_receiver_cycle_threshold_ns(aeron_driver_context_t *context, uint64_t value);
+int64_t aeron_driver_context_get_receiver_cycle_threshold_ns(aeron_driver_context_t *context);
 
 #define AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR "AERON_RECEIVER_IO_VECTOR_CAPACITY"
 int aeron_driver_context_set_receiver_io_vector_capacity(aeron_driver_context_t *context, uint32_t value);

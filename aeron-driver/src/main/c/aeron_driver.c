@@ -483,6 +483,23 @@ int aeron_driver_validate_page_size(aeron_driver_t *driver)
     return 0;
 }
 
+const char *aeron_driver_threading_mode_to_string(aeron_threading_mode_t mode)
+{
+    switch (mode)
+    {
+        case AERON_THREADING_MODE_DEDICATED:
+            return "DEDICATED";
+        case AERON_THREADING_MODE_SHARED:
+            return "SHARED";
+        case AERON_THREADING_MODE_SHARED_NETWORK:
+            return "SHARED_NETWORK";
+        case AERON_THREADING_MODE_INVOKER:
+            return "INVOKER";
+        default:
+            return "unknown";
+    }
+}
+
 void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
 {
     FILE *fpout = stdout;
@@ -525,7 +542,12 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    nak_multicast_group_size=%" PRIu64, (uint64_t)context->nak_multicast_group_size);
     fprintf(fpout, "\n    status_message_timeout_ns=%" PRIu64, context->status_message_timeout_ns);
     fprintf(fpout, "\n    counter_free_to_reuse_ns=%" PRIu64, context->counter_free_to_reuse_ns);
-    fprintf(fpout, "\n    conductor_cycle_threshold_ns=%" PRIu64, context->conductor_cycle_threshold_ns);
+    fprintf(fpout, "\n    conductor_cycle_threshold_ns=%" PRIu64,
+        context->conductor_duty_cycle_stall_tracker.cycle_threshold_ns);
+    fprintf(fpout, "\n    sender_cycle_threshold_ns=%" PRIu64,
+        context->sender_duty_cycle_stall_tracker.cycle_threshold_ns);
+    fprintf(fpout, "\n    receiver_cycle_threshold_ns=%" PRIu64,
+        context->receiver_duty_cycle_stall_tracker.cycle_threshold_ns);
     fprintf(fpout, "\n    term_buffer_length=%" PRIu64, (uint64_t)context->term_buffer_length);
     fprintf(fpout, "\n    ipc_term_buffer_length=%" PRIu64, (uint64_t)context->ipc_term_buffer_length);
     fprintf(fpout, "\n    publication_window_length=%" PRIu64, (uint64_t)context->publication_window_length);
@@ -556,7 +578,7 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
         aeron_dlinfo_func((aeron_fptr_t)context->nano_clock, buffer, sizeof(buffer)));
     /* cachedEpochClock */
     /* cachedNanoClock */
-    fprintf(fpout, "\n    threading_mode=%d", context->threading_mode);
+    fprintf(fpout, "\n    threading_mode=%s", aeron_driver_threading_mode_to_string(context->threading_mode));
     fprintf(fpout, "\n    agent_on_start_func=%s",
         aeron_dlinfo_func((aeron_fptr_t)context->agent_on_start_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    agent_on_start_state=%p", context->agent_on_start_state);

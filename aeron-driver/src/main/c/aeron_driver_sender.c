@@ -109,6 +109,8 @@ int aeron_driver_sender_init(
 
     int64_t now_ns = context->nano_clock();
     sender->re_resolution_deadline_ns = now_ns + context->re_resolution_check_interval_ns;
+    sender->context->sender_duty_cycle_stall_tracker.tracker.update(
+        sender->context->sender_duty_cycle_stall_tracker.tracker.state, now_ns);
 
     return 0;
 }
@@ -135,6 +137,9 @@ int aeron_driver_sender_do_work(void *clientd)
 
     int64_t now_ns = sender->context->nano_clock();
     aeron_clock_update_cached_nano_time(sender->context->sender_cached_clock, now_ns);
+
+    aeron_duty_cycle_tracker_t *tracker = sender->context->sender_duty_cycle_tracker;
+    tracker->measure_and_update(tracker->state, now_ns);
 
     int work_count = (int)aeron_spsc_concurrent_array_queue_drain(
         sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, AERON_COMMAND_DRAIN_LIMIT);

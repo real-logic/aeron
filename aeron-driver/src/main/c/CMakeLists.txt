@@ -312,6 +312,7 @@ SET(HEADERS
     aeron_driver_receiver_proxy.h
     aeron_driver_sender.h
     aeron_driver_sender_proxy.h
+    aeron_duty_cycle_tracker.h
     aeron_flow_control.h
     aeron_ipc_publication.h
     aeron_loss_detector.h

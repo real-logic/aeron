@@ -278,8 +278,6 @@ typedef struct aeron_driver_conductor_stct
     int64_t *errors_counter;
     int64_t *unblocked_commands_counter;
     int64_t *client_timeouts_counter;
-    int64_t *max_cycle_time_counter;
-    int64_t *cycle_time_threshold_exceeded_counter;
 
     int64_t clock_update_deadline_ns;
 

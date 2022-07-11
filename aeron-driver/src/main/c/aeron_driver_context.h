@@ -30,6 +30,7 @@
 #include "aeron_agent.h"
 #include "aeron_system_counters.h"
 #include "aeron_cnc_file_descriptor.h"
+#include "aeron_duty_cycle_tracker.h"
 
 #define AERON_COMMAND_QUEUE_CAPACITY (128)
 #define AERON_COMMAND_DRAIN_LIMIT (2)
@@ -109,7 +110,6 @@ typedef struct aeron_driver_context_stct
     uint64_t nak_unicast_delay_ns;                          /* aeron.nak.unicast.delay = 60ms */
     uint64_t nak_multicast_max_backoff_ns;                  /* aeron.nak.multicast.max.backoff = 60ms */
     uint64_t re_resolution_check_interval_ns;               /* aeron.driver.reresolution.check.interval = 1s */
-    uint64_t conductor_cycle_threshold_ns;                  /* aeron.driver.conductor.cycle.threshold = 1s */
     size_t to_driver_buffer_length;                         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;                        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;                   /* aeron.counters.buffer.length = 1MB */
@@ -261,6 +261,13 @@ typedef struct aeron_driver_context_stct
     const char *name_resolver_init_args;
     aeron_driver_name_resolver_on_resolve_t on_name_resolve_func;
 
+    aeron_duty_cycle_tracker_t *conductor_duty_cycle_tracker;
+    aeron_duty_cycle_tracker_t *sender_duty_cycle_tracker;
+    aeron_duty_cycle_tracker_t *receiver_duty_cycle_tracker;
+    aeron_duty_cycle_stall_tracker_t conductor_duty_cycle_stall_tracker;
+    aeron_duty_cycle_stall_tracker_t sender_duty_cycle_stall_tracker;
+    aeron_duty_cycle_stall_tracker_t receiver_duty_cycle_stall_tracker;
+
     aeron_dl_loaded_libs_state_t *dynamic_libs;
     aeron_driver_context_bindings_clientd_entry_t *bindings_clientd_entries;
     size_t num_bindings_clientd_entries;
@@ -277,6 +284,8 @@ aeron_driver_context_t;
 
 aeron_inferable_boolean_t aeron_config_parse_inferable_boolean(
     const char *inferable_boolean, aeron_inferable_boolean_t def);
+
+const char *aeron_driver_threading_mode_to_string(aeron_threading_mode_t mode);
 
 void aeron_driver_context_print_configuration(aeron_driver_context_t *context);
 

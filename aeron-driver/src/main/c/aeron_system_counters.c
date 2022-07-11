@@ -51,6 +51,10 @@ static aeron_system_counter_t system_counters[] =
         { "Resolution changes", AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES },
         { "Conductor max cycle time doing its work (ns)", AERON_SYSTEM_COUNTER_CONDUCTOR_MAX_CYCLE_TIME },
         { "Conductor work cycle exceeded threshold count", AERON_SYSTEM_COUNTER_CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED },
+        { "Sender max cycle time doing its work (ns)", AERON_SYSTEM_COUNTER_SENDER_MAX_CYCLE_TIME },
+        { "Sender work cycle exceeded threshold count", AERON_SYSTEM_COUNTER_SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED },
+        { "Receiver max cycle time doing its work (ns)", AERON_SYSTEM_COUNTER_RECEIVER_MAX_CYCLE_TIME },
+        { "Receiver work cycle exceeded threshold count", AERON_SYSTEM_COUNTER_RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED },
     };
 
 static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);

@@ -24,6 +24,7 @@
 extern "C"
 {
 #include "concurrent/aeron_spsc_rb.h"
+#include "util/aeron_error.h"
 }
 #undef max
 
@@ -62,7 +63,19 @@ TEST_F(SpscRbTest, shouldErrorForCapacityNotPowerOfTwo)
 {
     aeron_spsc_rb_t rb;
 
-    EXPECT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size() - 1), -1);
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size() - 1), -1);
+}
+
+TEST_F(SpscRbTest, shouldErrorForCapacityLessThanTheMinCapacity)
+{
+    aeron_spsc_rb_t rb;
+    const size_t capacity = (AERON_SPSC_RB_MIN_CAPACITY / 2);
+
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + capacity), -1);
+    ASSERT_EQ(aeron_errcode(), EINVAL);
+    const std::string expected_err_msg = "Invalid capacity: " + std::to_string(capacity);
+    const std::string actual_err_msg = std::string(aeron_errmsg());
+    ASSERT_NE(actual_err_msg.find(expected_err_msg), std::string::npos);
 }
 
 TEST_F(SpscRbTest, shouldErrorWhenMaxMessageSizeExceeded)
@@ -71,6 +84,30 @@ TEST_F(SpscRbTest, shouldErrorWhenMaxMessageSizeExceeded)
     ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
 
     EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), rb.max_message_length + 1), AERON_RB_ERROR);
+}
+
+TEST_F(SpscRbTest, shouldErrorWhenMinCapacityIsUsedAndMessageSizeIsNotZero)
+{
+    aeron_spsc_rb_t rb;
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + AERON_SPSC_RB_MIN_CAPACITY), 0);
+
+    EXPECT_EQ(rb.max_message_length, 0);
+    EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), 1), AERON_RB_ERROR);
+}
+
+TEST_F(SpscRbTest, shouldWriteAnEmptyMessageWhenMinCapacityIsUsed)
+{
+    aeron_spsc_rb_t rb;
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), AERON_RB_TRAILER_LENGTH + AERON_SPSC_RB_MIN_CAPACITY), 0);
+
+    EXPECT_EQ(0, rb.max_message_length);
+    EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), 0), AERON_RB_SUCCESS);
+
+    auto *record = (aeron_rb_record_descriptor_t *)(m_buffer.data());
+
+    EXPECT_EQ(record->length, (int32_t)AERON_RB_RECORD_HEADER_LENGTH);
+    EXPECT_EQ(record->msg_type_id, (int32_t)MSG_TYPE_ID);
+    EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(AERON_RB_ALIGNMENT));
 }
 
 TEST_F(SpscRbTest, shouldErrorWhenMessageTypeIsNegative)
@@ -381,6 +418,52 @@ TEST_F(SpscRbTest, shouldLimitReadOfMessages)
     EXPECT_EQ(messagesRead, (size_t)1);
     EXPECT_EQ(timesCalled, (size_t)1);
     EXPECT_EQ(rb.descriptor->head_position, (int64_t)(head + alignedRecordLength));
+}
+
+TEST_F(SpscRbTest, shouldPutMessageAtTheEndOfTheBufferWithoutPaddingAfterReadUnblocksZeroingOfTheNextHeader)
+{
+    aeron_spsc_rb_t rb;
+    const int32_t msgType = 555;
+    const size_t msgLength = (CAPACITY / 8) - AERON_RB_RECORD_HEADER_LENGTH;
+    const size_t alignedRecordLength = AERON_ALIGN(CAPACITY / 8, AERON_RB_ALIGNMENT);
+
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
+
+    m_srcBuffer.fill(7);
+    for (int i = 0; i < 7; i++)
+    {
+        EXPECT_EQ(aeron_spsc_rb_write(&rb, msgType, m_srcBuffer.data(), msgLength), AERON_RB_SUCCESS);
+    }
+    m_srcBuffer.fill(5);
+    EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), msgLength), AERON_RB_FULL);
+
+    size_t timesCalled = 0;
+    size_t messagesRead = aeron_spsc_rb_read(&rb, countTimesAsSizeT, &timesCalled, 1);
+
+    EXPECT_EQ(messagesRead, (size_t)1);
+    EXPECT_EQ(timesCalled, (size_t)1);
+
+    EXPECT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), msgLength), AERON_RB_SUCCESS);
+
+    EXPECT_EQ(rb.descriptor->head_position, (int64_t)alignedRecordLength);
+    EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(CAPACITY));
+
+    aeron_rb_record_descriptor_t *record;
+
+    // assert that the next message header was zeroed correctly
+    record = (aeron_rb_record_descriptor_t *)(rb.buffer);
+    EXPECT_EQ(record->msg_type_id, 0);
+    EXPECT_EQ(record->length, 0);
+
+    // second message
+    record = (aeron_rb_record_descriptor_t *)(rb.buffer + alignedRecordLength);
+    EXPECT_EQ(record->msg_type_id, msgType);
+    EXPECT_EQ(record->length, (int32_t)(msgLength + AERON_RB_RECORD_HEADER_LENGTH));
+
+    // last message
+    record = (aeron_rb_record_descriptor_t *)(rb.buffer + (CAPACITY - alignedRecordLength));
+    EXPECT_EQ(record->msg_type_id, MSG_TYPE_ID);
+    EXPECT_EQ(record->length, (int32_t)(msgLength + AERON_RB_RECORD_HEADER_LENGTH));
 }
 
 TEST_F(SpscRbTest, tryClaimShouldErrorWhenMessageTypeIsZero)

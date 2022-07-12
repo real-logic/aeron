@@ -19,6 +19,8 @@
 
 #include "concurrent/aeron_rb.h"
 
+#define AERON_MPSC_RB_MIN_CAPACITY (AERON_RB_RECORD_HEADER_LENGTH)
+
 typedef struct aeron_mpsc_rb_stct
 {
     uint8_t *buffer;

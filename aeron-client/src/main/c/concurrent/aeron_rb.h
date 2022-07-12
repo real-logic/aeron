@@ -51,11 +51,11 @@ aeron_rb_record_descriptor_t;
 
 #define AERON_RB_ALIGNMENT (2 * sizeof(int32_t))
 
-#define AERON_RB_MESSAGE_OFFSET(index) (index + sizeof(aeron_rb_record_descriptor_t))
+#define AERON_RB_MESSAGE_OFFSET(index) ((index) + sizeof(aeron_rb_record_descriptor_t))
 #define AERON_RB_RECORD_HEADER_LENGTH (sizeof(aeron_rb_record_descriptor_t))
 
-#define AERON_RB_MAX_MESSAGE_LENGTH(capacity) (capacity / 8)
-#define AERON_RB_INVALID_MSG_TYPE_ID(id) (id < 1)
+#define AERON_RB_MAX_MESSAGE_LENGTH(capacity, min_capacity) (capacity) == (min_capacity) ? 0 : ((capacity) / 8)
+#define AERON_RB_INVALID_MSG_TYPE_ID(id) ((id) < 1)
 #define AERON_RB_PADDING_MSG_TYPE_ID (-1)
 
 typedef enum aeron_rb_write_result_stct
@@ -68,6 +68,6 @@ aeron_rb_write_result_t;
 
 typedef void (*aeron_rb_handler_t)(int32_t, const void *, size_t, void *);
 
-#define AERON_RB_IS_CAPACITY_VALID(capacity) AERON_IS_POWER_OF_TWO(capacity)
+#define AERON_RB_IS_CAPACITY_VALID(capacity, min_capacity) AERON_IS_POWER_OF_TWO(capacity) && (capacity) >= (min_capacity)
 
 #endif //AERON_RB_H

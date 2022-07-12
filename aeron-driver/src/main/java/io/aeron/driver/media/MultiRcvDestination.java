@@ -75,7 +75,7 @@ final class MultiRcvDestination
 
     boolean hasDestination(final int transportIndex)
     {
-        return numDestinations > transportIndex && null != transports[transportIndex];
+        return transports.length > transportIndex && null != transports[transportIndex];
     }
 
     ReceiveDestinationTransport transport(final int transportIndex)

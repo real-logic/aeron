@@ -283,7 +283,7 @@ public final class DriverConductor implements Agent
                 rcvPos = ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
 
                 final boolean treatAsMulticast = subscription.group() == INFER ?
-                    channelEndpoint.udpChannel().isMulticast() : subscription.group() == FORCE_TRUE;
+                    channelEndpoint.udpChannel(transportIndex).isMulticast() : subscription.group() == FORCE_TRUE;
 
                 final PublicationImage image = new PublicationImage(
                     registrationId,
@@ -582,7 +582,7 @@ public final class DriverConductor implements Agent
             if (channelEndpoint.shouldBeClosed())
             {
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
-                receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
+                receiveChannelEndpointByChannelMap.remove(channelEndpoint.subscriptionUdpChannel().canonicalForm());
                 channelEndpoint.closeIndicators();
             }
         }
@@ -1502,7 +1502,8 @@ public final class DriverConductor implements Agent
     private void validateReceiveTimestampOffset(
         final UdpChannel udpChannel, final ReceiveChannelEndpoint channelEndpoint)
     {
-        if (udpChannel.channelReceiveTimestampOffset() != channelEndpoint.udpChannel().channelReceiveTimestampOffset())
+        if (udpChannel.channelReceiveTimestampOffset() !=
+            channelEndpoint.subscriptionUdpChannel().channelReceiveTimestampOffset())
         {
             throw new InvalidChannelException(
                 "option conflicts with existing subscription: " + CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME + "=" +

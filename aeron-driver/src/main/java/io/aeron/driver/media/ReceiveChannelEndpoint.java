@@ -186,7 +186,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
      */
     public String originalUriString()
     {
-        return udpChannel().originalUriString();
+        return subscriptionUdpChannel().originalUriString();
     }
 
     /**

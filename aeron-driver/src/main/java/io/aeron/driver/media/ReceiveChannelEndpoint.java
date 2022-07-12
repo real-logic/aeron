@@ -464,7 +464,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     /**
      * Get the {@link UdpChannel} for the transport index.
      *
-     * @param transportIndex to the the {@link UdpChannel} for.
+     * @param transportIndex to the {@link UdpChannel}.
      * @return the {@link UdpChannel} for the transport index.
      */
     public UdpChannel udpChannel(final int transportIndex)

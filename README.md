@@ -109,13 +109,6 @@ You can run the `AeronStat` utility to read system counters from a command line
 
 For more samples and scripts to run them, see the [aeron-samples](https://github.com/real-logic/aeron/tree/master/aeron-samples) directory.
 
-Media Driver Packaging
-----------------------
-
-The Media Driver is packaged by the default build into an application that can be found here
-
-    aeron-driver/build/distributions/aeron-driver-${VERSION}.zip
-
 
 License (See LICENSE file for full license)
 -------------------------------------------

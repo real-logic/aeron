@@ -58,7 +58,6 @@ public final class EchoServiceNode
             "aeron.cluster.tutorial.hostnames.internal", hostnamesStr);
         final List<String> hostnames = Arrays.asList(hostnamesStr.split(","));
         final List<String> internalHostnames = Arrays.asList(internalHostnamesStr.split(","));
-        final String baseDir = System.getProperty("aeron.cluster.tutorial.baseDir");
 
         final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
 

@@ -670,7 +670,7 @@ leader and see if our client is able to continue.
 [subs = "attributes+"]
 ----
 > java -cp <AERON_HOME>/aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
-  io.aeron.cluster.ClusterTool node0/consensus-module list-members
+  io.aeron.cluster.ClusterTool node0/cluster list-members
 ----
 
 This will show a list of all the members in the cluster, similar to the following:
@@ -703,7 +703,7 @@ We can discover the `pid` for that member using the following command:
 [subs = "attributes+"]
 ----
 > java -cp <AERON_HOME>/aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
-  io.aeron.cluster.ClusterTool node<leaderMemberId>/consensus-module pid
+  io.aeron.cluster.ClusterTool node<leaderMemberId>/cluster pid
 15060
 ----
 
@@ -829,7 +829,7 @@ Firstly lets look at the recording log.
 [subs="attributes+"]
 ----
 > java -cp <AERON_HOME>/aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
-  io.aeron.cluster.ClusterTool node0/consensus-module recording-log
+  io.aeron.cluster.ClusterTool node0/cluster recording-log
 ----
 
 Which should show a recording log with a single entry:
@@ -842,7 +842,7 @@ We can trigger a snapshot on the leader.
 
 ----
 > java -cp <AERON_HOME>/aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
-  io.aeron.cluster.ClusterTool node2/consensus-module snapshot
+  io.aeron.cluster.ClusterTool node2/cluster snapshot
 ----
 
 The recording log will now have additional entries.

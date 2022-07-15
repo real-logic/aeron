@@ -38,6 +38,8 @@ import static io.aeron.CommonContext.*;
  * range and this will be added to the replay channel for instructing the archive.
  * <p>
  * NOTE: Merging is only supported with UDP streams.
+ * <p>
+ * NOTE: ReplayMerge is not threadsafe and should <b>not</b> be used with a shared {@link AeronArchive} client.
  */
 public final class ReplayMerge implements AutoCloseable
 {

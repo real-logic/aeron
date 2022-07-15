@@ -70,46 +70,6 @@ support.
 1. [Performance Testing](https://github.com/real-logic/aeron/wiki/Performance-Testing)
 1. [Building Aeron](https://github.com/real-logic/aeron/wiki/Building-Aeron)
 
-Running Samples
----------------
-
-Start up a media driver which will create the data and conductor directories. On Linux, this will probably be in
-`/dev/shm/aeron` or `/tmp/aeron`.
-
-```shell
-    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar io.aeron.driver.MediaDriver
-```
-
-Alternatively, specify the data and conductor directories. The following example uses the shared memory 'directory' on
-Linux, but you could just as easily point to the regular filesystem.
-
-```shell
-    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar -Daeron.dir=/dev/shm/aeron io.aeron.driver.MediaDriver
-```
-
-You can run the `BasicSubscriber` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory
-directory, so be sure your `MediaDriver` is doing the same!
-
-```shell
-    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar io.aeron.samples.BasicSubscriber
-```
-    
-You can run the `BasicPublisher` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory
-directory, so be sure your `MediaDriver` is doing the same!
-
-```shell
-    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar io.aeron.samples.BasicPublisher
-```
-
-You can run the `AeronStat` utility to read system counters from a command line
-    
-```shell
-    $ java -cp aeron-all/build/libs/aeron-all-${VERSION}.jar io.aeron.samples.AeronStat
-```
-
-For more samples and scripts to run them, see the [aeron-samples](https://github.com/real-logic/aeron/tree/master/aeron-samples) directory.
-
-
 License (See LICENSE file for full license)
 -------------------------------------------
 Copyright 2014-2022 Real Logic Limited.

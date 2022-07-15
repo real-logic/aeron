@@ -40,9 +40,9 @@ with Java **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%
 
 Commercial support, training, and development on Aeron is available from
 [sales@real-logic.co.uk](mailto:sales@real-logic.co.uk?subject=Aeron). Premium features are available which include
-Solarflare/Xilinx ef_vi and AWS DPDK transport bindings for a further reduction in latency with increased throughput,
-and security with ATS (Aeron Transport Security) for encrypted communications is available to customers on commercial
-support.
+Solarflare/Xilinx ef_vi, Mellanox VMA, and AWS DPDK transport bindings for a further reduction in latency with increased
+throughput, and security with ATS (Aeron Transport Security) for encrypted communications is available to customers on
+commercial support.
 
 ### How do I use Aeron?
 

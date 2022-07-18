@@ -670,7 +670,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == appVersionValidator)
             {
-                appVersionValidator = new AppVersionValidator();
+                appVersionValidator = AppVersionValidator.SEMANTIC_VERSIONING_VALIDATOR;
             }
 
             if (null == epochClock)

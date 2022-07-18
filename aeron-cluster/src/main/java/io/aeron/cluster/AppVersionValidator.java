@@ -25,6 +25,11 @@ import org.agrona.SemanticVersion;
 public class AppVersionValidator
 {
     /**
+     * Singleton instance of {@link org.agrona.SemanticVersion} version which can be used to avoid allocation.
+     */
+    public static final AppVersionValidator SEMANTIC_VERSIONING_VALIDATOR = new AppVersionValidator();
+
+    /**
      * Check version compatibility between configured context appVersion and appVersion in
      * new leadership term or snapshot.
      *

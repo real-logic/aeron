@@ -1357,7 +1357,7 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == appVersionValidator)
             {
-                appVersionValidator = new AppVersionValidator();
+                appVersionValidator = AppVersionValidator.SEMANTIC_VERSIONING_VALIDATOR;
             }
 
             if (null == clusterTimeConsumerSupplier)

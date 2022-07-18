@@ -31,7 +31,9 @@ struct aeron_duty_cycle_tracker_stct
 
 typedef struct aeron_duty_cycle_stall_tracker_stct {
     struct aeron_duty_cycle_tracker_stct tracker;
+    char lhs_padding[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
     int64_t last_time_of_update_ns;
+    char rhs_padding[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
     uint64_t cycle_threshold_ns;
     int64_t *max_cycle_time_counter;
     int64_t *cycle_time_threshold_exceeded_counter;

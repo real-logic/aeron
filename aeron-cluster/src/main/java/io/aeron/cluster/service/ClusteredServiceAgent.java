@@ -468,7 +468,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final TimeUnit timeUnit,
         final int appVersion)
     {
-        if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
+        if (!ctx.appVersionValidator().isVersionCompatible(ctx.appVersion(), appVersion))
         {
             ctx.errorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
@@ -807,7 +807,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
 
         final int appVersion = snapshotLoader.appVersion();
-        if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
+        if (!ctx.appVersionValidator().isVersionCompatible(ctx.appVersion(), appVersion))
         {
             throw new ClusterException(
                 "incompatible app version: " + SemanticVersion.toString(ctx.appVersion()) +

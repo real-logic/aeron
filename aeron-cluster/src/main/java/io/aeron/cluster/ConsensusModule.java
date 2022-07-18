@@ -1295,6 +1295,7 @@ public final class ConsensusModule implements AutoCloseable
         private LogPublisher logPublisher;
         private EgressPublisher egressPublisher;
         private DutyCycleTracker dutyCycleTracker;
+        private AppVersionValidator appVersionValidator;
         private boolean isLogMdc;
 
         /**
@@ -1352,6 +1353,11 @@ public final class ConsensusModule implements AutoCloseable
             if (null == epochClock)
             {
                 epochClock = SystemEpochClock.INSTANCE;
+            }
+
+            if (null == appVersionValidator)
+            {
+                appVersionValidator = new AppVersionValidator();
             }
 
             if (null == clusterTimeConsumerSupplier)
@@ -1694,6 +1700,32 @@ public final class ConsensusModule implements AutoCloseable
         public int appVersion()
         {
             return appVersion;
+        }
+
+        /**
+         * User assigned application version validator implementation used to check version compatibility.
+         *
+         * The default validator uses {@link org.agrona.SemanticVersion} semantics.
+         *
+         * @param appVersionValidator for user application.
+         * @return this for fluent API.
+         */
+        public Context appVersionValidator(final AppVersionValidator appVersionValidator)
+        {
+            this.appVersionValidator = appVersionValidator;
+            return this;
+        }
+
+        /**
+         * User assigned application version validator implementation used to check version compatibility.
+         *
+         * The default validator uses {@link org.agrona.SemanticVersion} semantics.
+         *
+         * @return AppVersionValidator in use.
+         */
+        public AppVersionValidator appVersionValidator()
+        {
+            return appVersionValidator;
         }
 
         /**

@@ -700,7 +700,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             appVersion,
             isStartup);
 
-        if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
+        if (!ctx.appVersionValidator().isVersionCompatible(ctx.appVersion(), appVersion))
         {
             ctx.errorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
@@ -1324,7 +1324,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             unexpectedTermination();
         }
 
-        if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
+        if (!ctx.appVersionValidator().isVersionCompatible(ctx.appVersion(), appVersion))
         {
             ctx.countedErrorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
@@ -2708,7 +2708,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
 
             final int appVersion = snapshotLoader.appVersion();
-            if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
+            if (!ctx.appVersionValidator().isVersionCompatible(ctx.appVersion(), appVersion))
             {
                 throw new ClusterException(
                     "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +

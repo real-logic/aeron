@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.AppVersionValidator;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
@@ -616,6 +617,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private DutyCycleTracker dutyCycleTracker;
+        private AppVersionValidator appVersionValidator;
         private boolean ownsAeronClient;
 
         private ClusteredService clusteredService;
@@ -664,6 +666,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == idleStrategySupplier)
             {
                 idleStrategySupplier = Configuration.idleStrategySupplier(null);
+            }
+
+            if (null == appVersionValidator)
+            {
+                appVersionValidator = new AppVersionValidator();
             }
 
             if (null == epochClock)
@@ -830,6 +837,32 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public int appVersion()
         {
             return appVersion;
+        }
+
+        /**
+         * User assigned application version validator implementation used to check version compatibility.
+         *
+         * The default validator uses {@link org.agrona.SemanticVersion} semantics.
+         *
+         * @param appVersionValidator for user application.
+         * @return this for fluent API.
+         */
+        public Context appVersionValidator(final AppVersionValidator appVersionValidator)
+        {
+            this.appVersionValidator = appVersionValidator;
+            return this;
+        }
+
+        /**
+         * User assigned application version validator implementation used to check version compatibility.
+         *
+         * The default validator uses {@link org.agrona.SemanticVersion} semantics.
+         *
+         * @return AppVersionValidator in use.
+         */
+        public AppVersionValidator appVersionValidator()
+        {
+            return appVersionValidator;
         }
 
         /**

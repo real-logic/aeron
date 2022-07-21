@@ -16,10 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.log.EventLogExtension;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.*;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.junit.jupiter.api.BeforeEach;
@@ -446,6 +443,7 @@ class DynamicMembershipTest
         assertEquals(messageCount, dynamicMemberA.service().messageCount());
 
         awaitMembershipSize(staticLeader, 3);
+        awaitActiveMember(dynamicMemberA);
 
         staticFollowerB.isTerminationExpected(true);
         staticLeader.removeMember(staticFollowerB.index(), false);
@@ -464,6 +462,7 @@ class DynamicMembershipTest
         assertEquals(messageCount, dynamicMemberB.service().messageCount());
 
         awaitMembershipSize(staticLeader, 3);
+        awaitActiveMember(dynamicMemberB);
 
         final int initialLeaderIndex = staticLeader.index();
         staticLeader.isTerminationExpected(true);
@@ -487,11 +486,12 @@ class DynamicMembershipTest
         awaitMembershipSize(newLeader, 3);
 
         awaitElectionClosed(dynamicMemberC);
+        awaitActiveMember(dynamicMemberC);
         assertEquals(FOLLOWER, dynamicMemberC.role());
     }
 
     @Test
-    @InterruptAfter(10)
+    @InterruptAfter(30)
     void shouldDynamicallyJoinMemberAfterRecyclingAllStaticNodes(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(4).start();
@@ -529,6 +529,7 @@ class DynamicMembershipTest
         assertEquals(messageCount, dynamicMemberA.service().messageCount());
 
         awaitMembershipSize(staticLeader, 3);
+        awaitActiveMember(dynamicMemberA);
 
         staticFollowerB.isTerminationExpected(true);
         staticLeader.removeMember(staticFollowerB.index(), false);
@@ -547,6 +548,7 @@ class DynamicMembershipTest
         assertEquals(messageCount, dynamicMemberB.service().messageCount());
 
         awaitMembershipSize(staticLeader, 3);
+        awaitActiveMember(dynamicMemberB);
 
         final int initialLeaderIndex = staticLeader.index();
         staticLeader.isTerminationExpected(true);
@@ -568,6 +570,7 @@ class DynamicMembershipTest
         assertEquals(messageCount, dynamicMemberC.service().messageCount());
 
         awaitMembershipSize(newLeader, 3);
+        awaitActiveMember(dynamicMemberC);
 
         final long snapshotCount = cluster.getSnapshotCount(newLeader);
         cluster.takeSnapshot(newLeader);
@@ -590,6 +593,7 @@ class DynamicMembershipTest
         cluster.awaitSnapshotLoadedForService(dynamicMemberD);
         assertEquals(messageCount, dynamicMemberD.service().messageCount());
         awaitMembershipSize(newLeader, 3);
+        awaitActiveMember(dynamicMemberD);
     }
 
     @Test

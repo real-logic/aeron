@@ -214,14 +214,27 @@ public class TestCluster implements AutoCloseable
         ClusterTests.failOnClusterError();
     }
 
-    public static ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
+    public static ClusterMembership awaitMembershipSize(final TestNode node, final int size)
     {
         while (true)
         {
-            final ClusterMembership clusterMembership = leader.clusterMembership();
+            final ClusterMembership clusterMembership = node.clusterMembership();
             if (clusterMembership.activeMembers.size() == size)
             {
                 return clusterMembership;
+            }
+            await(10);
+        }
+    }
+
+    public static void awaitActiveMember(final TestNode node)
+    {
+        while (true)
+        {
+            final ClusterMembership clusterMembership = node.clusterMembership();
+            if (clusterMembership.activeMembers.stream().anyMatch(cm -> cm.id() == node.index()))
+            {
+                return;
             }
             await(10);
         }

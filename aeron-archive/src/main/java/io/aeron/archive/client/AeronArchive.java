@@ -2467,7 +2467,7 @@ public final class AeronArchive implements AutoCloseable
          * Minor version of the network protocol from client to archive. If these don't match then some features may
          * not be available.
          */
-        public static final int PROTOCOL_MINOR_VERSION = 9;
+        public static final int PROTOCOL_MINOR_VERSION = 10;
 
         /**
          * Patch version of the network protocol from client to archive. If these don't match then bug fixes may not

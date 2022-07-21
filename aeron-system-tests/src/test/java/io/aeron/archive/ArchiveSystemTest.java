@@ -16,10 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.*;
-import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveProxy;
-import io.aeron.archive.client.ControlResponseAdapter;
-import io.aeron.archive.client.RecordingEventsAdapter;
+import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -746,14 +743,13 @@ class ArchiveSystemTest
                 {
                     final long replayCorrelationId = client.nextCorrelationId();
 
+                    final ReplayParams replayParams = new ReplayParams()
+                        .position(startPosition)
+                        .length(Long.MAX_VALUE)
+                        .fileIoMaxLength(4096);
+
                     if (!archiveProxy.replay(
-                        recordingId,
-                        startPosition,
-                        Long.MAX_VALUE,
-                        REPLAY_URI,
-                        REPLAY_STREAM_ID,
-                        replayCorrelationId,
-                        controlSessionId))
+                        recordingId, REPLAY_URI, REPLAY_STREAM_ID, replayParams, replayCorrelationId, controlSessionId))
                     {
                         throw new IllegalStateException("failed to start replay");
                     }

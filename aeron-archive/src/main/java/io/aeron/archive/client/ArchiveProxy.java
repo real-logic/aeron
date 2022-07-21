@@ -415,6 +415,55 @@ public final class ArchiveProxy
     }
 
     /**
+     * Replay a recording from a given position. Supports specifying {@link ReplayParams} to change the behaviour of the
+     * replay. For example a bounded replay can be requested by specifying the boundingLimitCounterId. The ReplayParams
+     * is free to be reused after this call completes.
+     *
+     * @param recordingId      to be replayed.
+     * @param replayChannel    to which the replay should be sent.
+     * @param replayStreamId   to which the replay should be sent.
+     * @param replayParams     optional parameters change the behaviour of the replay.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     * @see ReplayParams
+     */
+    public boolean replay(
+        final long recordingId,
+        final String replayChannel,
+        final int replayStreamId,
+        final ReplayParams replayParams,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        if (replayParams.isBounded())
+        {
+            return boundedReplay(
+                recordingId,
+                replayParams.position(),
+                replayParams.length(),
+                replayParams.boundingLimitCounterId(),
+                replayChannel,
+                replayStreamId,
+                correlationId,
+                controlSessionId,
+                replayParams.fileIoMaxLength());
+        }
+        else
+        {
+            return replay(
+                recordingId,
+                replayParams.position(),
+                replayParams.length(),
+                replayChannel,
+                replayStreamId,
+                correlationId,
+                controlSessionId,
+                replayParams.fileIoMaxLength());
+        }
+    }
+
+    /**
      * Replay a recording from a given position.
      *
      * @param recordingId      to be replayed.
@@ -435,22 +484,15 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replayRequest)
-        {
-            replayRequest = new ReplayRequestEncoder();
-        }
-
-        replayRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .recordingId(recordingId)
-            .position(position)
-            .length(length)
-            .replayStreamId(replayStreamId)
-            .replayChannel(replayChannel);
-
-        return offer(replayRequest.encodedLength());
+        return replay(
+            recordingId,
+            position,
+            length,
+            replayChannel,
+            replayStreamId,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -476,23 +518,16 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == boundedReplayRequest)
-        {
-            boundedReplayRequest = new BoundedReplayRequestEncoder();
-        }
-
-        boundedReplayRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .recordingId(recordingId)
-            .position(position)
-            .length(length)
-            .limitCounterId(limitCounterId)
-            .replayStreamId(replayStreamId)
-            .replayChannel(replayChannel);
-
-        return offer(boundedReplayRequest.encodedLength());
+        return boundedReplay(
+            recordingId,
+            position,
+            length,
+            limitCounterId,
+            replayChannel,
+            replayStreamId,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -945,26 +980,19 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequest)
-        {
-            replicateRequest = new ReplicateRequest2Encoder();
-        }
-
-        replicateRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .srcRecordingId(srcRecordingId)
-            .dstRecordingId(dstRecordingId)
-            .stopPosition(AeronArchive.NULL_POSITION)
-            .channelTagId(Aeron.NULL_VALUE)
-            .subscriptionTagId(Aeron.NULL_VALUE)
-            .srcControlStreamId(srcControlStreamId)
-            .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination)
-            .replicationChannel(null);
-
-        return offer(replicateRequest.encodedLength());
+        return replicate(
+            srcRecordingId,
+            dstRecordingId,
+            AeronArchive.NULL_POSITION,
+            Aeron.NULL_VALUE,
+            Aeron.NULL_VALUE,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            null,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -1003,26 +1031,19 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequest)
-        {
-            replicateRequest = new ReplicateRequest2Encoder();
-        }
-
-        replicateRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .srcRecordingId(srcRecordingId)
-            .dstRecordingId(dstRecordingId)
-            .stopPosition(stopPosition)
-            .channelTagId(Aeron.NULL_VALUE)
-            .subscriptionTagId(Aeron.NULL_VALUE)
-            .srcControlStreamId(srcControlStreamId)
-            .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination)
-            .replicationChannel(replicationChannel);
-
-        return offer(replicateRequest.encodedLength());
+        return replicate(
+            srcRecordingId,
+            dstRecordingId,
+            stopPosition,
+            Aeron.NULL_VALUE,
+            Aeron.NULL_VALUE,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            replicationChannel,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -1060,26 +1081,19 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequest)
-        {
-            replicateRequest = new ReplicateRequest2Encoder();
-        }
-
-        replicateRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .srcRecordingId(srcRecordingId)
-            .dstRecordingId(dstRecordingId)
-            .stopPosition(AeronArchive.NULL_POSITION)
-            .channelTagId(channelTagId)
-            .subscriptionTagId(subscriptionTagId)
-            .srcControlStreamId(srcControlStreamId)
-            .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination)
-            .replicationChannel(null);
-
-        return offer(replicateRequest.encodedLength());
+        return replicate(
+            srcRecordingId,
+            dstRecordingId,
+            AeronArchive.NULL_POSITION,
+            channelTagId,
+            subscriptionTagId,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            null,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
     }
 
     /**
@@ -1122,26 +1136,63 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
-        if (null == replicateRequest)
-        {
-            replicateRequest = new ReplicateRequest2Encoder();
-        }
+        return replicate(
+            srcRecordingId,
+            dstRecordingId,
+            stopPosition,
+            channelTagId,
+            subscriptionTagId,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            replicationChannel,
+            correlationId,
+            controlSessionId,
+            Aeron.NULL_VALUE);
+    }
 
-        replicateRequest
-            .wrapAndApplyHeader(buffer, 0, messageHeader)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .srcRecordingId(srcRecordingId)
-            .dstRecordingId(dstRecordingId)
-            .stopPosition(stopPosition)
-            .channelTagId(channelTagId)
-            .subscriptionTagId(subscriptionTagId)
-            .srcControlStreamId(srcControlStreamId)
-            .srcControlChannel(srcControlChannel)
-            .liveDestination(liveDestination)
-            .replicationChannel(replicationChannel);
-
-        return offer(replicateRequest.encodedLength());
+    /**
+     * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
+     * archive. The behaviour of the replication is controlled through the {@link ReplicationParams}.
+     * <p>
+     * For a source recording that is still active the replay can merge with the live stream and then follow it
+     * directly and no longer require the replay from the source. This would require a multicast live destination.
+     * <p>
+     * Errors will be reported asynchronously and can be checked for with {@link AeronArchive#pollForErrorResponse()}
+     * or {@link AeronArchive#checkForErrorResponse()}.
+     * <p>
+     * The ReplicationParams is free to be reused when this call completes.
+     *
+     * @param srcRecordingId     recording id which must exist in the source archive.
+     * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
+     * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
+     * @param replicationParams  optional parameters to control the behaviour of the replication.
+     * @param correlationId      for this request.
+     * @param controlSessionId   for this request.
+     * @return true if successfully offered otherwise false.
+     * @see ReplicationParams
+     */
+    public boolean replicate(
+        final long srcRecordingId,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final ReplicationParams replicationParams,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        return replicate(
+            srcRecordingId,
+            replicationParams.dstRecordingId(),
+            replicationParams.stopPosition(),
+            replicationParams.channelTagId(),
+            replicationParams.subscriptionTagId(),
+            srcControlStreamId,
+            srcControlChannel,
+            replicationParams.liveDestination(),
+            null,
+            correlationId,
+            controlSessionId,
+            replicationParams.fileIoMaxLength());
     }
 
     /**
@@ -1392,5 +1443,102 @@ public final class ArchiveProxy
 
             retryIdleStrategy.idle();
         }
+    }
+
+    private boolean replay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final String replayChannel,
+        final int replayStreamId,
+        final long correlationId,
+        final long controlSessionId,
+        final int fileIoMaxLength)
+    {
+        if (null == replayRequest)
+        {
+            replayRequest = new ReplayRequestEncoder();
+        }
+
+        replayRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .position(position)
+            .length(length)
+            .replayStreamId(replayStreamId)
+            .fileIoMaxLength(fileIoMaxLength)
+            .replayChannel(replayChannel);
+
+        return offer(replayRequest.encodedLength());
+    }
+
+    private boolean boundedReplay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final int limitCounterId,
+        final String replayChannel,
+        final int replayStreamId,
+        final long correlationId,
+        final long controlSessionId,
+        final int fileIoMaxLength)
+    {
+        if (null == boundedReplayRequest)
+        {
+            boundedReplayRequest = new BoundedReplayRequestEncoder();
+        }
+
+        boundedReplayRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .position(position)
+            .length(length)
+            .limitCounterId(limitCounterId)
+            .replayStreamId(replayStreamId)
+            .fileIoMaxLength(fileIoMaxLength)
+            .replayChannel(replayChannel);
+
+        return offer(boundedReplayRequest.encodedLength());
+    }
+
+    private boolean replicate(
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final long stopPosition,
+        final long channelTagId,
+        final long subscriptionTagId,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String liveDestination,
+        final String replicationChannel,
+        final long correlationId,
+        final long controlSessionId,
+        final int fileIoMaxLength)
+    {
+        if (null == replicateRequest)
+        {
+            replicateRequest = new ReplicateRequest2Encoder();
+        }
+
+        replicateRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .srcRecordingId(srcRecordingId)
+            .dstRecordingId(dstRecordingId)
+            .stopPosition(stopPosition)
+            .channelTagId(channelTagId)
+            .subscriptionTagId(subscriptionTagId)
+            .srcControlStreamId(srcControlStreamId)
+            .fileIoMaxLength(fileIoMaxLength)
+            .srcControlChannel(srcControlChannel)
+            .liveDestination(liveDestination)
+            .replicationChannel(replicationChannel);
+
+        return offer(replicateRequest.encodedLength());
     }
 }

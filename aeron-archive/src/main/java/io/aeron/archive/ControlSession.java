@@ -340,6 +340,7 @@ final class ControlSession implements Session
         final long recordingId,
         final long position,
         final long length,
+        final int fileIoMaxLength,
         final int replayStreamId,
         final String replayChannel)
     {
@@ -347,7 +348,15 @@ final class ControlSession implements Session
         if (State.ACTIVE == state)
         {
             conductor.startReplay(
-                correlationId, recordingId, position, length, replayStreamId, replayChannel, null, this);
+                correlationId,
+                recordingId,
+                position,
+                length,
+                fileIoMaxLength,
+                replayStreamId,
+                replayChannel,
+                null,
+                this);
         }
     }
 
@@ -357,6 +366,7 @@ final class ControlSession implements Session
         final long position,
         final long length,
         final int limitCounterId,
+        final int fileIoMaxLength,
         final int replayStreamId,
         final String replayChannel)
     {
@@ -369,6 +379,7 @@ final class ControlSession implements Session
                 position,
                 length,
                 limitCounterId,
+                fileIoMaxLength,
                 replayStreamId,
                 replayChannel,
                 this);
@@ -483,6 +494,7 @@ final class ControlSession implements Session
         final long channelTagId,
         final long subscriptionTagId,
         final int srcControlStreamId,
+        final int fileIoMaxLength,
         final String srcControlChannel,
         final String liveDestination,
         final String replicationChannel)
@@ -501,6 +513,7 @@ final class ControlSession implements Session
                 srcControlChannel,
                 liveDestination,
                 replicationChannel,
+                fileIoMaxLength,
                 this);
         }
     }

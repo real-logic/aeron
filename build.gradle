@@ -455,12 +455,19 @@ project(':aeron-archive') {
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation files('build/classes/java/generatedTest')
     }
 
-    def generatedDir = file("${buildDir}/generated-src")
+    def generatedSrcDir = file("${buildDir}/generated-src")
+    def generatedTestDir = file("${buildDir}/generated-test")
+
     sourceSets {
         generated {
-            java.srcDir generatedDir
+            java.srcDir generatedSrcDir
+            compileClasspath += configurations.codecGeneration
+        }
+        generatedTest {
+            java.srcDir generatedTestDir
             compileClasspath += configurations.codecGeneration
         }
     }
@@ -471,16 +478,33 @@ project(':aeron-archive') {
         def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
 
         inputs.files(codecsFile, markCodecsFile, sbeFile)
-        outputs.dir generatedDir
+        outputs.dir generatedSrcDir
 
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
         classpath = configurations.codecGeneration
         systemProperties(
-            'sbe.output.dir': generatedDir,
+            'sbe.output.dir': generatedSrcDir,
             'sbe.target.language': 'Java',
             'sbe.validation.xsd': sbeFile,
             'sbe.validation.stop.on.error': 'true')
         args = [codecsFile, markCodecsFile]
+    }
+
+    task generateV6Codecs(type: JavaExec) {
+        def codecsFile = 'src/main/resources/archive/aeron-archive-codecs-v6.xml'
+        def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
+
+        inputs.files(codecsFile, sbeFile)
+        outputs.dir generatedTestDir
+
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        classpath = configurations.codecGeneration
+        systemProperties(
+                'sbe.output.dir': generatedTestDir,
+                'sbe.target.language': 'Java',
+                'sbe.validation.xsd': sbeFile,
+                'sbe.validation.stop.on.error': 'true')
+        args = [codecsFile]
     }
 
     def generatedCppDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated")
@@ -498,6 +522,8 @@ project(':aeron-archive') {
 
     compileJava.dependsOn compileGeneratedJava
     compileGeneratedJava.dependsOn generateCodecs
+    compileTestJava.dependsOn compileGeneratedTestJava
+    compileGeneratedTestJava.dependsOn generateV6Codecs
 
     jar {
         from sourceSets.generated.output

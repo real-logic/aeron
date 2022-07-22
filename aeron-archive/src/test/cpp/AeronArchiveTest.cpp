@@ -108,10 +108,10 @@ static int aeron_delete_directory(const char *dirname)
 
 #endif
 
-class AeronArchiveTest : public testing::Test
+class AeronArchiveTestBase
 {
 public:
-    ~AeronArchiveTest() override
+    ~AeronArchiveTestBase()
     {
         if (m_debug)
         {
@@ -119,7 +119,7 @@ public:
         }
     }
 
-    void SetUp() final
+    void DoSetUp()
     {
         m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
 
@@ -197,7 +197,7 @@ public:
         std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
     }
 
-    void TearDown() final
+    void DoTearDown()
     {
         if (0 != m_pid)
         {
@@ -430,6 +430,36 @@ protected:
     bool m_debug = true;
 };
 
+class AeronArchiveTest : public AeronArchiveTestBase, public testing::Test
+{
+public:
+    void SetUp() final
+    {
+        DoSetUp();
+    }
+
+    void TearDown() final
+    {
+        DoTearDown();
+    }
+};
+
+class AeronArchiveParamTest : public AeronArchiveTestBase, public testing::TestWithParam<bool>
+{
+public:
+    void SetUp() final
+    {
+        DoSetUp();
+    }
+
+    void TearDown() final
+    {
+        DoTearDown();
+    }
+};
+
+INSTANTIATE_TEST_SUITE_P(AeronArchive, AeronArchiveParamTest, testing::Values(true, false));
+
 TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
 {
     std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
@@ -537,8 +567,9 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
     EXPECT_EQ(count, 1);
 }
 
-TEST_F(AeronArchiveTest, shouldRecordThenReplay)
+TEST_P(AeronArchiveParamTest, shouldRecordThenReplay)
 {
+    const bool useParams = GetParam();
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
     std::int32_t sessionId;
@@ -588,15 +619,24 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplay)
         std::shared_ptr<Subscription> subscription = addSubscription(
             *aeronArchive->context().aeron(), m_replayChannel, m_replayStreamId);
 
-        aeronArchive->startReplay(recordingIdFromCounter, position, length, m_replayChannel, m_replayStreamId);
+        if (useParams)
+        {
+            aeronArchive->startReplay(
+                recordingIdFromCounter, m_replayChannel, m_replayStreamId, ReplayParams().position(position).length(length));
+        }
+        else
+        {
+            aeronArchive->startReplay(recordingIdFromCounter, position, length, m_replayChannel, m_replayStreamId);
+        }
 
         consumeMessages(*subscription, messageCount, messagePrefix);
         EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
     }
 }
 
-TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
+TEST_P(AeronArchiveParamTest, shouldRecordThenReplayThenTruncate)
 {
+    const bool useParams = GetParam();
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
     std::int32_t sessionId;
@@ -647,8 +687,17 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
 
     {
         const std::int64_t length = stopPosition - position;
-        std::shared_ptr<Subscription> subscription = aeronArchive->replay(
-            recordingId, position, length, m_replayChannel, m_replayStreamId);
+        std::shared_ptr<Subscription> subscription;
+        if (useParams)
+        {
+            subscription = aeronArchive->replay(
+                recordingId, m_replayChannel, m_replayStreamId, ReplayParams().position(position).length(length));
+        }
+        else
+        {
+            subscription = aeronArchive->replay(
+                recordingId, position, length, m_replayChannel, m_replayStreamId);
+        }
 
         consumeMessages(*subscription, messageCount, messagePrefix);
         EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
@@ -682,8 +731,9 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
     EXPECT_EQ(count, 1);
 }
 
-TEST_F(AeronArchiveTest, shouldRecordAndCancelReplayEarly)
+TEST_P(AeronArchiveParamTest, shouldRecordAndCancelReplayEarly)
 {
+    const bool useParams = GetParam();
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
     std::int64_t recordingId;
@@ -726,14 +776,23 @@ TEST_F(AeronArchiveTest, shouldRecordAndCancelReplayEarly)
     const std::int64_t position = 0L;
     const std::int64_t length = stopPosition - position;
 
-    const std::int64_t replaySessionId = aeronArchive->startReplay(
-        recordingId, position, length, m_replayChannel, m_replayStreamId);
+    std::int64_t replaySessionId;
+    if (useParams)
+    {
+        replaySessionId = aeronArchive->startReplay(
+            recordingId, m_replayChannel, m_replayStreamId, ReplayParams().position(position).length(length));
+    }
+    else
+    {
+        replaySessionId = aeronArchive->startReplay(recordingId, position, length, m_replayChannel, m_replayStreamId);
+    }
 
     aeronArchive->stopReplay(replaySessionId);
 }
 
-TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
+TEST_P(AeronArchiveParamTest, shouldReplayRecordingFromLateJoinPosition)
 {
+    const bool useParams = GetParam();
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
 
@@ -764,9 +823,18 @@ TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
         }
 
         {
-            std::shared_ptr<Subscription> replaySubscription = aeronArchive->replay(
-                recordingId, currentPosition, NULL_LENGTH, m_replayChannel, m_replayStreamId);
+            std::shared_ptr<Subscription> replaySubscription;
 
+            if (useParams)
+            {
+                replaySubscription = aeronArchive->replay(
+                    recordingId, m_replayChannel, m_replayStreamId, ReplayParams().position(currentPosition));
+            }
+            else
+            {
+                replaySubscription = aeronArchive->replay(
+                    recordingId, currentPosition, NULL_LENGTH, m_replayChannel, m_replayStreamId);
+            }
             offerMessages(*publication, messageCount, messagePrefix);
             consumeMessages(*subscription, messageCount, messagePrefix);
             consumeMessages(*replaySubscription, messageCount, messagePrefix);

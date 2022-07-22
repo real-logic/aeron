@@ -789,6 +789,43 @@ public:
     }
 
     /**
+     * Start a replay using the ReplayParams to govern its behaviour.
+     * <p>
+     * The lower 32-bits of the returned value contains the Image#sessionId of the received replay. All
+     * 64-bits are required to uniquely identify the replay when calling #stopReplay. The lower 32-bits
+     * can be obtained by casting the std::int64_t value to an std::int32_t.
+     *
+     * @param recordingId    to be replayed.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @param replayParams   to control the behaviour of the replay.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the id of the replay session which will be the same as the Image#sessionId of the received
+     *         replay for correlation with the matching channel and stream id in the lower 32 bits.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int64_t startReplay(
+        std::int64_t recordingId,
+        const std::string &replayChannel,
+        std::int32_t replayStreamId,
+        const ReplayParams &replayParams)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->replay<IdleStrategy>(
+            recordingId, replayChannel, replayStreamId, replayParams, m_lastCorrelationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send replay request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>("AeronArchive::startReplay", m_lastCorrelationId);
+    }
+
+    /**
      * Start a replay for a length in bytes of a recording from a position. If the position is #NULL_POSITION
      * then the stream will be replayed from the start.
      * <p>
@@ -923,6 +960,53 @@ public:
         }
 
         pollForResponse<IdleStrategy>("stopAllReplays::stopAllReplays", m_lastCorrelationId);
+    }
+
+    /**
+     * Start a replay using the ReplayParams to govern its behaviour.
+     *
+     * @param recordingId    to be replayed.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @param replayParams   to govern the behaviour of the replay.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the Subscription for consuming the replay.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::shared_ptr<Subscription> replay(
+        std::int64_t recordingId,
+        const std::string &replayChannel,
+        std::int32_t replayStreamId,
+        const ReplayParams &replayParams)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        std::shared_ptr<ChannelUri> replayChannelUri = ChannelUri::parse(replayChannel);
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->replay<IdleStrategy>(
+            recordingId, replayChannel, replayStreamId, replayParams, m_lastCorrelationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send replay request", SOURCEINFO);
+        }
+
+        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(
+            "AeronArchive::replay", m_lastCorrelationId));
+        replayChannelUri->put(SESSION_ID_PARAM_NAME, std::to_string(replaySessionId));
+
+        const std::int64_t subscriptionId = m_aeron->addSubscription(replayChannelUri->toString(), replayStreamId);
+        IdleStrategy idle;
+
+        std::shared_ptr<Subscription> subscription = m_aeron->findSubscription(subscriptionId);
+        while (!subscription)
+        {
+            idle.idle();
+            subscription = m_aeron->findSubscription(subscriptionId);
+        }
+
+        return subscription;
     }
 
     /**

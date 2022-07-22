@@ -30,6 +30,109 @@ namespace aeron { namespace archive { namespace client
 /// Length of buffer to use in proxy to hold messages for construction.
 constexpr const std::size_t PROXY_REQUEST_BUFFER_LENGTH = 8 * 1024;
 
+class ReplicationParams
+{
+public:
+    ReplicationParams() :
+        m_stopPosition(NULL_POSITION),
+        m_dstRecordingId(NULL_VALUE),
+        m_liveDestination(nullptr),
+        m_channelTagId(NULL_VALUE),
+        m_subscriptionTagId(NULL_VALUE),
+        m_fileIoMaxLength(NULL_VALUE)
+    {}
+
+    ReplicationParams& stopPosition(std::int64_t stopPosition)
+    {
+        m_stopPosition = stopPosition;
+        return *this;
+    }
+
+    std::int64_t stopPosition()
+    {
+        return m_stopPosition;
+    }
+
+private:
+    std::int64_t m_stopPosition;
+    std::int64_t m_dstRecordingId;
+    std::string *m_liveDestination;
+    std::int64_t m_channelTagId;
+    std::int64_t m_subscriptionTagId;
+    std::int32_t m_fileIoMaxLength;
+};
+
+class ReplayParams
+{
+public:
+    ReplayParams() :
+        m_boundingLimitCounterId(NULL_VALUE),
+        m_fileIoMaxLength(NULL_VALUE),
+        m_position(NULL_POSITION),
+        m_length(NULL_LENGTH)
+    {}
+
+    ~ReplayParams()
+    {
+        std::cout << "Destroying" << std::endl;
+    }
+
+    int32_t boundingLimitCounterId() const
+    {
+        return m_boundingLimitCounterId;
+    }
+
+    ReplayParams &boundingLimitCounterId(int32_t mBoundingLimitCounterId)
+    {
+        m_boundingLimitCounterId = mBoundingLimitCounterId;
+        return *this;
+    }
+
+    int32_t fileIoMaxLength() const
+    {
+        return m_fileIoMaxLength;
+    }
+
+    ReplayParams &fileIoMaxLength(int32_t mFileIoMaxLength)
+    {
+        m_fileIoMaxLength = mFileIoMaxLength;
+        return *this;
+    }
+
+    int64_t position() const
+    {
+        return m_position;
+    }
+
+    ReplayParams &position(int64_t mPosition)
+    {
+        m_position = mPosition;
+        return *this;
+    }
+
+    int64_t length() const
+    {
+        return m_length;
+    }
+
+    ReplayParams &length(int64_t mLength)
+    {
+        m_length = mLength;
+        return *this;
+    }
+
+    bool isBounded() const
+    {
+        return NULL_VALUE != boundingLimitCounterId();
+    }
+
+private:
+    std::int32_t m_boundingLimitCounterId;
+    std::int32_t m_fileIoMaxLength;
+    std::int64_t m_position;
+    std::int64_t m_length;
+};
+
 /**
  * Proxy class for encapsulating encoding and sending of control protocol messages to an archive.
  */
@@ -300,6 +403,43 @@ public:
         const util::index_t length = stopRecordingByIdentity(m_buffer, recordingId, correlationId, controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+ * Replay a recording from a given position.
+ *
+ * @param recordingId      to be replayed.
+ * @param position         from which the replay should be started.
+ * @param length           of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live stream.
+ * @param replayChannel    to which the replay should be sent.
+ * @param replayStreamId   to which the replay should be sent.
+ * @param correlationId    for this request.
+ * @param controlSessionId for this request.
+ * @tparam IdleStrategy to use between Publication::offer attempts.
+ * @return true if successfully offered otherwise false.
+ */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool replay(
+        std::int64_t recordingId,
+        const std::string &replayChannel,
+        std::int32_t replayStreamId,
+        const ReplayParams &replyParams,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        util::index_t msgLength;
+        if (replyParams.isBounded())
+        {
+            msgLength = boundedReplay(
+                m_buffer, recordingId, replyParams.position(), replyParams.length(), replyParams.boundingLimitCounterId(), replayChannel, replayStreamId, correlationId, controlSessionId);
+        }
+        else
+        {
+            msgLength = replay(
+                m_buffer, recordingId, replyParams.position(), replyParams.length(), replayChannel, replayStreamId, correlationId, controlSessionId);
+        }
+
+        return offer<IdleStrategy>(m_buffer, 0, msgLength);
     }
 
     /**

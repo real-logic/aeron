@@ -1447,6 +1447,30 @@ public class ElectionTest
         verify(recordingLog, times(1)).force(ctx.fileSyncLevel());
     }
 
+    @Test
+    void shouldNotCreateInitialTermWithMinusOneTermId()
+    {
+        final long initialLogLeadershipTermId = -1;
+        final long initialTermBaseLogPosition = 0;
+        final long leadershipTermId = 4;
+        final long logPosition = initialTermBaseLogPosition + 500;
+        final long nowNs = 1_000_000;
+
+        doReturn(null).when(recordingLog).findLastTerm();
+
+        Election.ensureRecordingLogCoherent(
+            ctx,
+            RECORDING_ID,
+            initialLogLeadershipTermId,
+            initialTermBaseLogPosition,
+            leadershipTermId,
+            initialTermBaseLogPosition,
+            logPosition,
+            nowNs);
+
+        verify(recordingLog, never()).appendTerm(RECORDING_ID, -1, initialTermBaseLogPosition, nowNs);
+    }
+
     @ParameterizedTest
     @CsvSource({
         "0, 0, 4",

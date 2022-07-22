@@ -492,6 +492,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
+    @SuppressWarnings("checkstyle:methodlength")
     void shouldDynamicallyJoinMemberAfterRecyclingAllStaticNodes(final TestInfo testInfo)
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(4).start();

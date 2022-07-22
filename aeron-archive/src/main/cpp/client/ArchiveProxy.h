@@ -72,11 +72,6 @@ public:
         m_length(NULL_LENGTH)
     {}
 
-    ~ReplayParams()
-    {
-        std::cout << "Destroying" << std::endl;
-    }
-
     int32_t boundingLimitCounterId() const
     {
         return m_boundingLimitCounterId;

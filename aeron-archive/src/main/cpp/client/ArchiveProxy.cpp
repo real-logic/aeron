@@ -234,13 +234,14 @@ util::index_t ArchiveProxy::stopRecordingByIdentity(
     return messageAndHeaderLength(request);
 }
 
-util::index_t ArchiveProxy::replay(
+index_t ArchiveProxy::replay(
     AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t position,
     std::int64_t length,
     const std::string &replayChannel,
     std::int32_t replayStreamId,
+    std::int32_t fileIoMaxLength,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -266,6 +267,7 @@ util::index_t ArchiveProxy::boundedReplay(
     std::int32_t limitCounterId,
     const std::string &replayChannel,
     std::int32_t replayStreamId,
+    std::int32_t fileIoMaxLength,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -279,6 +281,7 @@ util::index_t ArchiveProxy::boundedReplay(
         .length(length)
         .limitCounterId(limitCounterId)
         .replayStreamId(replayStreamId)
+        .fileIoMaxLength(fileIoMaxLength)
         .putReplayChannel(replayChannel);
 
     return messageAndHeaderLength(request);

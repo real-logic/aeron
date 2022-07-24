@@ -426,12 +426,29 @@ public:
         if (replyParams.isBounded())
         {
             msgLength = boundedReplay(
-                m_buffer, recordingId, replyParams.position(), replyParams.length(), replyParams.boundingLimitCounterId(), replayChannel, replayStreamId, correlationId, controlSessionId);
+                m_buffer,
+                recordingId,
+                replyParams.position(),
+                replyParams.length(),
+                replyParams.boundingLimitCounterId(),
+                replayChannel,
+                replayStreamId,
+                replyParams.fileIoMaxLength(),
+                correlationId,
+                controlSessionId);
         }
         else
         {
             msgLength = replay(
-                m_buffer, recordingId, replyParams.position(), replyParams.length(), replayChannel, replayStreamId, correlationId, controlSessionId);
+                m_buffer,
+                recordingId,
+                replyParams.position(),
+                replyParams.length(),
+                replayChannel,
+                replayStreamId,
+                replyParams.fileIoMaxLength(),
+                correlationId,
+                controlSessionId);
         }
 
         return offer<IdleStrategy>(m_buffer, 0, msgLength);
@@ -461,7 +478,15 @@ public:
         std::int64_t controlSessionId)
     {
         const util::index_t msgLength = replay(
-            m_buffer, recordingId, position, length, replayChannel, replayStreamId, correlationId, controlSessionId);
+            m_buffer,
+            recordingId,
+            position,
+            length,
+            replayChannel,
+            replayStreamId,
+            NULL_VALUE,
+            correlationId,
+            controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, msgLength);
     }
@@ -499,6 +524,7 @@ public:
             limitCounterId,
             replayChannel,
             replayStreamId,
+            NULL_VALUE,
             correlationId,
             controlSessionId);
 
@@ -1218,13 +1244,14 @@ private:
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
-    static util::index_t replay(
+    static index_t replay(
         AtomicBuffer &buffer,
         std::int64_t recordingId,
         std::int64_t position,
         std::int64_t length,
         const std::string &replayChannel,
         std::int32_t replayStreamId,
+        std::int32_t fileIoMaxLength,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
@@ -1236,6 +1263,7 @@ private:
         std::int32_t limitCounterId,
         const std::string &replayChannel,
         std::int32_t replayStreamId,
+        std::int32_t fileIoMaxLength,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 

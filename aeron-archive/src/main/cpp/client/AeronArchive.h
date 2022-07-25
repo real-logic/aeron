@@ -1530,6 +1530,50 @@ public:
     /**
      * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
      * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
+     * The behaviour of the replication will be governed by the values specified in the ReplicationParams.
+     * <p>
+     * For a source recording that is still active the replay can merge with the live stream and then follow it
+     * directly and no longer require the replay from the source. This would require a multicast live destination.
+     * <p>
+     * Errors will be reported asynchronously and can be checked for with AeronArchive#pollForErrorResponse()
+     * or AeronArchive#checkForErrorResponse(). Follow progress with RecordingSignalAdapter.
+     *
+     * @param srcRecordingId     recording id which must exist in the source archive.
+     * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
+     * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
+     * @param replicationParams  optional parameters to configure the behaviour of the replication.
+     * @tparam IdleStrategy      to use for polling operations.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline void replicate(
+        std::int64_t srcRecordingId,
+        std::int32_t srcControlStreamId,
+        const std::string &srcControlChannel,
+        const ReplicationParams &replicationParams)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->replicate<IdleStrategy>(
+            srcRecordingId,
+            srcControlStreamId,
+            srcControlChannel,
+            replicationParams,
+            m_lastCorrelationId,
+            m_controlSessionId))
+        {
+            throw ArchiveException("failed to send replicate request", SOURCEINFO);
+        }
+
+        pollForResponse<IdleStrategy>("AeronArchive::replicate", m_lastCorrelationId);
+    }
+
+    /**
+     * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
+     * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
      * If the destination recording id is Aeron#NULL_VALUE then a new destination recording is created,
      * otherwise the provided destination recording id will be extended. The details of the source recording
      * descriptor will be replicated. The subscription used in the archive will be tagged with the provided tags.

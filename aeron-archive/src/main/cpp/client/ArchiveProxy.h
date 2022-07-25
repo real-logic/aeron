@@ -116,7 +116,7 @@ public:
 
     /**
      * Channel to use for replicating the recording, empty string will mean that the default channel is used.
-     * @return channel to replicate the repording.
+     * @return channel to replicate the recording.
      */
     const std::string &replicationChannel() const
     {

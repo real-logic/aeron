@@ -2918,6 +2918,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         {
             pendingServiceMessageHeadOffset -= pendingServiceMessages.consume(
                 leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
+            pendingServiceMessageHeadOffset = Math.max(pendingServiceMessageHeadOffset, 0);
         }
 
         while (uncommittedTimers.peekLong() <= commitPosition)

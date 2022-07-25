@@ -383,7 +383,7 @@ class DynamicMembershipTest
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader();
         cluster.startStaticNode(leader0.index(), false);
-        TestCluster.awaitElectionClosed(cluster.node(leader0.index()));
+        awaitElectionClosed(cluster.node(leader0.index()));
 
         cluster.reconnectClient();
         cluster.sendMessages(messageCount);
@@ -393,7 +393,7 @@ class DynamicMembershipTest
         cluster.stopNode(leader1);
         final TestNode leader2 = cluster.awaitLeader();
         cluster.startStaticNode(leader1.index(), false);
-        TestCluster.awaitElectionClosed(cluster.node(leader1.index()));
+        awaitElectionClosed(cluster.node(leader1.index()));
 
         cluster.reconnectClient();
         cluster.sendMessages(messageCount);
@@ -648,8 +648,7 @@ class DynamicMembershipTest
 
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader();
-        cluster.startStaticNode(leader0.index(), false);
-        TestCluster.awaitElectionClosed(leader0);
+        awaitElectionClosed(cluster.startStaticNode(leader0.index(), false));
 
         cluster.takeSnapshot(leader1);
         cluster.awaitSnapshotCount(1);
@@ -661,8 +660,7 @@ class DynamicMembershipTest
 
         cluster.stopNode(leader1);
         final TestNode leader2 = cluster.awaitLeader();
-        cluster.startStaticNode(leader1.index(), false);
-        TestCluster.awaitElectionClosed(leader1);
+        awaitElectionClosed(cluster.startStaticNode(leader1.index(), false));
 
         cluster.reconnectClient();
         cluster.sendMessages(messageCount);

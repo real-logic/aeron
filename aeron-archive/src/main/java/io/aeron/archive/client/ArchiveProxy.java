@@ -1189,7 +1189,7 @@ public final class ArchiveProxy
             srcControlStreamId,
             srcControlChannel,
             replicationParams.liveDestination(),
-            null,
+            replicationParams.replicationChannel(),
             correlationId,
             controlSessionId,
             replicationParams.fileIoMaxLength());

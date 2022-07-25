@@ -27,6 +27,7 @@ public class ReplicationParams
     private long stopPosition;
     private long dstRecordingId;
     private String liveDestination;
+    private String replicationChannel;
     private long channelTagId;
     private long subscriptionTagId;
     private int fileIoMaxLength;
@@ -49,6 +50,7 @@ public class ReplicationParams
         stopPosition = AeronArchive.NULL_POSITION;
         dstRecordingId = Aeron.NULL_VALUE;
         liveDestination = null;
+        replicationChannel = null;
         channelTagId = Aeron.NULL_VALUE;
         subscriptionTagId = Aeron.NULL_VALUE;
         fileIoMaxLength = Aeron.NULL_VALUE;
@@ -120,6 +122,28 @@ public class ReplicationParams
     public String liveDestination()
     {
         return liveDestination;
+    }
+
+    /**
+     * Channel to use for replicating the recording, empty string will mean that the default channel is used.
+     * @return channel to replicate the recording.
+     */
+    public String replicationChannel()
+    {
+        return replicationChannel;
+    }
+
+    /**
+     * Channel use to replicate the recording. Default is null which will use the context's default replication
+     * channel
+     *
+     * @param replicationChannel to use for replicating the recording.
+     * @return this for a fluent API.
+     */
+    public ReplicationParams replicationChannel(final String replicationChannel)
+    {
+        this.replicationChannel = replicationChannel;
+        return this;
     }
 
     /**

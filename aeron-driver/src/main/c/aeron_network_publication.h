@@ -92,6 +92,7 @@ typedef struct aeron_network_publication_stct
     size_t position_bits_to_shift;
     size_t mtu_length;
     size_t max_messages_per_send;
+    size_t current_messages_per_send;
     bool is_exclusive;
     bool spies_simulate_connection;
     bool signal_eos;

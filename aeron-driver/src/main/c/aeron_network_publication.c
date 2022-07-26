@@ -204,6 +204,7 @@ int aeron_network_publication_create(
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
     _pub->mtu_length = params->mtu_length;
     _pub->max_messages_per_send = context->network_publication_max_messages_per_send;
+    _pub->current_messages_per_send = _pub->max_messages_per_send;
     _pub->term_window_length = (int64_t)aeron_producer_window_length(
         context->publication_window_length, params->term_length);
     _pub->linger_timeout_ns = (int64_t)params->linger_timeout_ns;
@@ -385,7 +386,7 @@ int aeron_network_publication_send_data(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos, int32_t term_offset)
 {
     const size_t term_length = (size_t)publication->term_length_mask + 1;
-    const size_t max_vlen = publication->max_messages_per_send;
+    const size_t max_vlen = publication->current_messages_per_send;
     int result = 0, vlen = 0;
     int64_t bytes_sent = 0;
     int32_t available_window = (int32_t)(aeron_counter_get(publication->snd_lmt_position.value_addr) - snd_pos);
@@ -428,10 +429,12 @@ int aeron_network_publication_send_data(
         {
             publication->time_of_last_data_or_heartbeat_ns = now_ns;
             publication->track_sender_limits = true;
+            publication->current_messages_per_send = publication->max_messages_per_send;
             aeron_counter_set_ordered(publication->snd_pos_position.value_addr, highest_pos);
         }
         else if (result >= 0)
         {
+            publication->current_messages_per_send = 1;
             aeron_counter_increment(publication->short_sends_counter, 1);
         }
     }

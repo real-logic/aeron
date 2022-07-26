@@ -542,7 +542,7 @@ static int aeron_udp_channel_transport_sendv(
     int num_sent = sendmmsg(transport->fd, msg, msg_i, 0);
     if (num_sent < 0)
     {
-        if (EAGAIN == errno || EWOULDBLOCK == errno || EINTR == errno)
+        if (EAGAIN == errno || EWOULDBLOCK == errno || EINTR == errno || ECONNREFUSED == errno)
         {
             return 0;
         }

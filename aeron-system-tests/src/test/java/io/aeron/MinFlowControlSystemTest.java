@@ -44,8 +44,10 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static io.aeron.AeronCounters.FLOW_CONTROL_RECEIVERS_COUNTER_TYPE_ID;
 import static io.aeron.FlowControlTests.awaitConnectionAndStatusMessages;
 import static io.aeron.test.Tests.awaitConnected;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -164,7 +166,14 @@ class MinFlowControlSystemTest
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
         publication = clientA.addPublication(MULTICAST_URI + publisherUriParams, STREAM_ID);
 
-        while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
+        final int flowControlCounterId = clientA.countersReader().findByTypeIdAndRegistrationId(
+            FLOW_CONTROL_RECEIVERS_COUNTER_TYPE_ID, publication.registrationId());
+        assertNotEquals(NULL_COUNTER_ID, flowControlCounterId);
+
+        while (!subscriptionA.isConnected() ||
+            !subscriptionB.isConnected() ||
+            !publication.isConnected() ||
+            clientA.countersReader().getCounterValue(flowControlCounterId) < 2)
         {
             Tests.yield();
         }

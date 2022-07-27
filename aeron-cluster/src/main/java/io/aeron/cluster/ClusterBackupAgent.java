@@ -459,11 +459,7 @@ public final class ClusterBackupAgent implements Agent
 
             clusterMembers = ClusterMember.parse(backupResponseDecoder.clusterMembers());
             leaderMember = ClusterMember.findMember(clusterMembers, leaderMemberId);
-
-            if (null != leaderMember)
-            {
-                leaderMember.leadershipTermId(logLeadershipTermId);
-            }
+            leaderMember.leadershipTermId(logLeadershipTermId);
 
             if (null != eventsListener)
             {

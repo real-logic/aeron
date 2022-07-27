@@ -39,8 +39,7 @@
 #include "collections/aeron_bit_set.h"
 #include "uri/aeron_uri.h"
 #include "util/aeron_parse_util.h"
-#include <sys/socket.h>
-#include <sys/un.h>
+#include <zmq.h>
 
 
 #define STATIC_BIT_SET_U64_LEN (512u)
@@ -4514,17 +4513,15 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     bool is_oldest_subscription_sparse = aeron_driver_conductor_is_oldest_subscription_sparse(
         conductor, endpoint, command->stream_id, command->session_id, registration_id);
 
-    int* notify_socket_fd = aeron_int64_to_ptr_hash_map_get(&conductor->stream_id_socket_map, (int64_t)command->stream_id);
+    void* notify_socket_fd = aeron_int64_to_ptr_hash_map_get(&conductor->stream_id_socket_map, (int64_t)command->stream_id);
     if (NULL == notify_socket_fd) {
         printf("Creating socket: %d\n", command->stream_id);
-        struct sockaddr_un server_addr;
-        memset(&server_addr, 0, sizeof(server_addr));
-        server_addr.sun_family = AF_UNIX;
-        snprintf(server_addr.sun_path, sizeof(server_addr.sun_path), "/tmp/socket-%d", command->stream_id);
-
-        notify_socket_fd = malloc(sizeof(int));
-        *notify_socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-        bind(*notify_socket_fd, (struct sockaddr *) &server_addr, sizeof(server_addr));
+        void *context = zmq_ctx_new ();
+        notify_socket_fd = zmq_socket (context, ZMQ_PUB);
+        char buf[1024];
+        snprintf(buf, sizeof(buf), "ipc:///tmp/sockets/%d", command->stream_id);
+        int rc = zmq_bind(notify_socket_fd, buf);
+        assert (rc == 0);
 
         aeron_int64_to_ptr_hash_map_put(&conductor->stream_id_socket_map, (int64_t)command->stream_id, notify_socket_fd);
     }

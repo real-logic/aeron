@@ -366,6 +366,16 @@ if (CYGWIN)
     endif ()
 endif ()
 
+find_package(PkgConfig)
+## use pkg-config to get hints for 0mq locations
+pkg_check_modules(PC_ZeroMQ QUIET zmq)
+
+## use the hint from above to find the location of libzmq
+find_library(ZeroMQ_LIBRARY
+        NAMES zmq
+        PATHS ${PC_ZeroMQ_LIBRARY_DIRS}
+        )
+
 target_link_libraries(
     aeron_driver
     ${CMAKE_DL_LIBS}
@@ -374,7 +384,8 @@ target_link_libraries(
     ${AERON_LIB_M_LIBS}
     ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${AERON_LIB_WINSOCK_LIBS})
+    ${AERON_LIB_WINSOCK_LIBS}
+    ${ZeroMQ_LIBRARY})
 
 target_link_libraries(
     aeronmd
@@ -385,7 +396,8 @@ target_link_libraries(
     ${AERON_LIB_M_LIBS}
     ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${AERON_LIB_WINSOCK_LIBS})
+    ${AERON_LIB_WINSOCK_LIBS}
+    ${ZeroMQ_LIBRARY})
 
 target_link_libraries(
     aeronmd_s
@@ -396,7 +408,8 @@ target_link_libraries(
     ${AERON_LIB_M_LIBS}
     ${AERON_LIB_ATOMIC_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${AERON_LIB_WINSOCK_LIBS})
+    ${AERON_LIB_WINSOCK_LIBS}
+    ${ZeroMQ_LIBRARY})
 
 target_compile_definitions(aeron_driver PRIVATE -DAERON_DRIVER)
 target_compile_definitions(aeron_driver_static PRIVATE -DAERON_DRIVER)

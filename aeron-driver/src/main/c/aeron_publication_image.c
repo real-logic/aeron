@@ -76,7 +76,7 @@ int aeron_publication_image_create(
     bool is_sparse,
     bool treat_as_multicast,
     aeron_system_counters_t *system_counters,
-    int* notify_socket_fd)
+    void* notify_socket_fd)
 {
     aeron_publication_image_t *_image = NULL;
     const uint64_t log_length = aeron_logbuffer_compute_log_length(
@@ -390,8 +390,8 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
 
         bool updated = aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
         if (updated) {
-            int buflen = snprintf(image->notify_socket_buf, sizeof(image->notify_socket_buf), "%ld", new_rebuild_position);
-            write(*image->notify_socket_fd, image->notify_socket_buf, buflen);
+            // int buflen = snprintf(image->notify_socket_buf, sizeof(image->notify_socket_buf), "%ld", new_rebuild_position);
+            // write(*image->notify_socket_fd, image->notify_socket_buf, buflen);
             // printf("%d: %ld\n", image->stream_id, new_rebuild_position);
         }
 

@@ -23,6 +23,7 @@
 #include "aeron_driver_conductor.h"
 #include "concurrent/aeron_term_gap_filler.h"
 #include <sys/socket.h>
+#include <zmq.h>
 
 static void aeron_publication_image_connection_set_control_address(
     aeron_publication_image_connection_t *connection, const struct sockaddr_storage *control_address)
@@ -390,9 +391,10 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
 
         bool updated = aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
         if (updated) {
-            // int buflen = snprintf(image->notify_socket_buf, sizeof(image->notify_socket_buf), "%ld", new_rebuild_position);
-            // write(*image->notify_socket_fd, image->notify_socket_buf, buflen);
-            // printf("%d: %ld\n", image->stream_id, new_rebuild_position);
+            int buflen = snprintf(image->notify_socket_buf, sizeof(image->notify_socket_buf), "%ld", new_rebuild_position);
+
+             zmq_send(image->notify_socket_fd, image->notify_socket_buf, buflen, 0);
+            // printf("%d: %ld [%d]\n", image->stream_id, new_rebuild_position, rc);
         }
 
         bool should_force_send_sm = false;

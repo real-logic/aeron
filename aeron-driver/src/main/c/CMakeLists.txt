@@ -16,9 +16,6 @@ include(CheckSymbolExists)
 include(CheckIncludeFile)
 include(CheckTypeSize)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
     add_definitions(-D_DEFAULT_SOURCE)
@@ -372,16 +369,11 @@ endif ()
 find_package(PkgConfig)
 ## use pkg-config to get hints for 0mq locations
 pkg_check_modules(PC_ZeroMQ QUIET zmq)
-pkg_check_modules(PC_Sodium QUIET sodium)
 
 ## use the hint from above to find the location of libzmq
 find_library(ZeroMQ_LIBRARY
         NAMES zmq
         PATHS ${PC_ZeroMQ_LIBRARY_DIRS}
-        )
-find_library(Sodium_LIBRARY
-        NAMES sodium 
-        PATHS ${PC_Sodium_LIBRARY_DIRS}
         )
 
 target_link_libraries(
@@ -394,7 +386,7 @@ target_link_libraries(
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS}
     ${ZeroMQ_LIBRARY}
-    ${Sodium_LIBRARY})
+    stdc++)
 
 target_link_libraries(
     aeronmd
@@ -407,7 +399,7 @@ target_link_libraries(
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS}
     ${ZeroMQ_LIBRARY}
-    ${Sodium_LIBRARY})
+    stdc++)
 
 # target_link_libraries(
 #  aeronmd_s
@@ -419,8 +411,7 @@ target_link_libraries(
 #    ${AERON_LIB_ATOMIC_LIBS}
 #    ${CMAKE_THREAD_LIBS_INIT}
 #    ${AERON_LIB_WINSOCK_LIBS}
-#    ${ZeroMQ_LIBRARY}
-#    ${Sodium_LIBRARY})
+#    ${ZeroMQ_LIBRARY})
 
 target_compile_definitions(aeron_driver PRIVATE -DAERON_DRIVER)
 # target_compile_definitions(aeron_driver_static PRIVATE -DAERON_DRIVER)

@@ -1354,15 +1354,14 @@ class Election
             // nextTermLogPosition == appendPosition.
             return;
         }
-        // Prevent -1 termIds in the log.
-        final long startingTermId = max(0, initialLogLeadershipTermId);
 
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
         final RecordingLog recordingLog = ctx.recordingLog();
         RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
+
         if (null == lastTerm)
         {
-            for (long termId = startingTermId; termId < leadershipTermId; termId++)
+            for (long termId = max(0, initialLogLeadershipTermId); termId < leadershipTermId; termId++)
             {
                 recordingLog.appendTerm(recordingId, termId, initialTermBaseLogPosition, timestamp);
                 recordingLog.commitLogPosition(termId, initialTermBaseLogPosition);

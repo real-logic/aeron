@@ -16,6 +16,9 @@ include(CheckSymbolExists)
 include(CheckIncludeFile)
 include(CheckTypeSize)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
+
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
     add_definitions(-D_DEFAULT_SOURCE)
@@ -330,9 +333,9 @@ add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
 target_include_directories(aeron_driver
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
 
-add_library(aeron_driver_static STATIC ${SOURCE} ${HEADERS})
-target_include_directories(aeron_driver_static
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
+# add_library(aeron_driver_static STATIC ${SOURCE} ${HEADERS})
+#target_include_directories(aeron_driver_static
+#  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
 
 add_executable(aeronmd aeronmd.c)
 target_include_directories(aeronmd
@@ -420,11 +423,12 @@ target_link_libraries(
 #    ${Sodium_LIBRARY})
 
 target_compile_definitions(aeron_driver PRIVATE -DAERON_DRIVER)
-target_compile_definitions(aeron_driver_static PRIVATE -DAERON_DRIVER)
+# target_compile_definitions(aeron_driver_static PRIVATE -DAERON_DRIVER)
 
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS aeron_driver aeron_driver_static
+        TARGETS aeron_driver
+        # TARGETS aeron_driver aeron_driver_static
         RUNTIME DESTINATION lib
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)

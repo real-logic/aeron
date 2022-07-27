@@ -31,6 +31,7 @@
 
 #include "util/aeron_math.h"
 #include "util/aeron_arrayutil.h"
+#include "aeron_alloc.h"
 #include "aeron_driver_conductor.h"
 #include "aeron_position.h"
 #include "aeron_driver_sender.h"
@@ -38,6 +39,8 @@
 #include "collections/aeron_bit_set.h"
 #include "uri/aeron_uri.h"
 #include "util/aeron_parse_util.h"
+#include <sys/socket.h>
+#include <sys/un.h>
 
 
 #define STATIC_BIT_SET_U64_LEN (512u)
@@ -444,6 +447,13 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     {
         return -1;
     }
+
+    if (aeron_int64_to_ptr_hash_map_init(
+        &conductor->stream_id_socket_map, 64, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        return -1;
+    }
+
 
     if (aeron_loss_reporter_init(&conductor->loss_reporter, context->loss_report.addr, context->loss_report.length) < 0)
     {
@@ -2898,6 +2908,7 @@ void aeron_driver_conductor_on_close(void *clientd)
 
     aeron_str_to_ptr_hash_map_delete(&conductor->send_channel_endpoint_by_channel_map);
     aeron_str_to_ptr_hash_map_delete(&conductor->receive_channel_endpoint_by_channel_map);
+    aeron_int64_to_ptr_hash_map_delete(&conductor->stream_id_socket_map);
     aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, AERON_NULL_VALUE);
 }
 
@@ -4502,6 +4513,23 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         endpoint->conductor_fields.udp_channel->is_multicast : AERON_FORCE_TRUE == group_subscription;
     bool is_oldest_subscription_sparse = aeron_driver_conductor_is_oldest_subscription_sparse(
         conductor, endpoint, command->stream_id, command->session_id, registration_id);
+
+    int* socket_fd = aeron_int64_to_ptr_hash_map_get(&conductor->stream_id_socket_map, (int64_t)command->stream_id);
+    if (NULL == socket_fd) {
+        printf("Creating socket: %d\n", command->stream_id);
+        char buffer[1024];
+        snprintf(buffer, sizeof(buffer), "/tmp/socket-%d", command->stream_id);
+        struct sockaddr_un server_addr;
+        memset(&server_addr, 0, sizeof(server_addr));
+        server_addr.sun_family = AF_UNIX;
+        strncpy(server_addr.sun_path, buffer, 104);
+
+        socket_fd = malloc(sizeof(int));
+        *socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
+        bind(*socket_fd, (struct sockaddr *) &server_addr, sizeof(server_addr));
+
+        aeron_int64_to_ptr_hash_map_put(&conductor->stream_id_socket_map, (int64_t)command->stream_id, socket_fd);
+    }
 
     aeron_publication_image_t *image = NULL;
     if (aeron_publication_image_create(

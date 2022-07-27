@@ -384,7 +384,10 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
         const int32_t rebuild_term_offset = (int32_t)(rebuild_position & image->term_length_mask);
         const int64_t new_rebuild_position = (rebuild_position - rebuild_term_offset) + rebuild_offset;
 
-        aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
+        bool updated = aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
+        if (updated) {
+            // printf("%d: %ld\n", image->stream_id, new_rebuild_position);
+        }
 
         bool should_force_send_sm = false;
         const int32_t window_length = image->congestion_control->on_track_rebuild(

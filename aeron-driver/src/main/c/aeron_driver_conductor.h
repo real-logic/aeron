@@ -27,6 +27,7 @@
 #include "aeron_system_counters.h"
 #include "aeron_ipc_publication.h"
 #include "collections/aeron_str_to_ptr_hash_map.h"
+#include "collections/aeron_int64_to_ptr_hash_map.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_driver_conductor_proxy.h"
@@ -289,6 +290,8 @@ typedef struct aeron_driver_conductor_stct
     int64_t last_consumer_command_position;
 
     uint8_t padding[AERON_CACHE_LINE_LENGTH];
+
+    aeron_int64_to_ptr_hash_map_t stream_id_socket_map;
 }
 aeron_driver_conductor_t;
 

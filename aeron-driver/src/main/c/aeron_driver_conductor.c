@@ -4514,21 +4514,19 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     bool is_oldest_subscription_sparse = aeron_driver_conductor_is_oldest_subscription_sparse(
         conductor, endpoint, command->stream_id, command->session_id, registration_id);
 
-    int* socket_fd = aeron_int64_to_ptr_hash_map_get(&conductor->stream_id_socket_map, (int64_t)command->stream_id);
-    if (NULL == socket_fd) {
+    int* notify_socket_fd = aeron_int64_to_ptr_hash_map_get(&conductor->stream_id_socket_map, (int64_t)command->stream_id);
+    if (NULL == notify_socket_fd) {
         printf("Creating socket: %d\n", command->stream_id);
-        char buffer[1024];
-        snprintf(buffer, sizeof(buffer), "/tmp/socket-%d", command->stream_id);
         struct sockaddr_un server_addr;
         memset(&server_addr, 0, sizeof(server_addr));
         server_addr.sun_family = AF_UNIX;
-        strncpy(server_addr.sun_path, buffer, 104);
+        snprintf(server_addr.sun_path, sizeof(server_addr.sun_path), "/tmp/socket-%d", command->stream_id);
 
-        socket_fd = malloc(sizeof(int));
-        *socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-        bind(*socket_fd, (struct sockaddr *) &server_addr, sizeof(server_addr));
+        notify_socket_fd = malloc(sizeof(int));
+        *notify_socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
+        bind(*notify_socket_fd, (struct sockaddr *) &server_addr, sizeof(server_addr));
 
-        aeron_int64_to_ptr_hash_map_put(&conductor->stream_id_socket_map, (int64_t)command->stream_id, socket_fd);
+        aeron_int64_to_ptr_hash_map_put(&conductor->stream_id_socket_map, (int64_t)command->stream_id, notify_socket_fd);
     }
 
     aeron_publication_image_t *image = NULL;
@@ -4554,7 +4552,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         is_reliable,
         is_oldest_subscription_sparse,
         treat_as_multicast,
-        &conductor->system_counters) < 0)
+        &conductor->system_counters,
+        notify_socket_fd) < 0)
     {
         aeron_counters_manager_free(&conductor->counters_manager, rcv_hwm_position.counter_id);
         aeron_counters_manager_free(&conductor->counters_manager, rcv_pos_position.counter_id);

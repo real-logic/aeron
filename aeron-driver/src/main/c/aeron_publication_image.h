@@ -131,6 +131,9 @@ typedef struct aeron_publication_image_stct
     int64_t *status_messages_sent_counter;
     int64_t *nak_messages_sent_counter;
     int64_t *loss_gap_fills_counter;
+
+    int* notify_socket_fd;
+    char notify_socket_buf[1024];
 }
 aeron_publication_image_t;
 
@@ -156,7 +159,8 @@ int aeron_publication_image_create(
     bool is_reliable,
     bool is_sparse,
     bool treat_as_multicast,
-    aeron_system_counters_t *system_counters);
+    aeron_system_counters_t *system_counters,
+    int* notify_socket_fd);
 
 int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, aeron_publication_image_t *image);
 

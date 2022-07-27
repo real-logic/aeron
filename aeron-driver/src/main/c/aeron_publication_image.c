@@ -22,6 +22,7 @@
 #include "aeron_driver_receiver_proxy.h"
 #include "aeron_driver_conductor.h"
 #include "concurrent/aeron_term_gap_filler.h"
+#include <sys/socket.h>
 
 static void aeron_publication_image_connection_set_control_address(
     aeron_publication_image_connection_t *connection, const struct sockaddr_storage *control_address)
@@ -74,7 +75,8 @@ int aeron_publication_image_create(
     bool is_reliable,
     bool is_sparse,
     bool treat_as_multicast,
-    aeron_system_counters_t *system_counters)
+    aeron_system_counters_t *system_counters,
+    int* notify_socket_fd)
 {
     aeron_publication_image_t *_image = NULL;
     const uint64_t log_length = aeron_logbuffer_compute_log_length(
@@ -241,6 +243,8 @@ int aeron_publication_image_create(
     aeron_counter_set_ordered(_image->rcv_hwm_position.value_addr, initial_position);
     aeron_counter_set_ordered(_image->rcv_pos_position.value_addr, initial_position);
 
+    _image->notify_socket_fd = notify_socket_fd;
+
     *image = _image;
 
     return 0;
@@ -386,6 +390,8 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
 
         bool updated = aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
         if (updated) {
+            int buflen = snprintf(image->notify_socket_buf, sizeof(image->notify_socket_buf), "%ld", new_rebuild_position);
+            write(*image->notify_socket_fd, image->notify_socket_buf, buflen);
             // printf("%d: %ld\n", image->stream_id, new_rebuild_position);
         }
 

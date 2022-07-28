@@ -491,7 +491,7 @@ project(':aeron-archive') {
     }
 
     task generateV6Codecs(type: JavaExec) {
-        def codecsFile = 'src/main/resources/archive/aeron-archive-codecs-v6.xml'
+        def codecsFile = 'src/test/resources/archive/aeron-archive-codecs-v6.xml'
         def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
 
         inputs.files(codecsFile, sbeFile)

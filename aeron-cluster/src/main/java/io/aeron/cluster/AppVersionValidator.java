@@ -19,7 +19,7 @@ import org.agrona.SemanticVersion;
 
 /**
  * Class to be used for determining AppVersion compatibility.
- *
+ * <p>
  * Default is to use {@link org.agrona.SemanticVersion} semantics for check.
  */
 public class AppVersionValidator

@@ -20,11 +20,11 @@ import java.util.List;
 
 /**
  * Creates a series of migration steps given a starting semantic version.
- *
+ * <p>
  * Migration steps are stored statically in a list sorted by order of operation. Each has
  * a minimum version. The first step that has a minimum version greater than the passed in version forms
  * the start of the migration steps. All steps afterward are included in the migration.
- *
+ * <p>
  * A step need not be a complete operation. A series of operations may be broken down in steps and
  * included with the same minimum version.
  */

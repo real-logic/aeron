@@ -2960,7 +2960,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Get the interface of the {@link MediaDriver} for name resolver purposes.
-         *
+         * <p>
          * The format is hostname:port and follows the URI format for the interface parameter. If set to null,
          * then the name resolver will not be used.
          *
@@ -2975,7 +2975,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Set the interface of the {@link MediaDriver} for name resolver purposes.
-         *
+         * <p>
          * The format is hostname:port and follows the URI format for the interface parameter. If set to null,
          * then the name resolver will not be used.
          *
@@ -2992,7 +2992,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Get the bootstrap neighbor of the {@link MediaDriver} for name resolver purposes.
-         *
+         * <p>
          * The format is comma separated list of {@code hostname:port} pairs. and follows the URI format for the
          * endpoint parameter.
          *
@@ -3007,7 +3007,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Set the bootstrap neighbor of the {@link MediaDriver} for name resolver purposes.
-         *
+         * <p>
          * The format is hostname:port and follows the URI format for the endpoint parameter.
          *
          * @param resolverBootstrapNeighbor to use for the name resolver.
@@ -3023,7 +3023,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Get the interval for checking if a re-resolution for endpoints and controls should be done.
-         *
+         * <p>
          * A value of 0 turns off checks and re-resolutions.
          *
          * @return timeout in ns.
@@ -3037,7 +3037,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Set the interval for checking if a re-resolution for endpoints and controls should be done.
-         *
+         * <p>
          * A value of 0 turns off checks and re-resolutions.
          *
          * @param reResolutionCheckIntervalNs to use for check

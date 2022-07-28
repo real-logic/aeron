@@ -26,7 +26,6 @@ public interface TimerServiceSupplier
     /**
      * New instance of the {@link TimerService}.
      *
-     *
      * @param timeUnit      units to be used by the underlying timer service.
      * @param timerHandler  that must be invoked for each expired timer.
      * @return              timer service instance ready for immediate usage.

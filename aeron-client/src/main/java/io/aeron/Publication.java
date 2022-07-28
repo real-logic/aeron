@@ -327,7 +327,7 @@ public abstract class Publication implements AutoCloseable
     /**
      * Fetches the local socket address for this publication. If the channel is not
      * {@link io.aeron.status.ChannelEndpointStatus#ACTIVE}, then this will return an empty list.
-     *
+     * <p>
      * The format is as follows:
      * <br>
      * <br>

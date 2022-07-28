@@ -1704,7 +1704,7 @@ public final class ConsensusModule implements AutoCloseable
 
         /**
          * User assigned application version validator implementation used to check version compatibility.
-         *
+         * <p>
          * The default validator uses {@link org.agrona.SemanticVersion} semantics.
          *
          * @param appVersionValidator for user application.
@@ -1718,7 +1718,7 @@ public final class ConsensusModule implements AutoCloseable
 
         /**
          * User assigned application version validator implementation used to check version compatibility.
-         *
+         * <p>
          * The default validator uses {@link org.agrona.SemanticVersion} semantics.
          *
          * @return AppVersionValidator in use.

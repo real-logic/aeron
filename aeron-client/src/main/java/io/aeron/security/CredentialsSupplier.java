@@ -17,7 +17,7 @@ package io.aeron.security;
 
 /**
  * Supplier of credentials for authentication with a system.
- *
+ * <p>
  * Implement this interface to supply credentials for clients. If no credentials are required then the
  * {@link NullCredentialsSupplier} can be used.
  */

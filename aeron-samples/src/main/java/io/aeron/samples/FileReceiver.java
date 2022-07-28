@@ -46,7 +46,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * linked via the correlation id. Messages are encoded in {@link java.nio.ByteOrder#LITTLE_ENDIAN}.
  * <p>
  * The chunk size if best determined by {@link io.aeron.Publication#maxPayloadLength()} minus header for the chunk.
- *
+ * <p>
  * <b>file-create</b>
  * <pre>
  *   0                   1                   2                   3

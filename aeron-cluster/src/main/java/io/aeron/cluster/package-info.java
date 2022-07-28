@@ -17,7 +17,7 @@
 /**
  * Aeron Cluster provides support for fault-tolerant services as replicated state machines based on the
  * <a href="https://raft.github.io/raft.pdf" target="_blank">Raft</a> consensus algorithm.
- *
+ * <p>
  * The purpose of Aeron Cluster is to aggregate and sequence streams from cluster clients into a single log. A number of
  * nodes will replicate and archive the log to achieve fault tolerance.
  * {@link io.aeron.cluster.service.ClusteredService}s deterministically process the log and respond to cluster clients.

@@ -258,7 +258,7 @@ public final class Image
 
     /**
      * Count of observed active transports within the image liveness timeout.
-     *
+     * <p>
      * If the image is closed, then this is 0. This may also be 0 if no actual datagrams have arrived. IPC
      * Images also will be 0.
      *

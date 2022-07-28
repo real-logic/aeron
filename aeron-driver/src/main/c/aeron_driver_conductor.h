@@ -153,6 +153,12 @@ aeron_linger_resource_entry_t;
 
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
+typedef struct notify_data_stct {
+    bool updated;
+    void* socket;
+    char buf[64];
+} notify_data_t; 
+
 typedef struct aeron_driver_conductor_stct
 {
     aeron_driver_context_t *context;

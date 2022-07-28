@@ -448,7 +448,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
-        &conductor->stream_id_socket_map, 64, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &conductor->stream_id_socket_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         return -1;
     }
@@ -2830,7 +2830,23 @@ int aeron_driver_conductor_do_work(void *clientd)
 
     for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
     {
-        aeron_publication_image_track_rebuild(conductor->publication_images.array[i].image, now_ns);
+        aeron_publication_image_t* image = conductor->publication_images.array[i].image;
+        if (aeron_publication_image_track_rebuild(image, now_ns)) {
+            notify_data_t* notify = aeron_int64_to_ptr_hash_map_get(&conductor->stream_id_socket_map, (int64_t)image->stream_id);
+            notify->updated = true;
+        }
+    }
+    for (size_t i = 0; i < conductor->stream_id_socket_map.capacity; i++) {
+        notify_data_t* notify = conductor->stream_id_socket_map.values[i];
+        if (notify != NULL && notify->updated) {
+            int64_t stream_id = conductor->stream_id_socket_map.keys[i];
+            // printf("%d\n", stream_id);
+
+            int buflen = snprintf(notify->buf, sizeof(notify->buf), "%ld", stream_id);
+
+             zmq_send(notify->socket, notify->buf, buflen, 0);
+            notify->updated = false;
+        }
     }
 
     return work_count;
@@ -4513,17 +4529,19 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     bool is_oldest_subscription_sparse = aeron_driver_conductor_is_oldest_subscription_sparse(
         conductor, endpoint, command->stream_id, command->session_id, registration_id);
 
-    void* notify_socket_fd = aeron_int64_to_ptr_hash_map_get(&conductor->stream_id_socket_map, (int64_t)command->stream_id);
-    if (NULL == notify_socket_fd) {
+    notify_data_t* notify = aeron_int64_to_ptr_hash_map_get(&conductor->stream_id_socket_map, (int64_t)command->stream_id);
+    if (NULL == notify) {
+        notify = malloc(sizeof(notify_data_t));
+        notify->updated = false;
         printf("Creating socket: %d\n", command->stream_id);
         void *context = zmq_ctx_new ();
-        notify_socket_fd = zmq_socket (context, ZMQ_PUB);
+        notify->socket = zmq_socket (context, ZMQ_PUB);
         char buf[1024];
         snprintf(buf, sizeof(buf), "ipc:///tmp/sockets/%d", command->stream_id);
-        int rc = zmq_bind(notify_socket_fd, buf);
+        int rc = zmq_bind(notify->socket, buf);
         assert (rc == 0);
 
-        aeron_int64_to_ptr_hash_map_put(&conductor->stream_id_socket_map, (int64_t)command->stream_id, notify_socket_fd);
+        aeron_int64_to_ptr_hash_map_put(&conductor->stream_id_socket_map, (int64_t)command->stream_id, notify);
     }
 
     aeron_publication_image_t *image = NULL;
@@ -4549,8 +4567,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         is_reliable,
         is_oldest_subscription_sparse,
         treat_as_multicast,
-        &conductor->system_counters,
-        notify_socket_fd) < 0)
+        &conductor->system_counters) < 0)
     {
         aeron_counters_manager_free(&conductor->counters_manager, rcv_hwm_position.counter_id);
         aeron_counters_manager_free(&conductor->counters_manager, rcv_pos_position.counter_id);

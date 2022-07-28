@@ -22,8 +22,6 @@
 #include "aeron_driver_receiver_proxy.h"
 #include "aeron_driver_conductor.h"
 #include "concurrent/aeron_term_gap_filler.h"
-#include <sys/socket.h>
-#include <zmq.h>
 
 static void aeron_publication_image_connection_set_control_address(
     aeron_publication_image_connection_t *connection, const struct sockaddr_storage *control_address)
@@ -76,8 +74,7 @@ int aeron_publication_image_create(
     bool is_reliable,
     bool is_sparse,
     bool treat_as_multicast,
-    aeron_system_counters_t *system_counters,
-    void* notify_socket_fd)
+    aeron_system_counters_t *system_counters)
 {
     aeron_publication_image_t *_image = NULL;
     const uint64_t log_length = aeron_logbuffer_compute_log_length(
@@ -244,8 +241,6 @@ int aeron_publication_image_create(
     aeron_counter_set_ordered(_image->rcv_hwm_position.value_addr, initial_position);
     aeron_counter_set_ordered(_image->rcv_pos_position.value_addr, initial_position);
 
-    _image->notify_socket_fd = notify_socket_fd;
-
     *image = _image;
 
     return 0;
@@ -348,7 +343,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
     }
 }
 
-void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int64_t now_ns)
+bool aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int64_t now_ns)
 {
     size_t subscriber_count = aeron_publication_image_subscriber_count(image);
     if (subscriber_count > 0)
@@ -390,12 +385,6 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
         const int64_t new_rebuild_position = (rebuild_position - rebuild_term_offset) + rebuild_offset;
 
         bool updated = aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
-        if (updated) {
-            int buflen = snprintf(image->notify_socket_buf, sizeof(image->notify_socket_buf), "%ld", new_rebuild_position);
-
-             zmq_send(image->notify_socket_fd, image->notify_socket_buf, buflen, 0);
-            // printf("%d: %ld [%d]\n", image->stream_id, new_rebuild_position, rc);
-        }
 
         bool should_force_send_sm = false;
         const int32_t window_length = image->congestion_control->on_track_rebuild(
@@ -418,7 +407,9 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
             aeron_publication_image_clean_buffer_to(image, min_sub_pos - image->term_length);
             aeron_publication_image_schedule_status_message(image, min_sub_pos, window_length);
         }
+        return updated;
     }
+    return false;
 }
 
 static inline void aeron_publication_image_track_connection(

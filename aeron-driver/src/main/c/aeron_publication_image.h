@@ -131,9 +131,6 @@ typedef struct aeron_publication_image_stct
     int64_t *status_messages_sent_counter;
     int64_t *nak_messages_sent_counter;
     int64_t *loss_gap_fills_counter;
-
-    void* notify_socket_fd;
-    char notify_socket_buf[1024];
 }
 aeron_publication_image_t;
 
@@ -159,8 +156,7 @@ int aeron_publication_image_create(
     bool is_reliable,
     bool is_sparse,
     bool treat_as_multicast,
-    aeron_system_counters_t *system_counters,
-    void* notify_socket_fd);
+    aeron_system_counters_t *system_counters);
 
 int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, aeron_publication_image_t *image);
 
@@ -168,7 +164,7 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
 
 void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length);
 
-void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int64_t now_ns);
+bool aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int64_t now_ns);
 
 int aeron_publication_image_insert_packet(
     aeron_publication_image_t *image,

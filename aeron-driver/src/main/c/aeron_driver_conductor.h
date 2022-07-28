@@ -155,8 +155,7 @@ typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
 typedef struct notify_data_stct {
     bool updated;
-    void* socket;
-    char buf[64];
+    char message[64];
 } notify_data_t; 
 
 typedef struct aeron_driver_conductor_stct
@@ -297,7 +296,8 @@ typedef struct aeron_driver_conductor_stct
 
     uint8_t padding[AERON_CACHE_LINE_LENGTH];
 
-    aeron_int64_to_ptr_hash_map_t stream_id_socket_map;
+    aeron_int64_to_ptr_hash_map_t stream_id_notify_map;
+    void* notify_socket;
 }
 aeron_driver_conductor_t;
 

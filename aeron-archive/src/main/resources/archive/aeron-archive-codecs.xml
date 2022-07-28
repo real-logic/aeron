@@ -96,14 +96,14 @@
         - Replays will start when the replay stream is connected and will automatically close at the end or if the
           replay stream is not connected.
         - Replays will likely have a different session if from the original recording.
-        - A replay can be for a live recording which will follow a live recording in an open ended fashion if requested
+        - A replay can be for a live recording which will follow a live recording in an open-ended fashion if requested
           length is -1 or greater than current recorded position.
         - A replay may be stopped early by closing the replay subscription or calling stop-replay.
         - A replay can be bounded by a provided counter id which limits the replay by externally controlled counter.
 
     4. Query
         - Existing recordings can be listed by recording id range and filtered by uri and stream-id.
-        - Recording subscriptions can be listed that have been setup by other sessions so they can closed on failures.
+        - Recording subscriptions can be listed for all sessions, so they can be closed on failure.
           An active recording subscription can be found by recording id.
         - The start, stop, and active recording position for recordings.
 
@@ -119,15 +119,15 @@
         - Replicated stream will likely not have the same recording id in destination archive.
         - Can follow a live recording up to the point it is stopped at the source.
         - Optionally Merge with a live stream after replay catch up to have multiple recordings of a live stream.
-        - The Subscription used for replication can have its tags provided so it can be followed externally.
+        - The Subscription used for replication can have its tags provided, so it can be followed externally.
 
     8. Recording Progress Events
         - Events indicating the asynchronous start, stop, and progress of all recordings.
         - This can be a high volume stream which reports progress in batches of messages recorded to storage.
-        - If only interested in the the change of lifecycle events such as start, stop, and extend then use the below.
+        - If only interested in the change of lifecycle events such as start, stop, and extend then use the below.
 
     9. Recording Storage Maintenance
-        - Detach segments from the beginning of a recording so they can be moved or deleted.
+        - Detach segments from the beginning of a recording, so they can be moved or deleted.
         - Delete segments from the beginning of a recording which have been detached.
         - Purge segments from the beginning of a recording which is composite action of detach and delete.
         - Attach segments to the beginning of a recording which have been previously detached.

@@ -24,7 +24,6 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.jupiter.api.Test;
 
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class ControlSessionDemuxerV6Test

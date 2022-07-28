@@ -80,10 +80,7 @@ public class TestCluster implements AutoCloseable
     private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
     private static final long CATALOG_CAPACITY = 128 * 1024;
     private static final String LOG_CHANNEL = "aeron:udp?term-length=512k";
-    // Use for testing cluster with multicast
-    // TODO: Parameterise tests with this.
-    // private static final String LOG_CHANNEL =
-    //     "aeron:udp?term-length=512k|endpoint=224.20.30.39:24326|interface=localhost";
+
     private static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
     private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
@@ -232,7 +229,7 @@ public class TestCluster implements AutoCloseable
         while (true)
         {
             final ClusterMembership clusterMembership = node.clusterMembership();
-            if (clusterMembership.activeMembers.stream().anyMatch(cm -> cm.id() == node.index()))
+            if (clusterMembership.activeMembers.stream().anyMatch((cm) -> cm.id() == node.index()))
             {
                 return;
             }
@@ -730,7 +727,6 @@ public class TestCluster implements AutoCloseable
 
     public AeronCluster connectIpcClient(final AeronCluster.Context clientCtx, final String aeronDirName)
     {
-
         clientCtx
             .aeronDirectoryName(aeronDirName)
             .isIngressExclusive(true)
@@ -747,8 +743,6 @@ public class TestCluster implements AutoCloseable
         }
         catch (final TimeoutException ex)
         {
-            System.out.println("Warning: " + ex);
-
             CloseHelper.close(client);
             client = AeronCluster.connect(clientCtx);
         }
@@ -1798,8 +1792,7 @@ public class TestCluster implements AutoCloseable
 
         return new DriverOutputConsumer()
         {
-            public void outputFiles(
-                final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
+            public void outputFiles(final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
             {
                 dataCollector.add(stdoutFile.toPath());
                 dataCollector.add(stderrFile.toPath());

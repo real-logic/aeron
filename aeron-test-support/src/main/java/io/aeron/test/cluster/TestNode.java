@@ -150,6 +150,7 @@ public class TestNode implements AutoCloseable
         {
             throw new IllegalStateException("multiple containers in use");
         }
+
         return containers[0];
     }
 
@@ -159,6 +160,7 @@ public class TestNode implements AutoCloseable
         {
             throw new IllegalStateException("multiple services in use");
         }
+
         return services[0];
     }
 
@@ -246,6 +248,7 @@ public class TestNode implements AutoCloseable
         {
             throw new IllegalStateException("multiple services in use");
         }
+
         return context.hasServiceTerminated[0].get();
     }
 
@@ -260,6 +263,7 @@ public class TestNode implements AutoCloseable
         {
             throw new IllegalStateException("multiple services in use");
         }
+
         return services[0].index();
     }
 

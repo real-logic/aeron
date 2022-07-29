@@ -128,6 +128,8 @@ public class ArchiveMarkFile implements AutoCloseable
 
         if (markFileExists && headerDecoder.errorBufferLength() > 0)
         {
+            validateMappedFileLength(buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+
             final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
                 buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
 
@@ -316,6 +318,16 @@ public class ArchiveMarkFile implements AutoCloseable
         }
 
         return HEADER_LENGTH + ctx.errorBufferLength();
+    }
+
+    private static void validateMappedFileLength(
+        final UnsafeBuffer buffer, final int headerLength, final int errorBufferLength)
+    {
+        if (buffer.capacity() < (headerLength + errorBufferLength))
+        {
+            throw new ArchiveException(
+                "ArchiveMarkFile required capacity=" + buffer.capacity() + " < " + (headerLength + errorBufferLength));
+        }
     }
 
     private void encode(final Archive.Context ctx)

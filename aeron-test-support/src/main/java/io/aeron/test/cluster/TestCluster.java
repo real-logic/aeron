@@ -16,7 +16,6 @@
 package io.aeron.test.cluster;
 
 import io.aeron.*;
-import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
@@ -29,7 +28,6 @@ import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.NewLeadershipTermEventDecoder;
 import io.aeron.cluster.service.Cluster;
-import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
@@ -52,7 +50,6 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NoOpLock;
-import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
@@ -69,7 +66,6 @@ import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
 import static io.aeron.test.cluster.ClusterTests.LARGE_MSG;
 import static io.aeron.test.cluster.ClusterTests.errorHandler;
 import static java.util.stream.Collectors.toList;
@@ -1558,101 +1554,6 @@ public class TestCluster implements AutoCloseable
                     10);
             }
         }
-    }
-
-    public static class ServiceContext
-    {
-        public final Aeron.Context aeronCtx = new Aeron.Context();
-        public final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
-        public final ClusteredServiceContainer.Context serviceContainerCtx = new ClusteredServiceContainer.Context();
-        TestNode.TestService service;
-    }
-
-    public static class NodeContext
-    {
-        public final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context();
-        public final Archive.Context archiveCtx = new Archive.Context();
-        public final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()
-            .replicationChannel("aeron:udp?endpoint=localhost:0");
-        public final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context();
-    }
-
-    public static ServiceContext serviceContext(
-        final int nodeIndex,
-        final int serviceId,
-        final NodeContext nodeCtx,
-        final Supplier<? extends TestNode.TestService> serviceSupplier)
-    {
-        final int serviceIndex = 3 * nodeIndex + serviceId;
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + nodeIndex + "-" + serviceIndex;
-        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + nodeIndex + "-driver";
-        final ServiceContext serviceCtx = new ServiceContext();
-
-        serviceCtx.service = serviceSupplier.get();
-
-        serviceCtx.aeronCtx
-            .aeronDirectoryName(aeronDirName)
-            .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE);
-
-        serviceCtx.aeronArchiveCtx
-            .controlRequestChannel(nodeCtx.archiveCtx.localControlChannel())
-            .controlResponseChannel(nodeCtx.archiveCtx.localControlChannel())
-            .recordingEventsChannel(nodeCtx.archiveCtx.recordingEventsChannel());
-
-        serviceCtx.serviceContainerCtx
-            .archiveContext(serviceCtx.aeronArchiveCtx.clone())
-            .clusterDir(new File(baseDirName, "service"))
-            .clusteredService(serviceCtx.service)
-            .serviceId(serviceId)
-            .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k");
-
-        return serviceCtx;
-    }
-
-    public static NodeContext nodeContext(final int index, final boolean cleanStart)
-    {
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
-        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final NodeContext nodeCtx = new NodeContext();
-
-        nodeCtx.mediaDriverCtx
-            .aeronDirectoryName(aeronDirName)
-            .threadingMode(ThreadingMode.SHARED)
-            .termBufferSparseFile(true)
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(false)
-            .nameResolver(new RedirectingNameResolver(DEFAULT_NODE_MAPPINGS));
-
-        nodeCtx.archiveCtx
-            .catalogCapacity(CATALOG_CAPACITY)
-            .segmentFileLength(256 * 1024)
-            .archiveDir(new File(baseDirName, "archive"))
-            .controlChannel(archiveControlRequestChannel(index))
-            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-            .recordingEventsEnabled(false)
-            .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart);
-
-        nodeCtx.aeronArchiveCtx
-            .controlRequestChannel(nodeCtx.archiveCtx.localControlChannel())
-            .controlResponseChannel(nodeCtx.archiveCtx.localControlChannel())
-            .recordingEventsChannel(nodeCtx.archiveCtx.recordingEventsChannel())
-            .aeronDirectoryName(aeronDirName);
-
-        nodeCtx.consensusModuleCtx
-            .clusterMemberId(index)
-            .clusterMembers(clusterMembers(0, 3))
-            .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)
-            .serviceCount(2)
-            .clusterDir(new File(baseDirName, "consensus-module"))
-            .ingressChannel(INGRESS_CHANNEL)
-            .logChannel(LOG_CHANNEL)
-            .archiveContext(nodeCtx.aeronArchiveCtx.clone())
-            .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k")
-            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
-            .deleteDirOnStart(cleanStart);
-
-        return nodeCtx;
     }
 
     public static Builder aCluster()

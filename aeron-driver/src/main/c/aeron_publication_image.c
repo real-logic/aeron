@@ -385,6 +385,7 @@ bool aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
         const int64_t new_rebuild_position = (rebuild_position - rebuild_term_offset) + rebuild_offset;
 
         // This is the rcv-pos increased counter, which is essentially the signal that new data can be polled.
+        // See: https://aeroncookbook.com/aeron/aeron-understanding-position/
         bool updated = aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
 
         bool should_force_send_sm = false;

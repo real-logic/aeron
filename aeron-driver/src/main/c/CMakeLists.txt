@@ -386,6 +386,7 @@ target_link_libraries(
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS}
     ${ZeroMQ_LIBRARY}
+    # Requires C++ std lib due to new ZMQ dependencies.
     stdc++)
 
 target_link_libraries(

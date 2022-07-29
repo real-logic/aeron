@@ -35,7 +35,9 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -72,17 +74,16 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private final ServiceAdapter serviceAdapter;
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
-    private final UnsafeBuffer messageBuffer = new UnsafeBuffer(
-        new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH]);
+    private final UnsafeBuffer messageBuffer = new UnsafeBuffer(new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH]);
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(
         messageBuffer,
         DataHeaderFlyweight.HEADER_LENGTH,
         Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH);
     private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
     private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
+    private final ArrayList<ContainerClientSession> sessions = new ArrayList<>();
     private final Long2ObjectHashMap<ContainerClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
-    private final Collection<ClientSession> unmodifiableClientSessions =
-        new UnmodifiableClientSessionCollection(sessionByIdMap.values());
+    private final Collection<ClientSession> unmodifiableClientSessions = Collections.unmodifiableCollection(sessions);
     private final BoundedLogAdapter logAdapter;
     private final DutyCycleTracker dutyCycleTracker;
     private String activeLifecycleCallbackName;
@@ -148,7 +149,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             if (!ctx.ownsAeronClient() && !aeron.isClosed())
             {
-                for (final ContainerClientSession session : sessionByIdMap.values())
+                for (final ContainerClientSession session : sessions)
                 {
                     session.disconnect(errorHandler);
                 }
@@ -234,7 +235,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public void forEachClientSession(final Consumer<? super ClientSession> action)
     {
-        sessionByIdMap.values().forEach(action);
+        sessions.forEach(action);
     }
 
     public boolean closeClientSession(final long clusterSessionId)
@@ -424,7 +425,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             session.connect(aeron);
         }
 
-        sessionByIdMap.put(clusterSessionId, session);
+        addSession(session);
         service.onSessionOpen(session, timestamp);
     }
 
@@ -444,6 +445,15 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             throw new ClusterException(
                 "unknown clusterSessionId=" + clusterSessionId + " for close reason=" + closeReason +
                 " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition);
+        }
+
+        for (int i = 0, size = sessions.size(); i < size; i++)
+        {
+            if (sessions.get(i).id() == clusterSessionId)
+            {
+                sessions.remove(i);
+                break;
+            }
         }
 
         session.disconnect(ctx.countedErrorHandler());
@@ -510,8 +520,36 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final String responseChannel,
         final byte[] encodedPrincipal)
     {
-        sessionByIdMap.put(clusterSessionId, new ContainerClientSession(
-            clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this));
+        final ContainerClientSession session = new ContainerClientSession(
+            clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this);
+
+        addSession(session);
+    }
+
+    private void addSession(final ContainerClientSession session)
+    {
+        final long clusterSessionId = session.id();
+        sessionByIdMap.put(clusterSessionId, session);
+
+        final int size = sessions.size();
+        int addIndex = size;
+        for (int i = size - 1; i >= 0; i--)
+        {
+            if (sessions.get(i).id() < clusterSessionId)
+            {
+                addIndex = i + 1;
+                break;
+            }
+        }
+
+        if (size == addIndex)
+        {
+            sessions.add(session);
+        }
+        else
+        {
+            sessions.add(addIndex, session);
+        }
     }
 
     void handleError(final Throwable ex)
@@ -683,7 +721,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         if (Role.LEADER != activeLog.role)
         {
-            for (final ContainerClientSession session : sessionByIdMap.values())
+            for (final ContainerClientSession session : sessions)
             {
                 session.disconnect(ctx.countedErrorHandler());
             }
@@ -726,7 +764,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         if (Role.LEADER == activeLog.role)
         {
-            for (final ContainerClientSession session : sessionByIdMap.values())
+            for (final ContainerClientSession session : sessions)
             {
                 if (ctx.isRespondingService() && !activeLog.isStartup)
                 {
@@ -876,7 +914,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
 
-        for (final ClientSession clientSession : sessionByIdMap.values())
+        for (final ClientSession clientSession : sessions)
         {
             snapshotTaker.snapshotSession(clientSession);
         }

@@ -31,6 +31,319 @@ namespace aeron { namespace archive { namespace client
 constexpr const std::size_t PROXY_REQUEST_BUFFER_LENGTH = 8 * 1024;
 
 /**
+ * Contains the optional parameters that can be passed to a Replication Request. Controls the behaviour of the
+ * replication including tagging, stop position, extending destination recordings, live merging, and setting the
+ * maximum length of the file I/O operations.
+ */
+ class ReplicationParams
+{
+public:
+    ReplicationParams() :
+        m_stopPosition(NULL_POSITION),
+        m_dstRecordingId(NULL_VALUE),
+        m_liveDestination(),
+        m_replicationChannel(),
+        m_channelTagId(NULL_VALUE),
+        m_subscriptionTagId(NULL_VALUE),
+        m_fileIoMaxLength(NULL_VALUE)
+    {}
+
+    /**
+     * The stop position for this replication request.
+     * @return stop position
+     */
+    std::int64_t stopPosition() const
+    {
+        return m_stopPosition;
+    }
+
+    /**
+     * Set the stop position for replication, default is aeron::NULL_POSITION, which will continuously replicate.
+     *
+     * @param stopPosition position to stop the replication at.
+     * @return this for a fluent API
+     */
+    ReplicationParams& stopPosition(std::int64_t stopPosition)
+    {
+        m_stopPosition = stopPosition;
+        return *this;
+    }
+
+    /**
+     * Destination recording id to extend.
+     *
+     * @return destination recording id.
+     */
+    int64_t dstRecordingId() const
+    {
+        return m_dstRecordingId;
+    }
+
+    /**
+     * The recording in the local archive to extend. Default is aeron::NULL_VALUE which will trigger the creation
+     * of a new recording in the destination archive.
+     *
+     * @param dstRecordingId destination recording to extend.
+     * @return this for a fluent API.
+     */
+    ReplicationParams &dstRecordingId(int64_t dstRecordingId)
+    {
+        m_dstRecordingId = dstRecordingId;
+        return *this;
+    }
+
+    /**
+     * Gets the destination for the live stream merge.
+     *
+     * @return destination for live stream merge.
+     */
+    const std::string &liveDestination() const
+    {
+        return m_liveDestination;
+    }
+
+    /**
+     * Destination for the live stream if merge is required. Default is empty string for no merge.
+     *
+     * @param liveChannel for the live stream merge
+     * @return this for a fluent API.
+     */
+    ReplicationParams &liveDestination(const std::string &liveDestination)
+    {
+        m_liveDestination = liveDestination;
+        return *this;
+    }
+
+    /**
+     * Channel to use for replicating the recording, empty string will mean that the default channel is used.
+     * @return channel to replicate the recording.
+     */
+    const std::string &replicationChannel() const
+    {
+        return m_replicationChannel;
+    }
+
+    /**
+     * Channel use to replicate the recording. Default is empty string which will use the context's default replication
+     * channel
+     *
+     * @param replicationChannel to use for replicating the recording.
+     * @return this for a fluent API.
+     */
+    ReplicationParams &replicationChannel(const std::string &replicationChannel)
+    {
+        m_replicationChannel = replicationChannel;
+        return *this;
+    }
+
+    /**
+     * Gets channel tag id for the archive subscription.
+     *
+     * @return channel tag id.
+     */
+    int64_t channelTagId() const
+    {
+        return m_channelTagId;
+    }
+
+    /**
+     * The channel used by the archive's subscription for replication will have the supplied channel tag applied to it.
+     * The default value for channelTagId is aeron::NULL_VALUE
+     *
+     * @param channelTagId tag to apply to the archive's subscription.
+     * @return this for a fluent API
+     */
+    ReplicationParams &channelTagId(int64_t channelTagId)
+    {
+        m_channelTagId = channelTagId;
+        return *this;
+    }
+
+    /**
+     * Gets subscription tag id for the archive subscription.
+     *
+     *  @return subscription tag id.
+     */
+    int64_t subscriptionTagId() const
+    {
+        return m_subscriptionTagId;
+    }
+
+    /**
+     * The channel used by the archive's subscription for replication will have the supplied subscription tag applied to
+     * it. The default value for subscriptionTagId is aeron::NULL_VALUE
+     *
+     * @param subscriptionTagId tag to apply to the archive's subscription.
+     * @return this for a fluent API
+     */
+    ReplicationParams &subscriptionTagId(int64_t subscriptionTagId)
+    {
+        m_subscriptionTagId = subscriptionTagId;
+        return *this;
+    }
+
+    /**
+     * Gets the maximum length for file IO operations in the replay. Defaults to {@link Aeron#NULL_VALUE} if not
+     * set, which will trigger the use of the Archive.Context default.
+     *
+     * @return maximum length of a file I/O operation.
+     */
+    int32_t fileIoMaxLength() const
+    {
+        return m_fileIoMaxLength;
+    }
+
+    /**
+     * The maximum size of a file operation when reading from the archive to execute the replication. Will use the value
+     * defined in the context otherwise. This can be used reduce the size of file IO operations to lower the
+     * priority of some replays. Setting it to a value larger than the context value will have no affect.
+     *
+     * @param fileIoMaxLength maximum length of a file I/O operation.
+     * @return this for a fluent API
+     */
+    ReplicationParams &fileIoMaxLength(int32_t fileIoMaxLength)
+    {
+        m_fileIoMaxLength = fileIoMaxLength;
+        return *this;
+    }
+
+private:
+    std::int64_t m_stopPosition;
+    std::int64_t m_dstRecordingId;
+    std::string m_liveDestination;
+    std::string m_replicationChannel;
+    std::int64_t m_channelTagId;
+    std::int64_t m_subscriptionTagId;
+    std::int32_t m_fileIoMaxLength;
+};
+
+/**
+ * Fluent API for setting optional replay parameters. Allows the user to configure starting position,
+ * replay length, bounding counter (for a bounded replay) and the max length for file I/O operations.
+ */
+class ReplayParams
+{
+public:
+    ReplayParams() :
+        m_boundingLimitCounterId(NULL_VALUE),
+        m_fileIoMaxLength(NULL_VALUE),
+        m_position(NULL_POSITION),
+        m_length(NULL_LENGTH)
+    {}
+
+    /**
+     * Gets the counterId specified for the bounding the replay. Returns aeron::NULL_VALUE if unspecified.
+     *
+     * @return the counter id to bound the replay.
+     */
+    int32_t boundingLimitCounterId() const
+    {
+        return m_boundingLimitCounterId;
+    }
+
+    /**
+     * Sets the counter id to be used for bounding the replay. Setting this value will trigger the sending of a
+     * bounded replay request instead of a normal replay. Default is aeron::NULL_VALUE, which will mean that a
+     * bound will not be applied.
+     *
+     * @param boundingLimitCounterId counter to use to bound the replay
+     * @return this for a fluent API
+     */
+    ReplayParams &boundingLimitCounterId(int32_t mBoundingLimitCounterId)
+    {
+        m_boundingLimitCounterId = mBoundingLimitCounterId;
+        return *this;
+    }
+
+    /**
+     * Gets the maximum length for file IO operations in the replay. Defaults to aeron::NULL_VALUE if not
+     * set, which will trigger the use of the Archive.Context default.
+     *
+     * @return maximum file length for IO operations during replay.
+     */
+    int32_t fileIoMaxLength() const
+    {
+        return m_fileIoMaxLength;
+    }
+
+    /**
+     * The maximum size of a file operation when reading from the archive to execute the replay. Will use the value
+     * defined in the context otherwise. This can be used reduce the size of file IO operations to lower the
+     * priority of some replays. Setting it to a value larger than the context value will have no affect.
+     *
+     * @param fileIoMaxLength maximum length of a replay file operation
+     * @return this for a fluent API
+     */
+    ReplayParams &fileIoMaxLength(int32_t mFileIoMaxLength)
+    {
+        m_fileIoMaxLength = mFileIoMaxLength;
+        return *this;
+    }
+
+    /**
+     * Position to start the replay at.
+     *
+     * @return position for the start of the replay.
+     */
+    int64_t position() const
+    {
+        return m_position;
+    }
+
+    /**
+     * Set the position to start the replay. If set to aeron::NULL_POSITION (which is the default) then
+     * the stream will be replayed from the start.
+     *
+     * @param position to start the replay from.
+     * @return this for a fluent API.
+     */
+    ReplayParams &position(int64_t mPosition)
+    {
+        m_position = mPosition;
+        return *this;
+    }
+
+    /**
+     * Length of the recording to replay.
+     *
+     * @return length of the recording to replay.
+     */
+    int64_t length() const
+    {
+        return m_length;
+    }
+
+    /**
+     * The length of the recorded stream to replay. If set to aeron::NULL_POSITION (the default) will
+     * replay a whole stream of unknown length. If set to INT64_MAX it will follow a live recording.
+     *
+     * @param length of the recording to be replayed.
+     * @return this for a fluent API.
+     */
+    ReplayParams &length(int64_t mLength)
+    {
+        m_length = mLength;
+        return *this;
+    }
+
+    /**
+     * Determines if the parameter setup has requested a bounded replay.
+     *
+     * @return true if the replay should be bounded, false otherwise.
+     */
+    bool isBounded() const
+    {
+        return NULL_VALUE != boundingLimitCounterId();
+    }
+
+private:
+    std::int32_t m_boundingLimitCounterId;
+    std::int32_t m_fileIoMaxLength;
+    std::int64_t m_position;
+    std::int64_t m_length;
+};
+
+/**
  * Proxy class for encapsulating encoding and sending of control protocol messages to an archive.
  */
 class ArchiveProxy
@@ -303,6 +616,60 @@ public:
     }
 
     /**
+ * Replay a recording from a given position.
+ *
+ * @param recordingId      to be replayed.
+ * @param position         from which the replay should be started.
+ * @param length           of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live stream.
+ * @param replayChannel    to which the replay should be sent.
+ * @param replayStreamId   to which the replay should be sent.
+ * @param correlationId    for this request.
+ * @param controlSessionId for this request.
+ * @tparam IdleStrategy to use between Publication::offer attempts.
+ * @return true if successfully offered otherwise false.
+ */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool replay(
+        std::int64_t recordingId,
+        const std::string &replayChannel,
+        std::int32_t replayStreamId,
+        const ReplayParams &replyParams,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        util::index_t msgLength;
+        if (replyParams.isBounded())
+        {
+            msgLength = boundedReplay(
+                m_buffer,
+                recordingId,
+                replyParams.position(),
+                replyParams.length(),
+                replyParams.boundingLimitCounterId(),
+                replayChannel,
+                replayStreamId,
+                replyParams.fileIoMaxLength(),
+                correlationId,
+                controlSessionId);
+        }
+        else
+        {
+            msgLength = replay(
+                m_buffer,
+                recordingId,
+                replyParams.position(),
+                replyParams.length(),
+                replayChannel,
+                replayStreamId,
+                replyParams.fileIoMaxLength(),
+                correlationId,
+                controlSessionId);
+        }
+
+        return offer<IdleStrategy>(m_buffer, 0, msgLength);
+    }
+
+    /**
      * Replay a recording from a given position.
      *
      * @param recordingId      to be replayed.
@@ -326,7 +693,15 @@ public:
         std::int64_t controlSessionId)
     {
         const util::index_t msgLength = replay(
-            m_buffer, recordingId, position, length, replayChannel, replayStreamId, correlationId, controlSessionId);
+            m_buffer,
+            recordingId,
+            position,
+            length,
+            replayChannel,
+            replayStreamId,
+            NULL_VALUE,
+            correlationId,
+            controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, msgLength);
     }
@@ -364,6 +739,7 @@ public:
             limitCounterId,
             replayChannel,
             replayStreamId,
+            NULL_VALUE,
             correlationId,
             controlSessionId);
 
@@ -731,6 +1107,54 @@ public:
     /**
      * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
      * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
+     * The behaviour of the replication is defined by the ReplicationParam.
+     * <p>
+     * For a source recording that is still active the replay can merge with the live stream and then follow it
+     * directly and no longer require the replay from the source. This would require a multicast live destination.
+     * <p>
+     * Errors will be reported asynchronously and can be checked for with AeronArchive#pollForErrorResponse()
+     * or AeronArchive#checkForErrorResponse(). Follow progress with RecordingSignalAdapter.
+     *
+     * @param srcRecordingId     recording id which must exist in the source archive.
+     * @param dstRecordingId     recording to extend in the destination, otherwise Aeron#NULL_VALUE.
+     * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
+     * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
+     * @param liveDestination    destination for the live stream if merge is required. Empty string for no merge.
+     * @param correlationId      for this request.
+     * @param controlSessionId   for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool replicate(
+        std::int64_t srcRecordingId,
+        std::int32_t srcControlStreamId,
+        const std::string &srcControlChannel,
+        const ReplicationParams &replicationParams,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        const util::index_t length = replicate(
+            m_buffer,
+            srcRecordingId,
+            replicationParams.dstRecordingId(),
+            replicationParams.stopPosition(),
+            replicationParams.channelTagId(),
+            replicationParams.subscriptionTagId(),
+            srcControlStreamId,
+            srcControlChannel,
+            replicationParams.liveDestination(),
+            replicationParams.replicationChannel(),
+            replicationParams.fileIoMaxLength(),
+            correlationId,
+            controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
+     * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
      * If the destination recording id is Aeron#NULL_VALUE then a new destination recording is created,
      * otherwise the provided destination recording id will be extended. The details of the source recording
      * descriptor will be replicated. The subscription used in the archive will be tagged with the provided tags.
@@ -1083,13 +1507,14 @@ private:
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
-    static util::index_t replay(
+    static index_t replay(
         AtomicBuffer &buffer,
         std::int64_t recordingId,
         std::int64_t position,
         std::int64_t length,
         const std::string &replayChannel,
         std::int32_t replayStreamId,
+        std::int32_t fileIoMaxLength,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
@@ -1101,6 +1526,7 @@ private:
         std::int32_t limitCounterId,
         const std::string &replayChannel,
         std::int32_t replayStreamId,
+        std::int32_t fileIoMaxLength,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
@@ -1233,6 +1659,21 @@ private:
         const std::string &srcControlChannel,
         const std::string &liveDestination,
         const std::string &replicationChannel,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    util::index_t replicate(
+        AtomicBuffer &buffer,
+        std::int64_t srcRecordingId,
+        std::int64_t dstRecordingId,
+        std::int64_t stopPosition,
+        std::int64_t channelTagId,
+        std::int64_t subscriptionTagId,
+        std::int32_t srcControlStreamId,
+        const std::string &srcControlChannel,
+        const std::string &liveDestination,
+        const std::string &replicationChannel,
+        std::int32_t fileIoMaxLength,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 

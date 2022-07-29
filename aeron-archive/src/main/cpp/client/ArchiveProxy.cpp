@@ -234,13 +234,14 @@ util::index_t ArchiveProxy::stopRecordingByIdentity(
     return messageAndHeaderLength(request);
 }
 
-util::index_t ArchiveProxy::replay(
+index_t ArchiveProxy::replay(
     AtomicBuffer &buffer,
     std::int64_t recordingId,
     std::int64_t position,
     std::int64_t length,
     const std::string &replayChannel,
     std::int32_t replayStreamId,
+    std::int32_t fileIoMaxLength,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -253,6 +254,7 @@ util::index_t ArchiveProxy::replay(
         .position(position)
         .length(length)
         .replayStreamId(replayStreamId)
+        .fileIoMaxLength(fileIoMaxLength)
         .putReplayChannel(replayChannel);
 
     return messageAndHeaderLength(request);
@@ -266,6 +268,7 @@ util::index_t ArchiveProxy::boundedReplay(
     std::int32_t limitCounterId,
     const std::string &replayChannel,
     std::int32_t replayStreamId,
+    std::int32_t fileIoMaxLength,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -279,6 +282,7 @@ util::index_t ArchiveProxy::boundedReplay(
         .length(length)
         .limitCounterId(limitCounterId)
         .replayStreamId(replayStreamId)
+        .fileIoMaxLength(fileIoMaxLength)
         .putReplayChannel(replayChannel);
 
     return messageAndHeaderLength(request);
@@ -522,6 +526,7 @@ util::index_t ArchiveProxy::replicate(
         .srcRecordingId(srcRecordingId)
         .dstRecordingId(dstRecordingId)
         .srcControlStreamId(srcControlStreamId)
+        .fileIoMaxLength(NULL_VALUE)
         .putSrcControlChannel(srcControlChannel)
         .putLiveDestination(liveDestination)
         .putReplicationChannel(nullptr, 0);
@@ -552,6 +557,7 @@ util::index_t ArchiveProxy::replicate(
         .channelTagId(NULL_VALUE)
         .subscriptionTagId(NULL_VALUE)
         .srcControlStreamId(srcControlStreamId)
+        .fileIoMaxLength(NULL_VALUE)
         .putSrcControlChannel(srcControlChannel)
         .putLiveDestination(liveDestination)
         .putReplicationChannel(replicationChannel);
@@ -582,6 +588,7 @@ util::index_t ArchiveProxy::taggedReplicate(
         .channelTagId(channelTagId)
         .subscriptionTagId(subscriptionTagId)
         .srcControlStreamId(srcControlStreamId)
+        .fileIoMaxLength(NULL_VALUE)
         .putSrcControlChannel(srcControlChannel)
         .putLiveDestination(liveDestination)
         .putReplicationChannel(nullptr, 0);
@@ -614,6 +621,41 @@ util::index_t ArchiveProxy::taggedReplicate(
         .channelTagId(channelTagId)
         .subscriptionTagId(subscriptionTagId)
         .srcControlStreamId(srcControlStreamId)
+        .fileIoMaxLength(NULL_VALUE)
+        .putSrcControlChannel(srcControlChannel)
+        .putLiveDestination(liveDestination)
+        .putReplicationChannel(replicationChannel);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::replicate(
+    AtomicBuffer &buffer,
+    std::int64_t srcRecordingId,
+    std::int64_t dstRecordingId,
+    std::int64_t stopPosition,
+    std::int64_t channelTagId,
+    std::int64_t subscriptionTagId,
+    std::int32_t srcControlStreamId,
+    const std::string &srcControlChannel,
+    const std::string &liveDestination,
+    const std::string &replicationChannel,
+    std::int32_t fileIoMaxLength,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    ReplicateRequest2 request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .srcRecordingId(srcRecordingId)
+        .dstRecordingId(dstRecordingId)
+        .stopPosition(stopPosition)
+        .channelTagId(channelTagId)
+        .subscriptionTagId(subscriptionTagId)
+        .srcControlStreamId(srcControlStreamId)
+        .fileIoMaxLength(fileIoMaxLength)
         .putSrcControlChannel(srcControlChannel)
         .putLiveDestination(liveDestination)
         .putReplicationChannel(replicationChannel);

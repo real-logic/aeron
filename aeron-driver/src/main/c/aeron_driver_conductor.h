@@ -153,6 +153,7 @@ aeron_linger_resource_entry_t;
 
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
+// Notification-related state.
 typedef struct notify_data_stct {
     bool updated;
     char message[64];
@@ -297,6 +298,7 @@ typedef struct aeron_driver_conductor_stct
     uint8_t padding[AERON_CACHE_LINE_LENGTH];
 
     aeron_int64_to_ptr_hash_map_t stream_id_notify_map;
+    // ZMQ socket for publishing notifications.
     void* notify_socket;
 }
 aeron_driver_conductor_t;

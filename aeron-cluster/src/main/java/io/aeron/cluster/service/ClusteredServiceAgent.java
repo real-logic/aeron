@@ -149,9 +149,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             if (!ctx.ownsAeronClient() && !aeron.isClosed())
             {
-                for (final ContainerClientSession session : sessions)
+                for (int i = 0, size = sessions.size(); i < size; i++)
                 {
-                    session.disconnect(errorHandler);
+                    sessions.get(i).disconnect(errorHandler);
                 }
 
                 CloseHelper.close(errorHandler, logAdapter);
@@ -721,9 +721,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         if (Role.LEADER != activeLog.role)
         {
-            for (final ContainerClientSession session : sessions)
+            for (int i = 0, size = sessions.size(); i < size; i++)
             {
-                session.disconnect(ctx.countedErrorHandler());
+                sessions.get(i).disconnect(ctx.countedErrorHandler());
             }
         }
 
@@ -764,8 +764,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         if (Role.LEADER == activeLog.role)
         {
-            for (final ContainerClientSession session : sessions)
+            for (int i = 0, size = sessions.size(); i < size; i++)
             {
+                final ContainerClientSession session = sessions.get(i);
+
                 if (ctx.isRespondingService() && !activeLog.isStartup)
                 {
                     session.connect(aeron);
@@ -914,9 +916,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
 
-        for (final ClientSession clientSession : sessions)
+        for (int i = 0, size = sessions.size(); i < size; i++)
         {
-            snapshotTaker.snapshotSession(clientSession);
+            snapshotTaker.snapshotSession(sessions.get(i));
         }
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());

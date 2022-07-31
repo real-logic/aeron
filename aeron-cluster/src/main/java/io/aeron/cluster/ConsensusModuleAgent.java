@@ -120,6 +120,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final ConsensusAdapter consensusAdapter;
     private final ConsensusPublisher consensusPublisher = new ConsensusPublisher();
     private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
+    private final ArrayList<ClusterSession> sessions = new ArrayList<>();
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> redirectSessions = new ArrayList<>();
@@ -416,7 +417,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 session.reject(EventCode.ERROR, detail);
                 rejectedSessions.add(session);
             }
-            else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
+            else if (pendingSessions.size() + sessions.size() >= ctx.maxConcurrentSessions())
             {
                 session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
                 rejectedSessions.add(session);
@@ -445,6 +446,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     session.closedLogPosition(logPublisher.position());
                     uncommittedClosedSessions.addLast(session);
                     sessionByIdMap.remove(clusterSessionId);
+                    removeSession(sessions, clusterSessionId);
                     session.close(aeron, ctx.countedErrorHandler());
                 }
             }
@@ -1115,9 +1117,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
 
             clearSessionsAfter(logPosition);
-            for (final ClusterSession session : sessionByIdMap.values())
+            for (int i = 0, size = sessions.size(); i < size; i++)
             {
-                session.disconnect(aeron, ctx.countedErrorHandler());
+                sessions.get(i).disconnect(aeron, ctx.countedErrorHandler());
             }
 
             commitPosition.setOrdered(logPosition);
@@ -1142,6 +1144,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 session.closedLogPosition(logPublisher.position());
                 uncommittedClosedSessions.addLast(session);
                 sessionByIdMap.remove(clusterSessionId);
+                removeSession(sessions, clusterSessionId);
                 session.close(aeron, ctx.countedErrorHandler());
             }
         }
@@ -1229,15 +1232,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void onReplaySessionMessage(final long clusterSessionId, final long timestamp)
     {
-        final ClusterSession clusterSession = sessionByIdMap.get(clusterSessionId);
-        if (null == clusterSession)
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null == session)
         {
             logServiceSessionId = clusterSessionId;
             pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
         }
         else
         {
-            clusterSession.timeOfLastActivityNs(clusterTimeUnit.toNanos(timestamp));
+            session.timeOfLastActivityNs(clusterTimeUnit.toNanos(timestamp));
         }
     }
 
@@ -1262,7 +1265,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         session.open(logPosition);
         session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
 
-        sessionByIdMap.put(clusterSessionId, session);
+        addSession(session);
         if (clusterSessionId >= nextSessionId)
         {
             nextSessionId = clusterSessionId + 1;
@@ -1271,11 +1274,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void onReplaySessionClose(final long clusterSessionId, final CloseReason closeReason)
     {
-        final ClusterSession clusterSession = sessionByIdMap.remove(clusterSessionId);
-        if (null != clusterSession)
+        final ClusterSession session = sessionByIdMap.remove(clusterSessionId);
+        if (null != session)
         {
-            clusterSession.closing(closeReason);
-            clusterSession.close(aeron, ctx.countedErrorHandler());
+            removeSession(sessions, clusterSessionId);
+            session.closing(closeReason);
+            session.close(aeron, ctx.countedErrorHandler());
         }
     }
 
@@ -1409,14 +1413,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final int responseStreamId,
         final String responseChannel)
     {
-        sessionByIdMap.put(clusterSessionId, new ClusterSession(
+        final ClusterSession session = new ClusterSession(
             clusterSessionId,
             correlationId,
             openedPosition,
             timeOfLastActivity,
             responseStreamId,
             createResponseChannel(responseChannel),
-            closeReason));
+            closeReason);
+
+        addSession(session);
 
         if (clusterSessionId >= nextSessionId)
         {
@@ -2084,8 +2090,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     {
         if (isStartup)
         {
-            for (final ClusterSession session : sessionByIdMap.values())
+            for (int i = 0, size = sessions.size(); i < size; i++)
             {
+                final ClusterSession session = sessions.get(i);
                 if (session.state() == OPEN)
                 {
                     session.closing(CloseReason.TIMEOUT);
@@ -2094,8 +2101,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
         else
         {
-            for (final ClusterSession session : sessionByIdMap.values())
+            for (int i = 0, size = sessions.size(); i < size; i++)
             {
+                final ClusterSession session = sessions.get(i);
                 if (session.state() == OPEN)
                 {
                     session.connect(ctx.countedErrorHandler(), aeron);
@@ -2103,8 +2111,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             }
 
             final long nowNs = clusterClock.timeNanos();
-            for (final ClusterSession session : sessionByIdMap.values())
+            for (int i = 0, size = sessions.size(); i < size; i++)
             {
+                final ClusterSession session = sessions.get(i);
                 if (session.state() == OPEN)
                 {
                     session.timeOfLastActivityNs(nowNs);
@@ -2165,7 +2174,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 if (ConsensusModule.State.ACTIVE == state)
                 {
                     workCount += processPendingSessions(pendingSessions, nowNs);
-                    workCount += checkSessions(sessionByIdMap, nowNs);
+                    workCount += checkSessions(sessions, nowNs);
                     workCount += processPassiveMembers(passiveMembers);
 
                     if (!ClusterMember.hasActiveQuorum(activeMembers, nowNs, leaderHeartbeatTimeoutNs))
@@ -2374,7 +2383,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 else if (appendSessionAndOpen(session, nowNs))
                 {
                     ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                    sessionByIdMap.put(session.id(), session);
+                    addSession(session);
                     workCount += 1;
                 }
             }
@@ -2484,13 +2493,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return workCount;
     }
 
-    private int checkSessions(final Long2ObjectHashMap<ClusterSession> sessionByIdMap, final long nowNs)
+    private int checkSessions(final ArrayList<ClusterSession> sessions, final long nowNs)
     {
         int workCount = 0;
 
-        for (final Iterator<ClusterSession> i = sessionByIdMap.values().iterator(); i.hasNext(); )
+        for (int i = sessions.size() - 1; i >= 0; i--)
         {
-            final ClusterSession session = i.next();
+            final ClusterSession session = sessions.get(i);
 
             if (nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
@@ -2505,7 +2514,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                         egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
-                        i.remove();
+                        sessions.remove(i);
+                        sessionByIdMap.remove(session.id());
                         session.close(aeron, ctx.countedErrorHandler());
                         ctx.timedOutClientCounter().incrementOrdered();
                         workCount++;
@@ -2520,7 +2530,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                         egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
                         session.closedLogPosition(logPublisher.position());
                         uncommittedClosedSessions.addLast(session);
-                        i.remove();
+                        sessions.remove(i);
+                        sessionByIdMap.remove(session.id());
                         session.close(aeron, ctx.countedErrorHandler());
                         if (session.closeReason() == CloseReason.TIMEOUT)
                         {
@@ -2531,7 +2542,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 }
                 else
                 {
-                    i.remove();
+                    sessions.remove(i);
+                    sessionByIdMap.remove(session.id());
                     session.close(aeron, ctx.countedErrorHandler());
                     workCount++;
                 }
@@ -2892,12 +2904,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     private void clearSessionsAfter(final long logPosition)
     {
-        for (final Iterator<ClusterSession> i = sessionByIdMap.values().iterator(); i.hasNext(); )
+        for (int i = sessions.size() - 1; i >= 0; i--)
         {
-            final ClusterSession session = i.next();
+            final ClusterSession session = sessions.get(i);
             if (session.openedLogPosition() > logPosition)
             {
-                i.remove();
+                sessions.remove(i);
+                sessionByIdMap.remove(session.id());
                 egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, "election");
                 session.close(aeron, ctx.countedErrorHandler());
             }
@@ -2970,7 +2983,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             {
                 session.closedLogPosition(NULL_POSITION);
                 session.state(CLOSING);
-                sessionByIdMap.put(session.id(), session);
+                addSession(session);
             }
         }
     }
@@ -3085,9 +3098,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         ctx.snapshotCounter().incrementOrdered();
 
         final long nowNs = clusterClock.timeNanos();
-        for (final ClusterSession session : sessionByIdMap.values())
+        for (int i = 0, size = sessions.size(); i < size; i++)
         {
-            session.timeOfLastActivityNs(nowNs);
+            sessions.get(i).timeOfLastActivityNs(nowNs);
         }
     }
 
@@ -3131,8 +3144,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             nextSessionId, nextServiceSessionId, logServiceSessionId, pendingServiceMessages.size());
         snapshotTaker.snapshotClusterMembers(memberId, highMemberId, ClusterMember.encodeAsString(activeMembers));
 
-        for (final ClusterSession session : sessionByIdMap.values())
+        for (int i = 0, size = sessions.size(); i < size; i++)
         {
+            final ClusterSession session = sessions.get(i);
+
             if (session.state() == OPEN || session.state() == CLOSED)
             {
                 snapshotTaker.snapshotSession(session);
@@ -3362,7 +3377,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         if (!dynamicJoinSnapshots.isEmpty())
         {
             final RecordingLog.Snapshot lastSnapshot = dynamicJoinSnapshots.get(dynamicJoinSnapshots.size() - 1);
-
             final RecordingLog.Entry termEntry = recordingLog.findTermEntry(lastSnapshot.leadershipTermId);
 
             if (null == termEntry)
@@ -3414,10 +3428,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
         }
 
-        final InetSocketAddress addr = UdpChannel.destinationAddress(ingressUri, DefaultNameResolver.INSTANCE);
+        final InetSocketAddress address = UdpChannel.destinationAddress(ingressUri, DefaultNameResolver.INSTANCE);
 
         // assume that if not resolved is a non-multicast address
-        return null != addr && null != addr.getAddress() && addr.getAddress().isMulticastAddress();
+        return null != address && null != address.getAddress() && address.getAddress().isMulticastAddress();
     }
 
     private void connectIngress()
@@ -3530,6 +3544,43 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private static boolean isCatchupAppendPosition(final short flags)
     {
         return 0 != (APPEND_POSITION_FLAG_CATCHUP & flags);
+    }
+
+    private void addSession(final ClusterSession session)
+    {
+        sessionByIdMap.put(session.id(), session);
+
+        final int size = sessions.size();
+        int addIndex = size;
+        for (int i = size - 1; i >= 0; i--)
+        {
+            if (sessions.get(i).id() < session.id())
+            {
+                addIndex = i + 1;
+                break;
+            }
+        }
+
+        if (size == addIndex)
+        {
+            sessions.add(session);
+        }
+        else
+        {
+            sessions.add(addIndex, session);
+        }
+    }
+
+    private static void removeSession(final ArrayList<ClusterSession> sessions, final long clusterSessionId)
+    {
+        for (int i = 0, size = sessions.size(); i < size; i++)
+        {
+            if (sessions.get(i).id() == clusterSessionId)
+            {
+                sessions.remove(i);
+                break;
+            }
+        }
     }
 
     public String toString()

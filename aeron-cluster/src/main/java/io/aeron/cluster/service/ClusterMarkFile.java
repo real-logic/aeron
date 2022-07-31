@@ -79,13 +79,14 @@ public final class ClusterMarkFile implements AutoCloseable
         final long timeoutMs)
     {
         final boolean markFileExists = file.exists();
+        final int totalFileLength = HEADER_LENGTH + errorBufferLength;
 
         markFile = new MarkFile(
             file,
             markFileExists,
             MarkFileHeaderDecoder.versionEncodingOffset(),
             MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
-            HEADER_LENGTH + errorBufferLength,
+            totalFileLength,
             timeoutMs,
             epochClock,
             (version) ->
@@ -110,11 +111,18 @@ public final class ClusterMarkFile implements AutoCloseable
 
         if (markFileExists)
         {
+            if (buffer.capacity() != totalFileLength)
+            {
+                throw new ClusterException(
+                    "ClusterMarkFile capacity=" + buffer.capacity() + " < expectedCapacity=" + totalFileLength);
+            }
+
+            final int existingErrorBufferLength = headerDecoder.errorBufferLength();
             final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
-                buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+                buffer, headerDecoder.headerLength(), existingErrorBufferLength);
 
             saveExistingErrors(file, existingErrorBuffer, type, CommonContext.fallbackLogger());
-            existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
+            existingErrorBuffer.setMemory(0, existingErrorBufferLength, (byte)0);
         }
         else
         {
@@ -193,9 +201,9 @@ public final class ClusterMarkFile implements AutoCloseable
     /**
      * Determines if this path name matches the consensus module file name pattern.
      *
-     * @param path       to examine
-     * @param attributes ignored, only needed for BiPredicate signature matching
-     * @return true if the name matches
+     * @param path       to examine.
+     * @param attributes ignored, only needed for BiPredicate signature matching,
+     * @return true if the name matches.
      */
     public static boolean isConsensusModuleMarkFile(final Path path, final BasicFileAttributes attributes)
     {
@@ -421,7 +429,7 @@ public final class ClusterMarkFile implements AutoCloseable
         if (length > HEADER_LENGTH)
         {
             throw new ClusterException(
-                "ClusterMarkFile headerLength=" + length + " > maxHeaderLength=" + HEADER_LENGTH);
+                "ClusterMarkFile headerLength=" + length + " > headerLengthCapacity=" + HEADER_LENGTH);
         }
     }
 

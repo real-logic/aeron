@@ -102,7 +102,7 @@ public class ArchiveMarkFile implements AutoCloseable
 
         markFile = new MarkFile(
             file,
-            file.exists(),
+            markFileExists,
             MarkFileHeaderDecoder.versionEncodingOffset(),
             MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
             totalFileLength,
@@ -126,15 +126,23 @@ public class ArchiveMarkFile implements AutoCloseable
         headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
 
-        if (markFileExists && headerDecoder.errorBufferLength() > 0)
+        if (markFileExists)
         {
-            validateMappedFileLength(buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+            if (buffer.capacity() != totalFileLength)
+            {
+                throw new ArchiveException(
+                    "ArchiveMarkFile capacity=" + buffer.capacity() + " < expectedCapacity=" + totalFileLength);
+            }
 
-            final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
-                buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+            final int existingErrorBufferLength = headerDecoder.errorBufferLength();
+            if (existingErrorBufferLength > 0)
+            {
+                final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
+                    buffer, headerDecoder.headerLength(), existingErrorBufferLength);
 
-            saveExistingErrors(file, existingErrorBuffer, CommonContext.fallbackLogger());
-            existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
+                saveExistingErrors(file, existingErrorBuffer, CommonContext.fallbackLogger());
+                existingErrorBuffer.setMemory(0, existingErrorBufferLength, (byte)0);
+            }
         }
 
         headerEncoder.pid(SystemUtil.getPid());
@@ -315,21 +323,10 @@ public class ArchiveMarkFile implements AutoCloseable
         if (headerLength > HEADER_LENGTH)
         {
             throw new ArchiveException(
-                "ArchiveMarkFile headerLength=" + headerLength + " > maxHeaderLength=" + HEADER_LENGTH);
+                "ArchiveMarkFile headerLength=" + headerLength + " > headerLengthCapacity=" + HEADER_LENGTH);
         }
 
         return HEADER_LENGTH + ctx.errorBufferLength();
-    }
-
-    private static void validateMappedFileLength(
-        final UnsafeBuffer buffer, final int headerLength, final int errorBufferLength)
-    {
-        final int requiredCapacity = headerLength + errorBufferLength;
-        if (buffer.capacity() < requiredCapacity)
-        {
-            throw new ArchiveException(
-                "ArchiveMarkFile capacity=" + buffer.capacity() + " < requiredCapacity=" + requiredCapacity);
-        }
     }
 
     private void encode(final Archive.Context ctx)

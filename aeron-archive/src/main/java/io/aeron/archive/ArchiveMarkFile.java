@@ -314,7 +314,8 @@ public class ArchiveMarkFile implements AutoCloseable
 
         if (headerLength > HEADER_LENGTH)
         {
-            throw new ArchiveException("ArchiveMarkFile required headerLength=" + headerLength + " > " + HEADER_LENGTH);
+            throw new ArchiveException(
+                "ArchiveMarkFile headerLength=" + headerLength + " > maxHeaderLength=" + HEADER_LENGTH);
         }
 
         return HEADER_LENGTH + ctx.errorBufferLength();
@@ -323,10 +324,11 @@ public class ArchiveMarkFile implements AutoCloseable
     private static void validateMappedFileLength(
         final UnsafeBuffer buffer, final int headerLength, final int errorBufferLength)
     {
-        if (buffer.capacity() < (headerLength + errorBufferLength))
+        final int requiredCapacity = headerLength + errorBufferLength;
+        if (buffer.capacity() < requiredCapacity)
         {
             throw new ArchiveException(
-                "ArchiveMarkFile required capacity=" + buffer.capacity() + " < " + (headerLength + errorBufferLength));
+                "ArchiveMarkFile capacity=" + buffer.capacity() + " < requiredCapacity=" + requiredCapacity);
         }
     }
 

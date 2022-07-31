@@ -420,7 +420,8 @@ public final class ClusterMarkFile implements AutoCloseable
 
         if (length > HEADER_LENGTH)
         {
-            throw new ClusterException("ClusterMarkFile required headerLength=" + length + " > " + HEADER_LENGTH);
+            throw new ClusterException(
+                "ClusterMarkFile headerLength=" + length + " > maxHeaderLength=" + HEADER_LENGTH);
         }
     }
 

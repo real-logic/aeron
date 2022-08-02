@@ -212,7 +212,7 @@ public final class EventLogAgent
         }
 
         return agentBuilder.type(nameEndsWith("DriverConductor"))
-            .transform((builder, typeDescription, classLoader, javaModule) ->
+            .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) ->
             {
                 if (hasImageHook)
                 {
@@ -245,11 +245,11 @@ public final class EventLogAgent
 
         return agentBuilder
             .type(nameEndsWith("ClientCommandAdapter"))
-            .transform((builder, typeDescription, classLoader, javaModule) -> builder
+            .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> builder
                 .visit(to(CmdInterceptor.class)
                     .on(named("onMessage"))))
             .type(nameEndsWith("ClientProxy"))
-            .transform((builder, typeDescription, classLoader, javaModule) -> builder
+            .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> builder
                 .visit(to(CmdInterceptor.class)
                     .on(named("transmit"))));
     }
@@ -429,7 +429,7 @@ public final class EventLogAgent
 
         return agentBuilder
             .type(nameEndsWith("ControlSessionDemuxer"))
-            .transform(((builder, typeDescription, classLoader, module) -> builder
+            .transform(((builder, typeDescription, classLoader, module, protectionDomain) -> builder
                 .visit(to(ControlInterceptor.ControlRequest.class)
                     .on(named("onFragment")))));
     }
@@ -584,7 +584,7 @@ public final class EventLogAgent
 
         return agentBuilder
             .type(nameEndsWith(typeName))
-            .transform((builder, typeDescription, classLoader, javaModule) ->
+            .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) ->
                 builder.visit(to(interceptorClass).on(named(interceptorMethod))));
     }
 
@@ -617,7 +617,7 @@ final class AgentBuilderListener implements AgentBuilder.Listener
     public void onDiscovery(
         final String typeName,
         final ClassLoader classLoader,
-        final JavaModule module,
+        final JavaModule javaModule,
         final boolean loaded)
     {
     }
@@ -625,7 +625,7 @@ final class AgentBuilderListener implements AgentBuilder.Listener
     public void onTransformation(
         final TypeDescription typeDescription,
         final ClassLoader classLoader,
-        final JavaModule module,
+        final JavaModule javaModule,
         final boolean loaded,
         final DynamicType dynamicType)
     {
@@ -634,7 +634,7 @@ final class AgentBuilderListener implements AgentBuilder.Listener
     public void onIgnored(
         final TypeDescription typeDescription,
         final ClassLoader classLoader,
-        final JavaModule module,
+        final JavaModule javaModule,
         final boolean loaded)
     {
     }
@@ -642,7 +642,7 @@ final class AgentBuilderListener implements AgentBuilder.Listener
     public void onError(
         final String typeName,
         final ClassLoader classLoader,
-        final JavaModule module,
+        final JavaModule javaModule,
         final boolean loaded,
         final Throwable throwable)
     {
@@ -653,7 +653,7 @@ final class AgentBuilderListener implements AgentBuilder.Listener
     public void onComplete(
         final String typeName,
         final ClassLoader classLoader,
-        final JavaModule module,
+        final JavaModule javaModule,
         final boolean loaded)
     {
     }

@@ -413,7 +413,12 @@ class ClusterBackupTest
         ErrorLogReader.read(
             atomicBuffer,
             (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-            foundError.set(encodedException.contains("AUTHENTICATION_REJECTED")));
+            {
+                if (encodedException.contains("AUTHENTICATION_REJECTED"))
+                {
+                    foundError.set(true);
+                }
+            });
 
         assertTrue(foundError.get());
     }
@@ -438,10 +443,16 @@ class ClusterBackupTest
 
         final AtomicBuffer atomicBuffer = testBackupNode.clusterBackupErrorLog();
         final MutableBoolean foundError = new MutableBoolean();
+
         ErrorLogReader.read(
             atomicBuffer,
             (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-            foundError.set(encodedException.contains("AUTHENTICATION_REJECTED")));
+            {
+                if (encodedException.contains("AUTHENTICATION_REJECTED"))
+                {
+                    foundError.set(true);
+                }
+            });
 
         assertTrue(foundError.get());
     }

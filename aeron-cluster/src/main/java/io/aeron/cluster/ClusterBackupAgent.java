@@ -405,10 +405,6 @@ public final class ClusterBackupAgent implements Agent
                 }
 
                 break;
-
-            default:
-                System.out.println("Unexpected message: " + messageHeaderDecoder.templateId());
-                break;
         }
     }
 

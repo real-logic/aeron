@@ -1536,10 +1536,10 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the {@link CredentialsSupplier} to be used when executing backup queries to the cluster.
+         * Set the {@link CredentialsSupplier} to be used for authentication with the cluster.
          *
-         * @param credentialsSupplier to supply credentials.
-         * @return this for a fluent API.
+         * @param credentialsSupplier to be used for authentication with the cluster.
+         * @return this for fluent API.
          */
         public Context credentialsSupplier(final CredentialsSupplier credentialsSupplier)
         {
@@ -1548,9 +1548,9 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Get the credentials supplier.
+         * Get the {@link CredentialsSupplier} to be used for authentication with the cluster.
          *
-         * @return credentials supplier
+         * @return the {@link CredentialsSupplier} to be used for authentication with the cluster.
          */
         public CredentialsSupplier credentialsSupplier()
         {

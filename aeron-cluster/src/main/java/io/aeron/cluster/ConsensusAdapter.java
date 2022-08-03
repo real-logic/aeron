@@ -47,6 +47,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
     private final TerminationPositionDecoder terminationPositionDecoder = new TerminationPositionDecoder();
     private final TerminationAckDecoder terminationAckDecoder = new TerminationAckDecoder();
     private final BackupQueryDecoder backupQueryDecoder = new BackupQueryDecoder();
+    private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -295,6 +296,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                 break;
 
             case BackupQueryDecoder.TEMPLATE_ID:
+            {
                 backupQueryDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -321,6 +323,25 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     responseChannel,
                     credentials);
                 break;
+            }
+
+            case ChallengeResponseDecoder.TEMPLATE_ID:
+            {
+                challengeResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final byte[] credentials = new byte[challengeResponseDecoder.encodedCredentialsLength()];
+                challengeResponseDecoder.getEncodedCredentials(credentials, 0, credentials.length);
+
+                consensusModuleAgent.onChallengeResponse(
+                    challengeResponseDecoder.correlationId(),
+                    challengeResponseDecoder.clusterSessionId(),
+                    credentials);
+                break;
+            }
         }
     }
 }

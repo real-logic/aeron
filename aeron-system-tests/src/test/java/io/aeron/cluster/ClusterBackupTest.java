@@ -16,6 +16,9 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.samples.archive.SampleAuthenticator;
+import io.aeron.security.AuthenticatorSupplier;
+import io.aeron.security.CredentialsSupplier;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
@@ -23,10 +26,16 @@ import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestBackupNode;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.agrona.collections.ArrayUtil;
+import org.agrona.collections.MutableBoolean;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.errors.ErrorLogReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.nio.charset.StandardCharsets;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,6 +48,57 @@ class ClusterBackupTest
 {
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    private final CredentialsSupplier simpleCredentialsSupplier = new CredentialsSupplier()
+    {
+        public byte[] encodedCredentials()
+        {
+            return "admin:admin".getBytes(StandardCharsets.US_ASCII);
+        }
+
+        public byte[] onChallenge(final byte[] encodedChallenge)
+        {
+            return ArrayUtil.EMPTY_BYTE_ARRAY;
+        }
+    };
+
+    private final CredentialsSupplier challengeResponseCredentialsSupplier = new CredentialsSupplier()
+    {
+        public byte[] encodedCredentials()
+        {
+            return "admin:adminC".getBytes(StandardCharsets.US_ASCII);
+        }
+
+        public byte[] onChallenge(final byte[] encodedChallenge)
+        {
+            return "admin:CSadmin".getBytes(StandardCharsets.US_ASCII);
+        }
+    };
+
+    private final CredentialsSupplier invalidSimpleCredentialsSupplier = new CredentialsSupplier()
+    {
+        public byte[] encodedCredentials()
+        {
+            return "admin:invalid".getBytes(StandardCharsets.US_ASCII);
+        }
+
+        public byte[] onChallenge(final byte[] encodedChallenge)
+        {
+            return ArrayUtil.EMPTY_BYTE_ARRAY;
+        }
+    };
+
+    private final CredentialsSupplier invalidChallengeResponseCredentialsSupplier = new CredentialsSupplier()
+    {
+        public byte[] encodedCredentials()
+        {
+            return "admin:adminC".getBytes(StandardCharsets.US_ASCII);
+        }
+
+        public byte[] onChallenge(final byte[] encodedChallenge)
+        {
+            return "admin:invalid".getBytes(StandardCharsets.US_ASCII);
+        }
+    };
 
     @BeforeEach
     void setUp()
@@ -236,6 +296,165 @@ class ClusterBackupTest
 
         assertEquals(totalMessageCount, node.service().messageCount());
         assertTrue(node.service().wasSnapshotLoaded());
+    }
+
+    @Test
+    @InterruptAfter(30)
+    void shouldBackupClusterWithSnapshotAndNonEmptyLogWithSimpleAuthentication()
+    {
+        final AuthenticatorSupplier authenticatorSupplier = SampleAuthenticator::new;
+
+        final TestCluster cluster = aCluster()
+            .withStaticNodes(3)
+            .withAuthenticationSupplier(authenticatorSupplier)
+            .start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+
+        final int preSnapshotMessageCount = 10;
+        final int postSnapshotMessageCount = 7;
+        final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
+
+        cluster.connectClient(simpleCredentialsSupplier);
+        cluster.sendMessages(preSnapshotMessageCount);
+        cluster.awaitResponseMessageCount(preSnapshotMessageCount);
+        cluster.awaitServicesMessageCount(preSnapshotMessageCount);
+
+        cluster.takeSnapshot(leader);
+        cluster.awaitSnapshotCount(1);
+
+        cluster.sendMessages(postSnapshotMessageCount);
+        cluster.awaitResponseMessageCount(totalMessageCount);
+        cluster.awaitServiceMessageCount(leader, totalMessageCount);
+
+        final long logPosition = leader.service().cluster().logPosition();
+
+        cluster.startClusterBackupNode(true, simpleCredentialsSupplier);
+
+        cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+        cluster.awaitBackupLiveLogPosition(logPosition);
+        cluster.stopAllNodes();
+
+        final TestNode node = cluster.startStaticNodeFromBackup();
+        cluster.awaitLeader();
+        cluster.awaitServiceMessageCount(node, totalMessageCount);
+
+        assertEquals(totalMessageCount, node.service().messageCount());
+        assertTrue(node.service().wasSnapshotLoaded());
+    }
+
+
+    @Test
+    @InterruptAfter(30)
+    void shouldBackupClusterWithSnapshotAndNonEmptyLogWithChallengeResponseAuthentication()
+    {
+        final AuthenticatorSupplier authenticatorSupplier = SampleAuthenticator::new;
+
+        final TestCluster cluster = aCluster()
+            .withStaticNodes(3)
+            .withAuthenticationSupplier(authenticatorSupplier)
+            .start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+
+        final int preSnapshotMessageCount = 10;
+        final int postSnapshotMessageCount = 7;
+        final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
+
+        cluster.connectClient(challengeResponseCredentialsSupplier);
+        cluster.sendMessages(preSnapshotMessageCount);
+        cluster.awaitResponseMessageCount(preSnapshotMessageCount);
+        cluster.awaitServicesMessageCount(preSnapshotMessageCount);
+
+        cluster.takeSnapshot(leader);
+        cluster.awaitSnapshotCount(1);
+
+        cluster.sendMessages(postSnapshotMessageCount);
+        cluster.awaitResponseMessageCount(totalMessageCount);
+        cluster.awaitServiceMessageCount(leader, totalMessageCount);
+
+        final long logPosition = leader.service().cluster().logPosition();
+
+        cluster.startClusterBackupNode(true, challengeResponseCredentialsSupplier);
+
+        cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+        cluster.awaitBackupLiveLogPosition(logPosition);
+        cluster.stopAllNodes();
+
+        final TestNode node = cluster.startStaticNodeFromBackup();
+        cluster.awaitLeader();
+        cluster.awaitServiceMessageCount(node, totalMessageCount);
+
+        assertEquals(totalMessageCount, node.service().messageCount());
+        assertTrue(node.service().wasSnapshotLoaded());
+    }
+
+    @Test
+    @InterruptAfter(30)
+    void shouldLogErrorWithInvalidCredentials()
+    {
+        final AuthenticatorSupplier authenticatorSupplier = SampleAuthenticator::new;
+        final TestCluster cluster = aCluster()
+            .withStaticNodes(3)
+            .withAuthenticationSupplier(authenticatorSupplier)
+            .start();
+        systemTestWatcher.cluster(cluster);
+        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("AUTHENTICATION_REJECTED"));
+
+        cluster.awaitLeader();
+        final TestBackupNode testBackupNode = cluster.startClusterBackupNode(true, invalidSimpleCredentialsSupplier);
+
+        cluster.awaitBackupState(ClusterBackup.State.RESET_BACKUP);
+
+        final AtomicBuffer atomicBuffer = testBackupNode.clusterBackupErrorLog();
+        final MutableBoolean foundError = new MutableBoolean();
+        ErrorLogReader.read(
+            atomicBuffer,
+            (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+            {
+                if (encodedException.contains("AUTHENTICATION_REJECTED"))
+                {
+                    foundError.set(true);
+                }
+            });
+
+        assertTrue(foundError.get());
+    }
+
+    @Test
+    @InterruptAfter(30)
+    void shouldLogErrorWithInvalidChallengeResponse()
+    {
+        final AuthenticatorSupplier authenticatorSupplier = SampleAuthenticator::new;
+        final TestCluster cluster = aCluster()
+            .withStaticNodes(3)
+            .withAuthenticationSupplier(authenticatorSupplier)
+            .start();
+        systemTestWatcher.cluster(cluster);
+        systemTestWatcher.ignoreErrorsMatching(s -> s.contains("AUTHENTICATION_REJECTED"));
+
+        cluster.awaitLeader();
+        final TestBackupNode testBackupNode = cluster.startClusterBackupNode(
+            true, invalidChallengeResponseCredentialsSupplier);
+
+        cluster.awaitBackupState(ClusterBackup.State.RESET_BACKUP);
+
+        final AtomicBuffer atomicBuffer = testBackupNode.clusterBackupErrorLog();
+        final MutableBoolean foundError = new MutableBoolean();
+
+        ErrorLogReader.read(
+            atomicBuffer,
+            (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+            {
+                if (encodedException.contains("AUTHENTICATION_REJECTED"))
+                {
+                    foundError.set(true);
+                }
+            });
+
+        assertTrue(foundError.get());
     }
 
     @Test

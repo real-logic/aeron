@@ -35,7 +35,10 @@ import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import io.aeron.samples.archive.RecordingDescriptor;
 import io.aeron.samples.archive.RecordingDescriptorCollector;
+import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.AuthorisationServiceSupplier;
+import io.aeron.security.CredentialsSupplier;
+import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.DriverOutputConsumer;
@@ -151,6 +154,7 @@ public class TestCluster implements AutoCloseable
     private String ingressChannel;
     private String egressChannel;
     private AuthorisationServiceSupplier authorisationServiceSupplier;
+    private AuthenticatorSupplier authenticationSupplier;
 
     private TestMediaDriver clientMediaDriver;
     private AeronCluster client;
@@ -303,6 +307,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .deleteDirOnStart(cleanStart);
 
@@ -359,6 +364,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .deleteDirOnStart(cleanStart);
 
@@ -417,6 +423,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .deleteDirOnStart(cleanStart);
 
@@ -473,6 +480,7 @@ public class TestCluster implements AutoCloseable
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .deleteDirOnStart(false);
 
@@ -482,6 +490,26 @@ public class TestCluster implements AutoCloseable
     }
 
     public TestBackupNode startClusterBackupNode(final boolean cleanStart)
+    {
+        final CredentialsSupplier credentialsSupplier = new CredentialsSupplier()
+        {
+            public byte[] encodedCredentials()
+            {
+                return new byte[0];
+            }
+
+            public byte[] onChallenge(final byte[] encodedChallenge)
+            {
+                return new byte[0];
+            }
+        };
+
+        return startClusterBackupNode(cleanStart, credentialsSupplier);
+    }
+
+    public TestBackupNode startClusterBackupNode(
+        final boolean cleanStart,
+        final CredentialsSupplier credentialsSupplier)
     {
         final int index = staticMemberCount + dynamicMemberCount;
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
@@ -523,13 +551,13 @@ public class TestCluster implements AutoCloseable
         clusterArchiveContext.controlResponseChannel(clusterArchiveResponseChannel.toString());
 
         context.clusterBackupContext
-            .errorHandler(errorHandler(index))
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .consensusChannel(consensusChannelUri.toString())
             .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
             .catchupEndpoint(hostname(index) + ":0")
             .clusterArchiveContext(clusterArchiveContext)
             .clusterDir(new File(baseDirName, "cluster-backup"))
+            .credentialsSupplier(credentialsSupplier)
             .deleteDirOnStart(cleanStart);
 
         backupNode = new TestBackupNode(context, dataCollector);
@@ -650,6 +678,11 @@ public class TestCluster implements AutoCloseable
         this.authorisationServiceSupplier = authorisationServiceSupplier;
     }
 
+    public void authenticationSupplier(final AuthenticatorSupplier authenticationSupplier)
+    {
+        this.authenticationSupplier = authenticationSupplier;
+    }
+
     public String staticClusterMembers()
     {
         return staticClusterMembers;
@@ -678,6 +711,14 @@ public class TestCluster implements AutoCloseable
     public AeronCluster connectClient()
     {
         return connectClient(new AeronCluster.Context().ingressChannel(ingressChannel).egressChannel(egressChannel));
+    }
+
+    public AeronCluster connectClient(final CredentialsSupplier credentialsSupplier)
+    {
+        return connectClient(new AeronCluster.Context()
+            .credentialsSupplier(credentialsSupplier)
+            .ingressChannel(ingressChannel)
+            .egressChannel(egressChannel));
     }
 
     public AeronCluster connectClient(final AeronCluster.Context clientCtx)
@@ -1018,7 +1059,7 @@ public class TestCluster implements AutoCloseable
                 throw new IllegalStateException("backup is closed");
             }
 
-            await(10);
+            Tests.sleep(10);
         }
     }
 
@@ -1570,6 +1611,7 @@ public class TestCluster implements AutoCloseable
         private String ingressChannel = INGRESS_CHANNEL;
         private String egressChannel = EGRESS_CHANNEL;
         private AuthorisationServiceSupplier authorisationServiceSupplier;
+        private AuthenticatorSupplier authenticationSupplier = new DefaultAuthenticatorSupplier();
         private IntFunction<TestNode.TestService[]> serviceSupplier =
             (i) -> new TestNode.TestService[]{ new TestNode.TestService().index(i) };
         private final IntHashSet invalidInitialResolutions = new IntHashSet();
@@ -1633,6 +1675,12 @@ public class TestCluster implements AutoCloseable
             return this;
         }
 
+        public Builder withAuthenticationSupplier(final AuthenticatorSupplier authenticatorSupplier)
+        {
+            this.authenticationSupplier = authenticatorSupplier;
+            return this;
+        }
+
         public TestCluster start()
         {
             return start(nodeCount);
@@ -1655,6 +1703,7 @@ public class TestCluster implements AutoCloseable
             testCluster.logChannel(logChannel);
             testCluster.ingressChannel(ingressChannel);
             testCluster.egressChannel(egressChannel);
+            testCluster.authenticationSupplier(authenticationSupplier);
             testCluster.authorisationServiceSupplier(authorisationServiceSupplier);
 
             try

@@ -26,8 +26,7 @@ import io.aeron.archive.codecs.RecordingSignalEventDecoder;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.BackupResponseDecoder;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
@@ -35,7 +34,6 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
@@ -68,6 +66,8 @@ public final class ClusterBackupAgent implements Agent
     private static final int SLOW_TICK_INTERVAL_MS = 10;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final BackupResponseDecoder backupResponseDecoder = new BackupResponseDecoder();
+    private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
+    private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
 
     private final ClusterBackup.Context ctx;
     private final ClusterMarkFile markFile;
@@ -363,24 +363,48 @@ public final class ClusterBackupAgent implements Agent
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        if (messageHeaderDecoder.templateId() == BackupResponseDecoder.TEMPLATE_ID)
+        switch (messageHeaderDecoder.templateId())
         {
-            backupResponseDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+            case BackupResponseDecoder.TEMPLATE_ID:
+                backupResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
 
-            onBackupResponse(
-                backupResponseDecoder.correlationId(),
-                backupResponseDecoder.logRecordingId(),
-                backupResponseDecoder.logLeadershipTermId(),
-                backupResponseDecoder.logTermBaseLogPosition(),
-                backupResponseDecoder.lastLeadershipTermId(),
-                backupResponseDecoder.lastTermBaseLogPosition(),
-                backupResponseDecoder.commitPositionCounterId(),
-                backupResponseDecoder.leaderMemberId(),
-                backupResponseDecoder);
+                onBackupResponse(
+                    backupResponseDecoder.correlationId(),
+                    backupResponseDecoder.logRecordingId(),
+                    backupResponseDecoder.logLeadershipTermId(),
+                    backupResponseDecoder.logTermBaseLogPosition(),
+                    backupResponseDecoder.lastLeadershipTermId(),
+                    backupResponseDecoder.lastTermBaseLogPosition(),
+                    backupResponseDecoder.commitPositionCounterId(),
+                    backupResponseDecoder.leaderMemberId(),
+                    backupResponseDecoder);
+                break;
+
+            case ChallengeDecoder.TEMPLATE_ID:
+                challengeDecoder.wrapAndApplyHeader(buffer, offset, messageHeaderDecoder);
+                final byte[] encodedChallenge = new byte[challengeDecoder.encodedChallengeLength()];
+                challengeDecoder.getEncodedChallenge(encodedChallenge, 0, challengeDecoder.encodedChallengeLength());
+
+                onChallengeResponse(
+                    challengeDecoder.correlationId(), challengeDecoder.clusterSessionId(), encodedChallenge);
+                break;
+
+            case SessionEventDecoder.TEMPLATE_ID:
+                sessionEventDecoder.wrapAndApplyHeader(buffer, offset, messageHeaderDecoder);
+                final EventCode code = sessionEventDecoder.code();
+                final String detail = sessionEventDecoder.detail();
+
+                if (this.correlationId == sessionEventDecoder.correlationId() &&
+                    (EventCode.ERROR == code || EventCode.AUTHENTICATION_REJECTED == code))
+                {
+                    throw new ClusterException(code + ": " + detail);
+                }
+
+                break;
         }
     }
 
@@ -485,6 +509,18 @@ public final class ClusterBackupAgent implements Agent
         }
     }
 
+    private void onChallengeResponse(
+        final long correlationId,
+        final long clusterSessionId,
+        final byte[] encodedChallenge)
+    {
+        final byte[] challengeResponse = ctx.credentialsSupplier().onChallenge(encodedChallenge);
+        this.correlationId = ctx.aeron().nextCorrelationId();
+
+        consensusPublisher.challengeResponse(
+            consensusPublication, this.correlationId, clusterSessionId, challengeResponse);
+    }
+
     private int slowTick(final long nowMs)
     {
         int workCount = aeronClientInvoker.invoke();
@@ -578,7 +614,7 @@ public final class ClusterBackupAgent implements Agent
                 ctx.consensusStreamId(),
                 AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION,
                 ctx.consensusChannel(),
-                ArrayUtil.EMPTY_BYTE_ARRAY))
+                ctx.credentialsSupplier().encodedCredentials()))
             {
                 timeOfLastBackupQueryMs = nowMs;
                 this.correlationId = correlationId;

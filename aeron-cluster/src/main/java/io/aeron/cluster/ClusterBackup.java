@@ -24,6 +24,8 @@ import io.aeron.cluster.service.ClusterCounters;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import io.aeron.security.CredentialsSupplier;
+import io.aeron.security.NullCredentialsSupplier;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
@@ -467,6 +469,7 @@ public final class ClusterBackup implements AutoCloseable
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
         private ClusterBackupEventsListener eventsListener;
+        private CredentialsSupplier credentialsSupplier;
 
         /**
          * Perform a shallow copy of the object.
@@ -650,6 +653,11 @@ public final class ClusterBackup implements AutoCloseable
             if (null == terminationHook)
             {
                 terminationHook = () -> shutdownSignalBarrier.signalAll();
+            }
+
+            if (null == credentialsSupplier)
+            {
+                credentialsSupplier = new NullCredentialsSupplier();
             }
 
             concludeMarkFile();
@@ -1525,6 +1533,28 @@ public final class ClusterBackup implements AutoCloseable
         public boolean useAgentInvoker()
         {
             return useAgentInvoker;
+        }
+
+        /**
+         * Set the {@link CredentialsSupplier} to be used for authentication with the cluster.
+         *
+         * @param credentialsSupplier to be used for authentication with the cluster.
+         * @return this for fluent API.
+         */
+        public Context credentialsSupplier(final CredentialsSupplier credentialsSupplier)
+        {
+            this.credentialsSupplier = credentialsSupplier;
+            return this;
+        }
+
+        /**
+         * Get the {@link CredentialsSupplier} to be used for authentication with the cluster.
+         *
+         * @return the {@link CredentialsSupplier} to be used for authentication with the cluster.
+         */
+        public CredentialsSupplier credentialsSupplier()
+        {
+            return this.credentialsSupplier;
         }
 
         /**

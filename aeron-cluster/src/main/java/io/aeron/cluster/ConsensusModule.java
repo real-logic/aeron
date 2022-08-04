@@ -3453,7 +3453,6 @@ public final class ConsensusModule implements AutoCloseable
          * Supplier of the {@link TimerService} instances.
          *
          * @return supplier of dynamically created {@link TimerService} instances.
-         * @see io.aeron.driver.Configuration#CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
         public TimerServiceSupplier timerServiceSupplier()
         {

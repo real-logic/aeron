@@ -572,7 +572,7 @@ public final class AeronCluster implements AutoCloseable
         if (clusterSessionId != this.clusterSessionId)
         {
             throw new ClusterException(
-                "invalid clusterSessionId=" + clusterSessionId + " expected " + this.clusterSessionId);
+                "invalid clusterSessionId=" + clusterSessionId + " expected=" + this.clusterSessionId);
         }
 
         this.leadershipTermId = leadershipTermId;
@@ -616,31 +616,19 @@ public final class AeronCluster implements AutoCloseable
 
     private void updateMemberEndpoints(final String ingressEndpoints, final int leaderMemberId)
     {
-        final Int2ObjectHashMap<MemberIngress> map = parseIngressEndpoints(ingressEndpoints);
-        final MemberIngress existingLeader = endpointByIdMap.get(leaderMemberId);
-        final MemberIngress newLeader = map.get(leaderMemberId);
-
-        if (null != existingLeader && null != existingLeader.publication &&
-            existingLeader.endpoint.equals(newLeader.endpoint))
-        {
-            newLeader.publication = existingLeader.publication;
-            publication = existingLeader.publication;
-            existingLeader.publication = null;
-        }
-
-        if (null == newLeader.publication)
-        {
-            final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
-            if (channelUri.isUdp())
-            {
-                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, newLeader.endpoint);
-            }
-
-            publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
-            newLeader.publication = publication;
-        }
-
         CloseHelper.closeAll(endpointByIdMap.values());
+
+        final Int2ObjectHashMap<MemberIngress> map = parseIngressEndpoints(ingressEndpoints);
+        final MemberIngress newLeader = map.get(leaderMemberId);
+        final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
+
+        if (channelUri.isUdp())
+        {
+            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, newLeader.endpoint);
+        }
+
+        publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
+        newLeader.publication = publication;
         endpointByIdMap = map;
     }
 

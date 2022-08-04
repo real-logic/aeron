@@ -34,8 +34,7 @@ import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
 @SlowTest
@@ -77,6 +76,8 @@ public class RecordingDescriptorCollectorTest
                 fromRecordingId = maxRecordingId + 1;
             }
         }
+
+        assertNotNull(System.getProperty("foo.bar"));
     }
 
     @Test

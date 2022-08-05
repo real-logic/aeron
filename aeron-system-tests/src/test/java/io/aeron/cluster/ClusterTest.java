@@ -331,10 +331,6 @@ class ClusterTest
         cluster.awaitServicesMessageCount(messageCount);
 
         cluster.stopNode(followerTwo);
-
-        final int delaySoKeepaliveIsRelevantMs = 2_000;
-        Tests.sleep(delaySoKeepaliveIsRelevantMs);
-        cluster.client().sendKeepAlive();
         awaitLossOfLeadership(leader.service());
 
         followerOne = cluster.startStaticNode(followerOne.index(), false);

@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
@@ -43,8 +44,8 @@ final class ClusterSession
     private boolean isBackupSession = false;
     private final long id;
     private long correlationId;
-    private long openedLogPosition = Aeron.NULL_VALUE;
-    private long closedLogPosition = Aeron.NULL_VALUE;
+    private long openedLogPosition = AeronArchive.NULL_POSITION;
+    private long closedLogPosition = AeronArchive.NULL_POSITION;
     private long timeOfLastActivityNs;
     private long responsePublicationId = Aeron.NULL_VALUE;
     private final int responseStreamId;
@@ -133,6 +134,12 @@ final class ClusterSession
     CloseReason closeReason()
     {
         return closeReason;
+    }
+
+    void resetCloseReason()
+    {
+        closedLogPosition = AeronArchive.NULL_POSITION;
+        closeReason = CloseReason.NULL_VAL;
     }
 
     void asyncConnect(final Aeron aeron)

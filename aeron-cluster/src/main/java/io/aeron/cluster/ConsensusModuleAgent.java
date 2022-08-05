@@ -2112,6 +2112,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             for (int i = 0, size = sessions.size(); i < size; i++)
             {
                 final ClusterSession session = sessions.get(i);
+
+                if (session.closeReason() == CloseReason.TIMEOUT)
+                {
+                    session.resetCloseReason();
+                    session.state(OPEN);
+                }
+
                 if (session.state() == OPEN)
                 {
                     session.connect(ctx.countedErrorHandler(), aeron);
@@ -2990,7 +2997,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             if (session.closedLogPosition() > commitPosition)
             {
                 session.closedLogPosition(NULL_POSITION);
-                session.state(CLOSING);
+                if (CloseReason.TIMEOUT == session.closeReason())
+                {
+                    session.resetCloseReason();
+                    session.state(OPEN);
+                }
+                else
+                {
+                    session.state(CLOSING);
+                }
+
                 addSession(session);
             }
         }

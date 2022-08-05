@@ -389,7 +389,7 @@ public final class ClusterBackupAgent implements Agent
                 final byte[] encodedChallenge = new byte[challengeDecoder.encodedChallengeLength()];
                 challengeDecoder.getEncodedChallenge(encodedChallenge, 0, challengeDecoder.encodedChallengeLength());
 
-                onChallengeResponse(
+                onChallenge(
                     challengeDecoder.correlationId(), challengeDecoder.clusterSessionId(), encodedChallenge);
                 break;
 
@@ -509,7 +509,7 @@ public final class ClusterBackupAgent implements Agent
         }
     }
 
-    private void onChallengeResponse(
+    private void onChallenge(
         final long correlationId,
         final long clusterSessionId,
         final byte[] encodedChallenge)

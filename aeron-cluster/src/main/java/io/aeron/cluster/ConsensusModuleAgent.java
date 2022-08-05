@@ -568,6 +568,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 }
             }
         }
+        else
+        {
+            consensusPublisher.challengeResponse(
+                leaderMember.publication(),
+                correlationId,
+                clusterSessionId,
+                encodedCredentials);
+        }
     }
 
     public boolean onTimerEvent(final long correlationId)

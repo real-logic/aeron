@@ -101,7 +101,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when the DynamicJoin changes state
      */
-    DYNAMIC_JOIN_STATE_CHANGE(15, ClusterEventDissector::dissectStateChange);
+    DYNAMIC_JOIN_STATE_CHANGE(15, ClusterEventDissector::dissectStateChange),
+
+    /**
+     * Event when the ClusterBackup changes state
+     */
+    CLUSTER_BACKUP_STATE_CHANGE(16, ClusterEventDissector::dissectStateChange);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

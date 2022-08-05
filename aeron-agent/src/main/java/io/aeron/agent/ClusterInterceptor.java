@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.Aeron;
 import io.aeron.cluster.codecs.CloseReason;
 import net.bytebuddy.asm.Advice;
 
@@ -271,6 +272,15 @@ class ClusterInterceptor
         static <E extends Enum<E>> void logStateChange(final E oldState, final E newState, final int memberId)
         {
             LOGGER.logStateChange(DYNAMIC_JOIN_STATE_CHANGE, oldState, newState, memberId);
+        }
+    }
+
+    static class ClusterBackupStateChange
+    {
+        @Advice.OnMethodEnter
+        static <E extends Enum<E>> void logStateChange(final E oldState, final E newState, final long nowMs)
+        {
+            LOGGER.logStateChange(CLUSTER_BACKUP_STATE_CHANGE, oldState, newState, Aeron.NULL_VALUE);
         }
     }
 }

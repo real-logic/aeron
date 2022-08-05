@@ -502,6 +502,15 @@ public final class EventLogAgent
             "logStateChange"
         );
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.CLUSTER_BACKUP_STATE_CHANGE,
+            "ClusterBackupAgent",
+            ClusterInterceptor.ClusterBackupStateChange.class,
+            "logStateChange"
+        );
+
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
 
         return tempBuilder;

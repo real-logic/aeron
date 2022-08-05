@@ -76,8 +76,6 @@ public class RecordingDescriptorCollectorTest
                 fromRecordingId = maxRecordingId + 1;
             }
         }
-
-        assertNotNull(System.getProperty("foo.bar"));
     }
 
     @Test

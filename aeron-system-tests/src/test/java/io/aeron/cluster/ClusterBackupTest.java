@@ -344,7 +344,6 @@ class ClusterBackupTest
         assertTrue(node.service().wasSnapshotLoaded());
     }
 
-
     @Test
     @InterruptAfter(30)
     void shouldBackupClusterWithSnapshotAndNonEmptyLogWithChallengeResponseAuthentication()

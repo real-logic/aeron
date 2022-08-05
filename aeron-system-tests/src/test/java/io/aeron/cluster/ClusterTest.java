@@ -527,10 +527,10 @@ class ClusterTest
 
         final TestNode firstLeader = cluster.awaitLeader();
 
-        final int messageCount = 1_000_000; // Add enough messages so replay takes some time
+        final int sufficientMessageCountForReplay = 1_000_000;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
+        cluster.sendMessages(sufficientMessageCountForReplay);
+        cluster.awaitResponseMessageCount(sufficientMessageCountForReplay);
         cluster.closeClient();
 
         cluster.awaitActiveSessionCount(firstLeader, 0);
@@ -548,8 +548,8 @@ class ClusterTest
 
         cluster.connectClient();
         cluster.sendMessages(10);
-        cluster.awaitResponseMessageCount(messageCount + 10);
-        cluster.awaitServicesMessageCount(messageCount + 10);
+        cluster.awaitResponseMessageCount(sufficientMessageCountForReplay + 10);
+        cluster.awaitServicesMessageCount(sufficientMessageCountForReplay + 10);
     }
 
     @Test
@@ -868,10 +868,12 @@ class ClusterTest
         try
         {
             cluster.stopNode(followerB);
-            Tests.sleep(2_000); // keep ingress going so the cluster advances.
+            final int delaySoClusterAdvancesMs = 2_000;
+            Tests.sleep(delaySoClusterAdvancesMs);
 
             followerB = cluster.startStaticNode(followerB.index(), false);
-            Tests.sleep(2_000); // keep ingress going a while after catchup.
+            final int delaySoIngressAdvancesAfterCatchupMs = 2_000;
+            Tests.sleep(delaySoIngressAdvancesAfterCatchupMs);
             awaitElectionClosed(followerB);
         }
         finally
@@ -1055,7 +1057,6 @@ class ClusterTest
         assertEquals(messageCount, cluster.node(0).service().messageCount());
         assertEquals(messageCount, cluster.node(1).service().messageCount());
 
-        // Needs a little time to replay the transactions...
         Tests.await(() -> cluster.node(2).service().messageCount() >= 3);
         assertEquals(messageCount, cluster.node(2).service().messageCount());
 
@@ -1289,7 +1290,6 @@ class ClusterTest
 
         cluster.startStaticNode(followerOne.index(), false);
 
-        // Needs a little time to replay the transactions...
         Tests.await(() -> cluster.node(followerOne.index()).service().messageCount() >= messageCount * 2);
         assertEquals(messageCount * 2, cluster.node(followerOne.index()).service().messageCount());
     }
@@ -1329,7 +1329,6 @@ class ClusterTest
 
         cluster.startStaticNode(followerOne.index(), false);
 
-        // Needs a little time to replay the transactions...
         Tests.await(() -> cluster.node(followerOne.index()).service().messageCount() >= messageCount * 3);
         assertEquals(messageCount * 3, cluster.node(followerOne.index()).service().messageCount());
     }
@@ -1590,9 +1589,10 @@ class ClusterTest
         final int originalMtu = 1408;
         final int newTermLength = 2 * 1024 * 1024;
         final int newMtu = 8992;
-
+        final int staticNodeCount = 3;
         final CRC32 crc32 = new CRC32();
-        cluster = aCluster().withStaticNodes(3)
+
+        cluster = aCluster().withStaticNodes(staticNodeCount)
             .withLogChannel("aeron:udp?term-length=" + originalTermLength + "|mtu=" + originalMtu)
             .withIngressChannel("aeron:udp?term-length=" + originalTermLength + "|mtu=" + originalMtu)
             .withEgressChannel(
@@ -1603,7 +1603,7 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < staticNodeCount; i++)
         {
             assertEquals(2, cluster.node(i).services().length);
         }
@@ -1650,11 +1650,7 @@ class ClusterTest
 
         cluster.stopAllNodes();
 
-        // seed all recording logs from the latest snapshot
-        for (int i = 0; i < 3; i++)
-        {
-            ClusterTool.seedRecordingLogFromSnapshot(cluster.node(i).consensusModule().context().clusterDir());
-        }
+        seedRecordingsFromLatestSnapshot(staticNodeCount);
 
         cluster.logChannel("aeron:udp?term-length=" + newTermLength + "|mtu=" + newMtu);
         cluster.ingressChannel("aeron:udp?term-length=" + newTermLength + "|mtu=" + newMtu);
@@ -1662,7 +1658,7 @@ class ClusterTest
         cluster.restartAllNodes(false);
         cluster.awaitLeader();
         assertEquals(2, cluster.followers().size());
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < staticNodeCount; i++)
         {
             assertEquals(2, cluster.node(i).services().length);
         }
@@ -1695,7 +1691,7 @@ class ClusterTest
                     finalChecksum == ((TestNode.ChecksumService)services[1]).checksum();
             };
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < staticNodeCount; i++)
         {
             final TestNode node = cluster.node(i);
             cluster.awaitServiceState(node, finalServiceState);
@@ -2090,5 +2086,13 @@ class ClusterTest
             });
 
         return hasResponse;
+    }
+
+    private void seedRecordingsFromLatestSnapshot(final int nodeCount)
+    {
+        for (int i = 0; i < nodeCount; i++)
+        {
+            ClusterTool.seedRecordingLogFromSnapshot(cluster.node(i).consensusModule().context().clusterDir());
+        }
     }
 }

@@ -803,7 +803,8 @@ public class TestCluster implements AutoCloseable
             }
             catch (final Exception ex)
             {
-                throw new ClusterException("failed to send message " + i + " of " + messageCount, ex);
+                final String msg = "failed to send message " + i + " of " + messageCount + " cause=" + ex.getMessage();
+                throw new ClusterException(msg, ex);
             }
         }
     }
@@ -819,7 +820,8 @@ public class TestCluster implements AutoCloseable
             }
             catch (final Exception ex)
             {
-                throw new ClusterException("failed to send message " + i + " of " + messageCount, ex);
+                final String msg = "failed to send message " + i + " of " + messageCount + " cause=" + ex.getMessage();
+                throw new ClusterException(msg, ex);
             }
         }
     }
@@ -835,7 +837,8 @@ public class TestCluster implements AutoCloseable
             }
             catch (final Exception ex)
             {
-                throw new ClusterException("failed to send message " + i + " of " + messageCount, ex);
+                final String msg = "failed to send message " + i + " of " + messageCount + " cause=" + ex.getMessage();
+                throw new ClusterException(msg, ex);
             }
         }
     }
@@ -849,7 +852,7 @@ public class TestCluster implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            throw new ClusterException("failed to send message", ex);
+            throw new ClusterException("failed to send message cause=" + ex.getMessage(), ex);
         }
     }
 
@@ -897,9 +900,10 @@ public class TestCluster implements AutoCloseable
                 {
                     client.sendKeepAlive();
                 }
-                catch (final ClusterException e)
+                catch (final ClusterException ex)
                 {
-                    throw new RuntimeException("count=" + count + " awaiting=" + messageCount, e);
+                    final String message = "count=" + count + " awaiting=" + messageCount + " cause=" + ex.getMessage();
+                    throw new RuntimeException(message, ex);
                 }
                 heartbeatDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
             }
@@ -1516,6 +1520,7 @@ public class TestCluster implements AutoCloseable
                         firstEntries.size(),
                         entries.size(),
                         "length mismatch: \n[0]" + firstEntries + " != " + "\n[" + node.index() + "] " + entries);
+
                     for (int i = 0; i < firstEntries.size(); i++)
                     {
                         final RecordingLog.Entry a = firstEntries.get(i);

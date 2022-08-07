@@ -275,7 +275,7 @@ class ClusterTest
         cluster.awaitServicesMessageCount(messageCount);
 
         cluster.disableNameResolution(originalLeader.hostname());
-        originalLeader.close();
+        cluster.stopNode(originalLeader);
 
         cluster.awaitLeader();
 

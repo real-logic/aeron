@@ -149,11 +149,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
             if (!ctx.ownsAeronClient() && !aeron.isClosed())
             {
-                for (int i = 0, size = sessions.size(); i < size; i++)
-                {
-                    sessions.get(i).disconnect(errorHandler);
-                }
-
+                disconnectEgress(errorHandler);
                 CloseHelper.close(errorHandler, logAdapter);
                 CloseHelper.close(errorHandler, serviceAdapter);
                 CloseHelper.close(errorHandler, consensusModuleProxy);
@@ -714,17 +710,23 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         logPosition = Math.max(logAdapter.image().position(), logPosition);
         CloseHelper.close(ctx.countedErrorHandler(), logAdapter);
+        disconnectEgress(ctx.countedErrorHandler());
         role(Role.FOLLOWER);
+    }
+
+    private void disconnectEgress(final CountedErrorHandler errorHandler)
+    {
+        for (int i = 0, size = sessions.size(); i < size; i++)
+        {
+            sessions.get(i).disconnect(errorHandler);
+        }
     }
 
     private void joinActiveLog(final ActiveLogEvent activeLog)
     {
         if (Role.LEADER != activeLog.role)
         {
-            for (int i = 0, size = sessions.size(); i < size; i++)
-            {
-                sessions.get(i).disconnect(ctx.countedErrorHandler());
-            }
+            disconnectEgress(ctx.countedErrorHandler());
         }
 
         Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);

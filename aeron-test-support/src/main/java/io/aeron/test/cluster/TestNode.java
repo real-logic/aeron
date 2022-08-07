@@ -148,7 +148,7 @@ public class TestNode implements AutoCloseable
     {
         if (1 != containers.length)
         {
-            throw new IllegalStateException("multiple containers in use");
+            throw new IllegalStateException("container count expected=1 actual=" + containers.length);
         }
 
         return containers[0];
@@ -158,7 +158,7 @@ public class TestNode implements AutoCloseable
     {
         if (1 != services.length)
         {
-            throw new IllegalStateException("multiple services in use");
+            throw new IllegalStateException("service count expected=1 actual=" + services.length);
         }
 
         return services[0];
@@ -246,7 +246,7 @@ public class TestNode implements AutoCloseable
     {
         if (1 != services.length)
         {
-            throw new IllegalStateException("multiple services in use");
+            throw new IllegalStateException("service count expected=1 actual=" + services.length);
         }
 
         return context.hasServiceTerminated[0].get();
@@ -261,7 +261,7 @@ public class TestNode implements AutoCloseable
     {
         if (1 != services.length)
         {
-            throw new IllegalStateException("multiple services in use");
+            throw new IllegalStateException("service count expected=1 actual=" + services.length);
         }
 
         return services[0].index();

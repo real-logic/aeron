@@ -870,11 +870,6 @@ public class TestCluster implements AutoCloseable
                 continue;
             }
 
-            if (Publication.CLOSED == result)
-            {
-                throw new ClusterException("client publication is closed");
-            }
-
             if (Publication.MAX_POSITION_EXCEEDED == result)
             {
                 throw new ClusterException("max position exceeded");

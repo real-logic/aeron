@@ -17,6 +17,7 @@ package io.aeron.cluster.client;
 
 import io.aeron.Aeron;
 import io.aeron.ControlledFragmentAssembler;
+import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -36,6 +37,8 @@ public final class EgressPoller implements ControlledFragmentHandler
     private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
+
+    private Image egressImage;
     private long clusterSessionId = Aeron.NULL_VALUE;
     private long correlationId = Aeron.NULL_VALUE;
     private long leadershipTermId = Aeron.NULL_VALUE;
@@ -67,6 +70,16 @@ public final class EgressPoller implements ControlledFragmentHandler
     public Subscription subscription()
     {
         return subscription;
+    }
+
+    /**
+     * {@link Image} for the egress response from the cluster which can be used for connection tracking.
+     *
+     * @return {@link Image} for the egress response from the cluster which can be used for connection tracking.
+     */
+    public Image egressImage()
+    {
+        return egressImage;
     }
 
     /**
@@ -252,6 +265,7 @@ public final class EgressPoller implements ControlledFragmentHandler
                 version = sessionEventDecoder.version();
                 detail = sessionEventDecoder.detail();
                 isPollComplete = true;
+                egressImage = (Image)header.context();
                 return Action.BREAK;
 
             case NewLeaderEventDecoder.TEMPLATE_ID:
@@ -266,6 +280,7 @@ public final class EgressPoller implements ControlledFragmentHandler
                 leaderMemberId = newLeaderEventDecoder.leaderMemberId();
                 detail = newLeaderEventDecoder.ingressEndpoints();
                 isPollComplete = true;
+                egressImage = (Image)header.context();
                 return Action.BREAK;
 
             case ChallengeDecoder.TEMPLATE_ID:

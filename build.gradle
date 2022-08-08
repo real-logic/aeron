@@ -910,6 +910,11 @@ project(':aeron-test-support') {
         }
     }
 
+    java {
+        withSourcesJar()
+    }
+
+
     javadoc.enabled = false
 }
 

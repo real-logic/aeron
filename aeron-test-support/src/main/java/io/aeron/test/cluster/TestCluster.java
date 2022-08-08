@@ -1422,17 +1422,17 @@ public class TestCluster implements AutoCloseable
         return memberId < 3 ? "node" + memberId : "localhost";
     }
 
-    private static String clusterBackupStatusEndpoint(final int clusterId, final int maxMemberCount)
+    static String clusterBackupStatusEndpoint(final int clusterId, final int maxMemberCount)
     {
         return hostname(maxMemberCount) + ":2" + clusterId + "22" + maxMemberCount;
     }
 
-    private static String archiveControlRequestChannel(final int memberId)
+    static String archiveControlRequestChannel(final int memberId)
     {
         return "aeron:udp?endpoint=" + hostname(memberId) + ":801" + memberId;
     }
 
-    private static String archiveControlResponseChannel(final int memberId)
+    static String archiveControlResponseChannel(final int memberId)
     {
         return "aeron:udp?endpoint=" + hostname(memberId) + ":0";
     }

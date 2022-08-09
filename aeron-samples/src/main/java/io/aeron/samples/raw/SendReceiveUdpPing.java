@@ -18,6 +18,8 @@ package io.aeron.samples.raw;
 import io.aeron.driver.Configuration;
 import org.HdrHistogram.Histogram;
 import org.agrona.BitUtil;
+import org.agrona.SystemUtil;
+import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
 import org.agrona.hints.ThreadHints;
 
@@ -56,6 +58,11 @@ public class SendReceiveUdpPing
         if (2 <= args.length)
         {
             remoteHost = args[1];
+        }
+
+        if (SystemUtil.isWindows())
+        {
+            HighResolutionTimer.enable();
         }
 
         System.out.printf("Number of channels: %d, Remote host: %s%n", numChannels, remoteHost);

@@ -18,6 +18,8 @@ package io.aeron.samples.raw;
 import io.aeron.driver.Configuration;
 import org.HdrHistogram.Histogram;
 import org.agrona.BitUtil;
+import org.agrona.SystemUtil;
+import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
 import org.agrona.hints.ThreadHints;
 
@@ -64,6 +66,11 @@ public class BurstSendReceiveUdpPing
         if (3 <= args.length)
         {
             burstSize = min(1024, Integer.parseInt(args[2]));
+        }
+
+        if (SystemUtil.isWindows())
+        {
+            HighResolutionTimer.enable();
         }
 
         System.out.printf("Remote host: %s, packet size: %d, burstSize: %d%n", remoteHost, packetSize, burstSize);

@@ -15,6 +15,8 @@
  */
 package io.aeron.samples.raw;
 
+import org.agrona.SystemUtil;
+import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
 import org.agrona.hints.ThreadHints;
 
@@ -46,6 +48,11 @@ public class ReceiveWriteUdpPong
         if (1 == args.length)
         {
             numChannels = Integer.parseInt(args[0]);
+        }
+
+        if (SystemUtil.isWindows())
+        {
+            HighResolutionTimer.enable();
         }
 
         final ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);

@@ -17,6 +17,8 @@ package io.aeron.samples.raw;
 
 import io.aeron.driver.Configuration;
 import org.HdrHistogram.Histogram;
+import org.agrona.SystemUtil;
+import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
 import org.agrona.hints.ThreadHints;
 
@@ -60,6 +62,11 @@ public class SendSelectReceiveUdpPing
 
     private void run() throws IOException
     {
+        if (SystemUtil.isWindows())
+        {
+            HighResolutionTimer.enable();
+        }
+
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
         final ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.MTU_LENGTH_DEFAULT);
 

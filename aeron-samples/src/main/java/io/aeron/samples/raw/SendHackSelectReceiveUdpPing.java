@@ -17,6 +17,8 @@ package io.aeron.samples.raw;
 
 import io.aeron.driver.Configuration;
 import org.HdrHistogram.Histogram;
+import org.agrona.SystemUtil;
+import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.hints.ThreadHints;
 import org.agrona.nio.NioSelectedKeySet;
 import org.agrona.concurrent.SigInt;
@@ -62,6 +64,11 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
 
     private void run() throws IOException
     {
+        if (SystemUtil.isWindows())
+        {
+            HighResolutionTimer.enable();
+        }
+
         receiveChannel = DatagramChannel.open();
         Common.init(receiveChannel);
         receiveChannel.bind(new InetSocketAddress("localhost", Common.PONG_PORT));

@@ -16,6 +16,8 @@
 package io.aeron.samples.raw;
 
 import io.aeron.driver.Configuration;
+import org.agrona.SystemUtil;
+import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
 import org.agrona.hints.ThreadHints;
 
@@ -53,6 +55,11 @@ public class SelectReceiveSendUdpPong
 
     private void run() throws IOException
     {
+        if (SystemUtil.isWindows())
+        {
+            HighResolutionTimer.enable();
+        }
+
         final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PONG_PORT);
         final ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.MTU_LENGTH_DEFAULT);
 

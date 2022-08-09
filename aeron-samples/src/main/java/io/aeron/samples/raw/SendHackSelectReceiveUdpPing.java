@@ -44,7 +44,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
 {
-    private static final InetSocketAddress SEND_ADDRESS = new InetSocketAddress("localhost", Common.PING_PORT);
+    private static final InetSocketAddress SEND_ADDRESS = new InetSocketAddress(Common.PING_DEST, Common.PING_PORT);
 
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.MTU_LENGTH_DEFAULT);
@@ -71,7 +71,7 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
 
         receiveChannel = DatagramChannel.open();
         Common.init(receiveChannel);
-        receiveChannel.bind(new InetSocketAddress("localhost", Common.PONG_PORT));
+        receiveChannel.bind(new InetSocketAddress(Common.PONG_DEST, Common.PONG_PORT));
 
         final DatagramChannel sendChannel = DatagramChannel.open();
         Common.init(sendChannel);

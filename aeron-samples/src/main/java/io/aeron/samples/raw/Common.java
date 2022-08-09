@@ -44,6 +44,16 @@ public class Common
      */
     public static final int PING_PORT = 20124;
 
+    /**
+     * Address to send ping messages to.  Pong should listen to this address.
+     */
+    public static final String PING_DEST = System.getProperty("io.aeron.raw.ping.dest", "localhost");
+
+    /**
+     * Address to send pong messages to.  Ping should listen to this address
+     */
+    public static final String PONG_DEST = System.getProperty("io.aeron.raw.pong.dest", "localhost");
+
     static final Field SELECTED_KEYS_FIELD;
     static final Field PUBLIC_SELECTED_KEYS_FIELD;
 

@@ -59,12 +59,12 @@ public class HackSelectReceiveSendUdpPong
             HighResolutionTimer.enable();
         }
 
-        final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PONG_PORT);
+        final InetSocketAddress sendAddress = new InetSocketAddress(Common.PONG_DEST, Common.PONG_PORT);
         final ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.MTU_LENGTH_DEFAULT);
 
         final DatagramChannel receiveChannel = DatagramChannel.open();
         Common.init(receiveChannel);
-        receiveChannel.bind(new InetSocketAddress("localhost", Common.PING_PORT));
+        receiveChannel.bind(new InetSocketAddress(Common.PING_DEST, Common.PING_PORT));
 
         final DatagramChannel sendChannel = DatagramChannel.open();
         Common.init(sendChannel);

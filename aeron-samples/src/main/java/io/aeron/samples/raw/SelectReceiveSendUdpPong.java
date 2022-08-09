@@ -54,7 +54,6 @@ public class SelectReceiveSendUdpPong
     private void run() throws IOException
     {
         final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PONG_PORT);
-
         final ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.MTU_LENGTH_DEFAULT);
 
         final DatagramChannel receiveChannel = DatagramChannel.open();

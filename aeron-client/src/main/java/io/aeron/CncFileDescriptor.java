@@ -347,11 +347,11 @@ public class CncFileDescriptor
     }
 
     /**
-     * Create the buffer which wraps the section in the CnC file for the counters metadata.
+     * Create the buffer which wraps the section in the CnC file for the counter's metadata.
      *
      * @param buffer         for the CnC file.
      * @param metaDataBuffer within the CnC file.
-     * @return a buffer which wraps the section in the CnC file for the counters metadata.
+     * @return a buffer which wraps the section in the CnC file for the counter's metadata.
      */
     public static UnsafeBuffer createCountersMetaDataBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {

@@ -28,7 +28,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * Flow control is set to minimum of tracked tagged receivers.
  * <p>
  * Tracking of tagged receivers is done as long as they continue to send Status Messages. Once SMs stop, the receiver
- * tracking for that receiver will timeout after a given number of nanoseconds.
+ * tracking for that receiver will time out after a given number of nanoseconds.
  */
 public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
 {

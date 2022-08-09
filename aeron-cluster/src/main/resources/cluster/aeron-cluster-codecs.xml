@@ -86,11 +86,11 @@
 
     1. Session Connect
         - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
-        - If successful, a OK session-event will be sent in the return path with the list of endpoint destinations
+        - If successful, an OK session-event will be sent in the return path with the list of endpoint destinations
           for the cluster members. The leader will come first.
         - Followers can respond with a REDIRECT code and a list of member endpoint destinations in the
           detail that will have the leader first.
-        - If a change of leader occurs mid session then a new-leader-event will be sent from the new leader.
+        - If a change of leader occurs mid-session then a new-leader-event will be sent from the new leader.
 
     2. Ingress/Egress Messages - Session Messages which make up application protocol.
         - Messages are sent to a clustered service with a SessionMessageHeader followed by an application payload.

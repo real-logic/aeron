@@ -609,7 +609,7 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Store the default frame header to the log meta data buffer.
+     * Store the default frame header to the log metadata buffer.
      *
      * @param metadataBuffer into which the default headers should be stored.
      * @param defaultHeader  to be stored.

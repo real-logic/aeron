@@ -38,7 +38,7 @@ import static org.agrona.collections.ArrayUtil.add;
  * group of receivers, not all possible receivers. However, it is agnostic of how that group is determined.
  * <p>
  * Tracking of receivers is done as long as they continue to send Status Messages. Once SMs stop, the receiver tracking
- * for that receiver will timeout after a given number of nanoseconds.
+ * for that receiver will time out after a given number of nanoseconds.
  */
 public abstract class AbstractMinMulticastFlowControl implements FlowControl
 {

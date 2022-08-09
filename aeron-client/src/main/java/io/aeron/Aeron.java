@@ -1191,7 +1191,7 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Setup a default callback for when an {@link Image} is available.
+         * Set up a default callback for when an {@link Image} is available.
          *
          * @param handler Callback method for handling available image notifications.
          * @return this for a fluent API.
@@ -1213,7 +1213,7 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Setup a default callback for when an {@link Image} is unavailable.
+         * Set up a default callback for when an {@link Image} is unavailable.
          *
          * @param handler Callback method for handling unavailable image notifications.
          * @return this for a fluent API.
@@ -1235,7 +1235,7 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Setup a callback for when a counter is available. This will be added to the list first before
+         * Set up a callback for when a counter is available. This will be added to the list first before
          * additional handler are added with {@link Aeron#addAvailableCounterHandler(AvailableCounterHandler)}.
          *
          * @param handler to be called for handling available counter notifications.
@@ -1258,7 +1258,7 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Setup a callback for when a counter is unavailable. This will be added to the list first before
+         * Set up a callback for when a counter is unavailable. This will be added to the list first before
          * additional handler are added with {@link Aeron#addUnavailableCounterHandler(UnavailableCounterHandler)}.
          *
          * @param handler to be called for handling unavailable counter notifications.

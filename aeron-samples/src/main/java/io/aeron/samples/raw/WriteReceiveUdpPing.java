@@ -84,7 +84,7 @@ public class WriteReceiveUdpPing
 
             histogram.reset();
             System.gc();
-            LockSupport.parkNanos(1000_000_000);
+            LockSupport.parkNanos(1_000_000_000L);
         }
     }
 

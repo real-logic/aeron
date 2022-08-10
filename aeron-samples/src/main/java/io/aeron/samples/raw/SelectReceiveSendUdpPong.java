@@ -50,11 +50,6 @@ public class SelectReceiveSendUdpPong
      */
     public static void main(final String[] args) throws IOException
     {
-        new SelectReceiveSendUdpPong().run();
-    }
-
-    private void run() throws IOException
-    {
         if (SystemUtil.isWindows())
         {
             HighResolutionTimer.enable();
@@ -111,6 +106,7 @@ public class SelectReceiveSendUdpPong
                 {
                     return;
                 }
+
                 ThreadHints.onSpinWait();
             }
 

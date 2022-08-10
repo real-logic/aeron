@@ -42,14 +42,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *
  * @see HackSelectReceiveSendUdpPong
  */
-public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
+public class SendHackSelectReceiveUdpPing
 {
-    private static final InetSocketAddress SEND_ADDRESS = new InetSocketAddress(Common.PING_DEST, Common.PING_PORT);
-    private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
-    private final ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.MTU_LENGTH_DEFAULT);
-    private DatagramChannel receiveChannel;
-    private int sequenceNumber;
-
     /**
      * Main method for launching the process.
      *
@@ -58,17 +52,16 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
      */
     public static void main(final String[] args) throws IOException
     {
-        new SendHackSelectReceiveUdpPing().run();
-    }
-
-    private void run() throws IOException
-    {
         if (SystemUtil.isWindows())
         {
             HighResolutionTimer.enable();
         }
 
-        receiveChannel = DatagramChannel.open();
+        final InetSocketAddress sendAddress = new InetSocketAddress(Common.PING_DEST, Common.PING_PORT);
+        final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
+        final ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.MTU_LENGTH_DEFAULT);
+
+        final DatagramChannel receiveChannel = DatagramChannel.open();
         Common.init(receiveChannel);
         receiveChannel.bind(new InetSocketAddress(Common.PONG_DEST, Common.PONG_PORT));
 
@@ -76,7 +69,7 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
         Common.init(sendChannel);
 
         final Selector selector = Selector.open();
-        receiveChannel.register(selector, OP_READ, this);
+        receiveChannel.register(selector, OP_READ, null);
         final NioSelectedKeySet keySet = Common.keySet(selector);
 
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -84,54 +77,48 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
 
         while (running.get())
         {
-            measureRoundTrip(HISTOGRAM, SEND_ADDRESS, buffer, sendChannel, selector, keySet, running);
+            measureRoundTrip(histogram, sendAddress, buffer, sendChannel, receiveChannel, selector, keySet, running);
 
-            HISTOGRAM.reset();
+            histogram.reset();
             System.gc();
-            LockSupport.parkNanos(1000 * 1000 * 1000);
+            LockSupport.parkNanos(1_000_000_000L);
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public int applyAsInt(final SelectionKey key)
-    {
-        try
-        {
-            buffer.clear();
-            receiveChannel.receive(buffer);
-
-            final long receivedSequenceNumber = buffer.getLong(0);
-            final long timestampNs = buffer.getLong(SIZE_OF_LONG);
-
-            if (receivedSequenceNumber != sequenceNumber)
-            {
-                throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
-            }
-
-            final long durationNs = System.nanoTime() - timestampNs;
-            HISTOGRAM.recordValue(durationNs);
-        }
-        catch (final IOException ex)
-        {
-            ex.printStackTrace();
-        }
-
-        return 1;
-    }
-
-    private void measureRoundTrip(
+    private static void measureRoundTrip(
         final Histogram histogram,
         final InetSocketAddress sendAddress,
         final ByteBuffer buffer,
         final DatagramChannel sendChannel,
+        final DatagramChannel receiveChannel,
         final Selector selector,
         final NioSelectedKeySet keySet,
         final AtomicBoolean running)
         throws IOException
     {
-        for (sequenceNumber = 0; sequenceNumber < Common.NUM_MESSAGES; sequenceNumber++)
+        final ToIntFunction<SelectionKey> handler =
+            (key) ->
+            {
+                try
+                {
+                    buffer.clear();
+                    receiveChannel.receive(buffer);
+
+                    final long receivedSequenceNumber = buffer.getLong(0);
+                    final long receivedTimestamp = buffer.getLong(SIZE_OF_LONG);
+                    final long durationNs = System.nanoTime() - receivedTimestamp;
+
+                    histogram.recordValue(durationNs);
+                }
+                catch (final IOException ex)
+                {
+                    ex.printStackTrace();
+                }
+
+                return 1;
+            };
+
+        for (int sequenceNumber = 0; sequenceNumber < Common.NUM_MESSAGES; sequenceNumber++)
         {
             final long timestampNs = System.nanoTime();
 
@@ -148,10 +135,11 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
                 {
                     return;
                 }
+
                 ThreadHints.onSpinWait();
             }
 
-            keySet.forEach(this);
+            keySet.forEach(handler);
         }
 
         histogram.outputPercentileDistribution(System.out, 1000.0);

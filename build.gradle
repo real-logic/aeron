@@ -265,7 +265,6 @@ subprojects {
         systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
     }
 
-
     task topologyTest(type: Test, group: 'verification') {
         maxParallelForks = 1
         useJUnitPlatform {

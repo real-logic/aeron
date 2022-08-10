@@ -45,8 +45,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class SendSelectReceiveUdpPing
 {
-    private static final InetSocketAddress SEND_ADDRESS = new InetSocketAddress("localhost", Common.PING_PORT);
-
     private int sequenceNumber;
 
     /**
@@ -74,6 +72,7 @@ public class SendSelectReceiveUdpPing
         Common.init(receiveChannel);
         receiveChannel.bind(new InetSocketAddress("localhost", Common.PONG_PORT));
 
+        final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PING_PORT);
         final DatagramChannel sendChannel = DatagramChannel.open();
         Common.init(sendChannel);
 
@@ -88,7 +87,7 @@ public class SendSelectReceiveUdpPing
                     receiveChannel.receive(buffer);
 
                     final long receivedSequenceNumber = buffer.getLong(0);
-                    final long timestampNs = buffer.getLong(SIZE_OF_LONG);
+                    final long receivedTimestampNs = buffer.getLong(SIZE_OF_LONG);
 
                     if (receivedSequenceNumber != sequenceNumber)
                     {
@@ -96,7 +95,7 @@ public class SendSelectReceiveUdpPing
                             "data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
                     }
 
-                    final long durationNs = System.nanoTime() - timestampNs;
+                    final long durationNs = System.nanoTime() - receivedTimestampNs;
                     histogram.recordValue(durationNs);
                 }
                 catch (final IOException ex)
@@ -114,11 +113,11 @@ public class SendSelectReceiveUdpPing
 
         while (running.get())
         {
-            measureRoundTrip(histogram, SEND_ADDRESS, buffer, sendChannel, selector, running);
+            measureRoundTrip(histogram, sendAddress, buffer, sendChannel, selector, running);
 
             histogram.reset();
             System.gc();
-            LockSupport.parkNanos(1000 * 1000 * 1000);
+            LockSupport.parkNanos(1_000_000_000L);
         }
     }
 
@@ -148,6 +147,7 @@ public class SendSelectReceiveUdpPing
                 {
                     return;
                 }
+
                 ThreadHints.onSpinWait();
             }
 

@@ -100,7 +100,7 @@ public class BurstSendReceiveUdpPing
 
             histogram.reset();
             System.gc();
-            LockSupport.parkNanos(1_000_000_000);
+            LockSupport.parkNanos(1_000_000_000L);
         }
     }
 

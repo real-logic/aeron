@@ -49,11 +49,6 @@ public class HackSelectReceiveSendUdpPong
      */
     public static void main(final String[] args) throws IOException
     {
-        new HackSelectReceiveSendUdpPong().run();
-    }
-
-    private void run() throws IOException
-    {
         if (SystemUtil.isWindows())
         {
             HighResolutionTimer.enable();
@@ -111,6 +106,7 @@ public class HackSelectReceiveSendUdpPong
                 {
                     return;
                 }
+
                 ThreadHints.onSpinWait();
             }
 

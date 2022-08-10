@@ -91,7 +91,7 @@ public class SendReceiveUdpPing
 
             histogram.reset();
             System.gc();
-            LockSupport.parkNanos(1_000_000_000);
+            LockSupport.parkNanos(1_000_000_000L);
         }
     }
 
@@ -136,12 +136,14 @@ public class SendReceiveUdpPing
             }
 
             final long receivedSequenceNumber = buffer.getLong(0);
+            final long receivedTimestamp = buffer.getLong(BitUtil.SIZE_OF_LONG);
+
             if (receivedSequenceNumber != sequenceNumber)
             {
                 throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
             }
 
-            final long durationNs = System.nanoTime() - buffer.getLong(BitUtil.SIZE_OF_LONG);
+            final long durationNs = System.nanoTime() - receivedTimestamp;
             histogram.recordValue(durationNs);
         }
 

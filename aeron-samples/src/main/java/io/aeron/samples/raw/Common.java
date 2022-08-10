@@ -40,17 +40,17 @@ public class Common
     public static final int PONG_PORT = 20123;
 
     /**
-     * UDP port on which Ping with listen.
+     * UDP port on which Ping will listen.
      */
     public static final int PING_PORT = 20124;
 
     /**
-     * Address to send ping messages to.  Pong should listen to this address.
+     * Address to send ping messages to. Pong should listen to this address.
      */
     public static final String PING_DEST = System.getProperty("io.aeron.raw.ping.dest", "localhost");
 
     /**
-     * Address to send pong messages to.  Ping should listen to this address
+     * Address to send pong messages to. Ping should listen to this address
      */
     public static final String PONG_DEST = System.getProperty("io.aeron.raw.pong.dest", "localhost");
 
@@ -64,15 +64,18 @@ public class Common
 
         try
         {
-            final Class<?> clazz = Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
-
-            if (clazz.isAssignableFrom(Selector.open().getClass()))
+            try (Selector selector = Selector.open())
             {
-                selectKeysField = clazz.getDeclaredField("selectedKeys");
-                selectKeysField.setAccessible(true);
+                final Class<?> clazz = Class.forName(
+                    "sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
+                if (clazz.isAssignableFrom(selector.getClass()))
+                {
+                    selectKeysField = clazz.getDeclaredField("selectedKeys");
+                    selectKeysField.setAccessible(true);
 
-                publicSelectKeysField = clazz.getDeclaredField("publicSelectedKeys");
-                publicSelectKeysField.setAccessible(true);
+                    publicSelectKeysField = clazz.getDeclaredField("publicSelectedKeys");
+                    publicSelectKeysField.setAccessible(true);
+                }
             }
         }
         catch (final Exception ignore)

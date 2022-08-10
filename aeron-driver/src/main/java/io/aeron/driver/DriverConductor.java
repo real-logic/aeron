@@ -568,7 +568,8 @@ public final class DriverConductor implements Agent
             {
                 if (0 == channelEndpoint.decRefToStreamAndSession(subscription.streamId(), subscription.sessionId()))
                 {
-                    receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
+                    receiverProxy.removeSubscription(
+                        channelEndpoint, subscription.streamId(), subscription.sessionId());
                 }
             }
             else

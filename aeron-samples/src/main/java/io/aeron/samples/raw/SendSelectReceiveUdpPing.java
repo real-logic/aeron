@@ -86,7 +86,7 @@ public class SendSelectReceiveUdpPing
 
                     if (receivedSequenceNumber != sequence.get())
                     {
-                        throw new IllegalStateException("Data Loss:" + sequence + " to " + receivedSequenceNumber);
+                        throw new IllegalStateException("Data Loss: " + sequence + " to " + receivedSequenceNumber);
                     }
 
                     final long durationNs = System.nanoTime() - receivedTimestampNs;

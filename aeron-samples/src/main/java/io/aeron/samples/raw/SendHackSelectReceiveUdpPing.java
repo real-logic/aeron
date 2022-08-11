@@ -88,7 +88,7 @@ public class SendHackSelectReceiveUdpPing
 
                     if (receivedSequenceNumber != sequence.get())
                     {
-                        throw new IllegalStateException("Data Loss:" + sequence + " to " + receivedSequenceNumber);
+                        throw new IllegalStateException("Data Loss: " + sequence + " to " + receivedSequenceNumber);
                     }
 
                     histogram.recordValue(durationNs);

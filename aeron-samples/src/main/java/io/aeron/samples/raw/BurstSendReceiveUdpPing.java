@@ -145,7 +145,7 @@ public class BurstSendReceiveUdpPing
                 final long receivedSequenceNumber = buffer.getLong(0);
                 if (receivedSequenceNumber != sequenceNumber + i)
                 {
-                    throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
+                    throw new IllegalStateException("Data Loss: " + sequenceNumber + " to " + receivedSequenceNumber);
                 }
 
                 final long durationNs = System.nanoTime() - buffer.getLong(BitUtil.SIZE_OF_LONG);

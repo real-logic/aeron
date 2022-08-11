@@ -130,7 +130,7 @@ public class WriteReceiveUdpPing
             final long receivedSequenceNumber = buffer.getLong(0);
             if (receivedSequenceNumber != sequenceNumber)
             {
-                throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
+                throw new IllegalStateException("Data Loss: " + sequenceNumber + " to " + receivedSequenceNumber);
             }
 
             final long durationNs = System.nanoTime() - buffer.getLong(SIZE_OF_LONG);

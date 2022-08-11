@@ -221,4 +221,34 @@ public class LocalSocketAddressStatus
 
         return endpoint;
     }
+
+    /**
+     * Return number of local addresses for the given subscription registration id.
+     *
+     * @param countersReader for the connected driver
+     * @param registrationId for the subscription
+     * @return nunmber of local socket addresses in use
+     */
+    public static int findNumberOfAddressesByRegistrationId(
+        final CountersReader countersReader, final long registrationId)
+    {
+        int result = 0;
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            final int counterState = countersReader.getCounterState(i);
+            if (counterState == RECORD_ALLOCATED &&
+                countersReader.getCounterTypeId(i) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID &&
+                countersReader.getCounterRegistrationId(i) == registrationId)
+            {
+                result++;
+            }
+            else if (RECORD_UNUSED == counterState)
+            {
+                break;
+            }
+        }
+
+        return result;
+    }
 }

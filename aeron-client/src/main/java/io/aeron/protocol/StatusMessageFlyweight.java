@@ -43,6 +43,11 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     public static final short SEND_SETUP_FLAG = 0x80;
 
     /**
+     * Publisher should treat Subscriber as going away
+     */
+    public static final short END_OF_STREAM_FLAG = 0x40;
+
+    /**
      * Offset in the frame at which the session-id field begins.
      */
     private static final int SESSION_ID_FIELD_OFFSET = 8;

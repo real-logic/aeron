@@ -34,6 +34,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthorisationService;
+import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 import org.agrona.collections.*;
@@ -2915,6 +2916,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             ctx.leaderHeartbeatTimeoutNs(),
             ctx.leaderHeartbeatIntervalNs(),
             nowNs);
+    }
+
+    void awaitNoLocalSocketAddresses(final long registrationId)
+    {
+        final CountersReader countersReader = aeron.countersReader();
+        while (LocalSocketAddressStatus.findNumberOfAddressesByRegistrationId(countersReader, registrationId) > 0)
+        {
+            idle();
+        }
     }
 
     private void clearSessionsAfter(final long logPosition)

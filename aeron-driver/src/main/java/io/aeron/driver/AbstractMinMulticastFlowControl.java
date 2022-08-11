@@ -28,6 +28,7 @@ import org.agrona.concurrent.status.CountersManager;
 import java.util.Arrays;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
+import static io.aeron.protocol.StatusMessageFlyweight.END_OF_STREAM_FLAG;
 import static org.agrona.AsciiEncoding.parseIntAscii;
 import static org.agrona.AsciiEncoding.parseLongAscii;
 import static org.agrona.SystemUtil.parseDuration;
@@ -132,7 +133,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         for (int lastIndex = receivers.length - 1, i = lastIndex; i >= 0; i--)
         {
             final Receiver receiver = receivers[i];
-            if ((receiver.timeOfLastStatusMessageNs + receiverTimeoutNs) - timeNs < 0)
+            if ((receiver.timeOfLastStatusMessageNs + receiverTimeoutNs) - timeNs < 0 || receiver.eosFlagged)
             {
                 if (i != lastIndex)
                 {
@@ -197,6 +198,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         final long windowLength = flyweight.receiverWindowLength();
         final long receiverId = flyweight.receiverId();
         final long lastPositionPlusWindow = position + windowLength;
+        final boolean eosFlagged = END_OF_STREAM_FLAG == (flyweight.flags() & END_OF_STREAM_FLAG);
         boolean isExisting = false;
         long minPosition = lastSetupSenderLimit(timeNs);
 
@@ -206,6 +208,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         {
             if (matchesTag && receiverId == receiver.receiverId)
             {
+                receiver.eosFlagged = eosFlagged;
                 receiver.lastPosition = Math.max(position, receiver.lastPosition);
                 receiver.lastPositionPlusWindow = lastPositionPlusWindow;
                 receiver.timeOfLastStatusMessageNs = timeNs;
@@ -216,6 +219,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         }
 
         if (!isExisting &&
+            !eosFlagged &&
             matchesTag &&
             (0 == receivers.length || lastPositionPlusWindow >= minPosition - windowLength))
         {
@@ -370,6 +374,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         long lastPosition;
         long lastPositionPlusWindow;
         long timeOfLastStatusMessageNs;
+        boolean eosFlagged;
 
         Receiver(
             final long receiverId,
@@ -385,6 +390,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
             this.lastPosition = lastPosition;
             this.lastPositionPlusWindow = lastPositionPlusWindow;
             this.timeOfLastStatusMessageNs = timeNs;
+            this.eosFlagged = false;
         }
     }
 }

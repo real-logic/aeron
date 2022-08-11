@@ -48,11 +48,15 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     public void close()
     {
         final Subscription subscription = this.subscription;
+
         this.subscription = null;
         fragmentAssembler.clear();
         if (null != subscription)
         {
+            final long subscriptionRegistrationId = subscription.registrationId();
+
             subscription.close();
+            consensusModuleAgent.awaitNoLocalSocketAddresses(subscriptionRegistrationId);
         }
     }
 

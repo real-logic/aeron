@@ -15,13 +15,16 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
-import io.aeron.cluster.service.ClusterClock;
+import io.aeron.BufferBuilder;
+import io.aeron.Image;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.service.ClusterClock;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
 
@@ -51,8 +54,11 @@ final class LogAdapter implements ControlledFragmentHandler
     {
         if (null != image)
         {
+            final long subscriptionRegistrationId = image.subscription().registrationId();
+
             logPosition = image.position();
             CloseHelper.close(errorHandler, image.subscription());
+            consensusModuleAgent.awaitNoLocalSocketAddresses(subscriptionRegistrationId);
             image = null;
         }
     }

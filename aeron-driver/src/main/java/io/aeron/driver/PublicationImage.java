@@ -26,6 +26,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
+import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
@@ -74,6 +75,7 @@ class PublicationImagePadding2 extends PublicationImageConductorFields
 class PublicationImageReceiverFields extends PublicationImagePadding2
 {
     boolean isEndOfStream = false;
+    boolean sendSmWithEosFlag = false;
     long timeOfLastPacketNs;
     ImageConnection[] imageConnections = new ImageConnection[1];
 }
@@ -442,6 +444,9 @@ public final class PublicationImage
         {
             isRebuilding = false;
             timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
+            // if sending EOS, then going through draining and through linger with no subscribers will take 1
+            // second by default. This will give 5x SM-EOSs with default SM timeout.
+            sendSmWithEosFlag = !isEndOfStream;
             this.state = State.DRAINING;
         }
     }
@@ -627,9 +632,10 @@ public final class PublicationImage
             {
                 final int termId = computeTermIdFromPosition(smPosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)smPosition & termLengthMask;
+                final short flags = sendSmWithEosFlag ? StatusMessageFlyweight.END_OF_STREAM_FLAG : 0;
 
                 channelEndpoint.sendStatusMessage(
-                    imageConnections, sessionId, streamId, termId, termOffset, receiverWindowLength, (byte)0);
+                    imageConnections, sessionId, streamId, termId, termOffset, receiverWindowLength, flags);
 
                 statusMessagesSent.incrementOrdered();
 

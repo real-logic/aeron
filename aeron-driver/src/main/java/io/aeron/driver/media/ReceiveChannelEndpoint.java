@@ -90,6 +90,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     private final long receiverId;
     private InetSocketAddress currentControlAddress;
     private AtomicCounter localSocketAddressIndicator;
+    private int imageCount;
 
     /**
      * Construct the receiver end for data streams.
@@ -365,7 +366,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     {
         return refCountByStreamIdMap.isEmpty() &&
             refCountByStreamIdAndSessionIdMap.isEmpty() &&
-            !statusIndicator.isClosed();
+            !statusIndicator.isClosed() &&
+            imageCount <= 0;
     }
 
     /**
@@ -901,6 +903,22 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
                 this,
                 currentControlAddress);
         }
+    }
+
+    /**
+     * Increment image count for this channel endpoint.
+     */
+    public void incrImageCount()
+    {
+        imageCount++;
+    }
+
+    /**
+     * Decrement image count for this channel endpoint.
+     */
+    public void decrImageCount()
+    {
+        --imageCount;
     }
 
     private void updateTimeOfLastActivityNs(final long nowNs, final int transportIndex)

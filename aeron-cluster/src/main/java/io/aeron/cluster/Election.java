@@ -605,7 +605,15 @@ class Election
             prepareForNewLeadership(nowNs);
             logSessionId = NULL_SESSION_ID;
             cleanupReplay();
-            CloseHelper.close(logSubscription);
+
+            if (null != logSubscription)
+            {
+                final long subscriptionRegistrationId = logSubscription.registrationId();
+
+                CloseHelper.close(logSubscription);
+                consensusModuleAgent.awaitNoLocalSocketAddresses(subscriptionRegistrationId);
+            }
+
             logSubscription = null;
         }
 

@@ -304,6 +304,7 @@ public final class DriverConductor implements Agent
                     sourceAddress,
                     congestionControl);
 
+                channelEndpoint.incrImageCount();
                 publicationImages.add(image);
                 receiverProxy.newPublicationImage(channelEndpoint, image);
 
@@ -580,12 +581,7 @@ public final class DriverConductor implements Agent
                 }
             }
 
-            if (channelEndpoint.shouldBeClosed())
-            {
-                receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
-                receiveChannelEndpointByChannelMap.remove(channelEndpoint.subscriptionUdpChannel().canonicalForm());
-                channelEndpoint.closeIndicators();
-            }
+            tryCloseReceiveChannelEndpoint(channelEndpoint);
         }
     }
 
@@ -634,6 +630,10 @@ public final class DriverConductor implements Agent
         {
             subscriptionLinks.get(i).unlink(image);
         }
+
+        final ReceiveChannelEndpoint channelEndpoint = image.channelEndpoint();
+        channelEndpoint.decrImageCount();
+        tryCloseReceiveChannelEndpoint(channelEndpoint);
     }
 
     void cleanupIpcPublication(final IpcPublication publication)
@@ -641,6 +641,16 @@ public final class DriverConductor implements Agent
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             subscriptionLinks.get(i).unlink(publication);
+        }
+    }
+
+    void tryCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    {
+        if (channelEndpoint.shouldBeClosed())
+        {
+            receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
+            receiveChannelEndpointByChannelMap.remove(channelEndpoint.subscriptionUdpChannel().canonicalForm());
+            channelEndpoint.closeIndicators();
         }
     }
 

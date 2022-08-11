@@ -18,6 +18,7 @@ package io.aeron.samples.raw;
 import io.aeron.driver.Configuration;
 import org.HdrHistogram.Histogram;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.hints.ThreadHints;
 import org.agrona.nio.NioSelectedKeySet;
@@ -72,30 +73,7 @@ public class SendHackSelectReceiveUdpPing
         receiveChannel.register(selector, OP_READ, null);
         final NioSelectedKeySet keySet = Common.keySet(selector);
 
-        final AtomicBoolean running = new AtomicBoolean(true);
-        SigInt.register(() -> running.set(false));
-
-        while (running.get())
-        {
-            measureRoundTrip(histogram, sendAddress, buffer, sendChannel, receiveChannel, selector, keySet, running);
-
-            histogram.reset();
-            System.gc();
-            LockSupport.parkNanos(1_000_000_000L);
-        }
-    }
-
-    private static void measureRoundTrip(
-        final Histogram histogram,
-        final InetSocketAddress sendAddress,
-        final ByteBuffer buffer,
-        final DatagramChannel sendChannel,
-        final DatagramChannel receiveChannel,
-        final Selector selector,
-        final NioSelectedKeySet keySet,
-        final AtomicBoolean running)
-        throws IOException
-    {
+        final MutableLong sequence = new MutableLong();
         final ToIntFunction<SelectionKey> handler =
             (key) ->
             {
@@ -108,6 +86,11 @@ public class SendHackSelectReceiveUdpPing
                     final long receivedTimestamp = buffer.getLong(SIZE_OF_LONG);
                     final long durationNs = System.nanoTime() - receivedTimestamp;
 
+                    if (receivedSequenceNumber != sequence.get())
+                    {
+                        throw new IllegalStateException("Data Loss:" + sequence + " to " + receivedSequenceNumber);
+                    }
+
                     histogram.recordValue(durationNs);
                 }
                 catch (final IOException ex)
@@ -118,12 +101,39 @@ public class SendHackSelectReceiveUdpPing
                 return 1;
             };
 
-        for (int sequenceNumber = 0; sequenceNumber < Common.NUM_MESSAGES; sequenceNumber++)
+        final AtomicBoolean running = new AtomicBoolean(true);
+        SigInt.register(() -> running.set(false));
+
+        while (running.get())
         {
+            measureRoundTrip(histogram, sendAddress, buffer, sendChannel, handler, selector, keySet, sequence, running);
+
+            histogram.reset();
+            System.gc();
+            LockSupport.parkNanos(1_000_000_000L);
+        }
+    }
+
+    private static void measureRoundTrip(
+        final Histogram histogram,
+        final InetSocketAddress sendAddress,
+        final ByteBuffer buffer,
+        final DatagramChannel sendChannel,
+        final ToIntFunction<SelectionKey> handler,
+        final Selector selector,
+        final NioSelectedKeySet keySet,
+        final MutableLong sequence,
+        final AtomicBoolean running)
+        throws IOException
+    {
+        for (int i = 0; i < Common.NUM_MESSAGES; i++)
+        {
+            sequence.set(i);
+
             final long timestampNs = System.nanoTime();
 
             buffer.clear();
-            buffer.putLong(sequenceNumber);
+            buffer.putLong(i);
             buffer.putLong(timestampNs);
             buffer.flip();
 

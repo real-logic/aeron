@@ -18,6 +18,7 @@ package io.aeron.samples.raw;
 import io.aeron.driver.Configuration;
 import org.HdrHistogram.Histogram;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
 import org.agrona.hints.ThreadHints;
@@ -45,8 +46,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class SendSelectReceiveUdpPing
 {
-    private int sequenceNumber;
-
     /**
      * Main method for launching the process.
      *
@@ -54,11 +53,6 @@ public class SendSelectReceiveUdpPing
      * @throws IOException if an error occurs with the channel.
      */
     public static void main(final String[] args) throws IOException
-    {
-        new SendSelectReceiveUdpPing().run();
-    }
-
-    private void run() throws IOException
     {
         if (SystemUtil.isWindows())
         {
@@ -77,6 +71,7 @@ public class SendSelectReceiveUdpPing
         Common.init(sendChannel);
 
         final Selector selector = Selector.open();
+        final MutableLong sequence = new MutableLong();
 
         final IntSupplier handler =
             () ->
@@ -89,10 +84,9 @@ public class SendSelectReceiveUdpPing
                     final long receivedSequenceNumber = buffer.getLong(0);
                     final long receivedTimestampNs = buffer.getLong(SIZE_OF_LONG);
 
-                    if (receivedSequenceNumber != sequenceNumber)
+                    if (receivedSequenceNumber != sequence.get())
                     {
-                        throw new IllegalStateException(
-                            "data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
+                        throw new IllegalStateException("Data Loss:" + sequence + " to " + receivedSequenceNumber);
                     }
 
                     final long durationNs = System.nanoTime() - receivedTimestampNs;
@@ -113,7 +107,7 @@ public class SendSelectReceiveUdpPing
 
         while (running.get())
         {
-            measureRoundTrip(histogram, sendAddress, buffer, sendChannel, selector, running);
+            measureRoundTrip(histogram, sendAddress, buffer, sendChannel, selector, sequence, running);
 
             histogram.reset();
             System.gc();
@@ -121,21 +115,24 @@ public class SendSelectReceiveUdpPing
         }
     }
 
-    private void measureRoundTrip(
+    private static void measureRoundTrip(
         final Histogram histogram,
         final InetSocketAddress sendAddress,
         final ByteBuffer buffer,
         final DatagramChannel sendChannel,
         final Selector selector,
+        final MutableLong sequence,
         final AtomicBoolean running)
         throws IOException
     {
-        for (sequenceNumber = 0; sequenceNumber < Common.NUM_MESSAGES; sequenceNumber++)
+        for (int i = 0; i < Common.NUM_MESSAGES; i++)
         {
+            sequence.set(i);
+
             final long timestamp = System.nanoTime();
 
             buffer.clear();
-            buffer.putLong(sequenceNumber);
+            buffer.putLong(i);
             buffer.putLong(timestamp);
             buffer.flip();
 

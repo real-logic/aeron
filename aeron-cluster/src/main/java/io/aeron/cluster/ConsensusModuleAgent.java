@@ -610,9 +610,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
                 final RecordingLog.Entry currentTermEntry = recordingLog.getTermEntry(this.leadershipTermId);
                 final long termBaseLogPosition = currentTermEntry.termBaseLogPosition;
-                final long nextLogLeadershipTermId;
-                final long nextTermBaseLogPosition;
-                final long nextLogPosition;
+                long nextLogLeadershipTermId = NULL_VALUE;
+                long nextTermBaseLogPosition = NULL_POSITION;
+                long nextLogPosition = NULL_POSITION;
 
                 if (logLeadershipTermId < this.leadershipTermId)
                 {
@@ -622,12 +622,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                     nextTermBaseLogPosition = null != nextLogEntry ?
                         nextLogEntry.termBaseLogPosition : termBaseLogPosition;
                     nextLogPosition = null != nextLogEntry ? nextLogEntry.logPosition : NULL_POSITION;
-                }
-                else
-                {
-                    nextLogLeadershipTermId = NULL_VALUE;
-                    nextTermBaseLogPosition = NULL_POSITION;
-                    nextLogPosition = NULL_POSITION;
                 }
 
                 consensusPublisher.newLeadershipTerm(

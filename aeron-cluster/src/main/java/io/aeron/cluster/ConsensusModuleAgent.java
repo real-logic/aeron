@@ -3227,7 +3227,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderDecoder.BYTE_ORDER);
         if (!pendingServiceMessages.append(buffer, offset - SESSION_HEADER_LENGTH, length + SESSION_HEADER_LENGTH))
         {
-            throw new ClusterException("pending service message buffer capacity: " + pendingServiceMessages.size());
+            throw new ClusterException("pending service message buffer at capacity: " + pendingServiceMessages.size());
         }
     }
 

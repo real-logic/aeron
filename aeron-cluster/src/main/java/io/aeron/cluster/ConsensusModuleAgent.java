@@ -1235,7 +1235,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null == session)
         {
-            logServiceSessionId = clusterSessionId;
+            logServiceSessionId = Math.max(clusterSessionId, logServiceSessionId);
             pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
         }
         else

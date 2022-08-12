@@ -2491,7 +2491,7 @@ public final class AeronArchive implements AutoCloseable
         /**
          * Timeout when waiting on a message to be sent or received.
          */
-        public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+        public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Channel for sending control messages to an archive.

@@ -630,10 +630,6 @@ public final class DriverConductor implements Agent
         {
             subscriptionLinks.get(i).unlink(image);
         }
-
-        final ReceiveChannelEndpoint channelEndpoint = image.channelEndpoint();
-        channelEndpoint.decrImageCount();
-        tryCloseReceiveChannelEndpoint(channelEndpoint);
     }
 
     void cleanupIpcPublication(final IpcPublication publication)

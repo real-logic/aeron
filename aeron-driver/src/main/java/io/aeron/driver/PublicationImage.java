@@ -100,6 +100,9 @@ public final class PublicationImage
         INIT, ACTIVE, DRAINING, LINGER, DONE
     }
 
+    // expected minimum number of SMs with EOS bit set sent during draining.
+    private static final long SM_EOS_MULTIPLE = 5;
+
     private static final AtomicLongFieldUpdater<PublicationImage> BEGIN_SM_CHANGE_UPDATER =
         AtomicLongFieldUpdater.newUpdater(PublicationImage.class, "beginSmChange");
 
@@ -442,11 +445,16 @@ public final class PublicationImage
     {
         if (State.ACTIVE == state)
         {
+            final long nowNs = cachedNanoClock.nanoTime();
+
             isRebuilding = false;
-            timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
-            // if sending EOS, then going through draining and through linger with no subscribers will take 1
-            // second by default. This will give 5x SM-EOSs with default SM timeout.
+            timeOfLastStateChangeNs = nowNs;
             sendSmWithEosFlag = !isEndOfStream;
+            if (sendSmWithEosFlag)
+            {
+                timeOfLastSmNs = nowNs - smTimeoutNs - 1;
+            }
+
             this.state = State.DRAINING;
         }
     }
@@ -765,9 +773,13 @@ public final class PublicationImage
                 break;
 
             case DRAINING:
-                if (isDrained())
+                if (isDrained() && ((timeOfLastStateChangeNs + (SM_EOS_MULTIPLE * smTimeoutNs)) - timeNs < 0))
                 {
                     conductor.transitionToLinger(this);
+
+                    channelEndpoint.decrImageCount();
+                    conductor.tryCloseReceiveChannelEndpoint(channelEndpoint);
+
                     timeOfLastStateChangeNs = timeNs;
                     state = State.LINGER;
                 }

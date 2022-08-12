@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.AgentTerminationException;
@@ -105,6 +106,23 @@ public final class DriverConductorProxy
         else
         {
             offer(() -> driverConductor.onReResolveControl(endpoint, udpChannel, channelEndpoint, address));
+        }
+    }
+
+    /**
+     * Close a receive destination.
+     *
+     * @param destinationTransport to be closed
+     */
+    public void closeReceiveDestination(final ReceiveDestinationTransport destinationTransport)
+    {
+        if (notConcurrent())
+        {
+            driverConductor.closeReceiveDestination(destinationTransport);
+        }
+        else
+        {
+            offer(() -> driverConductor.closeReceiveDestination(destinationTransport));
         }
     }
 

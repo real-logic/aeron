@@ -115,6 +115,14 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
     }
 
     /**
+     * Close the networking elements of the ReceiveChannelEndpoint, but leave other components (e.g. counters) in place.
+     */
+    public void closeTransport()
+    {
+        super.close();
+    }
+
+    /**
      * {@inheritDoc}
      */
     public void close()

@@ -220,6 +220,23 @@ class MultiDestinationSubscriptionTest
 
     @Test
     @InterruptAfter(10)
+    void addAndRemoveNetworkDestination()
+    {
+        launch(Tests::onError);
+
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(PUB_UNICAST_URI);
+
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+
+        Tests.awaitConnected(subscription);
+
+        subscription.removeDestination(PUB_UNICAST_URI);
+        Tests.awaitConnections(subscription, 0);
+    }
+
+    @Test
+    @InterruptAfter(10)
     void addDestinationWithIpcSubscriptionBeforeAddPublication()
     {
         launch(Tests::onError);

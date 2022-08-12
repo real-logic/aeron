@@ -20,7 +20,6 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.DutyCycleStallTracker;
-import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
@@ -267,7 +266,7 @@ public final class Receiver implements Agent
 
             dataTransportPoller.cancelRead(channelEndpoint, transport);
             channelEndpoint.removeDestination(transportIndex);
-            CloseHelper.close(transport);
+            transport.closeTransport();
             dataTransportPoller.selectNowWithoutProcessing();
 
             for (final PublicationImage image : publicationImages)
@@ -277,6 +276,8 @@ public final class Receiver implements Agent
                     image.removeDestination(transportIndex);
                 }
             }
+
+            conductorProxy.closeReceiveDestination(transport);
         }
     }
 

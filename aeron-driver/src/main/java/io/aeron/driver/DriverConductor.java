@@ -1153,6 +1153,11 @@ public final class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
+    void closeReceiveDestination(final ReceiveDestinationTransport destinationTransport)
+    {
+        CloseHelper.close(destinationTransport);
+    }
+
     void onTerminateDriver(final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)
     {
         if (ctx.terminationValidator().allowTermination(ctx.aeronDirectory(), tokenBuffer, tokenOffset, tokenLength))

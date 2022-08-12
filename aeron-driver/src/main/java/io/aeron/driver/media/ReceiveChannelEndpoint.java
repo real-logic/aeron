@@ -285,7 +285,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Increment the reference count for a given stream id.
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * increment the reference count for a given stream id.
      *
      * @param streamId to increment the reference for.
      * @return current reference count after the increment.
@@ -296,7 +297,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Decrement the reference count for a given stream id.
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * decrement the reference count for a given stream id.
      *
      * @param streamId to decrement the reference for.
      * @return current reference count after the decrement.
@@ -315,7 +317,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Increment the reference count for a given stream id and session id.
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * increment the reference count for a given stream id and session id.
      *
      * @param streamId  to increment the reference for.
      * @param sessionId to increment the reference for.
@@ -327,7 +330,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Decrement the reference count for a given stream id and session id.
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * decrement the reference count for a given stream id and session id.
      *
      * @param streamId  to increment the reference for.
      * @param sessionId to increment the reference for.
@@ -358,7 +362,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Should the channel be closed for cleanup.
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * determine if the channel should be closed for cleanup.
      *
      * @return true if the channel should be closed for cleanup.
      */
@@ -906,7 +911,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Increment image count for this channel endpoint.
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * increment image count for this channel endpoint.
      */
     public void incrImageCount()
     {
@@ -914,7 +920,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     }
 
     /**
-     * Decrement image count for this channel endpoint.
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * decrement image count for this channel endpoint.
      */
     public void decrImageCount()
     {

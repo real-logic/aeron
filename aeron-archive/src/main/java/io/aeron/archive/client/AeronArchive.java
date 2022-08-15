@@ -24,6 +24,7 @@ import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.NullCredentialsSupplier;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
 import org.agrona.concurrent.*;
 
@@ -141,19 +142,49 @@ public final class AeronArchive implements AutoCloseable
             {
                 isClosed = true;
                 final ErrorHandler errorHandler = context.errorHandler();
+                Exception resultEx = null;
 
                 if (archiveProxy.publication().isConnected())
                 {
-                    CloseHelper.close(errorHandler, () -> archiveProxy.closeSession(controlSessionId));
+                    resultEx = quietClose(resultEx, () -> archiveProxy.closeSession(controlSessionId));
                 }
 
                 if (!context.ownsAeronClient())
                 {
-                    CloseHelper.close(errorHandler, archiveProxy.publication());
-                    CloseHelper.close(errorHandler, controlResponsePoller.subscription());
+                    resultEx = quietClose(resultEx, archiveProxy.publication());
+                    resultEx = quietClose(resultEx, controlResponsePoller.subscription());
                 }
 
-                context.close();
+                boolean rethrow = false;
+                try
+                {
+                    context.close();
+                }
+                catch (final Exception ex)
+                {
+                    rethrow = true;
+                    if (null != resultEx)
+                    {
+                        resultEx.addSuppressed(ex);
+                    }
+                    else
+                    {
+                        resultEx = ex;
+                    }
+                }
+
+                if (null != resultEx)
+                {
+                    if (null != errorHandler)
+                    {
+                        errorHandler.onError(resultEx);
+                    }
+
+                    if (rethrow)
+                    {
+                        LangUtil.rethrowUnchecked(resultEx);
+                    }
+                }
             }
         }
         finally
@@ -3620,5 +3651,30 @@ public final class AeronArchive implements AutoCloseable
                 throw new AeronException("unexpected interrupt");
             }
         }
+    }
+
+    static Exception quietClose(final Exception previousException, final AutoCloseable closeable)
+    {
+        Exception resultException = previousException;
+        if (null != closeable)
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch (final Exception ex)
+            {
+                if (null != resultException)
+                {
+                    resultException.addSuppressed(ex);
+                }
+                else
+                {
+                    resultException = ex;
+                }
+            }
+        }
+
+        return resultException;
     }
 }

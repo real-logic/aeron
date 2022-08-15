@@ -26,8 +26,7 @@ import org.agrona.concurrent.SystemNanoClock;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AeronArchiveTest
@@ -45,7 +44,8 @@ class AeronArchiveTest
         final Aeron.Context aeronContext = mock(Aeron.Context.class);
         when(aeronContext.nanoClock()).thenReturn(SystemNanoClock.INSTANCE);
         when(aeron.context()).thenReturn(aeronContext);
-        doThrow(new IllegalMonitorStateException("aeron closed")).when(aeron).close();
+        final IllegalMonitorStateException aeronException = new IllegalMonitorStateException("aeron closed");
+        doThrow(aeronException).when(aeron).close();
 
         final Publication publication = mock(Publication.class);
         when(publication.isConnected()).thenReturn(true);
@@ -74,10 +74,17 @@ class AeronArchiveTest
         aeronArchive.close();
 
         final InOrder inOrder = inOrder(errorHandler);
-        inOrder.verify(errorHandler).onError(closeSessionException);
-        inOrder.verify(errorHandler).onError(publicationException);
-        inOrder.verify(errorHandler).onError(subscriptionException);
+        inOrder.verify(errorHandler).onError(argThat(
+            ex ->
+            {
+                final Throwable[] suppressed = ex.getSuppressed();
+                return closeSessionException == ex &&
+                    publicationException == suppressed[0] &&
+                    subscriptionException == suppressed[1];
+            }));
         inOrder.verifyNoMoreInteractions();
+        verify(publication).close();
+        verify(subscription).close();
     }
 
     @Test
@@ -113,11 +120,31 @@ class AeronArchiveTest
         final AeronArchive aeronArchive =
             new AeronArchive(context, controlResponsePoller, archiveProxy, controlSessionId);
 
-        final IllegalMonitorStateException ex = assertThrows(IllegalMonitorStateException.class, aeronArchive::close);
+        final IndexOutOfBoundsException ex = assertThrows(IndexOutOfBoundsException.class, aeronArchive::close);
 
-        assertSame(aeronException, ex);
+        assertSame(closeSessionException, ex);
         final InOrder inOrder = inOrder(errorHandler);
         inOrder.verify(errorHandler).onError(closeSessionException);
         inOrder.verifyNoMoreInteractions();
+
+        assertEquals(aeronException, ex.getSuppressed()[0]);
+    }
+
+    @Test
+    void shouldClose() throws Exception
+    {
+        final Exception previousException = new Exception();
+        final Exception thrownException = new Exception();
+
+        final AutoCloseable throwingCloseable = mock(AutoCloseable.class);
+        final AutoCloseable nonThrowingCloseable = mock(AutoCloseable.class);
+        doThrow(thrownException).when(throwingCloseable).close();
+
+        assertNull(AeronArchive.quietClose(null, nonThrowingCloseable));
+        assertEquals(previousException, AeronArchive.quietClose(previousException, nonThrowingCloseable));
+        final Exception ex = AeronArchive.quietClose(previousException, throwingCloseable);
+        assertEquals(previousException, ex);
+        assertEquals(thrownException, ex.getSuppressed()[0]);
+        assertEquals(thrownException, AeronArchive.quietClose(null, throwingCloseable));
     }
 }

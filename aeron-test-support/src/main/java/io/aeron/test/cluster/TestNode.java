@@ -445,7 +445,7 @@ public class TestNode implements AutoCloseable
                 throw new ClusterTerminationException(false);
             }
 
-            if (message.equals(ClusterTests.ECHO_IPC_INGRESS_MSG))
+            if (message.equals(ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG))
             {
                 if (null != session)
                 {

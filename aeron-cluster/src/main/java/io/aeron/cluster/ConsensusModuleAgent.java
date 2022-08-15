@@ -1219,8 +1219,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 else
                 {
                     clusterTermination.onServicesTerminated();
-                    if (clusterTermination.canTerminate(
-                        activeMembers, terminationPosition, clusterClock.timeNanos()))
+                    if (clusterTermination.canTerminate(activeMembers, terminationPosition, clusterClock.timeNanos()))
                     {
                         recordingLog.commitLogPosition(leadershipTermId, logPosition);
                         closeAndTerminate();
@@ -1235,7 +1234,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null == session)
         {
-            logServiceSessionId = Math.max(clusterSessionId, logServiceSessionId);
+            logServiceSessionId = clusterSessionId;
             pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
         }
         else
@@ -1738,7 +1737,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long logPosition = election.logPosition();
         notifiedCommitPosition = logPosition;
         commitPosition.setOrdered(logPosition);
-        pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
         updateMemberDetails(election.leader());
         election = null;
 
@@ -1792,9 +1790,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     }
 
     void trackCatchupCompletion(
-        final ClusterMember follower,
-        final long leadershipTermId,
-        final short appendPositionFlags)
+        final ClusterMember follower, final long leadershipTermId, final short appendPositionFlags)
     {
         if (NULL_VALUE != follower.catchupReplaySessionId() || isCatchupAppendPosition(appendPositionFlags))
         {
@@ -2863,7 +2859,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             this.commitPosition.setOrdered(commitPosition);
             timeOfLastLogUpdateNs = nowNs;
 
-            clearUncommittedEntriesTo(commitPosition);
+            sweepUncommittedEntriesTo(commitPosition);
             if (pendingMemberRemovals > 0)
             {
                 handleMemberRemovals(commitPosition);
@@ -2941,7 +2937,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         pendingSessions.clear();
     }
 
-    private void clearUncommittedEntriesTo(final long commitPosition)
+    private void sweepUncommittedEntriesTo(final long commitPosition)
     {
         if (uncommittedServiceMessages > 0)
         {
@@ -2982,14 +2978,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
         uncommittedTimers.clear();
 
-        pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
-        pendingServiceMessageHeadOffset = 0;
-
         if (uncommittedServiceMessages > 0)
         {
             pendingServiceMessages.consume(leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
             pendingServiceMessages.forEach(ConsensusModuleAgent::serviceSessionMessageReset, Integer.MAX_VALUE);
             uncommittedServiceMessages = 0;
+            pendingServiceMessageHeadOffset = 0;
         }
 
         ClusterSession session;
@@ -3250,7 +3244,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         if (appendPosition > 0)
         {
             ++uncommittedServiceMessages;
-            logServiceSessionId = clusterSessionId;
             pendingServiceMessageHeadOffset = headOffset;
             buffer.putLong(timestampOffset, appendPosition, SessionMessageHeaderEncoder.BYTE_ORDER);
 
@@ -3285,7 +3278,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         if (appendPosition <= commitPosition.getWeak())
         {
+            final int clusterSessionIdOffset = offset +
+                MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+
+            logServiceSessionId = buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
             --uncommittedServiceMessages;
+
             return true;
         }
 

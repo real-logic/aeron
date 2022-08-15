@@ -27,14 +27,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 
 @ExtendWith(InterruptingTestCallback.class)
-class ServiceIpcIngressTest
+class ServiceIpcIngressMessageTest
 {
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
     @InterruptAfter(20)
-    void shouldEchoIpcMessages()
+    void shouldEchoServiceIpcMessages()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -45,8 +45,8 @@ class ServiceIpcIngressTest
         final int messageCount = 10;
         for (int i = 0; i < messageCount; i++)
         {
-            cluster.msgBuffer().putStringWithoutLengthAscii(0, ClusterTests.ECHO_IPC_INGRESS_MSG);
-            cluster.pollUntilMessageSent(ClusterTests.ECHO_IPC_INGRESS_MSG.length());
+            cluster.msgBuffer().putStringWithoutLengthAscii(0, ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG);
+            cluster.pollUntilMessageSent(ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG.length());
         }
 
         cluster.awaitResponseMessageCount(messageCount);

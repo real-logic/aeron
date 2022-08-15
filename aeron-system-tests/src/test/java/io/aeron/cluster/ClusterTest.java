@@ -1011,10 +1011,10 @@ class ClusterTest
 
         final int messageCount = 50_000;
         cluster.connectClient();
-        cluster.msgBuffer().putStringWithoutLengthAscii(0, NO_OP_MSG);
+        final int messageLength = cluster.msgBuffer().putStringWithoutLengthAscii(0, NO_OP_MSG);
         for (int i = 0; i < messageCount; i++)
         {
-            cluster.pollUntilMessageSent(NO_OP_MSG.length());
+            cluster.pollUntilMessageSent(messageLength);
         }
         cluster.awaitResponseMessageCount(messageCount);
         cluster.awaitServicesMessageCount(messageCount);
@@ -2010,8 +2010,8 @@ class ClusterTest
         cluster.stopNode(follower);
 
         cluster.connectClient();
-        cluster.msgBuffer().putStringWithoutLengthAscii(0, message);
-        cluster.pollUntilMessageSent(message.length());
+        final int messageLength = cluster.msgBuffer().putStringWithoutLengthAscii(0, message);
+        cluster.pollUntilMessageSent(messageLength);
         cluster.awaitResponseMessageCount(1);
 
         follower = cluster.startStaticNode(follower.index(), false);

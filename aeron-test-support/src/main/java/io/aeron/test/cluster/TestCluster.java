@@ -811,12 +811,13 @@ public class TestCluster implements AutoCloseable
 
     public void sendLargeMessages(final int messageCount)
     {
+        final int messageLength = msgBuffer.putStringWithoutLengthAscii(0, LARGE_MSG);
+
         for (int i = 0; i < messageCount; i++)
         {
-            msgBuffer.putStringWithoutLengthAscii(0, LARGE_MSG);
             try
             {
-                pollUntilMessageSent(LARGE_MSG.length());
+                pollUntilMessageSent(messageLength);
             }
             catch (final Exception ex)
             {
@@ -828,12 +829,13 @@ public class TestCluster implements AutoCloseable
 
     public void sendUnexpectedMessages(final int messageCount)
     {
-        final int length = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.UNEXPECTED_MSG);
+        final int messageLength = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.UNEXPECTED_MSG);
+
         for (int i = 0; i < messageCount; i++)
         {
             try
             {
-                pollUntilMessageSent(length);
+                pollUntilMessageSent(messageLength);
             }
             catch (final Exception ex)
             {
@@ -845,10 +847,11 @@ public class TestCluster implements AutoCloseable
 
     public void sendTerminateMessage()
     {
-        final int length = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.TERMINATE_MSG);
+        final int messageLength = msgBuffer.putStringWithoutLengthAscii(0, ClusterTests.TERMINATE_MSG);
+
         try
         {
-            pollUntilMessageSent(length);
+            pollUntilMessageSent(messageLength);
         }
         catch (final Exception ex)
         {

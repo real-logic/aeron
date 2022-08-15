@@ -184,9 +184,9 @@ class MultiModuleSharedDriverTest
     private void echoMessage(final AeronCluster client, final String message, final MutableReference<String> egress)
     {
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-        final int length = buffer.putStringWithoutLengthAscii(0, message);
+        final int messageLength = buffer.putStringWithoutLengthAscii(0, message);
 
-        while (client.offer(buffer, 0, length) < 0)
+        while (client.offer(buffer, 0, messageLength) < 0)
         {
             Tests.yield();
         }

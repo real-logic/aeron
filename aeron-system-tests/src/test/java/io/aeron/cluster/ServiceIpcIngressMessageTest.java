@@ -41,13 +41,13 @@ class ServiceIpcIngressMessageTest
 
         cluster.awaitLeader();
         cluster.connectClient();
-        final int length = cluster.msgBuffer().putStringWithoutLengthAscii(
+        final int messageLength = cluster.msgBuffer().putStringWithoutLengthAscii(
             0, ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG);
 
         final int messageCount = 10;
         for (int i = 0; i < messageCount; i++)
         {
-            cluster.pollUntilMessageSent(length);
+            cluster.pollUntilMessageSent(messageLength);
         }
 
         cluster.awaitResponseMessageCount(messageCount);

@@ -202,11 +202,11 @@ public class ClusterTests
                 final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
                 final AeronCluster client = testCluster.client();
                 final ExpandableArrayBuffer msgBuffer = testCluster.msgBuffer();
-                msgBuffer.putStringWithoutLengthAscii(0, HELLO_WORLD_MSG);
+                final int messageLength = msgBuffer.putStringWithoutLengthAscii(0, HELLO_WORLD_MSG);
 
                 while (!Thread.interrupted())
                 {
-                    final long result = client.offer(msgBuffer, 0, HELLO_WORLD_MSG.length());
+                    final long result = client.offer(msgBuffer, 0, messageLength);
                     if (result > 0)
                     {
                         messageCounter.increment();

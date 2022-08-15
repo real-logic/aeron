@@ -51,17 +51,16 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("try")
     public void migrate(
         final PrintStream stream,
         final ArchiveMarkFile markFile,
         final Catalog catalog,
         final File archiveDir)
     {
-        try (FileChannel timestampFile = MigrationUtils.createMigrationTimestampFile(
+        try (FileChannel ignore = MigrationUtils.createMigrationTimestampFile(
             archiveDir, markFile.decoder().version(), minimumVersion()))
         {
-            assert null != timestampFile;
-
             catalog.forEach(
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, encoder, decoder) ->
                 {

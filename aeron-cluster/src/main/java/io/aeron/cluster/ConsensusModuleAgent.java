@@ -257,6 +257,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("try")
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
@@ -277,10 +278,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 logRecordingId(recoveryPlan.log.recordingId);
             }
 
-            try (Counter counter = addRecoveryStateCounter(recoveryPlan))
+            try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
             {
-                assert null != counter;
-
                 if (!recoveryPlan.snapshots.isEmpty())
                 {
                     loadSnapshot(recoveryPlan.snapshots.get(0), archive);
@@ -1768,8 +1767,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         dynamicJoin = null;
-
-        assert recoveryPlan.lastLeadershipTermId == leadershipTermId;
 
         election = new Election(
             false,

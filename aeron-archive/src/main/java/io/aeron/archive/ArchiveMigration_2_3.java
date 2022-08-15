@@ -51,6 +51,7 @@ class ArchiveMigration_2_3 implements ArchiveMigrationStep
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("try")
     public void migrate(
         final PrintStream stream,
         final ArchiveMarkFile markFile,
@@ -58,11 +59,9 @@ class ArchiveMigration_2_3 implements ArchiveMigrationStep
         final File archiveDir)
     {
         final int version = minimumVersion();
-        try (FileChannel timestampFile = MigrationUtils.createMigrationTimestampFile(
+        try (FileChannel ignore = MigrationUtils.createMigrationTimestampFile(
             archiveDir, markFile.decoder().version(), version))
         {
-            assert null != timestampFile;
-
             final File newFile = new File(archiveDir, CATALOG_FILE_NAME + ".updated");
             IoUtil.deleteIfExists(newFile);
             final Path updatedCatalogFile = newFile.toPath();

@@ -191,7 +191,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -325,7 +325,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -385,7 +385,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -445,7 +445,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --debug-build
+        run: cppbuild/cppbuild --debug-build
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -496,7 +496,7 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Darwin-x86_64/CMake.app/Contents/bin" >> $GITHUB_PATH
       - name: Build
-        run: cmake --version && cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -548,7 +548,7 @@ jobs:
           7z x cmake-$Env:CMAKE_VERSION-win64-x64.zip
           echo "cmake-$Env:CMAKE_VERSION-win64-x64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
       - name: Build
-        run: cmake --version && cppbuild/cppbuild
+        run: cppbuild/cppbuild
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

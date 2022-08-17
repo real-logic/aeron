@@ -1355,6 +1355,56 @@ TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
     EXPECT_EQ(count, 0);
 }
 
+TEST_F(AeronArchiveTest, shouldReadRecordingDescriptor)
+{
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+    std::shared_ptr<Aeron> aeron = aeronArchive->context().aeron();
+
+    std::shared_ptr<Publication> publication = addPublication(
+        *aeron, m_recordingChannel, m_recordingStreamId);
+
+    const std::int32_t sessionId = publication->sessionId();
+
+    const std::int64_t subscriptionId = aeronArchive->startRecording(
+        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+
+    const std::int64_t recordingId = [&] {
+        CountersReader &countersReader = aeron->countersReader();
+        const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+        return RecordingPos::getRecordingId(countersReader, counterId);
+    }();
+
+    aeronArchive->stopRecording(subscriptionId);
+
+    const std::int32_t count = aeronArchive->listRecording(
+        recordingId,
+        [&](
+            std::int64_t controlSessionId,
+            std::int64_t correlationId,
+            std::int64_t recordingId1,
+            std::int64_t startTimestamp,
+            std::int64_t stopTimestamp,
+            std::int64_t startPosition,
+            std::int64_t newStopPosition,
+            std::int32_t initialTermId,
+            std::int32_t segmentFileLength,
+            std::int32_t termBufferLength,
+            std::int32_t mtuLength,
+            std::int32_t sessionId1,
+            std::int32_t streamId,
+            const std::string &strippedChannel,
+            const std::string &originalChannel,
+            const std::string &sourceIdentity)
+        {
+            EXPECT_EQ(sessionId, sessionId1);
+            EXPECT_EQ(recordingId, recordingId1);
+            EXPECT_EQ(streamId, m_recordingStreamId);
+            EXPECT_EQ(originalChannel, m_recordingChannel);
+        });
+
+    EXPECT_EQ(count, 1);
+}
+
 TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
 {
     const std::string messagePrefix = "Message ";
@@ -1423,6 +1473,7 @@ TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
         {
             EXPECT_EQ(recordingId, recordingId1);
             EXPECT_EQ(streamId, m_recordingStreamId);
+            EXPECT_EQ(originalChannel, recordingChannel);
         });
 
     EXPECT_EQ(count, 1);

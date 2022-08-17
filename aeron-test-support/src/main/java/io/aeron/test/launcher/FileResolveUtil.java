@@ -61,7 +61,11 @@ public class FileResolveUtil
         }
 
         final File[] aeronAllJarFiles = allBuildLibs.listFiles(
-            (dir, name) -> name.startsWith(moduleName + "-") && name.endsWith(".jar"));
+            (dir, name) ->
+                name.startsWith(moduleName + "-") &&
+                name.endsWith(".jar") &&
+                !name.endsWith("-sources.jar") &&
+                !name.endsWith("-javadoc.jar"));
 
         if (null == aeronAllJarFiles || 0 == aeronAllJarFiles.length)
         {

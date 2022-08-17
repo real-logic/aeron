@@ -140,4 +140,20 @@ public interface ClusteredService
         int appVersion)
     {
     }
+
+    /**
+     * Implement this method to perform background tasks that are not related to the deterministic state machine
+     * model, such as keeping external connections alive to the cluster. This method must <b>not</b> be used to
+     * directly, or indirectly, update the service state. This method cannot be used for making calls on
+     * {@link Cluster} which could update the log such as {@link Cluster#scheduleTimer(long, long)} or
+     * {@link Cluster#offer(DirectBuffer, int, int)}.
+     *
+     * @param nowNs which can be used for measuring elapsed time and be used in the same way as
+     *              {@link System#nanoTime()}. This is <b>not</b> {@link Cluster#time()}.
+     * @return 0 if no work is done otherwise a positive number.
+     */
+    default int doBackgroundWork(final long nowNs)
+    {
+        return 0;
+    }
 }

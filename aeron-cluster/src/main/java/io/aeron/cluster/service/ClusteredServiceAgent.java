@@ -48,8 +48,26 @@ import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
-final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
+abstract class ClusteredServiceAgentLhsPadding
 {
+    byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
+    byte p016, p017, p018, p019, p020, p021, p022, p023, p024, p025, p026, p027, p028, p029, p030, p031;
+    byte p032, p033, p034, p035, p036, p037, p038, p039, p040, p041, p042, p043, p044, p045, p046, p047;
+    byte p048, p049, p050, p051, p052, p053, p054, p055, p056, p057, p058, p059, p060, p061, p062, p063;
+}
+
+abstract class ClusteredServiceAgentHotFields extends ClusteredServiceAgentLhsPadding
+{
+    boolean isBackgroundInvocation;
+}
+
+final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields implements Agent, Cluster, IdleStrategy
+{
+    byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
+    byte p080, p081, p082, p083, p084, p085, p086, p087, p088, p089, p090, p091, p092, p093, p094, p095;
+    byte p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
+    byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
+
     static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
 
     private volatile boolean isAbort;
@@ -60,7 +78,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     private long ackId = 0;
     private long terminationPosition = NULL_POSITION;
     private long markFileUpdateDeadlineMs;
-    private long cachedTimeMs;
+    private long lastSlowTickNs;
     private long clusterTime;
     private long logPosition = NULL_POSITION;
 
@@ -164,11 +182,12 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
     {
         int workCount = 0;
 
-        dutyCycleTracker.measureAndUpdate(nanoClock.nanoTime());
+        final long nowNs = nanoClock.nanoTime();
+        dutyCycleTracker.measureAndUpdate(nowNs);
 
         try
         {
-            if (checkForClockTick())
+            if (checkForClockTick(nowNs))
             {
                 pollServiceAdapter();
                 workCount += 1;
@@ -183,6 +202,16 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 {
                     closeLog();
                 }
+            }
+
+            try
+            {
+                isBackgroundInvocation = true;
+                workCount += service.doBackgroundWork(nowNs);
+            }
+            finally
+            {
+                isBackgroundInvocation = false;
             }
         }
         catch (final AgentTerminationException ex)
@@ -236,7 +265,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public boolean closeClientSession(final long clusterSessionId)
     {
-        checkForLifecycleCallback();
+        checkForValidInvocation();
 
         final ContainerClientSession clientSession = sessionByIdMap.get(clusterSessionId);
         if (clientSession == null)
@@ -275,21 +304,21 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public boolean scheduleTimer(final long correlationId, final long deadline)
     {
-        checkForLifecycleCallback();
+        checkForValidInvocation();
 
         return consensusModuleProxy.scheduleTimer(correlationId, deadline);
     }
 
     public boolean cancelTimer(final long correlationId)
     {
-        checkForLifecycleCallback();
+        checkForValidInvocation();
 
         return consensusModuleProxy.cancelTimer(correlationId);
     }
 
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        checkForLifecycleCallback();
+        checkForValidInvocation();
         sessionMessageHeaderEncoder.clusterSessionId(0);
 
         return consensusModuleProxy.offer(headerBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length);
@@ -297,7 +326,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public long offer(final DirectBufferVector[] vectors)
     {
-        checkForLifecycleCallback();
+        checkForValidInvocation();
         sessionMessageHeaderEncoder.clusterSessionId(0);
         vectors[0] = headerVector;
 
@@ -306,7 +335,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
-        checkForLifecycleCallback();
+        checkForValidInvocation();
         sessionMessageHeaderEncoder.clusterSessionId(0);
 
         return consensusModuleProxy.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim, headerBuffer);
@@ -329,7 +358,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             throw new AgentTerminationException("interrupted");
         }
-        checkForClockTick();
+        checkForClockTick(nanoClock.nanoTime());
     }
 
     public void idle(final int workCount)
@@ -341,7 +370,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             {
                 throw new AgentTerminationException("interrupted");
             }
-            checkForClockTick();
+            checkForClockTick(nanoClock.nanoTime());
         }
     }
 
@@ -560,7 +589,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final int offset,
         final int length)
     {
-        checkForLifecycleCallback();
+        checkForValidInvocation();
 
         if (Cluster.Role.LEADER != role)
         {
@@ -581,7 +610,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     long offer(final long clusterSessionId, final Publication publication, final DirectBufferVector[] vectors)
     {
-        checkForLifecycleCallback();
+        checkForValidInvocation();
 
         if (Cluster.Role.LEADER != role)
         {
@@ -608,7 +637,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         final int length,
         final BufferClaim bufferClaim)
     {
-        checkForLifecycleCallback();
+        checkForValidInvocation();
 
         if (Cluster.Role.LEADER != role)
         {
@@ -872,7 +901,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             snapshotState(publication, logPosition, leadershipTermId);
-            checkForClockTick();
+            checkForClockTick(nanoClock.nanoTime());
             archive.checkForErrorResponse();
             service.onTakeSnapshot(publication);
             awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
@@ -954,7 +983,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         return counterId;
     }
 
-    private boolean checkForClockTick()
+    private boolean checkForClockTick(final long nowNs)
     {
         if (isAbort || aeron.isClosed())
         {
@@ -962,10 +991,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             throw new AgentTerminationException("unexpected Aeron close");
         }
 
-        final long nowMs = epochClock.time();
-        if (cachedTimeMs != nowMs)
+        if (nowNs - lastSlowTickNs > 1000)
         {
-            cachedTimeMs = nowMs;
+            lastSlowTickNs = nowNs;
+            final long nowMs = epochClock.time();
 
             if (null != aeronAgentInvoker)
             {
@@ -1051,12 +1080,18 @@ final class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         throw new ClusterTerminationException(isTerminationExpected);
     }
 
-    private void checkForLifecycleCallback()
+    private void checkForValidInvocation()
     {
         if (null != activeLifecycleCallbackName)
         {
             throw new ClusterException(
                 "sending messages or scheduling timers is not allowed from " + activeLifecycleCallbackName);
+        }
+
+        if (isBackgroundInvocation)
+        {
+            throw new ClusterException(
+                "sending messages or scheduling timers is not allowed from ClusteredService.doBackgroundWork");
         }
     }
 

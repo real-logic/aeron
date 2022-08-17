@@ -101,8 +101,8 @@ void ControlResponseAdapter::onFragment(
             descriptor.mtuLength(),
             descriptor.sessionId(),
             descriptor.streamId(),
-            descriptor.strippedChannel(),
-            descriptor.originalChannel(),
-            descriptor.sourceIdentity());
+            descriptor.getStrippedChannelAsString(),
+            descriptor.getOriginalChannelAsString(),
+            descriptor.getSourceIdentityAsString());
     }
 }

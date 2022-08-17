@@ -37,6 +37,7 @@ import java.util.*;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.driver.Configuration.FILE_PAGE_SIZE_DEFAULT;
+import static java.lang.Math.max;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.*;
@@ -1278,6 +1279,75 @@ public final class RecordingLog implements AutoCloseable
     static boolean isValidSnapshot(final Entry entry)
     {
         return entry.isValid && ENTRY_TYPE_SNAPSHOT == entry.type;
+    }
+
+    void ensureCoherent(
+        final long recordingId,
+        final long initialLogLeadershipTermId,
+        final long initialTermBaseLogPosition,
+        final long leadershipTermId,
+        final long logTermBasePosition,
+        final long logPosition,
+        final long nowNs,
+        final long timestamp,
+        final int fileSyncLevel)
+    {
+        Entry lastTerm = findLastTerm();
+
+        if (null == lastTerm)
+        {
+            for (long termId = max(0, initialLogLeadershipTermId); termId < leadershipTermId; termId++)
+            {
+                appendTerm(recordingId, termId, initialTermBaseLogPosition, timestamp);
+                commitLogPosition(termId, initialTermBaseLogPosition);
+            }
+
+            appendTerm(recordingId, leadershipTermId, initialTermBaseLogPosition, timestamp);
+            if (NULL_VALUE != logPosition)
+            {
+                commitLogPosition(leadershipTermId, logPosition);
+            }
+        }
+        else if (lastTerm.leadershipTermId < leadershipTermId)
+        {
+            if (NULL_VALUE == lastTerm.logPosition)
+            {
+                if (NULL_VALUE == logTermBasePosition)
+                {
+                    throw new ClusterException(
+                        "Prior term was not committed: " + lastTerm +
+                            " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId +
+                            ", logTermBasePosition = " + logTermBasePosition + ", logPosition = " + logPosition +
+                            ", nowNs = " + nowNs);
+                }
+                else
+                {
+                    commitLogPosition(lastTerm.leadershipTermId, logTermBasePosition);
+                    lastTerm = Objects.requireNonNull(findLastTerm());
+                }
+            }
+
+            for (long termId = lastTerm.leadershipTermId + 1; termId < leadershipTermId; termId++)
+            {
+                appendTerm(recordingId, termId, lastTerm.logPosition, timestamp);
+                commitLogPosition(termId, lastTerm.logPosition);
+            }
+
+            appendTerm(recordingId, leadershipTermId, lastTerm.logPosition, timestamp);
+            if (NULL_VALUE != logPosition)
+            {
+                commitLogPosition(leadershipTermId, logPosition);
+            }
+        }
+        else
+        {
+            if (NULL_VALUE != logPosition)
+            {
+                commitLogPosition(leadershipTermId, logPosition);
+            }
+        }
+
+        force(fileSyncLevel);
     }
 
     private static void validateRecordingId(final long recordingId)

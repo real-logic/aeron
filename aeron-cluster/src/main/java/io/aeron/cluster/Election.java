@@ -1365,62 +1365,17 @@ class Election
 
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
         final RecordingLog recordingLog = ctx.recordingLog();
-        RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
 
-        if (null == lastTerm)
-        {
-            for (long termId = max(0, initialLogLeadershipTermId); termId < leadershipTermId; termId++)
-            {
-                recordingLog.appendTerm(recordingId, termId, initialTermBaseLogPosition, timestamp);
-                recordingLog.commitLogPosition(termId, initialTermBaseLogPosition);
-            }
-
-            recordingLog.appendTerm(recordingId, leadershipTermId, initialTermBaseLogPosition, timestamp);
-            if (NULL_VALUE != logPosition)
-            {
-                recordingLog.commitLogPosition(leadershipTermId, logPosition);
-            }
-        }
-        else if (lastTerm.leadershipTermId < leadershipTermId)
-        {
-            if (NULL_VALUE == lastTerm.logPosition)
-            {
-                if (NULL_VALUE == logTermBasePosition)
-                {
-                    throw new ClusterException(
-                        "Prior term was not committed: " + lastTerm +
-                        " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId +
-                        ", logTermBasePosition = " + logTermBasePosition + ", logPosition = " + logPosition +
-                        ", nowNs = " + nowNs);
-                }
-                else
-                {
-                    recordingLog.commitLogPosition(lastTerm.leadershipTermId, logTermBasePosition);
-                    lastTerm = Objects.requireNonNull(recordingLog.findLastTerm());
-                }
-            }
-
-            for (long termId = lastTerm.leadershipTermId + 1; termId < leadershipTermId; termId++)
-            {
-                recordingLog.appendTerm(recordingId, termId, lastTerm.logPosition, timestamp);
-                recordingLog.commitLogPosition(termId, lastTerm.logPosition);
-            }
-
-            recordingLog.appendTerm(recordingId, leadershipTermId, lastTerm.logPosition, timestamp);
-            if (NULL_VALUE != logPosition)
-            {
-                recordingLog.commitLogPosition(leadershipTermId, logPosition);
-            }
-        }
-        else
-        {
-            if (NULL_VALUE != logPosition)
-            {
-                recordingLog.commitLogPosition(leadershipTermId, logPosition);
-            }
-        }
-
-        recordingLog.force(ctx.fileSyncLevel());
+        recordingLog.ensureCoherent(
+            recordingId,
+            initialLogLeadershipTermId,
+            initialTermBaseLogPosition,
+            leadershipTermId,
+            logTermBasePosition,
+            logPosition,
+            nowNs,
+            timestamp,
+            ctx.fileSyncLevel());
     }
 
     private void updateRecordingLog(final long nowNs)

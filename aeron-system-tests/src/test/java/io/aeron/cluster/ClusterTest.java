@@ -2130,12 +2130,4 @@ class ClusterTest
             ClusterTool.seedRecordingLogFromSnapshot(cluster.node(i).consensusModule().context().clusterDir());
         }
     }
-
-    private static void awaitLossOfLeadership(final TestNode.TestService leaderService)
-    {
-        while (leaderService.roleChangedTo() != FOLLOWER)
-        {
-            Tests.sleep(100);
-        }
-    }
 }

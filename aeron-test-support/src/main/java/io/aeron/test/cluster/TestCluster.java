@@ -69,6 +69,7 @@ import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.test.cluster.ClusterTests.LARGE_MSG;
 import static io.aeron.test.cluster.ClusterTests.errorHandler;
 import static java.util.stream.Collectors.toList;
@@ -203,6 +204,14 @@ public class TestCluster implements AutoCloseable
     {
         Tests.sleep(delayMs);
         ClusterTests.failOnClusterError();
+    }
+
+    public static void awaitLossOfLeadership(final TestNode.TestService leaderService)
+    {
+        while (leaderService.roleChangedTo() != FOLLOWER)
+        {
+            Tests.sleep(100);
+        }
     }
 
     private void await(final int delayMs, final Supplier<String> message)

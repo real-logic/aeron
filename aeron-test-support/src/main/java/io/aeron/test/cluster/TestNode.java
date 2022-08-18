@@ -17,6 +17,7 @@ package io.aeron.test.cluster;
 
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
+import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
@@ -41,7 +42,9 @@ import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.Hashing;
+import org.agrona.collections.IntHashSet;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -329,9 +332,9 @@ public class TestNode implements AutoCloseable
         private volatile boolean hasReceivedUnexpectedMessage = false;
         private volatile Cluster.Role roleChangedTo = null;
         private final AtomicInteger activeSessionCount = new AtomicInteger();
-        private final AtomicInteger messageCount = new AtomicInteger();
+        final AtomicInteger messageCount = new AtomicInteger();
 
-        TestService index(final int index)
+        public TestService index(final int index)
         {
             this.index = index;
             return this;
@@ -587,6 +590,168 @@ public class TestNode implements AutoCloseable
             }
 
             checksum = Hashing.hash(checksum ^ msgChecksum);
+        }
+    }
+
+    public static class MessageTrackingService extends TestNode.TestService
+    {
+        private final ExpandableArrayBuffer messageBuffer = new ExpandableArrayBuffer();
+        private final IntHashSet clientMessages = new IntHashSet();
+        private final IntHashSet serviceMessages = new IntHashSet();
+        private int serviceMessageNumberOffset;
+
+        public void onStart(final Cluster cluster, final Image snapshotImage)
+        {
+            serviceMessageNumberOffset = 0;
+            clientMessages.clear();
+            serviceMessages.clear();
+            wasSnapshotLoaded = false;
+            this.cluster = cluster;
+            this.idleStrategy = cluster.idleStrategy();
+
+            if (null != snapshotImage)
+            {
+                final FragmentHandler handler =
+                    new FragmentAssembler((buffer, offset, length, header) ->
+                    {
+                        final byte snapshotType = buffer.getByte(offset);
+                        if (-1 == snapshotType)
+                        {
+                            serviceMessageNumberOffset = buffer.getInt(offset + 1, LITTLE_ENDIAN);
+                        }
+                        else if (0 == snapshotType) // client messages
+                        {
+                            restoreSnapshot(buffer, offset + 1, clientMessages);
+                        }
+                        else if (1 == snapshotType) // service messages
+                        {
+                            restoreSnapshot(buffer, offset + 1, serviceMessages);
+                        }
+                        else
+                        {
+                            throw new IllegalStateException("Unknown snapshot type: " + snapshotType);
+                        }
+                    });
+
+                while (true)
+                {
+                    final int fragments = snapshotImage.poll(handler, 1);
+
+                    if (snapshotImage.isClosed() || snapshotImage.isEndOfStream())
+                    {
+                        break;
+                    }
+
+                    idleStrategy.idle(fragments);
+                }
+                wasSnapshotLoaded = true;
+            }
+        }
+
+        public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
+        {
+            wasSnapshotTaken = false;
+
+            messageBuffer.putByte(0, (byte)-1);
+            messageBuffer.putInt(0, serviceMessageNumberOffset, LITTLE_ENDIAN);
+            idleStrategy.reset();
+            while (snapshotPublication.offer(messageBuffer, 0, SIZE_OF_INT) < 0)
+            {
+                idleStrategy.idle();
+            }
+
+            snapshotMessages(snapshotPublication, (byte)0, clientMessages);
+            snapshotMessages(snapshotPublication, (byte)1, serviceMessages);
+
+            wasSnapshotTaken = true;
+        }
+
+        public void onSessionMessage(
+            final ClientSession session,
+            final long timestamp,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
+        {
+            if (null != session)
+            {
+                final int messageNumber = buffer.getInt(offset, LITTLE_ENDIAN);
+                if (!clientMessages.add(messageNumber))
+                {
+                    throw new IllegalStateException("memberId=" + index() + " Duplicate client message: " +
+                        "messageNumber=" + messageNumber + ", clientMessages=" + clientMessages);
+                }
+
+                // Echo input message back to the client
+                while (session.offer(buffer, offset, length) < 0)
+                {
+                    idleStrategy.idle();
+                }
+
+                // Send 3 service messages
+                for (int i = 0; i < 3; i++)
+                {
+                    messageBuffer.putInt(0, --serviceMessageNumberOffset, LITTLE_ENDIAN);
+
+                    idleStrategy.reset();
+                    while (cluster.offer(messageBuffer, 0, SIZE_OF_INT) < 0)
+                    {
+                        idleStrategy.idle();
+                    }
+                }
+            }
+            else
+            {
+                final int messageNumber = buffer.getInt(offset, LITTLE_ENDIAN);
+                if (!serviceMessages.add(messageNumber))
+                {
+                    throw new IllegalStateException("memberId=" + index() + " Duplicate service message: " +
+                        "messageNumber=" + messageNumber + ", serviceMessages=" + serviceMessages);
+                }
+            }
+            messageCount.incrementAndGet(); // count all messages
+        }
+
+        private void snapshotMessages(
+            final ExclusivePublication snapshotPublication, final byte snapshotType, final IntHashSet messages)
+        {
+            int offset = 0;
+            messageBuffer.putByte(offset, snapshotType);
+            offset++;
+            messageBuffer.putInt(offset, messages.size(), LITTLE_ENDIAN);
+            offset += SIZE_OF_INT;
+
+            final IntHashSet.IntIterator iterator = messages.iterator();
+            while (iterator.hasNext())
+            {
+                final int messageId = iterator.nextValue();
+                messageBuffer.putInt(offset, messageId);
+                offset += SIZE_OF_INT;
+            }
+
+            idleStrategy.reset();
+            while (snapshotPublication.offer(messageBuffer, 0, offset) < 0)
+            {
+                idleStrategy.idle();
+            }
+        }
+
+        private void restoreSnapshot(final DirectBuffer buffer, final int offset, final IntHashSet messages)
+        {
+            int absoluteOffset = offset;
+            final int count = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+            absoluteOffset += SIZE_OF_INT;
+            for (int i = 0; i < count; i++)
+            {
+                final int messageId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+                absoluteOffset += SIZE_OF_INT;
+                if (!messages.add(messageId))
+                {
+                    throw new IllegalStateException("memberId=" + index() + " Duplicate message in snapshot: " +
+                        messageId);
+                }
+            }
         }
     }
 

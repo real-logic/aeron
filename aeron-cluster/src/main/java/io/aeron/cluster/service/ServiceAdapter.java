@@ -25,6 +25,8 @@ import org.agrona.DirectBuffer;
 
 final class ServiceAdapter implements AutoCloseable
 {
+    private static final int FRAGMENT_LIMIT = 1;
+
     private final Subscription subscription;
     private final ClusteredServiceAgent clusteredServiceAgent;
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
@@ -47,7 +49,7 @@ final class ServiceAdapter implements AutoCloseable
 
     int poll()
     {
-        return subscription.poll(fragmentAssembler, 10);
+        return subscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

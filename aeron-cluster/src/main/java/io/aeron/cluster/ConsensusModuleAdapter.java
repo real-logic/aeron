@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
 
 final class ConsensusModuleAdapter implements AutoCloseable
 {
-    private static final int FRAGMENT_LIMIT = 10;
+    private static final int FRAGMENT_LIMIT = 25;
 
     private final Subscription subscription;
     private final ConsensusModuleAgent consensusModuleAgent;

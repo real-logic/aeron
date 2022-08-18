@@ -32,7 +32,6 @@ import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 @ExtendWith(InterruptingTestCallback.class)
 class ServiceIpcIngressMessageTest

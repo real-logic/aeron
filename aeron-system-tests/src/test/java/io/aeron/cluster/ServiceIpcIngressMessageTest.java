@@ -67,6 +67,7 @@ class ServiceIpcIngressMessageTest
     {
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
+            .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
             .withServiceSupplier((i) -> new TestNode.TestService[]{ new TestNode.MessageTrackingService().index(i) })
             .start();
         systemTestWatcher.cluster(cluster);
@@ -83,6 +84,7 @@ class ServiceIpcIngressMessageTest
         }
         cluster.awaitResponseMessageCount(messageCount);
         cluster.awaitServicesMessageCount(messageCount * 4); // 1 client message + 3 service messages
+        cluster.awaitTimerEventCount(messageCount * 2); // two timers per message
 
         cluster.stopNode(oldLeader);
 
@@ -97,10 +99,12 @@ class ServiceIpcIngressMessageTest
         }
         cluster.awaitResponseMessageCount(messageCount);
         cluster.awaitServicesMessageCount(messageCount * 4);
+        cluster.awaitTimerEventCount(messageCount * 2);
 
         oldLeader = cluster.startStaticNode(oldLeader.index(), false);
         awaitElectionClosed(oldLeader);
         assertEquals(Cluster.Role.FOLLOWER, oldLeader.role());
         cluster.awaitServiceMessageCount(oldLeader, messageCount * 4);
+        cluster.awaitTimerEventCount(oldLeader, messageCount * 2);
     }
 }

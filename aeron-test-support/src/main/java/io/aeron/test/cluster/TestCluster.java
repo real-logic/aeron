@@ -156,7 +156,7 @@ public class TestCluster implements AutoCloseable
     private String egressChannel;
     private AuthorisationServiceSupplier authorisationServiceSupplier;
     private AuthenticatorSupplier authenticationSupplier;
-
+    private TimerServiceSupplier timerServiceSupplier;
     private TestMediaDriver clientMediaDriver;
     private AeronCluster client;
     private TestBackupNode backupNode;
@@ -318,6 +318,7 @@ public class TestCluster implements AutoCloseable
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
+            .timerServiceSupplier(timerServiceSupplier)
             .deleteDirOnStart(cleanStart);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -375,6 +376,7 @@ public class TestCluster implements AutoCloseable
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
+            .timerServiceSupplier(timerServiceSupplier)
             .deleteDirOnStart(cleanStart);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -434,6 +436,7 @@ public class TestCluster implements AutoCloseable
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
+            .timerServiceSupplier(timerServiceSupplier)
             .deleteDirOnStart(cleanStart);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -491,6 +494,7 @@ public class TestCluster implements AutoCloseable
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
+            .timerServiceSupplier(timerServiceSupplier)
             .deleteDirOnStart(false);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -625,6 +629,7 @@ public class TestCluster implements AutoCloseable
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .authorisationServiceSupplier(authorisationServiceSupplier)
+            .timerServiceSupplier(timerServiceSupplier)
             .deleteDirOnStart(false);
 
         backupNode = null;
@@ -685,6 +690,11 @@ public class TestCluster implements AutoCloseable
     public void authorisationServiceSupplier(final AuthorisationServiceSupplier authorisationServiceSupplier)
     {
         this.authorisationServiceSupplier = authorisationServiceSupplier;
+    }
+
+    public void timerServiceSupplier(final TimerServiceSupplier timerServiceSupplier)
+    {
+        this.timerServiceSupplier = timerServiceSupplier;
     }
 
     public void authenticationSupplier(final AuthenticatorSupplier authenticationSupplier)
@@ -1201,6 +1211,17 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    public void awaitTimerEventCount(final int expectedTimerEventsCount)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node && !node.isClosed())
+            {
+                awaitTimerEventCount(node, expectedTimerEventsCount);
+            }
+        }
+    }
+
     public void terminationsExpected(final boolean isExpected)
     {
         for (final TestNode node : nodes)
@@ -1225,6 +1246,36 @@ public class TestCluster implements AutoCloseable
             if (Thread.interrupted())
             {
                 throw new TimeoutException("count=" + count + " awaiting=" + messageCount + " node=" + node);
+            }
+
+            if (service.hasReceivedUnexpectedMessage())
+            {
+                fail("service received unexpected message");
+            }
+
+            final long nowMs = epochClock.time();
+            if (nowMs > keepAliveDeadlineMs)
+            {
+                client.sendKeepAlive();
+                keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+            }
+        }
+    }
+
+    public void awaitTimerEventCount(final TestNode node, final int expectedTimerEventsCount)
+    {
+        final TestNode.TestService service = node.service();
+        final EpochClock epochClock = client.context().aeron().context().epochClock();
+        long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+        long count;
+
+        while ((count = service.timerCount()) < expectedTimerEventsCount)
+        {
+            Thread.yield();
+            if (Thread.interrupted())
+            {
+                throw new TimeoutException("fired timer events=" + count + " awaiting=" + expectedTimerEventsCount +
+                    " node=" + node);
             }
 
             if (service.hasReceivedUnexpectedMessage())
@@ -1624,6 +1675,7 @@ public class TestCluster implements AutoCloseable
         private String egressChannel = EGRESS_CHANNEL;
         private AuthorisationServiceSupplier authorisationServiceSupplier;
         private AuthenticatorSupplier authenticationSupplier = new DefaultAuthenticatorSupplier();
+        private TimerServiceSupplier timerServiceSupplier;
         private IntFunction<TestNode.TestService[]> serviceSupplier =
             (i) -> new TestNode.TestService[]{ new TestNode.TestService().index(i) };
         private final IntHashSet invalidInitialResolutions = new IntHashSet();
@@ -1693,6 +1745,12 @@ public class TestCluster implements AutoCloseable
             return this;
         }
 
+        public Builder withTimerServiceSupplier(final TimerServiceSupplier timerServiceSupplier)
+        {
+            this.timerServiceSupplier = timerServiceSupplier;
+            return this;
+        }
+
         public TestCluster start()
         {
             return start(nodeCount);
@@ -1717,6 +1775,7 @@ public class TestCluster implements AutoCloseable
             testCluster.egressChannel(egressChannel);
             testCluster.authenticationSupplier(authenticationSupplier);
             testCluster.authorisationServiceSupplier(authorisationServiceSupplier);
+            testCluster.timerServiceSupplier(timerServiceSupplier);
 
             try
             {

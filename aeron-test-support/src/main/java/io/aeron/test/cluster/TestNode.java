@@ -45,6 +45,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.IntHashSet;
+import org.agrona.collections.LongHashSet;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -333,6 +334,7 @@ public class TestNode implements AutoCloseable
         private volatile Cluster.Role roleChangedTo = null;
         private final AtomicInteger activeSessionCount = new AtomicInteger();
         final AtomicInteger messageCount = new AtomicInteger();
+        private final AtomicInteger timerCount = new AtomicInteger();
 
         public TestService index(final int index)
         {
@@ -353,6 +355,11 @@ public class TestNode implements AutoCloseable
         public int messageCount()
         {
             return messageCount.get();
+        }
+
+        public int timerCount()
+        {
+            return timerCount.get();
         }
 
         public boolean wasSnapshotTaken()
@@ -482,6 +489,11 @@ public class TestNode implements AutoCloseable
             messageCount.incrementAndGet();
         }
 
+        public void onTimerEvent(final long correlationId, final long timestamp)
+        {
+            timerCount.incrementAndGet();
+        }
+
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
             final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SNAPSHOT_MSG_LENGTH]);
@@ -598,13 +610,17 @@ public class TestNode implements AutoCloseable
         private final ExpandableArrayBuffer messageBuffer = new ExpandableArrayBuffer();
         private final IntHashSet clientMessages = new IntHashSet();
         private final IntHashSet serviceMessages = new IntHashSet();
-        private int serviceMessageNumberOffset;
+        private final LongHashSet timers = new LongHashSet();
+        private int nextServiceMessageNumber;
+        private long nextTimerCorrelationId;
 
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {
-            serviceMessageNumberOffset = 0;
+            nextServiceMessageNumber = 0;
+            nextTimerCorrelationId = 1_000_000;
             clientMessages.clear();
             serviceMessages.clear();
+            timers.clear();
             wasSnapshotLoaded = false;
             this.cluster = cluster;
             this.idleStrategy = cluster.idleStrategy();
@@ -617,15 +633,20 @@ public class TestNode implements AutoCloseable
                         final byte snapshotType = buffer.getByte(offset);
                         if (-1 == snapshotType)
                         {
-                            serviceMessageNumberOffset = buffer.getInt(offset + 1, LITTLE_ENDIAN);
+                            nextServiceMessageNumber = buffer.getInt(offset + 1, LITTLE_ENDIAN);
+                            nextTimerCorrelationId = buffer.getLong(offset + 1 + SIZE_OF_INT, LITTLE_ENDIAN);
                         }
                         else if (0 == snapshotType) // client messages
                         {
-                            restoreSnapshot(buffer, offset + 1, clientMessages);
+                            restoreMessages(buffer, offset + 1, clientMessages);
                         }
                         else if (1 == snapshotType) // service messages
                         {
-                            restoreSnapshot(buffer, offset + 1, serviceMessages);
+                            restoreMessages(buffer, offset + 1, serviceMessages);
+                        }
+                        else if (2 == snapshotType) // timers
+                        {
+                            restoreTimers(buffer, offset + 1);
                         }
                         else
                         {
@@ -652,16 +673,22 @@ public class TestNode implements AutoCloseable
         {
             wasSnapshotTaken = false;
 
-            messageBuffer.putByte(0, (byte)-1);
-            messageBuffer.putInt(0, serviceMessageNumberOffset, LITTLE_ENDIAN);
+            int offset = 0;
+            messageBuffer.putByte(offset, (byte)-1);
+            offset++;
+            messageBuffer.putInt(offset, nextServiceMessageNumber, LITTLE_ENDIAN);
+            offset += SIZE_OF_INT;
+            messageBuffer.putLong(offset, nextTimerCorrelationId, LITTLE_ENDIAN);
+            offset += SIZE_OF_LONG;
             idleStrategy.reset();
-            while (snapshotPublication.offer(messageBuffer, 0, SIZE_OF_INT) < 0)
+            while (snapshotPublication.offer(messageBuffer, 0, offset) < 0)
             {
                 idleStrategy.idle();
             }
 
             snapshotMessages(snapshotPublication, (byte)0, clientMessages);
             snapshotMessages(snapshotPublication, (byte)1, serviceMessages);
+            snapshotTimers(snapshotPublication);
 
             wasSnapshotTaken = true;
         }
@@ -692,10 +719,20 @@ public class TestNode implements AutoCloseable
                 // Send 3 service messages
                 for (int i = 0; i < 3; i++)
                 {
-                    messageBuffer.putInt(0, --serviceMessageNumberOffset, LITTLE_ENDIAN);
+                    messageBuffer.putInt(0, --nextServiceMessageNumber, LITTLE_ENDIAN);
 
                     idleStrategy.reset();
                     while (cluster.offer(messageBuffer, 0, SIZE_OF_INT) < 0)
+                    {
+                        idleStrategy.idle();
+                    }
+                }
+
+                // Schedule two timers
+                for (int i = 0; i < 2; i++)
+                {
+                    idleStrategy.reset();
+                    while (!cluster.scheduleTimer(nextTimerCorrelationId++, cluster.time() - 1))
                     {
                         idleStrategy.idle();
                     }
@@ -711,6 +748,16 @@ public class TestNode implements AutoCloseable
                 }
             }
             messageCount.incrementAndGet(); // count all messages
+        }
+
+        public void onTimerEvent(final long correlationId, final long timestamp)
+        {
+            super.onTimerEvent(correlationId, timestamp);
+            if (!timers.add(correlationId))
+            {
+                throw new IllegalStateException("memberId=" + index() + " Duplicate timer event: " +
+                    "correlationId=" + correlationId + ", timers=" + timers);
+            }
         }
 
         private void snapshotMessages(
@@ -737,7 +784,30 @@ public class TestNode implements AutoCloseable
             }
         }
 
-        private void restoreSnapshot(final DirectBuffer buffer, final int offset, final IntHashSet messages)
+        private void snapshotTimers(final ExclusivePublication snapshotPublication)
+        {
+            int offset = 0;
+            messageBuffer.putByte(offset, (byte)2);
+            offset++;
+            messageBuffer.putInt(offset, timers.size(), LITTLE_ENDIAN);
+            offset += SIZE_OF_INT;
+
+            final LongHashSet.LongIterator iterator = timers.iterator();
+            while (iterator.hasNext())
+            {
+                final long correlationId = iterator.nextValue();
+                messageBuffer.putLong(offset, correlationId);
+                offset += SIZE_OF_LONG;
+            }
+
+            idleStrategy.reset();
+            while (snapshotPublication.offer(messageBuffer, 0, offset) < 0)
+            {
+                idleStrategy.idle();
+            }
+        }
+
+        private void restoreMessages(final DirectBuffer buffer, final int offset, final IntHashSet messages)
         {
             int absoluteOffset = offset;
             final int count = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
@@ -748,8 +818,25 @@ public class TestNode implements AutoCloseable
                 absoluteOffset += SIZE_OF_INT;
                 if (!messages.add(messageId))
                 {
-                    throw new IllegalStateException("memberId=" + index() + " Duplicate message in snapshot: " +
+                    throw new IllegalStateException("memberId=" + index() + " Duplicate message in a snapshot: " +
                         messageId);
+                }
+            }
+        }
+
+        private void restoreTimers(final DirectBuffer buffer, final int offset)
+        {
+            int absoluteOffset = offset;
+            final int count = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+            absoluteOffset += SIZE_OF_INT;
+            for (int i = 0; i < count; i++)
+            {
+                final long correlationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+                absoluteOffset += SIZE_OF_LONG;
+                if (!timers.add(correlationId))
+                {
+                    throw new IllegalStateException("memberId=" + index() + " Duplicate timer event in a snapshot: " +
+                        correlationId);
                 }
             }
         }

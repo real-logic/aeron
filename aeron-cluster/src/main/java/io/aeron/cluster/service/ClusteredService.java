@@ -147,6 +147,9 @@ public interface ClusteredService
      * directly, or indirectly, update the service state. This method cannot be used for making calls on
      * {@link Cluster} which could update the log such as {@link Cluster#scheduleTimer(long, long)} or
      * {@link Cluster#offer(DirectBuffer, int, int)}.
+     * <p>
+     * This method is not for long-running operations. Time taken can impact latency and should only be used for
+     * short constant time operations.
      *
      * @param nowNs which can be used for measuring elapsed time and be used in the same way as
      *              {@link System#nanoTime()}. This is <b>not</b> {@link Cluster#time()}.

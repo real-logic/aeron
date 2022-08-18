@@ -79,7 +79,7 @@ final class DriverNameResolverCache implements AutoCloseable
             entry.timeOfLastActivityMs = nowMs;
             entry.deadlineMs = nowMs + timeoutMs;
 
-            if (port != entry.port || byteSubsetEquals(address, entry.address, addressLength))
+            if (port != entry.port || !byteSubsetEquals(address, entry.address, addressLength))
             {
                 entry.address = Arrays.copyOf(address, addressLength);
                 entry.port = port;

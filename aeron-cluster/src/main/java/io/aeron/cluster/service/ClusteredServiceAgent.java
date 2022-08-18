@@ -68,7 +68,9 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     byte p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
     byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 
-    static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
+    private static final long ONE_MILLISECOND_NS = TimeUnit.MILLISECONDS.toNanos(1);
+    private static final long MARK_FILE_UPDATE_INTERVAL_MS =
+        TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
 
     private volatile boolean isAbort;
     private boolean isServiceActive;
@@ -991,7 +993,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
             throw new AgentTerminationException("unexpected Aeron close");
         }
 
-        if (nowNs - lastSlowTickNs > 1000)
+        if (nowNs - lastSlowTickNs > ONE_MILLISECOND_NS)
         {
             lastSlowTickNs = nowNs;
             final long nowMs = epochClock.time();

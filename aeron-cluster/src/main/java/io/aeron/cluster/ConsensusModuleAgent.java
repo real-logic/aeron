@@ -3210,15 +3210,20 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private void enqueueServiceSessionMessage(
         final MutableDirectBuffer buffer, final int offset, final int length, final long clusterSessionId)
     {
-        final int headerOffset = offset - SessionMessageHeaderDecoder.BLOCK_LENGTH;
-        final int clusterSessionIdOffset = headerOffset + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
-        final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
-
-        buffer.putLong(clusterSessionIdOffset, clusterSessionId, SessionMessageHeaderDecoder.BYTE_ORDER);
-        buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderDecoder.BYTE_ORDER);
-        if (!pendingServiceMessages.append(buffer, offset - SESSION_HEADER_LENGTH, length + SESSION_HEADER_LENGTH))
+        if (clusterSessionId > logServiceSessionId)
         {
-            throw new ClusterException("pending service message buffer at capacity: " + pendingServiceMessages.size());
+            final int headerOffset = offset - SessionMessageHeaderDecoder.BLOCK_LENGTH;
+            final int clusterSessionIdOffset =
+                headerOffset + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+            final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
+
+            buffer.putLong(clusterSessionIdOffset, clusterSessionId, SessionMessageHeaderDecoder.BYTE_ORDER);
+            buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderDecoder.BYTE_ORDER);
+            if (!pendingServiceMessages.append(buffer, offset - SESSION_HEADER_LENGTH, length + SESSION_HEADER_LENGTH))
+            {
+                throw new ClusterException("pending service message buffer at capacity: " +
+                    pendingServiceMessages.size());
+            }
         }
     }
 

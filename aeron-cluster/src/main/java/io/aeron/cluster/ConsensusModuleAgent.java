@@ -1149,12 +1149,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
     }
 
-    void onServiceMessage(final long leadershipTermId, final DirectBuffer buffer, final int offset, final int length)
+    void onServiceMessage(final DirectBuffer buffer, final int offset, final int length)
     {
-        if (leadershipTermId == this.leadershipTermId)
-        {
-            enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, nextServiceSessionId++);
-        }
+        enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, nextServiceSessionId++);
     }
 
     void onScheduleTimer(final long correlationId, final long deadline)

@@ -80,7 +80,6 @@ final class ConsensusModuleAdapter implements AutoCloseable
                     messageHeaderDecoder.version());
 
                 consensusModuleAgent.onServiceMessage(
-                    sessionMessageHeaderDecoder.leadershipTermId(),
                     buffer,
                     offset + AeronCluster.SESSION_HEADER_LENGTH,
                     length - AeronCluster.SESSION_HEADER_LENGTH);

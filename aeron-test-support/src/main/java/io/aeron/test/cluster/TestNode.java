@@ -770,12 +770,12 @@ public class TestNode implements AutoCloseable
 
         public void onTimerEvent(final long correlationId, final long timestamp)
         {
-            super.onTimerEvent(correlationId, timestamp);
             if (!timers.add(correlationId))
             {
                 throw new IllegalStateException("memberId=" + index() + ", serviceId=" + serviceId +
                     " Duplicate timer event: correlationId=" + correlationId + ", timers=" + timers);
             }
+            super.onTimerEvent(correlationId, timestamp);
         }
 
         private void snapshotMessages(

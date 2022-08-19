@@ -513,7 +513,7 @@ class ReplaySession implements Session, AutoCloseable
 
     private void onError(final String errorMessage)
     {
-        this.errorMessage = errorMessage;
+        this.errorMessage = errorMessage + ", recordingId=" + recordingId + ", sessionId=" + sessionId;
         state(State.INACTIVE);
     }
 

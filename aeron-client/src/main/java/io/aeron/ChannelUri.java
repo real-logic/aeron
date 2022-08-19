@@ -27,6 +27,7 @@ import java.util.Objects;
 
 import static io.aeron.CommonContext.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Parser for Aeron channel URIs. The format is:
@@ -534,6 +535,42 @@ public final class ChannelUri
 
         return uri;
     }
+
+    /**
+     * Uses the supplied endpoint to resolve any wildcard ports. If the existing endpoint has a value of "0" for then
+     * the port of this endpoint will be used instead. If the endpoint is not specified in this uri, then the whole
+     * supplied endpoint is used. If the endpoint exists and has a non-wildcard port, then the existing endpoint is
+     * retained.
+     *
+     * @param resolvedEndpoint The endpoint to supply a resolved endpoint port.
+     * @throws IllegalArgumentException if the supplied resolvedEndpoint does not have a port or the port is zero.
+     * @throws NullPointerException if the supplied resolvedEndpoint is null
+     */
+    public void replaceEndpointWildcardPort(final String resolvedEndpoint)
+    {
+        final int portSeparatorIndex = requireNonNull(resolvedEndpoint, "resolvedEndpoint is null").lastIndexOf(":");
+        if (-1 == portSeparatorIndex)
+        {
+            throw new IllegalArgumentException("No port specified on resolvedEndpoint=" + resolvedEndpoint);
+        }
+        if (resolvedEndpoint.endsWith(":0"))
+        {
+            throw new IllegalArgumentException("Wildcard port specified on resolvedEndpoint=" + resolvedEndpoint);
+        }
+
+        final String existingEndpoint = get(ENDPOINT_PARAM_NAME);
+        if (null == existingEndpoint)
+        {
+            put(ENDPOINT_PARAM_NAME, resolvedEndpoint);
+        }
+        else if (existingEndpoint.endsWith(":0"))
+        {
+            final String endpoint = existingEndpoint.substring(0, existingEndpoint.length() - 2) +
+                resolvedEndpoint.substring(resolvedEndpoint.lastIndexOf(':'));
+            put(ENDPOINT_PARAM_NAME, endpoint);
+        }
+    }
+
 
     private static void validateMedia(final String media)
     {

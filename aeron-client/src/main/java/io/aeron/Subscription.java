@@ -548,11 +548,7 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
 
                 if (null != endpoint && endpoint.endsWith(":0"))
                 {
-                    final String resolvedEndpoint = localSocketAddresses.get(0);
-                    final int i = resolvedEndpoint.lastIndexOf(':');
-                    uri.put(CommonContext.ENDPOINT_PARAM_NAME,
-                        endpoint.substring(0, endpoint.length() - 2) + resolvedEndpoint.substring(i));
-
+                    uri.replaceEndpointWildcardPort(localSocketAddresses.get(0));
                     return uri.toString();
                 }
             }

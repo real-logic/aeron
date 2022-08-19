@@ -24,19 +24,23 @@ import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableBoolean;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.UDP_MEDIA;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -166,6 +170,73 @@ class SessionSpecificSubscriptionTest
 
             assertFalse(publicationWildcard.isConnected());
             assertFalse(publicationWrongSession.isConnected());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    @InterruptAfter(5)
+    void shouldOnlySeeDataOnSpecificSessionWhenUsingTags(final ChannelUriStringBuilder channelBuilder)
+    {
+        final DirectBuffer liveBuffer = new UnsafeBuffer("live".getBytes(StandardCharsets.US_ASCII));
+        final DirectBuffer ignoredBuffer = new UnsafeBuffer("ignored".getBytes(StandardCharsets.US_ASCII));
+
+        final String liveChannel = channelBuilder.sessionId(SESSION_ID_1).build();
+        final String generalChannel = channelBuilder.sessionId((String)null).build();
+
+        final long channelTag = aeron.nextCorrelationId();
+        final long subscriptionTag = aeron.nextCorrelationId();
+
+        final String endpointChannel = channelBuilder.tags(channelTag, subscriptionTag).build();
+        final String tagOnlyChannel = channelBuilder
+            .endpoint((String)null)
+            .tags(channelTag, subscriptionTag)
+            .sessionId(SESSION_ID_1)
+            .build();
+
+        try (
+            Publication livePub = aeron.addExclusivePublication(liveChannel, STREAM_ID);
+            Publication ignoredPub = aeron.addExclusivePublication(generalChannel, STREAM_ID);
+            Subscription endpointSub = aeron.addSubscription(endpointChannel, STREAM_ID);
+            Subscription tagOnlySub = aeron.addSubscription(tagOnlyChannel, STREAM_ID))
+        {
+            Tests.awaitConnected(livePub);
+            Tests.awaitConnected(endpointSub);
+            Tests.awaitConnected(tagOnlySub);
+            Tests.awaitConnected(ignoredPub);
+
+            while (livePub.offer(liveBuffer) < 0)
+            {
+                Tests.yield();
+            }
+
+            while (ignoredPub.offer(ignoredBuffer) < 0)
+            {
+                Tests.yield();
+            }
+
+            final MutableBoolean isValid = new MutableBoolean(true);
+            final long deadlineMs = System.currentTimeMillis() + 2_000;
+            final IdleStrategy idleStrategy = new YieldingIdleStrategy();
+
+            int fragments = 0;
+            while (System.currentTimeMillis() < deadlineMs)
+            {
+                fragments += tagOnlySub.poll(
+                    (buffer, offset, length, header) ->
+                    {
+                        final String s = buffer.getStringWithoutLengthAscii(offset, length);
+                        if ("ignored".equals(s))
+                        {
+                            isValid.set(false);
+                        }
+                    }, 10);
+
+                idleStrategy.idle(fragments);
+            }
+
+            assertTrue(isValid.get());
+            assertEquals(1, fragments);
         }
     }
 

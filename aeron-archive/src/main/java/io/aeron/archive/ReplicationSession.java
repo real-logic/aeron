@@ -485,11 +485,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
 
             final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
-            if (null != endpoint && endpoint.endsWith(":0"))
+            if (null != endpoint)
             {
-                final int i = resolvedEndpoint.lastIndexOf(':');
-                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME,
-                    endpoint.substring(0, endpoint.length() - 2) + resolvedEndpoint.substring(i));
+                channelUri.replaceEndpointWildcardPort(resolvedEndpoint);
             }
 
             if (null != liveDestination)

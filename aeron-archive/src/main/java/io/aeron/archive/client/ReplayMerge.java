@@ -331,9 +331,7 @@ public final class ReplayMerge implements AutoCloseable
         final String resolvedEndpoint = subscription.resolvedEndpoint();
         if (null != resolvedEndpoint)
         {
-            final int i = resolvedEndpoint.lastIndexOf(':');
-            replayChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME,
-                replayEndpoint.substring(0, replayEndpoint.length() - 2) + resolvedEndpoint.substring(i));
+            replayChannelUri.replaceEndpointWildcardPort(resolvedEndpoint);
 
             timeOfLastProgressMs = nowMs;
             state(State.GET_RECORDING_POSITION);

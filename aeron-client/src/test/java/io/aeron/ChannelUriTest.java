@@ -193,6 +193,35 @@ class ChannelUriTest
         assertEquals(expected, destinationUri);
     }
 
+    @Test
+    void shouldSubstituteEndpoint()
+    {
+        assertSubstitution("aeron:udp?endpoint=localhost:12345", "aeron:udp?endpoint=localhost:0", "localhost:12345");
+        assertSubstitution(
+            "aeron:udp?endpoint=localhost:12345", "aeron:udp?endpoint=localhost:12345", "localhost:54321");
+        assertSubstitution("aeron:udp?endpoint=localhost:12345", "aeron:udp?endpoint=localhost:0", "127.0.0.1:12345");
+        assertSubstitution("aeron:udp?endpoint=127.0.0.1:12345", "aeron:udp", "127.0.0.1:12345");
+    }
+
+    @Test
+    void shouldThrowIfResolvedEndpointInvalid()
+    {
+        final ChannelUri uri = ChannelUri.parse("aeron:udp?endpoint=localhost:0");
+        assertThrows(IllegalArgumentException.class, () -> uri.replaceEndpointWildcardPort("localhost:0"));
+        assertThrows(IllegalArgumentException.class, () -> uri.replaceEndpointWildcardPort("localhost"));
+        assertThrows(NullPointerException.class, () -> uri.replaceEndpointWildcardPort(null));
+    }
+
+    private static void assertSubstitution(
+        final String expected,
+        final String originalChannel,
+        final String resolvedEndpoint)
+    {
+        final ChannelUri uri = ChannelUri.parse(originalChannel);
+        uri.replaceEndpointWildcardPort(resolvedEndpoint);
+        assertEquals(expected, uri.toString());
+    }
+
     private static List<Arguments> equalityValues()
     {
         return asList(

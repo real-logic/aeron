@@ -733,10 +733,10 @@ public final class ClusterBackupAgent implements Agent
                         return 0;
                     }
 
-                    final String endpoint = catchupEndpoint.substring(0, catchupEndpoint.length() - 2) +
-                        resolvedEndpoint.substring(resolvedEndpoint.lastIndexOf(':'));
                     final ChannelUri channelUri = ChannelUri.parse(ctx.catchupChannel());
-                    channelUri.put(ENDPOINT_PARAM_NAME, endpoint);
+                    channelUri.put(ENDPOINT_PARAM_NAME, catchupEndpoint);
+                    channelUri.replaceEndpointWildcardPort(resolvedEndpoint);
+
                     replayChannel = channelUri.toString();
                 }
             }

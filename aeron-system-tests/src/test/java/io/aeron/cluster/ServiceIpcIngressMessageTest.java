@@ -70,9 +70,13 @@ class ServiceIpcIngressMessageTest
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
-            .withServiceSupplier((i) -> new TestNode.TestService[]{ new TestNode.MessageTrackingService().index(i) })
+            .withServiceSupplier((i) -> new TestNode.TestService[]{
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i),
+                new TestNode.MessageTrackingService(3, i) })
             .start();
         systemTestWatcher.cluster(cluster);
+        final int serviceCount = cluster.node(0).services().length;
 
         TestNode oldLeader = cluster.awaitLeader();
         cluster.connectClient();
@@ -84,9 +88,8 @@ class ServiceIpcIngressMessageTest
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount * 4); // 1 client message + 3 service messages
-        cluster.awaitTimerEventCount(messageCount * 2); // two timers per message
+        cluster.awaitResponseMessageCount(messageCount * serviceCount);
+        awaitMessageCounters(cluster, messageCount);
 
         cluster.stopNode(oldLeader);
 
@@ -99,15 +102,13 @@ class ServiceIpcIngressMessageTest
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount * 4);
-        cluster.awaitTimerEventCount(messageCount * 2);
+        cluster.awaitResponseMessageCount(messageCount * serviceCount);
+        awaitMessageCounters(cluster, messageCount);
 
         oldLeader = cluster.startStaticNode(oldLeader.index(), false);
         awaitElectionClosed(oldLeader);
         assertEquals(Cluster.Role.FOLLOWER, oldLeader.role());
-        cluster.awaitServiceMessageCount(oldLeader, messageCount * 4);
-        cluster.awaitTimerEventCount(oldLeader, messageCount * 2);
+        awaitMessageCounters(cluster, oldLeader, messageCount);
 
         assertTrackedMessages(cluster, messageCount);
     }
@@ -119,9 +120,13 @@ class ServiceIpcIngressMessageTest
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
-            .withServiceSupplier((i) -> new TestNode.TestService[]{ new TestNode.MessageTrackingService().index(i) })
+            .withServiceSupplier((i) -> new TestNode.TestService[]{
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i),
+                new TestNode.MessageTrackingService(3, i) })
             .start();
         systemTestWatcher.cluster(cluster);
+        final int serviceCount = cluster.node(0).services().length;
 
         cluster.awaitLeader();
         cluster.connectClient();
@@ -133,9 +138,8 @@ class ServiceIpcIngressMessageTest
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount * 4); // 1 client message + 3 service messages
-        cluster.awaitTimerEventCount(messageCount * 2); // two timers per message
+        cluster.awaitResponseMessageCount(messageCount * serviceCount);
+        awaitMessageCounters(cluster, messageCount);
 
         cluster.stopAllNodes();
         cluster.restartAllNodes(false);
@@ -147,11 +151,34 @@ class ServiceIpcIngressMessageTest
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount * 4);
-        cluster.awaitTimerEventCount(messageCount * 2);
+        cluster.awaitResponseMessageCount(messageCount * serviceCount);
+        awaitMessageCounters(cluster, messageCount);
 
         assertTrackedMessages(cluster, messageCount);
+    }
+
+    private static void awaitMessageCounters(final TestCluster cluster, final int messageCount)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            final TestNode node = cluster.node(i);
+            if (null != node && !node.isClosed())
+            {
+                awaitMessageCounters(cluster, node, messageCount);
+            }
+        }
+    }
+
+    private static void awaitMessageCounters(final TestCluster cluster, final TestNode node, final int messageCount)
+    {
+        final TestNode.TestService[] services = node.services();
+        for (final TestNode.TestService service : services)
+        {
+            // 1 client message + 3 service messages
+            cluster.awaitServiceMessageCount(node, service, messageCount * 3 * services.length);
+            // two timers per message
+            cluster.awaitTimerEventCount(node, service, messageCount * 2 * services.length);
+        }
     }
 
     private static void assertTrackedMessages(final TestCluster cluster, final int messageCount)
@@ -159,10 +186,14 @@ class ServiceIpcIngressMessageTest
         for (int i = 0; i < 3; i++)
         {
             final TestNode node = cluster.node(i);
-            final TestNode.MessageTrackingService service = (TestNode.MessageTrackingService)node.service();
-            assertEquals(messageCount, service.clientMessages().size());
-            assertEquals(messageCount * 3, service.serviceMessages().size());
-            assertEquals(messageCount * 2, service.timers().size());
+            final TestNode.TestService[] services = node.services();
+            for (final TestNode.TestService service : services)
+            {
+                final TestNode.MessageTrackingService trackingService = (TestNode.MessageTrackingService)service;
+                assertEquals(messageCount, trackingService.clientMessages().size());
+                assertEquals(messageCount * 3 * services.length, trackingService.serviceMessages().size());
+                assertEquals(messageCount * 2 * services.length, trackingService.timers().size());
+            }
         }
     }
 }

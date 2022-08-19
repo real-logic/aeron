@@ -1236,6 +1236,12 @@ public class TestCluster implements AutoCloseable
     public void awaitServiceMessageCount(final TestNode node, final int messageCount)
     {
         final TestNode.TestService service = node.service();
+        awaitServiceMessageCount(node, service, messageCount);
+    }
+
+    public void awaitServiceMessageCount(
+        final TestNode node, final TestNode.TestService service, final int messageCount)
+    {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
         long count;
@@ -1265,6 +1271,12 @@ public class TestCluster implements AutoCloseable
     public void awaitTimerEventCount(final TestNode node, final int expectedTimerEventsCount)
     {
         final TestNode.TestService service = node.service();
+        awaitTimerEventCount(node, service, expectedTimerEventsCount);
+    }
+
+    public void awaitTimerEventCount(
+        final TestNode node, final TestNode.TestService service, final int expectedTimerEventsCount)
+    {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
         long count;

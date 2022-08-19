@@ -161,7 +161,7 @@ public class TestNode implements AutoCloseable
     {
         if (1 != services.length)
         {
-            throw new IllegalStateException("service count expected=1 actual=" + services.length);
+            throw new IllegalStateException("111 service count expected=1 actual=" + services.length);
         }
 
         return services[0];
@@ -181,7 +181,7 @@ public class TestNode implements AutoCloseable
         }
     }
 
-    boolean isClosed()
+    public boolean isClosed()
     {
         return isClosed;
     }
@@ -262,11 +262,6 @@ public class TestNode implements AutoCloseable
 
     public int index()
     {
-        if (1 != services.length)
-        {
-            throw new IllegalStateException("service count expected=1 actual=" + services.length);
-        }
-
         return services[0].index();
     }
 
@@ -606,12 +601,19 @@ public class TestNode implements AutoCloseable
 
     public static class MessageTrackingService extends TestNode.TestService
     {
+        private final int serviceId;
         private final ExpandableArrayBuffer messageBuffer = new ExpandableArrayBuffer();
         private final IntHashSet clientMessages = new IntHashSet();
         private final IntHashSet serviceMessages = new IntHashSet();
         private final LongHashSet timers = new LongHashSet();
         private int nextServiceMessageNumber;
         private long nextTimerCorrelationId;
+
+        public MessageTrackingService(final int serviceId, final int index)
+        {
+            this.serviceId = serviceId;
+            index(index);
+        }
 
         public IntHashSet clientMessages()
         {
@@ -630,8 +632,8 @@ public class TestNode implements AutoCloseable
 
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {
-            nextServiceMessageNumber = 0;
-            nextTimerCorrelationId = 1_000_000;
+            nextServiceMessageNumber = 10_000 * serviceId;
+            nextTimerCorrelationId = -1L * 10_000 * serviceId;
             clientMessages.clear();
             serviceMessages.clear();
             timers.clear();
@@ -720,8 +722,9 @@ public class TestNode implements AutoCloseable
                 final int messageNumber = buffer.getInt(offset, LITTLE_ENDIAN);
                 if (!clientMessages.add(messageNumber))
                 {
-                    throw new IllegalStateException("memberId=" + index() + " Duplicate client message: " +
-                        "messageNumber=" + messageNumber + ", clientMessages=" + clientMessages);
+                    throw new IllegalStateException("memberId=" + index() + ", serviceId=" + serviceId +
+                        " Duplicate client message: messageNumber=" + messageNumber + ", clientMessages=" +
+                        clientMessages);
                 }
 
                 // Echo input message back to the client
@@ -733,7 +736,7 @@ public class TestNode implements AutoCloseable
                 // Send 3 service messages
                 for (int i = 0; i < 3; i++)
                 {
-                    messageBuffer.putInt(0, --nextServiceMessageNumber, LITTLE_ENDIAN);
+                    messageBuffer.putInt(0, ++nextServiceMessageNumber, LITTLE_ENDIAN);
 
                     idleStrategy.reset();
                     while (cluster.offer(messageBuffer, 0, SIZE_OF_INT) < 0)
@@ -746,7 +749,7 @@ public class TestNode implements AutoCloseable
                 for (int i = 0; i < 2; i++)
                 {
                     idleStrategy.reset();
-                    while (!cluster.scheduleTimer(++nextTimerCorrelationId, cluster.time() - 1))
+                    while (!cluster.scheduleTimer(--nextTimerCorrelationId, cluster.time() - 1))
                     {
                         idleStrategy.idle();
                     }
@@ -757,8 +760,9 @@ public class TestNode implements AutoCloseable
                 final int messageNumber = buffer.getInt(offset, LITTLE_ENDIAN);
                 if (!serviceMessages.add(messageNumber))
                 {
-                    throw new IllegalStateException("memberId=" + index() + " Duplicate service message: " +
-                        "messageNumber=" + messageNumber + ", serviceMessages=" + serviceMessages);
+                    throw new IllegalStateException("memberId=" + index() + ", serviceId=" + serviceId +
+                        " Duplicate service message: messageNumber=" + messageNumber + ", serviceMessages=" +
+                        serviceMessages);
                 }
             }
             messageCount.incrementAndGet(); // count all messages
@@ -769,8 +773,8 @@ public class TestNode implements AutoCloseable
             super.onTimerEvent(correlationId, timestamp);
             if (!timers.add(correlationId))
             {
-                throw new IllegalStateException("memberId=" + index() + " Duplicate timer event: " +
-                    "correlationId=" + correlationId + ", timers=" + timers);
+                throw new IllegalStateException("memberId=" + index() + ", serviceId=" + serviceId +
+                    " Duplicate timer event: correlationId=" + correlationId + ", timers=" + timers);
             }
         }
 

@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
@@ -62,6 +63,7 @@ class ServiceIpcIngressMessageTest
     }
 
     @Test
+    @SlowTest
     @InterruptAfter(20)
     void shouldProcessServiceMessagesWithoutDuplicates()
     {
@@ -79,7 +81,7 @@ class ServiceIpcIngressMessageTest
         int messageCount = 0;
         for (int i = 0; i < 10; i++)
         {
-            msgBuffer.putInt(0, messageCount++, LITTLE_ENDIAN);
+            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
         cluster.awaitResponseMessageCount(messageCount);
@@ -94,7 +96,7 @@ class ServiceIpcIngressMessageTest
         cluster.reconnectClient();
         for (int i = 0; i < 3; i++)
         {
-            msgBuffer.putInt(0, messageCount++, LITTLE_ENDIAN);
+            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
         cluster.awaitResponseMessageCount(messageCount);
@@ -106,5 +108,61 @@ class ServiceIpcIngressMessageTest
         assertEquals(Cluster.Role.FOLLOWER, oldLeader.role());
         cluster.awaitServiceMessageCount(oldLeader, messageCount * 4);
         cluster.awaitTimerEventCount(oldLeader, messageCount * 2);
+
+        assertTrackedMessages(cluster, messageCount);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldProcessServiceMessagesWithoutDuplicatesAfterAFullClusterRestart()
+    {
+        final TestCluster cluster = aCluster()
+            .withStaticNodes(3)
+            .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
+            .withServiceSupplier((i) -> new TestNode.TestService[]{ new TestNode.MessageTrackingService().index(i) })
+            .start();
+        systemTestWatcher.cluster(cluster);
+
+        cluster.awaitLeader();
+        cluster.connectClient();
+        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
+
+        int messageCount = 0;
+        for (int i = 0; i < 5; i++)
+        {
+            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
+            cluster.pollUntilMessageSent(SIZE_OF_INT);
+        }
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount * 4); // 1 client message + 3 service messages
+        cluster.awaitTimerEventCount(messageCount * 2); // two timers per message
+
+        cluster.stopAllNodes();
+        cluster.restartAllNodes(false);
+        cluster.awaitLeader();
+
+        cluster.reconnectClient();
+        for (int i = 0; i < 4; i++)
+        {
+            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
+            cluster.pollUntilMessageSent(SIZE_OF_INT);
+        }
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount * 4);
+        cluster.awaitTimerEventCount(messageCount * 2);
+
+        assertTrackedMessages(cluster, messageCount);
+    }
+
+    private static void assertTrackedMessages(final TestCluster cluster, final int messageCount)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            final TestNode node = cluster.node(i);
+            final TestNode.MessageTrackingService service = (TestNode.MessageTrackingService)node.service();
+            assertEquals(messageCount, service.clientMessages().size());
+            assertEquals(messageCount * 3, service.serviceMessages().size());
+            assertEquals(messageCount * 2, service.timers().size());
+        }
     }
 }

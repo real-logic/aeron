@@ -93,7 +93,6 @@ public class TestNode implements AutoCloseable
                 .isIpcIngressAllowed(true)
                 .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
-
             consensusModule = ConsensusModule.launch(context.consensusModuleContext);
 
             containers = new ClusteredServiceContainer[services.length];
@@ -614,6 +613,21 @@ public class TestNode implements AutoCloseable
         private int nextServiceMessageNumber;
         private long nextTimerCorrelationId;
 
+        public IntHashSet clientMessages()
+        {
+            return clientMessages;
+        }
+
+        public IntHashSet serviceMessages()
+        {
+            return serviceMessages;
+        }
+
+        public LongHashSet timers()
+        {
+            return timers;
+        }
+
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {
             nextServiceMessageNumber = 0;
@@ -732,7 +746,7 @@ public class TestNode implements AutoCloseable
                 for (int i = 0; i < 2; i++)
                 {
                     idleStrategy.reset();
-                    while (!cluster.scheduleTimer(nextTimerCorrelationId++, cluster.time() - 1))
+                    while (!cluster.scheduleTimer(++nextTimerCorrelationId, cluster.time() - 1))
                     {
                         idleStrategy.idle();
                     }

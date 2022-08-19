@@ -548,7 +548,7 @@ public final class ChannelUri
      */
     public void replaceEndpointWildcardPort(final String resolvedEndpoint)
     {
-        final int portSeparatorIndex = requireNonNull(resolvedEndpoint, "resolvedEndpoint is null").lastIndexOf(":");
+        final int portSeparatorIndex = requireNonNull(resolvedEndpoint, "resolvedEndpoint is null").lastIndexOf(':');
         if (-1 == portSeparatorIndex)
         {
             throw new IllegalArgumentException("No port specified on resolvedEndpoint=" + resolvedEndpoint);

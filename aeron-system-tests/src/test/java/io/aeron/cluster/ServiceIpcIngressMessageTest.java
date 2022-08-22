@@ -133,7 +133,7 @@ class ServiceIpcIngressMessageTest
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
         int messageCount = 0;
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 10; i++)
         {
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
@@ -146,7 +146,7 @@ class ServiceIpcIngressMessageTest
         cluster.awaitLeader();
 
         cluster.reconnectClient();
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 20; i++)
         {
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);

@@ -85,7 +85,7 @@ class ServiceIpcIngressMessageTest
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
         int messageCount = 0;
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 50; i++)
         {
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
@@ -99,7 +99,7 @@ class ServiceIpcIngressMessageTest
         final TestNode follower = cluster.node(3 - oldLeader.index() - newLeader.index());
         assertEquals(Cluster.Role.FOLLOWER, follower.role());
         cluster.reconnectClient();
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 30; i++)
         {
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
@@ -174,9 +174,9 @@ class ServiceIpcIngressMessageTest
         final TestNode.TestService[] services = node.services();
         for (final TestNode.TestService service : services)
         {
-            // 1 client message + 3 service messages
-            cluster.awaitServiceMessageCount(node, service, messageCount * 4 * services.length);
-            // two timers per message
+            // 1 client message + 3 service messages x number of services
+            cluster.awaitServiceMessageCount(node, service, messageCount + (messageCount * 3 * services.length));
+            // 2 timers x number of services
             cluster.awaitTimerEventCount(node, service, messageCount * 2 * services.length);
         }
     }

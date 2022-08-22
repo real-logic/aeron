@@ -1258,7 +1258,8 @@ public final class TestCluster implements AutoCloseable
             Thread.yield();
             if (Thread.interrupted())
             {
-                throw new TimeoutException("count=" + count + " awaiting=" + messageCount + " node=" + node);
+                throw new TimeoutException("await message count: count=" + count + " awaiting=" + messageCount +
+                    " node=" + node);
             }
 
             if (service.hasReceivedUnexpectedMessage())
@@ -1293,8 +1294,8 @@ public final class TestCluster implements AutoCloseable
             Thread.yield();
             if (Thread.interrupted())
             {
-                throw new TimeoutException("fired timer events=" + count + " awaiting=" + expectedTimerEventsCount +
-                    " node=" + node);
+                throw new TimeoutException("await timer events: count=" + count + " awaiting=" +
+                    expectedTimerEventsCount + " node=" + node);
             }
 
             if (service.hasReceivedUnexpectedMessage())
@@ -1321,7 +1322,7 @@ public final class TestCluster implements AutoCloseable
             Thread.yield();
             if (Thread.interrupted())
             {
-                throw new TimeoutException("timeout while awaiting condition");
+                throw new TimeoutException("timeout while awaiting service state");
             }
 
             final long nowMs = epochClock.time();

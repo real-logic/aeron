@@ -592,13 +592,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final long logLeadershipTermId,
         final long logPosition,
         final long leadershipTermId,
-        final int followerMemberId)
+        final int followerMemberId,
+        final int protocolVersion)
     {
         checkFollowerForConsensusPublication(followerMemberId);
 
         if (null != election)
         {
-            election.onCanvassPosition(logLeadershipTermId, logPosition, leadershipTermId, followerMemberId);
+            election.onCanvassPosition(
+                logLeadershipTermId, logPosition, leadershipTermId, followerMemberId, protocolVersion);
         }
         else if (Cluster.Role.LEADER == role)
         {
@@ -642,11 +644,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     }
 
     void onRequestVote(
-        final long logLeadershipTermId, final long logPosition, final long candidateTermId, final int candidateId)
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long candidateTermId,
+        final int candidateId,
+        final int protocolVersion)
     {
         if (null != election)
         {
-            election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
+            election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId, protocolVersion);
         }
         else if (candidateTermId > leadershipTermId && null == dynamicJoin)
         {

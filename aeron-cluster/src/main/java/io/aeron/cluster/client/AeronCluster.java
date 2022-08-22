@@ -928,7 +928,7 @@ public final class AeronCluster implements AutoCloseable
     {
         /**
          * Major version of the network protocol from client to consensus module. If these don't match then client
-         * and archive consensus module are not compatible.
+         * and consensus module are not compatible.
          */
         public static final int PROTOCOL_MAJOR_VERSION = 0;
 
@@ -936,7 +936,7 @@ public final class AeronCluster implements AutoCloseable
          * Minor version of the network protocol from client to consensus module. If these don't match then some
          * features may not be available.
          */
-        public static final int PROTOCOL_MINOR_VERSION = 2;
+        public static final int PROTOCOL_MINOR_VERSION = 3;
 
         /**
          * Patch version of the network protocol from client to consensus module. If these don't match then bug fixes

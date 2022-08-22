@@ -273,6 +273,32 @@ public final class ConsensusModule implements AutoCloseable
     public static final class Configuration
     {
         /**
+         * Major version of the network protocol from consensus module to consensus module. If these don't match then
+         * consensus modules are not compatible.
+         */
+        public static final int PROTOCOL_MAJOR_VERSION = 1;
+
+        /**
+         * Minor version of the network protocol from consensus module to consensus module. If these don't match then
+         * some features may not be available.
+         */
+        public static final int PROTOCOL_MINOR_VERSION = 0;
+
+        /**
+         * Patch version of the network protocol from consensus module to consensus module. If these don't match then
+         * bug fixes may not have been applied.
+         */
+        public static final int PROTOCOL_PATCH_VERSION = 0;
+
+        /**
+         * Combined semantic version for the client to consensus module protocol.
+         *
+         * @see SemanticVersion
+         */
+        public static final int PROTOCOL_SEMANTIC_VERSION = SemanticVersion.compose(
+            PROTOCOL_MAJOR_VERSION, PROTOCOL_MINOR_VERSION, PROTOCOL_PATCH_VERSION);
+
+        /**
          * Type of snapshot for this component.
          */
         public static final long SNAPSHOT_TYPE_ID = 1;

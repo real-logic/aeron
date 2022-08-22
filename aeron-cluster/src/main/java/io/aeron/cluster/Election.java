@@ -281,7 +281,8 @@ class Election
         final long logLeadershipTermId,
         final long logPosition,
         final long leadershipTermId,
-        final int followerMemberId)
+        final int followerMemberId,
+        final int protocolVersion)
     {
         if (INIT == state)
         {
@@ -320,7 +321,11 @@ class Election
     }
 
     void onRequestVote(
-        final long logLeadershipTermId, final long logPosition, final long candidateTermId, final int candidateId)
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long candidateTermId,
+        final int candidateId,
+        final int protocolVersion)
     {
         if (INIT == state)
         {

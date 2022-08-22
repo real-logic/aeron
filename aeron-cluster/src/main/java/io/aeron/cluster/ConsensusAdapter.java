@@ -98,7 +98,8 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     canvassPositionDecoder.logLeadershipTermId(),
                     canvassPositionDecoder.logPosition(),
                     canvassPositionDecoder.leadershipTermId(),
-                    canvassPositionDecoder.followerMemberId());
+                    canvassPositionDecoder.followerMemberId(),
+                    canvassPositionDecoder.protocolVersion());
                 break;
 
             case RequestVoteDecoder.TEMPLATE_ID:
@@ -112,7 +113,8 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     requestVoteDecoder.logLeadershipTermId(),
                     requestVoteDecoder.logPosition(),
                     requestVoteDecoder.candidateTermId(),
-                    requestVoteDecoder.candidateMemberId());
+                    requestVoteDecoder.candidateMemberId(),
+                    requestVoteDecoder.protocolVersion());
                 break;
 
             case VoteDecoder.TEMPLATE_ID:

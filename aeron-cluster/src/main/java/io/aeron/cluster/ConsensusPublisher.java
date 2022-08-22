@@ -74,7 +74,8 @@ final class ConsensusPublisher
                     .logLeadershipTermId(logLeadershipTermId)
                     .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
-                    .followerMemberId(followerMemberId);
+                    .followerMemberId(followerMemberId)
+                    .protocolVersion(ConsensusModule.Configuration.PROTOCOL_SEMANTIC_VERSION);
 
                 bufferClaim.commit();
 
@@ -111,7 +112,8 @@ final class ConsensusPublisher
                     .logLeadershipTermId(logLeadershipTermId)
                     .logPosition(logPosition)
                     .candidateTermId(candidateTermId)
-                    .candidateMemberId(candidateMemberId);
+                    .candidateMemberId(candidateMemberId)
+                    .protocolVersion(ConsensusModule.Configuration.PROTOCOL_SEMANTIC_VERSION);
 
                 bufferClaim.commit();
 

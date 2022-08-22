@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.cluster.codecs"
                    id="111"
-                   version="8"
+                   version="9"
                    semanticVersion="5.3"
                    description="Message Codecs for communicating with, and within, an Aeron Cluster."
                    byteOrder="littleEndian">
@@ -434,6 +434,7 @@
         <field name="logPosition"              id="2" type="int64"/>
         <field name="leadershipTermId"         id="3" type="int64"/>
         <field name="followerMemberId"         id="4" type="int32"/>
+        <field name="protocolVersion"          id="5" type="version_t" sinceVersion="9"/>
     </sbe:message>
 
     <sbe:message name="RequestVote"
@@ -443,6 +444,7 @@
         <field name="logPosition"              id="2" type="int64"/>
         <field name="candidateTermId"          id="3" type="int64"/>
         <field name="candidateMemberId"        id="4" type="int32"/>
+        <field name="protocolVersion"          id="5" type="version_t" sinceVersion="9"/>
     </sbe:message>
 
     <sbe:message name="Vote"

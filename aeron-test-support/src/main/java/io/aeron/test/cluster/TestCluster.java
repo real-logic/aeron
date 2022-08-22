@@ -16,6 +16,7 @@
 package io.aeron.test.cluster;
 
 import io.aeron.*;
+import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
@@ -72,6 +73,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.test.cluster.ClusterTests.LARGE_MSG;
 import static io.aeron.test.cluster.ClusterTests.errorHandler;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -160,15 +162,16 @@ public class TestCluster implements AutoCloseable
     private TestMediaDriver clientMediaDriver;
     private AeronCluster client;
     private TestBackupNode backupNode;
+    private int archiveSegmentFileLength;
 
-    TestCluster(
+    private TestCluster(
         final int staticMemberCount,
         final int dynamicMemberCount,
         final int appointedLeaderId,
         final IntHashSet invalidInitialResolutions,
         final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
-        this.serviceSupplier = Objects.requireNonNull(serviceSupplier);
+        this.serviceSupplier = requireNonNull(serviceSupplier);
         final int memberCount = staticMemberCount + dynamicMemberCount;
         if ((memberCount + 1) >= 10)
         {
@@ -299,9 +302,9 @@ public class TestCluster implements AutoCloseable
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
-            .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart);
+            .deleteArchiveOnStart(cleanStart)
+            .segmentFileLength(archiveSegmentFileLength);
 
         context.consensusModuleContext
             .clusterMemberId(index)
@@ -353,17 +356,17 @@ public class TestCluster implements AutoCloseable
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
-            .segmentFileLength(SEGMENT_FILE_LENGTH)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart);
+            .deleteArchiveOnStart(cleanStart)
+            .segmentFileLength(archiveSegmentFileLength);
 
         context.consensusModuleContext
-            .clusterMemberId(NULL_VALUE)
-            .clusterMembers("")
+            .clusterMemberId(NULL_VALUE) //
+            .clusterMembers("")          //
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .memberEndpoints(clusterMembersEndpoints[index])
             .clusterDir(new File(baseDirName, "consensus-module"))
@@ -411,13 +414,13 @@ public class TestCluster implements AutoCloseable
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
-            .segmentFileLength(SEGMENT_FILE_LENGTH)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart);
+            .deleteArchiveOnStart(cleanStart)
+            .segmentFileLength(archiveSegmentFileLength);
 
         final String dynamicOnlyConsensusEndpoints = clusterConsensusEndpoints(0, 3, index);
 
@@ -475,9 +478,9 @@ public class TestCluster implements AutoCloseable
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
-            .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(false);
+            .deleteArchiveOnStart(false)
+            .segmentFileLength(archiveSegmentFileLength);
 
         context.consensusModuleContext
             .clusterMemberId(index)
@@ -545,13 +548,13 @@ public class TestCluster implements AutoCloseable
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
-            .segmentFileLength(SEGMENT_FILE_LENGTH)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart);
+            .deleteArchiveOnStart(cleanStart)
+            .segmentFileLength(archiveSegmentFileLength);
 
         final ChannelUri consensusChannelUri = ChannelUri.parse(context.clusterBackupContext.consensusChannel());
         final String backupStatusEndpoint = clusterBackupStatusEndpoint(0, index);
@@ -700,6 +703,11 @@ public class TestCluster implements AutoCloseable
     public void authenticationSupplier(final AuthenticatorSupplier authenticationSupplier)
     {
         this.authenticationSupplier = authenticationSupplier;
+    }
+
+    private void segmentFileLength(final int archiveSegmentFileLength)
+    {
+        this.archiveSegmentFileLength = archiveSegmentFileLength;
     }
 
     public String staticClusterMembers()
@@ -882,7 +890,7 @@ public class TestCluster implements AutoCloseable
     {
         while (true)
         {
-            client.pollEgress();
+            requireNonNull(client, "Client is not connected").pollEgress();
 
             final long result = client.offer(msgBuffer, 0, messageLength);
             if (result > 0)
@@ -1428,7 +1436,7 @@ public class TestCluster implements AutoCloseable
 
         final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
         final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir(), false);
-        final RecordingLog.Entry latestSnapshot = Objects.requireNonNull(
+        final RecordingLog.Entry latestSnapshot = requireNonNull(
             recordingLog.getLatestSnapshot(ConsensusModule.Configuration.SERVICE_ID));
         final long recordingId = recordingLog.findLastTermRecordingId();
         if (RecordingPos.NULL_RECORDING_ID == recordingId)
@@ -1691,6 +1699,7 @@ public class TestCluster implements AutoCloseable
         private IntFunction<TestNode.TestService[]> serviceSupplier =
             (i) -> new TestNode.TestService[]{ new TestNode.TestService().index(i) };
         private final IntHashSet invalidInitialResolutions = new IntHashSet();
+        private int archiveSegmentFileLength = TestCluster.SEGMENT_FILE_LENGTH;
 
         public Builder withStaticNodes(final int nodeCount)
         {
@@ -1788,6 +1797,7 @@ public class TestCluster implements AutoCloseable
             testCluster.authenticationSupplier(authenticationSupplier);
             testCluster.authorisationServiceSupplier(authorisationServiceSupplier);
             testCluster.timerServiceSupplier(timerServiceSupplier);
+            testCluster.segmentFileLength(archiveSegmentFileLength);
 
             try
             {
@@ -1813,6 +1823,12 @@ public class TestCluster implements AutoCloseable
             }
 
             return testCluster;
+        }
+
+        public Builder withSegmentFileLength(final int archiveSegmentFileLength)
+        {
+            this.archiveSegmentFileLength = archiveSegmentFileLength;
+            return this;
         }
     }
 

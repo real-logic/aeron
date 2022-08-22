@@ -1999,6 +1999,33 @@ class ClusterTest
         cluster.awaitNeutralControlToggle(leader);
     }
 
+    @Test
+    void shouldHandleTrimmingClusterFromTheFront()
+    {
+        cluster = aCluster().withSegmentFileLength(512 * 1024).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leaderNode = cluster.awaitLeader();
+        cluster.connectClient();
+        cluster.sendLargeMessages(1024);
+        cluster.awaitResponseMessageCount(1024);
+        cluster.awaitServicesMessageCount(1024);
+
+        cluster.takeSnapshot(leaderNode);
+        cluster.awaitSnapshotCount(1);
+        cluster.purgeLogToLastSnapshot();
+
+        cluster.terminationsExpected(true);
+        cluster.abortCluster(leaderNode);
+        cluster.awaitNodeTermination(leaderNode);
+        cluster.awaitNodeTermination(cluster.followers().get(0));
+        cluster.awaitNodeTermination(cluster.followers().get(1));
+        cluster.close();
+
+        cluster.restartAllNodes(false);
+        cluster.awaitServicesMessageCount(1024);
+    }
+
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)
     {
         cluster = aCluster().withStaticNodes(3).start();

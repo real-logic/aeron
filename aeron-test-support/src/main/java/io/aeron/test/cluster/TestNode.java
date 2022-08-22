@@ -51,6 +51,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -635,8 +636,8 @@ public class TestNode implements AutoCloseable
         {
             super.onStart(cluster, snapshotImage);
 
-            nextServiceMessageNumber = 10_000 * serviceId;
-            nextTimerCorrelationId = -1L * 10_000 * serviceId;
+            nextServiceMessageNumber = 1_000_000 * serviceId;
+            nextTimerCorrelationId = -1L * 1_000_000 * serviceId;
             clientMessages.clear();
             serviceMessages.clear();
             timers.clear();
@@ -730,12 +731,6 @@ public class TestNode implements AutoCloseable
                         clientMessages);
                 }
 
-                // Echo input message back to the client
-                while (session.offer(buffer, offset, length) < 0)
-                {
-                    idleStrategy.idle();
-                }
-
                 // Send 3 service messages
                 for (int i = 0; i < 3; i++)
                 {
@@ -751,11 +746,18 @@ public class TestNode implements AutoCloseable
                 // Schedule two timers
                 for (int i = 0; i < 2; i++)
                 {
+                    final long timerId = --nextTimerCorrelationId;
                     idleStrategy.reset();
-                    while (!cluster.scheduleTimer(--nextTimerCorrelationId, cluster.time() - 1))
+                    while (!cluster.scheduleTimer(timerId, cluster.time() - 1))
                     {
                         idleStrategy.idle();
                     }
+                }
+
+                // Echo input message back to the client
+                while (session.offer(buffer, offset, length) < 0)
+                {
+                    idleStrategy.idle();
                 }
             }
             else
@@ -905,7 +907,7 @@ public class TestNode implements AutoCloseable
     public String toString()
     {
         return "TestNode{" +
-            "consensusModule=" + consensusModule +
+            "services=" + Arrays.toString(services) +
             '}';
     }
 }

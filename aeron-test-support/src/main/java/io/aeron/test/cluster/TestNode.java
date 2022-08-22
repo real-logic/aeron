@@ -54,6 +54,7 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -615,23 +616,25 @@ public class TestNode implements AutoCloseable
             index(index);
         }
 
-        public IntHashSet clientMessages()
+        public int clientMessages()
         {
-            return clientMessages;
+            return clientMessages.size();
         }
 
-        public IntHashSet serviceMessages()
+        public int serviceMessages()
         {
-            return serviceMessages;
+            return serviceMessages.size();
         }
 
-        public LongHashSet timers()
+        public int timers()
         {
-            return timers;
+            return timers.size();
         }
 
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {
+            super.onStart(cluster, snapshotImage);
+
             nextServiceMessageNumber = 10_000 * serviceId;
             nextTimerCorrelationId = -1L * 10_000 * serviceId;
             clientMessages.clear();
@@ -776,6 +779,21 @@ public class TestNode implements AutoCloseable
                     " Duplicate timer event: correlationId=" + correlationId + ", timers=" + timers);
             }
             super.onTimerEvent(correlationId, timestamp);
+        }
+
+        public String toString()
+        {
+            return "MessageTrackingService{" +
+                "memberId=" + index() +
+                ", serviceId=" + serviceId +
+                ", messageCount=" + messageCount() +
+                ", timerCount=" + timerCount() +
+                ", nextServiceMessageNumber=" + nextServiceMessageNumber +
+                ", nextTimerCorrelationId=" + nextTimerCorrelationId +
+                ", clientMessages=" + clientMessages.stream().sorted().collect(Collectors.toList()) +
+                ", serviceMessages=" + serviceMessages.stream().sorted().collect(Collectors.toList()) +
+                ", timers=" + timers.stream().sorted().collect(Collectors.toList()) +
+                '}';
         }
 
         private void snapshotMessages(

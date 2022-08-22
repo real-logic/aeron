@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.function.Supplier;
+
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -121,9 +123,7 @@ class ServiceIpcIngressMessageTest
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
             .withServiceSupplier((i) -> new TestNode.TestService[]{
-                new TestNode.MessageTrackingService(1, i),
-                new TestNode.MessageTrackingService(2, i),
-                new TestNode.MessageTrackingService(3, i) })
+                new TestNode.MessageTrackingService(1, i)})
             .start();
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
@@ -175,7 +175,7 @@ class ServiceIpcIngressMessageTest
         for (final TestNode.TestService service : services)
         {
             // 1 client message + 3 service messages
-            cluster.awaitServiceMessageCount(node, service, messageCount * 3 * services.length);
+            cluster.awaitServiceMessageCount(node, service, messageCount * 4 * services.length);
             // two timers per message
             cluster.awaitTimerEventCount(node, service, messageCount * 2 * services.length);
         }
@@ -189,10 +189,11 @@ class ServiceIpcIngressMessageTest
             final TestNode.TestService[] services = node.services();
             for (final TestNode.TestService service : services)
             {
+                final Supplier<String> errorMsg = service::toString;
                 final TestNode.MessageTrackingService trackingService = (TestNode.MessageTrackingService)service;
-                assertEquals(messageCount, trackingService.clientMessages().size());
-                assertEquals(messageCount * 3 * services.length, trackingService.serviceMessages().size());
-                assertEquals(messageCount * 2 * services.length, trackingService.timers().size());
+                assertEquals(messageCount, trackingService.clientMessages(), errorMsg);
+                assertEquals(messageCount * 3 * services.length, trackingService.serviceMessages(), errorMsg);
+                assertEquals(messageCount * 2 * services.length, trackingService.timers(), errorMsg);
             }
         }
     }

@@ -41,7 +41,7 @@ class ServiceIpcIngressMessageTest
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(10)
     void shouldEchoServiceIpcMessages()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
@@ -64,7 +64,7 @@ class ServiceIpcIngressMessageTest
 
     @Test
     @SlowTest
-    @InterruptAfter(20)
+    @InterruptAfter(40)
     void shouldProcessServiceMessagesWithoutDuplicates()
     {
         final TestCluster cluster = aCluster()

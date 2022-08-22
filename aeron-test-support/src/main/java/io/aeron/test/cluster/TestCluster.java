@@ -16,7 +16,6 @@
 package io.aeron.test.cluster;
 
 import io.aeron.*;
-import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
@@ -77,7 +76,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestCluster implements AutoCloseable
+public final class TestCluster implements AutoCloseable
 {
     private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
     private static final long CATALOG_CAPACITY = 128 * 1024;

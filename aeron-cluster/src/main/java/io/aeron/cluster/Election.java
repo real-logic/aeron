@@ -29,6 +29,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.SemanticVersion;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.AgentTerminationException;
 
@@ -337,7 +338,8 @@ class Election
             return;
         }
 
-        if (candidateTermId <= this.candidateTermId)
+        if (candidateTermId <= this.candidateTermId ||
+            SemanticVersion.major(protocolVersion) < ConsensusModule.Configuration.PROTOCOL_MAJOR_VERSION)
         {
             placeVote(candidateTermId, candidateId, false);
         }

@@ -1729,7 +1729,7 @@ class ClusterTest
         for (int i = 0; i < staticNodeCount; i++)
         {
             final TestNode node = cluster.node(i);
-            cluster.awaitServiceState(node, finalServiceState);
+            cluster.awaitNodeState(node, finalServiceState);
         }
     }
 

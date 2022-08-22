@@ -65,7 +65,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TestNode implements AutoCloseable
+public final class TestNode implements AutoCloseable
 {
     private final Archive archive;
     private final ConsensusModule consensusModule;
@@ -131,6 +131,15 @@ public class TestNode implements AutoCloseable
                 ex.addSuppressed(e);
             }
             throw ex;
+        }
+    }
+
+    public void stopServiceContainers()
+    {
+        CloseHelper.closeAll(containers);
+        for (final AtomicBoolean terminationFlag : context.hasServiceTerminated)
+        {
+            terminationFlag.set(true);
         }
     }
 

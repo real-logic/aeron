@@ -1312,7 +1312,7 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
-    public void awaitServiceState(final TestNode node, final Predicate<TestNode> predicate)
+    public void awaitNodeState(final TestNode node, final Predicate<TestNode> predicate)
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
@@ -1322,7 +1322,7 @@ public final class TestCluster implements AutoCloseable
             Thread.yield();
             if (Thread.interrupted())
             {
-                throw new TimeoutException("timeout while awaiting service state");
+                throw new TimeoutException("timeout while awaiting node state");
             }
 
             final long nowMs = epochClock.time();

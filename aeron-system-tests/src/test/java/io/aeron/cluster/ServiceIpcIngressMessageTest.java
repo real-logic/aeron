@@ -95,7 +95,7 @@ class ServiceIpcIngressMessageTest
 
         cluster.stopNode(oldLeader);
 
-        final TestNode newLeader = cluster.awaitLeader();
+        final TestNode newLeader = cluster.awaitLeader(oldLeader.index());
         final TestNode follower = cluster.node(3 - oldLeader.index() - newLeader.index());
         assertEquals(Cluster.Role.FOLLOWER, follower.role());
         cluster.reconnectClient();
@@ -110,6 +110,58 @@ class ServiceIpcIngressMessageTest
         oldLeader = cluster.startStaticNode(oldLeader.index(), false);
         awaitElectionClosed(oldLeader);
         assertEquals(Cluster.Role.FOLLOWER, oldLeader.role());
+        awaitMessageCounters(cluster, oldLeader, messageCount);
+
+        assertTrackedMessages(cluster, messageCount);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldProcessServiceMessagesAndTimersWithoutDuplicatesWhenLeaderServicesAreStopped()
+    {
+        final TestCluster cluster = aCluster()
+            .withStaticNodes(3)
+            .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
+            .withServiceSupplier((i) -> new TestNode.TestService[]{
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i) })
+            .start();
+        systemTestWatcher.cluster(cluster);
+        final int serviceCount = cluster.node(0).services().length;
+
+        TestNode oldLeader = cluster.awaitLeader();
+        cluster.connectClient();
+        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
+
+        int messageCount = 0;
+        for (int i = 0; i < 50; i++)
+        {
+            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
+            cluster.pollUntilMessageSent(SIZE_OF_INT);
+        }
+        cluster.awaitResponseMessageCount(messageCount * serviceCount);
+        awaitMessageCounters(cluster, messageCount);
+
+        oldLeader.stopServiceContainers(); // stop services to cause a new election
+
+        final TestNode newLeader = cluster.awaitLeader(oldLeader.index());
+        final TestNode follower = cluster.node(3 - oldLeader.index() - newLeader.index());
+        assertEquals(Cluster.Role.FOLLOWER, follower.role());
+        cluster.awaitNodeState(oldLeader, node -> Cluster.Role.FOLLOWER == node.role());
+        cluster.reconnectClient();
+        for (int i = 0; i < 30; i++)
+        {
+            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
+            cluster.pollUntilMessageSent(SIZE_OF_INT);
+        }
+        cluster.awaitResponseMessageCount(messageCount * serviceCount);
+        awaitMessageCounters(cluster, newLeader, messageCount);
+        awaitMessageCounters(cluster, follower, messageCount);
+        assertTrackedMessages(newLeader, messageCount);
+        assertTrackedMessages(follower, messageCount);
+
+        cluster.stopNode(oldLeader);
+        oldLeader = cluster.startStaticNode(oldLeader.index(), false);
         awaitMessageCounters(cluster, oldLeader, messageCount);
 
         assertTrackedMessages(cluster, messageCount);
@@ -186,15 +238,20 @@ class ServiceIpcIngressMessageTest
         for (int i = 0; i < 3; i++)
         {
             final TestNode node = cluster.node(i);
-            final TestNode.TestService[] services = node.services();
-            for (final TestNode.TestService service : services)
-            {
-                final Supplier<String> errorMsg = service::toString;
-                final TestNode.MessageTrackingService trackingService = (TestNode.MessageTrackingService)service;
-                assertEquals(messageCount, trackingService.clientMessages(), errorMsg);
-                assertEquals(messageCount * 3 * services.length, trackingService.serviceMessages(), errorMsg);
-                assertEquals(messageCount * 2 * services.length, trackingService.timers(), errorMsg);
-            }
+            assertTrackedMessages(node, messageCount);
+        }
+    }
+
+    private static void assertTrackedMessages(final TestNode node, final int messageCount)
+    {
+        final TestNode.TestService[] services = node.services();
+        for (final TestNode.TestService service : services)
+        {
+            final Supplier<String> errorMsg = service::toString;
+            final TestNode.MessageTrackingService trackingService = (TestNode.MessageTrackingService)service;
+            assertEquals(messageCount, trackingService.clientMessages(), errorMsg);
+            assertEquals(messageCount * 3 * services.length, trackingService.serviceMessages(), errorMsg);
+            assertEquals(messageCount * 2 * services.length, trackingService.timers(), errorMsg);
         }
     }
 }

@@ -175,7 +175,7 @@ class ServiceIpcIngressMessageTest
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
             .withServiceSupplier((i) -> new TestNode.TestService[]{
-                new TestNode.MessageTrackingService(1, i)})
+                new TestNode.MessageTrackingService(1, i) })
             .start();
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
@@ -186,6 +186,60 @@ class ServiceIpcIngressMessageTest
 
         int messageCount = 0;
         for (int i = 0; i < 10; i++)
+        {
+            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
+            cluster.pollUntilMessageSent(SIZE_OF_INT);
+        }
+        cluster.awaitResponseMessageCount(messageCount * serviceCount);
+        awaitMessageCounts(cluster, messageCount);
+
+        cluster.stopAllNodes();
+        cluster.restartAllNodes(false);
+        cluster.awaitLeader();
+
+        cluster.reconnectClient();
+        for (int i = 0; i < 20; i++)
+        {
+            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
+            cluster.pollUntilMessageSent(SIZE_OF_INT);
+        }
+        cluster.awaitResponseMessageCount(messageCount * serviceCount);
+        awaitMessageCounts(cluster, messageCount);
+
+        assertTrackedMessages(cluster, messageCount);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldProcessServiceMessagesWithoutDuplicatesWhenClusterIsRestartedAfterTakingASnapshot()
+    {
+        final TestCluster cluster = aCluster()
+            .withStaticNodes(3)
+            .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
+            .withServiceSupplier((i) -> new TestNode.TestService[]{
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i) })
+            .start();
+        systemTestWatcher.cluster(cluster);
+        final int serviceCount = cluster.node(0).services().length;
+
+        final TestNode leader = cluster.awaitLeader();
+        cluster.connectClient();
+        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
+
+        int messageCount = 0;
+        for (int i = 0; i < 10; i++)
+        {
+            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
+            cluster.pollUntilMessageSent(SIZE_OF_INT);
+        }
+        cluster.awaitResponseMessageCount(messageCount * serviceCount);
+        awaitMessageCounts(cluster, messageCount);
+
+        cluster.takeSnapshot(leader);
+        cluster.awaitSnapshotCount(1);
+
+        for (int i = 0; i < 5; i++)
         {
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);

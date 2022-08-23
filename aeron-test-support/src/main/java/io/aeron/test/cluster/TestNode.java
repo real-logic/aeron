@@ -199,7 +199,12 @@ public final class TestNode implements AutoCloseable
 
     public Cluster.Role role()
     {
-        return Cluster.Role.get(consensusModule.context().clusterNodeRoleCounter());
+        final Counter roleCounter = consensusModule.context().clusterNodeRoleCounter();
+        if (!roleCounter.isClosed())
+        {
+            return Cluster.Role.get(roleCounter);
+        }
+        return Cluster.Role.FOLLOWER;
     }
 
     ElectionState electionState()
@@ -339,7 +344,7 @@ public final class TestNode implements AutoCloseable
         private volatile Cluster.Role roleChangedTo = null;
         private final AtomicInteger activeSessionCount = new AtomicInteger();
         final AtomicInteger messageCount = new AtomicInteger();
-        private final AtomicInteger timerCount = new AtomicInteger();
+        final AtomicInteger timerCount = new AtomicInteger();
 
         public TestService index(final int index)
         {
@@ -612,6 +617,10 @@ public final class TestNode implements AutoCloseable
 
     public static class MessageTrackingService extends TestNode.TestService
     {
+        private static final byte SNAPSHOT_COUNTERS = (byte)1;
+        private static final byte SNAPSHOT_CLIENT_MESSAGES = (byte)2;
+        private static final byte SNAPSHOT_SERVICE_MESSAGES = (byte)3;
+        private static final byte SNAPSHOT_TIMERS = (byte)4;
         private final int serviceId;
         private final ExpandableArrayBuffer messageBuffer = new ExpandableArrayBuffer();
         private final IntHashSet clientMessages = new IntHashSet();
@@ -643,8 +652,6 @@ public final class TestNode implements AutoCloseable
 
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {
-            super.onStart(cluster, snapshotImage);
-
             nextServiceMessageNumber = 1_000_000 * serviceId;
             nextTimerCorrelationId = -1L * 1_000_000 * serviceId;
             clientMessages.clear();
@@ -659,23 +666,36 @@ public final class TestNode implements AutoCloseable
                 final FragmentHandler handler =
                     new FragmentAssembler((buffer, offset, length, header) ->
                     {
-                        final byte snapshotType = buffer.getByte(offset);
-                        if (-1 == snapshotType)
+                        int index = offset;
+                        final byte snapshotType = buffer.getByte(index);
+                        index++;
+                        if (SNAPSHOT_COUNTERS == snapshotType)
                         {
-                            nextServiceMessageNumber = buffer.getInt(offset + 1, LITTLE_ENDIAN);
-                            nextTimerCorrelationId = buffer.getLong(offset + 1 + SIZE_OF_INT, LITTLE_ENDIAN);
+                            final int storedServiceId = buffer.getInt(index, LITTLE_ENDIAN);
+                            if (serviceId != storedServiceId)
+                            {
+                                throw new IllegalStateException("Invalid snapshot!");
+                            }
+                            index += SIZE_OF_INT;
+                            messageCount.set(buffer.getInt(index, LITTLE_ENDIAN));
+                            index += SIZE_OF_INT;
+                            timerCount.set(buffer.getInt(index, LITTLE_ENDIAN));
+                            index += SIZE_OF_INT;
+                            nextServiceMessageNumber = buffer.getInt(index, LITTLE_ENDIAN);
+                            index += SIZE_OF_INT;
+                            nextTimerCorrelationId = buffer.getLong(index, LITTLE_ENDIAN);
                         }
-                        else if (0 == snapshotType) // client messages
+                        else if (SNAPSHOT_CLIENT_MESSAGES == snapshotType) // client messages
                         {
-                            restoreMessages(buffer, offset + 1, clientMessages);
+                            restoreMessages(buffer, index, clientMessages);
                         }
-                        else if (1 == snapshotType) // service messages
+                        else if (SNAPSHOT_SERVICE_MESSAGES == snapshotType) // service messages
                         {
-                            restoreMessages(buffer, offset + 1, serviceMessages);
+                            restoreMessages(buffer, index, serviceMessages);
                         }
-                        else if (2 == snapshotType) // timers
+                        else if (SNAPSHOT_TIMERS == snapshotType) // timers
                         {
-                            restoreTimers(buffer, offset + 1);
+                            restoreTimers(buffer, index);
                         }
                         else
                         {
@@ -703,8 +723,15 @@ public final class TestNode implements AutoCloseable
             wasSnapshotTaken = false;
 
             int offset = 0;
-            messageBuffer.putByte(offset, (byte)-1);
+
+            messageBuffer.putByte(offset, SNAPSHOT_COUNTERS);
             offset++;
+            messageBuffer.putInt(offset, serviceId, LITTLE_ENDIAN);
+            offset += SIZE_OF_INT;
+            messageBuffer.putInt(offset, messageCount(), LITTLE_ENDIAN);
+            offset += SIZE_OF_INT;
+            messageBuffer.putInt(offset, timerCount(), LITTLE_ENDIAN);
+            offset += SIZE_OF_INT;
             messageBuffer.putInt(offset, nextServiceMessageNumber, LITTLE_ENDIAN);
             offset += SIZE_OF_INT;
             messageBuffer.putLong(offset, nextTimerCorrelationId, LITTLE_ENDIAN);
@@ -715,8 +742,8 @@ public final class TestNode implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            snapshotMessages(snapshotPublication, (byte)0, clientMessages);
-            snapshotMessages(snapshotPublication, (byte)1, serviceMessages);
+            snapshotMessages(snapshotPublication, SNAPSHOT_CLIENT_MESSAGES, clientMessages);
+            snapshotMessages(snapshotPublication, SNAPSHOT_SERVICE_MESSAGES, serviceMessages);
             snapshotTimers(snapshotPublication);
 
             wasSnapshotTaken = true;
@@ -795,8 +822,7 @@ public final class TestNode implements AutoCloseable
         public String toString()
         {
             return "MessageTrackingService{" +
-                "memberId=" + index() +
-                ", serviceId=" + serviceId +
+                "serviceId=" + serviceId +
                 ", messageCount=" + messageCount() +
                 ", timerCount=" + timerCount() +
                 ", nextServiceMessageNumber=" + nextServiceMessageNumber +
@@ -834,7 +860,7 @@ public final class TestNode implements AutoCloseable
         private void snapshotTimers(final ExclusivePublication snapshotPublication)
         {
             int offset = 0;
-            messageBuffer.putByte(offset, (byte)2);
+            messageBuffer.putByte(offset, SNAPSHOT_TIMERS);
             offset++;
             messageBuffer.putInt(offset, timers.size(), LITTLE_ENDIAN);
             offset += SIZE_OF_INT;
@@ -916,7 +942,9 @@ public final class TestNode implements AutoCloseable
     public String toString()
     {
         return "TestNode{" +
-            "services=" + Arrays.toString(services) +
+            "memberId=" + index() +
+            ", role=" + role() +
+            ", services=" + Arrays.toString(services) +
             '}';
     }
 }

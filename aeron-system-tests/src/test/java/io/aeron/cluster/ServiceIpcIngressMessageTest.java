@@ -91,7 +91,7 @@ class ServiceIpcIngressMessageTest
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
-        awaitMessageCounters(cluster, messageCount);
+        awaitMessageCounts(cluster, messageCount);
 
         cluster.stopNode(oldLeader);
 
@@ -105,12 +105,12 @@ class ServiceIpcIngressMessageTest
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
-        awaitMessageCounters(cluster, messageCount);
+        awaitMessageCounts(cluster, messageCount);
 
         oldLeader = cluster.startStaticNode(oldLeader.index(), false);
         awaitElectionClosed(oldLeader);
         assertEquals(Cluster.Role.FOLLOWER, oldLeader.role());
-        awaitMessageCounters(cluster, oldLeader, messageCount);
+        awaitMessageCounts(cluster, oldLeader, messageCount);
 
         assertTrackedMessages(cluster, messageCount);
     }
@@ -140,7 +140,7 @@ class ServiceIpcIngressMessageTest
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
-        awaitMessageCounters(cluster, messageCount);
+        awaitMessageCounts(cluster, messageCount);
 
         oldLeader.stopServiceContainers(); // stop services to cause a new election
 
@@ -155,14 +155,14 @@ class ServiceIpcIngressMessageTest
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
-        awaitMessageCounters(cluster, newLeader, messageCount);
-        awaitMessageCounters(cluster, follower, messageCount);
+        awaitMessageCounts(cluster, newLeader, messageCount);
+        awaitMessageCounts(cluster, follower, messageCount);
         assertTrackedMessages(newLeader, messageCount);
         assertTrackedMessages(follower, messageCount);
 
         cluster.stopNode(oldLeader);
         oldLeader = cluster.startStaticNode(oldLeader.index(), false);
-        awaitMessageCounters(cluster, oldLeader, messageCount);
+        awaitMessageCounts(cluster, oldLeader, messageCount);
 
         assertTrackedMessages(cluster, messageCount);
     }
@@ -191,7 +191,7 @@ class ServiceIpcIngressMessageTest
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
-        awaitMessageCounters(cluster, messageCount);
+        awaitMessageCounts(cluster, messageCount);
 
         cluster.stopAllNodes();
         cluster.restartAllNodes(false);
@@ -204,24 +204,24 @@ class ServiceIpcIngressMessageTest
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
-        awaitMessageCounters(cluster, messageCount);
+        awaitMessageCounts(cluster, messageCount);
 
         assertTrackedMessages(cluster, messageCount);
     }
 
-    private static void awaitMessageCounters(final TestCluster cluster, final int messageCount)
+    private static void awaitMessageCounts(final TestCluster cluster, final int messageCount)
     {
         for (int i = 0; i < 3; i++)
         {
             final TestNode node = cluster.node(i);
             if (null != node && !node.isClosed())
             {
-                awaitMessageCounters(cluster, node, messageCount);
+                awaitMessageCounts(cluster, node, messageCount);
             }
         }
     }
 
-    private static void awaitMessageCounters(final TestCluster cluster, final TestNode node, final int messageCount)
+    private static void awaitMessageCounts(final TestCluster cluster, final TestNode node, final int messageCount)
     {
         final TestNode.TestService[] services = node.services();
         for (final TestNode.TestService service : services)

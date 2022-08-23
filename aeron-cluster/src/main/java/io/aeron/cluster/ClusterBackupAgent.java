@@ -95,7 +95,7 @@ public final class ClusterBackupAgent implements Agent
     private AeronArchive.AsyncConnect clusterArchiveAsyncConnect;
     private AeronArchive clusterArchive;
 
-    private SnapshotReplication snapshotReplication;
+    private MultiSnapshotReplication multiSnapshotReplication;
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
     private final Subscription consensusSubscription;
@@ -120,7 +120,6 @@ public final class ClusterBackupAgent implements Agent
     private long liveLogRecordingId = NULL_VALUE;
     private int leaderCommitPositionCounterId = NULL_VALUE;
     private int clusterConsensusEndpointsCursor = NULL_VALUE;
-    private int snapshotCursor = 0;
     private int liveLogReplaySessionId = NULL_VALUE;
     private int liveLogRecCounterId = NULL_COUNTER_ID;
 
@@ -180,10 +179,7 @@ public final class ClusterBackupAgent implements Agent
                 backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
             }
 
-            if (null != snapshotReplication)
-            {
-                snapshotReplication.close(backupArchive);
-            }
+            CloseHelper.close(multiSnapshotReplication);
 
             if (!ctx.ownsAeronClient())
             {
@@ -307,11 +303,8 @@ public final class ClusterBackupAgent implements Agent
         snapshotsRetrieved.clear();
         fragmentAssembler.clear();
 
-        if (null != snapshotReplication)
-        {
-            snapshotReplication.close(backupArchive);
-            snapshotReplication = null;
-        }
+        CloseHelper.close(multiSnapshotReplication);
+        multiSnapshotReplication = null;
 
         if (NULL_VALUE != liveLogRecordingSubscriptionId)
         {
@@ -477,7 +470,6 @@ public final class ClusterBackupAgent implements Agent
             }
 
             timeOfLastBackupQueryMs = 0;
-            snapshotCursor = 0;
             this.correlationId = NULL_VALUE;
             leaderCommitPositionCounterId = commitPositionCounterId;
 
@@ -637,68 +629,33 @@ public final class ClusterBackupAgent implements Agent
             return null == clusterArchive ? clusterArchiveAsyncConnect.step() - step : 1;
         }
 
-        if (null == snapshotReplication)
+        if (null == multiSnapshotReplication)
         {
             final ChannelUri replicationUri = ChannelUri.parse(ctx.catchupChannel());
             replicationUri.put(ENDPOINT_PARAM_NAME, ctx.catchupEndpoint());
-            final long replicationId = backupArchive.replicate(
-                snapshotsToRetrieve.get(snapshotCursor).recordingId,
-                RecordingPos.NULL_RECORDING_ID,
-                NULL_POSITION,
+            multiSnapshotReplication = new MultiSnapshotReplication(
+                backupArchive,
                 clusterArchive.context().controlRequestStreamId(),
                 clusterArchive.context().controlRequestChannel(),
-                null,
                 replicationUri.toString());
 
-            snapshotReplication = new SnapshotReplication(replicationId, true);
-            timeOfLastProgressMs = nowMs;
+            snapshotsToRetrieve.forEach(multiSnapshotReplication::addSnapshot);
             workCount++;
         }
-        else
+
+        workCount += multiSnapshotReplication.poll();
+        workCount += pollBackupArchiveEvents();
+        timeOfLastProgressMs = nowMs;
+
+        if (multiSnapshotReplication.isComplete())
         {
-            workCount += pollBackupArchiveEvents();
-            timeOfLastProgressMs = nowMs;
+            snapshotsRetrieved.addAll(multiSnapshotReplication.snapshotsRetrieved());
 
-            if (snapshotReplication.isDone())
-            {
-                if (snapshotReplication.isComplete())
-                {
-                    final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
+            multiSnapshotReplication.close();
+            multiSnapshotReplication = null;
 
-                    snapshotsRetrieved.add(new RecordingLog.Snapshot(
-                        snapshotReplication.recordingId(),
-                        snapshot.leadershipTermId,
-                        snapshot.termBaseLogPosition,
-                        snapshot.logPosition,
-                        snapshot.timestamp,
-                        snapshot.serviceId));
-
-                    snapshotReplication = null;
-
-                    if (++snapshotCursor >= snapshotsToRetrieve.size())
-                    {
-                        state(LIVE_LOG_RECORD, nowMs);
-                        workCount++;
-                    }
-                }
-                else
-                {
-                    final ChannelUri replicationUri = ChannelUri.parse(ctx.catchupChannel());
-                    replicationUri.put(ENDPOINT_PARAM_NAME, ctx.catchupEndpoint());
-                    final long replicationId = backupArchive.replicate(
-                        snapshotsToRetrieve.get(snapshotCursor).recordingId,
-                        snapshotReplication.recordingId(),
-                        NULL_POSITION,
-                        clusterArchive.context().controlRequestStreamId(),
-                        clusterArchive.context().controlRequestChannel(),
-                        null,
-                        replicationUri.toString());
-
-                    snapshotReplication = new SnapshotReplication(replicationId, false);
-                    timeOfLastProgressMs = nowMs;
-                    workCount++;
-                }
-            }
+            state(LIVE_LOG_RECORD, nowMs);
+            workCount++;
         }
 
         return workCount;
@@ -1000,9 +957,9 @@ public final class ClusterBackupAgent implements Agent
                         throw ex;
                     }
                 }
-                else if (RecordingSignalEventDecoder.TEMPLATE_ID == templateId && null != snapshotReplication)
+                else if (RecordingSignalEventDecoder.TEMPLATE_ID == templateId && null != multiSnapshotReplication)
                 {
-                    snapshotReplication.onSignal(
+                    multiSnapshotReplication.onSignal(
                         poller.correlationId(),
                         poller.recordingId(),
                         poller.recordingPosition(),

@@ -1234,14 +1234,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     void onReplaySessionMessage(final long clusterSessionId, final long timestamp)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null == session)
+        if (null != session)
+        {
+            session.timeOfLastActivityNs(clusterTimeUnit.toNanos(timestamp));
+        }
+        else if (clusterSessionId < 0)
         {
             logServiceSessionId = clusterSessionId;
             pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
-        }
-        else
-        {
-            session.timeOfLastActivityNs(clusterTimeUnit.toNanos(timestamp));
         }
     }
 

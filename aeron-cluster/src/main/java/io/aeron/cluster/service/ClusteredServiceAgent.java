@@ -321,7 +321,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
         checkForValidInvocation();
-        sessionMessageHeaderEncoder.clusterSessionId(0);
+        sessionMessageHeaderEncoder.clusterSessionId(context().serviceId());
 
         return consensusModuleProxy.offer(headerBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length);
     }
@@ -329,7 +329,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     public long offer(final DirectBufferVector[] vectors)
     {
         checkForValidInvocation();
-        sessionMessageHeaderEncoder.clusterSessionId(0);
+        sessionMessageHeaderEncoder.clusterSessionId(context().serviceId());
         vectors[0] = headerVector;
 
         return consensusModuleProxy.offer(vectors);
@@ -338,7 +338,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
         checkForValidInvocation();
-        sessionMessageHeaderEncoder.clusterSessionId(0);
+        sessionMessageHeaderEncoder.clusterSessionId(context().serviceId());
 
         return consensusModuleProxy.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim, headerBuffer);
     }

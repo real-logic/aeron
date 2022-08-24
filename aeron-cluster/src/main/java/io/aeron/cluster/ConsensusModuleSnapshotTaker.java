@@ -34,6 +34,8 @@ class ConsensusModuleSnapshotTaker
     private final ConsensusModuleEncoder consensusModuleEncoder = new ConsensusModuleEncoder();
     private final ClusterMembersEncoder clusterMembersEncoder = new ClusterMembersEncoder();
 
+    private final PendingMessageTrackerEncoder pendingMessageTrackerEncoder = new PendingMessageTrackerEncoder();
+
     ConsensusModuleSnapshotTaker(
         final ExclusivePublication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronClientInvoker)
     {
@@ -162,8 +164,30 @@ class ConsensusModuleSnapshotTaker
         }
     }
 
-    void snapshot(final ExpandableRingBuffer pendingServiceMessages)
+    void snapshot(final PendingServiceMessageTracker tracker)
     {
-        pendingServiceMessages.forEach(this, Integer.MAX_VALUE);
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + PendingMessageTrackerEncoder.BLOCK_LENGTH;
+
+        idleStrategy.reset();
+        while (true)
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                pendingMessageTrackerEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .nextServiceSessionId(tracker.nextServiceSessionId())
+                    .logServiceSessionId(tracker.logServiceSessionId())
+                    .pendingMessageCapacity(tracker.pendingMessages().size())
+                    .serviceId(tracker.serviceId());
+
+                bufferClaim.commit();
+                break;
+            }
+
+            checkResultAndIdle(result);
+        }
+
+        tracker.pendingMessages().forEach(this, Integer.MAX_VALUE);
     }
 }

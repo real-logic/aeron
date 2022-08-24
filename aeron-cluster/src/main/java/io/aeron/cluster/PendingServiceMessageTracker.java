@@ -32,10 +32,11 @@ final class PendingServiceMessageTracker
 {
     private static final int SERVICE_MESSAGE_LIMIT = 20;
 
+    private final int serviceId;
     private int pendingMessageHeadOffset = 0;
     private int uncommittedMessages = 0;
-    private long nextServiceSessionId = Long.MIN_VALUE + 1;
-    private long logServiceSessionId = Long.MIN_VALUE;
+    private long nextServiceSessionId;
+    private long logServiceSessionId;
     private long leadershipTermId = NULL_VALUE;
 
     private final Counter commitPosition;
@@ -47,16 +48,28 @@ final class PendingServiceMessageTracker
     private final ExpandableRingBuffer.MessageConsumer followerMessageSweeper = this::followerMessageSweeper;
 
     PendingServiceMessageTracker(
-        final Counter commitPosition, final LogPublisher logPublisher, final ClusterClock clusterClock)
+        final int serviceId,
+        final Counter commitPosition,
+        final LogPublisher logPublisher,
+        final ClusterClock clusterClock)
     {
+        this.serviceId = serviceId;
         this.commitPosition = commitPosition;
         this.logPublisher = logPublisher;
         this.clusterClock = clusterClock;
+
+        logServiceSessionId = ((long)serviceId << 56) | Long.MIN_VALUE;
+        nextServiceSessionId = logServiceSessionId + 1;
     }
 
     void leadershipTermId(final long leadershipTermId)
     {
         this.leadershipTermId = leadershipTermId;
+    }
+
+    int serviceId()
+    {
+        return serviceId;
     }
 
     long nextServiceSessionId()
@@ -83,8 +96,8 @@ final class PendingServiceMessageTracker
             buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderDecoder.BYTE_ORDER);
             if (!pendingMessages.append(buffer, offset - SESSION_HEADER_LENGTH, length + SESSION_HEADER_LENGTH))
             {
-                throw new ClusterException(
-                    "pending service message buffer at capacity: " + pendingMessages.size());
+                throw new ClusterException("pending service message buffer at capacity=" + pendingMessages.size() +
+                    " for serviceId=" + serviceId);
             }
         }
     }
@@ -140,6 +153,11 @@ final class PendingServiceMessageTracker
     int size()
     {
         return pendingMessages.size();
+    }
+
+    ExpandableRingBuffer pendingMessages()
+    {
+        return pendingMessages;
     }
 
     private boolean messageAppender(
@@ -214,8 +232,8 @@ final class PendingServiceMessageTracker
         return buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER) <= logServiceSessionId;
     }
 
-    public ExpandableRingBuffer pendingMessages()
+    static int serviceId(final long clusterSessionId)
     {
-        return pendingMessages;
+        return ((int)(clusterSessionId >>> 56)) & 0x7F;
     }
 }

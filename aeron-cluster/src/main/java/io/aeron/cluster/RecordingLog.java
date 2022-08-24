@@ -1286,7 +1286,7 @@ public final class RecordingLog implements AutoCloseable
         final long initialLogLeadershipTermId,
         final long initialTermBaseLogPosition,
         final long leadershipTermId,
-        final long logTermBasePosition,
+        final long termBaseLogPosition,
         final long logPosition,
         final long nowNs,
         final long timestamp,
@@ -1299,10 +1299,9 @@ public final class RecordingLog implements AutoCloseable
             for (long termId = max(0, initialLogLeadershipTermId); termId < leadershipTermId; termId++)
             {
                 appendTerm(recordingId, termId, initialTermBaseLogPosition, timestamp);
-                commitLogPosition(termId, initialTermBaseLogPosition);
             }
 
-            appendTerm(recordingId, leadershipTermId, initialTermBaseLogPosition, timestamp);
+            appendTerm(recordingId, leadershipTermId, termBaseLogPosition, timestamp);
             if (NULL_VALUE != logPosition)
             {
                 commitLogPosition(leadershipTermId, logPosition);
@@ -1312,17 +1311,17 @@ public final class RecordingLog implements AutoCloseable
         {
             if (NULL_VALUE == lastTerm.logPosition)
             {
-                if (NULL_VALUE == logTermBasePosition)
+                if (NULL_VALUE == termBaseLogPosition)
                 {
                     throw new ClusterException(
                         "Prior term was not committed: " + lastTerm +
                             " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId +
-                            ", logTermBasePosition = " + logTermBasePosition + ", logPosition = " + logPosition +
+                            ", logTermBasePosition = " + termBaseLogPosition + ", logPosition = " + logPosition +
                             ", nowNs = " + nowNs);
                 }
                 else
                 {
-                    commitLogPosition(lastTerm.leadershipTermId, logTermBasePosition);
+                    commitLogPosition(lastTerm.leadershipTermId, termBaseLogPosition);
                     lastTerm = Objects.requireNonNull(findLastTerm());
                 }
             }
@@ -1330,7 +1329,6 @@ public final class RecordingLog implements AutoCloseable
             for (long termId = lastTerm.leadershipTermId + 1; termId < leadershipTermId; termId++)
             {
                 appendTerm(recordingId, termId, lastTerm.logPosition, timestamp);
-                commitLogPosition(termId, lastTerm.logPosition);
             }
 
             appendTerm(recordingId, leadershipTermId, lastTerm.logPosition, timestamp);

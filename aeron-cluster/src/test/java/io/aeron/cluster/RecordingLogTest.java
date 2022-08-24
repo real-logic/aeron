@@ -34,10 +34,12 @@ import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
 import static java.util.Arrays.asList;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class RecordingLogTest
 {
@@ -808,11 +810,48 @@ class RecordingLogTest
             nowNs,
             1);
 
-        final RecordingLog.Entry termEntry = log.findTermEntry(leadershipTermId);
+        final RecordingLog.Entry termEntry = requireNonNull(log.findTermEntry(leadershipTermId));
         assertEquals(termBaseLogPosition, termEntry.termBaseLogPosition);
         assertEquals(logPosition, termEntry.logPosition);
 
         assertEquals(1, log.entries().size());
+    }
+
+    @Test
+    void shouldBackFillPriorTerm(
+        @TempDir final Path tempDir)
+    {
+        final long initialLogLeadershipTermId = 0;
+        final long initialTermBaseLogPosition = 0;
+        final long leadershipTermId = 1;
+        final long termBaseLogPosition = 10_000;
+        final long logPosition = -1;
+        final long nowNs = 1_000_000;
+
+        final RecordingLog log = new RecordingLog(tempDir.toFile(), true);
+
+        log.ensureCoherent(
+            RECORDING_ID,
+            initialLogLeadershipTermId,
+            initialTermBaseLogPosition,
+            leadershipTermId,
+            termBaseLogPosition,
+            logPosition,
+            nowNs,
+            nowNs,
+            1);
+
+        final RecordingLog.Entry termEntry0 = requireNonNull(log.findTermEntry(0));
+        assertEquals(initialLogLeadershipTermId, termEntry0.termBaseLogPosition);
+        assertEquals(initialTermBaseLogPosition, termEntry0.termBaseLogPosition);
+        assertEquals(termBaseLogPosition, termEntry0.logPosition);
+
+        final RecordingLog.Entry termEntry1 = requireNonNull(log.findTermEntry(1));
+        assertEquals(leadershipTermId, termEntry1.leadershipTermId);
+        assertEquals(termBaseLogPosition, termEntry1.termBaseLogPosition);
+        assertEquals(-1, termEntry1.logPosition);
+
+        assertEquals(2, log.entries().size());
     }
 
     @Test

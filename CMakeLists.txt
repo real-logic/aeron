@@ -111,6 +111,7 @@ if (UNIX)
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "9")
         add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-builtin>)
+        add_compile_options($<$<COMPILE_LANGUAGE:C>:-fno-builtin>)
     endif ()
 
     if (C_WARNINGS_AS_ERRORS)

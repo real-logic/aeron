@@ -213,12 +213,12 @@ abstract class ClusterTimerTest
     {
         final ClusteredService service = new StubClusteredService()
         {
-            private int timerId = 1;
+            private int timerCorrelationId = 1;
 
             public void onTimerEvent(final long correlationId, final long timestamp)
             {
                 triggeredTimersCounter.getAndIncrement();
-                scheduleNext(serviceCorrelationId(timerId++), timestamp + INTERVAL_MS);
+                scheduleNext(serviceCorrelationId(timerCorrelationId++), timestamp + INTERVAL_MS);
             }
 
             public void onStart(final Cluster cluster, final Image snapshotImage)
@@ -229,7 +229,7 @@ abstract class ClusterTimerTest
                 if (null != snapshotImage)
                 {
                     final FragmentHandler fragmentHandler =
-                        (buffer, offset, length, header) -> timerId = buffer.getInt(offset);
+                        (buffer, offset, length, header) -> timerCorrelationId = buffer.getInt(offset);
 
                     while (true)
                     {
@@ -247,7 +247,7 @@ abstract class ClusterTimerTest
             public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
             {
                 final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(SIZE_OF_INT);
-                buffer.putInt(0, timerId);
+                buffer.putInt(0, timerCorrelationId);
 
                 idleStrategy.reset();
                 while (snapshotPublication.offer(buffer, 0, SIZE_OF_INT) < 0)
@@ -266,7 +266,7 @@ abstract class ClusterTimerTest
                 final TimeUnit timeUnit,
                 final int appVersion)
             {
-                scheduleNext(serviceCorrelationId(timerId++), timestamp + INTERVAL_MS);
+                scheduleNext(serviceCorrelationId(timerCorrelationId++), timestamp + INTERVAL_MS);
             }
 
             private void scheduleNext(final long correlationId, final long deadlineMs)

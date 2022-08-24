@@ -56,7 +56,6 @@ import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
-import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.exceptions.AeronException.Category.WARN;
 import static java.lang.Math.min;
@@ -64,7 +63,6 @@ import static java.lang.Math.min;
 final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 {
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
-    private static final int SERVICE_MESSAGE_LIMIT = 20;
     static final short APPEND_POSITION_FLAG_NONE = 0;
     static final short APPEND_POSITION_FLAG_CATCHUP = 1;
 
@@ -73,8 +71,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final long leaderHeartbeatTimeoutNs;
     private long unavailableCounterHandlerRegistrationId;
     private long nextSessionId = 1;
-    private long nextServiceSessionId = Long.MIN_VALUE + 1;
-    private long logServiceSessionId = Long.MIN_VALUE;
+
     private long leadershipTermId = NULL_VALUE;
     private long expectedAckPosition = 0;
     private long serviceAckId = 0;
@@ -86,8 +83,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private long timeOfLastAppendPositionSendNs = 0;
     private long slowTickDeadlineNs = 0;
     private long markFileUpdateDeadlineNs = 0;
-    private int pendingServiceMessageHeadOffset = 0;
-    private int uncommittedServiceMessages = 0;
+
     private int memberId;
     private int highMemberId;
     private int pendingMemberRemovals = 0;
@@ -129,13 +125,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private final Long2LongCounterMap expiredTimerCountByCorrelationIdMap = new Long2LongCounterMap(0);
     private final ArrayDeque<ClusterSession> uncommittedClosedSessions = new ArrayDeque<>();
     private final LongArrayQueue uncommittedTimers = new LongArrayQueue(Long.MAX_VALUE);
-    private final ExpandableRingBuffer pendingServiceMessages = new ExpandableRingBuffer();
-    private final ExpandableRingBuffer.MessageConsumer serviceSessionMessageAppender =
-        this::serviceSessionMessageAppender;
-    private final ExpandableRingBuffer.MessageConsumer leaderServiceSessionMessageSweeper =
-        this::leaderServiceSessionMessageSweeper;
-    private final ExpandableRingBuffer.MessageConsumer followerServiceSessionMessageSweeper =
-        this::followerServiceSessionMessageSweeper;
+    private final PendingServiceMessageTracker pendingServiceMessageTracker;
+
     private final Authenticator authenticator;
     private final AuthorisationService authorisationService;
     private final ClusterSessionProxy sessionProxy;
@@ -216,6 +207,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
         authenticator = ctx.authenticatorSupplier().get();
         authorisationService = ctx.authorisationServiceSupplier().get();
+
+        pendingServiceMessageTracker = new PendingServiceMessageTracker(commitPosition, logPublisher, clusterClock);
     }
 
     /**
@@ -1157,7 +1150,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void onServiceMessage(final DirectBuffer buffer, final int offset, final int length)
     {
-        enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, nextServiceSessionId++);
+        pendingServiceMessageTracker.enqueueMessage((MutableDirectBuffer)buffer, offset, length);
     }
 
     void onScheduleTimer(final long correlationId, final long deadline)
@@ -1240,8 +1233,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
         else if (clusterSessionId < 0)
         {
-            logServiceSessionId = clusterSessionId;
-            pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
+            pendingServiceMessageTracker.sweepFollowerMessages(clusterSessionId);
         }
     }
 
@@ -1338,7 +1330,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             unexpectedTermination();
         }
 
-        this.leadershipTermId = leadershipTermId;
+        leadershipTermId(leadershipTermId);
 
         if (null != election)
         {
@@ -1433,7 +1425,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void onLoadPendingMessage(final DirectBuffer buffer, final int offset, final int length)
     {
-        pendingServiceMessages.append(buffer, offset, length);
+        pendingServiceMessageTracker.appendMessage(buffer, offset, length);
     }
 
     void onLoadConsensusModuleState(
@@ -1443,9 +1435,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final int pendingMessageCapacity)
     {
         this.nextSessionId = nextSessionId;
-        this.nextServiceSessionId = nextServiceSessionId;
-        this.logServiceSessionId = logServiceSessionId;
-        pendingServiceMessages.reset(pendingMessageCapacity);
+        pendingServiceMessageTracker.loadState(nextServiceSessionId, logServiceSessionId, pendingMessageCapacity);
     }
 
     void onLoadClusterMembers(final int memberId, final int highMemberId, final String members)
@@ -1542,7 +1532,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final String channel = (isIpc ? IPC_CHANNEL : UDP_CHANNEL) +
             "?tags=" + logPublicationChannelTag + "|session-id=" + logSessionId + "|alias=log";
 
-        this.leadershipTermId = leadershipTermId;
+        leadershipTermId(leadershipTermId);
         startLogRecording(channel, ctx.logStreamId(), SourceLocation.LOCAL);
         while (!tryCreateAppendPosition(logSessionId))
         {
@@ -1716,7 +1706,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     void electionComplete(final long nowNs)
     {
-        leadershipTermId = election.leadershipTermId();
+        leadershipTermId(election.leadershipTermId());
 
         if (Cluster.Role.LEADER == role)
         {
@@ -2015,6 +2005,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         return workCount;
     }
 
+    private void leadershipTermId(final long leadershipTermId)
+    {
+        this.leadershipTermId = leadershipTermId;
+        pendingServiceMessageTracker.leadershipTermId(leadershipTermId);
+    }
+
     private void logNewLeadershipTerm(
         final long logLeadershipTermId,
         final long nextLeadershipTermId,
@@ -2219,8 +2215,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
             if (ConsensusModule.State.ACTIVE == state)
             {
                 workCount += timerService.poll(timestamp);
-                workCount += pendingServiceMessages.forEach(
-                    pendingServiceMessageHeadOffset, serviceSessionMessageAppender, SERVICE_MESSAGE_LIMIT);
+                workCount += pendingServiceMessageTracker.poll();
                 workCount += ingressAdapter.poll();
             }
 
@@ -2736,12 +2731,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 throw new ClusterException("incompatible time unit: " + clusterTimeUnit + " snapshot=" + timeUnit);
             }
 
-            pendingServiceMessages.forEach(ConsensusModuleAgent::serviceSessionMessageReset, Integer.MAX_VALUE);
+            pendingServiceMessageTracker.reset();
         }
 
         timerService.currentTime(clusterClock.time());
         commitPosition.setOrdered(snapshot.logPosition);
-        leadershipTermId = snapshot.leadershipTermId;
+        leadershipTermId(snapshot.leadershipTermId);
         expectedAckPosition = snapshot.logPosition;
     }
 
@@ -2939,12 +2934,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
     private void sweepUncommittedEntriesTo(final long commitPosition)
     {
-        if (uncommittedServiceMessages > 0)
-        {
-            pendingServiceMessageHeadOffset -= pendingServiceMessages.consume(
-                leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
-            pendingServiceMessageHeadOffset = Math.max(pendingServiceMessageHeadOffset, 0);
-        }
+        pendingServiceMessageTracker.sweepLeaderMessages();
 
         while (uncommittedTimers.peekLong() <= commitPosition)
         {
@@ -2978,13 +2968,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
         uncommittedTimers.clear();
 
-        if (uncommittedServiceMessages > 0)
-        {
-            pendingServiceMessages.consume(leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
-            pendingServiceMessages.forEach(ConsensusModuleAgent::serviceSessionMessageReset, Integer.MAX_VALUE);
-            uncommittedServiceMessages = 0;
-            pendingServiceMessageHeadOffset = 0;
-        }
+        pendingServiceMessageTracker.restoreUncommittedMessages();
 
         ClusterSession session;
         while (null != (session = uncommittedClosedSessions.pollFirst()))
@@ -3160,7 +3144,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
 
         snapshotTaker.snapshotConsensusModuleState(
-            nextSessionId, nextServiceSessionId, logServiceSessionId, pendingServiceMessages.size());
+            nextSessionId,
+            pendingServiceMessageTracker.nextServiceSessionId(),
+            pendingServiceMessageTracker.logServiceSessionId(),
+            pendingServiceMessageTracker.size());
         snapshotTaker.snapshotClusterMembers(memberId, highMemberId, ClusterMember.encodeAsString(activeMembers));
 
         for (int i = 0, size = sessions.size(); i < size; i++)
@@ -3174,7 +3161,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         }
 
         timerService.snapshot(snapshotTaker);
-        snapshotTaker.snapshot(pendingServiceMessages);
+        snapshotTaker.snapshot(pendingServiceMessageTracker.pendingMessages());
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
     }
@@ -3208,98 +3195,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
     private void onUnavailableIngressImage(final Image image)
     {
         ingressAdapter.freeSessionBuffer(image.sessionId());
-    }
-
-    private void enqueueServiceSessionMessage(
-        final MutableDirectBuffer buffer, final int offset, final int length, final long clusterSessionId)
-    {
-        if (clusterSessionId > logServiceSessionId)
-        {
-            final int headerOffset = offset - SessionMessageHeaderDecoder.BLOCK_LENGTH;
-            final int clusterSessionIdOffset =
-                headerOffset + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
-            final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
-
-            buffer.putLong(clusterSessionIdOffset, clusterSessionId, SessionMessageHeaderDecoder.BYTE_ORDER);
-            buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderDecoder.BYTE_ORDER);
-            if (!pendingServiceMessages.append(buffer, offset - SESSION_HEADER_LENGTH, length + SESSION_HEADER_LENGTH))
-            {
-                throw new ClusterException(
-                    "pending service message buffer at capacity: " + pendingServiceMessages.size());
-            }
-        }
-    }
-
-    private boolean serviceSessionMessageAppender(
-        final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
-    {
-        final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
-        final int clusterSessionIdOffset = headerOffset + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
-        final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
-        final long clusterSessionId = buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
-
-        final long appendPosition = logPublisher.appendMessage(
-            leadershipTermId,
-            clusterSessionId,
-            clusterClock.time(),
-            buffer,
-            offset + SESSION_HEADER_LENGTH,
-            length - SESSION_HEADER_LENGTH);
-
-        if (appendPosition > 0)
-        {
-            ++uncommittedServiceMessages;
-            pendingServiceMessageHeadOffset = headOffset;
-            buffer.putLong(timestampOffset, appendPosition, SessionMessageHeaderEncoder.BYTE_ORDER);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private static boolean serviceSessionMessageReset(
-        final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
-    {
-        final int timestampOffset = offset +
-            MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.timestampEncodingOffset();
-        final long appendPosition = buffer.getLong(timestampOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
-
-        if (appendPosition < Long.MAX_VALUE)
-        {
-            buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderEncoder.BYTE_ORDER);
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean leaderServiceSessionMessageSweeper(
-        final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
-    {
-        final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
-        final int clusterSessionIdOffset = headerOffset + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
-        final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
-        final long appendPosition = buffer.getLong(timestampOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
-
-        if (commitPosition.getWeak() >= appendPosition)
-        {
-            logServiceSessionId = buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
-            --uncommittedServiceMessages;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean followerServiceSessionMessageSweeper(
-        final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
-    {
-        final int clusterSessionIdOffset = offset +
-            MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
-
-        return buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER) <= logServiceSessionId;
     }
 
     private void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)

@@ -105,8 +105,12 @@ add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
 if (UNIX)
     add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter)
 
-    if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "11.0")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "11.0")
         add_compile_options(-Wno-error=maybe-uninitialized)
+    endif ()
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "9")
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-builtin>)
     endif ()
 
     if (C_WARNINGS_AS_ERRORS)

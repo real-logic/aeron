@@ -1338,7 +1338,7 @@ class Election
 
     private void ensureRecordingLogCoherent(
         final long leadershipTermId,
-        final long logTermBasePosition,
+        final long termBaseLogPosition,
         final long logPosition,
         final long nowNs)
     {
@@ -1348,7 +1348,7 @@ class Election
             initialLogLeadershipTermId,
             initialTermBaseLogPosition,
             leadershipTermId,
-            logTermBasePosition,
+            termBaseLogPosition,
             logPosition,
             nowNs);
     }
@@ -1359,7 +1359,7 @@ class Election
         final long initialLogLeadershipTermId,
         final long initialTermBaseLogPosition,
         final long leadershipTermId,
-        final long logTermBasePosition,
+        final long termBaseLogPosition,
         final long logPosition,
         final long nowNs)
     {
@@ -1378,7 +1378,7 @@ class Election
             initialLogLeadershipTermId,
             initialTermBaseLogPosition,
             leadershipTermId,
-            logTermBasePosition,
+            NULL_VALUE != termBaseLogPosition ? termBaseLogPosition : initialTermBaseLogPosition,
             logPosition,
             nowNs,
             timestamp,

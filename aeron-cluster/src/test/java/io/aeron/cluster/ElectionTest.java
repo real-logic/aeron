@@ -1243,7 +1243,7 @@ public class ElectionTest
             initialLeadershipTermId,
             initialTermBaseLogPosition,
             initialLeadershipTermId,
-            -1,
+            initialTermBaseLogPosition,
             leaderTermBaseLogPosition,
             t1,
             t1,

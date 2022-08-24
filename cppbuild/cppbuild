@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 SOURCE_DIR="$(pwd)"
 export BUILD_DIR="${SOURCE_DIR}/cppbuild/Release"
 export BUILD_CONFIG=Release
@@ -134,7 +136,10 @@ if [[ ${COVERAGE_BUILD} -eq 1 ]] ; then
   genhtml coverage/cov.stripped.info --demangle-cpp -o coverage
 else
   cd "${BUILD_DIR}" || exit
-  cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j ${ncpus} all && ctest -C ${BUILD_CONFIG} --output-on-failure
+  cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}"
+  make clean
+  make -j ${ncpus} all
+  ctest -C ${BUILD_CONFIG} --output-on-failure
 fi
 
 if [ true = "${BUILD_PACKAGE}" ]

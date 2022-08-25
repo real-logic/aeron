@@ -40,6 +40,7 @@ add_executable(BasicSubscriberW BasicSubscriber.cpp ${HEADERS})
 add_executable(StreamingPublisherW StreamingPublisher.cpp ${HEADERS})
 add_executable(RateSubscriberW RateSubscriber.cpp ${HEADERS})
 add_executable(PongW Pong.cpp ${HEADERS})
+add_executable(PingW Ping.cpp ${HEADERS})
 add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 add_executable(Throughput Throughput.cpp ${HEADERS})
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
@@ -102,15 +103,12 @@ target_include_directories(PongW
 target_link_libraries(PongW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
-if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR NOT CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "9")
-    add_executable(PingW Ping.cpp ${HEADERS})
-    target_include_directories(PingW
-        PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
-    target_link_libraries(PingW
-        ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
-        hdr_histogram_static)
-    add_dependencies(PingW hdr_histogram)
-endif ()
+target_include_directories(PingW
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+target_link_libraries(PingW
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
+    hdr_histogram_static)
+add_dependencies(PingW hdr_histogram)
 
 target_include_directories(Throughput
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})

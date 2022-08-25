@@ -127,8 +127,9 @@ if (UNIX)
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     endif (COVERAGE_BUILD)
 
-    if (AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS)
-#        add_compile_options($<$<CONFIG:Release>:-Ofast>)
+    if (AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS AND
+        NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "9"))
+        add_compile_options($<$<CONFIG:Release>:-Ofast>)
     endif ()
 endif ()
 

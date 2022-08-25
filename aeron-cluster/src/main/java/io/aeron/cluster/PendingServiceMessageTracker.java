@@ -24,6 +24,7 @@ import io.aeron.cluster.service.ClusterClock;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableRingBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.MutableInteger;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
@@ -145,14 +146,54 @@ final class PendingServiceMessageTracker
         return pendingMessages.forEach(pendingMessageHeadOffset, messageAppender, SERVICE_MESSAGE_LIMIT);
     }
 
-    void reset()
-    {
-        pendingMessages.forEach(PendingServiceMessageTracker::messageReset, Integer.MAX_VALUE);
-    }
-
     int size()
     {
         return pendingMessages.size();
+    }
+
+    void verify()
+    {
+        final MutableInteger messageCount = new MutableInteger();
+        final ExpandableRingBuffer.MessageConsumer messageConsumer =
+            (buffer, offset, length, headOffset) ->
+            {
+                messageCount.increment();
+
+                final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
+                final int clusterSessionIdOffset =
+                    headerOffset + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+
+                final long clusterSessionId = buffer.getLong(
+                    clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
+
+                if (clusterSessionId != (logServiceSessionId + messageCount.get()))
+                {
+                    throw new ClusterException("snapshot has incorrect pending message:" +
+                        " serviceId=" + serviceId +
+                        " nextServiceSessionId= " + nextServiceSessionId +
+                        " logServiceSessionId= " + logServiceSessionId +
+                        " clusterSessionId= " + clusterSessionId +
+                        " pendingMessageIndex=" + messageCount.get());
+                }
+
+                return true;
+            };
+
+        pendingMessages.forEach(messageConsumer, Integer.MAX_VALUE);
+
+        if (nextServiceSessionId != (logServiceSessionId + messageCount.get() + 1))
+        {
+            throw new ClusterException("snapshot has incorrect pending message state:" +
+                " serviceId=" + serviceId +
+                " nextServiceSessionId= " + nextServiceSessionId +
+                " logServiceSessionId= " + logServiceSessionId +
+                " pendingMessageCount=" + messageCount.get());
+        }
+    }
+
+    void reset()
+    {
+        pendingMessages.forEach(PendingServiceMessageTracker::messageReset, Integer.MAX_VALUE);
     }
 
     ExpandableRingBuffer pendingMessages()

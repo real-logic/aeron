@@ -2721,9 +2721,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
         final String channel = ctx.replayChannel();
         final int streamId = ctx.replayStreamId();
         final int sessionId = (int)archive.startReplay(snapshot.recordingId, 0, NULL_LENGTH, channel, streamId);
-        final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
+        final String replayChannel = ChannelUri.addSessionId(channel, sessionId);
 
-        try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
+        try (Subscription subscription = aeron.addSubscription(replayChannel, streamId))
         {
             final Image image = awaitImage(sessionId, subscription);
             final ConsensusModuleSnapshotLoader snapshotLoader = new ConsensusModuleSnapshotLoader(image, this);
@@ -2764,6 +2764,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
             for (final PendingServiceMessageTracker tracker : pendingServiceMessageTrackers)
             {
+                tracker.verify();
                 tracker.reset();
             }
         }

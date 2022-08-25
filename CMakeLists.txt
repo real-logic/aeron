@@ -109,6 +109,11 @@ if (UNIX)
         add_compile_options(-Wno-error=maybe-uninitialized)
     endif ()
 
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "12" AND
+        ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS "13")
+        add_compile_options(-Wno-error=dangling-pointer)
+    endif ()
+
     if (C_WARNINGS_AS_ERRORS)
         add_compile_options($<$<COMPILE_LANGUAGE:C>:-Werror>)
     endif (C_WARNINGS_AS_ERRORS)

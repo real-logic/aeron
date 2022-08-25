@@ -15,27 +15,25 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
-import io.aeron.cluster.service.ClusterClock;
+import io.aeron.Image;
+import io.aeron.ImageControlledFragmentAssembler;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.service.ClusterClock;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
-import java.util.concurrent.TimeUnit;
+import java.io.PrintStream;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 
-
-class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
+class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
 {
     static final int FRAGMENT_LIMIT = 10;
 
     private boolean inSnapshot = false;
     private boolean isDone = false;
-    private int appVersion;
-    private TimeUnit timeUnit;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
@@ -47,27 +45,17 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
     private final PendingMessageTrackerDecoder pendingMessageTrackerDecoder = new PendingMessageTrackerDecoder();
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
     private final Image image;
-    private final ConsensusModuleAgent consensusModuleAgent;
+    final PrintStream out;
 
-    ConsensusModuleSnapshotLoader(final Image image, final ConsensusModuleAgent agent)
+    ConsensusModuleSnapshotInspector(final Image image, final PrintStream out)
     {
         this.image = image;
-        this.consensusModuleAgent = agent;
+        this.out = out;
     }
 
     boolean isDone()
     {
         return isDone;
-    }
-
-    public int appVersion()
-    {
-        return appVersion;
-    }
-
-    public TimeUnit timeUnit()
-    {
-        return timeUnit;
     }
 
     int poll()
@@ -86,8 +74,7 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        switch (messageHeaderDecoder.templateId())
         {
             case SessionMessageHeaderDecoder.TEMPLATE_ID:
                 sessionMessageHeaderDecoder.wrap(
@@ -96,8 +83,9 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onLoadPendingMessage(
-                    sessionMessageHeaderDecoder.clusterSessionId(), buffer, offset, length);
+                out.println("Pending Message:" +
+                    " length=" + length +
+                    " clusterSessionId=" + sessionMessageHeaderDecoder.clusterSessionId());
                 break;
 
             case SnapshotMarkerDecoder.TEMPLATE_ID:
@@ -121,8 +109,9 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                             throw new ClusterException("already in snapshot");
                         }
                         inSnapshot = true;
-                        appVersion = snapshotMarkerDecoder.appVersion();
-                        timeUnit = ClusterClock.map(snapshotMarkerDecoder.timeUnit());
+                        out.println("Snapshot:" +
+                            " appVersion=" + snapshotMarkerDecoder.appVersion() +
+                            " timeUnit=" + ClusterClock.map(snapshotMarkerDecoder.timeUnit()));
                         return Action.CONTINUE;
 
                     case END:
@@ -142,14 +131,14 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onLoadSession(
-                    clusterSessionDecoder.clusterSessionId(),
-                    clusterSessionDecoder.correlationId(),
-                    clusterSessionDecoder.openedLogPosition(),
-                    clusterSessionDecoder.timeOfLastActivity(),
-                    clusterSessionDecoder.closeReason(),
-                    clusterSessionDecoder.responseStreamId(),
-                    clusterSessionDecoder.responseChannel());
+                out.println("Cluster Session:" +
+                    " clusterSessionId=" + clusterSessionDecoder.clusterSessionId() +
+                    " correlationId=" + clusterSessionDecoder.correlationId() +
+                    " openedLogPosition=" + clusterSessionDecoder.openedLogPosition() +
+                    " timeOfLastActivity=" + clusterSessionDecoder.timeOfLastActivity() +
+                    " closeReason=" + clusterSessionDecoder.closeReason() +
+                    " responseStreamId=" + clusterSessionDecoder.responseStreamId() +
+                    " responseChannel=" + clusterSessionDecoder.responseChannel());
                 break;
 
             case TimerDecoder.TEMPLATE_ID:
@@ -159,7 +148,9 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onScheduleTimer(timerDecoder.correlationId(), timerDecoder.deadline());
+                out.println("Timer:" +
+                    " correlationId=" + timerDecoder.correlationId() +
+                    " deadline=" + timerDecoder.deadline());
                 break;
 
             case ConsensusModuleDecoder.TEMPLATE_ID:
@@ -169,11 +160,11 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onLoadConsensusModuleState(
-                    consensusModuleDecoder.nextSessionId(),
-                    consensusModuleDecoder.nextServiceSessionId(),
-                    consensusModuleDecoder.logServiceSessionId(),
-                    consensusModuleDecoder.pendingMessageCapacity());
+                out.println("Consensus Module State:" +
+                    " nextSessionId=" + consensusModuleDecoder.nextSessionId() +
+                    " nextServiceSessionId=" + consensusModuleDecoder.nextServiceSessionId() +
+                    " logServiceSessionId=" + consensusModuleDecoder.logServiceSessionId() +
+                    " pendingMessageCapacity=" + consensusModuleDecoder.pendingMessageCapacity());
                 break;
 
             case ClusterMembersDecoder.TEMPLATE_ID:
@@ -183,10 +174,10 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onLoadClusterMembers(
-                    clusterMembersDecoder.memberId(),
-                    clusterMembersDecoder.highMemberId(),
-                    clusterMembersDecoder.clusterMembers());
+                out.println("Cluster Members:" +
+                    " memberId=" + clusterMembersDecoder.memberId() +
+                    " highMemberId=" + clusterMembersDecoder.highMemberId() +
+                    " clusterMembers=" + clusterMembersDecoder.clusterMembers());
                 break;
 
             case PendingMessageTrackerDecoder.TEMPLATE_ID:
@@ -196,14 +187,14 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onLoadPendingMessageTrackerState(
-                    pendingMessageTrackerDecoder.nextServiceSessionId(),
-                    pendingMessageTrackerDecoder.logServiceSessionId(),
-                    pendingMessageTrackerDecoder.pendingMessageCapacity(),
-                    pendingMessageTrackerDecoder.serviceId());
+                out.println("Pending Message Tracker:" +
+                    " nextServiceSessionId=" + pendingMessageTrackerDecoder.nextServiceSessionId() +
+                    " logServiceSessionId=" + pendingMessageTrackerDecoder.logServiceSessionId() +
+                    " pendingMessageCapacity=" + pendingMessageTrackerDecoder.pendingMessageCapacity() +
+                    " serviceId=" + pendingMessageTrackerDecoder.serviceId());
                 break;
         }
 
-        return ControlledFragmentHandler.Action.CONTINUE;
+        return Action.CONTINUE;
     }
 }

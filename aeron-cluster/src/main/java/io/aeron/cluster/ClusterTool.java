@@ -15,9 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.CncFileDescriptor;
-import io.aeron.CommonContext;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BooleanType;
@@ -83,6 +81,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *                           resume: resumes reading from the log.
  *                         shutdown: initiates an orderly stop of the cluster with a snapshot.
  *                            abort: stops the cluster without a snapshot.
+ *      describe-latest-cm-snapshot: prints the contents of the latest consensus module snapshot.
  * </pre>
  */
 public class ClusterTool
@@ -97,6 +96,38 @@ public class ClusterTool
      */
     public static final String AERON_CLUSTER_TOOL_DELAY_PROP_NAME = "aeron.cluster.tool.delay";
 
+    /**
+     * Property name for setting the channel used for archive replays.
+     */
+    public static final String AERON_CLUSTER_TOOL_REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.tool.replay.channel";
+
+    /**
+     * Default channel used for archive replays.
+     */
+    public static final String AERON_CLUSTER_TOOL_REPLAY_CHANNEL_DEFAULT = "aeron:ipc";
+
+    /**
+     * Channel used for archive replays.
+     */
+    public static final String AERON_CLUSTER_TOOL_REPLAY_CHANNEL = SystemUtil.getProperty(
+        AERON_CLUSTER_TOOL_REPLAY_CHANNEL_PROP_NAME, AERON_CLUSTER_TOOL_REPLAY_CHANNEL_DEFAULT);
+
+    /**
+     * Property name for setting the stream id used for archive replays.
+     */
+    public static final String AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_PROP_NAME = "aeron.cluster.tool.replay.stream.id";
+
+    /**
+     * Default stream id used for archive replays.
+     */
+    public static final int AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_DEFAULT = 1;
+
+    /**
+     * Stream id used for archive replays.
+     */
+    public static final int AERON_CLUSTER_TOOL_REPLAY_STREAM_ID = Integer.getInteger(
+        AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_PROP_NAME, AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_DEFAULT);
+
     private static final long TIMEOUT_MS =
         NANOSECONDS.toMillis(getDurationInNanos(AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME, 0));
 
@@ -110,7 +141,7 @@ public class ClusterTool
     {
         if (args.length < 2)
         {
-            printHelp(System.out);
+            printHelp();
             System.exit(-1);
         }
 
@@ -118,7 +149,7 @@ public class ClusterTool
         if (!clusterDir.exists())
         {
             System.err.println("ERR: cluster directory not found: " + clusterDir.getAbsolutePath());
-            printHelp(System.out);
+            printHelp();
             System.exit(-1);
         }
 
@@ -135,7 +166,7 @@ public class ClusterTool
             case "recovery-plan":
                 if (args.length < 3)
                 {
-                    printHelp(System.out);
+                    printHelp();
                     System.exit(-1);
                 }
                 recoveryPlan(System.out, clusterDir, Integer.parseInt(args[2]));
@@ -164,7 +195,7 @@ public class ClusterTool
             case "remove-member":
                 if (args.length < 3)
                 {
-                    printHelp(System.out);
+                    printHelp();
                     System.exit(-1);
                 }
                 removeMember(System.out, clusterDir, Integer.parseInt(args[2]), false);
@@ -173,7 +204,7 @@ public class ClusterTool
             case "remove-passive":
                 if (args.length < 3)
                 {
-                    printHelp(System.out);
+                    printHelp();
                     System.exit(-1);
                 }
                 removeMember(System.out, clusterDir, Integer.parseInt(args[2]), true);
@@ -217,9 +248,13 @@ public class ClusterTool
                 exitWithErrorOnFailure(abort(clusterDir, System.out));
                 break;
 
+            case "describe-latest-cm-snapshot":
+                describeLatestConsensusModuleSnapshot(System.out, clusterDir);
+                break;
+
             default:
                 System.out.println("Unknown command: " + args[1]);
-                printHelp(System.out);
+                printHelp();
                 System.exit(-1);
         }
     }
@@ -870,6 +905,87 @@ public class ClusterTool
     }
 
     /**
+     * Print out a summary of the state captured in the latest consensus module snapshot.
+     *
+     * @param out        to print the operation result.
+     * @param clusterDir where the cluster is running.
+     */
+    public static void describeLatestConsensusModuleSnapshot(final PrintStream out, final File clusterDir)
+    {
+        RecordingLog.Entry entry = null;
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
+        {
+            final List<RecordingLog.Entry> entries = recordingLog.entries();
+            for (int i = entries.size() - 1; i >= 0; i--)
+            {
+                final RecordingLog.Entry e = entries.get(i);
+                if (RecordingLog.isValidSnapshot(e) && ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
+                {
+                    entry = e;
+                    break;
+                }
+            }
+
+            if (null == entry)
+            {
+                out.println("Snapshot not found");
+                return;
+            }
+        }
+
+        final ClusterNodeControlProperties properties;
+        try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+        {
+            properties = markFile.loadControlProperties();
+        }
+
+        final AeronArchive.Context archiveCtx = new AeronArchive.Context()
+            .controlRequestChannel("aeron:ipc")
+            .controlResponseChannel("aeron:ipc");
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(properties.aeronDirectoryName));
+            AeronArchive archive = AeronArchive.connect(archiveCtx.aeron(aeron)))
+        {
+            final String channel = AERON_CLUSTER_TOOL_REPLAY_CHANNEL;
+            final int streamId = AERON_CLUSTER_TOOL_REPLAY_STREAM_ID;
+            final int sessionId = (int)archive.startReplay(
+                entry.recordingId, 0, AeronArchive.NULL_LENGTH, channel, streamId);
+
+            final String replayChannel = ChannelUri.addSessionId(channel, sessionId);
+            try (Subscription subscription = aeron.addSubscription(replayChannel, streamId))
+            {
+                Image image;
+                while ((image = subscription.imageBySessionId(sessionId)) == null)
+                {
+                    archive.checkForErrorResponse();
+                    Thread.yield();
+                }
+
+                final ConsensusModuleSnapshotInspector inspector = new ConsensusModuleSnapshotInspector(image, out);
+                while (true)
+                {
+                    final int fragments = inspector.poll();
+                    if (0 == fragments)
+                    {
+                        if (inspector.isDone())
+                        {
+                            break;
+                        }
+
+                        if (image.isClosed())
+                        {
+                            throw new ClusterException("snapshot ended unexpectedly: " + image);
+                        }
+
+                        archive.checkForErrorResponse();
+                        Thread.yield();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Instruct the cluster to take a snapshot.
      *
      * @param clusterDir where the consensus module is running.
@@ -1198,9 +1314,9 @@ public class ClusterTool
         }
     }
 
-    private static void printHelp(final PrintStream out)
+    private static void printHelp()
     {
-        out.format(
+        System.out.format(
             "Usage: <cluster-dir> <command> [options]%n" +
             "                         describe: prints out all descriptors in the mark file.%n" +
             "                              pid: prints PID of cluster component.%n" +
@@ -1218,7 +1334,8 @@ public class ClusterTool
             "                          suspend: suspends appending to the log.%n" +
             "                           resume: resumes appending to the log.%n" +
             "                         shutdown: initiates an orderly stop of the cluster with a snapshot.%n" +
-            "                            abort: stops the cluster without a snapshot.%n");
-        out.flush();
+            "                            abort: stops the cluster without a snapshot.%n" +
+            "      describe-latest-cm-snapshot: prints the contents of the latest consensus module snapshot.%n");
+        System.out.flush();
     }
 }

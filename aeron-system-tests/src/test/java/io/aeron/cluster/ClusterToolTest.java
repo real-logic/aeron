@@ -86,6 +86,29 @@ class ClusterToolTest
 
     @Test
     @InterruptAfter(30)
+    void shouldDescribeLatestConsensusModuleSnapshot()
+    {
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+
+        assertTrue(ClusterTool.snapshot(
+            leader.consensusModule().context().clusterDir(),
+            capturingPrintStream.resetAndGetPrintStream()));
+
+        ClusterTool.describeLatestConsensusModuleSnapshot(
+            capturingPrintStream.resetAndGetPrintStream(),
+            leader.consensusModule().context().clusterDir());
+
+        assertThat(
+            capturingPrintStream.flushAndGetContent(),
+            containsString("Snapshot: appVersion=1 timeUnit=MILLISECONDS"));
+    }
+
+    @Test
+    @InterruptAfter(30)
     void shouldNotSnapshotWhenSuspendedOnly()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();

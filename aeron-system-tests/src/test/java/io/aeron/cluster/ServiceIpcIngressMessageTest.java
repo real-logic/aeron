@@ -66,7 +66,7 @@ class ServiceIpcIngressMessageTest
 
     @Test
     @SlowTest
-    @InterruptAfter(40)
+    @InterruptAfter(30)
     void shouldProcessServiceMessagesWithoutDuplicates()
     {
         final TestCluster cluster = aCluster()
@@ -116,7 +116,8 @@ class ServiceIpcIngressMessageTest
     }
 
     @Test
-    @InterruptAfter(10)
+    @SlowTest
+    @InterruptAfter(30)
     void shouldProcessServiceMessagesAndTimersWithoutDuplicatesWhenLeaderServicesAreStopped()
     {
         final TestCluster cluster = aCluster()
@@ -168,7 +169,8 @@ class ServiceIpcIngressMessageTest
     }
 
     @Test
-    @InterruptAfter(10)
+    @SlowTest
+    @InterruptAfter(30)
     void shouldProcessServiceMessagesWithoutDuplicatesAfterAFullClusterRestart()
     {
         final TestCluster cluster = aCluster()
@@ -210,7 +212,8 @@ class ServiceIpcIngressMessageTest
     }
 
     @Test
-    @InterruptAfter(10)
+    @SlowTest
+    @InterruptAfter(30)
     void shouldProcessServiceMessagesWithoutDuplicatesWhenClusterIsRestartedAfterTakingASnapshot()
     {
         final TestCluster cluster = aCluster()

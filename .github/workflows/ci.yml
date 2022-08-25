@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8', '11', '17', '18' ]
-        os: [ 'ubuntu-20.04', 'windows-latest' ]
+        os: [ 'ubuntu-22.04', 'windows-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -93,7 +93,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8' ]
-        os: [ 'ubuntu-20.04' ]
+        os: [ 'ubuntu-22.04' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -146,8 +146,8 @@ jobs:
           name: crash-logs-topology-${{ matrix.os }}-java-${{ matrix.java }}
           path: ${{ steps.copy_test_logs.outputs.file }}
 
-  cpp-gcc-build:
-    name: C++ GCC ${{ matrix.version }}
+  cpp-gcc-2004-build:
+    name: C++ GCC ${{ matrix.version }} (Ubuntu 20.04)
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -202,12 +202,69 @@ jobs:
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v3
         with:
-          name: crash-logs-gcc-${{ matrix.version }}
+          name: crash-logs-gcc-2004-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
+
+  cpp-gcc-2204-build:
+    name: C++ GCC ${{ matrix.version }} (Ubuntu 22.04)
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '9', '10', '11', '12' ]
+    env:
+      CC: gcc-${{ matrix.version }}
+      CXX: g++-${{ matrix.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-caches-
+      - name: Cache Gradle wrappers
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          java -Xinternalversion
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+      - name: Install compiler
+        run: |
+          echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
+          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
+          curl --retry ${INSTALL_COMPILER_RETRIES} -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
+      - name: Build
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+      - name: Copy test logs
+        id: copy_test_logs
+        if: failure()
+        run: |
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
+      - name: Upload crash logs
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
+        uses: actions/upload-artifact@v3
+        with:
+          name: crash-logs-gcc-2204-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-gcc-centos-build:
     name: C++ CentOS devtoolset-${{ matrix.version }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -244,7 +301,7 @@ jobs:
 
   cpp-gcc-rhel-build:
     name: C++ RHEL 8
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -336,16 +393,16 @@ jobs:
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v3
         with:
-          name: crash-logs-clang-${{ matrix.version }}
+          name: crash-logs-clang-2004-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.file }}
 
-  cpp-clang-debug-build:
-    name: C++ Clang ${{ matrix.version }} debug build
-    runs-on: ubuntu-20.04
+  cpp-clang-ubuntu-2204-build:
+    name: C++ Clang ${{ matrix.version }} (Ubuntu 22.04)
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        version: [ '10' ]
+        version: [ '11', '12', '13', '14' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}
@@ -376,11 +433,65 @@ jobs:
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
-          curl --retry ${INSTALL_COMPILER_RETRIES} -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
-          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.version }} main"
-          sudo apt-get update
-          sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev libidn11
+          sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev
+          curl --retry ${INSTALL_COMPILER_RETRIES} -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
+      - name: Build
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+      - name: Copy test logs
+        id: copy_test_logs
+        if: failure()
+        run: |
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
+      - name: Upload crash logs
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
+        uses: actions/upload-artifact@v3
+        with:
+          name: crash-logs-clang-2204-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
+
+  cpp-clang-debug-build:
+    name: C++ Clang ${{ matrix.version }} debug build
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '11' ]
+    env:
+      CC: clang-${{ matrix.version }}
+      CXX: clang++-${{ matrix.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-caches-
+      - name: Cache Gradle wrappers
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Setup java 8 to run the Gradle script
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          java -Xinternalversion
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+      - name: Install compiler
+        run: |
+          echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
+          sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev
           curl --retry ${INSTALL_COMPILER_RETRIES} -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH

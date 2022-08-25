@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8', '11', '17', '18' ]
-        os: [ 'ubuntu-20.04', 'windows-latest' ]
+        os: [ 'ubuntu-22.04', 'windows-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -87,7 +87,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8', '17' ]
-        os: [ 'ubuntu-20.04' ]
+        os: [ 'ubuntu-22.04' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -126,11 +126,11 @@ jobs:
 
   cpp-slow-tests-gcc:
     name: C++ Slow System Tests GCC ${{ matrix.version }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        version: [ '11' ]
+        version: [ '12' ]
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
@@ -181,7 +181,7 @@ jobs:
 
   cpp-slow-tests-clang:
     name: C++ Slow System Tests Clang ${{ matrix.version }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -284,11 +284,11 @@ jobs:
 
   cpp-sanitize-gcc:
     name: C++ Sanitise Build GCC ${{ matrix.version }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        version: [ '11' ]
+        version: [ '12' ]
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
@@ -339,7 +339,7 @@ jobs:
 
   cpp-sanitize-clang:
     name: C++ Sanitise Build Clang ${{ matrix.version }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:

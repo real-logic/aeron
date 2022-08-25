@@ -108,9 +108,8 @@ target_include_directories(PingW
 target_link_libraries(PingW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
     hdr_histogram_static)
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(PingW PRIVATE -fno-builtin)
-endif ()
+# Workaround for Clang 9.
+target_compile_options(PingW PRIVATE -fno-builtin)
 add_dependencies(PingW hdr_histogram)
 
 target_include_directories(Throughput

@@ -162,8 +162,7 @@ jobs:
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
-          sudo apt-get update
-          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
+          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --no-system-tests
       - name: Copy test logs
@@ -216,11 +215,8 @@ jobs:
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
-          curl --retry ${INSTALL_COMPILER_RETRIES} -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
-          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.version }} main"
-          sudo apt-get update
-          sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev libidn11
+          sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --no-system-tests
       - name: Copy test logs
@@ -320,8 +316,7 @@ jobs:
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
-          sudo apt-get update
-          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev libidn11
+          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --relwithdebinfo-build --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
       - name: Copy test logs
@@ -374,11 +369,8 @@ jobs:
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
-          curl --retry ${INSTALL_COMPILER_RETRIES} -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
-          sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.version }} main"
-          sudo apt-get update
-          sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev libidn11
+          sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
       - name: Copy test logs

@@ -120,7 +120,7 @@ public class ClusterTool
     /**
      * Default stream id used for archive replays.
      */
-    public static final int AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_DEFAULT = 1;
+    public static final int AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_DEFAULT = 103;
 
     /**
      * Stream id used for archive replays.

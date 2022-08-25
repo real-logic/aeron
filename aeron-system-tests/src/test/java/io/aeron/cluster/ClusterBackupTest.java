@@ -23,6 +23,7 @@ import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestBackupNode;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
@@ -407,19 +408,7 @@ class ClusterBackupTest
 
         cluster.awaitBackupState(ClusterBackup.State.RESET_BACKUP);
 
-        final AtomicBuffer atomicBuffer = testBackupNode.clusterBackupErrorLog();
-        final MutableBoolean foundError = new MutableBoolean();
-        ErrorLogReader.read(
-            atomicBuffer,
-            (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-            {
-                if (encodedException.contains("AUTHENTICATION_REJECTED"))
-                {
-                    foundError.set(true);
-                }
-            });
-
-        assertTrue(foundError.get());
+        awaitErrorLogged(testBackupNode, "AUTHENTICATION_REJECTED");
     }
 
     @Test
@@ -440,20 +429,7 @@ class ClusterBackupTest
 
         cluster.awaitBackupState(ClusterBackup.State.RESET_BACKUP);
 
-        final AtomicBuffer atomicBuffer = testBackupNode.clusterBackupErrorLog();
-        final MutableBoolean foundError = new MutableBoolean();
-
-        ErrorLogReader.read(
-            atomicBuffer,
-            (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-            {
-                if (encodedException.contains("AUTHENTICATION_REJECTED"))
-                {
-                    foundError.set(true);
-                }
-            });
-
-        assertTrue(foundError.get());
+        awaitErrorLogged(testBackupNode, "AUTHENTICATION_REJECTED");
     }
 
     @Test
@@ -624,5 +600,25 @@ class ClusterBackupTest
 
         assertEquals(messageCount + 5, node.service().messageCount());
         assertFalse(node.service().wasSnapshotLoaded());
+    }
+
+    private static void awaitErrorLogged(final TestBackupNode testBackupNode, final String expectedErrorMessage)
+    {
+        final AtomicBuffer atomicBuffer = testBackupNode.clusterBackupErrorLog();
+        final MutableBoolean foundError = new MutableBoolean();
+
+        Tests.await(() ->
+        {
+            ErrorLogReader.read(
+                atomicBuffer,
+                (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+                {
+                    if (encodedException.contains(expectedErrorMessage))
+                    {
+                        foundError.set(true);
+                    }
+                });
+            return foundError.get();
+        });
     }
 }

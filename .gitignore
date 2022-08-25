@@ -60,6 +60,7 @@ cppbuild/*.log
 cppbuild/*.cache
 cppbuild/Debug
 cppbuild/Release
+cppbuild/RelWithDebInfo
 cppbuild/Win32
 
 # JVM crash reports

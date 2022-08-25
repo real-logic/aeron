@@ -21,6 +21,7 @@ import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.SessionMessageHeaderDecoder;
 import io.aeron.cluster.codecs.SessionMessageHeaderEncoder;
 import io.aeron.cluster.service.ClusterClock;
+import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableRingBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -173,7 +174,8 @@ final class PendingServiceMessageTracker
                         " nextServiceSessionId= " + nextServiceSessionId +
                         " logServiceSessionId= " + logServiceSessionId +
                         " clusterSessionId= " + clusterSessionId +
-                        " pendingMessageIndex=" + messageCount.get());
+                        " pendingMessageIndex=" + messageCount.get(),
+                        AeronException.Category.FATAL);
                 }
 
                 return true;
@@ -187,7 +189,8 @@ final class PendingServiceMessageTracker
                 " serviceId=" + serviceId +
                 " nextServiceSessionId= " + nextServiceSessionId +
                 " logServiceSessionId= " + logServiceSessionId +
-                " pendingMessageCount=" + messageCount.get());
+                " pendingMessageCount=" + messageCount.get(),
+                AeronException.Category.FATAL);
         }
     }
 

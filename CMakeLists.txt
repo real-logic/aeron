@@ -128,7 +128,7 @@ if (UNIX)
     endif (COVERAGE_BUILD)
 
     if (AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS)
-        add_compile_options($<$<CONFIG:Release>:-Ofast>)
+#        add_compile_options($<$<CONFIG:Release>:-Ofast>)
     endif ()
 endif ()
 

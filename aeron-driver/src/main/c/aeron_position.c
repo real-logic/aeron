@@ -270,7 +270,8 @@ int32_t aeron_counter_local_sockaddr_indicator_allocate(
     sockaddr_layout.channel_status_id = channel_status_counter_id,
     sockaddr_layout.local_sockaddr_len =
         (int32_t)(local_sockaddr_srclen < local_sockaddr_dstlen ? local_sockaddr_srclen : local_sockaddr_dstlen);
-    strncpy(sockaddr_layout.local_sockaddr, local_sockaddr, sockaddr_layout.local_sockaddr_len + 1);
+    memcpy(sockaddr_layout.local_sockaddr, local_sockaddr, sockaddr_layout.local_sockaddr_len);
+    sockaddr_layout.local_sockaddr[sockaddr_layout.local_sockaddr_len + 1] = '\0';
 
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
     int label_length = snprintf(

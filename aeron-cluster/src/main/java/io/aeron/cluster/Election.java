@@ -338,8 +338,7 @@ class Election
             return;
         }
 
-        if (candidateTermId <= this.candidateTermId ||
-            SemanticVersion.major(protocolVersion) < ConsensusModule.Configuration.PROTOCOL_MAJOR_VERSION)
+        if (candidateTermId <= this.candidateTermId)
         {
             placeVote(candidateTermId, candidateId, false);
         }

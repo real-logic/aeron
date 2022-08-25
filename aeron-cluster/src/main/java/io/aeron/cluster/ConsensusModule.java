@@ -324,7 +324,7 @@ public final class ConsensusModule implements AutoCloseable
         public static final String CLUSTER_INGRESS_IPC_ALLOWED_DEFAULT = "false";
 
         /**
-         * Service ID to identify a snapshot in the {@link RecordingLog}.
+         * Service ID to identify a snapshot in the {@link RecordingLog} for the consensus module.
          */
         public static final int SERVICE_ID = Aeron.NULL_VALUE;
 

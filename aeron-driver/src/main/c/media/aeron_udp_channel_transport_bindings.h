@@ -304,7 +304,7 @@ inline int aeron_udp_channel_outgoing_interceptor_send_to_transport(
 }
 
 
-inline void aeron_udp_channel_incoming_interceptor_recv_func(
+void aeron_udp_channel_incoming_interceptor_recv_func(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     void *receiver_clientd,
@@ -313,22 +313,7 @@ inline void aeron_udp_channel_incoming_interceptor_recv_func(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr,
-    struct timespec *media_timestamp)
-{
-    aeron_udp_channel_incoming_interceptor_t *interceptor = data_paths->incoming_interceptors;
-
-    interceptor->incoming_func(
-        interceptor->interceptor_state,
-        interceptor->next_interceptor,
-        transport,
-        receiver_clientd,
-        endpoint_clientd,
-        destination_clientd,
-        buffer,
-        length,
-        addr,
-        media_timestamp);
-}
+    struct timespec *media_timestamp);
 
 inline void aeron_udp_channel_incoming_interceptor_to_endpoint(
     void *interceptor_state,

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <array>
 #include <cstdint>
 #include <thread>
 #include <functional>
@@ -211,26 +210,16 @@ public:
         conductorTest->m_to_driver_handler(type_id, buffer, length);
     }
 
-     static char *allocateStringWithPrefix(const char *prefix, const char *suffix, const char c, const size_t length)
+     static std::string allocateStringWithPrefix(
+         const std::string& prefix, const std::string suffix, const char c, const size_t length)
     {
-        char *uri = new char[length + 1];;
-        uri[length] = '\0';
+        std::string result = std::string(prefix).append(suffix);
+        if (length > result.length())
+        {
+            result.append(length - result.length(), c);
+        }
 
-        memcpy(uri, prefix, strlen(prefix));
-
-        size_t offset = strlen(prefix);
-        memcpy(uri + offset, suffix, strlen(suffix));
-
-        offset += strlen(suffix);
-        memset(uri + offset, c, length - offset);
-
-        return uri;
-    }
-
-    size_t readToDriver(std::function<void(int32_t, const void *, size_t)>& handler)
-    {
-        m_to_driver_handler = handler;
-        return aeron_mpsc_rb_read(&m_to_driver, ToDriverHandler, this, 1);
+        return result;
     }
 
     int doWork(bool updateDriverHeartbeat = true)
@@ -415,9 +404,9 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfullyMaxMessageSize)
     aeron_async_add_publication_t *async = nullptr;
     aeron_publication_t *publication = nullptr;
     const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_publication_command_t);
-    char *uri = allocateStringWithPrefix(URI_RESERVED, "|alias=", 'X', uri_length);
+    std::string uri = allocateStringWithPrefix(URI_RESERVED, "|alias=", 'X', uri_length);
 
-    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, uri, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_publication(&async, &m_conductor, uri.c_str(), STREAM_ID), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
@@ -429,9 +418,7 @@ TEST_F(ClientConductorTest, shouldAddPublicationSuccessfullyMaxMessageSize)
 
     ASSERT_GT(aeron_async_add_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != publication);
-    EXPECT_EQ(strcmp(uri, publication->channel), 0);
-
-    delete[] uri;
+    EXPECT_EQ(strcmp(uri.c_str(), publication->channel), 0);
 
     ASSERT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
     doWork();
@@ -499,9 +486,9 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfullyMaxMessageS
     aeron_async_add_exclusive_publication_t *async = nullptr;
     aeron_exclusive_publication_t *publication = nullptr;
     const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_publication_command_t);
-    char *uri = allocateStringWithPrefix(URI_RESERVED, "|alias=", 'C', uri_length);
+    std::string uri = allocateStringWithPrefix(URI_RESERVED, "|alias=", 'C', uri_length);
 
-    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, uri, STREAM_ID), 0);
+    ASSERT_EQ(aeron_client_conductor_async_add_exclusive_publication(&async, &m_conductor, uri.c_str(), STREAM_ID), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
@@ -513,9 +500,7 @@ TEST_F(ClientConductorTest, shouldAddExclusivePublicationSuccessfullyMaxMessageS
 
     ASSERT_GT(aeron_async_add_exclusive_publication_poll(&publication, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != publication);
-    EXPECT_EQ(strcmp(uri, publication->channel), 0);
-
-    delete[] uri;
+    EXPECT_EQ(strcmp(uri.c_str(), publication->channel), 0);
 
     ASSERT_EQ(aeron_exclusive_publication_close(publication, nullptr, nullptr), 0);
     doWork();
@@ -582,10 +567,10 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionSuccessfullyMaxMessageSize)
     aeron_async_add_subscription_t *async = nullptr;
     aeron_subscription_t *subscription = nullptr;
     const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_subscription_command_t);
-    char *uri = allocateStringWithPrefix(SUB_URI, "|alias=", 'Z', uri_length);
+    std::string uri = allocateStringWithPrefix(SUB_URI, "|alias=", 'Z', uri_length);
 
     ASSERT_EQ(aeron_client_conductor_async_add_subscription(
-        &async, &m_conductor, uri, STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
+        &async, &m_conductor, uri.c_str(), STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
@@ -596,9 +581,7 @@ TEST_F(ClientConductorTest, shouldAddSubscriptionSuccessfullyMaxMessageSize)
 
     ASSERT_GT(aeron_async_add_subscription_poll(&subscription, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != subscription);
-    EXPECT_EQ(strcmp(uri, subscription->channel), 0);
-
-    delete[] uri;
+    EXPECT_EQ(strcmp(uri.c_str(), subscription->channel), 0);
 
     ASSERT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
     doWork();
@@ -671,10 +654,10 @@ TEST_F(ClientConductorTest, shouldAddCounterSuccessfullyMaxMessageSize)
     key_buffer[5] = 13;
     const size_t label_buffer_length =
         MAX_MESSAGE_SIZE - key_buffer_length - 2 * sizeof(int32_t) - sizeof(aeron_counter_command_t);
-    char *label_buffer = allocateStringWithPrefix("label", "=", 'x', label_buffer_length);
+    std::string label_buffer = allocateStringWithPrefix("label", "=", 'x', label_buffer_length);
 
     ASSERT_EQ(aeron_client_conductor_async_add_counter(
-        &async, &m_conductor, COUNTER_TYPE_ID, key_buffer, key_buffer_length, label_buffer, label_buffer_length), 0);
+        &async, &m_conductor, COUNTER_TYPE_ID, key_buffer, key_buffer_length, label_buffer.c_str(), label_buffer_length), 0);
     doWork();
 
     ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
@@ -686,7 +669,6 @@ TEST_F(ClientConductorTest, shouldAddCounterSuccessfullyMaxMessageSize)
     ASSERT_GT(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != counter);
 
-    delete[] label_buffer;
     delete[] key_buffer;
 
     ASSERT_EQ(aeron_counter_close(counter, nullptr, nullptr), 0);
@@ -893,9 +875,9 @@ TEST_F(ClientConductorTest, shouldHandlePublicationAddRemoveDestinationMaxMessag
     ASSERT_GT(aeron_async_add_publication_poll(&publication, async_pub), 0) << aeron_errmsg();
 
     const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_destination_command_t);
-    const char *destUri = allocateStringWithPrefix(DEST_URI, "|alias=", 'a', uri_length);
+    std::string destUri = allocateStringWithPrefix(DEST_URI, "|alias=", 'a', uri_length);
     ASSERT_EQ(
-        aeron_client_conductor_async_add_publication_destination(&async_add_dest, &m_conductor, publication, destUri),
+        aeron_client_conductor_async_add_publication_destination(&async_add_dest, &m_conductor, publication, destUri.c_str()),
         0);
 
     transmitOnOperationSuccess(async_add_dest);
@@ -906,11 +888,9 @@ TEST_F(ClientConductorTest, shouldHandlePublicationAddRemoveDestinationMaxMessag
 
     ASSERT_EQ(
         aeron_client_conductor_async_remove_publication_destination(
-            &async_remove_dest, &m_conductor, publication, destUri),
+            &async_remove_dest, &m_conductor, publication, destUri.c_str()),
         0);
     transmitOnOperationSuccess(async_remove_dest);
-
-    delete[] destUri;
 
     doWork();
     ASSERT_GT(aeron_publication_async_destination_poll(async_remove_dest), 0) << aeron_errmsg();
@@ -973,10 +953,10 @@ TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestinationMaxMes
     ASSERT_GT(aeron_async_add_exclusive_publication_poll(&publication, async_pub), 0) << aeron_errmsg();
 
     const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_destination_command_t);
-    const char *destUri = allocateStringWithPrefix(DEST_URI, "|alias=", 'a', uri_length);
+    std::string destUri = allocateStringWithPrefix(DEST_URI, "|alias=", 'a', uri_length);
     ASSERT_EQ(
         aeron_client_conductor_async_add_exclusive_publication_destination(
-            &async_dest, &m_conductor, publication, destUri),
+            &async_dest, &m_conductor, publication, destUri.c_str()),
         0);
 
     transmitOnOperationSuccess(async_dest);
@@ -987,10 +967,8 @@ TEST_F(ClientConductorTest, shouldHandleExclusivePublicationAddDestinationMaxMes
 
     ASSERT_EQ(
         aeron_client_conductor_async_remove_exclusive_publication_destination(
-            &async_dest, &m_conductor, publication, destUri),
+            &async_dest, &m_conductor, publication, destUri.c_str()),
         0);
-
-    delete[] destUri;
 
     transmitOnOperationSuccess(async_dest);
     doWork();
@@ -1059,10 +1037,10 @@ TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestinationMaxMessageSize
     ASSERT_GT(aeron_async_add_subscription_poll(&subscription, async_sub), 0) << aeron_errmsg();
 
     const size_t uri_length = MAX_MESSAGE_SIZE - sizeof(aeron_destination_command_t);
-    const char *destUri = allocateStringWithPrefix(DEST_URI, "|alias=", 'a', uri_length);
+    std::string destUri = allocateStringWithPrefix(DEST_URI, "|alias=", 'a', uri_length);
     ASSERT_EQ(
         aeron_client_conductor_async_add_subscription_destination(
-            &async_dest, &m_conductor, subscription, destUri),
+            &async_dest, &m_conductor, subscription, destUri.c_str()),
         0);
 
     transmitOnOperationSuccess(async_dest);
@@ -1072,11 +1050,9 @@ TEST_F(ClientConductorTest, shouldHandleSubscriptionAddDestinationMaxMessageSize
     ASSERT_GT(aeron_subscription_async_destination_poll(async_dest), 0) << aeron_errmsg();
 
     ASSERT_EQ(
-        aeron_client_conductor_async_remove_subscription_destination(&async_dest, &m_conductor, subscription, destUri),
+        aeron_client_conductor_async_remove_subscription_destination(&async_dest, &m_conductor, subscription, destUri.c_str()),
         0);
     transmitOnOperationSuccess(async_dest);
-
-    delete[] destUri;
 
     doWork();
     ASSERT_GT(aeron_subscription_async_destination_poll(async_dest), 0) << aeron_errmsg();

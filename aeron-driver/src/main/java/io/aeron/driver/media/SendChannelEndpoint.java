@@ -466,10 +466,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
     /**
      * Allocate a destinations counter if the channel uses multiple destinations.
      *
-     * @param tempBuffer to use for metadata formatting
-     * @param countersManager for the driver
-     * @param registrationId of the endpoint
-     * @param originalUriString of the channel
+     * @param tempBuffer        to use for metadata formatting.
+     * @param countersManager   for the driver.
+     * @param registrationId    of the endpoint.
+     * @param originalUriString of the channel.
      */
     public void allocateDestinationsCounterForMdc(
         final MutableDirectBuffer tempBuffer,

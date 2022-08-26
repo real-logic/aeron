@@ -632,11 +632,11 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     /**
      * Callback to handle a received setup frame.
      *
-     * @param header          of the setup frame
-     * @param buffer          containing the setup frame.
-     * @param length          of the setup frame.
-     * @param srcAddress      the message came from.
-     * @param transportIndex  on which the message was received.
+     * @param header         of the setup frame.
+     * @param buffer         containing the setup frame.
+     * @param length         of the setup frame.
+     * @param srcAddress     the message came from.
+     * @param transportIndex on which the message was received.
      */
     public void onSetupMessage(
         final SetupFlyweight header,
@@ -652,11 +652,11 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     /**
      * Callback to handle a received RTT Measurement frame.
      *
-     * @param header          of the RTT Measurement frame
-     * @param buffer          containing the RTT Measurement frame.
-     * @param length          of the RTT Measurement frame.
-     * @param srcAddress      the message came from.
-     * @param transportIndex  on which the message was received.
+     * @param header         of the RTT Measurement frame.
+     * @param buffer         containing the RTT Measurement frame.
+     * @param length         of the RTT Measurement frame.
+     * @param srcAddress     the message came from.
+     * @param transportIndex on which the message was received.
      */
     public void onRttMeasurement(
         final RttMeasurementFlyweight header,
@@ -799,11 +799,11 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
      * Send RTT Measurement frame to the sources.
      *
      * @param controlAddresses of the sources.
-     * @param sessionId       for the image.
-     * @param streamId        for the image.
-     * @param echoTimestampNs timestamp to echo in a reply.
-     * @param receptionDelta  time in nanoseconds between receiving original request and sending Reply RTT Measurement.
-     * @param isReply         true if a reply.
+     * @param sessionId        for the image.
+     * @param streamId         for the image.
+     * @param echoTimestampNs  timestamp to echo in a reply.
+     * @param receptionDelta   time in nanoseconds between receiving original request and sending Reply RTT Measurement.
+     * @param isReply          true if a reply.
      */
     public void sendRttMeasurement(
         final ImageConnection[] controlAddresses,

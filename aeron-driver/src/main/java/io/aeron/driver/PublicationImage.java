@@ -777,7 +777,7 @@ public final class PublicationImage
                 {
                     conductor.transitionToLinger(this);
 
-                    channelEndpoint.decrImageCount();
+                    channelEndpoint.decRefImages();
                     conductor.tryCloseReceiveChannelEndpoint(channelEndpoint);
 
                     timeOfLastStateChangeNs = timeNs;

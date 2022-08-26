@@ -304,7 +304,7 @@ public final class DriverConductor implements Agent
                     sourceAddress,
                     congestionControl);
 
-                channelEndpoint.incrImageCount();
+                channelEndpoint.incRefImages();
                 publicationImages.add(image);
                 receiverProxy.newPublicationImage(channelEndpoint, image);
 

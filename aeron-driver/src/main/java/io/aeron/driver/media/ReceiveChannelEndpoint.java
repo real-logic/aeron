@@ -90,7 +90,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
     private final long receiverId;
     private InetSocketAddress currentControlAddress;
     private AtomicCounter localSocketAddressIndicator;
-    private int imageCount;
+    private int imageRefCount;
 
     /**
      * Construct the receiver end for data streams.
@@ -372,7 +372,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
         return refCountByStreamIdMap.isEmpty() &&
             refCountByStreamIdAndSessionIdMap.isEmpty() &&
             !statusIndicator.isClosed() &&
-            imageCount <= 0;
+            imageRefCount <= 0;
     }
 
     /**
@@ -912,20 +912,20 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointHotFields
 
     /**
      * Called from the {@link io.aeron.driver.DriverConductor} to
-     * increment image count for this channel endpoint.
+     * increment image ref count for this channel endpoint.
      */
-    public void incrImageCount()
+    public void incRefImages()
     {
-        imageCount++;
+        imageRefCount++;
     }
 
     /**
      * Called from the {@link io.aeron.driver.DriverConductor} to
-     * decrement image count for this channel endpoint.
+     * decrement image ref count for this channel endpoint.
      */
-    public void decrImageCount()
+    public void decRefImages()
     {
-        --imageCount;
+        --imageRefCount;
     }
 
     private void updateTimeOfLastActivityNs(final long nowNs, final int transportIndex)

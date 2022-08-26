@@ -59,7 +59,7 @@ if not "%1"=="" (
         echo "Disabling parallel build"
     ) else if "%1"=="--parallel-cpus" (
         set CMAKE_BUILD_PARALLEL_LEVEL=%2
-        echo Using %CMAKE_BUILD_PARALLEL_LEVEL% cpus
+        echo Using !CMAKE_BUILD_PARALLEL_LEVEL! cpus
         shift
     ) else (
         echo "Unknown option %%o"

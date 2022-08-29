@@ -1680,6 +1680,17 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
+    public void seedRecordingsFromLatestSnapshot()
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                ClusterTool.seedRecordingLogFromSnapshot(node.consensusModule().context().clusterDir());
+            }
+        }
+    }
+
     public static Builder aCluster()
     {
         return new Builder();

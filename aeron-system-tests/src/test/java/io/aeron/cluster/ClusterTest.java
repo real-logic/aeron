@@ -1685,7 +1685,7 @@ class ClusterTest
 
         cluster.stopAllNodes();
 
-        seedRecordingsFromLatestSnapshot(staticNodeCount);
+        cluster.seedRecordingsFromLatestSnapshot();
 
         cluster.logChannel("aeron:udp?term-length=" + newTermLength + "|mtu=" + newMtu);
         cluster.ingressChannel("aeron:udp?term-length=" + newTermLength + "|mtu=" + newMtu);
@@ -2148,13 +2148,5 @@ class ClusterTest
             });
 
         return hasResponse;
-    }
-
-    private void seedRecordingsFromLatestSnapshot(final int nodeCount)
-    {
-        for (int i = 0; i < nodeCount; i++)
-        {
-            ClusterTool.seedRecordingLogFromSnapshot(cluster.node(i).consensusModule().context().clusterDir());
-        }
     }
 }

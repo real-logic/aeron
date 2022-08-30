@@ -39,6 +39,11 @@ final class ClusterSession
         INIT, CONNECTING, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSING, INVALID, CLOSED
     }
 
+    enum Action
+    {
+        CLIENT, BACKUP, HEARTBEAT
+    }
+
     private boolean hasNewLeaderEventPending = false;
     private boolean hasOpenEventPending = true;
     private boolean isBackupSession = false;
@@ -56,6 +61,7 @@ final class ClusterSession
     private EventCode eventCode = null;
     private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] encodedPrincipal = NULL_PRINCIPAL;
+    private Action action = Action.CLIENT;
 
     ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
     {
@@ -332,14 +338,14 @@ final class ClusterSession
         hasOpenEventPending = false;
     }
 
-    boolean isBackupSession()
+    Action action()
     {
-        return isBackupSession;
+        return action;
     }
 
-    void markAsBackupSession()
+    void action(final Action action)
     {
-        this.isBackupSession = true;
+        this.action = action;
     }
 
     Publication responsePublication()

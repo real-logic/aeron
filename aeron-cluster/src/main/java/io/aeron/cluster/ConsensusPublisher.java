@@ -48,6 +48,8 @@ final class ConsensusPublisher
     private final TerminationAckEncoder terminationAckEncoder = new TerminationAckEncoder();
     private final BackupQueryEncoder backupQueryEncoder = new BackupQueryEncoder();
     private final BackupResponseEncoder backupResponseEncoder = new BackupResponseEncoder();
+    private final HeartbeatRequestEncoder heartbeatRequestEncoder = new HeartbeatRequestEncoder();
+    private final HeartbeatResponseEncoder heartbeatResponseEncoder = new HeartbeatResponseEncoder();
 
     void canvassPosition(
         final ExclusivePublication publication,
@@ -389,21 +391,7 @@ final class ConsensusPublisher
             .memberEndpoints(memberEndpoints);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + addPassiveMemberEncoder.encodedLength();
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.offer(buffer, 0, length);
-            if (result > 0)
-            {
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
+        return sendPublication(publication, buffer, length);
     }
 
     boolean clusterMemberChange(
@@ -426,21 +414,7 @@ final class ConsensusPublisher
             .passiveMembers(passiveMembers);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + clusterMembersChangeEncoder.encodedLength();
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.offer(buffer, 0, length);
-            if (result > 0)
-            {
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
+        return sendPublication(publication, buffer, length);
     }
 
     boolean snapshotRecordingQuery(
@@ -646,21 +620,7 @@ final class ConsensusPublisher
             .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + backupQueryEncoder.encodedLength();
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.offer(buffer, 0, length);
-            if (result > 0)
-            {
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
+        return sendPublication(publication, buffer, length);
     }
 
     boolean backupResponse(
@@ -699,21 +659,40 @@ final class ConsensusPublisher
         backupResponseEncoder.clusterMembers(clusterMembers);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + backupResponseEncoder.encodedLength();
+        return sendSession(session, buffer, length);
+    }
 
-        int attempts = SEND_ATTEMPTS;
-        do
+    boolean heartbeatRequest(
+        final ExclusivePublication publication,
+        final long correlationId,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] encodedCredentials)
+    {
+        if (null == publication)
         {
-            final long result = session.responsePublication().offer(buffer, 0, length);
-            if (result > 0)
-            {
-                return true;
-            }
-
-            checkResult(result);
+            return false;
         }
-        while (--attempts > 0);
 
-        return false;
+        heartbeatRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .responseStreamId(responseStreamId)
+            .responseChannel(responseChannel)
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + heartbeatRequestEncoder.encodedLength();
+        return sendPublication(publication, buffer, length);
+    }
+
+    public boolean heartbeatResponse(final ClusterSession session)
+    {
+        heartbeatResponseEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(session.correlationId());
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + heartbeatResponseEncoder.encodedLength();
+        return sendSession(session, buffer, length);
     }
 
     public boolean challengeResponse(
@@ -730,6 +709,22 @@ final class ConsensusPublisher
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength();
 
+        return sendPublication(publication, buffer, length);
+    }
+
+    private static void checkResult(final long result)
+    {
+        if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new AeronException("unexpected publication state: " + result);
+        }
+    }
+
+    private static boolean sendPublication(
+        final ExclusivePublication publication,
+        final ExpandableArrayBuffer buffer,
+        final int length)
+    {
         int attempts = SEND_ATTEMPTS;
         do
         {
@@ -746,11 +741,24 @@ final class ConsensusPublisher
         return false;
     }
 
-    private static void checkResult(final long result)
+    private static boolean sendSession(
+        final ClusterSession session,
+        final ExpandableArrayBuffer buffer,
+        final int length)
     {
-        if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
+        int attempts = SEND_ATTEMPTS;
+        do
         {
-            throw new AeronException("unexpected publication state: " + result);
+            final long result = session.responsePublication().offer(buffer, 0, length);
+            if (result > 0)
+            {
+                return true;
+            }
+
+            checkResult(result);
         }
+        while (--attempts > 0);
+
+        return false;
     }
 }

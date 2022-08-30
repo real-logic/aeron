@@ -48,6 +48,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
     private final TerminationAckDecoder terminationAckDecoder = new TerminationAckDecoder();
     private final BackupQueryDecoder backupQueryDecoder = new BackupQueryDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
+    private final HeartbeatRequestDecoder heartbeatRequestDecoder = new HeartbeatRequestDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -344,6 +345,37 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     credentials);
                 break;
             }
+
+            case HeartbeatRequestDecoder.TEMPLATE_ID:
+            {
+                heartbeatRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final String responseChannel = heartbeatRequestDecoder.responseChannel();
+                final int credentialsLength = heartbeatRequestDecoder.encodedCredentialsLength();
+                final byte[] credentials;
+                if (credentialsLength > 0)
+                {
+                    credentials = new byte[credentialsLength];
+                    heartbeatRequestDecoder.getEncodedCredentials(credentials, 0, credentials.length);
+                }
+                else
+                {
+                    credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
+                }
+
+                consensusModuleAgent.onHeartbeatRequest(
+                    heartbeatRequestDecoder.correlationId(),
+                    heartbeatRequestDecoder.responseStreamId(),
+                    responseChannel,
+                    credentials);
+
+                break;
+            }
+
         }
     }
 }

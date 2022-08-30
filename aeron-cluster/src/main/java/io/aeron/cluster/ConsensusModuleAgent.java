@@ -958,7 +958,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 final ClusterSession session = new ClusterSession(
                     NULL_VALUE, responseStreamId, createResponseChannel(responseChannel));
 
-                session.markAsBackupSession();
+                session.action(ClusterSession.Action.BACKUP);
                 session.asyncConnect(aeron);
 
                 final long timestamp = clusterClock.time();
@@ -973,10 +973,46 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
                 }
                 else
                 {
-                    authenticator.onConnectRequest(
-                        session.id(), encodedCredentials, clusterTimeUnit.toMillis(timestamp));
+                    final long timestampMs = clusterTimeUnit.toMillis(timestamp);
+                    authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
                     pendingSessions.add(session);
                 }
+            }
+        }
+    }
+
+    public void onHeartbeatRequest(
+        final long correlationId,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] encodedCredentials)
+    {
+        if (null == election && null == dynamicJoin)
+        {
+            if (Cluster.Role.LEADER != role)
+            {
+                consensusPublisher.heartbeatRequest(
+                    leaderMember.publication(),
+                    correlationId,
+                    responseStreamId,
+                    responseChannel,
+                    encodedCredentials);
+            }
+            else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
+            {
+                final ClusterSession session = new ClusterSession(
+                    NULL_VALUE, responseStreamId, createResponseChannel(responseChannel));
+
+                session.action(ClusterSession.Action.HEARTBEAT);
+                session.asyncConnect(aeron);
+
+                final long timestamp = clusterClock.time();
+                final long timestampNs = clusterTimeUnit.toNanos(timestamp);
+                final long timestampMs = clusterTimeUnit.toMillis(timestamp);
+
+                session.lastActivityNs(timestampNs, correlationId);
+                authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
+                pendingSessions.add(session);
             }
         }
     }
@@ -2393,27 +2429,47 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler
 
             if (session.state() == AUTHENTICATED)
             {
-                if (session.isBackupSession())
+                switch (session.action())
                 {
-                    final RecordingLog.Entry entry = recordingLog.findLastTerm();
-                    if (null != entry && consensusPublisher.backupResponse(
-                        session,
-                        commitPosition.id(),
-                        leaderMember.id(),
-                        entry,
-                        recoveryPlan,
-                        ClusterMember.encodeAsString(activeMembers)))
+                    case CLIENT:
                     {
-                        ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                        session.close(aeron, ctx.countedErrorHandler());
-                        workCount += 1;
+                        if (appendSessionAndOpen(session, nowNs))
+                        {
+                            ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                            addSession(session);
+                            workCount += 1;
+                        }
+                        break;
                     }
-                }
-                else if (appendSessionAndOpen(session, nowNs))
-                {
-                    ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                    addSession(session);
-                    workCount += 1;
+
+                    case BACKUP:
+                    {
+                        final RecordingLog.Entry entry = recordingLog.findLastTerm();
+                        if (null != entry && consensusPublisher.backupResponse(
+                            session,
+                            commitPosition.id(),
+                            leaderMember.id(),
+                            entry,
+                            recoveryPlan,
+                            ClusterMember.encodeAsString(activeMembers)))
+                        {
+                            ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                            session.close(aeron, ctx.countedErrorHandler());
+                            workCount += 1;
+                        }
+                        break;
+                    }
+
+                    case HEARTBEAT:
+                    {
+                        if (consensusPublisher.heartbeatResponse(session))
+                        {
+                            ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                            session.close(aeron, ctx.countedErrorHandler());
+                            workCount += 1;
+                        }
+                        break;
+                    }
                 }
             }
             else if (session.state() == REJECTED)

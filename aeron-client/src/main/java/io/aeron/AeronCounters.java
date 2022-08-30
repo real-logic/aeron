@@ -267,6 +267,11 @@ public final class AeronCounters
      */
     public static final int CLUSTER_STANDBY_ERROR_COUNT_TYPE_ID = 221;
 
+    /**
+     * Counter type for responses to heartbeat request from the cluster.
+     */
+    public static final int CLUSTER_STANDBY_HEARTBEAT_RESPONSE_COUNT_TYPE_ID = 222;
+
     private AeronCounters()
     {
     }

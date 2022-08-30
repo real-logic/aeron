@@ -260,12 +260,12 @@ public final class AeronCounters
     /**
      * The type id of the {@link Counter} used for the warm standby state.
      */
-    public static final int CLUSTER_WARM_STANDBY_STATE_TYPE_ID = 220;
+    public static final int CLUSTER_STANDBY_STATE_TYPE_ID = 220;
 
     /**
      * Counter type id for the clustered service error count.
      */
-    public static final int CLUSTER_WARM_STANDBY_ERROR_COUNT_TYPE_ID = 221;
+    public static final int CLUSTER_STANDBY_ERROR_COUNT_TYPE_ID = 221;
 
     private AeronCounters()
     {

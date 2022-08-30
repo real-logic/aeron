@@ -48,6 +48,7 @@ import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
@@ -58,6 +59,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -1859,4 +1861,56 @@ public final class TestCluster implements AutoCloseable
             }
         };
     }
+
+    public static final CredentialsSupplier SIMPLE_CREDENTIALS_SUPPLIER = new CredentialsSupplier()
+    {
+        public byte[] encodedCredentials()
+        {
+            return "admin:admin".getBytes(StandardCharsets.US_ASCII);
+        }
+
+        public byte[] onChallenge(final byte[] encodedChallenge)
+        {
+            return ArrayUtil.EMPTY_BYTE_ARRAY;
+        }
+    };
+
+    public static final CredentialsSupplier CHALLENGE_RESPONSE_CREDENTIALS_SUPPLIER = new CredentialsSupplier()
+    {
+        public byte[] encodedCredentials()
+        {
+            return "admin:adminC".getBytes(StandardCharsets.US_ASCII);
+        }
+
+        public byte[] onChallenge(final byte[] encodedChallenge)
+        {
+            return "admin:CSadmin".getBytes(StandardCharsets.US_ASCII);
+        }
+    };
+
+    public static final CredentialsSupplier INVALID_SIMPLE_CREDENTIALS_SUPPLIER = new CredentialsSupplier()
+    {
+        public byte[] encodedCredentials()
+        {
+            return "admin:invalid".getBytes(StandardCharsets.US_ASCII);
+        }
+
+        public byte[] onChallenge(final byte[] encodedChallenge)
+        {
+            return ArrayUtil.EMPTY_BYTE_ARRAY;
+        }
+    };
+
+    public static final CredentialsSupplier INVALID_CHALLENGE_RESPONSE_CREDENTIALS_SUPPLIER = new CredentialsSupplier()
+    {
+        public byte[] encodedCredentials()
+        {
+            return "admin:adminC".getBytes(StandardCharsets.US_ASCII);
+        }
+
+        public byte[] onChallenge(final byte[] encodedChallenge)
+        {
+            return "admin:invalid".getBytes(StandardCharsets.US_ASCII);
+        }
+    };
 }

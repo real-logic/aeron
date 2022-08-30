@@ -46,7 +46,6 @@ final class ClusterSession
 
     private boolean hasNewLeaderEventPending = false;
     private boolean hasOpenEventPending = true;
-    private boolean isBackupSession = false;
     private final long id;
     private long correlationId;
     private long openedLogPosition = AeronArchive.NULL_POSITION;

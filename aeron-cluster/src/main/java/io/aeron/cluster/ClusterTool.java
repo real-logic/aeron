@@ -961,13 +961,15 @@ public class ClusterTool
                     Thread.yield();
                 }
 
-                final ConsensusModuleSnapshotInspector inspector = new ConsensusModuleSnapshotInspector(image, out);
+                final ConsensusModuleSnapshotAdapter adapter = new ConsensusModuleSnapshotAdapter(
+                    image, new ConsensusModuleSnapshotPrinter(out));
+
                 while (true)
                 {
-                    final int fragments = inspector.poll();
+                    final int fragments = adapter.poll();
                     if (0 == fragments)
                     {
-                        if (inspector.isDone())
+                        if (adapter.isDone())
                         {
                             break;
                         }

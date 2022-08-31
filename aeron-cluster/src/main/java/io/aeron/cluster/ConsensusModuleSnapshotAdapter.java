@@ -24,11 +24,9 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
-import java.io.PrintStream;
-
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 
-class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
+class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
 {
     static final int FRAGMENT_LIMIT = 10;
 
@@ -45,12 +43,12 @@ class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
     private final PendingMessageTrackerDecoder pendingMessageTrackerDecoder = new PendingMessageTrackerDecoder();
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
     private final Image image;
-    final PrintStream out;
+    private final ConsensusModuleSnapshotListener listener;
 
-    ConsensusModuleSnapshotInspector(final Image image, final PrintStream out)
+    ConsensusModuleSnapshotAdapter(final Image image, final ConsensusModuleSnapshotListener listener)
     {
         this.image = image;
-        this.out = out;
+        this.listener = listener;
     }
 
     boolean isDone()
@@ -83,9 +81,8 @@ class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                out.println("Pending Message:" +
-                    " length=" + length +
-                    " clusterSessionId=" + sessionMessageHeaderDecoder.clusterSessionId());
+                listener.onSessionMessage(
+                    sessionMessageHeaderDecoder.clusterSessionId(), buffer, offset, length);
                 break;
 
             case SnapshotMarkerDecoder.TEMPLATE_ID:
@@ -109,9 +106,9 @@ class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
                             throw new ClusterException("already in snapshot");
                         }
                         inSnapshot = true;
-                        out.println("Snapshot:" +
-                            " appVersion=" + snapshotMarkerDecoder.appVersion() +
-                            " timeUnit=" + ClusterClock.map(snapshotMarkerDecoder.timeUnit()));
+
+                        listener.onBeginSnapshot(
+                            snapshotMarkerDecoder.appVersion(), ClusterClock.map(snapshotMarkerDecoder.timeUnit()));
                         return Action.CONTINUE;
 
                     case END:
@@ -131,14 +128,14 @@ class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                out.println("Cluster Session:" +
-                    " clusterSessionId=" + clusterSessionDecoder.clusterSessionId() +
-                    " correlationId=" + clusterSessionDecoder.correlationId() +
-                    " openedLogPosition=" + clusterSessionDecoder.openedLogPosition() +
-                    " timeOfLastActivity=" + clusterSessionDecoder.timeOfLastActivity() +
-                    " closeReason=" + clusterSessionDecoder.closeReason() +
-                    " responseStreamId=" + clusterSessionDecoder.responseStreamId() +
-                    " responseChannel=" + clusterSessionDecoder.responseChannel());
+                listener.onClusterSession(
+                    clusterSessionDecoder.clusterSessionId(),
+                    clusterSessionDecoder.correlationId(),
+                    clusterSessionDecoder.openedLogPosition(),
+                    clusterSessionDecoder.timeOfLastActivity(),
+                    clusterSessionDecoder.closeReason(),
+                    clusterSessionDecoder.responseStreamId(),
+                    clusterSessionDecoder.responseChannel());
                 break;
 
             case TimerDecoder.TEMPLATE_ID:
@@ -148,9 +145,7 @@ class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                out.println("Timer:" +
-                    " correlationId=" + timerDecoder.correlationId() +
-                    " deadline=" + timerDecoder.deadline());
+                listener.onTimer(timerDecoder.correlationId(), timerDecoder.deadline());
                 break;
 
             case ConsensusModuleDecoder.TEMPLATE_ID:
@@ -160,11 +155,11 @@ class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                out.println("Consensus Module State:" +
-                    " nextSessionId=" + consensusModuleDecoder.nextSessionId() +
-                    " nextServiceSessionId=" + consensusModuleDecoder.nextServiceSessionId() +
-                    " logServiceSessionId=" + consensusModuleDecoder.logServiceSessionId() +
-                    " pendingMessageCapacity=" + consensusModuleDecoder.pendingMessageCapacity());
+                listener.onConsensusModuleState(
+                    consensusModuleDecoder.nextSessionId(),
+                    consensusModuleDecoder.nextServiceSessionId(),
+                    consensusModuleDecoder.logServiceSessionId(),
+                    consensusModuleDecoder.pendingMessageCapacity());
                 break;
 
             case ClusterMembersDecoder.TEMPLATE_ID:
@@ -174,10 +169,10 @@ class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                out.println("Cluster Members:" +
-                    " memberId=" + clusterMembersDecoder.memberId() +
-                    " highMemberId=" + clusterMembersDecoder.highMemberId() +
-                    " clusterMembers=" + clusterMembersDecoder.clusterMembers());
+                listener.onClusterMembers(
+                    clusterMembersDecoder.memberId(),
+                    clusterMembersDecoder.highMemberId(),
+                    clusterMembersDecoder.clusterMembers());
                 break;
 
             case PendingMessageTrackerDecoder.TEMPLATE_ID:
@@ -187,11 +182,11 @@ class ConsensusModuleSnapshotInspector implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                out.println("Pending Message Tracker:" +
-                    " nextServiceSessionId=" + pendingMessageTrackerDecoder.nextServiceSessionId() +
-                    " logServiceSessionId=" + pendingMessageTrackerDecoder.logServiceSessionId() +
-                    " pendingMessageCapacity=" + pendingMessageTrackerDecoder.pendingMessageCapacity() +
-                    " serviceId=" + pendingMessageTrackerDecoder.serviceId());
+                listener.onPendingMessageTracker(
+                    pendingMessageTrackerDecoder.nextServiceSessionId(),
+                    pendingMessageTrackerDecoder.logServiceSessionId(),
+                    pendingMessageTrackerDecoder.pendingMessageCapacity(),
+                    pendingMessageTrackerDecoder.serviceId());
                 break;
         }
 

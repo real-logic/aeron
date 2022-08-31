@@ -2258,8 +2258,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                 if (ConsensusModule.State.ACTIVE == state)
                 {
-                    workCount += checkSessions(sessions, nowNs);
                     workCount += processPendingSessions(pendingSessions, nowNs);
+                    workCount += checkSessions(sessions, nowNs);
                     workCount += processPassiveMembers(passiveMembers);
 
                     if (!ClusterMember.hasActiveQuorum(activeMembers, nowNs, leaderHeartbeatTimeoutNs))
@@ -2455,7 +2455,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 {
                     case CLIENT:
                     {
-                        if (appendSessionAndOpen(session, nowNs))
+                        if (session.hasOpenEventPending())
+                        {
+                            // this has to be sent to client before then to service
+                            workCount += sendSessionOpenEvent(session);
+                        }
+                        if (!session.hasOpenEventPending() && appendSessionAndOpen(session, nowNs))
                         {
                             ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                             addSession(session);
@@ -2654,10 +2659,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     session.close(aeron, ctx.countedErrorHandler());
                     workCount++;
                 }
-            }
-            else if (session.hasOpenEventPending())
-            {
-                workCount += sendSessionOpenEvent(session);
             }
             else if (session.hasNewLeaderEventPending())
             {

@@ -2459,12 +2459,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                         {
                             // this has to be sent to client before then to service
                             workCount += sendSessionOpenEvent(session);
-                        }
-                        if (!session.hasOpenEventPending() && appendSessionAndOpen(session, nowNs))
-                        {
                             ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                             addSession(session);
-                            workCount += 1;
                         }
                         break;
                     }
@@ -2658,6 +2654,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     sessionByIdMap.remove(session.id());
                     session.close(aeron, ctx.countedErrorHandler());
                     workCount++;
+                }
+            }
+            else if (session.state() == AUTHENTICATED)
+            {
+                // session blocks in this state for messages: onIngressMessage
+                if (appendSessionAndOpen(session, nowNs))
+                {
+                    workCount += 1;
                 }
             }
             else if (session.hasNewLeaderEventPending())

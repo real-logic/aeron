@@ -459,6 +459,7 @@ public final class ClusterMarkFile implements AutoCloseable
             MarkFileHeaderDecoder.SCHEMA_VERSION);
 
         return new ClusterNodeControlProperties(
+            decoder.memberId(),
             decoder.serviceStreamId(),
             decoder.consensusModuleStreamId(),
             decoder.aeronDirectory(),

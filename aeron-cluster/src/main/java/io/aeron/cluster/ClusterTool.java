@@ -981,6 +981,11 @@ public class ClusterTool
                         Thread.yield();
                     }
                 }
+
+                out.println("Consensus Module Snapshot End:" +
+                    " memberId=" + properties.memberId +
+                    " recordingId=" + entry.recordingId +
+                    " length=" + image.position());
             }
         }
     }

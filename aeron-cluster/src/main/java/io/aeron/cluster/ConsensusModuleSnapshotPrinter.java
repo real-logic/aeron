@@ -30,14 +30,14 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
         this.out = out;
     }
 
-    public void onBeginSnapshot(final int appVersion, final TimeUnit timeUnit)
+    public void onLoadBeginSnapshot(final int appVersion, final TimeUnit timeUnit)
     {
         out.println("Snapshot:" +
             " appVersion=" + appVersion +
             " timeUnit=" + timeUnit);
     }
 
-    public void onConsensusModuleState(
+    public void onLoadConsensusModuleState(
         final long nextSessionId,
         final long nextServiceSessionId,
         final long logServiceSessionId,
@@ -50,7 +50,7 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
             " pendingMessageCapacity=" + pendingMessageCapacity);
     }
 
-    public void onClusterMembers(final int memberId, final int highMemberId, final String clusterMembers)
+    public void onLoadClusterMembers(final int memberId, final int highMemberId, final String clusterMembers)
     {
         out.println("Cluster Members:" +
             " memberId=" + memberId +
@@ -58,7 +58,7 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
             " clusterMembers=" + clusterMembers);
     }
 
-    public void onSessionMessage(
+    public void onLoadPendingMessage(
         final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
     {
         out.println("Pending Message:" +
@@ -66,7 +66,7 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
             " clusterSessionId=" + clusterSessionId);
     }
 
-    public void onClusterSession(
+    public void onLoadClusterSession(
         final long clusterSessionId,
         final long correlationId,
         final long openedLogPosition,
@@ -85,14 +85,14 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
             " responseChannel=" + responseChannel);
     }
 
-    public void onTimer(final long correlationId, final long deadline)
+    public void onLoadTimer(final long correlationId, final long deadline)
     {
         out.println("Timer:" +
             " correlationId=" + correlationId +
             " deadline=" + deadline);
     }
 
-    public void onPendingMessageTracker(
+    public void onLoadPendingMessageTracker(
         final long nextServiceSessionId,
         final long logServiceSessionId,
         final int pendingMessageCapacity,

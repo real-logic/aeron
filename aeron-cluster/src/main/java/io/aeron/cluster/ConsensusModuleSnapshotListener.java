@@ -22,16 +22,16 @@ import java.util.concurrent.TimeUnit;
 
 interface ConsensusModuleSnapshotListener
 {
-    void onBeginSnapshot(int appVersion, TimeUnit timeUnit);
+    void onLoadBeginSnapshot(int appVersion, TimeUnit timeUnit);
 
-    void onConsensusModuleState(
+    void onLoadConsensusModuleState(
         long nextSessionId, long nextServiceSessionId, long logServiceSessionId, int pendingMessageCapacity);
 
-    void onClusterMembers(int memberId, int highMemberId, String clusterMembers);
+    void onLoadClusterMembers(int memberId, int highMemberId, String clusterMembers);
 
-    void onSessionMessage(long clusterSessionId, DirectBuffer buffer, int offset, int length);
+    void onLoadPendingMessage(long clusterSessionId, DirectBuffer buffer, int offset, int length);
 
-    void onClusterSession(
+    void onLoadClusterSession(
         long clusterSessionId,
         long correlationId,
         long openedLogPosition,
@@ -40,8 +40,8 @@ interface ConsensusModuleSnapshotListener
         int responseStreamId,
         String responseChannel);
 
-    void onTimer(long correlationId, long deadline);
+    void onLoadTimer(long correlationId, long deadline);
 
-    void onPendingMessageTracker(
+    void onLoadPendingMessageTracker(
         long nextServiceSessionId, long logServiceSessionId, int pendingMessageCapacity, int serviceId);
 }

@@ -81,7 +81,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.onSessionMessage(
+                listener.onLoadPendingMessage(
                     sessionMessageHeaderDecoder.clusterSessionId(), buffer, offset, length);
                 break;
 
@@ -107,7 +107,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                         }
                         inSnapshot = true;
 
-                        listener.onBeginSnapshot(
+                        listener.onLoadBeginSnapshot(
                             snapshotMarkerDecoder.appVersion(), ClusterClock.map(snapshotMarkerDecoder.timeUnit()));
                         return Action.CONTINUE;
 
@@ -128,7 +128,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.onClusterSession(
+                listener.onLoadClusterSession(
                     clusterSessionDecoder.clusterSessionId(),
                     clusterSessionDecoder.correlationId(),
                     clusterSessionDecoder.openedLogPosition(),
@@ -145,7 +145,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.onTimer(timerDecoder.correlationId(), timerDecoder.deadline());
+                listener.onLoadTimer(timerDecoder.correlationId(), timerDecoder.deadline());
                 break;
 
             case ConsensusModuleDecoder.TEMPLATE_ID:
@@ -155,7 +155,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.onConsensusModuleState(
+                listener.onLoadConsensusModuleState(
                     consensusModuleDecoder.nextSessionId(),
                     consensusModuleDecoder.nextServiceSessionId(),
                     consensusModuleDecoder.logServiceSessionId(),
@@ -169,7 +169,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.onClusterMembers(
+                listener.onLoadClusterMembers(
                     clusterMembersDecoder.memberId(),
                     clusterMembersDecoder.highMemberId(),
                     clusterMembersDecoder.clusterMembers());
@@ -182,7 +182,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.onPendingMessageTracker(
+                listener.onLoadPendingMessageTracker(
                     pendingMessageTrackerDecoder.nextServiceSessionId(),
                     pendingMessageTrackerDecoder.logServiceSessionId(),
                     pendingMessageTrackerDecoder.pendingMessageCapacity(),

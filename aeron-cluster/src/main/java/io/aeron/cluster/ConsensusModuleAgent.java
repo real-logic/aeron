@@ -2258,8 +2258,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                 if (ConsensusModule.State.ACTIVE == state)
                 {
-                    workCount += processPendingSessions(pendingSessions, nowNs);
                     workCount += checkSessions(sessions, nowNs);
+                    workCount += processPendingSessions(pendingSessions, nowNs);
                     workCount += processPassiveMembers(passiveMembers);
 
                     if (!ClusterMember.hasActiveQuorum(activeMembers, nowNs, leaderHeartbeatTimeoutNs))

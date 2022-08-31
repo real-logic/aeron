@@ -20,12 +20,12 @@ import org.agrona.SemanticVersion;
 /**
  * Class to be used for determining AppVersion compatibility.
  * <p>
- * Default is to use {@link org.agrona.SemanticVersion} semantics for check.
+ * Default is to use {@link org.agrona.SemanticVersion} major version for checking compatibility.
  */
 public class AppVersionValidator
 {
     /**
-     * Singleton instance of {@link org.agrona.SemanticVersion} version which can be used to avoid allocation.
+     * Singleton instance of {@link AppVersionValidator} version which can be used to avoid allocation.
      */
     public static final AppVersionValidator SEMANTIC_VERSIONING_VALIDATOR = new AppVersionValidator();
 
@@ -33,7 +33,7 @@ public class AppVersionValidator
      * Check version compatibility between configured context appVersion and appVersion in
      * new leadership term or snapshot.
      *
-     * @param contextAppVersion configured appVersion value from context.
+     * @param contextAppVersion   configured appVersion value from context.
      * @param appVersionUnderTest to check against configured appVersion.
      * @return true for compatible or false for not compatible.
      */

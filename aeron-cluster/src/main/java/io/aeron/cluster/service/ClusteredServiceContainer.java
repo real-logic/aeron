@@ -856,7 +856,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * User assigned application version validator implementation used to check version compatibility.
          * <p>
-         * The default validator uses {@link org.agrona.SemanticVersion} semantics.
+         * The default is to use {@link org.agrona.SemanticVersion} major version for checking compatibility.
          *
          * @return AppVersionValidator in use.
          */

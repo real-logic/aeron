@@ -122,8 +122,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final ArrayList<ClusterSession> rejectedUserSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> redirectUserSessions = new ArrayList<>();
 
-    private final ArrayList<ClusterSession> pendingAdminSessions = new ArrayList<>();
-    private final ArrayList<ClusterSession> rejectedAdminSessions = new ArrayList<>();
+    private final ArrayList<ClusterSession> pendingBackupSessions = new ArrayList<>();
+    private final ArrayList<ClusterSession> rejectedBackupSessions = new ArrayList<>();
 
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
     private final Long2LongCounterMap expiredTimerCountByCorrelationIdMap = new Long2LongCounterMap(0);
@@ -682,12 +682,30 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    void onChallengeResponse(final long correlationId, final long clusterSessionId, final byte[] encodedCredentials)
+    void onIngressChallengeResponse(
+        final long correlationId,
+        final long clusterSessionId,
+        final byte[] encodedCredentials)
     {
         if (Cluster.Role.LEADER == role)
         {
             onChallengeResponseForSession(pendingUserSessions, correlationId, clusterSessionId, encodedCredentials);
-            onChallengeResponseForSession(pendingAdminSessions, correlationId, clusterSessionId, encodedCredentials);
+        }
+        else
+        {
+            consensusPublisher.challengeResponse(
+                leaderMember.publication(), correlationId, clusterSessionId, encodedCredentials);
+        }
+    }
+
+    void onConsensusChallengeResponse(
+        final long correlationId,
+        final long clusterSessionId,
+        final byte[] encodedCredentials)
+    {
+        if (Cluster.Role.LEADER == role)
+        {
+            onChallengeResponseForSession(pendingBackupSessions, correlationId, clusterSessionId, encodedCredentials);
         }
         else
         {
@@ -1112,14 +1130,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 {
                     final long timestampMs = clusterTimeUnit.toMillis(timestamp);
                     authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
-                    pendingAdminSessions.add(session);
+                    pendingBackupSessions.add(session);
                 }
                 else
                 {
                     final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
                         ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
                     session.reject(EventCode.ERROR, detail);
-                    rejectedAdminSessions.add(session);
+                    rejectedBackupSessions.add(session);
                 }
             }
         }
@@ -2287,7 +2305,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         workCount += pollArchiveEvents();
         workCount += sendRedirects(redirectUserSessions, nowNs);
         workCount += sendRejections(rejectedUserSessions, nowNs);
-        workCount += sendRejections(rejectedAdminSessions, nowNs);
+        workCount += sendRejections(rejectedBackupSessions, nowNs);
 
         if (null == election)
         {
@@ -2298,7 +2316,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 if (ConsensusModule.State.ACTIVE == state)
                 {
                     workCount += processPendingSessions(pendingUserSessions, rejectedUserSessions, nowNs);
-                    workCount += processPendingSessions(pendingAdminSessions, rejectedAdminSessions, nowNs);
+                    workCount += processPendingSessions(pendingBackupSessions, rejectedBackupSessions, nowNs);
                     workCount += checkSessions(sessions, nowNs);
                     workCount += processPassiveMembers(passiveMembers);
 

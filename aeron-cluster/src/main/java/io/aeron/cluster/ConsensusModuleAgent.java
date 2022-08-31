@@ -2457,10 +2457,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     {
                         if (session.hasOpenEventPending())
                         {
-                            // this has to be sent to client before then to service
-                            workCount += sendSessionOpenEvent(session);
-                            ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                            addSession(session);
+                            if (sendSessionOpenEvent(session))
+                            {
+                                workCount += 1;
+                                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                                addSession(session);
+                            }
                         }
                         break;
                     }
@@ -2713,15 +2715,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return 0;
     }
 
-    private int sendSessionOpenEvent(final ClusterSession session)
+    private boolean sendSessionOpenEvent(final ClusterSession session)
     {
         if (egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.OK, ""))
         {
             session.clearOpenEventPending();
-            return 1;
+            return true;
         }
 
-        return 0;
+        return false;
     }
 
     private boolean appendSessionAndOpen(final ClusterSession session, final long nowNs)

@@ -81,7 +81,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *                           resume: resumes reading from the log.
  *                         shutdown: initiates an orderly stop of the cluster with a snapshot.
  *                            abort: stops the cluster without a snapshot.
- *      describe-latest-cm-snapshot: prints the contents of the latest consensus module snapshot.
+ *      describe-latest-cm-snapshot: prints the contents of the latest valid consensus module snapshot.
  * </pre>
  */
 public class ClusterTool
@@ -1342,7 +1342,7 @@ public class ClusterTool
             "                           resume: resumes appending to the log.%n" +
             "                         shutdown: initiates an orderly stop of the cluster with a snapshot.%n" +
             "                            abort: stops the cluster without a snapshot.%n" +
-            "      describe-latest-cm-snapshot: prints the contents of the latest consensus module snapshot.%n");
+            "      describe-latest-cm-snapshot: prints the contents of the latest valid consensus module snapshot.%n");
         System.out.flush();
     }
 }

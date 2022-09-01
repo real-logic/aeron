@@ -2455,7 +2455,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 {
                     case CLIENT:
                     {
-                        if (appendSessionAndOpen(session, nowNs))
+                        if (session.responsePublication().isConnected() && appendSessionAndOpen(session, nowNs))
                         {
                             ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                             addSession(session);
@@ -2726,6 +2726,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         {
             session.open(resultingPosition);
             session.timeOfLastActivityNs(nowNs);
+            sendSessionOpenEvent(session);
             return true;
         }
 

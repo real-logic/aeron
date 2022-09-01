@@ -1515,7 +1515,7 @@ public final class ConsensusModule implements AutoCloseable
             {
                 dutyCycleTracker = new DutyCycleStallTracker(
                     ClusterCounters.allocate(
-                        aeron, buffer, "Cluster max cycle time (ns)",
+                        aeron, buffer, "Cluster max cycle time in ns",
                         AeronCounters.CLUSTER_MAX_CYCLE_TIME_TYPE_ID, clusterId),
                     ClusterCounters.allocate(
                         aeron, buffer, "Cluster work cycle time exceeded count: threshold=" + cycleThresholdNs + "ns",

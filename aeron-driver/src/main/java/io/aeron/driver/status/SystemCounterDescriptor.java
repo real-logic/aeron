@@ -157,7 +157,7 @@ public enum SystemCounterDescriptor
     /**
      * The maximum time spent by the conductor between work cycles.
      */
-    CONDUCTOR_MAX_CYCLE_TIME(26, "Conductor max cycle time doing its work (ns)"),
+    CONDUCTOR_MAX_CYCLE_TIME(26, "Conductor max cycle time doing its work in ns"),
 
     /**
      * Count of the number of times the cycle time threshold has been exceeded by the conductor in its work cycle.
@@ -167,7 +167,7 @@ public enum SystemCounterDescriptor
     /**
      * The maximum time spent by the sender between work cycles.
      */
-    SENDER_MAX_CYCLE_TIME(28, "Sender max cycle time doing its work (ns)"),
+    SENDER_MAX_CYCLE_TIME(28, "Sender max cycle time doing its work in ns"),
 
     /**
      * Count of the number of times the cycle time threshold has been exceeded by the sender in its work cycle.
@@ -177,7 +177,7 @@ public enum SystemCounterDescriptor
     /**
      * The maximum time spent by the receiver between work cycles.
      */
-    RECEIVER_MAX_CYCLE_TIME(30, "Receiver max cycle time doing its work (ns)"),
+    RECEIVER_MAX_CYCLE_TIME(30, "Receiver max cycle time doing its work in ns"),
 
     /**
      * Count of the number of times the cycle time threshold has been exceeded by the receiver in its work cycle.

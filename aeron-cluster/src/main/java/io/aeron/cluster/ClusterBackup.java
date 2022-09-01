@@ -598,7 +598,7 @@ public final class ClusterBackup implements AutoCloseable
             if (null == nextQueryDeadlineMsCounter)
             {
                 nextQueryDeadlineMsCounter = ClusterCounters.allocate(
-                    aeron, buffer, "ClusterBackup next query deadline (ms)", QUERY_DEADLINE_TYPE_ID, clusterId);
+                    aeron, buffer, "ClusterBackup next query deadline in ms", QUERY_DEADLINE_TYPE_ID, clusterId);
             }
 
             if (null == threadFactory)

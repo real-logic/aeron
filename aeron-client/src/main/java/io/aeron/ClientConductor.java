@@ -1330,7 +1330,7 @@ final class ClientConductor implements Agent
         }
         while (deadlineNs - nanoClock.nanoTime() > 0);
 
-        throw new DriverTimeoutException("no response from MediaDriver within (ns): " + driverTimeoutNs);
+        throw new DriverTimeoutException("no response from MediaDriver within " + driverTimeoutNs + "ns");
     }
 
     private int checkTimeouts(final long nowNs)
@@ -1357,8 +1357,8 @@ final class ClientConductor implements Agent
             forceCloseResources();
 
             throw new ConductorServiceTimeoutException(
-                "service interval exceeded (ns): timeout=" + interServiceTimeoutNs +
-                ", interval=" + (nowNs - timeOfLastServiceNs));
+                "service interval exceeded: timeout=" + interServiceTimeoutNs +
+                "ns, interval=" + (nowNs - timeOfLastServiceNs) + "ns");
         }
     }
 
@@ -1375,8 +1375,8 @@ final class ClientConductor implements Agent
                 forceCloseResources();
 
                 throw new DriverTimeoutException(
-                    "MediaDriver keepalive (ms): age=" +
-                    (nowMs - lastKeepAliveMs) + " > timeout=" + driverTimeoutMs);
+                    "MediaDriver keepalive: age=" +
+                    (nowMs - lastKeepAliveMs) + "ms > timeout=" + driverTimeoutMs + "ms");
             }
 
             if (null == heartbeatTimestamp)

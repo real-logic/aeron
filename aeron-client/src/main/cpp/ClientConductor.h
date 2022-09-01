@@ -452,8 +452,8 @@ private:
 
                 int64_t age = m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs;
                 DriverTimeoutException exception(
-                    "MediaDriver keepalive (ms): age=" + std::to_string(age) +
-                    " > timeout=" + std::to_string(m_driverTimeoutMs), SOURCEINFO);
+                    "MediaDriver keepalive: age=" + std::to_string(age) +
+                    "ms > timeout=" + std::to_string(m_driverTimeoutMs) + "ms", SOURCEINFO);
                 m_errorHandler(exception);
             }
 

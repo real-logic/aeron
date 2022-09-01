@@ -1089,7 +1089,7 @@ public final class Archive implements AutoCloseable
             {
                 conductorDutyCycleTracker = new DutyCycleStallTracker(
                     aeron.addCounter(
-                        AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID, "archive-conductor max cycle time (ns)"),
+                        AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID, "archive-conductor max cycle time in ns"),
                     aeron.addCounter(
                         AeronCounters.ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                         "archive-conductor work cycle time exceeded count: threshold=" +
@@ -1122,7 +1122,7 @@ public final class Archive implements AutoCloseable
                     recorderDutyCycleTracker = new DutyCycleStallTracker(
                         aeron.addCounter(
                             AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID,
-                            "archive-recorder max cycle time (ns)"),
+                            "archive-recorder max cycle time in ns"),
                         aeron.addCounter(
                             AeronCounters.ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                             "archive-recorder work cycle time exceeded count: threshold=" +
@@ -1135,7 +1135,7 @@ public final class Archive implements AutoCloseable
                     replayerDutyCycleTracker = new DutyCycleStallTracker(
                         aeron.addCounter(
                             AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID,
-                            "archive-replayer max cycle time (ns)"),
+                            "archive-replayer max cycle time in ns"),
                         aeron.addCounter(
                             AeronCounters.ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                             "archive-replayer work cycle time exceeded count: threshold=" +

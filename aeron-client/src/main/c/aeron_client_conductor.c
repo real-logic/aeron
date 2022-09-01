@@ -388,7 +388,7 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
             conductor->is_terminating = true;
             aeron_client_conductor_force_close_resources(conductor);
             snprintf(buffer, sizeof(buffer) - 1,
-                "MediaDriver keepalive (ms): age=%" PRId64 " > timeout=%" PRId64,
+                "MediaDriver keepalive: age=%" PRId64 "ms > timeout=%" PRId64 "ms",
                 (int64_t)(now_ms - last_keepalive_ms),
                 (int64_t)conductor->driver_timeout_ms);
             conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_DRIVER_TIMEOUT, buffer);
@@ -522,7 +522,7 @@ int aeron_client_conductor_on_check_timeouts(aeron_client_conductor_t *conductor
             conductor->is_terminating = true;
             aeron_client_conductor_force_close_resources(conductor);
             snprintf(buffer, sizeof(buffer) - 1,
-                "service interval exceeded (ns): timeout=%" PRId64 ", interval=%" PRId64,
+                "service interval exceeded in ns: timeout=%" PRId64 ", interval=%" PRId64,
                 (int64_t)conductor->inter_service_timeout_ns,
                 (int64_t)(now_ns - conductor->time_of_last_service_ns));
             conductor->error_handler(

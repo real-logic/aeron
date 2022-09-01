@@ -24,18 +24,18 @@ import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.IntArrayList;
+import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.util.function.Supplier;
-
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
 class ServiceIpcIngressMessageTest
@@ -120,7 +120,7 @@ class ServiceIpcIngressMessageTest
         assertEquals(Cluster.Role.FOLLOWER, oldLeader.role());
         awaitMessageCounts(cluster, oldLeader, messageCount);
 
-        assertTrackedMessages(cluster, messageCount);
+        assertTrackedMessages(cluster, -1, messageCount);
     }
 
     @Test
@@ -166,14 +166,13 @@ class ServiceIpcIngressMessageTest
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
         awaitMessageCounts(cluster, newLeader, messageCount);
         awaitMessageCounts(cluster, follower, messageCount);
-        assertTrackedMessages(newLeader, messageCount);
-        assertTrackedMessages(follower, messageCount);
+        assertTrackedMessages(cluster, oldLeader.index(), messageCount);
 
         cluster.stopNode(oldLeader);
         oldLeader = cluster.startStaticNode(oldLeader.index(), false);
         awaitMessageCounts(cluster, oldLeader, messageCount);
 
-        assertTrackedMessages(cluster, messageCount);
+        assertTrackedMessages(cluster, -1, messageCount);
     }
 
     @Test
@@ -216,7 +215,7 @@ class ServiceIpcIngressMessageTest
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
         awaitMessageCounts(cluster, messageCount);
 
-        assertTrackedMessages(cluster, messageCount);
+        assertTrackedMessages(cluster, -1, messageCount);
     }
 
     @Test
@@ -246,6 +245,7 @@ class ServiceIpcIngressMessageTest
         }
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
         awaitMessageCounts(cluster, messageCount);
+        assertTrackedMessages(cluster, -1, messageCount);
 
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
@@ -257,10 +257,23 @@ class ServiceIpcIngressMessageTest
         }
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
         awaitMessageCounts(cluster, messageCount);
+        assertTrackedMessages(cluster, -1, messageCount);
+
+        final TestNode.MessageTrackingService leaderTrackingService =
+            (TestNode.MessageTrackingService)leader.services()[0];
+        final IntArrayList clientMessagesBeforeRestart = leaderTrackingService.clientMessages();
+        final IntArrayList serviceMessagesBeforeRestart = leaderTrackingService.serviceMessages();
+        final LongArrayList timersBeforeRestart = leaderTrackingService.timers();
 
         cluster.stopAllNodes();
         cluster.restartAllNodes(false);
-        cluster.awaitLeader();
+        final TestNode newLeader = cluster.awaitLeader();
+        final TestNode.MessageTrackingService newLeaderTrackingService =
+            (TestNode.MessageTrackingService)newLeader.services()[0];
+        assertEquals(clientMessagesBeforeRestart, newLeaderTrackingService.clientMessages());
+        assertEquals(serviceMessagesBeforeRestart, newLeaderTrackingService.serviceMessages());
+        assertEquals(timersBeforeRestart, newLeaderTrackingService.timers());
+        assertTrackedMessages(cluster, -1, messageCount);
 
         cluster.reconnectClient();
         for (int i = 0; i < 20; i++)
@@ -270,8 +283,7 @@ class ServiceIpcIngressMessageTest
         }
         cluster.awaitResponseMessageCount(messageCount * serviceCount);
         awaitMessageCounts(cluster, messageCount);
-
-        assertTrackedMessages(cluster, messageCount);
+        assertTrackedMessages(cluster, -1, messageCount);
     }
 
     private static void awaitMessageCounts(final TestCluster cluster, final int messageCount)
@@ -298,25 +310,71 @@ class ServiceIpcIngressMessageTest
         }
     }
 
-    private static void assertTrackedMessages(final TestCluster cluster, final int messageCount)
+    private static void assertTrackedMessages(
+        final TestCluster cluster, final int excludeIndex, final int messageCount)
     {
+        final TestNode leader = cluster.findLeader();
+        assertNotEquals(leader.index(), excludeIndex);
+
+        final TestNode.TestService[] leaderServices = leader.services();
+        final int numberOfTrackingServices = leaderServices.length;
+        final TestNode.MessageTrackingService trackingService = (TestNode.MessageTrackingService)leaderServices[0];
+        final IntArrayList clientMessages = trackingService.clientMessages();
+        final IntArrayList serviceMessages = trackingService.serviceMessages();
+        final LongArrayList timers = trackingService.timers();
+
+        assertEquals(
+            messageCount,
+            clientMessages.size(),
+            () -> "Invalid client message count: " + leader);
+        assertEquals(
+            messageCount * 3 * numberOfTrackingServices,
+            serviceMessages.size(),
+            () -> "Invalid service message count: " + leader);
+        assertEquals(messageCount * 2 * numberOfTrackingServices,
+            timers.size(),
+            () -> "Invalid timer event count: " + leader);
+
         for (int i = 0; i < 3; i++)
         {
-            final TestNode node = cluster.node(i);
-            assertTrackedMessages(node, messageCount);
+            if (excludeIndex != i)
+            {
+                final TestNode node = cluster.node(i);
+                assertTrackedServiceState(node, clientMessages, serviceMessages, timers);
+            }
         }
     }
 
-    private static void assertTrackedMessages(final TestNode node, final int messageCount)
+    private static void assertTrackedServiceState(
+        final TestNode node,
+        final IntArrayList expectedClientMessages,
+        final IntArrayList expectedServiceMessages,
+        final LongArrayList expectedTimers)
     {
         final TestNode.TestService[] services = node.services();
         for (final TestNode.TestService service : services)
         {
-            final Supplier<String> errorMsg = service::toString;
             final TestNode.MessageTrackingService trackingService = (TestNode.MessageTrackingService)service;
-            assertEquals(messageCount, trackingService.clientMessages(), errorMsg);
-            assertEquals(messageCount * 3 * services.length, trackingService.serviceMessages(), errorMsg);
-            assertEquals(messageCount * 2 * services.length, trackingService.timers(), errorMsg);
+            final IntArrayList actualClientMessages = trackingService.clientMessages();
+            if (!expectedClientMessages.equals(actualClientMessages))
+            {
+                fail("memberId=" + node.index() + ", role=" + node.role() + ": Client messages diverged:\n expected=" +
+                    expectedClientMessages + "\n   actual=" + actualClientMessages);
+            }
+
+            final IntArrayList actualServiceMessages = trackingService.serviceMessages();
+            if (!expectedServiceMessages.equals(actualServiceMessages))
+            {
+                fail("memberId=" + node.index() + ", role=" + node.role() + ": Service messages diverged:\n expected=" +
+                    expectedServiceMessages + "\n   actual=" + actualServiceMessages);
+            }
+
+            final LongArrayList actualTimers = trackingService.timers();
+            if (!expectedTimers.equals(actualTimers))
+            {
+                fail("memberId=" + node.index() + ", role=" + node.role() + ": Timers diverged:\n expected=" +
+                    expectedTimers + "\n   actual=" + actualTimers);
+            }
         }
     }
 }

@@ -44,8 +44,9 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.Hashing;
-import org.agrona.collections.IntHashSet;
-import org.agrona.collections.LongHashSet;
+import org.agrona.collections.IntArrayList;
+import org.agrona.collections.LongArrayList;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -55,7 +56,6 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -623,9 +623,9 @@ public final class TestNode implements AutoCloseable
         private static final byte SNAPSHOT_TIMERS = (byte)4;
         private final int serviceId;
         private final ExpandableArrayBuffer messageBuffer = new ExpandableArrayBuffer();
-        private final IntHashSet clientMessages = new IntHashSet();
-        private final IntHashSet serviceMessages = new IntHashSet();
-        private final LongHashSet timers = new LongHashSet();
+        private final IntArrayList clientMessages = new IntArrayList();
+        private final IntArrayList serviceMessages = new IntArrayList();
+        private final LongArrayList timers = new LongArrayList();
         private int nextServiceMessageNumber;
         private long nextTimerCorrelationId;
 
@@ -635,19 +635,19 @@ public final class TestNode implements AutoCloseable
             index(index);
         }
 
-        public int clientMessages()
+        public IntArrayList clientMessages()
         {
-            return clientMessages.size();
+            return copy(clientMessages);
         }
 
-        public int serviceMessages()
+        public IntArrayList serviceMessages()
         {
-            return serviceMessages.size();
+            return copy(serviceMessages);
         }
 
-        public int timers()
+        public LongArrayList timers()
         {
-            return timers.size();
+            return copy(timers);
         }
 
         public void onStart(final Cluster cluster, final Image snapshotImage)
@@ -759,13 +759,8 @@ public final class TestNode implements AutoCloseable
         {
             if (null != session)
             {
-                final int messageNumber = buffer.getInt(offset, LITTLE_ENDIAN);
-                if (!clientMessages.add(messageNumber))
-                {
-                    throw new IllegalStateException("memberId=" + index() + ", serviceId=" + serviceId +
-                        " Duplicate client message: messageNumber=" + messageNumber + ", clientMessages=" +
-                        clientMessages);
-                }
+                final int messageId = buffer.getInt(offset, LITTLE_ENDIAN);
+                clientMessages.addInt(messageId);
 
                 // Send 3 service messages
                 for (int i = 0; i < 3; i++)
@@ -798,24 +793,15 @@ public final class TestNode implements AutoCloseable
             }
             else
             {
-                final int messageNumber = buffer.getInt(offset, LITTLE_ENDIAN);
-                if (!serviceMessages.add(messageNumber))
-                {
-                    throw new IllegalStateException("memberId=" + index() + ", serviceId=" + serviceId +
-                        " Duplicate service message: messageNumber=" + messageNumber + ", serviceMessages=" +
-                        serviceMessages);
-                }
+                final int serviceMessageId = buffer.getInt(offset, LITTLE_ENDIAN);
+                serviceMessages.addInt(serviceMessageId);
             }
             messageCount.incrementAndGet(); // count all messages
         }
 
         public void onTimerEvent(final long correlationId, final long timestamp)
         {
-            if (!timers.add(correlationId))
-            {
-                throw new IllegalStateException("memberId=" + index() + ", serviceId=" + serviceId +
-                    " Duplicate timer event: correlationId=" + correlationId + ", timers=" + timers);
-            }
+            timers.add(correlationId);
             super.onTimerEvent(correlationId, timestamp);
         }
 
@@ -827,31 +813,29 @@ public final class TestNode implements AutoCloseable
                 ", timerCount=" + timerCount() +
                 ", nextServiceMessageNumber=" + nextServiceMessageNumber +
                 ", nextTimerCorrelationId=" + nextTimerCorrelationId +
-                ", clientMessages=" + clientMessages.stream().sorted().collect(Collectors.toList()) +
-                ", serviceMessages=" + serviceMessages.stream().sorted().collect(Collectors.toList()) +
-                ", timers=" + timers.stream().sorted().collect(Collectors.toList()) +
+                ", clientMessages=" + clientMessages +
+                ", serviceMessages=" + serviceMessages +
+                ", timers=" + timers +
                 '}';
         }
 
         private void snapshotMessages(
-            final ExclusivePublication snapshotPublication, final byte snapshotType, final IntHashSet messages)
+            final ExclusivePublication snapshotPublication, final byte snapshotType, final IntArrayList messages)
         {
-            int offset = 0;
-            messageBuffer.putByte(offset, snapshotType);
-            offset++;
-            messageBuffer.putInt(offset, messages.size(), LITTLE_ENDIAN);
-            offset += SIZE_OF_INT;
+            final MutableInteger offset = new MutableInteger();
+            messageBuffer.putByte(offset.get(), snapshotType);
+            offset.increment();
+            messageBuffer.putInt(offset.get(), messages.size(), LITTLE_ENDIAN);
+            offset.addAndGet(SIZE_OF_INT);
 
-            final IntHashSet.IntIterator iterator = messages.iterator();
-            while (iterator.hasNext())
+            messages.forEachInt((messageId) ->
             {
-                final int messageId = iterator.nextValue();
-                messageBuffer.putInt(offset, messageId);
-                offset += SIZE_OF_INT;
-            }
+                messageBuffer.putInt(offset.get(), messageId);
+                offset.addAndGet(SIZE_OF_INT);
+            });
 
             idleStrategy.reset();
-            while (snapshotPublication.offer(messageBuffer, 0, offset) < 0)
+            while (snapshotPublication.offer(messageBuffer, 0, offset.get()) < 0)
             {
                 idleStrategy.idle();
             }
@@ -859,28 +843,26 @@ public final class TestNode implements AutoCloseable
 
         private void snapshotTimers(final ExclusivePublication snapshotPublication)
         {
-            int offset = 0;
-            messageBuffer.putByte(offset, SNAPSHOT_TIMERS);
-            offset++;
-            messageBuffer.putInt(offset, timers.size(), LITTLE_ENDIAN);
-            offset += SIZE_OF_INT;
+            final MutableInteger offset = new MutableInteger();
+            messageBuffer.putByte(offset.get(), SNAPSHOT_TIMERS);
+            offset.increment();
+            messageBuffer.putInt(offset.get(), timers.size(), LITTLE_ENDIAN);
+            offset.addAndGet(SIZE_OF_INT);
 
-            final LongHashSet.LongIterator iterator = timers.iterator();
-            while (iterator.hasNext())
+            timers.forEachLong((correlationId) ->
             {
-                final long correlationId = iterator.nextValue();
-                messageBuffer.putLong(offset, correlationId);
-                offset += SIZE_OF_LONG;
-            }
+                messageBuffer.putLong(offset.get(), correlationId);
+                offset.addAndGet(SIZE_OF_LONG);
+            });
 
             idleStrategy.reset();
-            while (snapshotPublication.offer(messageBuffer, 0, offset) < 0)
+            while (snapshotPublication.offer(messageBuffer, 0, offset.get()) < 0)
             {
                 idleStrategy.idle();
             }
         }
 
-        private void restoreMessages(final DirectBuffer buffer, final int offset, final IntHashSet messages)
+        private void restoreMessages(final DirectBuffer buffer, final int offset, final IntArrayList messages)
         {
             int absoluteOffset = offset;
             final int count = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
@@ -889,11 +871,7 @@ public final class TestNode implements AutoCloseable
             {
                 final int messageId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
                 absoluteOffset += SIZE_OF_INT;
-                if (!messages.add(messageId))
-                {
-                    throw new IllegalStateException("memberId=" + index() + " Duplicate message in a snapshot: " +
-                        messageId);
-                }
+                messages.addInt(messageId);
             }
         }
 
@@ -906,12 +884,18 @@ public final class TestNode implements AutoCloseable
             {
                 final long correlationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
                 absoluteOffset += SIZE_OF_LONG;
-                if (!timers.add(correlationId))
-                {
-                    throw new IllegalStateException("memberId=" + index() + " Duplicate timer event in a snapshot: " +
-                        correlationId);
-                }
+                timers.add(correlationId);
             }
+        }
+
+        private static IntArrayList copy(final IntArrayList values)
+        {
+            return new IntArrayList(values.toIntArray(), values.size(), values.nullValue());
+        }
+
+        private static LongArrayList copy(final LongArrayList values)
+        {
+            return new LongArrayList(values.toLongArray(), values.size(), values.nullValue());
         }
     }
 

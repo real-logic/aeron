@@ -41,6 +41,7 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -100,7 +101,7 @@ public final class ClusterBackupAgent implements Agent
     private final Subscription consensusSubscription;
     private ExclusivePublication consensusPublication;
     private ClusterMember[] clusterMembers;
-    private ClusterMember leaderMember;
+    private ClusterMember logSupplierMember;
     private RecordingLog recordingLog;
     private RecordingLog.Entry leaderLogEntry;
     private RecordingLog.Entry leaderLastTermEntry;
@@ -114,13 +115,14 @@ public final class ClusterBackupAgent implements Agent
     private long timeOfLastProgressMs = 0;
     private long coolDownDeadlineMs = NULL_VALUE;
     private long correlationId = NULL_VALUE;
-    private long leaderLogRecordingId = NULL_VALUE;
+    private long clusterLogRecordingId = NULL_VALUE;
     private long liveLogRecordingSubscriptionId = NULL_VALUE;
     private long liveLogRecordingId = NULL_VALUE;
     private long liveLogReplaySessionId = NULL_VALUE;
     private int leaderCommitPositionCounterId = NULL_VALUE;
     private int clusterConsensusEndpointsCursor = NULL_VALUE;
     private int liveLogRecCounterId = NULL_COUNTER_ID;
+    private int leaderCursorValue = NULL_VALUE;
 
     ClusterBackupAgent(final ClusterBackup.Context ctx)
     {
@@ -302,10 +304,10 @@ public final class ClusterBackupAgent implements Agent
     private void reset()
     {
         clusterMembers = null;
-        leaderMember = null;
+        logSupplierMember = null;
         leaderLogEntry = null;
         leaderLastTermEntry = null;
-        clusterConsensusEndpointsCursor = NULL_VALUE;
+        clusterConsensusEndpointsCursor = ThreadLocalRandom.current().nextInt(clusterConsensusEndpoints.length);
         liveLogRecCounterId = NULL_COUNTER_ID;
         liveLogRecordingId = NULL_VALUE;
 
@@ -398,7 +400,7 @@ public final class ClusterBackupAgent implements Agent
                     backupResponseDecoder.lastLeadershipTermId(),
                     backupResponseDecoder.lastTermBaseLogPosition(),
                     backupResponseDecoder.commitPositionCounterId(),
-                    backupResponseDecoder.leaderMemberId(),
+                    backupResponseDecoder.memberId(),
                     backupResponseDecoder);
                 break;
 
@@ -412,14 +414,13 @@ public final class ClusterBackupAgent implements Agent
 
             case SessionEventDecoder.TEMPLATE_ID:
                 sessionEventDecoder.wrapAndApplyHeader(buffer, offset, messageHeaderDecoder);
-                final EventCode code = sessionEventDecoder.code();
+
+                final long correlationId = sessionEventDecoder.correlationId();
+                final int leaderMemberId = sessionEventDecoder.leaderMemberId();
+                final EventCode eventCode = sessionEventDecoder.code();
                 final String detail = sessionEventDecoder.detail();
 
-                if (this.correlationId == sessionEventDecoder.correlationId() &&
-                    (EventCode.ERROR == code || EventCode.AUTHENTICATION_REJECTED == code))
-                {
-                    throw new ClusterException(code + ": " + detail);
-                }
+                onSessionEvent(correlationId, leaderMemberId, eventCode, detail);
                 break;
         }
     }
@@ -433,7 +434,7 @@ public final class ClusterBackupAgent implements Agent
         final long lastLeadershipTermId,
         final long lastTermBaseLogPosition,
         final int commitPositionCounterId,
-        final int leaderMemberId,
+        final int memberId,
         final BackupResponseDecoder backupResponseDecoder)
     {
         if (BACKUP_QUERY == state && correlationId == this.correlationId)
@@ -461,9 +462,11 @@ public final class ClusterBackupAgent implements Agent
                 }
             }
 
-            if (null == leaderMember || leaderMember.id() != leaderMemberId || logRecordingId != leaderLogRecordingId)
+            if (null == logSupplierMember ||
+                logSupplierMember.id() != memberId ||
+                logRecordingId != clusterLogRecordingId)
             {
-                leaderLogRecordingId = logRecordingId;
+                clusterLogRecordingId = logRecordingId;
                 leaderLogEntry = new RecordingLog.Entry(
                     logRecordingId,
                     logLeadershipTermId,
@@ -497,12 +500,12 @@ public final class ClusterBackupAgent implements Agent
             leaderCommitPositionCounterId = commitPositionCounterId;
 
             clusterMembers = ClusterMember.parse(backupResponseDecoder.clusterMembers());
-            leaderMember = ClusterMember.findMember(clusterMembers, leaderMemberId);
-            leaderMember.leadershipTermId(logLeadershipTermId);
+            logSupplierMember = ClusterMember.findMember(clusterMembers, memberId);
+            logSupplierMember.leadershipTermId(logLeadershipTermId);
 
             if (null != eventsListener)
             {
-                eventsListener.onBackupResponse(clusterMembers, leaderMember, snapshotsToRetrieve);
+                eventsListener.onBackupResponse(clusterMembers, logSupplierMember, snapshotsToRetrieve);
             }
 
             if (null == clusterArchive)
@@ -512,7 +515,7 @@ public final class ClusterBackupAgent implements Agent
                 final AeronArchive.Context clusterArchiveContext = ctx.clusterArchiveContext().clone();
                 final ChannelUri leaderArchiveUri = ChannelUri.parse(clusterArchiveContext.controlRequestChannel());
 
-                leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
+                leaderArchiveUri.put(ENDPOINT_PARAM_NAME, logSupplierMember.archiveEndpoint());
                 clusterArchiveContext.controlRequestChannel(leaderArchiveUri.toString());
 
                 clusterArchiveAsyncConnect = AeronArchive.asyncConnect(clusterArchiveContext);
@@ -530,6 +533,26 @@ public final class ClusterBackupAgent implements Agent
 
         correlationId = ctx.aeron().nextCorrelationId();
         consensusPublisher.challengeResponse(consensusPublication, correlationId, clusterSessionId, challengeResponse);
+    }
+
+    private void onSessionEvent(
+        final long correlationId,
+        final int leaderMemberId,
+        final EventCode eventCode,
+        final String detail)
+    {
+        if (this.correlationId == correlationId)
+        {
+            if (EventCode.ERROR == eventCode || EventCode.AUTHENTICATION_REJECTED == eventCode)
+            {
+                throw new ClusterException(eventCode + ": " + detail);
+            }
+            else if (EventCode.REDIRECT == eventCode)
+            {
+                leaderCursorValue = clusterConsensusEndpointsCursor;
+                state(RESET_BACKUP, ctx.epochClock().time());
+            }
+        }
     }
 
     private int slowTick(final long nowMs)
@@ -587,6 +610,10 @@ public final class ClusterBackupAgent implements Agent
         if (null == consensusPublication || nowMs > (timeOfLastBackupQueryMs + backupResponseTimeoutMs))
         {
             int cursor = ++clusterConsensusEndpointsCursor;
+            if (clusterConsensusEndpointsCursor == leaderCursorValue)
+            {
+                cursor = ++clusterConsensusEndpointsCursor;
+            }
             if (cursor >= clusterConsensusEndpoints.length)
             {
                 clusterConsensusEndpointsCursor = 0;
@@ -600,6 +627,7 @@ public final class ClusterBackupAgent implements Agent
             CloseHelper.close(ctx.countedErrorHandler(), consensusPublication);
 
             final ChannelUri uri = ChannelUri.parse(ctx.consensusChannel());
+
             uri.put(ENDPOINT_PARAM_NAME, clusterConsensusEndpoints[cursor]);
 
             try
@@ -756,7 +784,7 @@ public final class ClusterBackupAgent implements Agent
                 final long replayId = ctx.aeron().nextCorrelationId();
 
                 if (clusterArchive.archiveProxy().boundedReplay(
-                    leaderLogRecordingId,
+                    clusterLogRecordingId,
                     startPosition,
                     NULL_LENGTH,
                     leaderCommitPositionCounterId,

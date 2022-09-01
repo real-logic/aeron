@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.cluster.codecs"
                    id="111"
-                   version="9"
+                   version="10"
                    semanticVersion="5.3"
                    description="Message Codecs for communicating with, and within, an Aeron Cluster."
                    byteOrder="littleEndian">
@@ -593,6 +593,8 @@
         <field name="lastTermBaseLogPosition"  id="6"  type="int64"/>
         <field name="commitPositionCounterId"  id="7"  type="int32"/>
         <field name="leaderMemberId"           id="8"  type="int32"/>
+        <field name="memberId"                 id="17" type="int32" sinceVersion="10"
+               description="id of member providing the response."/>
         <group name="snapshots"                id="9"  dimensionType="groupSizeEncoding"
                description="Snapshots of state for the consensus module and services.">
             <field name="recordingId"          id="10" type="int64"/>

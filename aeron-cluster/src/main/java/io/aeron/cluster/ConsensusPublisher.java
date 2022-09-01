@@ -627,6 +627,7 @@ final class ConsensusPublisher
         final ClusterSession session,
         final int commitPositionCounterId,
         final int leaderMemberId,
+        final int memberId,
         final RecordingLog.Entry lastEntry,
         final RecordingLog.RecoveryPlan recoveryPlan,
         final String clusterMembers)
@@ -639,7 +640,8 @@ final class ConsensusPublisher
             .lastLeadershipTermId(lastEntry.leadershipTermId)
             .lastTermBaseLogPosition(lastEntry.termBaseLogPosition)
             .commitPositionCounterId(commitPositionCounterId)
-            .leaderMemberId(leaderMemberId);
+            .leaderMemberId(leaderMemberId)
+            .memberId(memberId);
 
         final BackupResponseEncoder.SnapshotsEncoder snapshotsEncoder =
             backupResponseEncoder.snapshotsCount(recoveryPlan.snapshots.size());

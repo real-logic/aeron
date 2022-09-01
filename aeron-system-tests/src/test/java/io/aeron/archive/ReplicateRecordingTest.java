@@ -661,6 +661,7 @@ class ReplicateRecordingTest
 
             awaitSignal(signalRef, adapter, RecordingSignal.SYNC);
             awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE_END);
+            awaitSignal(signalRef, adapter, RecordingSignal.STOP);
 
             if (useParams)
             {

@@ -89,7 +89,7 @@ final class ClusterSession
 
         if (CloseReason.NULL_VAL != closeReason)
         {
-            state(State.CLOSED);
+            state(State.CLOSING);
         }
         else
         {

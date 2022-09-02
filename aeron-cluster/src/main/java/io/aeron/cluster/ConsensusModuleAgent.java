@@ -1284,16 +1284,19 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         {
             session.closing(CloseReason.SERVICE_ACTION);
 
-            if (Cluster.Role.LEADER == role && logPublisher.appendSessionClose(
-                memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
+            if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
             {
-                final String msg = CloseReason.SERVICE_ACTION.name();
-                egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
-                session.closedLogPosition(logPublisher.position());
-                uncommittedClosedSessions.addLast(session);
-                sessionByIdMap.remove(clusterSessionId);
-                removeSession(sessions, clusterSessionId);
-                session.close(aeron, ctx.countedErrorHandler());
+                if (logPublisher.appendSessionClose(
+                    memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
+                {
+                    final String msg = CloseReason.SERVICE_ACTION.name();
+                    egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
+                    session.closedLogPosition(logPublisher.position());
+                    uncommittedClosedSessions.addLast(session);
+                    sessionByIdMap.remove(clusterSessionId);
+                    removeSession(sessions, clusterSessionId);
+                    session.close(aeron, ctx.countedErrorHandler());
+                }
             }
         }
     }
@@ -3257,8 +3260,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         for (int i = 0, size = sessions.size(); i < size; i++)
         {
             final ClusterSession session = sessions.get(i);
+            final ClusterSession.State sessionState = session.state();
 
-            if (session.state() == OPEN || session.state() == CLOSED)
+            if (sessionState == OPEN || sessionState == CLOSING)
             {
                 snapshotTaker.snapshotSession(session);
             }

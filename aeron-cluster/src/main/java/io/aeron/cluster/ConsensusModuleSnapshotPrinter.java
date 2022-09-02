@@ -30,18 +30,26 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
         this.out = out;
     }
 
-    public void onLoadBeginSnapshot(final int appVersion, final TimeUnit timeUnit)
+    public void onLoadBeginSnapshot(
+        final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {
         out.println("Snapshot:" +
             " appVersion=" + appVersion +
             " timeUnit=" + timeUnit);
     }
 
+    public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)
+    {
+    }
+
     public void onLoadConsensusModuleState(
         final long nextSessionId,
         final long nextServiceSessionId,
         final long logServiceSessionId,
-        final int pendingMessageCapacity)
+        final int pendingMessageCapacity,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
         out.println("Consensus Module State:" +
             " nextSessionId=" + nextSessionId +
@@ -50,7 +58,13 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
             " pendingMessageCapacity=" + pendingMessageCapacity);
     }
 
-    public void onLoadClusterMembers(final int memberId, final int highMemberId, final String clusterMembers)
+    public void onLoadClusterMembers(
+        final int memberId,
+        final int highMemberId,
+        final String clusterMembers,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
         out.println("Cluster Members:" +
             " memberId=" + memberId +
@@ -73,7 +87,10 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
         final long timeOfLastActivity,
         final CloseReason closeReason,
         final int responseStreamId,
-        final String responseChannel)
+        final String responseChannel,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
         out.println("Cluster Session:" +
             " clusterSessionId=" + clusterSessionId +
@@ -85,7 +102,8 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
             " responseChannel=" + responseChannel);
     }
 
-    public void onLoadTimer(final long correlationId, final long deadline)
+    public void onLoadTimer(
+        final long correlationId, final long deadline, final DirectBuffer buffer, final int offset, final int length)
     {
         out.println("Timer:" +
             " correlationId=" + correlationId +
@@ -96,7 +114,10 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
         final long nextServiceSessionId,
         final long logServiceSessionId,
         final int pendingMessageCapacity,
-        final int serviceId)
+        final int serviceId,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
         out.println("Pending Message Tracker:" +
             " nextServiceSessionId=" + nextServiceSessionId +

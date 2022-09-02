@@ -22,12 +22,19 @@ import java.util.concurrent.TimeUnit;
 
 interface ConsensusModuleSnapshotListener
 {
-    void onLoadBeginSnapshot(int appVersion, TimeUnit timeUnit);
+    void onLoadBeginSnapshot(int appVersion, TimeUnit timeUnit, DirectBuffer buffer, int offset, int length);
 
     void onLoadConsensusModuleState(
-        long nextSessionId, long nextServiceSessionId, long logServiceSessionId, int pendingMessageCapacity);
+        long nextSessionId,
+        long nextServiceSessionId,
+        long logServiceSessionId,
+        int pendingMessageCapacity,
+        DirectBuffer buffer,
+        int offset,
+        int length);
 
-    void onLoadClusterMembers(int memberId, int highMemberId, String clusterMembers);
+    void onLoadClusterMembers(
+        int memberId, int highMemberId, String clusterMembers, DirectBuffer buffer, int offset, int length);
 
     void onLoadPendingMessage(long clusterSessionId, DirectBuffer buffer, int offset, int length);
 
@@ -38,10 +45,21 @@ interface ConsensusModuleSnapshotListener
         long timeOfLastActivity,
         CloseReason closeReason,
         int responseStreamId,
-        String responseChannel);
+        String responseChannel,
+        DirectBuffer buffer,
+        int offset,
+        int length);
 
-    void onLoadTimer(long correlationId, long deadline);
+    void onLoadTimer(long correlationId, long deadline, DirectBuffer buffer, int offset, int length);
 
     void onLoadPendingMessageTracker(
-        long nextServiceSessionId, long logServiceSessionId, int pendingMessageCapacity, int serviceId);
+        long nextServiceSessionId,
+        long logServiceSessionId,
+        int pendingMessageCapacity,
+        int serviceId,
+        DirectBuffer buffer,
+        int offset,
+        int length);
+
+    void onLoadEndSnapshot(DirectBuffer buffer, int offset, int length);
 }

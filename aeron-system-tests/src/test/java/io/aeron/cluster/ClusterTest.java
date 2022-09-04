@@ -251,11 +251,7 @@ class ClusterTest
         cluster.awaitLeader();
         cluster.connectClient();
 
-        final int messageCount = 10;
-
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(10);
     }
 
     @Test
@@ -270,18 +266,14 @@ class ClusterTest
 
         final int messageCount = 10;
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.disableNameResolution(originalLeader.hostname());
         cluster.stopNode(originalLeader);
 
         cluster.awaitLeader();
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(2 * messageCount);
-        cluster.awaitServicesMessageCount(2 * messageCount);
+        cluster.sendAndAwaitMessages(messageCount, 2 * messageCount);
     }
 
     @Test
@@ -298,9 +290,7 @@ class ClusterTest
 
         final int messageCount = 10;
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.restoreNameResolution(initiallyUnresolvableNodeId);
         assertNotNull(cluster.startStaticNode(initiallyUnresolvableNodeId, true));
@@ -326,9 +316,7 @@ class ClusterTest
         final int messageCount = 10;
 
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopNode(followerTwo);
         awaitLossOfLeadership(leader.service());
@@ -342,9 +330,7 @@ class ClusterTest
         assertEquals(FOLLOWER, followerOne.role());
         assertEquals(leader.index(), newLeader.index());
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount * 2);
-        cluster.awaitServicesMessageCount(messageCount * 2);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 2);
     }
 
     @Test
@@ -364,10 +350,7 @@ class ClusterTest
         cluster.awaitLeader();
         cluster.connectClient();
 
-        final int messageCount = 10;
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(10);
     }
 
     @Test
@@ -383,9 +366,7 @@ class ClusterTest
         final int preFailureMessageCount = 10;
         final int postFailureMessageCount = 7;
 
-        cluster.sendMessages(preFailureMessageCount);
-        cluster.awaitResponseMessageCount(preFailureMessageCount);
-        cluster.awaitServicesMessageCount(preFailureMessageCount);
+        cluster.sendAndAwaitMessages(preFailureMessageCount);
 
         assertEquals(originalLeader.index(), cluster.client().leaderMemberId());
 
@@ -586,9 +567,7 @@ class ClusterTest
         cluster.awaitLeader();
 
         cluster.connectClient();
-        cluster.sendMessages(10);
-        cluster.awaitResponseMessageCount(sufficientMessageCountForReplay + 10);
-        cluster.awaitServicesMessageCount(sufficientMessageCountForReplay + 10);
+        cluster.sendAndAwaitMessages(10, sufficientMessageCountForReplay + 10);
     }
 
     @Test
@@ -805,9 +784,7 @@ class ClusterTest
 
         final TestNode leader = cluster.awaitLeader();
         cluster.connectClient();
-        cluster.sendMessages(1);
-        cluster.awaitResponseMessageCount(1);
-        cluster.awaitServicesMessageCount(1);
+        cluster.sendAndAwaitMessages(1);
 
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .controlRequestChannel(leader.archive().context().localControlChannel())
@@ -1096,11 +1073,9 @@ class ClusterTest
         assertEquals(messageCount, cluster.node(2).service().messageCount());
 
         final int messageCountAfterStart = 4;
-        cluster.reconnectClient();
-        cluster.sendMessages(messageCountAfterStart);
         messageCount += messageCountAfterStart;
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.reconnectClient();
+        cluster.sendAndAwaitMessages(messageCountAfterStart, messageCount);
     }
 
     @Test
@@ -1398,9 +1373,7 @@ class ClusterTest
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader0.index(), false);
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount * 3);
-        cluster.awaitServicesMessageCount(messageCount * 3);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 3);
 
         cluster.terminationsExpected(true);
         cluster.stopAllNodes();
@@ -1455,9 +1428,7 @@ class ClusterTest
 
         final int messageCount = 3;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader(leader0.index());
@@ -1468,9 +1439,7 @@ class ClusterTest
         awaitElectionClosed(cluster.node(leader0.index()));
 
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount * 2);
-        cluster.awaitServicesMessageCount(messageCount * 2);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 2);
 
         cluster.stopNode(leader1);
         cluster.awaitLeader(leader1.index());
@@ -1481,9 +1450,7 @@ class ClusterTest
         awaitElectionClosed(cluster.node(leader1.index()));
 
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount * 3);
-        cluster.awaitServicesMessageCount(messageCount * 3);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 3);
     }
 
     @Test
@@ -1497,9 +1464,7 @@ class ClusterTest
 
         final int messageCount = 3;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader(leader0.index());
@@ -1508,9 +1473,7 @@ class ClusterTest
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader0.index(), false);
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount * 2);
-        cluster.awaitServicesMessageCount(messageCount * 2);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 2);
 
         cluster.takeSnapshot(leader1);
         cluster.awaitSnapshotCount(1);
@@ -1522,9 +1485,7 @@ class ClusterTest
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader1.index(), false);
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount * 3);
-        cluster.awaitServicesMessageCount(messageCount * 3);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 3);
 
         // No snapshot for Term 2
 
@@ -1549,9 +1510,7 @@ class ClusterTest
 
         final int messageCount = 3;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.takeSnapshot(leader0);
         cluster.awaitSnapshotCount(1);
@@ -1563,9 +1522,7 @@ class ClusterTest
         assertTrue(cluster.client().sendKeepAlive());
         cluster.startStaticNode(leader0.index(), false);
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount * 2);
-        cluster.awaitServicesMessageCount(messageCount * 2);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 2);
 
         cluster.takeSnapshot(leader1);
         for (int i = 0; i < 3; i++)
@@ -1573,9 +1530,7 @@ class ClusterTest
             cluster.awaitSnapshotCount(cluster.node(i), leader0.index() == i ? 1 : 2);
         }
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount * 3);
-        cluster.awaitServicesMessageCount(messageCount * 3);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 3);
 
         cluster.takeSnapshot(leader1);
         for (int i = 0; i < 3; i++)
@@ -1583,9 +1538,7 @@ class ClusterTest
             cluster.awaitSnapshotCount(cluster.node(i), leader0.index() == i ? 2 : 3);
         }
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount * 4);
-        cluster.awaitServicesMessageCount(messageCount * 4);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 4);
 
         cluster.terminationsExpected(true);
         cluster.stopAllNodes();

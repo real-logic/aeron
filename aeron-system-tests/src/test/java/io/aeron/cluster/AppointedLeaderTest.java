@@ -65,9 +65,6 @@ class AppointedLeaderTest
 
         cluster.connectClient();
 
-        final int messageCount = 10;
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(10);
     }
 }

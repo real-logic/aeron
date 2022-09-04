@@ -889,9 +889,14 @@ public final class TestCluster implements AutoCloseable
 
     public void sendAndAwaitMessages(final int messageCount)
     {
-        sendMessages(messageCount);
-        awaitResponseMessageCount(messageCount);
-        awaitServicesMessageCount(messageCount);
+        sendAndAwaitMessages(messageCount, messageCount);
+    }
+
+    public void sendAndAwaitMessages(final int sendCount, final int awaitCount)
+    {
+        sendMessages(sendCount);
+        awaitResponseMessageCount(awaitCount);
+        awaitServicesMessageCount(awaitCount);
     }
 
     public void pollUntilMessageSent(final int messageLength)

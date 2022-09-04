@@ -72,9 +72,7 @@ class MultiNodeTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopAllNodes();
         cluster.restartAllNodes(false);
@@ -102,15 +100,11 @@ class MultiNodeTest
         final int postCatchupMessageCount = 10;
         final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
         cluster.connectClient();
-        cluster.sendMessages(preCatchupMessageCount);
-        cluster.awaitResponseMessageCount(preCatchupMessageCount);
-        cluster.awaitServicesMessageCount(preCatchupMessageCount);
+        cluster.sendAndAwaitMessages(preCatchupMessageCount);
 
         cluster.stopNode(cluster.node(0));
 
-        cluster.sendMessages(postCatchupMessageCount);
-        cluster.awaitResponseMessageCount(totalMessageCount);
-        cluster.awaitServicesMessageCount(totalMessageCount);
+        cluster.sendAndAwaitMessages(postCatchupMessageCount, totalMessageCount);
 
         cluster.stopAllNodes();
         cluster.restartAllNodes(false);

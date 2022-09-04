@@ -81,9 +81,7 @@ class ClusterBackupTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         final long logPosition = leader.service().cluster().logPosition();
 
@@ -114,9 +112,7 @@ class ClusterBackupTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         final long logPosition = leader.service().cluster().logPosition();
 
@@ -141,9 +137,7 @@ class ClusterBackupTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
@@ -174,9 +168,7 @@ class ClusterBackupTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.node(0).isTerminationExpected(true);
         cluster.node(1).isTerminationExpected(true);
@@ -213,9 +205,7 @@ class ClusterBackupTest
         final int postSnapshotMessageCount = 7;
         final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
         cluster.connectClient();
-        cluster.sendMessages(preSnapshotMessageCount);
-        cluster.awaitResponseMessageCount(preSnapshotMessageCount);
-        cluster.awaitServicesMessageCount(preSnapshotMessageCount);
+        cluster.sendAndAwaitMessages(preSnapshotMessageCount);
 
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
@@ -259,9 +249,7 @@ class ClusterBackupTest
         final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
 
         cluster.connectClient(TestCluster.SIMPLE_CREDENTIALS_SUPPLIER);
-        cluster.sendMessages(preSnapshotMessageCount);
-        cluster.awaitResponseMessageCount(preSnapshotMessageCount);
-        cluster.awaitServicesMessageCount(preSnapshotMessageCount);
+        cluster.sendAndAwaitMessages(preSnapshotMessageCount);
 
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
@@ -305,9 +293,7 @@ class ClusterBackupTest
         final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
 
         cluster.connectClient(TestCluster.CHALLENGE_RESPONSE_CREDENTIALS_SUPPLIER);
-        cluster.sendMessages(preSnapshotMessageCount);
-        cluster.awaitResponseMessageCount(preSnapshotMessageCount);
-        cluster.awaitServicesMessageCount(preSnapshotMessageCount);
+        cluster.sendAndAwaitMessages(preSnapshotMessageCount);
 
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
@@ -386,9 +372,7 @@ class ClusterBackupTest
         final int postSnapshotMessageCount = 7;
         final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
         cluster.connectClient();
-        cluster.sendMessages(preSnapshotMessageCount);
-        cluster.awaitResponseMessageCount(preSnapshotMessageCount);
-        cluster.awaitServicesMessageCount(preSnapshotMessageCount);
+        cluster.sendAndAwaitMessages(preSnapshotMessageCount);
 
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
@@ -440,9 +424,7 @@ class ClusterBackupTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         final long logPosition = leader.service().cluster().logPosition();
         final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
@@ -478,9 +460,7 @@ class ClusterBackupTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopNode(leaderOne);
 
@@ -510,9 +490,7 @@ class ClusterBackupTest
 
         final int messageCount = 10;
         final AeronCluster aeronCluster = cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         final long logPosition = leaderOne.service().cluster().logPosition();
 

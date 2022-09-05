@@ -1499,7 +1499,7 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
-    private static String[] clusterMembersEndpoints(final int clusterId, final int maxMemberCount)
+    static String[] clusterMembersEndpoints(final int clusterId, final int maxMemberCount)
     {
         final String[] clusterMembersEndpoints = new String[maxMemberCount];
 
@@ -1516,7 +1516,7 @@ public final class TestCluster implements AutoCloseable
         return clusterMembersEndpoints;
     }
 
-    private static String clusterConsensusEndpoints(final int clusterId, final int beginIndex, final int endIndex)
+    static String clusterConsensusEndpoints(final int clusterId, final int beginIndex, final int endIndex)
     {
         final StringBuilder builder = new StringBuilder();
 

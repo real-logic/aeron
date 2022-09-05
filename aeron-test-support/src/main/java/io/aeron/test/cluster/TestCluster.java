@@ -18,6 +18,8 @@ package io.aeron.test.cluster;
 import io.aeron.*;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingSignalConsumer;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.*;
 import io.aeron.cluster.client.AeronCluster;
@@ -48,10 +50,7 @@ import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.collections.ArrayUtil;
-import org.agrona.collections.IntHashSet;
-import org.agrona.collections.MutableInteger;
-import org.agrona.collections.MutableLong;
+import org.agrona.collections.*;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -1461,12 +1460,24 @@ public final class TestCluster implements AutoCloseable
         try (Aeron aeron = Aeron.connect(
             new Aeron.Context().aeronDirectoryName(node.mediaDriver().aeronDirectoryName())))
         {
+            final MutableBoolean segmentsDeleted = new MutableBoolean(false);
+            final RecordingSignalConsumer deleteSignalConsumer =
+                (controlSessionId, correlationId, recordingId1, subscriptionId, position, signal) ->
+                {
+                    if (RecordingSignal.DELETE == signal)
+                    {
+                        segmentsDeleted.set(true);
+                    }
+                };
+
             final AeronArchive.Context aeronArchiveCtx = node
                 .consensusModule()
                 .context()
                 .archiveContext()
                 .clone()
-                .aeron(aeron).ownsAeronClient(false);
+                .recordingSignalConsumer(deleteSignalConsumer)
+                .aeron(aeron)
+                .ownsAeronClient(false);
 
             try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveCtx))
             {
@@ -1478,7 +1489,12 @@ public final class TestCluster implements AutoCloseable
                     latestSnapshot.logPosition,
                     recordingDescriptor.termBufferLength(),
                     recordingDescriptor.segmentFileLength());
-                aeronArchive.purgeSegments(recordingId, newStartPosition);
+                final long segmentsDeleteCount = aeronArchive.purgeSegments(recordingId, newStartPosition);
+
+                while (0 < segmentsDeleteCount && !segmentsDeleted.get())
+                {
+                    aeronArchive.pollForRecordingSignals();
+                }
             }
         }
     }

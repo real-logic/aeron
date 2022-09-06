@@ -1227,7 +1227,7 @@ class Election
     private Subscription addFollowerSubscription()
     {
         final Aeron aeron = ctx.aeron();
-        ChannelUri logChannelParams = ChannelUri.parse(ctx.logChannel());
+        final ChannelUri logChannelParams = ChannelUri.parse(ctx.logChannel());
         final String channel = new ChannelUriStringBuilder()
             .media(UDP_MEDIA)
             .tags(aeron.nextCorrelationId() + "," + aeron.nextCorrelationId())

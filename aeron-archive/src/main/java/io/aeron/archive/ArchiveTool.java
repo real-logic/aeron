@@ -953,6 +953,11 @@ public class ArchiveTool
             return;
         }
 
+        if (0 == fragmentCountLimit)
+        {
+            return;
+        }
+
         final RecordingReader reader = new RecordingReader(
             catalog.recordingSummary(descriptor.recordingId(), new RecordingSummary()),
             archiveDir,

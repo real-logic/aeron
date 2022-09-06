@@ -125,11 +125,16 @@ class PublicationGroupTest
     }
 
     @Test
-    void name()
+    void shouldEventuallyGetADifferentOrderAfterShuffle()
     {
-        System.out.println(publicationGroup);
-        publicationGroup.shuffle();
+        final String[] originalOrder = Arrays.copyOf(endpoints, endpoints.length);
+        int differenceCount = 0;
+        for (int i = 0; i < 100; i++)
+        {
+            publicationGroup.shuffle();
+            differenceCount += !Arrays.equals(originalOrder, endpoints) ? 1 : 0;
+        }
 
-        System.out.println(publicationGroup);
+        assertNotEquals(0, differenceCount);
     }
 }

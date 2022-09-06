@@ -41,6 +41,7 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -74,7 +75,6 @@ public final class ClusterBackupAgent implements Agent
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final Aeron aeron;
-    private final String[] clusterConsensusEndpoints;
     private final ConsensusPublisher consensusPublisher = new ConsensusPublisher();
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
     private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>(4);
@@ -87,6 +87,7 @@ public final class ClusterBackupAgent implements Agent
     private final long backupProgressTimeoutMs;
     private final long coolDownIntervalMs;
     private final long unavailableCounterHandlerRegistrationId;
+    private final PublicationGroup<ExclusivePublication> consensusPublicationGroup;
 
     private ClusterBackup.State state = BACKUP_QUERY;
 
@@ -99,7 +100,6 @@ public final class ClusterBackupAgent implements Agent
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
     private final Subscription consensusSubscription;
-    private ExclusivePublication consensusPublication;
     private ClusterMember[] clusterMembers;
     private ClusterMember logSupplierMember;
     private RecordingLog recordingLog;
@@ -120,9 +120,7 @@ public final class ClusterBackupAgent implements Agent
     private long liveLogRecordingId = NULL_VALUE;
     private long liveLogReplaySessionId = NULL_VALUE;
     private int leaderCommitPositionCounterId = NULL_VALUE;
-    private int clusterConsensusEndpointsCursor = NULL_VALUE;
     private int liveLogRecCounterId = NULL_COUNTER_ID;
-    private int leaderCursorValue = NULL_VALUE;
 
     ClusterBackupAgent(final ClusterBackup.Context ctx)
     {
@@ -137,7 +135,11 @@ public final class ClusterBackupAgent implements Agent
         markFile = ctx.clusterMarkFile();
         eventsListener = ctx.eventsListener();
 
-        clusterConsensusEndpoints = ctx.clusterConsensusEndpoints().split(",");
+        final String[] clusterConsensusEndpoints = ctx.clusterConsensusEndpoints().split(",");
+
+        consensusPublicationGroup = new PublicationGroup<>(
+            clusterConsensusEndpoints, ctx.consensusChannel(), ctx.consensusStreamId(), Aeron::addExclusivePublication);
+        consensusPublicationGroup.shuffle();
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -198,7 +200,7 @@ public final class ClusterBackupAgent implements Agent
                 CloseHelper.closeAll(
                     (ErrorHandler)ctx.countedErrorHandler(),
                     consensusSubscription,
-                    consensusPublication,
+                    consensusPublicationGroup,
                     recordingSubscription);
             }
 
@@ -307,7 +309,6 @@ public final class ClusterBackupAgent implements Agent
         logSupplierMember = null;
         leaderLogEntry = null;
         leaderLastTermEntry = null;
-        clusterConsensusEndpointsCursor = ThreadLocalRandom.current().nextInt(clusterConsensusEndpoints.length);
         liveLogRecCounterId = NULL_COUNTER_ID;
         liveLogRecordingId = NULL_VALUE;
 
@@ -348,12 +349,11 @@ public final class ClusterBackupAgent implements Agent
 
         CloseHelper.closeAll(
             (ErrorHandler)ctx.countedErrorHandler(),
-            consensusPublication,
+            consensusPublicationGroup,
             clusterArchive,
             clusterArchiveAsyncConnect,
             recordingSubscription);
 
-        consensusPublication = null;
         clusterArchive = null;
         clusterArchiveAsyncConnect = null;
         recordingSubscription = null;
@@ -532,7 +532,8 @@ public final class ClusterBackupAgent implements Agent
         final byte[] challengeResponse = ctx.credentialsSupplier().onChallenge(encodedChallenge);
 
         correlationId = ctx.aeron().nextCorrelationId();
-        consensusPublisher.challengeResponse(consensusPublication, correlationId, clusterSessionId, challengeResponse);
+        consensusPublisher.challengeResponse(
+            consensusPublicationGroup.current(), this.correlationId, clusterSessionId, challengeResponse);
     }
 
     private void onSessionEvent(
@@ -549,7 +550,7 @@ public final class ClusterBackupAgent implements Agent
             }
             else if (EventCode.REDIRECT == eventCode)
             {
-                leaderCursorValue = clusterConsensusEndpointsCursor;
+                consensusPublicationGroup.closeAndExcludeCurrent();
                 state(RESET_BACKUP, ctx.epochClock().time());
             }
         }
@@ -607,32 +608,16 @@ public final class ClusterBackupAgent implements Agent
 
     private int backupQuery(final long nowMs)
     {
-        if (null == consensusPublication || nowMs > (timeOfLastBackupQueryMs + backupResponseTimeoutMs))
+        if (null == consensusPublicationGroup.current() || nowMs > (timeOfLastBackupQueryMs + backupResponseTimeoutMs))
         {
-            int cursor = ++clusterConsensusEndpointsCursor;
-            if (clusterConsensusEndpointsCursor == leaderCursorValue)
-            {
-                cursor = ++clusterConsensusEndpointsCursor;
-            }
-            if (cursor >= clusterConsensusEndpoints.length)
-            {
-                clusterConsensusEndpointsCursor = 0;
-                cursor = 0;
-            }
-
             CloseHelper.close(ctx.countedErrorHandler(), clusterArchiveAsyncConnect);
             CloseHelper.close(ctx.countedErrorHandler(), clusterArchive);
             clusterArchiveAsyncConnect = null;
             clusterArchive = null;
-            CloseHelper.close(ctx.countedErrorHandler(), consensusPublication);
-
-            final ChannelUri uri = ChannelUri.parse(ctx.consensusChannel());
-
-            uri.put(ENDPOINT_PARAM_NAME, clusterConsensusEndpoints[cursor]);
 
             try
             {
-                consensusPublication = aeron.addExclusivePublication(uri.toString(), ctx.consensusStreamId());
+                consensusPublicationGroup.next(aeron);
             }
             catch (final RegistrationException ex)
             {
@@ -644,12 +629,12 @@ public final class ClusterBackupAgent implements Agent
 
             return 1;
         }
-        else if (NULL_VALUE == correlationId && consensusPublication.isConnected())
+        else if (NULL_VALUE == correlationId && consensusPublicationGroup.current().isConnected())
         {
             final long correlationId = aeron.nextCorrelationId();
 
             if (consensusPublisher.backupQuery(
-                consensusPublication,
+                consensusPublicationGroup.current(),
                 correlationId,
                 ctx.consensusStreamId(),
                 AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION,

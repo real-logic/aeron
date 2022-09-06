@@ -478,7 +478,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public int socketSndbufLength()
     {
-        return 0 != udpChannel.socketSndbufLength() ? udpChannel.socketSndbufLength() : context.socketSndbufLength();
+        return socketSndbufLength;
     }
 
     /**

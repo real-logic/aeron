@@ -148,7 +148,7 @@ public class LogInspector
                         }
                         catch (final Exception ex)
                         {
-                            System.err.printf("frameLength=%d offset=%d%n", frameLength, offset);
+                            System.err.println("frameLength=" + frameLength + " offset=" + offset);
                             ex.printStackTrace();
                         }
 

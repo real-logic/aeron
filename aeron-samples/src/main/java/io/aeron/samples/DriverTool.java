@@ -85,7 +85,7 @@ public class DriverTool
         else
         {
             System.out.println("Command `n Control file: " + cncFile);
-            System.out.format("Version: %d, PID: %d%n", cncVersion, pid(cncMetaData));
+            System.out.println("Version: " + cncVersion + ", PID: " + pid(cncMetaData));
             printDateActivityAndStartTimestamps(startTimestampMs(cncMetaData), toDriver.consumerHeartbeatTime());
         }
     }

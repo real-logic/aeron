@@ -64,7 +64,7 @@ public class ErrorStat
             final File errorFile = new File(ERROR_FILE_NAME);
             System.out.println("Error file " + errorFile);
             errorMmap = SamplesUtil.mapExistingFileReadOnly(errorFile);
-            mmapToErrorBuffer = mmap -> new UnsafeBuffer(
+            mmapToErrorBuffer = (mmap) -> new UnsafeBuffer(
                 mmap, ERROR_FILE_OFFSET, errorMmap.capacity() - ERROR_FILE_OFFSET);
         }
         else
@@ -79,7 +79,8 @@ public class ErrorStat
         {
             final AtomicBuffer buffer = mmapToErrorBuffer.apply(errorMmap);
             final int distinctErrorCount = ErrorLogReader.read(buffer, ErrorStat::accept);
-            System.out.format("%n%d distinct errors observed.%n", distinctErrorCount);
+            System.out.println();
+            System.out.println(distinctErrorCount + " distinct errors observed.");
         }
         finally
         {
@@ -93,11 +94,11 @@ public class ErrorStat
         final long lastObservationTimestamp,
         final String encodedException)
     {
-        System.out.format(
-            "***%n%d observations from %s to %s for:%n %s%n",
-            observationCount,
-            DATE_FORMAT.format(new Date(firstObservationTimestamp)),
-            DATE_FORMAT.format(new Date(lastObservationTimestamp)),
-            encodedException);
+        final String fromDate = DATE_FORMAT.format(new Date(firstObservationTimestamp));
+        final String toDate = DATE_FORMAT.format(new Date(lastObservationTimestamp));
+
+        System.out.println();
+        System.out.println(observationCount + " observations from " + fromDate + " to " + toDate + " for:");
+        System.out.println(encodedException);
     }
 }

@@ -911,16 +911,20 @@ public class CommonContext implements Cloneable
         if (ErrorLogReader.hasErrors(errorBuffer))
         {
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-            final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->
-                out.format(
-                "***%n%d observations from %s to %s for:%n %s%n",
-                count,
-                dateFormat.format(new Date(firstTimestamp)),
-                dateFormat.format(new Date(lastTimestamp)),
-                ex);
+            final ErrorConsumer errorConsumer =
+                (count, firstTimestamp, lastTimestamp, encodedException) ->
+                {
+                    final String fromDate = dateFormat.format(new Date(firstTimestamp));
+                    final String toDate = dateFormat.format(new Date(lastTimestamp));
+
+                    out.println();
+                    out.println(count + " observations from " + fromDate + " to " + toDate + " for:");
+                    out.println(encodedException);
+                };
 
             distinctErrorCount = ErrorLogReader.read(errorBuffer, errorConsumer);
-            out.format("%n%d distinct errors observed.%n", distinctErrorCount);
+            out.println();
+            out.println(distinctErrorCount + " distinct errors observed.");
         }
 
         return distinctErrorCount;

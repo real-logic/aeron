@@ -63,6 +63,7 @@ public class LogInspector
      *
      * @param args passed to the process.
      */
+    @SuppressWarnings("methodLength")
     public static void main(final String[] args)
     {
         final PrintStream out = System.out;
@@ -78,7 +79,7 @@ public class LogInspector
         try (LogBuffers logBuffers = new LogBuffers(logFileName))
         {
             out.println("======================================================================");
-            out.format("%s Inspection dump for %s%n", new Date(), logFileName);
+            out.println(new Date() + " Inspection dump for " + logFileName);
             out.println("======================================================================");
 
             final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
@@ -87,19 +88,20 @@ public class LogInspector
             final UnsafeBuffer metaDataBuffer = logBuffers.metaDataBuffer();
             final int initialTermId = initialTermId(metaDataBuffer);
 
-            out.format("   Is Connected: %s%n", isConnected(metaDataBuffer));
-            out.format("Initial term id: %d%n", initialTermId);
-            out.format("     Term Count: %d%n", activeTermCount(metaDataBuffer));
-            out.format("   Active index: %d%n", indexByTermCount(activeTermCount(metaDataBuffer)));
-            out.format("    Term length: %d%n", termLength);
-            out.format("     MTU length: %d%n", mtuLength(metaDataBuffer));
-            out.format("      Page Size: %d%n", pageSize(metaDataBuffer));
-            out.format("   EOS Position: %d%n%n", endOfStreamPosition(metaDataBuffer));
+            out.println("   Is connected: " + isConnected(metaDataBuffer));
+            out.println("Initial term id: " + initialTermId);
+            out.println("     Term count: " + activeTermCount(metaDataBuffer));
+            out.println("   Active index: " + indexByTermCount(activeTermCount(metaDataBuffer)));
+            out.println("    Term length: " + termLength);
+            out.println("     MTU length: " + mtuLength(metaDataBuffer));
+            out.println("      Page size: " + pageSize(metaDataBuffer));
+            out.println("   EOS position: " + endOfStreamPosition(metaDataBuffer));
+            out.println();
 
             if (!AERON_LOG_SKIP_DEFAULT_HEADER)
             {
                 dataHeaderFlyweight.wrap(defaultFrameHeader(metaDataBuffer));
-                out.format("default %s%n", dataHeaderFlyweight);
+                out.println("default " + dataHeaderFlyweight);
             }
             out.println();
 
@@ -110,20 +112,21 @@ public class LogInspector
                 final int termId = termId(rawTail);
                 final int offset = (int)Math.min(termOffset, termLength);
                 final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
-                out.format(
-                    "Index %d Term Meta Data termOffset=%d termId=%d rawTail=%d position=%d%n",
-                    i,
-                    termOffset,
-                    termId,
-                    rawTail,
-                    LogBufferDescriptor.computePosition(termId, offset, positionBitsToShift, initialTermId));
+                final long position = computePosition(termId, offset, positionBitsToShift, initialTermId);
+
+                out.println("Index " + i + " Term Meta Data" +
+                    " termOffset=" + termOffset +
+                    " termId=" + termId +
+                    " rawTail=" + rawTail +
+                    " position=" + position);
             }
 
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
                 out.println();
                 out.println("======================================================================");
-                out.format("Index %d Term Data%n%n", i);
+                out.println("Index " + i + " Term Data");
+                out.println();
 
                 final UnsafeBuffer termBuffer = termBuffers[i];
                 int offset = 0;

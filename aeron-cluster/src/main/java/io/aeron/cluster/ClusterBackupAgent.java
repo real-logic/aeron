@@ -41,8 +41,6 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -400,6 +398,7 @@ public final class ClusterBackupAgent implements Agent
                     backupResponseDecoder.lastLeadershipTermId(),
                     backupResponseDecoder.lastTermBaseLogPosition(),
                     backupResponseDecoder.commitPositionCounterId(),
+                    backupResponseDecoder.leaderMemberId(),
                     backupResponseDecoder.memberId(),
                     backupResponseDecoder);
                 break;
@@ -434,9 +433,17 @@ public final class ClusterBackupAgent implements Agent
         final long lastLeadershipTermId,
         final long lastTermBaseLogPosition,
         final int commitPositionCounterId,
+        final int leaderMemberId,
         final int memberId,
         final BackupResponseDecoder backupResponseDecoder)
     {
+        if (NULL_VALUE != leaderMemberId && leaderMemberId == memberId)
+        {
+            consensusPublicationGroup.closeAndExcludeCurrent();
+            state(RESET_BACKUP, epochClock.time());
+            return;
+        }
+
         if (BACKUP_QUERY == state && correlationId == this.correlationId)
         {
             final BackupResponseDecoder.SnapshotsDecoder snapshotsDecoder = backupResponseDecoder.snapshots();
@@ -551,7 +558,7 @@ public final class ClusterBackupAgent implements Agent
             else if (EventCode.REDIRECT == eventCode)
             {
                 consensusPublicationGroup.closeAndExcludeCurrent();
-                state(RESET_BACKUP, ctx.epochClock().time());
+                state(RESET_BACKUP, epochClock.time());
             }
         }
     }

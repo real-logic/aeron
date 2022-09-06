@@ -130,7 +130,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     private final ArrayList<ClusterSession> pendingBackupSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedBackupSessions = new ArrayList<>();
-    private final ArrayList<ClusterSession> redirectBackupSessions = new ArrayList<>();
 
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
     private final Long2LongCounterMap expiredTimerCountByCorrelationIdMap = new Long2LongCounterMap(0);
@@ -1115,25 +1114,18 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 session.asyncConnect(aeron);
                 session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
 
-                if (Cluster.Role.LEADER == role)
+                if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION == SemanticVersion.major(version))
                 {
-                    redirectBackupSessions.add(session);
+                    final long timestampMs = clusterTimeUnit.toMillis(timestamp);
+                    authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
+                    pendingBackupSessions.add(session);
                 }
                 else
                 {
-                    if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION == SemanticVersion.major(version))
-                    {
-                        final long timestampMs = clusterTimeUnit.toMillis(timestamp);
-                        authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
-                        pendingBackupSessions.add(session);
-                    }
-                    else
-                    {
-                        final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
-                            ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
-                        session.reject(EventCode.ERROR, detail);
-                        rejectedBackupSessions.add(session);
-                    }
+                    final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                        ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
+                    session.reject(EventCode.ERROR, detail);
+                    rejectedBackupSessions.add(session);
                 }
             }
         }
@@ -2291,9 +2283,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
         workCount += pollArchiveEvents();
         workCount += sendRedirects(redirectUserSessions, nowNs);
-        workCount += sendRejections(rejectedUserSessions, nowNs);
 
-        workCount += sendRedirects(redirectBackupSessions, nowNs);
+        workCount += sendRejections(rejectedUserSessions, nowNs);
         workCount += sendRejections(rejectedBackupSessions, nowNs);
 
         if (null == election)

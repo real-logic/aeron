@@ -904,7 +904,8 @@ public class ArchiveTool
 
     private static boolean readContinueAnswer(final String msg)
     {
-        System.out.printf("%n" + msg + ": ");
+        System.out.println();
+        System.out.print(msg + ": ");
         final String answer = new Scanner(System.in).nextLine();
 
         return answer.isEmpty() || answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes");
@@ -939,11 +940,12 @@ public class ArchiveTool
         final long stopPosition = descriptor.stopPosition();
         final long streamLength = stopPosition - descriptor.startPosition();
 
-        out.printf("%n%nRecording %d %n  channel: %s%n  streamId: %d%n  stream length: %d%n",
-            descriptor.recordingId(),
-            descriptor.strippedChannel(),
-            descriptor.streamId(),
-            NULL_POSITION == stopPosition ? NULL_POSITION : streamLength);
+        out.println();
+        out.println();
+        out.println("Recording " + descriptor.recordingId());
+        out.println("  channel: " + descriptor.strippedChannel());
+        out.println("  streamId: " + descriptor.streamId());
+        out.println("  stream length: " + (NULL_POSITION == stopPosition ? NULL_POSITION : streamLength));
         out.println(header);
         out.println(descriptor);
 
@@ -996,8 +998,9 @@ public class ArchiveTool
                 fragmentCount = fragmentCountLimit;
                 if (NULL_POSITION != stopPosition)
                 {
-                    out.printf("%d bytes (from %d) remaining in recording %d%n",
-                        streamLength - reader.replayPosition(), streamLength, descriptor.recordingId());
+                    out.println(
+                        streamLength - reader.replayPosition() + " bytes of (from " + streamLength +
+                        ") remaining in recording id " + descriptor.recordingId());
                 }
 
                 isActive = continueActionOnFragmentLimit.confirm(fragmentCountLimit);

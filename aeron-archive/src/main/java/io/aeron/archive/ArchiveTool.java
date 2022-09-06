@@ -465,6 +465,11 @@ public class ArchiveTool
         final long fragmentCountLimit,
         final ActionConfirmation<Long> confirmActionOnFragmentCountLimit)
     {
+        if (fragmentCountLimit <= 0)
+        {
+            throw new IllegalArgumentException("Invalid fragmentCountLimit=" + fragmentCountLimit);
+        }
+
         try (Catalog catalog = openCatalogReadOnly(archiveDir, INSTANCE);
             ArchiveMarkFile markFile = openMarkFile(archiveDir, out::println))
         {
@@ -473,6 +478,30 @@ public class ArchiveTool
 
             out.println();
             out.println("Dumping up to " + fragmentCountLimit + " fragments per recording");
+
+            final SimpleFragmentHandler fragmentHandler = (buffer, offset, length, frameType, flags, reservedValue) ->
+            {
+                out.println("data at offset [" + offset + "] with length = " + length);
+                if (HDR_TYPE_PAD == frameType)
+                {
+                    out.println("PADDING FRAME");
+                }
+                else if (HDR_TYPE_DATA == frameType)
+                {
+                    if ((flags & UNFRAGMENTED) != UNFRAGMENTED)
+                    {
+                        String suffix = (flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG ? "BEGIN_FRAGMENT" : "";
+                        suffix += (flags & END_FRAG_FLAG) == END_FRAG_FLAG ? "END_FRAGMENT" : "";
+                        out.println("Fragmented frame. " + suffix);
+                    }
+                    out.println(PrintBufferUtil.prettyHexDump(buffer, offset, length));
+                }
+                else
+                {
+                    out.println("Unexpected frame type " + frameType);
+                }
+            };
+
             catalog.forEach(
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> dump(
                 out,
@@ -481,7 +510,8 @@ public class ArchiveTool
                 fragmentCountLimit,
                 confirmActionOnFragmentCountLimit,
                 headerDecoder,
-                descriptorDecoder));
+                descriptorDecoder,
+                fragmentHandler));
         }
     }
 
@@ -935,7 +965,8 @@ public class ArchiveTool
         final long fragmentCountLimit,
         final ActionConfirmation<Long> continueActionOnFragmentLimit,
         final RecordingDescriptorHeaderDecoder header,
-        final RecordingDescriptorDecoder descriptor)
+        final RecordingDescriptorDecoder descriptor,
+        final SimpleFragmentHandler fragmentHandler)
     {
         final long stopPosition = descriptor.stopPosition();
         final long streamLength = stopPosition - descriptor.startPosition();
@@ -955,58 +986,37 @@ public class ArchiveTool
             return;
         }
 
-        final RecordingReader reader = new RecordingReader(
+        try (RecordingReader reader = new RecordingReader(
             catalog.recordingSummary(descriptor.recordingId(), new RecordingSummary()),
             archiveDir,
             descriptor.startPosition(),
-            NULL_POSITION);
-
-        boolean isActive = true;
-        long fragmentCount = fragmentCountLimit;
-        do
+            NULL_POSITION))
         {
-            out.println();
-            out.print("Frame at position [" + reader.replayPosition() + "] ");
-
-            reader.poll(
-                (buffer, offset, length, frameType, flags, reservedValue) ->
-                {
-                    out.println("data at offset [" + offset + "] with length = " + length);
-                    if (HDR_TYPE_PAD == frameType)
-                    {
-                        out.println("PADDING FRAME");
-                    }
-                    else if (HDR_TYPE_DATA == frameType)
-                    {
-                        if ((flags & UNFRAGMENTED) != UNFRAGMENTED)
-                        {
-                            String suffix = (flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG ? "BEGIN_FRAGMENT" : "";
-                            suffix += (flags & END_FRAG_FLAG) == END_FRAG_FLAG ? "END_FRAGMENT" : "";
-                            out.println("Fragmented frame. " + suffix);
-                        }
-                        out.println(PrintBufferUtil.prettyHexDump(buffer, offset, length));
-                    }
-                    else
-                    {
-                        out.println("Unexpected frame type " + frameType);
-                    }
-                },
-                1);
-
-            if (--fragmentCount == 0)
+            boolean isActive = true;
+            long fragmentCount = fragmentCountLimit;
+            do
             {
-                fragmentCount = fragmentCountLimit;
-                if (NULL_POSITION != stopPosition)
-                {
-                    out.println(
-                        streamLength - reader.replayPosition() + " bytes of (from " + streamLength +
-                        ") remaining in recording id " + descriptor.recordingId());
-                }
+                out.println();
+                out.print("Frame at position [" + reader.replayPosition() + "] ");
 
-                isActive = continueActionOnFragmentLimit.confirm(fragmentCountLimit);
+                if (reader.poll(fragmentHandler, 1) > 0)
+                {
+                    if (--fragmentCount == 0)
+                    {
+                        fragmentCount = fragmentCountLimit;
+                        if (NULL_POSITION != stopPosition)
+                        {
+                            out.println(
+                                streamLength - reader.replayPosition() + " bytes of (from " + streamLength +
+                                ") remaining in recording id " + descriptor.recordingId());
+                        }
+
+                        isActive = continueActionOnFragmentLimit.confirm(fragmentCountLimit);
+                    }
+                }
             }
+            while (isActive && !reader.isDone());
         }
-        while (!reader.isDone() && isActive);
     }
 
     private static void printMarkInformation(final ArchiveMarkFile markFile, final PrintStream out)

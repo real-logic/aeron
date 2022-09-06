@@ -1235,8 +1235,8 @@ class Election
             .sessionId(logSessionId)
             .group(Boolean.TRUE)
             .rejoin(Boolean.FALSE)
-            .receiverWindowLength(logChannelParams)
             .socketRcvbufLength(logChannelParams)
+            .receiverWindowLength(logChannelParams)
             .alias("log")
             .build();
 

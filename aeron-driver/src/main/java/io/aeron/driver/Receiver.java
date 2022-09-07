@@ -126,6 +126,8 @@ public final class Receiver implements Agent
             final PublicationImage image = publicationImages[i];
             if (image.isConnected(nowNs))
             {
+                image.processEosAndDrain(nowNs);
+
                 workCount += image.sendPendingStatusMessage(nowNs);
                 workCount += image.processPendingLoss();
                 workCount += image.initiateAnyRttMeasurements(nowNs);

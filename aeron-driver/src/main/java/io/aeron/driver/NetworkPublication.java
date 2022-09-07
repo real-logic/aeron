@@ -47,6 +47,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermScanner.*;
 import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_AND_END_FLAGS;
 import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS;
+import static io.aeron.protocol.StatusMessageFlyweight.END_OF_STREAM_FLAG;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 class NetworkPublicationPadding1
@@ -132,6 +133,7 @@ public final class NetworkPublication
     private volatile boolean isConnected;
     private volatile boolean isEndOfStream;
     private volatile boolean hasSenderReleased;
+    private volatile boolean hasReceivedSmEos;
     private State state = State.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
@@ -407,6 +409,13 @@ public final class NetworkPublication
         if (!hasInitialConnection)
         {
             hasInitialConnection = true;
+        }
+
+        if (!channelEndpoint.udpChannel().isMulticast() &&
+            !channelEndpoint.udpChannel().isMultiDestination() &&
+            END_OF_STREAM_FLAG == (msg.flags() & END_OF_STREAM_FLAG))
+        {
+            hasReceivedSmEos = true;
         }
 
         final long timeNs = cachedNanoClock.nanoTime();
@@ -960,7 +969,7 @@ public final class NetworkPublication
             }
 
             case LINGER:
-                if ((timeOfLastActivityNs + lingerTimeoutNs) - timeNs < 0)
+                if (hasReceivedSmEos || (timeOfLastActivityNs + lingerTimeoutNs) - timeNs < 0)
                 {
                     channelEndpoint.decRef();
                     conductor.cleanupPublication(this);

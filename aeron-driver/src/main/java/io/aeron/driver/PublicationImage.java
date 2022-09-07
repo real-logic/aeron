@@ -128,7 +128,7 @@ public final class PublicationImage
     private int lossLength;
     private long lastLossChangeNumber = Aeron.NULL_VALUE;
 
-    private long timeOfLastStateChangeNs;
+    private volatile long timeOfLastStateChangeNs;
 
     private final long correlationId;
     private final long imageLivenessTimeoutNs;
@@ -142,6 +142,7 @@ public final class PublicationImage
     private final boolean isReliable;
 
     private boolean isRebuilding = true;
+    private volatile boolean mayReceiverRelease = false;
     private volatile boolean hasReceiverReleased = false;
     private volatile State state = State.INIT;
 
@@ -449,7 +450,12 @@ public final class PublicationImage
 
             isRebuilding = false;
             timeOfLastStateChangeNs = nowNs;
-            sendSmWithEosFlag = !isEndOfStream;
+
+            if (!sendSmWithEosFlag)
+            {
+                sendSmWithEosFlag = !isEndOfStream || rebuildPosition.getVolatile() == hwmPosition.get();
+            }
+
             if (sendSmWithEosFlag)
             {
                 timeOfLastSmNs = nowNs - smTimeoutNs - 1;
@@ -615,7 +621,28 @@ public final class PublicationImage
     {
         return ((timeOfLastPacketNs + imageLivenessTimeoutNs) - nowNs >= 0) &&
             !channelEndpoint.isClosed() &&
-            (!isEndOfStream || rebuildPosition.getVolatile() < hwmPosition.get());
+            (!isEndOfStream || !mayReceiverRelease);
+    }
+
+    /**
+     * Check for EOS from publication and switch to {@link State#DRAINING} if caught up to end of stream position.
+     *
+     * @param nowNs current time of use
+     */
+    void processEosAndDrain(final long nowNs)
+    {
+        if (!sendSmWithEosFlag)
+        {
+            if (isEndOfStream && rebuildPosition.getVolatile() == hwmPosition.get() && State.ACTIVE == state)
+            {
+                isRebuilding = false;
+                timeOfLastStateChangeNs = nowNs;
+
+                sendSmWithEosFlag = true;
+                timeOfLastSmNs = nowNs - smTimeoutNs - 1;
+                this.state = State.DRAINING;
+            }
+        }
     }
 
     /**
@@ -781,6 +808,7 @@ public final class PublicationImage
                     conductor.tryCloseReceiveChannelEndpoint(channelEndpoint);
 
                     timeOfLastStateChangeNs = timeNs;
+                    mayReceiverRelease = true;
                     state = State.LINGER;
                 }
                 break;

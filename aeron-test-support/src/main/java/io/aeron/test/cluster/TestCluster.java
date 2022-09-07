@@ -1542,12 +1542,22 @@ public final class TestCluster implements AutoCloseable
 
     static String archiveControlRequestChannel(final int memberId)
     {
-        return "aeron:udp?endpoint=" + hostname(memberId) + ":801" + memberId;
+        return "aeron:udp?endpoint=" + archiveControlRequestEndpoint(memberId);
+    }
+
+    static String archiveControlRequestEndpoint(final int memberId)
+    {
+        return hostname(memberId) + ":801" + memberId;
     }
 
     static String archiveControlResponseChannel(final int memberId)
     {
-        return "aeron:udp?endpoint=" + hostname(memberId) + ":0";
+        return "aeron:udp?endpoint=" + archiveControlResponseEndpoint(memberId);
+    }
+
+    static String archiveControlResponseEndpoint(final int memberId)
+    {
+        return hostname(memberId) + ":0";
     }
 
     public void invalidateLatestSnapshot()

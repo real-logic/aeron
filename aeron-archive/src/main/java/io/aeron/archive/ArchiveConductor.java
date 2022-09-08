@@ -652,7 +652,7 @@ abstract class ArchiveConductor
 
         if (!catalog.hasRecording(recordingId))
         {
-            final String msg = "unknown recording id " + recordingId;
+            final String msg = "unknown recording id: " + recordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
             return;
         }
@@ -842,7 +842,7 @@ abstract class ArchiveConductor
 
         if (!catalog.hasRecording(recordingId))
         {
-            final String msg = "unknown recording " + recordingId;
+            final String msg = "unknown recording id: " + recordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
             return null;
         }
@@ -1601,7 +1601,7 @@ abstract class ArchiveConductor
     {
         if (!catalog.hasRecording(recordingId))
         {
-            final String msg = "unknown recording " + recordingId;
+            final String msg = "unknown recording id: " + recordingId;
             session.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
             return false;
         }

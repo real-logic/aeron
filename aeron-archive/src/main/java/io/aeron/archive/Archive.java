@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
+import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
@@ -1183,6 +1184,28 @@ public final class Archive implements AutoCloseable
             if (null == archiveClientContext)
             {
                 archiveClientContext = new AeronArchive.Context();
+            }
+
+            if (null == archiveClientContext.controlResponseChannel())
+            {
+                final ChannelUri controlChannelUri = ChannelUri.parse(controlChannel);
+                final String endpoint = controlChannelUri.get(ENDPOINT_PARAM_NAME);
+                int separatorIndex = -1;
+                if (null == endpoint || -1 == (separatorIndex = endpoint.lastIndexOf(':')))
+                {
+                    throw new ConfigurationException(
+                        "Unable to derive Archive.Context.archiveClientContext.controlResponseChannel as " +
+                        "Archive.Context.controlChannel.endpoint=" + endpoint +
+                        " and is not in the <host>:<port> format");
+
+                }
+                final String responseEndpoint = endpoint.substring(0, separatorIndex) + ":0";
+                final String responseChannel = new ChannelUriStringBuilder()
+                    .media("udp")
+                    .endpoint(responseEndpoint)
+                    .build();
+
+                archiveClientContext.controlResponseChannel(responseChannel);
             }
 
             archiveClientContext.aeron(aeron).lock(NoOpLock.INSTANCE).errorHandler(errorHandler);

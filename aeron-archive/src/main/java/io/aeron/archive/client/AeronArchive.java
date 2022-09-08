@@ -2581,11 +2581,6 @@ public final class AeronArchive implements AutoCloseable
         public static final String CONTROL_RESPONSE_CHANNEL_PROP_NAME = "aeron.archive.control.response.channel";
 
         /**
-         * Default channel for receiving control response messages from an archive.
-         */
-        public static final String CONTROL_RESPONSE_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:0";
-
-        /**
          * Stream id within a channel for receiving control messages from an archive.
          */
         public static final String CONTROL_RESPONSE_STREAM_ID_PROP_NAME = "aeron.archive.control.response.stream.id";
@@ -2757,15 +2752,13 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * The value {@link #CONTROL_RESPONSE_CHANNEL_DEFAULT} or system property
-         * {@link #CONTROL_RESPONSE_CHANNEL_PROP_NAME} if set.
+         * The value of system property {@link #CONTROL_RESPONSE_CHANNEL_PROP_NAME} if set, null otherwise.
          *
-         * @return {@link #CONTROL_RESPONSE_CHANNEL_DEFAULT} or system property
-         * {@link #CONTROL_RESPONSE_CHANNEL_PROP_NAME} if set.
+         * @return of system property {@link #CONTROL_RESPONSE_CHANNEL_PROP_NAME} if set.
          */
         public static String controlResponseChannel()
         {
-            return System.getProperty(CONTROL_RESPONSE_CHANNEL_PROP_NAME, CONTROL_RESPONSE_CHANNEL_DEFAULT);
+            return System.getProperty(CONTROL_RESPONSE_CHANNEL_PROP_NAME);
         }
 
         /**
@@ -2882,6 +2875,11 @@ public final class AeronArchive implements AutoCloseable
             if (null == controlRequestChannel)
             {
                 throw new ConfigurationException("AeronArchive.Context.controlRequestChannel must be set");
+            }
+
+            if (null == controlResponseChannel)
+            {
+                throw new ConfigurationException("AeronArchive.Context.controlResponseChannel must be set");
             }
 
             if (null == aeron)

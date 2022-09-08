@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class ArchiveContextTests
+class ArchiveContextTest
 {
     private final Archive.Context context = TestContexts.localhostArchive();
 
@@ -134,6 +134,28 @@ class ArchiveContextTests
     void shouldThrowIfReplicationChannelIsNotSet()
     {
         context.replicationChannel(null);
+        assertThrows(ConfigurationException.class, context::conclude);
+    }
+
+    @Test
+    void shouldDeriveArchiveClientContextResponseChannelFromArchiveControlChannel()
+    {
+        context.controlChannel("aeron:udp?endpoint=127.0.0.2:23005");
+        context.conclude();
+        assertEquals("aeron:udp?endpoint=127.0.0.2:0", context.archiveClientContext().controlResponseChannel());
+    }
+
+    @Test
+    void shouldThrowConfigurationExceptionIfUnableToDeriveArchiveClientContextResponseChannelDueToEndpointFormat()
+    {
+        context.controlChannel("aeron:udp?endpoint=some_logical_name");
+        assertThrows(ConfigurationException.class, context::conclude);
+    }
+
+    @Test
+    void shouldThrowConfigurationExceptionIfUnableToDeriveArchiveClientContextResponseChannelDueToEndpointNull()
+    {
+        context.controlChannel("aeron:udp?control-mode=dynamic|control=192.168.0.1:12345");
         assertThrows(ConfigurationException.class, context::conclude);
     }
 

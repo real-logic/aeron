@@ -21,19 +21,21 @@ import io.aeron.archive.client.AeronArchive;
 public class TestContexts
 {
     public static final String LOCALHOST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
-    public static final String LOCALHOST_CONTROL_CHANNEL = "aeron:udp?endpoint=localhost:8010";
+    public static final String LOCALHOST_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8010";
+    public static final String LOCALHOST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:0";
 
     public static Archive.Context localhostArchive()
     {
         return new Archive.Context()
-            .controlChannel(LOCALHOST_CONTROL_CHANNEL)
+            .controlChannel(LOCALHOST_CONTROL_REQUEST_CHANNEL)
             .replicationChannel(LOCALHOST_REPLICATION_CHANNEL);
     }
 
     public static AeronArchive.Context localhostAeronArchive()
     {
         return new AeronArchive.Context()
-            .controlRequestChannel(LOCALHOST_CONTROL_CHANNEL);
+            .controlRequestChannel(LOCALHOST_CONTROL_REQUEST_CHANNEL)
+            .controlResponseChannel(LOCALHOST_CONTROL_RESPONSE_CHANNEL);
     }
 
 }

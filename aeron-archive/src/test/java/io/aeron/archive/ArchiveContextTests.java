@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.RethrowingErrorHandler;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -47,6 +48,7 @@ class ArchiveContextTests
         when(aeron.context()).thenReturn(aeronContext);
         context
             .aeron(aeron)
+            .replicationChannel("aeron:udp?endpoint=localhost:0")
             .errorCounter(mock(AtomicCounter.class))
             .archiveDir(tempDir.resolve("archive-test").toFile());
     }
@@ -126,6 +128,13 @@ class ArchiveContextTests
         {
             System.clearProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME);
         }
+    }
+
+    @Test
+    void shouldThrowIfReplicationChannelIsNotSet()
+    {
+        context.replicationChannel(null);
+        assertThrows(ConfigurationException.class, context::conclude);
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

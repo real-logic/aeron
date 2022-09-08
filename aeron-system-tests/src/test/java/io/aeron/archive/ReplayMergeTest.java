@@ -23,10 +23,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -135,7 +132,7 @@ class ReplayMergeTest
             systemTestWatcher);
 
         archive = Archive.launch(
-            new Archive.Context()
+            TestContexts.localhostArchive()
                 .catalogCapacity(CATALOG_CAPACITY)
                 .aeronDirectoryName(mediaDriverContext.aeronDirectoryName())
                 .archiveDir(archiveDir)

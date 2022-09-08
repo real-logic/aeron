@@ -431,13 +431,6 @@ public final class Archive implements AutoCloseable
         public static final String REPLICATION_CHANNEL_PROP_NAME = "aeron.archive.replication.channel";
 
         /**
-         * Channel for receiving replication streams replayed from another archive.
-         *
-         * @see #REPLICATION_CHANNEL_PROP_NAME
-         */
-        public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:0";
-
-        /**
          * Name of the system property for specifying a supplier of {@link Authenticator} for the archive.
          */
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.archive.authenticator.supplier";
@@ -737,15 +730,13 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * The value {@link #REPLICATION_CHANNEL_DEFAULT} or system property
-         * {@link #REPLICATION_CHANNEL_PROP_NAME} if set.
+         * The system property {@link #REPLICATION_CHANNEL_PROP_NAME} if set, null otherwise.
          *
-         * @return {@link #REPLICATION_CHANNEL_DEFAULT} or system property
-         * {@link #REPLICATION_CHANNEL_PROP_NAME} if set.
+         * @return system property {@link #REPLICATION_CHANNEL_PROP_NAME} if set.
          */
         public static String replicationChannel()
         {
-            return System.getProperty(REPLICATION_CHANNEL_PROP_NAME, REPLICATION_CHANNEL_DEFAULT);
+            return System.getProperty(REPLICATION_CHANNEL_PROP_NAME);
         }
 
         /**
@@ -968,6 +959,11 @@ public final class Archive implements AutoCloseable
             if (!localControlChannel.startsWith(CommonContext.IPC_CHANNEL))
             {
                 throw new ConfigurationException("local control channel must be IPC media: uri=" + localControlChannel);
+            }
+
+            if (null == replicationChannel)
+            {
+                throw new ConfigurationException("Archive.Context.replicationChannel must be set");
             }
 
             if (null == archiveDir)

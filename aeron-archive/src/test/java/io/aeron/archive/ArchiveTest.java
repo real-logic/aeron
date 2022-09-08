@@ -34,6 +34,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -139,7 +140,7 @@ class ArchiveTest
             .dirDeleteOnStart(true)
             .publicationUnblockTimeoutNs(connectTimeoutNs * 2)
             .threadingMode(ThreadingMode.SHARED);
-        final Archive.Context archiveCtx = new Archive.Context()
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .threadingMode(SHARED)
             .connectTimeoutNs(connectTimeoutNs);
         executor.prestartAllCoreThreads();
@@ -180,7 +181,7 @@ class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Archive.Context archiveCtx = new Archive.Context().threadingMode(SHARED);
+        final Archive.Context archiveCtx = TestContexts.localhostArchive().threadingMode(SHARED);
 
         long resultingPosition;
         final int initialPosition = DataHeaderFlyweight.HEADER_LENGTH * 9;
@@ -265,7 +266,7 @@ class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Archive.Context archiveCtx = new Archive.Context().threadingMode(SHARED);
+        final Archive.Context archiveCtx = TestContexts.localhostArchive().threadingMode(SHARED);
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
             AeronArchive archive = AeronArchive.connect())
@@ -320,7 +321,7 @@ class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Archive.Context archiveCtx = new Archive.Context()
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .archiveFileStore(fileStore)
             .lowStorageSpaceThreshold(threshold)
             .deleteArchiveOnStart(true)
@@ -362,7 +363,7 @@ class ArchiveTest
                 return actionId != TruncateRecordingRequestDecoder.TEMPLATE_ID;
             };
 
-        final Archive.Context archiveCtx = new Archive.Context()
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .deleteArchiveOnStart(true)
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .threadingMode(SHARED);
@@ -498,7 +499,7 @@ class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Archive.Context archiveCtx = new Archive.Context().threadingMode(SHARED);
+        final Archive.Context archiveCtx = TestContexts.localhostArchive().threadingMode(SHARED);
         final String controlResponseChannel = "aeron:udp?endpoint=" + endpoint;
         final AeronArchive.Context clientContext = new AeronArchive.Context()
             .controlResponseChannel(controlResponseChannel);

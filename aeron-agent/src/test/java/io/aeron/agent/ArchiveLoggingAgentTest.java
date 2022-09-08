@@ -104,6 +104,7 @@ public class ArchiveLoggingAgentTest
             .archiveDir(new File(testDir, "archive"))
             .deleteArchiveOnStart(true)
             .recordingEventsEnabled(false)
+            .replicationChannel("aeron:udp?endpoint=localhost:0")
             .controlChannel(aeronArchiveContext.controlRequestChannel())
             .controlStreamId(aeronArchiveContext.controlRequestStreamId())
             .localControlStreamId(aeronArchiveContext.controlRequestStreamId())

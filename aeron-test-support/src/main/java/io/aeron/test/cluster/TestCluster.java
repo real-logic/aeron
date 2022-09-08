@@ -304,7 +304,8 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         context.consensusModuleContext
             .clusterMemberId(index)
@@ -362,7 +363,8 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         context.consensusModuleContext
             .clusterMemberId(NULL_VALUE) //
@@ -420,7 +422,8 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         final String dynamicOnlyConsensusEndpoints = clusterConsensusEndpoints(0, 3, index);
 
@@ -480,7 +483,8 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(false)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         context.consensusModuleContext
             .clusterMemberId(index)
@@ -554,7 +558,8 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         final ChannelUri consensusChannelUri = ChannelUri.parse(context.clusterBackupContext.consensusChannel());
         final String backupStatusEndpoint = clusterBackupStatusEndpoint(0, index);
@@ -617,7 +622,8 @@ public final class TestCluster implements AutoCloseable
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(false);
+            .deleteArchiveOnStart(false)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         context.consensusModuleContext
             .clusterMemberId(backupNodeIndex)

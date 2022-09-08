@@ -117,6 +117,7 @@ public final class ClusterConfig
             .controlChannel(udpChannel(nodeId, hostname, portBase, ARCHIVE_CONTROL_PORT_OFFSET))
             .archiveClientContext(replicationArchiveContext)
             .localControlChannel("aeron:ipc?term-length=64k")
+            .replicationChannel("aeron:udp?endpoint=" + hostname + ":0")
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED);
 

@@ -90,7 +90,7 @@ class BasicArchiveTest
 
         archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
-        final Archive.Context archiveCtx = new Archive.Context()
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .catalogCapacity(CATALOG_CAPACITY)
             .aeronDirectoryName(aeronDirectoryName)
             .deleteArchiveOnStart(true)

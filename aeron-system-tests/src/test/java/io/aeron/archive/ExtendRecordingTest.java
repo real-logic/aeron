@@ -25,10 +25,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.samples.archive.RecordingDescriptor;
 import io.aeron.samples.archive.RecordingDescriptorCollector;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -108,7 +105,7 @@ class ExtendRecordingTest
             .spiesSimulateConnection(false)
             .dirDeleteOnStart(true);
 
-        final Archive.Context archiveCtx = new Archive.Context()
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
             .aeronDirectoryName(aeronDirectoryName)
             .archiveDir(archiveDir)

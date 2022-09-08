@@ -654,7 +654,8 @@ public class ClusterNodeRestartTest
                 .catalogCapacity(CATALOG_CAPACITY)
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
-                .deleteArchiveOnStart(initialLaunch),
+                .deleteArchiveOnStart(initialLaunch)
+                .replicationChannel("aeron:udp?endpoint=localhost:0"),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
                 .terminationHook(terminationLatch::countDown)

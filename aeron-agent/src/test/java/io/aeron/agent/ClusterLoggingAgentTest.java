@@ -125,6 +125,7 @@ public class ClusterLoggingAgentTest
             .archiveDir(new File(testDir, "archive"))
             .deleteArchiveOnStart(true)
             .recordingEventsEnabled(false)
+            .replicationChannel("aeron:udp?endpoint=localhost:0")
             .threadingMode(ArchiveThreadingMode.SHARED);
 
         final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()

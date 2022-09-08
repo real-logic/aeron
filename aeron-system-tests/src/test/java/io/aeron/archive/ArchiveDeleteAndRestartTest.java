@@ -22,10 +22,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.samples.archive.RecordingDescriptorCollector;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
@@ -79,7 +76,7 @@ class ArchiveDeleteAndRestartTest
             .spiesSimulateConnection(true)
             .dirDeleteOnStart(true);
 
-        archiveContext = new Archive.Context()
+        archiveContext = TestContexts.localhostArchive()
             .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
             .fileSyncLevel(SYNC_LEVEL)
             .deleteArchiveOnStart(true)

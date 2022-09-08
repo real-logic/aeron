@@ -487,7 +487,8 @@ public class AuthenticationTest
                 .catalogCapacity(CATALOG_CAPACITY)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .recordingEventsEnabled(false)
-                .deleteArchiveOnStart(true),
+                .deleteArchiveOnStart(true)
+                .replicationChannel("aeron:udp?endpoint=localhost:0"),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))
                 .authenticatorSupplier(authenticatorSupplier)

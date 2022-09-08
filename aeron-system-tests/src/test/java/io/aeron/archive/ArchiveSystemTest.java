@@ -24,10 +24,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.*;
 import org.agrona.collections.MutableBoolean;
@@ -131,7 +128,7 @@ class ArchiveSystemTest
             .spiesSimulateConnection(true)
             .dirDeleteOnStart(true);
 
-        final Archive.Context archiveContext = new Archive.Context()
+        final Archive.Context archiveContext = TestContexts.localhostArchive()
             .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
             .fileSyncLevel(SYNC_LEVEL)
             .deleteArchiveOnStart(true)

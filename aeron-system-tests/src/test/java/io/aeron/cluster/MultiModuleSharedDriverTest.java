@@ -60,7 +60,7 @@ class MultiModuleSharedDriverTest
             .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
 
-        final Archive.Context archiveCtx = new Archive.Context()
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .threadingMode(ArchiveThreadingMode.SHARED)
             .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
             .recordingEventsEnabled(false)
@@ -244,7 +244,7 @@ class MultiModuleSharedDriverTest
                 .nameResolver(new RedirectingNameResolver(TestCluster.DEFAULT_NODE_MAPPINGS))
                 .dirDeleteOnStart(true);
 
-            final Archive.Context archiveCtx = new Archive.Context()
+            final Archive.Context archiveCtx = TestContexts.localhostArchive()
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive-" + nodeId))
                 .controlChannel("aeron:udp?endpoint=localhost:801" + nodeId)

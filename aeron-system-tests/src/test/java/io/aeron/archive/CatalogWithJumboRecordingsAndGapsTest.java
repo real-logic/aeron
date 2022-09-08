@@ -23,6 +23,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.TestContexts;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
@@ -125,7 +126,7 @@ class CatalogWithJumboRecordingsAndGapsTest
             .ipcTermBufferLength(TERM_MIN_LENGTH)
             .dirDeleteOnStart(true);
 
-        final Archive.Context archiveCtx = new Archive.Context()
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
             .aeronDirectoryName(aeronDirectoryName)
             .archiveDir(archiveDir)

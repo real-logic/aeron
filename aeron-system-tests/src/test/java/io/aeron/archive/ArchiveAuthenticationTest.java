@@ -345,7 +345,7 @@ class ArchiveAuthenticationTest
                 .aeronDirectoryName(aeronDirectoryName));
 
         aeronArchive = AeronArchive.connect(
-            new AeronArchive.Context()
+            TestContexts.localhostAeronArchive()
                 .credentialsSupplier(credentialsSupplier)
                 .aeron(aeron));
     }

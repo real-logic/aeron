@@ -16,9 +16,13 @@
 package io.aeron.archive.client;
 
 import io.aeron.*;
-import io.aeron.archive.codecs.*;
+import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.archive.codecs.RecordingSignalEventDecoder;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.NullCredentialsSupplier;
@@ -2530,11 +2534,6 @@ public final class AeronArchive implements AutoCloseable
         public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.archive.control.channel";
 
         /**
-         * Channel for sending control messages to an archive.
-         */
-        public static final String CONTROL_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8010";
-
-        /**
          * Stream id within a channel for sending control messages to an archive.
          */
         public static final String CONTROL_STREAM_ID_PROP_NAME = "aeron.archive.control.stream.id";
@@ -2712,15 +2711,13 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * The value {@link #CONTROL_CHANNEL_DEFAULT} or system property
-         * {@link #CONTROL_CHANNEL_PROP_NAME} if set.
+         * The value of system property {@link #CONTROL_CHANNEL_PROP_NAME} if set, null otherwise
          *
-         * @return {@link #CONTROL_CHANNEL_DEFAULT} or system property
-         * {@link #CONTROL_CHANNEL_PROP_NAME} if set.
+         * @return system property {@link #CONTROL_CHANNEL_PROP_NAME} if set.
          */
         public static String controlChannel()
         {
-            return System.getProperty(CONTROL_CHANNEL_PROP_NAME, CONTROL_CHANNEL_DEFAULT);
+            return System.getProperty(CONTROL_CHANNEL_PROP_NAME);
         }
 
         /**
@@ -2880,6 +2877,11 @@ public final class AeronArchive implements AutoCloseable
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
             {
                 throw new ConcurrentConcludeException();
+            }
+
+            if (null == controlRequestChannel)
+            {
+                throw new ConfigurationException("AeronArchive.Context.controlRequestChannel must be set");
             }
 
             if (null == aeron)

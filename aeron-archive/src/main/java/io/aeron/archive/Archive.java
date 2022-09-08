@@ -951,9 +951,15 @@ public final class Archive implements AutoCloseable
                 throw new ConfigurationException("invalid fileIoMaxLength=" + fileIoMaxLength);
             }
 
+            if (null == controlChannel)
+            {
+                throw new ConfigurationException("Archive.Context.controlChannel must be set");
+            }
+
             if (!controlChannel.startsWith(CommonContext.UDP_CHANNEL))
             {
-                throw new ConfigurationException("remote control channel must be UDP media: uri=" + controlChannel);
+                throw new ConfigurationException(
+                    "Archive.Context.controlChannel must be UDP media: uri=" + controlChannel);
             }
 
             if (!localControlChannel.startsWith(CommonContext.IPC_CHANNEL))

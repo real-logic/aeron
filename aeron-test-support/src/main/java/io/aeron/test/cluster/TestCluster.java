@@ -565,18 +565,12 @@ public final class TestCluster implements AutoCloseable
         final String backupStatusEndpoint = clusterBackupStatusEndpoint(0, index);
         consensusChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME, backupStatusEndpoint);
 
-        final AeronArchive.Context clusterArchiveContext = new AeronArchive.Context();
-        final ChannelUri clusterArchiveResponseChannel =
-            ChannelUri.parse(clusterArchiveContext.controlResponseChannel());
-        clusterArchiveResponseChannel.put(CommonContext.ENDPOINT_PARAM_NAME, hostname(index) + ":0");
-        clusterArchiveContext.controlResponseChannel(clusterArchiveResponseChannel.toString());
-
         context.clusterBackupContext
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .consensusChannel(consensusChannelUri.toString())
             .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
             .catchupEndpoint(hostname(index) + ":0")
-            .clusterArchiveContext(clusterArchiveContext)
+            .clusterArchiveContext(context.aeronArchiveContext)
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .credentialsSupplier(credentialsSupplier)
             .deleteDirOnStart(cleanStart);

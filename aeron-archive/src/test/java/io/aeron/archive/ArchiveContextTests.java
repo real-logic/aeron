@@ -20,6 +20,7 @@ import io.aeron.RethrowingErrorHandler;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
+import io.aeron.test.TestContexts;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +37,7 @@ import static org.mockito.Mockito.when;
 
 class ArchiveContextTests
 {
-    private final Archive.Context context = new Archive.Context();
+    private final Archive.Context context = TestContexts.localhostArchive();
 
     @BeforeEach
     void beforeEach(final @TempDir Path tempDir)
@@ -48,7 +49,6 @@ class ArchiveContextTests
         when(aeron.context()).thenReturn(aeronContext);
         context
             .aeron(aeron)
-            .replicationChannel("aeron:udp?endpoint=localhost:0")
             .errorCounter(mock(AtomicCounter.class))
             .archiveDir(tempDir.resolve("archive-test").toFile());
     }

@@ -128,7 +128,7 @@ class ExtendRecordingTest
                 .aeronDirectoryName(aeronDirectoryName));
 
         aeronArchive = AeronArchive.connect(
-            new AeronArchive.Context()
+            TestContexts.localhostAeronArchive()
                 .recordingSignalConsumer(mockRecordingSignalConsumer)
                 .aeron(aeron));
     }

@@ -48,7 +48,7 @@ public class RecordingDescriptorCollectorTest
                 .archiveDir(tempDir.resolve("archive").toFile())
                 .deleteArchiveOnStart(true));
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-            AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            AeronArchive aeronArchive = AeronArchive.connect(TestContexts.localhostAeronArchive()
                 .aeron(aeron)
                 .ownsAeronClient(false)))
         {
@@ -84,7 +84,7 @@ public class RecordingDescriptorCollectorTest
                 .archiveDir(tempDir.resolve("archive").toFile())
                 .deleteArchiveOnStart(true));
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-            AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            AeronArchive aeronArchive = AeronArchive.connect(TestContexts.localhostAeronArchive()
                 .aeron(aeron)
                 .ownsAeronClient(false)))
         {
@@ -125,7 +125,7 @@ public class RecordingDescriptorCollectorTest
                 .archiveDir(tempDir.resolve("archive").toFile())
                 .deleteArchiveOnStart(true));
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-            AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            AeronArchive aeronArchive = AeronArchive.connect(TestContexts.localhostAeronArchive()
                 .aeron(aeron)
                 .ownsAeronClient(false)))
         {

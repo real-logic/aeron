@@ -149,7 +149,7 @@ class CatalogWithJumboRecordingsAndGapsTest
                 .aeronDirectoryName(aeronDirectoryName));
 
         aeronArchive = AeronArchive.connect(
-            new AeronArchive.Context()
+            TestContexts.localhostAeronArchive()
                 .aeron(aeron));
     }
 

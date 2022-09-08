@@ -152,7 +152,8 @@ class ArchiveTest
                 executor.execute(
                     () ->
                     {
-                        final AeronArchive.Context ctx = new AeronArchive.Context().messageTimeoutNs(connectTimeoutNs);
+                        final AeronArchive.Context ctx = TestContexts.localhostAeronArchive()
+                            .messageTimeoutNs(connectTimeoutNs);
                         final AeronArchive archive = AeronArchive.connect(ctx);
                         archiveClientQueue.add(archive);
                         latch.countDown();
@@ -188,7 +189,7 @@ class ArchiveTest
         final long recordingId;
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx.clone(), archiveCtx.clone());
-            AeronArchive archive = AeronArchive.connect())
+            AeronArchive archive = AeronArchive.connect(TestContexts.localhostAeronArchive()))
         {
             final int termLength = 128 * 1024;
             final int initialTermId = 29;
@@ -236,7 +237,7 @@ class ArchiveTest
         final Archive.Context archiveCtxClone = archiveCtx.clone();
         final MediaDriver.Context driverCtxClone = driverCtx.clone();
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtxClone, archiveCtxClone);
-            AeronArchive archive = AeronArchive.connect())
+            AeronArchive archive = AeronArchive.connect(TestContexts.localhostAeronArchive()))
         {
             assertEquals(initialPosition, archive.getStartPosition(recordingId));
             assertEquals(resultingPosition, archive.getStopPosition(recordingId));
@@ -269,7 +270,7 @@ class ArchiveTest
         final Archive.Context archiveCtx = TestContexts.localhostArchive().threadingMode(SHARED);
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
-            AeronArchive archive = AeronArchive.connect())
+            AeronArchive archive = AeronArchive.connect(TestContexts.localhostAeronArchive()))
         {
             final long subIdOne = archive.startRecording(channelOne, expectedStreamId, LOCAL);
             final long subIdTwo = archive.startRecording(channelTwo, expectedStreamId + 1, LOCAL);
@@ -328,7 +329,7 @@ class ArchiveTest
             .threadingMode(SHARED);
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
-            AeronArchive archive = AeronArchive.connect())
+            AeronArchive archive = AeronArchive.connect(TestContexts.localhostAeronArchive()))
         {
             try
             {
@@ -369,7 +370,7 @@ class ArchiveTest
             .threadingMode(SHARED);
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
-            AeronArchive archive = AeronArchive.connect())
+            AeronArchive archive = AeronArchive.connect(TestContexts.localhostAeronArchive()))
         {
             try
             {
@@ -501,7 +502,7 @@ class ArchiveTest
             .threadingMode(ThreadingMode.SHARED);
         final Archive.Context archiveCtx = TestContexts.localhostArchive().threadingMode(SHARED);
         final String controlResponseChannel = "aeron:udp?endpoint=" + endpoint;
-        final AeronArchive.Context clientContext = new AeronArchive.Context()
+        final AeronArchive.Context clientContext = TestContexts.localhostAeronArchive()
             .controlResponseChannel(controlResponseChannel);
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);

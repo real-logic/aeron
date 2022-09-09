@@ -27,7 +27,6 @@ import static io.aeron.archive.codecs.RecordingSignal.SYNC;
 import static io.aeron.archive.status.RecordingPos.NULL_RECORDING_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class MultiSnapshotReplicationTest

@@ -39,7 +39,7 @@ import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class RecoverAfterFailedCatchupClusterTest
 {
-    private static ClusterInstrumentor clusterInstrumentor;
+    static ClusterInstrumentor clusterInstrumentor;
 
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();

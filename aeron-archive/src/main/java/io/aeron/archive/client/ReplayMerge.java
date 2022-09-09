@@ -81,7 +81,6 @@ public final class ReplayMerge implements AutoCloseable
     private final EpochClock epochClock;
     private final String replayDestination;
     private final String liveDestination;
-    private final String replayEndpoint;
     private final ChannelUri replayChannelUri;
 
     /**
@@ -136,7 +135,7 @@ public final class ReplayMerge implements AutoCloseable
         replayChannelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
         replayChannelUri.put(CommonContext.EOS_PARAM_NAME, "false");
 
-        replayEndpoint = ChannelUri.parse(replayDestination).get(ENDPOINT_PARAM_NAME);
+        final String replayEndpoint = ChannelUri.parse(replayDestination).get(ENDPOINT_PARAM_NAME);
         if (replayEndpoint.endsWith(":0"))
         {
             state = State.RESOLVE_REPLAY_PORT;

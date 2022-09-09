@@ -3,8 +3,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.asciidoctor:asciidoctorj:2.5.2'
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.13.0.202109080827-r'
+    implementation 'org.asciidoctor:asciidoctorj:2.5.5'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.13.1.202206130422-r'
 }
 
 tasks.withType(JavaCompile) {

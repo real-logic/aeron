@@ -525,7 +525,10 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             final long position,
             final RecordingSignal signal)
         {
-            this.recordingId = recordingId;
+            if (NULL_VALUE != recordingId)
+            {
+                this.recordingId = recordingId;
+            }
             this.signal = signal;
         }
 

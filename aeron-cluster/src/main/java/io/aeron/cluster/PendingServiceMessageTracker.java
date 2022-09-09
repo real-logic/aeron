@@ -171,9 +171,9 @@ final class PendingServiceMessageTracker
                 {
                     throw new ClusterException("snapshot has incorrect pending message:" +
                         " serviceId=" + serviceId +
-                        " nextServiceSessionId= " + nextServiceSessionId +
-                        " logServiceSessionId= " + logServiceSessionId +
-                        " clusterSessionId= " + clusterSessionId +
+                        " nextServiceSessionId=" + nextServiceSessionId +
+                        " logServiceSessionId=" + logServiceSessionId +
+                        " clusterSessionId=" + clusterSessionId +
                         " pendingMessageIndex=" + messageCount.get(),
                         AeronException.Category.FATAL);
                 }
@@ -187,8 +187,8 @@ final class PendingServiceMessageTracker
         {
             throw new ClusterException("snapshot has incorrect pending message state:" +
                 " serviceId=" + serviceId +
-                " nextServiceSessionId= " + nextServiceSessionId +
-                " logServiceSessionId= " + logServiceSessionId +
+                " nextServiceSessionId=" + nextServiceSessionId +
+                " logServiceSessionId=" + logServiceSessionId +
                 " pendingMessageCount=" + messageCount.get(),
                 AeronException.Category.FATAL);
         }

@@ -68,7 +68,7 @@ class MultiModuleSharedDriverTest
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx))
         {
-            final ConsensusModule.Context moduleCtx0 = new ConsensusModule.Context()
+            final ConsensusModule.Context moduleCtx0 = TestContexts.localhostConsensusModule()
                 .clusterId(0)
                 .deleteDirOnStart(true)
                 .clusterDir(new File(SystemUtil.tmpDirName(), "cluster-0-0"))
@@ -86,7 +86,7 @@ class MultiModuleSharedDriverTest
                 .serviceStreamId(moduleCtx0.serviceStreamId())
                 .consensusModuleStreamId(moduleCtx0.consensusModuleStreamId());
 
-            final ConsensusModule.Context moduleCtx1 = new ConsensusModule.Context()
+            final ConsensusModule.Context moduleCtx1 = TestContexts.localhostConsensusModule()
                 .clusterId(1)
                 .deleteDirOnStart(true)
                 .clusterDir(new File(SystemUtil.tmpDirName(), "cluster-0-1"))

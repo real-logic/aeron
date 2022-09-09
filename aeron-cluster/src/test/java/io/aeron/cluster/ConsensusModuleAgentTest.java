@@ -27,6 +27,7 @@ import io.aeron.driver.DutyCycleTracker;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.status.ReadableCounter;
+import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.collections.MutableLong;
@@ -68,7 +69,7 @@ public class ConsensusModuleAgentTest
     private final Counter mockTimedOutClientCounter = mock(Counter.class);
     private final LongConsumer mockTimeConsumer = mock(LongConsumer.class);
 
-    private final ConsensusModule.Context ctx = new ConsensusModule.Context()
+    private final ConsensusModule.Context ctx = TestContexts.localhostConsensusModule()
         .errorHandler(Tests::onError)
         .errorCounter(mock(AtomicCounter.class))
         .moduleStateCounter(mock(Counter.class))

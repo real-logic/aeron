@@ -30,7 +30,6 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
-import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -277,15 +276,9 @@ public final class ClusterBackup implements AutoCloseable
     public static class Configuration
     {
         /**
-         * Default which is derived from {@link ConsensusModule.Context#consensusChannel()} with the member endpoint
-         * added for the consensus channel.
+         * Channel template used for catchup and replication of log and snapshots.
          */
-        public static final String CONSENSUS_CHANNEL_DEFAULT;
-
-        /**
-         * Member endpoint used for the catchup channel.
-         */
-        public static final String CATCHUP_ENDPOINT_DEFAULT;
+        public static final String CLUSTER_BACKUP_CATCHUP_ENDPOINT_PROP_NAME = "aeron.cluster.backup.catchup.endpoint";
 
         /**
          * Channel template used for catchup and replication of log and snapshots.
@@ -339,23 +332,28 @@ public final class ClusterBackup implements AutoCloseable
          */
         public static final long CLUSTER_BACKUP_PROGRESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
-        static
+        /**
+         * The value of system property {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME} if set, otherwise it will
+         * try to derive the catchup endpoint from {@link ConsensusModule.Configuration#clusterMembers()} and
+         * {@link ConsensusModule.Configuration#clusterMemberId()}. Failing that null will be returned.
+         *
+         * @return system property {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME}, the derived value, or null.
+         */
+        public static String catchupEndpoint()
         {
-            final ClusterMember[] clusterMembers = ClusterMember.parse(ConsensusModule.Configuration.clusterMembers());
-            final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
+            String configuredCatchupEndpoint = System.getProperty(CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME);
 
-            ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+            if (null == configuredCatchupEndpoint && null != ConsensusModule.Configuration.clusterMembers())
+            {
+                final ClusterMember member = ClusterMember.determineMember(
+                    ClusterMember.parse(ConsensusModule.Configuration.clusterMembers()),
+                    ConsensusModule.Configuration.clusterMemberId(),
+                    ConsensusModule.Configuration.memberEndpoints());
 
-            final ClusterMember member = ClusterMember.determineMember(
-                clusterMembers,
-                ConsensusModule.Configuration.clusterMemberId(),
-                ConsensusModule.Configuration.memberEndpoints());
+                configuredCatchupEndpoint = member.catchupEndpoint();
+            }
 
-            final ChannelUri consensusUri = ChannelUri.parse(ConsensusModule.Configuration.consensusChannel());
-            consensusUri.put(ENDPOINT_PARAM_NAME, member.consensusEndpoint());
-
-            CONSENSUS_CHANNEL_DEFAULT = consensusUri.toString();
-            CATCHUP_ENDPOINT_DEFAULT = member.catchupEndpoint();
+            return configuredCatchupEndpoint;
         }
 
         /**
@@ -368,6 +366,36 @@ public final class ClusterBackup implements AutoCloseable
         public static String catchupChannel()
         {
             return System.getProperty(CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME, CLUSTER_BACKUP_CATCHUP_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value of system property {@link ConsensusModule.Configuration#consensusChannel()} if set. If that channel
+         * does not have an endpoint set, then this will try to derive one using
+         * {@link ConsensusModule.Configuration#clusterMembers()} and
+         * {@link ConsensusModule.Configuration#clusterMemberId()}.
+         *
+         * @return system property {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME}, the derived value, or null.
+         */
+        public static String consensusChannel()
+        {
+            String consensusChannel = ConsensusModule.Configuration.consensusChannel();
+
+            if (null != consensusChannel && null != ConsensusModule.Configuration.clusterMembers())
+            {
+                final ChannelUri consensusUri = ChannelUri.parse(consensusChannel);
+                if (!consensusUri.containsKey(ENDPOINT_PARAM_NAME))
+                {
+                    final ClusterMember member = ClusterMember.determineMember(
+                        ClusterMember.parse(ConsensusModule.Configuration.clusterMembers()),
+                        ConsensusModule.Configuration.clusterMemberId(),
+                        ConsensusModule.Configuration.memberEndpoints());
+
+                    consensusUri.put(ENDPOINT_PARAM_NAME, member.consensusEndpoint());
+                    consensusChannel = consensusUri.toString();
+                }
+            }
+
+            return consensusChannel;
         }
 
         /**
@@ -432,12 +460,12 @@ public final class ClusterBackup implements AutoCloseable
         private Aeron aeron;
 
         private int clusterId = ClusteredServiceContainer.Configuration.clusterId();
-        private String consensusChannel = Configuration.CONSENSUS_CHANNEL_DEFAULT;
+        private String consensusChannel = Configuration.consensusChannel();
         private int consensusStreamId = ConsensusModule.Configuration.consensusStreamId();
         private int consensusModuleSnapshotStreamId = ConsensusModule.Configuration.snapshotStreamId();
         private int serviceSnapshotStreamId = ClusteredServiceContainer.Configuration.snapshotStreamId();
         private int logStreamId = ConsensusModule.Configuration.logStreamId();
-        private String catchupEndpoint = Configuration.CATCHUP_ENDPOINT_DEFAULT;
+        private String catchupEndpoint = Configuration.catchupEndpoint();
         private String catchupChannel = Configuration.catchupChannel();
 
         private long clusterBackupIntervalNs = Configuration.clusterBackupIntervalNs();
@@ -509,6 +537,11 @@ public final class ClusterBackup implements AutoCloseable
             if (deleteDirOnStart)
             {
                 IoUtil.delete(clusterDir, false);
+            }
+
+            if (null == catchupEndpoint)
+            {
+                throw new ClusterException("ClusterBackup.Context.catchupEndpoint must be set");
             }
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())
@@ -1131,11 +1164,11 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the catchup endpoint to use for log retrieval.
+         * Set the endpoint that will be subscribed to in order to receive logs and snapshots.
          *
          * @param catchupEndpoint to use for the log retrieval.
          * @return catchup endpoint to use for the log retrieval.
-         * @see Configuration#CATCHUP_ENDPOINT_DEFAULT
+         * @see Configuration#catchupEndpoint()
          */
         public Context catchupEndpoint(final String catchupEndpoint)
         {
@@ -1147,7 +1180,7 @@ public final class ClusterBackup implements AutoCloseable
          * Get the catchup endpoint to use for log retrieval.
          *
          * @return catchup endpoint to use for the log retrieval.
-         * @see Configuration#CATCHUP_ENDPOINT_DEFAULT
+         * @see Configuration#catchupEndpoint()
          */
         public String catchupEndpoint()
         {

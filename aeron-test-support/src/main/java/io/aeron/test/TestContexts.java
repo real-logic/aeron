@@ -17,12 +17,15 @@ package io.aeron.test;
 
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.ConsensusModule;
 
 public class TestContexts
 {
     public static final String LOCALHOST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     public static final String LOCALHOST_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8010";
     public static final String LOCALHOST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:0";
+    public static final String LOCALHOST_SINGLE_HOST_CLUSTER_MEMBERS =
+        "0,localhost:20000,localhost:20001,localhost:20002,localhost:0,localhost:8010";
 
     public static Archive.Context localhostArchive()
     {
@@ -38,4 +41,9 @@ public class TestContexts
             .controlResponseChannel(LOCALHOST_CONTROL_RESPONSE_CHANNEL);
     }
 
+    public static ConsensusModule.Context localhostConsensusModule()
+    {
+        return new ConsensusModule.Context()
+            .clusterMembers(LOCALHOST_SINGLE_HOST_CLUSTER_MEMBERS);
+    }
 }

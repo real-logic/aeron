@@ -38,6 +38,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.DataCollector;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
@@ -617,6 +618,7 @@ public final class TestNode implements AutoCloseable
 
     public static class MessageTrackingService extends TestNode.TestService
     {
+        private static volatile boolean delaySessionMessageProcessing;
         private static final byte SNAPSHOT_COUNTERS = (byte)1;
         private static final byte SNAPSHOT_CLIENT_MESSAGES = (byte)2;
         private static final byte SNAPSHOT_SERVICE_MESSAGES = (byte)3;
@@ -628,6 +630,11 @@ public final class TestNode implements AutoCloseable
         private final LongArrayList timers = new LongArrayList();
         private int nextServiceMessageNumber;
         private long nextTimerCorrelationId;
+
+        public static void delaySessionMessageProcessing(final boolean shouldDelay)
+        {
+            delaySessionMessageProcessing = shouldDelay;
+        }
 
         public MessageTrackingService(final int serviceId, final int index)
         {
@@ -757,6 +764,11 @@ public final class TestNode implements AutoCloseable
             final int length,
             final Header header)
         {
+            if (delaySessionMessageProcessing)
+            {
+                Tests.sleep(1);
+            }
+
             if (null != session)
             {
                 final int messageId = buffer.getInt(offset, LITTLE_ENDIAN);
@@ -813,9 +825,6 @@ public final class TestNode implements AutoCloseable
                 ", timerCount=" + timerCount() +
                 ", nextServiceMessageNumber=" + nextServiceMessageNumber +
                 ", nextTimerCorrelationId=" + nextTimerCorrelationId +
-                ", clientMessages=" + clientMessages +
-                ", serviceMessages=" + serviceMessages +
-                ", timers=" + timers +
                 '}';
         }
 

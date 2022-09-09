@@ -387,7 +387,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return null != agentRoleName ? agentRoleName : "consensus-module_" + ctx.clusterId() + "_" + memberId;
     }
 
-    public void onLoadBeginSnapshot(final int appVersion, final TimeUnit timeUnit)
+    public void onLoadBeginSnapshot(
+        final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {
         if (!ctx.appVersionValidator().isVersionCompatible(ctx.appVersion(), appVersion))
         {
@@ -404,6 +405,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
+    public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)
+    {
+    }
+
     public void onLoadClusterSession(
         final long clusterSessionId,
         final long correlationId,
@@ -411,7 +416,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long timeOfLastActivity,
         final CloseReason closeReason,
         final int responseStreamId,
-        final String responseChannel)
+        final String responseChannel,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
         final ClusterSession session = new ClusterSession(
             clusterSessionId,
@@ -434,13 +442,22 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long nextSessionId,
         final long nextServiceSessionId,
         final long logServiceSessionId,
-        final int pendingMessageCapacity)
+        final int pendingMessageCapacity,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
         this.nextSessionId = nextSessionId;
         pendingServiceMessageTrackers[0].loadState(nextServiceSessionId, logServiceSessionId, pendingMessageCapacity);
     }
 
-    public void onLoadClusterMembers(final int memberId, final int highMemberId, final String members)
+    public void onLoadClusterMembers(
+        final int memberId,
+        final int highMemberId,
+        final String members,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
         if (null == dynamicJoin && !ctx.clusterMembersIgnoreSnapshot())
         {
@@ -472,7 +489,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long nextServiceSessionId,
         final long logServiceSessionId,
         final int pendingMessageCapacity,
-        final int serviceId)
+        final int serviceId,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
         if (serviceId < 0 || serviceId >= pendingServiceMessageTrackers.length)
         {
@@ -491,7 +511,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         pendingServiceMessageTrackers[index].appendMessage(buffer, offset, length);
     }
 
-    public void onLoadTimer(final long correlationId, final long deadline)
+    public void onLoadTimer(
+        final long correlationId, final long deadline, final DirectBuffer buffer, final int offset, final int length)
     {
         onScheduleTimer(correlationId, deadline);
     }

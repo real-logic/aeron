@@ -81,8 +81,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.onLoadPendingMessage(
-                    sessionMessageHeaderDecoder.clusterSessionId(), buffer, offset, length);
+                listener.onLoadPendingMessage(sessionMessageHeaderDecoder.clusterSessionId(), buffer, offset, length);
                 break;
 
             case SnapshotMarkerDecoder.TEMPLATE_ID:
@@ -108,7 +107,11 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                         inSnapshot = true;
 
                         listener.onLoadBeginSnapshot(
-                            snapshotMarkerDecoder.appVersion(), ClusterClock.map(snapshotMarkerDecoder.timeUnit()));
+                            snapshotMarkerDecoder.appVersion(),
+                            ClusterClock.map(snapshotMarkerDecoder.timeUnit()),
+                            buffer,
+                            offset,
+                            length);
                         return Action.CONTINUE;
 
                     case END:
@@ -116,6 +119,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                         {
                             throw new ClusterException("missing begin snapshot");
                         }
+                        listener.onLoadEndSnapshot(buffer, offset, length);
                         isDone = true;
                         return Action.BREAK;
                 }
@@ -135,7 +139,10 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     clusterSessionDecoder.timeOfLastActivity(),
                     clusterSessionDecoder.closeReason(),
                     clusterSessionDecoder.responseStreamId(),
-                    clusterSessionDecoder.responseChannel());
+                    clusterSessionDecoder.responseChannel(),
+                    buffer,
+                    offset,
+                    length);
                 break;
 
             case TimerDecoder.TEMPLATE_ID:
@@ -145,7 +152,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.onLoadTimer(timerDecoder.correlationId(), timerDecoder.deadline());
+                listener.onLoadTimer(timerDecoder.correlationId(), timerDecoder.deadline(), buffer, offset, length);
                 break;
 
             case ConsensusModuleDecoder.TEMPLATE_ID:
@@ -159,7 +166,10 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     consensusModuleDecoder.nextSessionId(),
                     consensusModuleDecoder.nextServiceSessionId(),
                     consensusModuleDecoder.logServiceSessionId(),
-                    consensusModuleDecoder.pendingMessageCapacity());
+                    consensusModuleDecoder.pendingMessageCapacity(),
+                    buffer,
+                    offset,
+                    length);
                 break;
 
             case ClusterMembersDecoder.TEMPLATE_ID:
@@ -172,7 +182,10 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                 listener.onLoadClusterMembers(
                     clusterMembersDecoder.memberId(),
                     clusterMembersDecoder.highMemberId(),
-                    clusterMembersDecoder.clusterMembers());
+                    clusterMembersDecoder.clusterMembers(),
+                    buffer,
+                    offset,
+                    length);
                 break;
 
             case PendingMessageTrackerDecoder.TEMPLATE_ID:
@@ -186,7 +199,10 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     pendingMessageTrackerDecoder.nextServiceSessionId(),
                     pendingMessageTrackerDecoder.logServiceSessionId(),
                     pendingMessageTrackerDecoder.pendingMessageCapacity(),
-                    pendingMessageTrackerDecoder.serviceId());
+                    pendingMessageTrackerDecoder.serviceId(),
+                    buffer,
+                    offset,
+                    length);
                 break;
         }
 

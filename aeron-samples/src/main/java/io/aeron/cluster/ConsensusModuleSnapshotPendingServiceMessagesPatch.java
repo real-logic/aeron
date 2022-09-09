@@ -82,22 +82,22 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
 
         final long recordingId = entry.recordingId;
         final ClusterNodeControlProperties properties = ClusterTool.loadControlProperties(clusterDir);
-        final RecordingSignalInfo recordingSignalInfo = new RecordingSignalInfo();
+        final RecordingSignalCapture recordingSignalCapture = new RecordingSignalCapture();
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(properties.aeronDirectoryName));
             AeronArchive archive = AeronArchive.connect(new AeronArchive.Context()
                 .controlRequestChannel(IPC_CHANNEL)
                 .controlResponseChannel(IPC_CHANNEL)
-                .recordingSignalConsumer(recordingSignalInfo)
+                .recordingSignalConsumer(recordingSignalCapture)
                 .aeron(aeron)))
         {
             final SnapshotReader snapshotReader = new SnapshotReader();
             replayLocalSnapshotRecording(aeron, archive, recordingId, snapshotReader);
             final long targetNextServiceSessionId =
-                snapshotReader.logServiceSessionId + 1 + snapshotReader.pendingServiceMessagesCount;
+                snapshotReader.logServiceSessionId + 1 + snapshotReader.pendingServiceMessageCount;
             if (targetNextServiceSessionId != snapshotReader.nextServiceSessionId)
             {
-                final long tempRecordingId =
-                    createNewSnapshotRecording(aeron, archive, recordingId, targetNextServiceSessionId);
+                final long tempRecordingId = createNewSnapshotRecording(
+                    aeron, archive, recordingId, targetNextServiceSessionId);
 
                 final long stopPosition = awaitRecordingStopPosition(archive, recordingId);
                 final long newStopPosition = awaitRecordingStopPosition(archive, tempRecordingId);
@@ -108,7 +108,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                 }
 
                 archive.truncateRecording(recordingId, 0);
-                awaitRecordingSignal(archive, recordingSignalInfo, recordingId, RecordingSignal.DELETE);
+                awaitRecordingSignal(archive, recordingSignalCapture, recordingId, RecordingSignal.DELETE);
 
                 archive.replicate(
                     tempRecordingId,
@@ -116,8 +116,10 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                     archive.context().controlRequestStreamId(),
                     IPC_CHANNEL,
                     null);
-                awaitRecordingSignal(archive, recordingSignalInfo, recordingId, RecordingSignal.REPLICATE_END);
-                awaitRecordingSignal(archive, recordingSignalInfo, recordingId, RecordingSignal.STOP);
+
+                awaitRecordingSignal(archive, recordingSignalCapture, recordingId, RecordingSignal.REPLICATE_END);
+                awaitRecordingSignal(archive, recordingSignalCapture, recordingId, RecordingSignal.STOP);
+
                 final long replicatedStopPosition = awaitRecordingStopPosition(archive, recordingId);
                 if (stopPosition != replicatedStopPosition)
                 {
@@ -126,10 +128,12 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                 }
 
                 archive.purgeRecording(tempRecordingId);
-                awaitRecordingSignal(archive, recordingSignalInfo, tempRecordingId, RecordingSignal.DELETE);
+                awaitRecordingSignal(archive, recordingSignalCapture, tempRecordingId, RecordingSignal.DELETE);
+
                 return true;
             }
         }
+
         return false;
     }
 
@@ -189,14 +193,16 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         final long oldRecordingId,
         final long targetNextServiceSessionId)
     {
-        final RecordingInfo oldRecordingInfo = loadRecordingInfo(archive, oldRecordingId);
+        final RecordingDescriptorCapture oldRecordingDescriptorCapture = loadRecordingDescriptor(
+            archive, oldRecordingId);
 
         final ChannelUri channelUri = ChannelUri.parse(IPC_CHANNEL);
         channelUri.put(CommonContext.ALIAS_PARAM_NAME, "snapshot-patch");
-        channelUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(oldRecordingInfo.mtuLength));
-        channelUri.initialPosition(0, oldRecordingInfo.initialTermId, oldRecordingInfo.termBufferLength);
+        channelUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(oldRecordingDescriptorCapture.mtuLength));
+        channelUri.initialPosition(
+            0, oldRecordingDescriptorCapture.initialTermId, oldRecordingDescriptorCapture.termBufferLength);
         final String channel = channelUri.toString();
-        final int streamId = oldRecordingInfo.streamId;
+        final int streamId = oldRecordingDescriptorCapture.streamId;
 
         try (ExclusivePublication snapshotPublication = archive.addRecordedExclusivePublication(channel, streamId))
         {
@@ -214,6 +220,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                     new SnapshotWriter(snapshotPublication, targetNextServiceSessionId));
 
                 awaitRecordingComplete(countersReader, counterId, snapshotPublication.position(), newRecordingId);
+
                 return newRecordingId;
             }
             finally
@@ -223,14 +230,16 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         }
     }
 
-    private static RecordingInfo loadRecordingInfo(final AeronArchive archive, final long oldRecordingId)
+    private static RecordingDescriptorCapture loadRecordingDescriptor(
+        final AeronArchive archive, final long oldRecordingId)
     {
-        final RecordingInfo recordingInfo = new RecordingInfo();
-        if (1 != archive.listRecording(oldRecordingId, recordingInfo))
+        final RecordingDescriptorCapture recordingDescriptorCapture = new RecordingDescriptorCapture();
+        if (1 != archive.listRecording(oldRecordingId, recordingDescriptorCapture))
         {
             throw new ClusterException("failed to read recording descriptor for id: " + oldRecordingId);
         }
-        return recordingInfo;
+
+        return recordingDescriptorCapture;
     }
 
     private static int awaitRecordingCounter(final int publicationSessionId, final CountersReader countersReader)
@@ -240,6 +249,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         {
             Thread.yield();
         }
+
         return counterId;
     }
 
@@ -263,17 +273,18 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         {
             Thread.yield();
         }
+
         return stopPosition;
     }
 
     private static void awaitRecordingSignal(
         final AeronArchive archive,
-        final RecordingSignalInfo signalInfo,
+        final RecordingSignalCapture recordingSignalCapture,
         final long recordingId,
         final RecordingSignal expectedSignal)
     {
-        signalInfo.reset();
-        while (recordingId != signalInfo.recordingId || expectedSignal != signalInfo.signal)
+        recordingSignalCapture.reset();
+        while (recordingId != recordingSignalCapture.recordingId || expectedSignal != recordingSignalCapture.signal)
         {
             if (0 == archive.pollForRecordingSignals())
             {
@@ -294,6 +305,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             System.out.println("Usage: <cluster-dir>");
             System.exit(-1);
         }
+
         new ConsensusModuleSnapshotPendingServiceMessagesPatch().execute(new File(args[0]));
     }
 
@@ -301,7 +313,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
     {
         private long nextServiceSessionId = NULL_SESSION_ID;
         private long logServiceSessionId = NULL_SESSION_ID;
-        private int pendingServiceMessagesCount = 0;
+        private int pendingServiceMessageCount = 0;
 
         public void onLoadBeginSnapshot(
             final int appVersion,
@@ -328,7 +340,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         public void onLoadPendingMessage(
             final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
         {
-            pendingServiceMessagesCount++;
+            pendingServiceMessageCount++;
         }
 
         public void onLoadClusterMembers(
@@ -389,9 +401,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         private final long targetNextServiceSessionId;
         private long nextClusterSessionId;
 
-        SnapshotWriter(
-            final ExclusivePublication snapshotPublication,
-            final long targetNextServiceSessionId)
+        SnapshotWriter(final ExclusivePublication snapshotPublication, final long targetNextServiceSessionId)
         {
             this.snapshotPublication = snapshotPublication;
             this.targetNextServiceSessionId = targetNextServiceSessionId;
@@ -493,10 +503,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             writeToASnapshot(buffer, offset, length);
         }
 
-        private void writeToASnapshot(
-            final DirectBuffer buffer,
-            final int offset,
-            final int length)
+        private void writeToASnapshot(final DirectBuffer buffer, final int offset, final int length)
         {
             long result;
             while ((result = snapshotPublication.offer(buffer, offset, length)) < 0)
@@ -507,12 +514,13 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                 {
                     throw new ClusterException("can't offer into a snapshot: " + result);
                 }
+
                 Thread.yield();
             }
         }
     }
 
-    private static final class RecordingSignalInfo implements RecordingSignalConsumer
+    private static final class RecordingSignalCapture implements RecordingSignalConsumer
     {
         long recordingId;
         RecordingSignal signal;
@@ -539,7 +547,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         }
     }
 
-    private static final class RecordingInfo implements RecordingDescriptorConsumer
+    private static final class RecordingDescriptorCapture implements RecordingDescriptorConsumer
     {
         int initialTermId;
         int termBufferLength;

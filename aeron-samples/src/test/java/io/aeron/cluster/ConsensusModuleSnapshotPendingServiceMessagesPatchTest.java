@@ -25,7 +25,6 @@ import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SessionMessageHeaderDecoder;
 import io.aeron.cluster.codecs.SessionMessageHeaderEncoder;
-import io.aeron.logbuffer.BufferClaim;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
@@ -66,8 +65,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(InterruptingTestCallback.class)
 class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
 {
-    private final BufferClaim bufferClaim = new BufferClaim();
-
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
@@ -193,7 +190,9 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                 pendingMessageClusterSessionIds.add(clusterSessionId);
             }
         };
+
         readSnapshotRecording(leader, leaderSnapshot.recordingId, stateReader);
+
         final long beforeNextSessionId = mutableNextSessionId.get();
         final long beforeNextServiceSessionId = mutableNextServiceSessionId.get();
         final long beforeLogServiceSessionId = mutableLogServiceSessionId.get();
@@ -423,8 +422,9 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         final long recordingId,
         final ConsensusModuleSnapshotListener snapshotListener)
     {
-        try (Aeron aeron = Aeron.connect(new Aeron.Context()
-            .aeronDirectoryName(node.mediaDriver().aeronDirectoryName()));
+        try (
+            Aeron aeron = Aeron.connect(new Aeron.Context()
+                .aeronDirectoryName(node.mediaDriver().aeronDirectoryName()));
             AeronArchive archive = AeronArchive.connect(new AeronArchive.Context()
                 .controlRequestChannel(IPC_CHANNEL)
                 .controlResponseChannel(IPC_CHANNEL)

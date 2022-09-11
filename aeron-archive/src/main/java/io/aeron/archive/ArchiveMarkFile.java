@@ -317,7 +317,7 @@ public class ArchiveMarkFile implements AutoCloseable
             (4 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
             ctx.controlChannel().length() +
             ctx.localControlChannel().length() +
-            ctx.recordingEventsChannel().length() +
+            (null != ctx.recordingEventsChannel() ? ctx.recordingEventsChannel().length() : 0) +
             ctx.aeronDirectoryName().length();
 
         if (headerLength > HEADER_LENGTH)

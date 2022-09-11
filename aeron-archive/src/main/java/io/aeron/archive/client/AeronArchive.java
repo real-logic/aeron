@@ -2621,7 +2621,7 @@ public final class AeronArchive implements AutoCloseable
         /**
          * Channel enabled for recording progress events of recordings from an archive which defaults to true.
          */
-        public static final boolean RECORDING_EVENTS_ENABLED_DEFAULT = true;
+        public static final boolean RECORDING_EVENTS_ENABLED_DEFAULT = false;
 
         /**
          * Sparse term buffer indicator for control streams.
@@ -2774,15 +2774,13 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * The value {@link #RECORDING_EVENTS_CHANNEL_DEFAULT} or system property
-         * {@link #RECORDING_EVENTS_CHANNEL_PROP_NAME} if set.
+         * The value of system property {@link #RECORDING_EVENTS_CHANNEL_PROP_NAME} if set, null otherwise.
          *
-         * @return {@link #RECORDING_EVENTS_CHANNEL_DEFAULT} or system property
-         * {@link #RECORDING_EVENTS_CHANNEL_PROP_NAME} if set.
+         * @return system property {@link #RECORDING_EVENTS_CHANNEL_PROP_NAME} if set.
          */
         public static String recordingEventsChannel()
         {
-            return System.getProperty(RECORDING_EVENTS_CHANNEL_PROP_NAME, RECORDING_EVENTS_CHANNEL_DEFAULT);
+            return System.getProperty(RECORDING_EVENTS_CHANNEL_PROP_NAME);
         }
 
         /**
@@ -2806,7 +2804,7 @@ public final class AeronArchive implements AutoCloseable
         public static boolean recordingEventsEnabled()
         {
             final String propValue = System.getProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
-            return null != propValue ? "true".equals(propValue) : RECORDING_EVENTS_ENABLED_DEFAULT;
+            return null != propValue ? Boolean.parseBoolean(propValue) : RECORDING_EVENTS_ENABLED_DEFAULT;
         }
     }
 

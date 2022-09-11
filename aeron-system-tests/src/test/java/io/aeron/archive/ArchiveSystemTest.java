@@ -135,6 +135,8 @@ class ArchiveSystemTest
             .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))
             .segmentFileLength(segmentFileLength)
             .threadingMode(archiveThreadingMode)
+            .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030")
+            .recordingEventsEnabled(true)
             .idleStrategySupplier(YieldingIdleStrategy::new);
         try
         {

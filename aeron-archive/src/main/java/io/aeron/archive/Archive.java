@@ -973,6 +973,13 @@ public final class Archive implements AutoCloseable
                 throw new ConfigurationException("Archive.Context.replicationChannel must be set");
             }
 
+            if (recordingEventsEnabled() && null == recordingEventsChannel())
+            {
+                throw new ConfigurationException(
+                    "Archive.Context.recordingEventsChannel must be set if " +
+                    "Archive.Context.recordingEventsEnabled is true");
+            }
+
             if (null == archiveDir)
             {
                 archiveDir = new File(archiveDirectoryName);
@@ -1518,7 +1525,7 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Get the channel URI on which the recording events publication will publish.
+         * Get the channel URI on which the recording events publication will publish. Will be null if not configured.
          *
          * @return the channel URI on which the recording events publication will publish.
          * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_CHANNEL_PROP_NAME

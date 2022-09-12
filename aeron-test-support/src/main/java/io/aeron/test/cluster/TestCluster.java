@@ -304,7 +304,8 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         context.consensusModuleContext
             .clusterMemberId(index)
@@ -362,7 +363,8 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         context.consensusModuleContext
             .clusterMemberId(NULL_VALUE) //
@@ -420,7 +422,8 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         final String dynamicOnlyConsensusEndpoints = clusterConsensusEndpoints(0, 3, index);
 
@@ -480,7 +483,8 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(false)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         context.consensusModuleContext
             .clusterMemberId(index)
@@ -554,24 +558,19 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength);
+            .segmentFileLength(archiveSegmentFileLength)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         final ChannelUri consensusChannelUri = ChannelUri.parse(context.clusterBackupContext.consensusChannel());
         final String backupStatusEndpoint = clusterBackupStatusEndpoint(0, index);
         consensusChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME, backupStatusEndpoint);
-
-        final AeronArchive.Context clusterArchiveContext = new AeronArchive.Context();
-        final ChannelUri clusterArchiveResponseChannel =
-            ChannelUri.parse(clusterArchiveContext.controlResponseChannel());
-        clusterArchiveResponseChannel.put(CommonContext.ENDPOINT_PARAM_NAME, hostname(index) + ":0");
-        clusterArchiveContext.controlResponseChannel(clusterArchiveResponseChannel.toString());
 
         context.clusterBackupContext
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .consensusChannel(consensusChannelUri.toString())
             .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
             .catchupEndpoint(hostname(index) + ":0")
-            .clusterArchiveContext(clusterArchiveContext)
+            .clusterArchiveContext(context.aeronArchiveContext)
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .credentialsSupplier(credentialsSupplier)
             .deleteDirOnStart(cleanStart);
@@ -617,7 +616,8 @@ public final class TestCluster implements AutoCloseable
             .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(false);
+            .deleteArchiveOnStart(false)
+            .replicationChannel(REPLICATION_CHANNEL);
 
         context.consensusModuleContext
             .clusterMemberId(backupNodeIndex)

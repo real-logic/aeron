@@ -20,10 +20,7 @@ import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,12 +43,12 @@ public class RecordingDescriptorCollectorTest
     void shouldCollectPagesOfRecordingDescriptors(@TempDir final Path tempDir)
     {
         try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));
-            Archive ignore = Archive.launch(new Archive.Context()
+            Archive ignore = Archive.launch(TestContexts.localhostArchive()
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .archiveDir(tempDir.resolve("archive").toFile())
                 .deleteArchiveOnStart(true));
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-            AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            AeronArchive aeronArchive = AeronArchive.connect(TestContexts.localhostAeronArchive()
                 .aeron(aeron)
                 .ownsAeronClient(false)))
         {
@@ -82,12 +79,12 @@ public class RecordingDescriptorCollectorTest
     void shouldAllowUserToRetainDescriptorsToPreventReuse(@TempDir final Path tempDir)
     {
         try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));
-            Archive ignore = Archive.launch(new Archive.Context()
+            Archive ignore = Archive.launch(TestContexts.localhostArchive()
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .archiveDir(tempDir.resolve("archive").toFile())
                 .deleteArchiveOnStart(true));
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-            AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            AeronArchive aeronArchive = AeronArchive.connect(TestContexts.localhostAeronArchive()
                 .aeron(aeron)
                 .ownsAeronClient(false)))
         {
@@ -123,12 +120,12 @@ public class RecordingDescriptorCollectorTest
     void shouldShouldNotReuseDescriptorIfPoolSizeIsZero(@TempDir final Path tempDir)
     {
         try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));
-            Archive ignore = Archive.launch(new Archive.Context()
+            Archive ignore = Archive.launch(TestContexts.localhostArchive()
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .archiveDir(tempDir.resolve("archive").toFile())
                 .deleteArchiveOnStart(true));
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-            AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            AeronArchive aeronArchive = AeronArchive.connect(TestContexts.localhostAeronArchive()
                 .aeron(aeron)
                 .ownsAeronClient(false)))
         {

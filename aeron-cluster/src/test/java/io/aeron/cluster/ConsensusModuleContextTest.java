@@ -23,6 +23,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
+import io.aeron.test.TestContexts;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
@@ -56,7 +57,7 @@ class ConsensusModuleContextTest
         when(aeron.context()).thenReturn(aeronContext);
         when(aeron.conductorAgentInvoker()).thenReturn(conductorInvoker);
 
-        context = new ConsensusModule.Context()
+        context = TestContexts.localhostConsensusModule()
             .clusterDir(clusterDir)
             .aeron(aeron)
             .errorCounter(mock(AtomicCounter.class))

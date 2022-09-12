@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
@@ -28,6 +27,7 @@ import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
@@ -69,7 +69,7 @@ class NameResolutionClusterNodeTest
                 .termBufferSparseFile(true)
                 .errorHandler(mockErrorHandler)
                 .dirDeleteOnStart(true),
-            new Archive.Context()
+            TestContexts.localhostArchive()
                 .catalogCapacity(CATALOG_CAPACITY)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .recordingEventsEnabled(false)

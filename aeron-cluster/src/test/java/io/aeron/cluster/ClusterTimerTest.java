@@ -17,7 +17,6 @@ package io.aeron.cluster;
 
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
-import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClientSession;
@@ -29,6 +28,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.StubClusteredService;
@@ -306,7 +306,7 @@ abstract class ClusterTimerTest
                 .termBufferSparseFile(true)
                 .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnStart(true),
-            new Archive.Context()
+            TestContexts.localhostArchive()
                 .catalogCapacity(CATALOG_CAPACITY)
                 .errorHandler(ClusterTests.errorHandler(0))
                 .threadingMode(ArchiveThreadingMode.SHARED)

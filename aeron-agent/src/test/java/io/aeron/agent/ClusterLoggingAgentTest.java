@@ -28,6 +28,7 @@ import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 import org.agrona.CloseHelper;
@@ -120,7 +121,7 @@ public class ClusterLoggingAgentTest
             .controlResponseStreamId(AeronArchive.Configuration.localControlStreamId() + 1)
             .controlResponseStreamId(101);
 
-        final Archive.Context archiveCtx = new Archive.Context()
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .errorHandler(Tests::onError)
             .archiveDir(new File(testDir, "archive"))
             .deleteArchiveOnStart(true)

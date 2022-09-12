@@ -365,12 +365,6 @@ public final class ConsensusModule implements AutoCloseable
         public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
 
         /**
-         * Default property for the list of cluster member endpoints.
-         */
-        public static final String CLUSTER_MEMBERS_DEFAULT =
-            "0,localhost:20000,localhost:20001,localhost:20002,localhost:0,localhost:8010";
-
-        /**
          * Property name for the comma separated list of cluster consensus endpoints used for adding passive
          * followers as well as dynamic join of a cluster.
          */
@@ -824,15 +818,13 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The value {@link #CLUSTER_MEMBERS_DEFAULT} or system property
-         * {@link #CLUSTER_MEMBERS_PROP_NAME} if set.
+         * The value of system property {@link #CLUSTER_MEMBERS_PROP_NAME} if set, null otherwise.
          *
-         * @return {@link #CLUSTER_MEMBERS_DEFAULT} or system property
-         * {@link #CLUSTER_MEMBERS_PROP_NAME} if set.
+         * @return of system property {@link #CLUSTER_MEMBERS_PROP_NAME} if set.
          */
         public static String clusterMembers()
         {
-            return System.getProperty(CLUSTER_MEMBERS_PROP_NAME, CLUSTER_MEMBERS_DEFAULT);
+            return System.getProperty(CLUSTER_MEMBERS_PROP_NAME);
         }
 
         /**
@@ -1359,6 +1351,11 @@ public final class ConsensusModule implements AutoCloseable
             if (null == clusterDir)
             {
                 clusterDir = new File(clusterDirectoryName);
+            }
+
+            if (null == clusterMembers)
+            {
+                throw new ClusterException("ConsensusModule.Context.clusterMembers must be set");
             }
 
             if (deleteDirOnStart)

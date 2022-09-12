@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
+import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
@@ -431,13 +432,6 @@ public final class Archive implements AutoCloseable
         public static final String REPLICATION_CHANNEL_PROP_NAME = "aeron.archive.replication.channel";
 
         /**
-         * Channel for receiving replication streams replayed from another archive.
-         *
-         * @see #REPLICATION_CHANNEL_PROP_NAME
-         */
-        public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:0";
-
-        /**
          * Name of the system property for specifying a supplier of {@link Authenticator} for the archive.
          */
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.archive.authenticator.supplier";
@@ -737,15 +731,13 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * The value {@link #REPLICATION_CHANNEL_DEFAULT} or system property
-         * {@link #REPLICATION_CHANNEL_PROP_NAME} if set.
+         * The system property {@link #REPLICATION_CHANNEL_PROP_NAME} if set, null otherwise.
          *
-         * @return {@link #REPLICATION_CHANNEL_DEFAULT} or system property
-         * {@link #REPLICATION_CHANNEL_PROP_NAME} if set.
+         * @return system property {@link #REPLICATION_CHANNEL_PROP_NAME} if set.
          */
         public static String replicationChannel()
         {
-            return System.getProperty(REPLICATION_CHANNEL_PROP_NAME, REPLICATION_CHANNEL_DEFAULT);
+            return System.getProperty(REPLICATION_CHANNEL_PROP_NAME);
         }
 
         /**
@@ -960,14 +952,32 @@ public final class Archive implements AutoCloseable
                 throw new ConfigurationException("invalid fileIoMaxLength=" + fileIoMaxLength);
             }
 
+            if (null == controlChannel)
+            {
+                throw new ConfigurationException("Archive.Context.controlChannel must be set");
+            }
+
             if (!controlChannel.startsWith(CommonContext.UDP_CHANNEL))
             {
-                throw new ConfigurationException("remote control channel must be UDP media: uri=" + controlChannel);
+                throw new ConfigurationException(
+                    "Archive.Context.controlChannel must be UDP media: uri=" + controlChannel);
             }
 
             if (!localControlChannel.startsWith(CommonContext.IPC_CHANNEL))
             {
                 throw new ConfigurationException("local control channel must be IPC media: uri=" + localControlChannel);
+            }
+
+            if (null == replicationChannel)
+            {
+                throw new ConfigurationException("Archive.Context.replicationChannel must be set");
+            }
+
+            if (recordingEventsEnabled() && null == recordingEventsChannel())
+            {
+                throw new ConfigurationException(
+                    "Archive.Context.recordingEventsChannel must be set if " +
+                    "Archive.Context.recordingEventsEnabled is true");
             }
 
             if (null == archiveDir)
@@ -1181,6 +1191,28 @@ public final class Archive implements AutoCloseable
             if (null == archiveClientContext)
             {
                 archiveClientContext = new AeronArchive.Context();
+            }
+
+            if (null == archiveClientContext.controlResponseChannel())
+            {
+                final ChannelUri controlChannelUri = ChannelUri.parse(controlChannel);
+                final String endpoint = controlChannelUri.get(ENDPOINT_PARAM_NAME);
+                int separatorIndex = -1;
+                if (null == endpoint || -1 == (separatorIndex = endpoint.lastIndexOf(':')))
+                {
+                    throw new ConfigurationException(
+                        "Unable to derive Archive.Context.archiveClientContext.controlResponseChannel as " +
+                        "Archive.Context.controlChannel.endpoint=" + endpoint +
+                        " and is not in the <host>:<port> format");
+
+                }
+                final String responseEndpoint = endpoint.substring(0, separatorIndex) + ":0";
+                final String responseChannel = new ChannelUriStringBuilder()
+                    .media("udp")
+                    .endpoint(responseEndpoint)
+                    .build();
+
+                archiveClientContext.controlResponseChannel(responseChannel);
             }
 
             archiveClientContext.aeron(aeron).lock(NoOpLock.INSTANCE).errorHandler(errorHandler);
@@ -1493,7 +1525,7 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Get the channel URI on which the recording events publication will publish.
+         * Get the channel URI on which the recording events publication will publish. Will be null if not configured.
          *
          * @return the channel URI on which the recording events publication will publish.
          * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_CHANNEL_PROP_NAME

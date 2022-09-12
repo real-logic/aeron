@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Publication;
-import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClientSession;
@@ -650,7 +649,7 @@ public class ClusterNodeRestartTest
                 .termBufferSparseFile(true)
                 .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnStart(true),
-            new Archive.Context()
+            TestContexts.localhostArchive()
                 .catalogCapacity(CATALOG_CAPACITY)
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)

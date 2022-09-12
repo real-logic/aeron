@@ -26,6 +26,7 @@ import io.aeron.test.cluster.TestNode;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.LongArrayList;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,12 @@ class ServiceIpcIngressMessageTest
     {
         systemTestWatcher.ignoreErrorsMatching(
             (s) -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        TestNode.MessageTrackingService.delaySessionMessageProcessing(false);
     }
 
     @Test
@@ -238,19 +245,17 @@ class ServiceIpcIngressMessageTest
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
         int messageCount = 0;
-        for (int i = 0; i < 10; i++)
+        TestNode.MessageTrackingService.delaySessionMessageProcessing(true);
+        for (int i = 0; i < 1999; i++)
         {
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
-        cluster.awaitResponseMessageCount(messageCount * serviceCount);
-        awaitMessageCounts(cluster, messageCount);
-        assertTrackedMessages(cluster, -1, messageCount);
-
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
+        TestNode.MessageTrackingService.delaySessionMessageProcessing(false);
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 567; i++)
         {
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);

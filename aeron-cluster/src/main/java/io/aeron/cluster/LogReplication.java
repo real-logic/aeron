@@ -156,7 +156,7 @@ final class LogReplication
                 case DELETE:
                     throw new ClusterException("recording was deleted during replication: " + this);
 
-                case STOP:
+                case REPLICATE_END:
                     isStopped = true;
                     break;
             }

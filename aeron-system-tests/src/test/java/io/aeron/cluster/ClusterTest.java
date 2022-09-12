@@ -55,7 +55,6 @@ import static io.aeron.test.Tests.awaitAvailableWindow;
 import static io.aeron.test.cluster.ClusterTests.*;
 import static io.aeron.test.cluster.TestCluster.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -874,9 +873,8 @@ class ClusterTest
         TestNode followerB = followers.get(1);
 
         cluster.connectClient();
-        final long backoffIntervalNs = MICROSECONDS.toNanos(500);
-        final Thread messageThread = startPublisherThread(cluster, messageCounter, backoffIntervalNs);
 
+        final Thread messageThread = startPublisherThread(cluster, messageCounter);
         try
         {
             cluster.stopNode(followerB);
@@ -901,9 +899,7 @@ class ClusterTest
         cluster.awaitActiveSessionCount(0);
 
         assertEquals(0L, leader.errors());
-
         assertEquals(0L, followerA.errors());
-
         assertEquals(0L, followerB.errors());
     }
 

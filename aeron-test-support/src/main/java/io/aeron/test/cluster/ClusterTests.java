@@ -15,7 +15,6 @@
  */
 package io.aeron.test.cluster;
 
-import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.exceptions.AeronException;
@@ -33,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
 
 public class ClusterTests
 {
@@ -82,8 +80,8 @@ public class ClusterTests
         return
             (ex) ->
             {
-                if (ex instanceof AeronException && ((AeronException)ex).category() == AeronException.Category.WARN ||
-                    shouldDownScaleToWarning(ex))
+                if (ex instanceof AeronException &&
+                    ((AeronException)ex).category() == AeronException.Category.WARN || shouldDownScaleToWarning(ex))
                 {
                     addWarning(ex);
                     return;
@@ -95,9 +93,7 @@ public class ClusterTests
                 }
 
                 addError(ex);
-
                 printMessageAndStackTrace("\n*** Error in member " + memberId + " ***\n\n", ex);
-
                 printWarning();
             };
     }
@@ -193,8 +189,7 @@ public class ClusterTests
         return false;
     }
 
-    public static Thread startPublisherThread(
-        final TestCluster testCluster, final MutableInteger messageCounter, final long backoffIntervalNs)
+    public static Thread startPublisherThread(final TestCluster testCluster, final MutableInteger messageCounter)
     {
         final Thread thread = new Thread(
             () ->
@@ -213,11 +208,19 @@ public class ClusterTests
                     }
                     else
                     {
-                        if (Publication.CLOSED == result)
+                        if (client.isClosed())
                         {
                             break;
                         }
-                        LockSupport.parkNanos(backoffIntervalNs);
+
+                        try
+                        {
+                            Thread.sleep(1);
+                        }
+                        catch (final InterruptedException ignore)
+                        {
+                            break;
+                        }
                     }
 
                     idleStrategy.idle(client.pollEgress());

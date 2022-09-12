@@ -65,6 +65,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(InterruptingTestCallback.class)
 class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
 {
+    private static final int NUM_MESSAGES = 1987;
+
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
@@ -129,7 +131,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
     @Test
     @SlowTest
     @InterruptAfter(30)
-    void executeIsANoOpIfTheSnapshotIsInValidState()
+    void executeIsANoOpIfTheSnapshotIsValid()
     {
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
@@ -147,7 +149,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         TestNode.MessageTrackingService.delaySessionMessageProcessing(true);
         int messageCount = 0;
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
-        for (int i = 0; i < 2222; i++)
+        for (int i = 0; i < NUM_MESSAGES; i++)
         {
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
@@ -242,7 +244,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         TestNode.MessageTrackingService.delaySessionMessageProcessing(true);
         int messageCount = 0;
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
-        for (int i = 0; i < 2222; i++)
+        for (int i = 0; i < NUM_MESSAGES; i++)
         {
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
@@ -377,6 +379,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             final TestNode node = cluster.node(i);
             if (null != node)
             {
+                node.isTerminationExpected(true);
                 node.stopServiceContainers();
                 node.consensusModule().close();
             }

@@ -721,14 +721,17 @@ final class Catalog implements AutoCloseable
                     }
                 }
             }
+
+            catalogBuffer.wrap(catalogByteBuffer, recordingOffset, newFrameLength);
         }
         else
         {
             length = oldFrameLength - DESCRIPTOR_HEADER_LENGTH;
             checksumLength = newFrameLength - DESCRIPTOR_HEADER_LENGTH;
+            catalogBuffer.wrap(catalogByteBuffer, recordingOffset, oldFrameLength);
+            catalogBuffer.setMemory(newFrameLength, oldFrameLength - newFrameLength, (byte)0);
         }
 
-        catalogBuffer.wrap(catalogByteBuffer, recordingOffset, newFrameLength);
         descriptorEncoder
             .wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH)
             .recordingId(recordingId)

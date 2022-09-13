@@ -1204,10 +1204,11 @@ class CatalogTest
 
             assertEquals(recordingThreeId + 1, catalog.nextRecordingId());
             assertEquals(originalCapacity, catalog.capacity());
+            final int oldFrameLength = 160;
             verifyRecordingForId(
                 catalog,
                 recordingOneId,
-                160,
+                oldFrameLength,
                 128,
                 512,
                 111L,
@@ -1221,7 +1222,13 @@ class CatalogTest
                 "A",
                 "B",
                 "C");
-            assertChecksum(catalog, recordingOneId, 96, 1488471744, checksum);
+            final int newFrameLength = 96;
+            assertChecksum(catalog, recordingOneId, newFrameLength, 1488471744, checksum);
+            // verify that the excessive old data was erased
+            for (int i = newFrameLength; i < oldFrameLength; i++)
+            {
+                assertEquals(0, unsafeBuffer.getByte(RecordingDescriptorHeaderDecoder.BLOCK_LENGTH + i));
+            }
 
             verifyRecordingForId(
                 catalog,

@@ -61,7 +61,7 @@
 #define S_IROTH 0
 #define S_IWOTH 0
 
-static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool pre_touch)
+static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 {
     HANDLE hmap = CreateFileMapping((HANDLE)_get_osfhandle(fd), 0, PAGE_READWRITE, 0, 0, 0);
 
@@ -72,7 +72,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool p
         return -1;
     }
 
-    mapping->addr = MapViewOfFileEx(hmap, FILE_MAP_WRITE, 0, offset, mapping->length, NULL);
+    mapping->addr = MapViewOfFileEx(hmap, FILE_MAP_WRITE, 0, 0, mapping->length, NULL);
 
     if (!CloseHandle(hmap))
     {
@@ -113,11 +113,11 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
     return 0;
 }
 
-int aeron_ftruncate(int fd, off_t length)
+int aeron_ftruncate(int fd, size_t length)
 {
     HANDLE hfile = (HANDLE)_get_osfhandle(fd);
     LARGE_INTEGER file_size;
-    file_size.QuadPart = length;
+    file_size.QuadPart = (long long)length;
 
     if (!SetFilePointerEx(hfile, file_size, NULL, FILE_BEGIN))
     {
@@ -320,9 +320,9 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
     int fd = aeron_create_file(path);
     if (fd >= 0)
     {
-        if (aeron_ftruncate(fd, (off_t)mapped_file->length) >= 0)
+        if (0 == aeron_ftruncate(fd, mapped_file->length))
         {
-            if (aeron_mmap(mapped_file, fd, 0, fill_with_zeroes) == 0)
+            if (0 == aeron_mmap(mapped_file, fd, fill_with_zeroes))
             {
 #ifndef AERON_NATIVE_PRETOUCH
                 if (fill_with_zeroes)
@@ -340,12 +340,12 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
         }
         else
         {
-            AERON_SET_ERR(errno, "Failed to stat file: %s", path);
+            AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
         }
     }
     else
     {
-        AERON_SET_ERR(errno, "Failed to open file: %s", path);
+        AERON_SET_ERR(errno, "Failed to create file: %s", path);
     }
 
     return result;
@@ -358,13 +358,12 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
     int fd = open(path, O_RDWR);
     if (fd >= 0)
     {
-        struct stat sb;
-
-        if (fstat(fd, &sb) == 0)
+        const int64_t file_length = aeron_file_length(path);
+        if (-1 != file_length)
         {
-            mapped_file->length = (size_t)sb.st_size;
+            mapped_file->length = (size_t)file_length;
 
-            if (aeron_mmap(mapped_file, fd, 0, false) == 0)
+            if (0 == aeron_mmap(mapped_file, fd, false))
             {
                 result = 0;
             }
@@ -451,17 +450,17 @@ int aeron_raw_log_map(
     uint64_t page_size)
 {
     int result = -1;
-    uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
+    const uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
 
-    int fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    int fd = aeron_create_file(path);
     if (fd >= 0)
     {
-        if (aeron_ftruncate(fd, (off_t)log_length) >= 0)
+        if (0 == aeron_ftruncate(fd, (size_t)log_length))
         {
             mapped_raw_log->mapped_file.length = (size_t)log_length;
             mapped_raw_log->mapped_file.addr = NULL;
 
-            if (aeron_mmap(&mapped_raw_log->mapped_file, fd, 0, !use_sparse_files) < 0)
+            if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, !use_sparse_files))
             {
                 AERON_SET_ERR(errno, "Failed to map raw log, filename: %s", path);
                 return -1;
@@ -495,7 +494,7 @@ int aeron_raw_log_map(
     }
     else
     {
-        AERON_SET_ERR(errno, "Failed to open raw log, filename: %s", path);
+        AERON_SET_ERR(errno, "Failed to create raw log, filename: %s", path);
     }
 
     return result;
@@ -508,13 +507,12 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
     int fd = open(path, O_RDWR);
     if (fd >= 0)
     {
-        struct stat sb;
-
-        if (fstat(fd, &sb) == 0)
+        const int64_t file_length = aeron_file_length(path);
+        if (-1 != file_length)
         {
-            mapped_raw_log->mapped_file.length = (size_t)sb.st_size;
+            mapped_raw_log->mapped_file.length =file_length;
 
-            if (aeron_mmap(&mapped_raw_log->mapped_file, fd, 0, pre_touch) < 0)
+            if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, pre_touch))
             {
                 AERON_SET_ERR(errno, "Failed to mmap existing raw log, filename: %s", path);
                 return -1;

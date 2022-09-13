@@ -61,7 +61,7 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file);
 #define S_IRWXG 0
 #define S_IRWXO 0
 
-int aeron_ftruncate(int fd, off_t length);
+int aeron_ftruncate(int fd, size_t length);
 int aeron_mkdir(const char *path, int permission);
 #endif
 

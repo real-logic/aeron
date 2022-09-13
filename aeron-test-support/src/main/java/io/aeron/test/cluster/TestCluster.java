@@ -37,10 +37,7 @@ import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import io.aeron.samples.archive.RecordingDescriptor;
 import io.aeron.samples.archive.RecordingDescriptorCollector;
-import io.aeron.security.AuthenticatorSupplier;
-import io.aeron.security.AuthorisationServiceSupplier;
-import io.aeron.security.CredentialsSupplier;
-import io.aeron.security.DefaultAuthenticatorSupplier;
+import io.aeron.security.*;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.DriverOutputConsumer;
@@ -511,25 +508,25 @@ public final class TestCluster implements AutoCloseable
 
     public TestBackupNode startClusterBackupNode(final boolean cleanStart)
     {
-        final CredentialsSupplier credentialsSupplier = new CredentialsSupplier()
-        {
-            public byte[] encodedCredentials()
-            {
-                return new byte[0];
-            }
+        return startClusterBackupNode(cleanStart, new NullCredentialsSupplier());
+    }
 
-            public byte[] onChallenge(final byte[] encodedChallenge)
-            {
-                return new byte[0];
-            }
-        };
-
-        return startClusterBackupNode(cleanStart, credentialsSupplier);
+    public TestBackupNode startClusterBackupNode(final boolean cleanStart, final ClusterBackup.SourceType sourceType)
+    {
+        return startClusterBackupNode(cleanStart, new NullCredentialsSupplier(), sourceType);
     }
 
     public TestBackupNode startClusterBackupNode(
         final boolean cleanStart,
         final CredentialsSupplier credentialsSupplier)
+    {
+        return startClusterBackupNode(cleanStart, credentialsSupplier, ClusterBackup.SourceType.FOLLOWER);
+    }
+
+    public TestBackupNode startClusterBackupNode(
+        final boolean cleanStart,
+        final CredentialsSupplier credentialsSupplier,
+        final ClusterBackup.SourceType sourceType)
     {
         final int index = staticMemberCount + dynamicMemberCount;
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
@@ -573,6 +570,7 @@ public final class TestCluster implements AutoCloseable
             .clusterArchiveContext(context.aeronArchiveContext)
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .credentialsSupplier(credentialsSupplier)
+            .sourceType(sourceType)
             .deleteDirOnStart(cleanStart);
 
         backupNode = new TestBackupNode(context, dataCollector);

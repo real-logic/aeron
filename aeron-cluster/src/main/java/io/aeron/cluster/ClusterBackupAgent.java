@@ -86,6 +86,7 @@ public final class ClusterBackupAgent implements Agent
     private final long coolDownIntervalMs;
     private final long unavailableCounterHandlerRegistrationId;
     private final PublicationGroup<ExclusivePublication> consensusPublicationGroup;
+    private final LogSourceValidator logSourceValidator;
 
     private ClusterBackup.State state = BACKUP_QUERY;
 
@@ -149,6 +150,7 @@ public final class ClusterBackupAgent implements Agent
         stateCounter = ctx.stateCounter();
         liveLogPositionCounter = ctx.liveLogPositionCounter();
         nextQueryDeadlineMsCounter = ctx.nextQueryDeadlineMsCounter();
+        logSourceValidator = new LogSourceValidator(ctx.sourceType());
     }
 
     /**
@@ -437,7 +439,7 @@ public final class ClusterBackupAgent implements Agent
         final int memberId,
         final BackupResponseDecoder backupResponseDecoder)
     {
-        if (NULL_VALUE != leaderMemberId && leaderMemberId == memberId)
+        if (!logSourceValidator.isAcceptable(leaderMemberId, memberId))
         {
             consensusPublicationGroup.closeAndExcludeCurrent();
             state(RESET_BACKUP, epochClock.time());

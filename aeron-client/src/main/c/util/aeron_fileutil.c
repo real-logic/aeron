@@ -223,7 +223,7 @@ int aeron_is_directory(const char *path)
 #include <stdio.h>
 #include <pwd.h>
 
-static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool pre_touch)
+static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 {
     int flags = MAP_SHARED;
 
@@ -236,7 +236,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset, bool p
     (void)pre_touch;
 #endif
 
-    mapping->addr = mmap(NULL, mapping->length, PROT_READ | PROT_WRITE, flags, fd, offset);
+    mapping->addr = mmap(NULL, mapping->length, PROT_READ | PROT_WRITE, flags, fd, 0);
     close(fd);
 
     return MAP_FAILED == mapping->addr ? -1 : 0;

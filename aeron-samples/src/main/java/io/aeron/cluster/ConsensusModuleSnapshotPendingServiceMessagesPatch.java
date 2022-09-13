@@ -17,12 +17,10 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.client.RecordingSignalConsumer;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
@@ -56,6 +54,7 @@ import static io.aeron.Publication.*;
 public class ConsensusModuleSnapshotPendingServiceMessagesPatch
 {
     static final int SNAPSHOT_REPLAY_STREAM_ID = 103;
+    static final int SNAPSHOT_RECORDING_STREAM_ID = 107;
 
     /**
      * Execute the code to patch the latest snapshot.
@@ -193,17 +192,8 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         final long oldRecordingId,
         final long targetNextServiceSessionId)
     {
-        final RecordingDescriptorCapture oldRecordingDescriptorCapture = loadRecordingDescriptor(
-            archive, oldRecordingId);
-
-        final ChannelUri channelUri = ChannelUri.parse(IPC_CHANNEL);
-        channelUri.put(CommonContext.ALIAS_PARAM_NAME, "snapshot-patch");
-        channelUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(oldRecordingDescriptorCapture.mtuLength));
-        channelUri.initialPosition(
-            0, oldRecordingDescriptorCapture.initialTermId, oldRecordingDescriptorCapture.termBufferLength);
-        final String channel = channelUri.toString();
-        final int streamId = oldRecordingDescriptorCapture.streamId;
-
+        final String channel = "aeron:ipc?alias=consensus-module-snapshot-patch";
+        final int streamId = SNAPSHOT_RECORDING_STREAM_ID;
         try (ExclusivePublication snapshotPublication = archive.addRecordedExclusivePublication(channel, streamId))
         {
             try
@@ -228,18 +218,6 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                 archive.stopRecording(snapshotPublication);
             }
         }
-    }
-
-    private static RecordingDescriptorCapture loadRecordingDescriptor(
-        final AeronArchive archive, final long oldRecordingId)
-    {
-        final RecordingDescriptorCapture recordingDescriptorCapture = new RecordingDescriptorCapture();
-        if (1 != archive.listRecording(oldRecordingId, recordingDescriptorCapture))
-        {
-            throw new ClusterException("failed to read recording descriptor for id: " + oldRecordingId);
-        }
-
-        return recordingDescriptorCapture;
     }
 
     private static int awaitRecordingCounter(final int publicationSessionId, final CountersReader countersReader)
@@ -544,38 +522,6 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         {
             recordingId = NULL_VALUE;
             signal = null;
-        }
-    }
-
-    private static final class RecordingDescriptorCapture implements RecordingDescriptorConsumer
-    {
-        int initialTermId;
-        int termBufferLength;
-        int mtuLength;
-        int streamId;
-
-        public void onRecordingDescriptor(
-            final long controlSessionId,
-            final long correlationId,
-            final long recordingId,
-            final long startTimestamp,
-            final long stopTimestamp,
-            final long startPosition,
-            final long stopPosition,
-            final int initialTermId,
-            final int segmentFileLength,
-            final int termBufferLength,
-            final int mtuLength,
-            final int sessionId,
-            final int streamId,
-            final String strippedChannel,
-            final String originalChannel,
-            final String sourceIdentity)
-        {
-            this.initialTermId = initialTermId;
-            this.termBufferLength = termBufferLength;
-            this.mtuLength = mtuLength;
-            this.streamId = streamId;
         }
     }
 }

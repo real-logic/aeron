@@ -57,7 +57,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private long srcStopPosition = NULL_POSITION;
     private long srcRecordingPosition = NULL_POSITION;
     private final long dstStopPosition;
-    private final boolean dstRecordingIsEmpty;
+    private final boolean isDestinationRecordingEmpty;
     private long timeOfLastActionMs;
     private final long actionTimeoutMs;
     private final long replicationId;
@@ -128,11 +128,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             replayPosition = recordingSummary.stopPosition;
             replayStreamId = recordingSummary.streamId;
-            dstRecordingIsEmpty = recordingSummary.startPosition == recordingSummary.stopPosition;
+            isDestinationRecordingEmpty = recordingSummary.startPosition == recordingSummary.stopPosition;
         }
         else
         {
-            dstRecordingIsEmpty = false;
+            isDestinationRecordingEmpty = false;
         }
     }
 
@@ -294,7 +294,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
             signal(startPosition, REPLICATE);
         }
-        else if (dstRecordingIsEmpty)
+        else if (isDestinationRecordingEmpty)
         {
             replayPosition = startPosition;
             catalog.replaceRecording(

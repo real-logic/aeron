@@ -58,7 +58,7 @@ class DriverEventDissectorTest
 
         DriverEventDissector.dissectRemovePublicationCleanup(buffer, offset, builder);
 
-        assertEquals("[2.5] " + CONTEXT + ": " + REMOVE_PUBLICATION_CLEANUP.name() +
+        assertEquals("[2.500000] " + CONTEXT + ": " + REMOVE_PUBLICATION_CLEANUP.name() +
             " [22/88]: sessionId=42 streamId=11 channel=channel uri",
             builder.toString());
     }
@@ -74,7 +74,7 @@ class DriverEventDissectorTest
 
         DriverEventDissector.dissectRemoveSubscriptionCleanup(buffer, offset, builder);
 
-        assertEquals("[0.1] " + CONTEXT + ": " + REMOVE_SUBSCRIPTION_CLEANUP.name() +
+        assertEquals("[0.100000] " + CONTEXT + ": " + REMOVE_SUBSCRIPTION_CLEANUP.name() +
             " [100/100]: streamId=33 id=111111111111 channel=test",
             builder.toString());
     }
@@ -91,7 +91,7 @@ class DriverEventDissectorTest
 
         DriverEventDissector.dissectRemoveImageCleanup(buffer, offset, builder);
 
-        assertEquals("[12.3456789] " + CONTEXT + ": " + REMOVE_IMAGE_CLEANUP.name() +
+        assertEquals("[12.345678] " + CONTEXT + ": " + REMOVE_IMAGE_CLEANUP.name() +
             " [66/99]: sessionId=77 streamId=55 id=1000000 channel=URI",
             builder.toString());
     }
@@ -114,7 +114,7 @@ class DriverEventDissectorTest
 
         dissectFrame(CMD_IN_ADD_COUNTER, buffer, 0, builder);
 
-        assertEquals("[1.0] " + CONTEXT + ": " + CMD_IN_ADD_COUNTER.name() + " [5/5]: 127.0.0.1:8080 " +
+        assertEquals("[1.000000] " + CONTEXT + ": " + CMD_IN_ADD_COUNTER.name() + " [5/5]: 127.0.0.1:8080 " +
             "PAD 00001101 len 100 42:5:16 @1045",
             builder.toString());
     }
@@ -137,7 +137,7 @@ class DriverEventDissectorTest
 
         dissectFrame(CMD_IN_ADD_PUBLICATION, buffer, 0, builder);
 
-        assertEquals("[1.0] " + CONTEXT + ": " + CMD_IN_ADD_PUBLICATION.name() + " [5/5]: 127.0.0.1:8888 " +
+        assertEquals("[1.000000] " + CONTEXT + ": " + CMD_IN_ADD_PUBLICATION.name() + " [5/5]: 127.0.0.1:8888 " +
             "DATA 00010111 len 77 12:51:6 @444",
             builder.toString());
     }
@@ -162,7 +162,7 @@ class DriverEventDissectorTest
 
         dissectFrame(CMD_OUT_ERROR, buffer, 0, builder);
 
-        assertEquals("[1.0] " + CONTEXT + ": " + CMD_OUT_ERROR.name() + " [5/5]: 127.0.0.1:8888 " +
+        assertEquals("[1.000000] " + CONTEXT + ": " + CMD_OUT_ERROR.name() + " [5/5]: 127.0.0.1:8888 " +
             "SM 00000111 len 121 5:8:4 @18 2048 11",
             builder.toString());
     }
@@ -186,7 +186,7 @@ class DriverEventDissectorTest
 
         dissectFrame(CMD_OUT_ERROR, buffer, 0, builder);
 
-        assertEquals("[3.0] " + CONTEXT + ": " + CMD_OUT_ERROR.name() + " [3/3]: 127.0.0.1:8888 " +
+        assertEquals("[3.000000] " + CONTEXT + ": " + CMD_OUT_ERROR.name() + " [3/3]: 127.0.0.1:8888 " +
             "NAK 00000010 len 54 5:8:20 @0 999999",
             builder.toString());
     }
@@ -213,7 +213,7 @@ class DriverEventDissectorTest
 
         dissectFrame(CMD_OUT_EXCLUSIVE_PUBLICATION_READY, buffer, 0, builder);
 
-        assertEquals("[3.0] " + CONTEXT + ": " + CMD_OUT_EXCLUSIVE_PUBLICATION_READY.name() +
+        assertEquals("[3.000000] " + CONTEXT + ": " + CMD_OUT_EXCLUSIVE_PUBLICATION_READY.name() +
             " [3/3]: 127.0.0.1:8888 " +
             "SETUP 11001000 len 1 15:18:81 69 @10 444 MTU 8096 TTL 20000",
             builder.toString());
@@ -238,7 +238,7 @@ class DriverEventDissectorTest
 
         dissectFrame(CMD_IN_ADD_RCV_DESTINATION, buffer, 0, builder);
 
-        assertEquals("[3.0] " + CONTEXT + ": " + CMD_IN_ADD_RCV_DESTINATION.name() + " [3/3]: 127.0.0.1:8888 " +
+        assertEquals("[3.000000] " + CONTEXT + ": " + CMD_IN_ADD_RCV_DESTINATION.name() + " [3/3]: 127.0.0.1:8888 " +
             "RTT 00010100 len 100 0:1 123456789 354 22",
             builder.toString());
     }
@@ -255,7 +255,7 @@ class DriverEventDissectorTest
 
         dissectFrame(CMD_OUT_ON_OPERATION_SUCCESS, buffer, 0, builder);
 
-        assertEquals("[3.0] " + CONTEXT + ": " + CMD_OUT_ON_OPERATION_SUCCESS.name() + " [3/3]: 127.0.0.1:8888 " +
+        assertEquals("[3.000000] " + CONTEXT + ": " + CMD_OUT_ON_OPERATION_SUCCESS.name() + " [3/3]: 127.0.0.1:8888 " +
             "FRAME_UNKNOWN: " + HDR_TYPE_EXT,
             builder.toString());
     }
@@ -268,7 +268,7 @@ class DriverEventDissectorTest
 
         DriverEventDissector.dissectString(CMD_IN_CLIENT_CLOSE, buffer, 0, builder);
 
-        assertEquals("[1.1] " + CONTEXT + ": " + CMD_IN_CLIENT_CLOSE.name() + " [1/1]: Hello, World!",
+        assertEquals("[1.100000] " + CONTEXT + ": " + CMD_IN_CLIENT_CLOSE.name() + " [1/1]: Hello, World!",
             builder.toString());
     }
 
@@ -286,7 +286,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[1.78] " + CONTEXT + ": " + eventCode.name() + " [10/10]: " +
+        assertEquals("[1.780000] " + CONTEXT + ": " + eventCode.name() + " [10/10]: " +
             "3 [" + eventCode.id() + ":15] pub channel",
             builder.toString());
     }
@@ -306,7 +306,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[1.78] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
+        assertEquals("[1.780000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
             "31 [90][" + eventCode.id() + ":6] sub channel",
             builder.toString());
     }
@@ -325,7 +325,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/87]: " +
+        assertEquals("[21.032000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/87]: " +
             "11 [" + eventCode.id() + ":16]",
             builder.toString());
     }
@@ -348,7 +348,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+        assertEquals("[21.032000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.ordinal() + ":42 1 5 [8 " + eventCode.id() + "] log.txt",
             builder.toString());
     }
@@ -370,7 +370,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+        assertEquals("[21.032000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.ordinal() + ":22 [0:245] [767] log2.txt source identity",
             builder.toString());
     }
@@ -386,7 +386,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/111]: " +
+        assertEquals("[21.032000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/111]: " +
             eventCode.id(),
             builder.toString());
     }
@@ -403,7 +403,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+        assertEquals("[21.032000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             "[" + eventCode.id() + ":2]",
             builder.toString());
     }
@@ -422,7 +422,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/99]: " +
+        assertEquals("[21.032000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/99]: " +
             "300 [" + eventCode.id() + " -19] the channel",
             builder.toString());
     }
@@ -445,7 +445,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/77]: " +
+        assertEquals("[21.032000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/77]: " +
             eventCode.id() + " [1010101:404] dst",
             builder.toString());
     }
@@ -463,7 +463,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+        assertEquals("[1.900000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.id() + " " + ErrorCode.MALFORMED_COMMAND + " Huge stacktrace!",
             builder.toString());
     }
@@ -483,7 +483,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+        assertEquals("[1.900000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             "3 [" + flyweight.keyBufferOffset() + " 10][" + flyweight.labelBufferOffset() + " 13][" +
             eventCode.id() + ":42]",
             builder.toString());
@@ -501,7 +501,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+        assertEquals("[1.900000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             "42 " + eventCode.id(),
             builder.toString());
     }
@@ -518,7 +518,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+        assertEquals("[1.900000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.id() + " 18",
             builder.toString());
     }
@@ -534,7 +534,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+        assertEquals("[1.900000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.id(),
             builder.toString());
     }
@@ -551,7 +551,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+        assertEquals("[1.900000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.id() + " 11",
             builder.toString());
     }
@@ -564,7 +564,7 @@ class DriverEventDissectorTest
 
         dissectCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[1.0] " + CONTEXT + ": " + eventCode.name() + " [5/5]: COMMAND_UNKNOWN: " + eventCode,
+        assertEquals("[1.000000] " + CONTEXT + ": " + eventCode.name() + " [5/5]: COMMAND_UNKNOWN: " + eventCode,
             builder.toString());
     }
 
@@ -580,7 +580,7 @@ class DriverEventDissectorTest
 
         DriverEventDissector.dissectUntetheredSubscriptionStateChange(buffer, offset, builder);
 
-        assertEquals("[1.5] " + CONTEXT + ": " + UNTETHERED_SUBSCRIPTION_STATE_CHANGE.name() +
+        assertEquals("[1.500000] " + CONTEXT + ": " + UNTETHERED_SUBSCRIPTION_STATE_CHANGE.name() +
             " [22/88]: subscriptionId=88 streamId=123 sessionId=777 state changed",
             builder.toString());
     }
@@ -595,7 +595,7 @@ class DriverEventDissectorTest
 
         DriverEventDissector.dissectAddress(NAME_RESOLUTION_NEIGHBOR_ADDED, buffer, offset, builder);
 
-        assertEquals("[2.5] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOR_ADDED.name() +
+        assertEquals("[2.500000] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOR_ADDED.name() +
             " [17/27]: 127.0.0.1:4848", builder.toString());
     }
 
@@ -609,7 +609,7 @@ class DriverEventDissectorTest
 
         DriverEventDissector.dissectAddress(NAME_RESOLUTION_NEIGHBOR_ADDED, buffer, offset, builder);
 
-        assertEquals("[2.5] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOR_ADDED.name() +
+        assertEquals("[2.500000] " + CONTEXT + ": " + NAME_RESOLUTION_NEIGHBOR_ADDED.name() +
             " [17/27]: [2001:db8:85a3:0:0:8a2e:370:7334]:4848", builder.toString());
     }
 
@@ -626,7 +626,7 @@ class DriverEventDissectorTest
 
         DriverEventDissector.dissectFlowControlReceiver(FLOW_CONTROL_RECEIVER_ADDED, buffer, offset, builder);
 
-        assertEquals("[2.5] " + CONTEXT + ": " + FLOW_CONTROL_RECEIVER_ADDED.name() +
+        assertEquals("[2.500000] " + CONTEXT + ": " + FLOW_CONTROL_RECEIVER_ADDED.name() +
             " [42/48]: receiverCount=5 receiverId=-45754449919191 sessionId=11 streamId=4 channel=ABC",
             builder.toString());
     }

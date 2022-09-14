@@ -37,16 +37,16 @@ class CommonEventDissectorTest
     @Test
     void dissectLogStartMessage()
     {
-        final long timestampNs = 10_000_001_055L;
+        final long timestampNs = 10_000_001_955L;
         final long timestampMs = 10_000_001L;
 
         CommonEventDissector.dissectLogStartMessage(timestampNs, timestampMs, ZoneId.of("UTC"), builder);
-        assertThat(builder.toString(), equalTo("[10.000001055] log started 1970-01-01 02:46:40.001+0000"));
+        assertThat(builder.toString(), equalTo("[10.000001] log started 1970-01-01 02:46:40.001+0000"));
 
         builder.delete(0, builder.length());
 
         CommonEventDissector.dissectLogStartMessage(timestampNs, timestampMs, ZoneId.of("America/New_York"), builder);
-        assertThat(builder.toString(), equalTo("[10.000001055] log started 1969-12-31 21:46:40.001-0500"));
+        assertThat(builder.toString(), equalTo("[10.000001] log started 1969-12-31 21:46:40.001-0500"));
     }
 
     @Test
@@ -58,7 +58,7 @@ class CommonEventDissectorTest
             .dissectLogHeader("test ctx", ArchiveEventCode.CMD_OUT_RESPONSE, buffer, 0, builder);
 
         assertEquals(LOG_HEADER_LENGTH, decodedLength);
-        assertEquals("[1.23456789] test ctx: CMD_OUT_RESPONSE [100/222]", builder.toString());
+        assertEquals("[1.234567] test ctx: CMD_OUT_RESPONSE [100/222]", builder.toString());
     }
 
     @Test

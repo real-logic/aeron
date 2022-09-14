@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import org.agrona.AsciiEncoding;
 import org.agrona.MutableDirectBuffer;
 
 import java.time.ZoneId;
@@ -31,7 +32,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 final class CommonEventDissector
 {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = ofPattern("uuuu-MM-dd HH:mm:ss.SSSZ");
-    private static final double NANOS_PER_SECOND = 1_000_000_000.0;
+    private static final long NANOS_PER_SECOND = 1_000_000_000;
+    private static final long NANOS_PER_MICROSECOND = 1_000;
 
     private CommonEventDissector()
     {
@@ -40,10 +42,8 @@ final class CommonEventDissector
     static void dissectLogStartMessage(
         final long timestampNs, final long timestampMs, final ZoneId zone, final StringBuilder builder)
     {
-        builder
-            .append('[')
-            .append(((double)timestampNs) / NANOS_PER_SECOND)
-            .append("] log started ")
+        appendTimestamp(builder, timestampNs);
+        builder.append("log started ")
             .append(DATE_TIME_FORMATTER.format(ofInstant(ofEpochMilli(timestampMs), zone)));
     }
 
@@ -65,11 +65,8 @@ final class CommonEventDissector
         final long timestampNs = buffer.getLong(offset + encodedLength, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_LONG;
 
-        builder
-            .append('[')
-            .append(((double)timestampNs) / NANOS_PER_SECOND)
-            .append("] ")
-            .append(context)
+        appendTimestamp(builder, timestampNs);
+        builder.append(context)
             .append(": ")
             .append(code.name())
             .append(" [")
@@ -143,5 +140,21 @@ final class CommonEventDissector
         encodedLength += addressLength;
 
         return encodedLength;
+    }
+
+    private static void appendTimestamp(final StringBuilder builder, final long timestampNs)
+    {
+        final long seconds = timestampNs / NANOS_PER_SECOND;
+        final long micros = (timestampNs - seconds * NANOS_PER_SECOND) / NANOS_PER_MICROSECOND;
+        final int numDigitsAfterDot = AsciiEncoding.digitCount(micros);
+        builder.append('[');
+        builder.append(seconds);
+        builder.append('.');
+        for (int i = 0, size = 6 - numDigitsAfterDot; i < size; i++)
+        {
+            builder.append('0');
+        }
+        builder.append(micros);
+        builder.append(']').append(' ');
     }
 }

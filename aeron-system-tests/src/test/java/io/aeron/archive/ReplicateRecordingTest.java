@@ -36,12 +36,13 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
@@ -189,7 +190,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldThrowExceptionWhenDstRecordingIdUnknown(final boolean useParams)
     {
@@ -221,7 +222,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldThrowExceptionWhenSrcRecordingIdUnknown(final boolean useParams)
     {
@@ -254,7 +255,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateStoppedRecording(final boolean useParams)
     {
@@ -305,7 +306,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateWithOlderVersion(final boolean useParams)
     {
@@ -356,7 +357,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateStoppedRecordingsConcurrently(final boolean useParams)
     {
@@ -424,7 +425,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateLiveWithoutMergingRecording(final boolean useParams)
     {
@@ -478,7 +479,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateLiveRecordingAndStopAtSpecifiedPosition(final boolean useParams)
     {
@@ -546,7 +547,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateMoreThanOnce(final boolean useParams)
     {
@@ -620,7 +621,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateSyncedRecording(final boolean useParams)
     {
@@ -682,7 +683,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateLiveRecordingAndMerge(final boolean useParams)
     {
@@ -738,7 +739,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateLiveRecordingAndMergeBeforeDataFlows(final boolean useParams)
     {
@@ -789,7 +790,7 @@ class ReplicateRecordingTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     @InterruptAfter(10)
     void shouldReplicateLiveRecordingAndMergeWhileFollowingWithTaggedSubscription(final boolean useParams)
     {
@@ -980,15 +981,92 @@ class ReplicateRecordingTest
         assertThat(error, Matchers.containsString("fileIoMaxLength"));
     }
 
-    private void validateRecordingAreEqual(final long srcRecordingId, final long dstRecordingId)
+    @ParameterizedTest
+    @InterruptAfter(10)
+    @CsvSource({
+        "aeron:ipc?alias=src-recording|mtu=1344|init-term-id=777|term-id=1111112|term-offset=4096|" +
+            "term-length=512K, aeron:udp?alias=OTHER|endpoint=localhost:8108|term-length=1G",
+        "aeron:udp?alias=OTHER|endpoint=localhost:8108|term-length=1G, aeron:ipc?alias=dst-recording|mtu=1344|" +
+            "init-term-id=1111111|term-id=1111112|term-offset=4096|term-length=512K",
+        "aeron:udp?endpoint=localhost:8108|mtu=1344|init-term-id=11|term-id=15|term-offset=1024|term-length=512K, " +
+            "aeron:udp?endpoint=localhost:8109|mtu=1376|init-term-id=222|term-id=333|term-offset=96|term-length=256M",
+        "aeron:ipc?alias=src, aeron:udp?alias=dst|endpoint=localhost:8080",
+        "aeron:udp?alias=src|endpoint=localhost:8080, aeron:ipc?alias=dst",
+    })
+    public void shouldReplicateStoppedRecordingOverAnExistingTruncatedRecordingReplacingAllParameters(
+        final String srcChannel, final String dstChannel)
     {
-        final ExpandableArrayBuffer srcRecordingData = new ExpandableArrayBuffer();
-        readRecordingIntoBuffer(srcRecordingId, srcRecordingData);
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(1);
+        final int srcStreamId = 3333;
+        final long srcRecordingId = createStoppedRecording(
+            srcAeronArchive, srcChannel, srcStreamId, "src recording data", 10);
 
-        final ExpandableArrayBuffer dstRecordingData = new ExpandableArrayBuffer();
-        readRecordingIntoBuffer(dstRecordingId, dstRecordingData);
+        final MutableLong recordingIdRef = new MutableLong();
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, recordingIdRef);
 
-        assertEquals(srcRecordingData, dstRecordingData);
+        int dstStreamId = 555;
+        long dstRecordingId;
+        while (srcRecordingId >= (dstRecordingId =
+            createStoppedRecording(dstAeronArchive, "aeron:ipc?term-length=64K", dstStreamId, "temp", 1)))
+        {
+            dstAeronArchive.truncateRecording(dstRecordingId, 0);
+            awaitSignal(signalRef, adapter, RecordingSignal.DELETE);
+            dstStreamId++;
+        }
+
+        dstRecordingId = createStoppedRecording(dstAeronArchive, dstChannel, dstStreamId, "destination 42", 42);
+        assertNotEquals(srcRecordingId, dstRecordingId);
+        assertNotEquals(srcStreamId, dstStreamId);
+
+        assertEquals(1, srcAeronArchive.listRecording(srcRecordingId, collector.reset()));
+        final RecordingDescriptor srcRecording = collector.descriptors().get(0).retain();
+        assertEquals(1, dstAeronArchive.listRecording(dstRecordingId, collector.reset()));
+        final RecordingDescriptor dstRecording = collector.descriptors().get(0).retain();
+        assertNotEquals(srcRecording.startTimestamp(), dstRecording.startTimestamp());
+        assertNotEquals(srcRecording.stopTimestamp(), dstRecording.stopTimestamp());
+        assertNotEquals(srcRecording.stopPosition(), dstRecording.stopPosition());
+        assertNotEquals(srcRecording.initialTermId(), dstRecording.initialTermId());
+        assertNotEquals(srcRecording.termBufferLength(), dstRecording.termBufferLength());
+        assertNotEquals(srcRecording.controlSessionId(), dstRecording.controlSessionId());
+        assertNotEquals(srcRecording.sessionId(), dstRecording.sessionId());
+        assertNotEquals(srcRecording.streamId(), dstRecording.streamId());
+        assertNotEquals(srcRecording.strippedChannel(), dstRecording.strippedChannel());
+        assertNotEquals(srcRecording.originalChannel(), dstRecording.originalChannel());
+        assertEquals(srcRecording.sourceIdentity(), dstRecording.sourceIdentity());
+
+        dstAeronArchive.truncateRecording(dstRecordingId, dstRecording.startPosition());
+        awaitSignal(signalRef, adapter, RecordingSignal.DELETE);
+        assertEquals(dstRecordingId, recordingIdRef.get());
+
+        dstAeronArchive.replicate(
+            srcRecordingId, dstRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+
+        recordingIdRef.set(NULL_VALUE);
+        awaitSignal(signalRef, adapter, RecordingSignal.EXTEND);
+        assertEquals(dstRecordingId, recordingIdRef.get());
+        awaitSignal(signalRef, adapter, RecordingSignal.SYNC);
+        awaitSignal(signalRef, adapter, RecordingSignal.REPLICATE_END);
+        awaitSignal(signalRef, adapter, RecordingSignal.STOP);
+
+        assertEquals(1, dstAeronArchive.listRecording(dstRecordingId, collector.reset()));
+        final RecordingDescriptor replicatedRecording = collector.descriptors().get(0).retain();
+        assertEquals(srcRecording.startTimestamp(), replicatedRecording.startTimestamp());
+        assertEquals(srcRecording.startPosition(), replicatedRecording.startPosition());
+        assertEquals(srcRecording.stopPosition(), replicatedRecording.stopPosition());
+        assertEquals(srcRecording.initialTermId(), replicatedRecording.initialTermId());
+        assertEquals(srcRecording.segmentFileLength(), replicatedRecording.segmentFileLength());
+        assertEquals(srcRecording.termBufferLength(), replicatedRecording.termBufferLength());
+        assertEquals(srcRecording.mtuLength(), replicatedRecording.mtuLength());
+        assertEquals(srcRecording.sessionId(), replicatedRecording.sessionId());
+        assertEquals(srcRecording.streamId(), replicatedRecording.streamId());
+        assertEquals(srcRecording.strippedChannel(), replicatedRecording.strippedChannel());
+        assertEquals(srcRecording.originalChannel(), replicatedRecording.originalChannel());
+        assertEquals(srcRecording.sourceIdentity(), replicatedRecording.sourceIdentity());
+        assertEquals(dstRecording.controlSessionId(), replicatedRecording.controlSessionId());
+        // extend recording will overwrite the stopTimestamp
+        assertNotEquals(srcRecording.stopTimestamp(), replicatedRecording.stopTimestamp());
+        assertNotEquals(dstRecording.stopTimestamp(), replicatedRecording.stopTimestamp());
     }
 
     private void readRecordingIntoBuffer(final long srcRecordingId, final ExpandableArrayBuffer srcRecordingData)
@@ -1043,5 +1121,42 @@ class ReplicateRecordingTest
         final MutableReference<RecordingSignal> signalRef, final MutableLong recordingIdRef)
     {
         return newRecordingSignalAdapter(ERROR_CONTROL_LISTENER, signalRef, recordingIdRef);
+    }
+
+    private long createStoppedRecording(
+        final AeronArchive aeronArchive,
+        final String channel,
+        final int streamId,
+        final String payload,
+        final int messageCount)
+    {
+        try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(channel, streamId))
+        {
+            try
+            {
+                final CountersReader counters = aeronArchive.context().aeron().countersReader();
+                final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                offer(publication, messageCount, payload);
+                awaitPosition(counters, counterId, publication.position());
+                return recordingId;
+            }
+            finally
+            {
+                aeronArchive.stopRecording(publication);
+            }
+        }
+    }
+
+    private void validateRecordingAreEqual(final long srcRecordingId, final long dstRecordingId)
+    {
+        final ExpandableArrayBuffer srcRecordingData = new ExpandableArrayBuffer();
+        readRecordingIntoBuffer(srcRecordingId, srcRecordingData);
+
+        final ExpandableArrayBuffer dstRecordingData = new ExpandableArrayBuffer();
+        readRecordingIntoBuffer(dstRecordingId, dstRecordingData);
+
+        assertEquals(srcRecordingData, dstRecordingData);
     }
 }

@@ -656,6 +656,90 @@ final class Catalog implements AutoCloseable
         forceWrites(catalogChannel);
     }
 
+    void replaceRecording(
+        final long recordingId,
+        final long startPosition,
+        final long stopPosition,
+        final long startTimestamp,
+        final long stopTimestamp,
+        final int imageInitialTermId,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int mtuLength,
+        final int sessionId,
+        final int streamId,
+        final String strippedChannel,
+        final String originalChannel,
+        final String sourceIdentity)
+    {
+        final int recordingOffset = recordingDescriptorOffset(recordingId);
+        if (-1 == recordingOffset)
+        {
+            throw new ArchiveException("unknown recording id: " + recordingId);
+        }
+
+        final int recordingLength = fieldAccessBuffer.getInt(
+            recordingOffset + RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), BYTE_ORDER);
+        final int oldFrameLength = align(recordingLength + DESCRIPTOR_HEADER_LENGTH, alignment);
+        final int newFrameLength = recordingDescriptorFrameLength(strippedChannel, originalChannel, sourceIdentity);
+        final int length, checksumLength;
+        if (newFrameLength > oldFrameLength)
+        {
+            length = checksumLength = newFrameLength - DESCRIPTOR_HEADER_LENGTH;
+
+            final int shiftBytes = newFrameLength - oldFrameLength;
+            final int endOfLastRecording = nextRecordingDescriptorOffset;
+            if (endOfLastRecording + shiftBytes > capacity)
+            {
+                growCatalog(MAX_CATALOG_LENGTH, shiftBytes);
+            }
+
+            nextRecordingDescriptorOffset += shiftBytes;
+
+            final long[] index = catalogIndex.index();
+            final int lastPosition = catalogIndex.lastPosition();
+            if (recordingId != index[lastPosition])
+            {
+                shiftDataToTheRight(recordingOffset, oldFrameLength, newFrameLength, endOfLastRecording);
+                fixupIndexForShifterRecordings(index, lastPosition, recordingId, shiftBytes);
+            }
+
+            catalogBuffer.wrap(catalogByteBuffer, recordingOffset, newFrameLength);
+        }
+        else
+        {
+            length = oldFrameLength - DESCRIPTOR_HEADER_LENGTH;
+            checksumLength = newFrameLength - DESCRIPTOR_HEADER_LENGTH;
+            catalogBuffer.wrap(catalogByteBuffer, recordingOffset, oldFrameLength);
+            catalogBuffer.setMemory(newFrameLength, oldFrameLength - newFrameLength, (byte)0);
+        }
+
+        descriptorEncoder
+            .wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH)
+            .recordingId(recordingId)
+            .startTimestamp(startTimestamp)
+            .stopTimestamp(stopTimestamp)
+            .startPosition(startPosition)
+            .stopPosition(stopPosition)
+            .initialTermId(imageInitialTermId)
+            .segmentFileLength(segmentFileLength)
+            .termBufferLength(termBufferLength)
+            .mtuLength(mtuLength)
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .strippedChannel(strippedChannel)
+            .originalChannel(originalChannel)
+            .sourceIdentity(sourceIdentity);
+
+        descriptorHeaderEncoder
+            .wrap(catalogBuffer, 0)
+            .length(length)
+            .checksum(computeRecordingDescriptorChecksum(recordingOffset, checksumLength))
+            .state(VALID);
+
+        forceWrites(catalogChannel);
+    }
+
     long startPosition(final long recordingId)
     {
         final int offset = recordingDescriptorOffset(recordingId) +
@@ -921,6 +1005,33 @@ final class Catalog implements AutoCloseable
             SIZE_OF_INT + originalChannel.length() +
             SIZE_OF_INT + sourceIdentity.length();
         return align(DESCRIPTOR_HEADER_LENGTH + recordingDescriptorLength, alignment);
+    }
+
+    private void shiftDataToTheRight(
+        final int recordingOffset, final int oldFrameLength, final int newFrameLength, final int endOfLastRecording)
+    {
+        fieldAccessBuffer.putBytes(
+            recordingOffset + newFrameLength,
+            fieldAccessBuffer,
+            recordingOffset + oldFrameLength,
+            endOfLastRecording - (recordingOffset + oldFrameLength));
+    }
+
+    private static void fixupIndexForShifterRecordings(
+        final long[] index, final int lastPosition, final long recordingId, final int shiftBytes)
+    {
+        boolean updateOffset = false;
+        for (int i = 0; i <= lastPosition; i += 2)
+        {
+            if (updateOffset)
+            {
+                index[i + 1] += shiftBytes;
+            }
+            else if (recordingId == index[i])
+            {
+                updateOffset = true;
+            }
+        }
     }
 
     /**

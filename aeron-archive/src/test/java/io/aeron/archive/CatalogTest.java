@@ -57,8 +57,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CatalogTest
@@ -205,17 +204,56 @@ class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            verifyRecordingForId(catalog, recordingOneId, 160, 6, 1, "channelG", "sourceA");
-            verifyRecordingForId(catalog, recordingTwoId, 160, 7, 2, "channelH", "sourceV");
+            verifyRecordingForId(
+                catalog,
+                recordingOneId,
+                160,
+                0L,
+                NULL_POSITION,
+                0L,
+                NULL_TIMESTAMP,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                6,
+                1,
+                "channelG",
+                "channelG?tag=f",
+                "sourceA");
+
+            verifyRecordingForId(
+                catalog,
+                recordingTwoId,
+                160,
+                0L,
+                NULL_POSITION,
+                0L,
+                NULL_TIMESTAMP,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                7,
+                2,
+                "channelH",
+                "channelH?tag=f",
+                "sourceV");
+
             verifyRecordingForId(
                 catalog,
                 recordingThreeId,
                 352,
-                8,
+                0L,
+                NULL_POSITION,
+                0L,
+                NULL_TIMESTAMP,
+                0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 8,
                 3,
                 "channelThatIsVeryLongAndShouldNotBeTruncated",
-                "source can also be a very very very long String and it will not be truncated even " +
-                "if gets very very long");
+                "channelThatIsVeryLongAndShouldNotBeTruncated?tag=f",
+                "source can also be a very very very long String and it will not be truncated even if gets " +
+                "very very long");
         }
     }
 
@@ -226,13 +264,58 @@ class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, () -> 3L, null, segmentFileBuffer))
         {
             newRecordingId = catalog.addNewRecording(
-                0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
+                32,
+                128,
+                21,
+                42,
+                5,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                9,
+                4,
+                "channelJ",
+                "channelJ?tag=f",
+                "sourceN");
         }
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            verifyRecordingForId(catalog, recordingOneId, 160, 6, 1, "channelG", "sourceA");
-            verifyRecordingForId(catalog, newRecordingId, 160, 9, 4, "channelJ", "sourceN");
+            verifyRecordingForId(
+                catalog,
+                recordingOneId,
+                160,
+                0L,
+                0L, // updated from NULL_POSITION when Catalog was created for write
+                0L,
+                3L, // updated from NULL_TIMESTAMP when Catalog was created for write
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                6,
+                1,
+                "channelG",
+                "channelG?tag=f",
+                "sourceA");
+
+            verifyRecordingForId(
+                catalog,
+                newRecordingId,
+                160,
+                32,
+                128,
+                21,
+                42,
+                5,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                9,
+                4,
+                "channelJ",
+                "channelJ?tag=f",
+                "sourceN");
         }
     }
 
@@ -803,11 +886,11 @@ class CatalogTest
         final Checksum checksum = crc32();
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
         {
-            assertChecksum(catalog, recordingOneId, 0);
+            assertChecksum(catalog, recordingOneId, 160, 0, null);
 
             catalog.recordingStopped(recordingOneId, 140, 231723682323L);
 
-            assertChecksum(catalog, recordingOneId, 1656993099);
+            assertChecksum(catalog, recordingOneId, 160, 1656993099, checksum);
         }
     }
 
@@ -817,11 +900,11 @@ class CatalogTest
         final Checksum checksum = crc32();
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
         {
-            assertChecksum(catalog, recordingTwoId, 0);
+            assertChecksum(catalog, recordingTwoId, 160, 0, null);
 
             catalog.stopPosition(recordingTwoId, 7777);
 
-            assertChecksum(catalog, recordingTwoId, -1985007076);
+            assertChecksum(catalog, recordingTwoId, 160, -1985007076, checksum);
         }
     }
 
@@ -831,11 +914,11 @@ class CatalogTest
         final Checksum checksum = crc32();
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
         {
-            assertChecksum(catalog, recordingThreeId, 0);
+            assertChecksum(catalog, recordingThreeId, 352, 0, null);
 
             catalog.startPosition(recordingThreeId, 123);
 
-            assertChecksum(catalog, recordingThreeId, -160510802);
+            assertChecksum(catalog, recordingThreeId, 352, -160510802, checksum);
         }
     }
 
@@ -847,19 +930,370 @@ class CatalogTest
         {
             final long recordingId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 6, 1, "channelNew", "channelNew?tag=X", "sourceX");
-            assertChecksum(catalog, recordingId, 1691549102);
+            assertChecksum(catalog, recordingId, 160, 1691549102, checksum);
 
             catalog.extendRecording(recordingId, 555, 13, 31);
 
-            assertChecksum(catalog, recordingId, -1694749833);
+            assertChecksum(catalog, recordingId, 160, -1694749833, checksum);
         }
     }
 
-    private void assertChecksum(final Catalog catalog, final long recordingId, final int expectedChecksum)
+    @Test
+    void replaceThrowsArchiveExceptionIfRecordingIdIsUnknown()
+    {
+        final Checksum checksum = crc32();
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            catalog.startPosition(recordingOneId, 0);
+            catalog.startPosition(recordingTwoId, 0);
+            catalog.startPosition(recordingThreeId, 0);
+            assertChecksum(catalog, recordingOneId, 160, -866186973, checksum);
+            assertChecksum(catalog, recordingTwoId, 160, -1947831311, checksum);
+            assertChecksum(catalog, recordingThreeId, 352, -529628341, checksum);
+        }
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            final int unknownRecordingId = 1_000_000;
+            final ArchiveException exception = assertThrowsExactly(
+                ArchiveException.class, () -> catalog.replaceRecording(
+                unknownRecordingId,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                "11",
+                "12",
+                "13"));
+            assertEquals("ERROR - unknown recording id: " + unknownRecordingId, exception.getMessage());
+
+            assertEquals(1024, catalog.capacity());
+            assertEquals(3, catalog.index().size());
+            assertEquals(recordingThreeId + 1, catalog.nextRecordingId());
+            assertChecksum(catalog, recordingOneId, 160, -866186973, checksum);
+            assertChecksum(catalog, recordingTwoId, 160, -1947831311, checksum);
+            assertChecksum(catalog, recordingThreeId, 352, -529628341, checksum);
+        }
+    }
+
+    @Test
+    void replaceRecordingUpdateCatalogFileWhenNewMetadataDoesNotFit()
+    {
+        final Checksum checksum = crc32();
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            catalog.startPosition(recordingOneId, 0);
+            catalog.startPosition(recordingTwoId, 0);
+            catalog.startPosition(recordingThreeId, 0);
+            assertChecksum(catalog, recordingOneId, 160, -866186973, checksum);
+            assertChecksum(catalog, recordingTwoId, 160, -1947831311, checksum);
+            assertChecksum(catalog, recordingThreeId, 352, -529628341, checksum);
+        }
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            final long oldCapacity = catalog.capacity();
+
+            final String newSourceIdentity = addSuffix(
+                "and the source identity changes as well and is also quite a long one funny thing: ", "!", 2000);
+            catalog.replaceRecording(
+                recordingTwoId,
+                1024,
+                16 * 1024,
+                3252535612L,
+                6238423648L,
+                777,
+                SEGMENT_LENGTH * 4,
+                TERM_LENGTH * 2,
+                1344,
+                -19,
+                42,
+                "suppose to be a short description of the channel but can be whatever and surprising. Veni, vidi, vici",
+                "aeron:ipc?tag=15|alias=that is very very very long and will overflow the originally assigned length " +
+                "for sure and then some",
+                newSourceIdentity);
+
+            assertTrue(catalog.capacity() > oldCapacity);
+            assertEquals(recordingThreeId + 1, catalog.nextRecordingId());
+            verifyRecordingForId(
+                catalog,
+                recordingOneId,
+                160,
+                0L,
+                0L,
+                0L,
+                1L,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                6,
+                1,
+                "channelG",
+                "channelG?tag=f",
+                "sourceA");
+            assertChecksum(catalog, recordingOneId, 160, -866186973, checksum);
+
+            verifyRecordingForId(
+                catalog,
+                recordingTwoId,
+                2400,
+                1024,
+                16 * 1024,
+                3252535612L,
+                6238423648L,
+                777,
+                SEGMENT_LENGTH * 4,
+                TERM_LENGTH * 2,
+                1344,
+                -19,
+                42,
+                "suppose to be a short description of the channel but can be whatever and surprising. Veni, vidi, vici",
+                "aeron:ipc?tag=15|alias=that is very very very long and will overflow the originally assigned length " +
+                "for sure and then some",
+                newSourceIdentity);
+            assertChecksum(catalog, recordingTwoId, 2400, -2076878182, checksum);
+
+            verifyRecordingForId(
+                catalog,
+                recordingThreeId,
+                352,
+                0L,
+                0L,
+                0L,
+                1L,
+                0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 8,
+                3,
+                "channelThatIsVeryLongAndShouldNotBeTruncated",
+                "channelThatIsVeryLongAndShouldNotBeTruncated?tag=f",
+                "source can also be a very very very long String and it will not be truncated even if gets " +
+                "very very long");
+            assertChecksum(catalog, recordingThreeId, 352, -529628341, checksum);
+        }
+    }
+
+    @Test
+    void replaceRecordingUpdateCatalogFileWhenNewMetadataDoesNotFitAndDifferenceInSizeIsSmall()
+    {
+        final Checksum checksum = crc32();
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            catalog.startPosition(recordingOneId, 0);
+            catalog.startPosition(recordingTwoId, 0);
+            catalog.startPosition(recordingThreeId, 0);
+            assertChecksum(catalog, recordingOneId, 160, -866186973, checksum);
+            assertChecksum(catalog, recordingTwoId, 160, -1947831311, checksum);
+            assertChecksum(catalog, recordingThreeId, 352, -529628341, checksum);
+        }
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            catalog.replaceRecording(
+                recordingTwoId,
+                1024,
+                16 * 1024,
+                3252535612L,
+                6238423648L,
+                777,
+                SEGMENT_LENGTH * 4,
+                TERM_LENGTH * 2,
+                1344,
+                -19,
+                42,
+                "channelH",
+                "channelH?tag=f",
+                "to source or not to source that is the question");
+
+            assertEquals(recordingThreeId + 1, catalog.nextRecordingId());
+            verifyRecordingForId(
+                catalog,
+                recordingOneId,
+                160,
+                0L,
+                0L,
+                0L,
+                1L,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                6,
+                1,
+                "channelG",
+                "channelG?tag=f",
+                "sourceA");
+            assertChecksum(catalog, recordingOneId, 160, -866186973, checksum);
+
+            verifyRecordingForId(
+                catalog,
+                recordingTwoId,
+                224,
+                1024,
+                16 * 1024,
+                3252535612L,
+                6238423648L,
+                777,
+                SEGMENT_LENGTH * 4,
+                TERM_LENGTH * 2,
+                1344,
+                -19,
+                42,
+                "channelH",
+                "channelH?tag=f",
+                "to source or not to source that is the question");
+            assertChecksum(catalog, recordingTwoId, 224, -1059517110, checksum);
+
+            verifyRecordingForId(
+                catalog,
+                recordingThreeId,
+                352,
+                0L,
+                0L,
+                0L,
+                1L,
+                0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 8,
+                3,
+                "channelThatIsVeryLongAndShouldNotBeTruncated",
+                "channelThatIsVeryLongAndShouldNotBeTruncated?tag=f",
+                "source can also be a very very very long String and it will not be truncated even if gets " +
+                "very very long");
+            assertChecksum(catalog, recordingThreeId, 352, -529628341, checksum);
+        }
+    }
+
+    @Test
+    void replaceRecordingShouldUpdateMetadataInPlaceWhenShorterThanTheOldOne()
+    {
+        final long updateTime = 555555L;
+        final Checksum checksum = crc32();
+        try (Catalog catalog =
+            new Catalog(archiveDir, null, 0, CAPACITY, () -> updateTime, checksum, segmentFileBuffer))
+        {
+            catalog.startPosition(recordingOneId, 0);
+            catalog.startPosition(recordingTwoId, 0);
+            catalog.startPosition(recordingThreeId, 0);
+            assertChecksum(catalog, recordingOneId, 160, 729050496, checksum);
+            assertChecksum(catalog, recordingTwoId, 160, 1825380178, checksum);
+            assertChecksum(catalog, recordingThreeId, 352, -1553583482, checksum);
+        }
+
+        try (Catalog catalog =
+            new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
+        {
+            final long originalCapacity = catalog.capacity();
+
+            catalog.replaceRecording(
+                recordingOneId,
+                128,
+                512,
+                111L,
+                222L,
+                -19091,
+                SEGMENT_LENGTH * 16,
+                TERM_LENGTH * 4,
+                1372,
+                21,
+                8,
+                "A",
+                "B",
+                "C");
+
+            assertEquals(recordingThreeId + 1, catalog.nextRecordingId());
+            assertEquals(originalCapacity, catalog.capacity());
+            final int oldFrameLength = 160;
+            verifyRecordingForId(
+                catalog,
+                recordingOneId,
+                oldFrameLength,
+                128,
+                512,
+                111L,
+                222L,
+                -19091,
+                SEGMENT_LENGTH * 16,
+                TERM_LENGTH * 4,
+                1372,
+                21,
+                8,
+                "A",
+                "B",
+                "C");
+            final int newFrameLength = 96;
+            verifyOldExcessiveDataWasErased(oldFrameLength, newFrameLength);
+            assertChecksum(catalog, recordingOneId, newFrameLength, 1488471744, checksum);
+
+            verifyRecordingForId(
+                catalog,
+                recordingTwoId,
+                160,
+                0L,
+                0L,
+                0L,
+                updateTime,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                7,
+                2,
+                "channelH",
+                "channelH?tag=f",
+                "sourceV");
+            assertChecksum(catalog, recordingTwoId, 160, 1825380178, checksum);
+
+            verifyRecordingForId(
+                catalog,
+                recordingThreeId,
+                352,
+                0L,
+                0L,
+                0L,
+                updateTime,
+                0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 8,
+                3,
+                "channelThatIsVeryLongAndShouldNotBeTruncated",
+                "channelThatIsVeryLongAndShouldNotBeTruncated?tag=f",
+                "source can also be a very very very long String and it will not be truncated even if gets " +
+                "very very long");
+            assertChecksum(catalog, recordingThreeId, 352, -1553583482, checksum);
+        }
+    }
+
+    private void verifyOldExcessiveDataWasErased(final int oldFrameLength, final int newFrameLength)
+    {
+        assertTrue(oldFrameLength > newFrameLength);
+        for (int i = newFrameLength; i < oldFrameLength; i++)
+        {
+            assertEquals(0, unsafeBuffer.getByte(RecordingDescriptorHeaderDecoder.BLOCK_LENGTH + i));
+        }
+    }
+
+    private static void assertChecksum(
+        final Catalog catalog,
+        final long recordingId,
+        final int alignedChecksumLength,
+        final int expectedChecksum,
+        final Checksum checksum)
     {
         catalog.forEntry(recordingId,
             (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-            assertEquals(expectedChecksum, headerDecoder.checksum()));
+            {
+                assertEquals(expectedChecksum, headerDecoder.checksum());
+                if (null != checksum)
+                {
+                    final int computedChecksum = checksum.compute(
+                        descriptorDecoder.buffer().addressOffset(),
+                        RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+                        alignedChecksumLength);
+                    assertEquals(expectedChecksum, computedChecksum);
+                }
+            });
     }
 
     private void testInvalidateRecording(final long recordingId)
@@ -888,9 +1322,18 @@ class CatalogTest
         final Catalog catalog,
         final long id,
         final int length,
+        final long startPosition,
+        final long stopPosition,
+        final long startTimestamp,
+        final long stopTimestamp,
+        final int initialTermId,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int mtuLength,
         final int sessionId,
         final int streamId,
         final String strippedChannel,
+        final String originalChannel,
         final String sourceIdentity)
     {
         assertTrue(catalog.wrapDescriptor(id, unsafeBuffer));
@@ -911,10 +1354,18 @@ class CatalogTest
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 
         assertEquals(id, recordingDescriptorDecoder.recordingId());
+        assertEquals(startPosition, recordingDescriptorDecoder.startPosition());
+        assertEquals(stopPosition, recordingDescriptorDecoder.stopPosition());
+        assertEquals(startTimestamp, recordingDescriptorDecoder.startTimestamp());
+        assertEquals(stopTimestamp, recordingDescriptorDecoder.stopTimestamp());
+        assertEquals(initialTermId, recordingDescriptorDecoder.initialTermId());
+        assertEquals(segmentFileLength, recordingDescriptorDecoder.segmentFileLength());
+        assertEquals(termBufferLength, recordingDescriptorDecoder.termBufferLength());
+        assertEquals(mtuLength, recordingDescriptorDecoder.mtuLength());
         assertEquals(sessionId, recordingDescriptorDecoder.sessionId());
         assertEquals(streamId, recordingDescriptorDecoder.streamId());
         assertEquals(strippedChannel, recordingDescriptorDecoder.strippedChannel());
-        assertEquals(strippedChannel + "?tag=f", recordingDescriptorDecoder.originalChannel());
+        assertEquals(originalChannel, recordingDescriptorDecoder.originalChannel());
         assertEquals(sourceIdentity, recordingDescriptorDecoder.sourceIdentity());
     }
 
@@ -950,5 +1401,16 @@ class CatalogTest
                 BufferUtil.free(mappedByteBuffer);
             }
         }
+    }
+
+    private static String addSuffix(final String prefix, final String suffix, final int times)
+    {
+        final StringBuilder buff = new StringBuilder(prefix.length() + suffix.length() * times);
+        buff.append(prefix);
+        for (int i = 0; i < times; i++)
+        {
+            buff.append(suffix);
+        }
+        return buff.toString();
     }
 }

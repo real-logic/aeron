@@ -57,6 +57,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private long srcStopPosition = NULL_POSITION;
     private long srcRecordingPosition = NULL_POSITION;
     private final long dstStopPosition;
+    private final boolean isDestinationRecordingEmpty;
     private long timeOfLastActionMs;
     private final long actionTimeoutMs;
     private final long replicationId;
@@ -127,6 +128,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             replayPosition = recordingSummary.stopPosition;
             replayStreamId = recordingSummary.streamId;
+            isDestinationRecordingEmpty = recordingSummary.startPosition == recordingSummary.stopPosition;
+        }
+        else
+        {
+            isDestinationRecordingEmpty = false;
         }
     }
 
@@ -287,6 +293,25 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 sourceIdentity);
 
             signal(startPosition, REPLICATE);
+        }
+        else if (isDestinationRecordingEmpty)
+        {
+            replayPosition = startPosition;
+            catalog.replaceRecording(
+                dstRecordingId,
+                startPosition,
+                startPosition,
+                startTimestamp,
+                startTimestamp,
+                initialTermId,
+                segmentFileLength,
+                termBufferLength,
+                mtuLength,
+                sessionId,
+                streamId,
+                strippedChannel,
+                originalChannel,
+                sourceIdentity);
         }
 
         State nextState = State.EXTEND;
@@ -565,12 +590,13 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final boolean isClosed = image.isClosed();
         final boolean isEndOfStream = image.isEndOfStream();
         final long position = image.position();
+        final boolean isSynced = NULL_POSITION != srcStopPosition && position >= srcStopPosition;
 
-        if ((NULL_POSITION != srcStopPosition && position >= srcStopPosition) ||
+        if (isSynced ||
             (NULL_POSITION != dstStopPosition && position >= dstStopPosition) ||
             isEndOfStream || isClosed)
         {
-            if (NULL_POSITION != srcStopPosition && position >= srcStopPosition)
+            if (isSynced)
             {
                 signal(position, SYNC);
             }

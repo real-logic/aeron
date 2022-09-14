@@ -1178,7 +1178,7 @@ const char *aeron_driver_agent_dissect_log_header(
     snprintf(
         buffer,
         sizeof(buffer) - 1,
-        "[%f] %s: %.*s [%" PRIu64 "/%" PRIu64 "]",
+        "[%.6f] %s: %.*s [%" PRIu64 "/%" PRIu64 "]",
         (double)time_ns / NANOS_PER_SECOND,
         AERON_DRIVER_AGENT_LOG_CONTEXT,
         AERON_DRIVER_AGENT_MAX_EVENT_NAME_LENGTH,
@@ -1195,7 +1195,7 @@ const char *aeron_driver_agent_dissect_log_start(int64_t time_ns, int64_t time_m
     char datestamp[256];
 
     aeron_driver_agent_format_date(datestamp, sizeof(datestamp) - 1, time_ms);
-    snprintf(buffer, sizeof(buffer) - 1, "[%f] log started %s", (double)time_ns / NANOS_PER_SECOND, datestamp);
+    snprintf(buffer, sizeof(buffer) - 1, "[%.6f] log started %s", (double)time_ns / NANOS_PER_SECOND, datestamp);
 
     return buffer;
 }

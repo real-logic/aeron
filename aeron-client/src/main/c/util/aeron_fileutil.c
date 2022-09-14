@@ -373,7 +373,7 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
         }
         else
         {
-            AERON_SET_ERR(errno, "Failed to stat file: %s", path);
+            AERON_SET_ERR(errno, "Failed to determine the size of the file: %s", path);
         }
     }
     else
@@ -519,7 +519,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
         }
         else
         {
-            AERON_SET_ERR(errno, "Failed to stat existing raw log, filename: %s", path);
+            AERON_SET_ERR(errno, "Failed to determine the size of the existing raw log, filename: %s", path);
             close(fd);
             return -1;
         }

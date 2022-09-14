@@ -687,39 +687,21 @@ final class Catalog implements AutoCloseable
         {
             length = checksumLength = newFrameLength - DESCRIPTOR_HEADER_LENGTH;
 
-            final int numExtraBytes = newFrameLength - oldFrameLength;
+            final int shiftBytes = newFrameLength - oldFrameLength;
             final int endOfLastRecording = nextRecordingDescriptorOffset;
-            if (endOfLastRecording + numExtraBytes > capacity)
+            if (endOfLastRecording + shiftBytes > capacity)
             {
-                growCatalog(MAX_CATALOG_LENGTH, numExtraBytes);
+                growCatalog(MAX_CATALOG_LENGTH, shiftBytes);
             }
 
-            nextRecordingDescriptorOffset += numExtraBytes;
+            nextRecordingDescriptorOffset += shiftBytes;
 
             final long[] index = catalogIndex.index();
             final int lastPosition = catalogIndex.lastPosition();
             if (recordingId != index[lastPosition])
             {
-                //  if not the last recording then shift existing data to the end of the file
-                fieldAccessBuffer.putBytes(
-                    recordingOffset + newFrameLength,
-                    fieldAccessBuffer,
-                    recordingOffset + oldFrameLength,
-                    endOfLastRecording - (recordingOffset + oldFrameLength));
-
-                // fixup the index of the shifted data
-                boolean updateOffset = false;
-                for (int i = 0; i <= lastPosition; i += 2)
-                {
-                    if (updateOffset)
-                    {
-                        index[i + 1] += numExtraBytes;
-                    }
-                    else if (recordingId == index[i])
-                    {
-                        updateOffset = true;
-                    }
-                }
+                shiftDataToTheRight(recordingOffset, oldFrameLength, newFrameLength, endOfLastRecording);
+                fixupIndexForShifterRecordings(index, lastPosition, recordingId, shiftBytes);
             }
 
             catalogBuffer.wrap(catalogByteBuffer, recordingOffset, newFrameLength);
@@ -1023,6 +1005,33 @@ final class Catalog implements AutoCloseable
             SIZE_OF_INT + originalChannel.length() +
             SIZE_OF_INT + sourceIdentity.length();
         return align(DESCRIPTOR_HEADER_LENGTH + recordingDescriptorLength, alignment);
+    }
+
+    private void shiftDataToTheRight(
+        final int recordingOffset, final int oldFrameLength, final int newFrameLength, final int endOfLastRecording)
+    {
+        fieldAccessBuffer.putBytes(
+            recordingOffset + newFrameLength,
+            fieldAccessBuffer,
+            recordingOffset + oldFrameLength,
+            endOfLastRecording - (recordingOffset + oldFrameLength));
+    }
+
+    private static void fixupIndexForShifterRecordings(
+        final long[] index, final int lastPosition, final long recordingId, final int shiftBytes)
+    {
+        boolean updateOffset = false;
+        for (int i = 0; i <= lastPosition; i += 2)
+        {
+            if (updateOffset)
+            {
+                index[i + 1] += shiftBytes;
+            }
+            else if (recordingId == index[i])
+            {
+                updateOffset = true;
+            }
+        }
     }
 
     /**

@@ -1223,12 +1223,8 @@ class CatalogTest
                 "B",
                 "C");
             final int newFrameLength = 96;
+            verifyOldExcessiveDataWasErased(oldFrameLength, newFrameLength);
             assertChecksum(catalog, recordingOneId, newFrameLength, 1488471744, checksum);
-            // verify that the excessive old data was erased
-            for (int i = newFrameLength; i < oldFrameLength; i++)
-            {
-                assertEquals(0, unsafeBuffer.getByte(RecordingDescriptorHeaderDecoder.BLOCK_LENGTH + i));
-            }
 
             verifyRecordingForId(
                 catalog,
@@ -1264,6 +1260,15 @@ class CatalogTest
                 "source can also be a very very very long String and it will not be truncated even if gets " +
                 "very very long");
             assertChecksum(catalog, recordingThreeId, 352, -1553583482, checksum);
+        }
+    }
+
+    private void verifyOldExcessiveDataWasErased(final int oldFrameLength, final int newFrameLength)
+    {
+        assertTrue(oldFrameLength > newFrameLength);
+        for (int i = newFrameLength; i < oldFrameLength; i++)
+        {
+            assertEquals(0, unsafeBuffer.getByte(RecordingDescriptorHeaderDecoder.BLOCK_LENGTH + i));
         }
     }
 

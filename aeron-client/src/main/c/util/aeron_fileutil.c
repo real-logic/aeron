@@ -23,7 +23,6 @@
 #define AERON_NATIVE_PRETOUCH
 #endif
 
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
@@ -117,7 +116,7 @@ int aeron_ftruncate(int fd, size_t length)
 {
     HANDLE hfile = (HANDLE)_get_osfhandle(fd);
     LARGE_INTEGER file_size;
-    file_size.QuadPart = (long long)length;
+    file_size.QuadPart = (LONGLONG)length;
 
     if (!SetFilePointerEx(hfile, file_size, NULL, FILE_BEGIN))
     {
@@ -510,7 +509,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
         const int64_t file_length = aeron_file_length(path);
         if (-1 != file_length)
         {
-            mapped_raw_log->mapped_file.length =file_length;
+            mapped_raw_log->mapped_file.length = file_length;
 
             if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, pre_touch))
             {

@@ -210,7 +210,7 @@ TEST_F(FileUtilTest, rawLogMapExistingShouldHandleMaxTermBufferLength)
     aeron_mapped_raw_log_t mapped_raw_log = {};
     const char *file = "test_raw_log_map_existing_file_max_buffer_length.log";
     const size_t file_length = 3223322624;
-    const size_t term_length = (size_t)AERON_LOGBUFFER_TERM_MAX_LENGTH;
+    const size_t term_length = AERON_LOGBUFFER_TERM_MAX_LENGTH;
     const size_t page_size = 2 * 1024 * 1024;
     ASSERT_EQ(0, aeron_raw_log_map(&mapped_raw_log, file, true, term_length, page_size)) << aeron_errmsg();
     auto logbuffer_metadata = (aeron_logbuffer_metadata_t *)(mapped_raw_log.log_meta_data.addr);

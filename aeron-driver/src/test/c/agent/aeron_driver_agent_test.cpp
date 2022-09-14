@@ -1510,7 +1510,7 @@ TEST_F(DriverAgentTest, dissecLogStartShouldFormatNanoTimeWithMicrosecondPrecisi
 
     auto result = std::string(aeron_driver_agent_dissect_log_start(time_ns, time_ms));
 
-    ASSERT_EQ(0, result.find("[55555.123457] log started 2009-02-14 00:31:30.987+", 0));
+    ASSERT_EQ(0, result.find("[55555.123457] log started 2009-02-1", 0));
 }
 
 TEST_F(DriverAgentTest, dissecLogHeaderShouldFormatNanoTimeWithMicrosecondPrecision)

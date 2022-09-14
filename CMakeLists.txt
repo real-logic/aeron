@@ -160,8 +160,8 @@ elseif (MSVC)
 
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP /wd4251")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP /wd4251")
-    set(CMAKE_C_FLAGS_DEBUG "/MTd")
-    set(CMAKE_C_FLAGS_RELEASE "/MT")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
 
     unset(CMAKE_C_STANDARD) # To avoid `/std:c11` in the compiler options
 

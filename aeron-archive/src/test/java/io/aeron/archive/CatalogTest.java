@@ -57,8 +57,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CatalogTest
@@ -999,6 +998,10 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, checksum, segmentFileBuffer))
         {
+            final long oldCapacity = catalog.capacity();
+
+            final String newSourceIdentity = addSuffix(
+                "and the source identity changes as well and is also quite a long one funny thing: ", "!", 2000);
             catalog.replaceRecording(
                 recordingTwoId,
                 1024,
@@ -1014,9 +1017,9 @@ class CatalogTest
                 "suppose to be a short description of the channel but can be whatever and surprising. Veni, vidi, vici",
                 "aeron:ipc?tag=15|alias=that is very very very long and will overflow the originally assigned length " +
                 "for sure and then some",
-                "and the source identity changes as well and is also quite a long one funny thing, that used to be " +
-                "a known fact but is now forgotten.");
+                newSourceIdentity);
 
+            assertTrue(catalog.capacity() > oldCapacity);
             assertEquals(recordingThreeId + 1, catalog.nextRecordingId());
             verifyRecordingForId(
                 catalog,
@@ -1040,7 +1043,7 @@ class CatalogTest
             verifyRecordingForId(
                 catalog,
                 recordingTwoId,
-                480,
+                2400,
                 1024,
                 16 * 1024,
                 3252535612L,
@@ -1054,9 +1057,8 @@ class CatalogTest
                 "suppose to be a short description of the channel but can be whatever and surprising. Veni, vidi, vici",
                 "aeron:ipc?tag=15|alias=that is very very very long and will overflow the originally assigned length " +
                 "for sure and then some",
-                "and the source identity changes as well and is also quite a long one funny thing, that used to be " +
-                "a known fact but is now forgotten.");
-            assertChecksum(catalog, recordingTwoId, 480, -116239158, checksum);
+                newSourceIdentity);
+            assertChecksum(catalog, recordingTwoId, 2400, -2076878182, checksum);
 
             verifyRecordingForId(
                 catalog,
@@ -1399,5 +1401,16 @@ class CatalogTest
                 BufferUtil.free(mappedByteBuffer);
             }
         }
+    }
+
+    private static String addSuffix(final String prefix, final String suffix, final int times)
+    {
+        final StringBuilder buff = new StringBuilder(prefix.length() + suffix.length() * times);
+        buff.append(prefix);
+        for (int i = 0; i < times; i++)
+        {
+            buff.append(suffix);
+        }
+        return buff.toString();
     }
 }

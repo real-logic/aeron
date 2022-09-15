@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.log.EventLogExtension;
 import io.aeron.test.*;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;

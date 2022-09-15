@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.log.EventLogExtension;
+import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;

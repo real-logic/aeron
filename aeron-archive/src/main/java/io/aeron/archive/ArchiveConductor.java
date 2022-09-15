@@ -476,18 +476,7 @@ abstract class ArchiveConductor
 
             if (null != subscription)
             {
-                for (final RecordingSession session : recordingSessionByIdMap.values())
-                {
-                    if (subscription == session.subscription())
-                    {
-                        session.abort();
-                    }
-                }
-
-                if (0 == subscriptionRefCountMap.decrementAndGet(subscription.registrationId()))
-                {
-                    subscription.close();
-                }
+                abortRecordingSessionAndCloseSubscription(subscription);
 
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
             }
@@ -523,19 +512,7 @@ abstract class ArchiveConductor
         final Subscription subscription = removeRecordingSubscription(subscriptionId);
         if (null != subscription)
         {
-            for (final RecordingSession session : recordingSessionByIdMap.values())
-            {
-                if (subscription == session.subscription())
-                {
-                    session.abort();
-                }
-            }
-
-            if (subscriptionRefCountMap.decrementAndGet(subscriptionId) <= 0)
-            {
-                CloseHelper.close(errorHandler, subscription);
-            }
-
+            abortRecordingSessionAndCloseSubscription(subscription);
             return true;
         }
 
@@ -1056,15 +1033,10 @@ abstract class ArchiveConductor
                 if (null != subscription)
                 {
                     found = 1;
-
-                    for (final RecordingSession session : recordingSessionByIdMap.values())
+                    if (0 == subscriptionRefCountMap.decrementAndGet(subscriptionId))
                     {
-                        if (subscription == session.subscription())
-                        {
-                            session.abort();
-                        }
+                        subscription.close();
                     }
-                    subscriptionRefCountMap.decrementAndGet(subscriptionId);
                 }
             }
 
@@ -1437,6 +1409,22 @@ abstract class ArchiveConductor
             recordingId, correlationId, deleteList, controlSession, controlResponseProxy, errorHandler));
 
         return count;
+    }
+
+    private void abortRecordingSessionAndCloseSubscription(final Subscription subscription)
+    {
+        for (final RecordingSession session : recordingSessionByIdMap.values())
+        {
+            if (subscription == session.subscription())
+            {
+                session.abort();
+            }
+        }
+
+        if (0 == subscriptionRefCountMap.decrementAndGet(subscription.registrationId()))
+        {
+            subscription.close();
+        }
     }
 
     private int findTermOffsetForStart(

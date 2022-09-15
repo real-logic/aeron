@@ -106,9 +106,11 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                         stopPosition + ", actualStopPosition=" + newStopPosition);
                 }
 
+                recordingSignalCapture.reset();
                 archive.truncateRecording(recordingId, 0);
                 awaitRecordingSignal(archive, recordingSignalCapture, recordingId, RecordingSignal.DELETE);
 
+                recordingSignalCapture.reset();
                 archive.replicate(
                     tempRecordingId,
                     recordingId,
@@ -117,6 +119,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                     null);
 
                 awaitRecordingSignal(archive, recordingSignalCapture, recordingId, RecordingSignal.REPLICATE_END);
+                recordingSignalCapture.reset();
                 awaitRecordingSignal(archive, recordingSignalCapture, recordingId, RecordingSignal.STOP);
 
                 final long replicatedStopPosition = awaitRecordingStopPosition(archive, recordingId);
@@ -126,6 +129,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                         stopPosition + ", replicatedStopPosition=" + replicatedStopPosition);
                 }
 
+                recordingSignalCapture.reset();
                 archive.purgeRecording(tempRecordingId);
                 awaitRecordingSignal(archive, recordingSignalCapture, tempRecordingId, RecordingSignal.DELETE);
 
@@ -261,7 +265,6 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         final long recordingId,
         final RecordingSignal expectedSignal)
     {
-        recordingSignalCapture.reset();
         while (recordingId != recordingSignalCapture.recordingId || expectedSignal != recordingSignalCapture.signal)
         {
             if (0 == archive.pollForRecordingSignals())

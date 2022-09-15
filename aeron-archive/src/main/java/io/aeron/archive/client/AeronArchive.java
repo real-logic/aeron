@@ -429,22 +429,23 @@ public final class AeronArchive implements AutoCloseable
         {
             ensureOpen();
 
-            if (!controlResponsePoller.subscription().isConnected())
+            final ControlResponsePoller poller = controlResponsePoller;
+            if (!poller.subscription().isConnected())
             {
                 return NOT_CONNECTED_MSG;
             }
 
-            if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+            if (poller.poll() != 0 && poller.isPollComplete())
             {
-                if (controlResponsePoller.controlSessionId() == controlSessionId)
+                if (poller.controlSessionId() == controlSessionId)
                 {
-                    if (controlResponsePoller.code() == ControlResponseCode.ERROR)
+                    if (poller.code() == ControlResponseCode.ERROR)
                     {
-                        return controlResponsePoller.errorMessage();
+                        return poller.errorMessage();
                     }
-                    else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
+                    else if (poller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
                     {
-                        dispatchRecordingSignal();
+                        dispatchRecordingSignal(poller);
                     }
                 }
             }
@@ -472,7 +473,8 @@ public final class AeronArchive implements AutoCloseable
         {
             ensureOpen();
 
-            if (!controlResponsePoller.subscription().isConnected())
+            final ControlResponsePoller poller = controlResponsePoller;
+            if (!poller.subscription().isConnected())
             {
                 if (null != context.errorHandler())
                 {
@@ -483,16 +485,16 @@ public final class AeronArchive implements AutoCloseable
                     throw new ArchiveException(NOT_CONNECTED_MSG);
                 }
             }
-            else if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+            else if (poller.poll() != 0 && poller.isPollComplete())
             {
-                if (controlResponsePoller.controlSessionId() == controlSessionId)
+                if (poller.controlSessionId() == controlSessionId)
                 {
-                    if (controlResponsePoller.code() == ControlResponseCode.ERROR)
+                    if (poller.code() == ControlResponseCode.ERROR)
                     {
                         final ArchiveException ex = new ArchiveException(
-                            controlResponsePoller.errorMessage(),
-                            (int)controlResponsePoller.relevantId(),
-                            controlResponsePoller.correlationId());
+                            poller.errorMessage(),
+                            (int)poller.relevantId(),
+                            poller.correlationId());
 
                         if (null != context.errorHandler())
                         {
@@ -503,9 +505,9 @@ public final class AeronArchive implements AutoCloseable
                             throw ex;
                         }
                     }
-                    else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
+                    else if (poller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
                     {
-                        dispatchRecordingSignal();
+                        dispatchRecordingSignal(poller);
                     }
                 }
             }
@@ -529,16 +531,17 @@ public final class AeronArchive implements AutoCloseable
         {
             ensureOpen();
 
-            if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+            final ControlResponsePoller poller = controlResponsePoller;
+            if (poller.poll() != 0 && poller.isPollComplete())
             {
-                if (controlResponsePoller.controlSessionId() == controlSessionId)
+                if (poller.controlSessionId() == controlSessionId)
                 {
-                    if (controlResponsePoller.code() == ControlResponseCode.ERROR)
+                    if (poller.code() == ControlResponseCode.ERROR)
                     {
                         final ArchiveException ex = new ArchiveException(
-                            controlResponsePoller.errorMessage(),
-                            (int)controlResponsePoller.relevantId(),
-                            controlResponsePoller.correlationId());
+                            poller.errorMessage(),
+                            (int)poller.relevantId(),
+                            poller.correlationId());
 
                         if (null != context.errorHandler())
                         {
@@ -549,9 +552,9 @@ public final class AeronArchive implements AutoCloseable
                             throw ex;
                         }
                     }
-                    else if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
+                    else if (poller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID)
                     {
-                        dispatchRecordingSignal();
+                        dispatchRecordingSignal(poller);
                         return 1;
                     }
                 }
@@ -2242,10 +2245,10 @@ public final class AeronArchive implements AutoCloseable
 
             if (poller.isPollComplete())
             {
-                if (controlResponsePoller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID &&
-                    controlResponsePoller.controlSessionId() == controlSessionId)
+                if (poller.templateId() == RecordingSignalEventDecoder.TEMPLATE_ID &&
+                    poller.controlSessionId() == controlSessionId)
                 {
-                    dispatchRecordingSignal();
+                    dispatchRecordingSignal(poller);
                     continue;
                 }
 
@@ -2447,15 +2450,15 @@ public final class AeronArchive implements AutoCloseable
         }
     }
 
-    private void dispatchRecordingSignal()
+    private void dispatchRecordingSignal(final ControlResponsePoller poller)
     {
         context.recordingSignalConsumer().onSignal(
-            controlResponsePoller.controlSessionId(),
-            controlResponsePoller.correlationId(),
-            controlResponsePoller.recordingId(),
-            controlResponsePoller.subscriptionId(),
-            controlResponsePoller.position(),
-            controlResponsePoller.recordingSignal());
+            poller.controlSessionId(),
+            poller.correlationId(),
+            poller.recordingId(),
+            poller.subscriptionId(),
+            poller.position(),
+            poller.recordingSignal());
     }
 
     private void invokeInvokers()

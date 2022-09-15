@@ -99,10 +99,9 @@ public final class TestNode implements AutoCloseable
             consensusModule = ConsensusModule.launch(context.consensusModuleContext);
 
             containers = new ClusteredServiceContainer[services.length];
-            final File baseDir = context.consensusModuleContext.clusterDir().getParentFile();
+            final File servicesDir = new File(context.consensusModuleContext.clusterDir().getParentFile(), "services");
             for (int i = 0; i < services.length; i++)
             {
-                final File clusterDir = new File(baseDir, "service" + i);
                 final ClusteredServiceContainer.Context ctx = context.serviceContainerContext.clone();
                 ctx.aeronDirectoryName(aeronDirectoryName)
                     .archiveContext(context.aeronArchiveContext.clone()
@@ -110,13 +109,13 @@ public final class TestNode implements AutoCloseable
                         .controlResponseChannel("aeron:ipc"))
                     .terminationHook(ClusterTests.terminationHook(
                         context.isTerminationExpected, context.hasServiceTerminated[i]))
-                    .clusterDir(clusterDir)
+                    .clusterDir(servicesDir)
                     .clusteredService(services[i])
                     .serviceId(i);
                 containers[i] = ClusteredServiceContainer.launch(ctx);
-                dataCollector.add(clusterDir.toPath());
             }
 
+            dataCollector.add(servicesDir.toPath());
             dataCollector.add(consensusModule.context().clusterDir().toPath());
             dataCollector.add(archive.context().archiveDir().toPath());
             dataCollector.add(mediaDriver.context().aeronDirectory().toPath());

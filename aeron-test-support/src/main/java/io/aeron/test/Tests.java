@@ -407,6 +407,10 @@ public class Tests
         while (!conditionSupplier.getAsBoolean())
         {
             Tests.yield();
+            if (Thread.currentThread().isInterrupted())
+            {
+                throw new TimeoutException("while awaiting");
+            }
         }
     }
 

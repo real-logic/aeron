@@ -18,16 +18,18 @@ package io.aeron.archive;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.archive.client.*;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
+import io.aeron.archive.client.ControlEventListener;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.Tests;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -128,48 +130,39 @@ class ArchiveSystemTests
         }
     }
 
-    static void pollForSignal(final RecordingSignalAdapter recordingSignalAdapter)
+    static TestRecordingSignalConsumer injectRecordingSignalConsumer(final AeronArchive aeronArchive)
     {
-        while (0 == recordingSignalAdapter.poll())
-        {
-            Tests.yield();
-        }
+        final long controlSessionId = aeronArchive.controlSessionId();
+        final TestRecordingSignalConsumer recordingSignalConsumer = new TestRecordingSignalConsumer(controlSessionId);
+        aeronArchive.context().recordingSignalConsumer(recordingSignalConsumer);
+        return recordingSignalConsumer;
     }
 
     static void awaitSignal(
-        final MutableReference<RecordingSignal> signalRef,
-        final RecordingSignalAdapter adapter,
+        final AeronArchive aeronArchive,
+        final TestRecordingSignalConsumer signalConsumer,
         final RecordingSignal expectedSignal)
     {
-        while (expectedSignal != awaitSignal(signalRef, adapter))
+        while (expectedSignal != signalConsumer.signal)
         {
-            Tests.yield();
+            if (0 == aeronArchive.pollForRecordingSignals())
+            {
+                Thread.yield();
+            }
+            if (Thread.currentThread().isInterrupted())
+            {
+                throw new TimeoutException(
+                    "awaiting signal=" + expectedSignal + " lastSignal=" + signalConsumer.signal);
+            }
         }
     }
 
-    static RecordingSignal awaitSignal(
-        final MutableReference<RecordingSignal> signalRef, final RecordingSignalAdapter adapter)
+    static void resetAndAwaitSignal(
+        final AeronArchive aeronArchive,
+        final TestRecordingSignalConsumer signalConsumer,
+        final RecordingSignal expectedSignal)
     {
-        signalRef.set(null);
-
-        do
-        {
-            pollForSignal(adapter);
-        }
-        while (signalRef.get() == null);
-
-        return signalRef.get();
-    }
-
-    static void awaitSignalOrResponse(
-        final MutableReference<RecordingSignal> signalRef, final RecordingSignalAdapter adapter)
-    {
-        signalRef.set(null);
-
-        do
-        {
-            pollForSignal(adapter);
-        }
-        while (signalRef.get() == null && !adapter.isDone());
+        signalConsumer.reset();
+        awaitSignal(aeronArchive, signalConsumer, expectedSignal);
     }
 }

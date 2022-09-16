@@ -860,6 +860,7 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-cluster')
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testImplementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testRuntimeOnly "org.junit.platform:junit-platform-console-standalone:${junitPlatformVersion}"
         testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
         if (buildJavaVersion == 8) {

@@ -230,6 +230,18 @@ class ConsensusModuleContextTest
         }
     }
 
+    @Test
+    void shouldThrowIllegalStateExceptionIfAnActiveMarkFileExists()
+    {
+        final ConsensusModule.Context another = context.clone();
+        context.conclude();
+
+        final RuntimeException exception = assertThrowsExactly(RuntimeException.class, another::conclude);
+        final Throwable cause = exception.getCause();
+        assertInstanceOf(IllegalStateException.class, cause);
+        assertEquals("active Mark file detected", cause.getMessage());
+    }
+
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier
     {
         public AuthorisationService get()

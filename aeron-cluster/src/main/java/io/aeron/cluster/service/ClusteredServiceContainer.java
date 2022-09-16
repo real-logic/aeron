@@ -146,9 +146,14 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final long SNAPSHOT_TYPE_ID = 2;
 
         /**
-         * Update interval for cluster mark file.
+         * Update interval for cluster mark file in nanoseconds.
          */
         public static final long MARK_FILE_UPDATE_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
+
+        /**
+         * Timeout in milliseconds to detect liveness.
+         */
+        public static final long LIVENESS_TIMEOUT_MS = 5 * TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
 
         /**
          * Property name for the identity of the cluster instance.
@@ -698,7 +703,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 markFile = new ClusterMarkFile(
                     new File(clusterDir, ClusterMarkFile.markFilenameForService(serviceId)),
-                    ClusterComponentType.CONTAINER, errorBufferLength, epochClock, 0);
+                    ClusterComponentType.CONTAINER, errorBufferLength, epochClock, LIVENESS_TIMEOUT_MS);
             }
 
             if (null == errorLog)

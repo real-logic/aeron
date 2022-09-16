@@ -47,6 +47,7 @@ import java.util.function.Supplier;
 
 import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -1395,7 +1396,7 @@ public final class ConsensusModule implements AutoCloseable
                     ClusterComponentType.CONSENSUS_MODULE,
                     errorBufferLength,
                     epochClock,
-                    0);
+                    LIVENESS_TIMEOUT_MS);
             }
 
             if (null == errorLog)

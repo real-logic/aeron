@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
@@ -449,7 +450,7 @@ public final class ClusterBackup implements AutoCloseable
     /**
      * Context for overriding default configuration for {@link ClusterBackup}.
      */
-    public static class Context
+    public static class Context implements Cloneable
     {
         private static final AtomicIntegerFieldUpdater<Context> IS_CONCLUDED_UPDATER = newUpdater(
             Context.class, "isConcluded");
@@ -561,7 +562,7 @@ public final class ClusterBackup implements AutoCloseable
                     ClusterComponentType.BACKUP,
                     errorBufferLength,
                     epochClock,
-                    0);
+                    LIVENESS_TIMEOUT_MS);
             }
 
             if (null == errorLog)

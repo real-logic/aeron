@@ -488,6 +488,16 @@ public final class Archive implements AutoCloseable
         public static final String REPLAY_CHECKSUM_PROP_NAME = "aeron.archive.replay.checksum";
 
         /**
+         * Update interval in ms for archive mark file.
+         */
+        static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
+
+        /**
+         * Timeout in milliseconds for detecting if there is an active Archive instance.
+         */
+        static final long LIVENESS_TIMEOUT_MS = MARK_FILE_UPDATE_INTERVAL_MS * 5;
+
+        /**
          * Get the directory name to be used for storing the archive.
          *
          * @return the directory name to be used for storing the archive.

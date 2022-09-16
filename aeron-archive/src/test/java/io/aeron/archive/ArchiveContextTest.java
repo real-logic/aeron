@@ -159,6 +159,24 @@ class ArchiveContextTest
         assertThrows(ConfigurationException.class, context::conclude);
     }
 
+    @Test
+    void shouldThrowIllegalStateExceptionIfThereIsAnActiveMarkFile()
+    {
+        context.conclude();
+        assertNotNull(context.archiveMarkFile());
+        assertNotEquals(0, context.archiveMarkFile().activityTimestampVolatile());
+
+        final Archive.Context anotherContext = TestContexts.localhostArchive()
+            .archiveDir(context.archiveDir())
+            .errorHandler(context.errorHandler())
+            .aeron(context.aeron());
+
+        final RuntimeException exception = assertThrowsExactly(RuntimeException.class, anotherContext::conclude);
+        final Throwable cause = exception.getCause();
+        assertInstanceOf(IllegalStateException.class, cause);
+        assertEquals("active Mark file detected", cause.getMessage());
+    }
+
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier
     {
         public AuthorisationService get()

@@ -17,4 +17,9 @@
 @echo off
 set "DIR=%~dp0"
 
-call "%DIR%\..\run-java" io.aeron.archive.ArchivingMediaDriver %*
+call "%DIR%\..\run-java" ^
+    -Daeron.archive.control.channel=aeron:udp?endpoint=localhost:8010 ^
+    -Daeron.archive.replication.channel=aeron:udp?endpoint=localhost:0 ^
+    -Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0 ^
+    io.aeron.archive.ArchivingMediaDriver %*
+

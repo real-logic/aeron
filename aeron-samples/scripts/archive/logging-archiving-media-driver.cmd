@@ -20,4 +20,7 @@ set "DIR=%~dp0"
 call "%DIR%\..\run-java-logging" ^
     -Daeron.event.log=admin ^
     -Daeron.event.archive.log=all ^
+    -Daeron.archive.control.channel=aeron:udp?endpoint=localhost:8010 ^
+    -Daeron.archive.replication.channel=aeron:udp?endpoint=localhost:0 ^
+    -Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0 ^
     %JVM_OPTS% io.aeron.archive.ArchivingMediaDriver %*

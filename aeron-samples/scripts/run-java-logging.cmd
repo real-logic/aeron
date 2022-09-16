@@ -22,7 +22,7 @@ call "%DIR%\java-common"
 
 "%JAVA_HOME%\bin\java" ^
   -cp "%DIR%\..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar" ^
-  -javaagent:"%DIR%\..\..\aeron-agent\build\libs\aeron-agent-${VERSION}.jar" ^
+  -javaagent:"%DIR%\..\..\aeron-agent\build\libs\aeron-agent-%VERSION%.jar" ^
   !JAVA_OPTIONS! ^
   !ADD_OPENS! ^
   %JVM_OPTS% ^

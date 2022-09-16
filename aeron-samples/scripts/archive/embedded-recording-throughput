@@ -32,4 +32,7 @@ exec "${DIR}/../run-java" \
     -Daeron.archive.file.sync.level=0 \
     -Daeron.archive.file.io.max.length=1m \
     -Daeron.sample.channel=aeron:ipc \
+    -Daeron.archive.control.channel=aeron:udp?endpoint=localhost:8010 \
+    -Daeron.archive.replication.channel=aeron:udp?endpoint=localhost:0 \
+    -Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0 \
     ${JVM_OPTS} io.aeron.samples.archive.EmbeddedRecordingThroughput "$@"

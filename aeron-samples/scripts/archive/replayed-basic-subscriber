@@ -17,4 +17,8 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-exec "${DIR}/../run-java" io.aeron.samples.archive.ReplayedBasicSubscriber
+exec "${DIR}/../run-java" \
+  -Daeron.archive.control.channel=aeron:udp?endpoint=localhost:8010 \
+  -Daeron.archive.replication.channel=aeron:udp?endpoint=localhost:0 \
+  -Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0 \
+  io.aeron.samples.archive.ReplayedBasicSubscriber

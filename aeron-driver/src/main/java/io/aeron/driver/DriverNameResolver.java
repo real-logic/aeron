@@ -319,7 +319,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
             if (nowMs > (neighbor.timeOfLastActivityMs + neighborTimeoutMs))
             {
-                Neighbor.neighbourRemoved(nowMs, neighbor.socketAddress);
+                Neighbor.neighborRemoved(nowMs, neighbor.socketAddress);
                 ArrayListUtil.fastUnorderedRemove(neighborList, i, lastIndex--);
                 workCount++;
             }
@@ -452,7 +452,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
             {
                 final Neighbor neighbor = new Neighbor(new InetSocketAddress(
                     InetAddress.getByAddress(neighborAddress), port), timeOfLastActivity);
-                Neighbor.neighbourAdded(nowMs, neighbor.socketAddress);
+                Neighbor.neighborAdded(nowMs, neighbor.socketAddress);
                 neighborList.add(neighbor);
                 neighborsCounter.setOrdered(neighborList.size());
             }
@@ -572,12 +572,12 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
             this.timeOfLastActivityMs = nowMs;
         }
 
-        static void neighbourAdded(final long nowMs, final InetSocketAddress address)
+        static void neighborAdded(final long nowMs, final InetSocketAddress address)
         {
 //            System.out.println(nowMs + " neighbour added: " + address);
         }
 
-        static void neighbourRemoved(final long nowMs, final InetSocketAddress address)
+        static void neighborRemoved(final long nowMs, final InetSocketAddress address)
         {
 //            System.out.println(nowMs + " neighbour removed: " + address);
         }

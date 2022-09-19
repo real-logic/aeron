@@ -495,7 +495,7 @@ public final class Archive implements AutoCloseable
         /**
          * Timeout in milliseconds for detecting if there is an active Archive instance.
          */
-        static final long LIVENESS_TIMEOUT_MS = MARK_FILE_UPDATE_INTERVAL_MS * 5;
+        static final long LIVENESS_TIMEOUT_MS = 10 * MARK_FILE_UPDATE_INTERVAL_MS;
 
         /**
          * Get the directory name to be used for storing the archive.

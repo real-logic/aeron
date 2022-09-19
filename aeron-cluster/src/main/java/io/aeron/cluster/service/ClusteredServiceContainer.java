@@ -153,7 +153,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Timeout in milliseconds to detect liveness.
          */
-        public static final long LIVENESS_TIMEOUT_MS = 5 * TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
+        public static final long LIVENESS_TIMEOUT_MS = 10 * TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
 
         /**
          * Property name for the identity of the cluster instance.

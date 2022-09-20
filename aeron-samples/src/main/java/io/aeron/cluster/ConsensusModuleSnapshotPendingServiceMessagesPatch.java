@@ -21,7 +21,6 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingSignalConsumer;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
@@ -30,6 +29,7 @@ import io.aeron.cluster.codecs.ConsensusModuleEncoder;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SessionMessageHeaderEncoder;
 import io.aeron.cluster.service.ClusterNodeControlProperties;
+import io.aeron.samples.archive.RecordingSignalCapture;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -108,7 +108,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
 
                 recordingSignalCapture.reset();
                 archive.truncateRecording(recordingId, 0);
-                awaitRecordingSignal(archive, recordingSignalCapture, recordingId, RecordingSignal.DELETE);
+                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.DELETE);
 
                 recordingSignalCapture.reset();
                 archive.replicate(
@@ -118,11 +118,11 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                     IPC_CHANNEL,
                     null);
 
-                awaitRecordingSignal(archive, recordingSignalCapture, recordingId, RecordingSignal.REPLICATE_END);
+                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.REPLICATE_END);
                 recordingSignalCapture.reset();
-                awaitRecordingSignal(archive, recordingSignalCapture, recordingId, RecordingSignal.STOP);
+                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.STOP);
 
-                final long replicatedStopPosition = awaitRecordingStopPosition(archive, recordingId);
+                final long replicatedStopPosition = recordingSignalCapture.position();
                 if (stopPosition != replicatedStopPosition)
                 {
                     throw new ClusterException("incomplete replication of the new recording: expectedStopPosition=" +
@@ -131,12 +131,14 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
 
                 recordingSignalCapture.reset();
                 archive.purgeRecording(tempRecordingId);
-                awaitRecordingSignal(archive, recordingSignalCapture, tempRecordingId, RecordingSignal.DELETE);
+                recordingSignalCapture.awaitSignal(archive, tempRecordingId, RecordingSignal.DELETE);
 
+                System.out.println("Snapshot recording=" + recordingId + " was successfully patched.");
                 return true;
             }
         }
 
+        System.out.println("Snapshot recording=" + recordingId + " is valid.");
         return false;
     }
 
@@ -257,21 +259,6 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         }
 
         return stopPosition;
-    }
-
-    private static void awaitRecordingSignal(
-        final AeronArchive archive,
-        final RecordingSignalCapture recordingSignalCapture,
-        final long recordingId,
-        final RecordingSignal expectedSignal)
-    {
-        while (recordingId != recordingSignalCapture.recordingId || expectedSignal != recordingSignalCapture.signal)
-        {
-            if (0 == archive.pollForRecordingSignals())
-            {
-                Thread.yield();
-            }
-        }
     }
 
     /**
@@ -498,33 +485,6 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
 
                 Thread.yield();
             }
-        }
-    }
-
-    private static final class RecordingSignalCapture implements RecordingSignalConsumer
-    {
-        long recordingId;
-        RecordingSignal signal;
-
-        public void onSignal(
-            final long controlSessionId,
-            final long correlationId,
-            final long recordingId,
-            final long subscriptionId,
-            final long position,
-            final RecordingSignal signal)
-        {
-            if (NULL_VALUE != recordingId)
-            {
-                this.recordingId = recordingId;
-            }
-            this.signal = signal;
-        }
-
-        void reset()
-        {
-            recordingId = NULL_VALUE;
-            signal = null;
         }
     }
 }

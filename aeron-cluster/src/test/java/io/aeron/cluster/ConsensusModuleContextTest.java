@@ -25,7 +25,9 @@ import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.TestContexts;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +48,9 @@ class ConsensusModuleContextTest
     File clusterDir;
 
     private ConsensusModule.Context context;
+    private final CountersManager countersManager = new CountersManager(
+        new UnsafeBuffer(new byte[64 * 1024]), new UnsafeBuffer(new byte[16 * 1024]));
+    private long registrationId = 0;
 
     @BeforeEach
     void beforeEach()
@@ -56,6 +61,7 @@ class ConsensusModuleContextTest
         final Aeron aeron = mock(Aeron.class);
         when(aeron.context()).thenReturn(aeronContext);
         when(aeron.conductorAgentInvoker()).thenReturn(conductorInvoker);
+        when(aeron.countersReader()).thenReturn(countersManager);
 
         context = TestContexts.localhostConsensusModule()
             .clusterDir(clusterDir)
@@ -63,13 +69,19 @@ class ConsensusModuleContextTest
             .errorCounter(mock(AtomicCounter.class))
             .ingressChannel("must be specified")
             .replicationChannel("must be specified")
-            .moduleStateCounter(mock(Counter.class))
-            .electionStateCounter(mock(Counter.class))
-            .clusterNodeRoleCounter(mock(Counter.class))
-            .commitPositionCounter(mock(Counter.class))
-            .controlToggleCounter(mock(Counter.class))
-            .snapshotCounter(mock(Counter.class))
-            .timedOutClientCounter(mock(Counter.class));
+            .moduleStateCounter(newCounter("moduleState", CONSENSUS_MODULE_STATE_TYPE_ID))
+            .electionStateCounter(newCounter("electionState", ELECTION_STATE_TYPE_ID))
+            .clusterNodeRoleCounter(newCounter("clusterNodeRole", CLUSTER_NODE_ROLE_TYPE_ID))
+            .commitPositionCounter(newCounter("commitPosition", COMMIT_POSITION_TYPE_ID))
+            .controlToggleCounter(newCounter("controlToggle", CONTROL_TOGGLE_TYPE_ID))
+            .snapshotCounter(newCounter("snapshot", SNAPSHOT_COUNTER_TYPE_ID))
+            .timedOutClientCounter(newCounter("timedOut", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID));
+    }
+
+    private Counter newCounter(final String name, final int typeId)
+    {
+        final AtomicCounter atomicCounter = countersManager.newCounter(name, typeId);
+        return new Counter(countersManager, ++registrationId, atomicCounter.id());
     }
 
     @AfterEach
@@ -228,6 +240,55 @@ class ConsensusModuleContextTest
         {
             System.clearProperty(AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME);
         }
+    }
+
+    @Test
+    void shouldValidateModuleStateCounter()
+    {
+        context.moduleStateCounter(newCounter("moduleState", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID));
+        assertThrows(ConfigurationException.class, context::conclude);
+    }
+
+    @Test
+    void shouldValidateElectionStateCounter()
+    {
+        context.electionStateCounter(newCounter("electionState", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID));
+        assertThrows(ConfigurationException.class, context::conclude);
+    }
+
+    @Test
+    void shouldValidateClusterNodeRoleCounter()
+    {
+        context.clusterNodeRoleCounter(newCounter("clusterNodeRole", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID));
+        assertThrows(ConfigurationException.class, context::conclude);
+    }
+
+    @Test
+    void shouldValidateCommitPositionCounter()
+    {
+        context.commitPositionCounter(newCounter("commitPosition", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID));
+        assertThrows(ConfigurationException.class, context::conclude);
+    }
+
+    @Test
+    void shouldValidateControlToggleCounter()
+    {
+        context.controlToggleCounter(newCounter("controlToggle", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID));
+        assertThrows(ConfigurationException.class, context::conclude);
+    }
+
+    @Test
+    void shouldValidateSnapshotCounter()
+    {
+        context.snapshotCounter(newCounter("snapshot", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID));
+        assertThrows(ConfigurationException.class, context::conclude);
+    }
+
+    @Test
+    void shouldValidateTimedOutClientCounter()
+    {
+        context.timedOutClientCounter(newCounter("timedOut", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID));
+        assertThrows(ConfigurationException.class, context::conclude);
     }
 
     @Test

@@ -45,11 +45,12 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
+import static io.aeron.AeronCounters.validateCounterTypeId;
 import static io.aeron.CommonContext.*;
+import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
+import static io.aeron.cluster.ConsensusModule.Configuration.COMMIT_POSITION_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
-import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
-import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
-import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
@@ -1472,42 +1473,52 @@ public final class ConsensusModule implements AutoCloseable
                 moduleStateCounter = ClusterCounters.allocate(
                     aeron, buffer, "Consensus Module state", CONSENSUS_MODULE_STATE_TYPE_ID, clusterId);
             }
+            validateCounterTypeId(aeron, moduleStateCounter, CONSENSUS_MODULE_STATE_TYPE_ID);
+
 
             if (null == electionStateCounter)
             {
                 electionStateCounter = ClusterCounters.allocate(
                     aeron, buffer, "Cluster election state", ELECTION_STATE_TYPE_ID, clusterId);
             }
+            validateCounterTypeId(aeron, electionStateCounter, ELECTION_STATE_TYPE_ID);
+
 
             if (null == clusterNodeRoleCounter)
             {
                 clusterNodeRoleCounter = ClusterCounters.allocate(
                     aeron, buffer, "Cluster node role", CLUSTER_NODE_ROLE_TYPE_ID, clusterId);
             }
+            validateCounterTypeId(aeron, clusterNodeRoleCounter, CLUSTER_NODE_ROLE_TYPE_ID);
+
 
             if (null == commitPosition)
             {
                 commitPosition = ClusterCounters.allocate(
                     aeron, buffer, "Cluster commit-pos:", COMMIT_POSITION_TYPE_ID, clusterId);
             }
+            validateCounterTypeId(aeron, commitPosition, COMMIT_POSITION_TYPE_ID);
 
             if (null == controlToggle)
             {
                 controlToggle = ClusterCounters.allocate(
                     aeron, buffer, "Cluster control toggle", CONTROL_TOGGLE_TYPE_ID, clusterId);
             }
+            validateCounterTypeId(aeron, controlToggle, CONTROL_TOGGLE_TYPE_ID);
 
             if (null == snapshotCounter)
             {
                 snapshotCounter = ClusterCounters.allocate(
                     aeron, buffer, "Cluster snapshot count", SNAPSHOT_COUNTER_TYPE_ID, clusterId);
             }
+            validateCounterTypeId(aeron, snapshotCounter, SNAPSHOT_COUNTER_TYPE_ID);
 
             if (null == timedOutClientCounter)
             {
                 timedOutClientCounter = ClusterCounters.allocate(
                     aeron, buffer, "Cluster timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
             }
+            validateCounterTypeId(aeron, timedOutClientCounter, CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID);
 
             if (null == dutyCycleTracker)
             {

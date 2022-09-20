@@ -47,7 +47,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
+import static io.aeron.AeronCounters.validateCounterTypeId;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.archive.Archive.Configuration.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
@@ -1230,8 +1232,9 @@ public final class Archive implements AutoCloseable
             if (null == controlSessionsCounter)
             {
                 controlSessionsCounter = aeron.addCounter(
-                    Configuration.ARCHIVE_CONTROL_SESSIONS_TYPE_ID, "Archive Control Sessions");
+                    ARCHIVE_CONTROL_SESSIONS_TYPE_ID, "Archive Control Sessions");
             }
+            validateCounterTypeId(aeron, controlSessionsCounter, ARCHIVE_CONTROL_SESSIONS_TYPE_ID);
 
             int expectedCount = DEDICATED == threadingMode ? 2 : 0;
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;

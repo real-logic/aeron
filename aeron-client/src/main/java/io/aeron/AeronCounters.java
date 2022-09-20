@@ -15,7 +15,9 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.status.ChannelEndpointStatus;
+import org.agrona.concurrent.status.CountersReader;
 
 /**
  * This class serves as a registry for all counter type IDs used by Aeron.
@@ -274,5 +276,47 @@ public final class AeronCounters
 
     private AeronCounters()
     {
+    }
+
+    /**
+     * Checks that the counter specified by {@code counterId} has the counterTypeId that matches the specified value.
+     * If not it will throw a {@link io.aeron.exceptions.ConfigurationException}.
+     *
+     * @param countersReader to look up the counter type id.
+     * @param counterId counter to reference.
+     * @param expectedCounterTypeId the expected type id for the counter.
+     * @throws io.aeron.exceptions.ConfigurationException if the type id does not match.
+     * @throws IllegalArgumentException if the counterId is not valid.
+     */
+    public static void validateCounterTypeId(
+        final CountersReader countersReader,
+        final int counterId,
+        final int expectedCounterTypeId)
+    {
+        final int counterTypeId = countersReader.getCounterTypeId(counterId);
+        if (expectedCounterTypeId != counterTypeId)
+        {
+            throw new ConfigurationException(
+                "The type for counterId=" + counterId + ", typeId=" + counterTypeId + " does not match the expected=" +
+                expectedCounterTypeId);
+        }
+    }
+
+    /**
+     * Convenience overload for {@link AeronCounters#validateCounterTypeId(CountersReader, int, int)}
+     *
+     * @param aeron to resolve a counters reader.
+     * @param counter to be checked for the appropriate counterTypeId.
+     * @param expectedCounterTypeId the expected type id for the counter.
+     * @throws io.aeron.exceptions.ConfigurationException if the type id does not match.
+     * @throws IllegalArgumentException if the counterId is not valid.
+     * @see AeronCounters#validateCounterTypeId(CountersReader, int, int)
+     */
+    public static void validateCounterTypeId(
+        final Aeron aeron,
+        final Counter counter,
+        final int expectedCounterTypeId)
+    {
+        validateCounterTypeId(aeron.countersReader(), counter.id(), expectedCounterTypeId);
     }
 }

@@ -296,7 +296,7 @@ public final class ConsensusModule implements AutoCloseable
      */
     public void close()
     {
-        CloseHelper.close(conductorRunner);
+        CloseHelper.closeAll(conductorRunner, conductorInvoker);
     }
 
     /**

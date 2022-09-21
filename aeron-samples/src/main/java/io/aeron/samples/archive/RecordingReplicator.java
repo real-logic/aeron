@@ -84,7 +84,7 @@ public class RecordingReplicator
      * Name of the required system property for specifying the id of the source recording that must be replicated to
      * the destination Archive.
      */
-    public static final String SOURCE_RECORDING_ID_PROP_NAME = "aeron.sample.Archive.replicate.source.recording.id";
+    public static final String SOURCE_RECORDING_ID_PROP_NAME = "aeron.sample.archive.replicate.source.recording.id";
 
     /**
      * Name of the optional system property for specifying the destination recording id. Defaults to
@@ -92,28 +92,28 @@ public class RecordingReplicator
      * the destination Archive.
      */
     public static final String DESTINATION_RECORDING_ID_PROP_NAME =
-        "aeron.sample.Archive.replicate.destination.recording.id";
+        "aeron.sample.archive.replicate.destination.recording.id";
 
     /**
      * Name of the required system property for specifying the control request channel to connect to the source Archive
      * from the destination Archive.
      */
     public static final String SOURCE_ARCHIVE_CONTROL_REQUEST_CHANNEL =
-        "aeron.sample.Archive.replicate.source.control.request.channel";
+        "aeron.sample.archive.replicate.source.control.request.channel";
 
     /**
      * Name of the optional system property for specifying the control request stream id to connect to the source
      * Archive from the destination Archive. Defaults to {@link AeronArchive.Configuration#CONTROL_STREAM_ID_DEFAULT}.
      */
     public static final String SOURCE_ARCHIVE_CONTROL_REQUEST_STREAM_ID =
-        "aeron.sample.Archive.replicate.source.control.request.stream.id";
+        "aeron.sample.archive.replicate.source.control.request.stream.id";
 
     /**
      * Name of the optional system property for specifying an explicit replication channel for recording replication
      * between source and destination archives. If not specified then the {@link io.aeron.archive.Archive.Context#replicationChannel()}
      * of the destination Archive will be used.
      */
-    public static final String REPLICATION_CHANNEL = "aeron.sample.Archive.replicate.replication.channel";
+    public static final String REPLICATION_CHANNEL = "aeron.sample.archive.replicate.replication.channel";
 
     private final AeronArchive aeronArchive;
     private final RecordingSignalCapture signalCapture;

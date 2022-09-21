@@ -234,6 +234,7 @@ public class RecordingReplicator
             if (!"y".equalsIgnoreCase(answer) && !"yes".equalsIgnoreCase(answer))
             {
                 System.out.println("Action aborted!");
+                System.exit(-1);
                 return;
             }
         }

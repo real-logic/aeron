@@ -20,7 +20,6 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
-import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.Tests;
@@ -122,12 +121,7 @@ class ArchiveSystemTests
         {
             if (0 == aeronArchive.pollForRecordingSignals())
             {
-                Thread.yield();
-            }
-            if (Thread.currentThread().isInterrupted())
-            {
-                throw new TimeoutException(
-                    "awaiting signal=" + expectedSignal + " lastSignal=" + signalConsumer.signal);
+                Tests.yield();
             }
         }
     }

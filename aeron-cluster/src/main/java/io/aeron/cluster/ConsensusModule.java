@@ -200,6 +200,7 @@ public final class ConsensusModule implements AutoCloseable
     private final Context ctx;
     private final ConsensusModuleAgent conductor;
     private final AgentRunner conductorRunner;
+    private final AgentInvoker conductorInvoker;
 
     ConsensusModule(final Context ctx)
     {
@@ -209,7 +210,18 @@ public final class ConsensusModule implements AutoCloseable
             this.ctx = ctx;
 
             conductor = new ConsensusModuleAgent(ctx);
-            conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
+
+            if (ctx.useAgentInvoker())
+            {
+                conductorInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), conductor);
+                conductorRunner = null;
+            }
+            else
+            {
+                conductorRunner = new AgentRunner(
+                    ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
+                conductorInvoker = null;
+            }
         }
         catch (final ConcurrentConcludeException ex)
         {
@@ -246,7 +258,15 @@ public final class ConsensusModule implements AutoCloseable
     public static ConsensusModule launch(final Context ctx)
     {
         final ConsensusModule consensusModule = new ConsensusModule(ctx);
-        AgentRunner.startOnThread(consensusModule.conductorRunner, ctx.threadFactory());
+
+        if (null != consensusModule.conductorRunner)
+        {
+            AgentRunner.startOnThread(consensusModule.conductorRunner, ctx.threadFactory());
+        }
+        else
+        {
+            consensusModule.conductorInvoker.start();
+        }
 
         return consensusModule;
     }
@@ -259,6 +279,16 @@ public final class ConsensusModule implements AutoCloseable
     public Context context()
     {
         return ctx;
+    }
+
+    /**
+     * Get the {@link AgentInvoker} for the consensus module.
+     *
+     * @return the {@link AgentInvoker} for the consensus module.
+     */
+    public AgentInvoker conductorAgentInvoker()
+    {
+        return conductorInvoker;
     }
 
     /**
@@ -1317,6 +1347,7 @@ public final class ConsensusModule implements AutoCloseable
         private DutyCycleTracker dutyCycleTracker;
         private AppVersionValidator appVersionValidator;
         private boolean isLogMdc;
+        private boolean useAgentInvoker = false;
 
         /**
          * Perform a shallow copy of the object.
@@ -3334,6 +3365,30 @@ public final class ConsensusModule implements AutoCloseable
         {
             this.authorisationServiceSupplier = authorisationServiceSupplier;
             return this;
+        }
+
+        /**
+         * Should an {@link AgentInvoker} be used for running the {@link ConsensusModule} rather than run it on
+         * a thread with a {@link AgentRunner}.
+         *
+         * @param useAgentInvoker use {@link AgentInvoker} be used for running the {@link ConsensusModule}?
+         * @return this for a fluent API.
+         */
+        public ConsensusModule.Context useAgentInvoker(final boolean useAgentInvoker)
+        {
+            this.useAgentInvoker = useAgentInvoker;
+            return this;
+        }
+
+        /**
+         * Should an {@link AgentInvoker} be used for running the {@link ConsensusModule} rather than run it on
+         * a thread with a {@link AgentRunner}.
+         *
+         * @return true if the {@link ConsensusModule} will be run with an {@link AgentInvoker} otherwise false.
+         */
+        public boolean useAgentInvoker()
+        {
+            return useAgentInvoker;
         }
 
         /**

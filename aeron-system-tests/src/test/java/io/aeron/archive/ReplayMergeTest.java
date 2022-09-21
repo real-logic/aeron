@@ -191,11 +191,11 @@ class ReplayMergeTest
 
             aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE, true);
             final CountersReader counters = aeron.countersReader();
-            final int recordingCounterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int recordingCounterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
 
             publishMessages(publication);
-            awaitPosition(counters, recordingCounterId, publication.position());
+            Tests.awaitPosition(counters, recordingCounterId, publication.position());
             int attempt = 1;
 
             while (!attemptReplayMerge(

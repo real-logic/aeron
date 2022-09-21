@@ -142,7 +142,7 @@ class BasicArchiveTest
             sessionId = publication.sessionId();
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, sessionId);
+            final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
@@ -151,7 +151,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -228,7 +228,7 @@ class BasicArchiveTest
             sessionId = publication.sessionId();
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, sessionId);
+            final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
             recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
@@ -237,7 +237,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingId));
@@ -287,7 +287,7 @@ class BasicArchiveTest
             sessionId = publication.sessionId();
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, sessionId);
+            final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
@@ -296,7 +296,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -369,7 +369,7 @@ class BasicArchiveTest
                 sessionId = publication.sessionId();
 
                 final CountersReader counters = aeron.countersReader();
-                final int counterId = awaitRecordingCounterId(counters, sessionId);
+                final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
                 recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
                 assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
@@ -378,7 +378,7 @@ class BasicArchiveTest
                 consume(subscription, messageCount, messagePrefix);
 
                 stopPosition = publication.position();
-                awaitPosition(counters, counterId, stopPosition);
+                Tests.awaitPosition(counters, counterId, stopPosition);
 
                 final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
                 assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -427,7 +427,7 @@ class BasicArchiveTest
             sessionId = publication.sessionId();
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, sessionId);
+            final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
@@ -436,7 +436,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -485,14 +485,14 @@ class BasicArchiveTest
             Publication publication = aeronArchive.addRecordedPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingId));
 
@@ -526,14 +526,14 @@ class BasicArchiveTest
             Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
 
             final long currentPosition = publication.position();
-            awaitPosition(counters, counterId, currentPosition);
+            Tests.awaitPosition(counters, counterId, currentPosition);
 
             try (Subscription replaySubscription = aeronArchive.replay(
                 recordingId, currentPosition, AeronArchive.NULL_LENGTH, REPLAY_CHANNEL, REPLAY_STREAM_ID))
@@ -563,14 +563,14 @@ class BasicArchiveTest
             Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
 
             final long currentPosition = publication.position();
-            awaitPosition(counters, counterId, currentPosition);
+            Tests.awaitPosition(counters, counterId, currentPosition);
 
             final long lastMatchingRecording = aeronArchive.findLastMatchingRecording(
                 0, RECORDED_CHANNEL, RECORDED_STREAM_ID, publication.sessionId());
@@ -594,7 +594,7 @@ class BasicArchiveTest
             Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = ArchiveSystemTests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
             assertNotEquals(RecordingPos.NULL_RECORDING_ID, recordingId);
 
@@ -602,7 +602,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             final long currentPosition = publication.position();
-            awaitPosition(counters, counterId, currentPosition);
+            Tests.awaitPosition(counters, counterId, currentPosition);
 
             final long lastMatchingRecording = aeronArchive.findLastMatchingRecording(
                 0, RECORDED_CHANNEL, RECORDED_STREAM_ID, publication.sessionId() + 1);
@@ -634,7 +634,7 @@ class BasicArchiveTest
             sessionId = publication.sessionId();
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, sessionId);
+            final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
@@ -643,7 +643,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -741,7 +741,7 @@ class BasicArchiveTest
             sessionId = publication.sessionId();
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, sessionId);
+            final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
@@ -750,7 +750,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
         }
 
         aeronArchive.stopRecording(subscriptionId);

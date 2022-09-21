@@ -28,6 +28,7 @@ import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.TestContexts;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.CountersReader;
@@ -126,11 +127,11 @@ class ManageRecordingHistoryTest
         try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             final long startPosition = 0L;
             final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
@@ -164,11 +165,11 @@ class ManageRecordingHistoryTest
             assertEquals(startPosition, publication.position());
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             final File archiveDir = archive.context().archiveDir();
             long position = 0;
@@ -227,11 +228,11 @@ class ManageRecordingHistoryTest
         try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -266,11 +267,11 @@ class ManageRecordingHistoryTest
             assertEquals(startPosition, publication.position());
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -299,11 +300,11 @@ class ManageRecordingHistoryTest
         try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -351,11 +352,11 @@ class ManageRecordingHistoryTest
             assertEquals(startPosition, publication.position());
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -394,11 +395,11 @@ class ManageRecordingHistoryTest
         try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int dstCounterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int dstCounterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
 
             offerToPosition(publication, "dst-message-", targetPosition);
-            awaitPosition(counters, dstCounterId, publication.position());
+            Tests.awaitPosition(counters, dstCounterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -424,11 +425,11 @@ class ManageRecordingHistoryTest
 
             try (Publication migratePub = aeronArchive.addRecordedExclusivePublication(migrateChannel, STREAM_ID))
             {
-                final int srcCounterId = awaitRecordingCounterId(counters, migratePub.sessionId());
+                final int srcCounterId = Tests.awaitRecordingCounterId(counters, migratePub.sessionId());
                 srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
 
                 offerToPosition(migratePub, "src-message-", SEGMENT_LENGTH * 4 + TERM_LENGTH + FRAME_ALIGNMENT);
-                awaitPosition(counters, srcCounterId, migratePub.position());
+                Tests.awaitPosition(counters, srcCounterId, migratePub.position());
 
                 signalConsumer.reset();
                 aeronArchive.stopRecording(migratePub);
@@ -499,11 +500,11 @@ class ManageRecordingHistoryTest
         try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int dstCounterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int dstCounterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
 
             offerToPosition(publication, "dst-message-", targetPosition);
-            awaitPosition(counters, dstCounterId, publication.position());
+            Tests.awaitPosition(counters, dstCounterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -527,11 +528,11 @@ class ManageRecordingHistoryTest
 
             try (Publication migratePub = aeronArchive.addRecordedExclusivePublication(migrateChannel, STREAM_ID))
             {
-                final int srcCounterId = awaitRecordingCounterId(counters, migratePub.sessionId());
+                final int srcCounterId = Tests.awaitRecordingCounterId(counters, migratePub.sessionId());
                 srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
 
                 offerToPosition(migratePub, "src-message-", segmentFileBasePosition);
-                awaitPosition(counters, srcCounterId, migratePub.position());
+                Tests.awaitPosition(counters, srcCounterId, migratePub.position());
 
                 signalConsumer.reset();
                 aeronArchive.stopRecording(migratePub);
@@ -594,11 +595,11 @@ class ManageRecordingHistoryTest
         try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long newRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);

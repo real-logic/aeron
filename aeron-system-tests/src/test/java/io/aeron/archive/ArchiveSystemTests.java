@@ -19,20 +19,13 @@ import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveException;
-import io.aeron.archive.client.ControlEventListener;
-import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
-import io.aeron.archive.status.RecordingPos;
-import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.Tests;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.status.CountersReader;
 
-import static io.aeron.Aeron.NULL_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ArchiveSystemTests
@@ -40,26 +33,6 @@ class ArchiveSystemTests
     static final long CATALOG_CAPACITY = 128 * 1024;
     static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     static final int FRAGMENT_LIMIT = 10;
-
-    static final ControlEventListener ERROR_CONTROL_LISTENER =
-        (controlSessionId, correlationId, relevantId, code, errorMessage) ->
-        {
-            if (code == ControlResponseCode.ERROR)
-            {
-                throw new ArchiveException(errorMessage, (int)relevantId, correlationId);
-            }
-        };
-
-    static int awaitRecordingCounterId(final CountersReader counters, final int sessionId)
-    {
-        int counterId;
-        while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
-        {
-            Tests.yield();
-        }
-
-        return counterId;
-    }
 
     static void offer(final Publication publication, final int count, final String prefix)
     {
@@ -117,19 +90,6 @@ class ArchiveSystemTests
         assertEquals(count, received.get());
     }
 
-    static void awaitPosition(final CountersReader counters, final int counterId, final long position)
-    {
-        while (counters.getCounterValue(counterId) < position)
-        {
-            if (counters.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
-            {
-                throw new IllegalStateException("count not active: " + counterId);
-            }
-
-            Tests.yield();
-        }
-    }
-
     static TestRecordingSignalConsumer injectRecordingSignalConsumer(final AeronArchive aeronArchive)
     {
         final long controlSessionId = aeronArchive.controlSessionId();
@@ -147,12 +107,7 @@ class ArchiveSystemTests
         {
             if (0 == aeronArchive.pollForRecordingSignals())
             {
-                Thread.yield();
-            }
-            if (Thread.currentThread().isInterrupted())
-            {
-                throw new TimeoutException(
-                    "awaiting signal=" + expectedSignal + " lastSignal=" + signalConsumer.signal);
+                Tests.yield();
             }
         }
     }

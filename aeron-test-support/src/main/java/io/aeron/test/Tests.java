@@ -18,6 +18,7 @@ package io.aeron.test;
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
@@ -40,6 +41,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static org.mockito.Mockito.doAnswer;
 
 /**
@@ -684,5 +686,29 @@ public class Tests
                 System.err.println(context.getDisplayName() + " failed with random seed: " + seed);
             }
         };
+    }
+
+    public static int awaitRecordingCounterId(final CountersReader counters, final int sessionId)
+    {
+        int counterId;
+        while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
+        {
+            Tests.yield();
+        }
+
+        return counterId;
+    }
+
+    public static void awaitPosition(final CountersReader counters, final int counterId, final long position)
+    {
+        while (counters.getCounterValue(counterId) < position)
+        {
+            if (counters.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
+            {
+                throw new IllegalStateException("count not active: " + counterId);
+            }
+
+            Tests.yield();
+        }
     }
 }

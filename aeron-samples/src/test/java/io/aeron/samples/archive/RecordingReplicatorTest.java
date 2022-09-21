@@ -60,6 +60,7 @@ class RecordingReplicatorTest
     private static final int DST_ARCHIVE_CONTROL_STREAM_ID = 2002;
     private static final String DST_ARCHIVE_REPLICATION_CHANNEL =
         "aeron:udp?alias=dst-replication-channel|endpoint=localhost:9999";
+    private static final int TERM_BUFFER_LENGTH = 128 * 1024;
     private MediaDriver srcMediaDriver;
     private MediaDriver dstMediaDriver;
     private Archive srcArchive;
@@ -75,6 +76,8 @@ class RecordingReplicatorTest
             .aeronDirectoryName(tempDir.resolve("src-driver").toString())
             .termBufferSparseFile(true)
             .threadingMode(ThreadingMode.SHARED)
+            .ipcTermBufferLength(TERM_BUFFER_LENGTH)
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .spiesSimulateConnection(true)
             .dirDeleteOnStart(true));
 
@@ -83,6 +86,8 @@ class RecordingReplicatorTest
             .aeronDirectoryName(tempDir.resolve("dst-driver").toString())
             .termBufferSparseFile(true)
             .threadingMode(ThreadingMode.SHARED)
+            .ipcTermBufferLength(TERM_BUFFER_LENGTH)
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .spiesSimulateConnection(true)
             .dirDeleteOnStart(true));
 
@@ -154,7 +159,7 @@ class RecordingReplicatorTest
         createRecording(dstAeronArchive, IPC_CHANNEL + "?alias=one", 111);
         final long dstRecordingId = createRecording(
             dstAeronArchive,
-            "aeron:udp?endpoint=localhost:8114|init-term-id=13|term-id=27|term-offset=1024|term-length=128K",
+            "aeron:udp?endpoint=localhost:8114|init-term-id=13|term-id=27|term-offset=1024|term-length=64K",
             444);
 
         try (AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
@@ -194,7 +199,7 @@ class RecordingReplicatorTest
             System.out.println();
             for (int i = 0; i < numMessages; i++)
             {
-                final int messageSize = random.nextInt(8, 1200);
+                final int messageSize = random.nextInt(8, 500);
                 long result;
                 while ((result = publication.tryClaim(messageSize, bufferClaim)) < 0)
                 {

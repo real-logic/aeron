@@ -195,8 +195,7 @@ class RecordingReplicatorTest
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             final ThreadLocalRandom random = ThreadLocalRandom.current();
-            final int numMessages = random.nextInt(1, 10);
-            System.out.println();
+            final int numMessages = random.nextInt(1, 11);
             for (int i = 0; i < numMessages; i++)
             {
                 final int messageSize = random.nextInt(8, 500);
@@ -218,12 +217,18 @@ class RecordingReplicatorTest
                 buffer.putInt(offset + (messageSize - SIZE_OF_INT), random.nextInt(), LITTLE_ENDIAN);
                 bufferClaim.commit();
             }
+            
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             final RecordingSignalCapture signalCapture =
                 (RecordingSignalCapture)aeronArchive.context().recordingSignalConsumer();
             signalCapture.reset();
             aeronArchive.stopRecording(publication);
             signalCapture.awaitSignal(aeronArchive, recordingId, RecordingSignal.STOP);
+
+            final long startPosition = aeronArchive.getStartPosition(recordingId);
+            final long stopPosition = aeronArchive.getStopPosition(recordingId);
+            assertNotEquals(startPosition, stopPosition);
 
             return recordingId;
         }

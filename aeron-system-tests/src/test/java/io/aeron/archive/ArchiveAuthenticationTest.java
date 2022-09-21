@@ -398,7 +398,7 @@ class ArchiveAuthenticationTest
             consume(subscription, messageCount, messagePrefix);
 
             final long currentPosition = publication.position();
-            awaitPosition(counters, counterId, currentPosition);
+            Tests.awaitPosition(counters, counterId, currentPosition);
         }
 
         aeronArchive.stopRecording(subscriptionId);

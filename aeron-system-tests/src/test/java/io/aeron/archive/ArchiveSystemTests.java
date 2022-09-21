@@ -25,7 +25,6 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.Tests;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.status.CountersReader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -89,19 +88,6 @@ class ArchiveSystemTests
         }
 
         assertEquals(count, received.get());
-    }
-
-    static void awaitPosition(final CountersReader counters, final int counterId, final long position)
-    {
-        while (counters.getCounterValue(counterId) < position)
-        {
-            if (counters.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
-            {
-                throw new IllegalStateException("count not active: " + counterId);
-            }
-
-            Tests.yield();
-        }
     }
 
     static TestRecordingSignalConsumer injectRecordingSignalConsumer(final AeronArchive aeronArchive)

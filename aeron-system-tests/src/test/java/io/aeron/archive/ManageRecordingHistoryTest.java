@@ -131,7 +131,7 @@ class ManageRecordingHistoryTest
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             final long startPosition = 0L;
             final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
@@ -169,7 +169,7 @@ class ManageRecordingHistoryTest
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             final File archiveDir = archive.context().archiveDir();
             long position = 0;
@@ -232,7 +232,7 @@ class ManageRecordingHistoryTest
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -271,7 +271,7 @@ class ManageRecordingHistoryTest
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -304,7 +304,7 @@ class ManageRecordingHistoryTest
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -356,7 +356,7 @@ class ManageRecordingHistoryTest
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -399,7 +399,7 @@ class ManageRecordingHistoryTest
             final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
 
             offerToPosition(publication, "dst-message-", targetPosition);
-            awaitPosition(counters, dstCounterId, publication.position());
+            Tests.awaitPosition(counters, dstCounterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -429,7 +429,7 @@ class ManageRecordingHistoryTest
                 srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
 
                 offerToPosition(migratePub, "src-message-", SEGMENT_LENGTH * 4 + TERM_LENGTH + FRAME_ALIGNMENT);
-                awaitPosition(counters, srcCounterId, migratePub.position());
+                Tests.awaitPosition(counters, srcCounterId, migratePub.position());
 
                 signalConsumer.reset();
                 aeronArchive.stopRecording(migratePub);
@@ -504,7 +504,7 @@ class ManageRecordingHistoryTest
             final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
 
             offerToPosition(publication, "dst-message-", targetPosition);
-            awaitPosition(counters, dstCounterId, publication.position());
+            Tests.awaitPosition(counters, dstCounterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
@@ -532,7 +532,7 @@ class ManageRecordingHistoryTest
                 srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
 
                 offerToPosition(migratePub, "src-message-", segmentFileBasePosition);
-                awaitPosition(counters, srcCounterId, migratePub.position());
+                Tests.awaitPosition(counters, srcCounterId, migratePub.position());
 
                 signalConsumer.reset();
                 aeronArchive.stopRecording(migratePub);
@@ -599,7 +599,7 @@ class ManageRecordingHistoryTest
             final long newRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);

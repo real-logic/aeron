@@ -195,7 +195,7 @@ class ReplayMergeTest
             final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
 
             publishMessages(publication);
-            awaitPosition(counters, recordingCounterId, publication.position());
+            Tests.awaitPosition(counters, recordingCounterId, publication.position());
             int attempt = 1;
 
             while (!attemptReplayMerge(

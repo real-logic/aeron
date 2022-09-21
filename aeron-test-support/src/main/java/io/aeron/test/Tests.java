@@ -698,4 +698,17 @@ public class Tests
 
         return counterId;
     }
+
+    public static void awaitPosition(final CountersReader counters, final int counterId, final long position)
+    {
+        while (counters.getCounterValue(counterId) < position)
+        {
+            if (counters.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
+            {
+                throw new IllegalStateException("count not active: " + counterId);
+            }
+
+            Tests.yield();
+        }
+    }
 }

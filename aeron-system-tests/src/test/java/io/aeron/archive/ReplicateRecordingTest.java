@@ -263,7 +263,7 @@ class ReplicateRecordingTest
             srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
         }
 
         srcRecordingSignalConsumer.reset();
@@ -307,7 +307,7 @@ class ReplicateRecordingTest
             srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
         }
 
         srcRecordingSignalConsumer.reset();
@@ -355,7 +355,7 @@ class ReplicateRecordingTest
 
                 offer(publication, messageCount, messagePrefix);
                 position = publication.position();
-                awaitPosition(counters, counterId, position);
+                Tests.awaitPosition(counters, counterId, position);
             }
         }
 
@@ -422,7 +422,7 @@ class ReplicateRecordingTest
             srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(srcCounters, counterId, publication.position());
+            Tests.awaitPosition(srcCounters, counterId, publication.position());
 
             dstRecordingSignalConsumer.reset();
             final long replicationId;
@@ -443,10 +443,10 @@ class ReplicateRecordingTest
             final CountersReader dstCounters = dstAeron.countersReader();
             final int dstCounterId =
                 RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingSignalConsumer.recordingId);
-            awaitPosition(dstCounters, dstCounterId, publication.position());
+            Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(dstCounters, dstCounterId, publication.position());
+            Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
 
             dstRecordingSignalConsumer.reset();
             dstAeronArchive.stopReplication(replicationId);
@@ -477,10 +477,10 @@ class ReplicateRecordingTest
 
             offer(publication, messageCount, messagePrefix);
             final long firstPosition = publication.position();
-            awaitPosition(srcCounters, counterId, firstPosition);
+            Tests.awaitPosition(srcCounters, counterId, firstPosition);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(srcCounters, counterId, publication.position());
+            Tests.awaitPosition(srcCounters, counterId, publication.position());
 
             dstRecordingSignalConsumer.reset();
             if (useParams)
@@ -510,7 +510,7 @@ class ReplicateRecordingTest
 
             offer(publication, messageCount, messagePrefix);
             final int srcCounterId = RecordingPos.findCounterIdByRecording(srcCounters, srcRecordingId);
-            awaitPosition(srcCounters, srcCounterId, publication.position());
+            Tests.awaitPosition(srcCounters, srcCounterId, publication.position());
 
             assertTrue(firstPosition < publication.position());
             long dstStopPosition;
@@ -544,7 +544,7 @@ class ReplicateRecordingTest
             srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(srcCounters, counterId, publication.position());
+            Tests.awaitPosition(srcCounters, counterId, publication.position());
 
             long replicationId;
             dstRecordingSignalConsumer.reset();
@@ -565,7 +565,7 @@ class ReplicateRecordingTest
             final CountersReader dstCounters = dstAeron.countersReader();
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
             int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
-            awaitPosition(dstCounters, dstCounterId, publication.position());
+            Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
 
             dstRecordingSignalConsumer.reset();
             dstAeronArchive.stopReplication(replicationId);
@@ -590,7 +590,7 @@ class ReplicateRecordingTest
             dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(dstCounters, dstCounterId, publication.position());
+            Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
 
             dstRecordingSignalConsumer.reset();
             dstAeronArchive.stopReplication(replicationId);
@@ -620,7 +620,7 @@ class ReplicateRecordingTest
             srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(srcCounters, counterId, publication.position());
+            Tests.awaitPosition(srcCounters, counterId, publication.position());
 
             srcRecordingSignalConsumer.reset();
             srcAeronArchive.stopRecording(subscriptionId);
@@ -686,7 +686,7 @@ class ReplicateRecordingTest
             srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(srcCounters, counterId, publication.position());
+            Tests.awaitPosition(srcCounters, counterId, publication.position());
 
             dstRecordingSignalConsumer.reset();
             if (useParams)
@@ -714,7 +714,7 @@ class ReplicateRecordingTest
                 RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingSignalConsumer.recordingId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(dstCounters, dstCounterId, publication.position());
+            Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
         }
 
         srcRecordingSignalConsumer.reset();
@@ -763,7 +763,7 @@ class ReplicateRecordingTest
                 RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingSignalConsumer.recordingId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(dstCounters, dstCounterId, publication.position());
+            Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
         }
 
         dstRecordingSignalConsumer.reset();
@@ -797,7 +797,7 @@ class ReplicateRecordingTest
             srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
 
             offer(publication, messageCount, messagePrefix);
-            awaitPosition(srcCounters, counterId, publication.position());
+            Tests.awaitPosition(srcCounters, counterId, publication.position());
 
             dstRecordingSignalConsumer.reset();
             if (useParams)
@@ -837,7 +837,7 @@ class ReplicateRecordingTest
 
             offer(publication, messageCount, messagePrefix);
             consume(taggedSubscription, messageCount, messagePrefix);
-            awaitPosition(dstCounters, dstCounterId, publication.position());
+            Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
 
             final Image image = taggedSubscription.imageBySessionId(publication.sessionId());
             assertEquals(publication.position(), image.position());
@@ -879,7 +879,7 @@ class ReplicateRecordingTest
             srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, longMessagePrefix.toString());
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
         }
 
         srcRecordingSignalConsumer.reset();
@@ -932,7 +932,7 @@ class ReplicateRecordingTest
             srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, longMessagePrefix.toString());
-            awaitPosition(counters, counterId, publication.position());
+            Tests.awaitPosition(counters, counterId, publication.position());
         }
 
         srcRecordingSignalConsumer.reset();
@@ -1096,7 +1096,7 @@ class ReplicateRecordingTest
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 offer(publication, messageCount, payload);
-                awaitPosition(counters, counterId, publication.position());
+                Tests.awaitPosition(counters, counterId, publication.position());
                 return recordingId;
             }
             finally

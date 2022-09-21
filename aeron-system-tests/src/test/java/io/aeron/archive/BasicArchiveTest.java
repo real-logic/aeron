@@ -151,7 +151,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -237,7 +237,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingId));
@@ -296,7 +296,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -378,7 +378,7 @@ class BasicArchiveTest
                 consume(subscription, messageCount, messagePrefix);
 
                 stopPosition = publication.position();
-                awaitPosition(counters, counterId, stopPosition);
+                Tests.awaitPosition(counters, counterId, stopPosition);
 
                 final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
                 assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -436,7 +436,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -492,7 +492,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingId));
 
@@ -533,7 +533,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             final long currentPosition = publication.position();
-            awaitPosition(counters, counterId, currentPosition);
+            Tests.awaitPosition(counters, counterId, currentPosition);
 
             try (Subscription replaySubscription = aeronArchive.replay(
                 recordingId, currentPosition, AeronArchive.NULL_LENGTH, REPLAY_CHANNEL, REPLAY_STREAM_ID))
@@ -570,7 +570,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             final long currentPosition = publication.position();
-            awaitPosition(counters, counterId, currentPosition);
+            Tests.awaitPosition(counters, counterId, currentPosition);
 
             final long lastMatchingRecording = aeronArchive.findLastMatchingRecording(
                 0, RECORDED_CHANNEL, RECORDED_STREAM_ID, publication.sessionId());
@@ -602,7 +602,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             final long currentPosition = publication.position();
-            awaitPosition(counters, counterId, currentPosition);
+            Tests.awaitPosition(counters, counterId, currentPosition);
 
             final long lastMatchingRecording = aeronArchive.findLastMatchingRecording(
                 0, RECORDED_CHANNEL, RECORDED_STREAM_ID, publication.sessionId() + 1);
@@ -643,7 +643,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
@@ -750,7 +750,7 @@ class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
+            Tests.awaitPosition(counters, counterId, stopPosition);
         }
 
         aeronArchive.stopRecording(subscriptionId);

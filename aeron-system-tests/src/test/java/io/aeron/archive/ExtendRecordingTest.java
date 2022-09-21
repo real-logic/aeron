@@ -178,7 +178,7 @@ class ExtendRecordingTest
                 consume(subscription, 0, messageCount);
 
                 stopOne = publication.position();
-                ArchiveSystemTests.awaitPosition(counters, counterId, stopOne);
+                Tests.awaitPosition(counters, counterId, stopOne);
             }
             finally
             {
@@ -217,7 +217,7 @@ class ExtendRecordingTest
                 consume(subscription, messageCount, messageCount);
 
                 stopTwo = publication.position();
-                ArchiveSystemTests.awaitPosition(counters, counterId, stopTwo);
+                Tests.awaitPosition(counters, counterId, stopTwo);
             }
             finally
             {

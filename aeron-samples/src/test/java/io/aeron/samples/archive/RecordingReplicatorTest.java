@@ -129,7 +129,7 @@ class RecordingReplicatorTest
     }
 
     @Test
-    @InterruptAfter(10)
+    @InterruptAfter(30)
     void replicateAsNewRecording()
     {
         createRecording(srcAeronArchive, IPC_CHANNEL, 555);
@@ -149,7 +149,7 @@ class RecordingReplicatorTest
     }
 
     @Test
-    @InterruptAfter(10)
+    @InterruptAfter(30)
     void replicateOverAnExistingRecording()
     {
         createRecording(srcAeronArchive, IPC_CHANNEL, 555);

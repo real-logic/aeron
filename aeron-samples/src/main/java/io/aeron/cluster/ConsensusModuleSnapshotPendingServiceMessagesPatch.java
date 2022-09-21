@@ -118,11 +118,11 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                     IPC_CHANNEL,
                     null);
 
-                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.REPLICATE_END);
+                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.SYNC);
                 recordingSignalCapture.reset();
-                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.STOP);
+                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.REPLICATE_END);
 
-                final long replicatedStopPosition = recordingSignalCapture.position();
+                final long replicatedStopPosition = awaitRecordingStopPosition(archive, recordingId);
                 if (stopPosition != replicatedStopPosition)
                 {
                     throw new ClusterException("incomplete replication of the new recording: expectedStopPosition=" +

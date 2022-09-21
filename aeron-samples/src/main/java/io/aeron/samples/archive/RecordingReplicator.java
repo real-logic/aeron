@@ -195,17 +195,17 @@ public class RecordingReplicator
         final long targetRecordingId;
         if (NULL_VALUE == dstRecordingId)
         {
-            signalCapture.awaitSignal(aeronArchive, RecordingSignal.REPLICATE_END);
+            signalCapture.awaitSignal(aeronArchive, RecordingSignal.SYNC);
             targetRecordingId = signalCapture.recordingId();
         }
         else
         {
-            signalCapture.awaitSignal(aeronArchive, dstRecordingId, RecordingSignal.REPLICATE_END);
+            signalCapture.awaitSignal(aeronArchive, dstRecordingId, RecordingSignal.SYNC);
             targetRecordingId = dstRecordingId;
         }
 
         signalCapture.reset();
-        signalCapture.awaitSignal(aeronArchive, targetRecordingId, RecordingSignal.STOP);
+        signalCapture.awaitSignal(aeronArchive, targetRecordingId, RecordingSignal.REPLICATE_END);
 
         return targetRecordingId;
     }

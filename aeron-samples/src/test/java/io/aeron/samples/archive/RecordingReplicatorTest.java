@@ -129,7 +129,7 @@ class RecordingReplicatorTest
     }
 
     @Test
-    @InterruptAfter(30)
+    @InterruptAfter(10)
     void replicateAsNewRecording()
     {
         createRecording(srcAeronArchive, IPC_CHANNEL, 555);
@@ -149,7 +149,7 @@ class RecordingReplicatorTest
     }
 
     @Test
-    @InterruptAfter(30)
+    @InterruptAfter(10)
     void replicateOverAnExistingRecording()
     {
         createRecording(srcAeronArchive, IPC_CHANNEL, 555);
@@ -240,7 +240,6 @@ class RecordingReplicatorTest
         final RecordingDescriptor dstRecording = collector.descriptors().get(0).retain();
 
         assertNotEquals(srcRecording.recordingId(), dstRecording.recordingId());
-        assertNotEquals(srcRecording.stopTimestamp(), dstRecording.stopTimestamp());
         assertEquals(srcRecording.startTimestamp(), dstRecording.startTimestamp());
         assertEquals(srcRecording.startPosition(), dstRecording.startPosition());
         assertEquals(srcRecording.stopPosition(), dstRecording.stopPosition());

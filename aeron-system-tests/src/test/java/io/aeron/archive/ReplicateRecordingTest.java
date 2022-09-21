@@ -31,7 +31,7 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
-import org.agrona.collections.*;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.Matchers;
@@ -966,21 +966,27 @@ class ReplicateRecordingTest
     @InterruptAfter(10)
     @CsvSource({
         "aeron:ipc?alias=src-recording|mtu=1344|init-term-id=777|term-id=1111112|term-offset=4096|" +
-            "term-length=512K, aeron:udp?alias=OTHER|endpoint=localhost:8108|term-length=1G",
+            "term-length=512K, aeron:udp?alias=OTHER|endpoint=localhost:8108|term-length=1G, 5, 1",
         "aeron:udp?alias=OTHER|endpoint=localhost:8108|term-length=1G, aeron:ipc?alias=dst-recording|mtu=1344|" +
-            "init-term-id=1111111|term-id=1111112|term-offset=4096|term-length=512K",
+            "init-term-id=1111111|term-id=1111112|term-offset=4096|term-length=512K, 3, 10",
         "aeron:udp?endpoint=localhost:8108|mtu=1344|init-term-id=11|term-id=15|term-offset=1024|term-length=512K, " +
-            "aeron:udp?endpoint=localhost:8109|mtu=1376|init-term-id=222|term-id=333|term-offset=96|term-length=256M",
-        "aeron:ipc?alias=src, aeron:udp?alias=dst|endpoint=localhost:8080",
-        "aeron:udp?alias=src|endpoint=localhost:8080, aeron:ipc?alias=dst",
+            "aeron:udp?endpoint=localhost:8109|mtu=1376|init-term-id=222|term-id=333|term-offset=96|term-length=256M" +
+            ", 7, 4",
+        "aeron:ipc?alias=src, aeron:udp?alias=dst|endpoint=localhost:8080, 21, 21",
+        "aeron:udp?alias=src|endpoint=localhost:8080|init-term-id=3|term-id=5|term-length=64K|term-offset=64, " +
+            "aeron:ipc?alias=dst|init-term-id=11|term-id=13|term-length=64K|term-offset=2752, 42, 19"
     })
     public void shouldReplicateStoppedRecordingOverAnExistingTruncatedRecordingReplacingAllParameters(
-        final String srcChannel, final String dstChannel)
+        final String srcChannel, final String dstChannel, final int srcMessageCount, final int dstMessageCount)
     {
         final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(1);
         final int srcStreamId = 3333;
         final long srcRecordingId = createStoppedRecording(
-            srcAeronArchive, srcRecordingSignalConsumer, srcChannel, srcStreamId, "src recording data", 10);
+            srcAeronArchive,
+            srcRecordingSignalConsumer,
+            srcChannel,
+            srcStreamId,
+            "src recording data", srcMessageCount);
 
         int dstStreamId = 555;
         long dstRecordingId;
@@ -994,7 +1000,7 @@ class ReplicateRecordingTest
         }
 
         dstRecordingId = createStoppedRecording(
-            dstAeronArchive, dstRecordingSignalConsumer, dstChannel, dstStreamId, "destination 42", 42);
+            dstAeronArchive, dstRecordingSignalConsumer, dstChannel, dstStreamId, "destination 42", dstMessageCount);
         assertNotEquals(srcRecordingId, dstRecordingId);
         assertNotEquals(srcStreamId, dstStreamId);
 
@@ -1004,9 +1010,6 @@ class ReplicateRecordingTest
         final RecordingDescriptor dstRecording = collector.descriptors().get(0).retain();
         assertNotEquals(srcRecording.startTimestamp(), dstRecording.startTimestamp());
         assertNotEquals(srcRecording.stopTimestamp(), dstRecording.stopTimestamp());
-        assertNotEquals(srcRecording.stopPosition(), dstRecording.stopPosition());
-        assertNotEquals(srcRecording.initialTermId(), dstRecording.initialTermId());
-        assertNotEquals(srcRecording.termBufferLength(), dstRecording.termBufferLength());
         assertNotEquals(srcRecording.controlSessionId(), dstRecording.controlSessionId());
         assertNotEquals(srcRecording.sessionId(), dstRecording.sessionId());
         assertNotEquals(srcRecording.streamId(), dstRecording.streamId());

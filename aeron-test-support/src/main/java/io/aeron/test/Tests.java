@@ -693,7 +693,7 @@ public class Tests
         int counterId;
         while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
         {
-            yield();
+            Tests.yield();
         }
 
         return counterId;

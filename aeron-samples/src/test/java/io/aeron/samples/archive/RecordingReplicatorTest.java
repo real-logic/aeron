@@ -34,9 +34,10 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
@@ -128,13 +129,14 @@ class RecordingReplicatorTest
         CloseHelper.closeAll(dstAeronArchive, srcAeronArchive, dstArchive, srcArchive, dstMediaDriver, srcMediaDriver);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(ints = { 0, 9 })
     @InterruptAfter(10)
-    void replicateAsNewRecording()
+    void replicateAsNewRecording(final int srcMessageCount)
     {
-        createRecording(srcAeronArchive, IPC_CHANNEL, 555);
-        createRecording(srcAeronArchive, "aeron:udp?endpoint=localhost:8108", 666);
-        final long srcRecordingId = createRecording(srcAeronArchive, IPC_CHANNEL + "?alias=third", 1010101010);
+        createRecording(srcAeronArchive, IPC_CHANNEL, 555, 3);
+        createRecording(srcAeronArchive, "aeron:udp?endpoint=localhost:8108", 666, 1);
+        final long srcRecordingId = createRecording(srcAeronArchive, IPC_CHANNEL + "?alias=third", 1010101010, srcMessageCount);
 
         final RecordingReplicator recordingReplicator = new RecordingReplicator(
             dstAeronArchive,
@@ -148,19 +150,20 @@ class RecordingReplicatorTest
         verifyRecordingReplicated(srcRecordingId, replicatedRecordingId);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(ints = { 0, 7, 21 })
     @InterruptAfter(10)
-    void replicateOverAnExistingRecording()
+    void replicateOverAnExistingRecording(final int srcMessageCount)
     {
-        createRecording(srcAeronArchive, IPC_CHANNEL, 555);
-        createRecording(srcAeronArchive, "aeron:udp?endpoint=localhost:8108", 666);
-        final long srcRecordingId = createRecording(srcAeronArchive, IPC_CHANNEL + "?alias=third", 1010101010);
+        createRecording(srcAeronArchive, IPC_CHANNEL, 555, 1);
+        createRecording(srcAeronArchive, "aeron:udp?endpoint=localhost:8108", 666, 1);
+        final long srcRecordingId = createRecording(srcAeronArchive, IPC_CHANNEL + "?alias=third", 1010101010, 5);
 
-        createRecording(dstAeronArchive, IPC_CHANNEL + "?alias=one", 111);
+        createRecording(dstAeronArchive, IPC_CHANNEL + "?alias=one", 111, 3);
         final long dstRecordingId = createRecording(
             dstAeronArchive,
             "aeron:udp?endpoint=localhost:8114|init-term-id=13|term-id=27|term-offset=1024|term-length=64K",
-            444);
+            444, 19);
 
         try (AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
             .aeronDirectoryName(dstMediaDriver.aeronDirectoryName())
@@ -186,7 +189,8 @@ class RecordingReplicatorTest
     private long createRecording(
         final AeronArchive aeronArchive,
         final String channel,
-        final int streamId)
+        final int streamId,
+        final int numMessages)
     {
         try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(channel, streamId))
         {
@@ -194,11 +198,9 @@ class RecordingReplicatorTest
             final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-            final ThreadLocalRandom random = ThreadLocalRandom.current();
-            final int numMessages = random.nextInt(1, 11);
             for (int i = 0; i < numMessages; i++)
             {
-                final int messageSize = random.nextInt(8, 500);
+                final int messageSize = ThreadLocalRandom.current().nextInt(8, 500);
                 long result;
                 while ((result = publication.tryClaim(messageSize, bufferClaim)) < 0)
                 {
@@ -213,11 +215,12 @@ class RecordingReplicatorTest
 
                 final MutableDirectBuffer buffer = bufferClaim.buffer();
                 final int offset = bufferClaim.offset();
-                buffer.putInt(offset, random.nextInt(), LITTLE_ENDIAN);
-                buffer.putInt(offset + (messageSize - SIZE_OF_INT), random.nextInt(), LITTLE_ENDIAN);
+                buffer.putInt(offset, ThreadLocalRandom.current().nextInt(), LITTLE_ENDIAN);
+                buffer.putInt(
+                    offset + (messageSize - SIZE_OF_INT), ThreadLocalRandom.current().nextInt(), LITTLE_ENDIAN);
                 bufferClaim.commit();
             }
-            
+
             Tests.awaitPosition(counters, counterId, publication.position());
 
             final RecordingSignalCapture signalCapture =
@@ -226,9 +229,12 @@ class RecordingReplicatorTest
             aeronArchive.stopRecording(publication);
             signalCapture.awaitSignal(aeronArchive, recordingId, RecordingSignal.STOP);
 
-            final long startPosition = aeronArchive.getStartPosition(recordingId);
-            final long stopPosition = aeronArchive.getStopPosition(recordingId);
-            assertNotEquals(startPosition, stopPosition);
+            if (numMessages > 0)
+            {
+                final long startPosition = aeronArchive.getStartPosition(recordingId);
+                final long stopPosition = aeronArchive.getStopPosition(recordingId);
+                assertNotEquals(startPosition, stopPosition);
+            }
 
             return recordingId;
         }

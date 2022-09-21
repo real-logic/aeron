@@ -1,0 +1,253 @@
+/*
+ * Copyright 2014-2022 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.aeron.samples.archive;
+
+import io.aeron.ExclusivePublication;
+import io.aeron.Publication;
+import io.aeron.archive.Archive;
+import io.aeron.archive.ArchiveThreadingMode;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.archive.status.RecordingPos;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.BufferClaim;
+import io.aeron.test.EventLogExtension;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.Tests;
+import org.agrona.CloseHelper;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.CommonContext.IPC_CHANNEL;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
+class RecordingReplicatorTest
+{
+    private static final String SRC_ARCHIVE_CONTROL_CHANNEL =
+        "aeron:udp?alias=src-request-channel|endpoint=localhost:8091";
+    private static final int SRC_ARCHIVE_CONTROL_STREAM_ID = 1001;
+    private static final String SRC_ARCHIVE_REPLICATION_CHANNEL =
+        "aeron:udp?alias=dst-replication-channel|endpoint=localhost:9998";
+    private static final String DST_ARCHIVE_CONTROL_CHANNEL =
+        "aeron:udp?alias=dst-request-channel|endpoint=localhost:8092";
+    private static final int DST_ARCHIVE_CONTROL_STREAM_ID = 2002;
+    private static final String DST_ARCHIVE_REPLICATION_CHANNEL =
+        "aeron:udp?alias=dst-replication-channel|endpoint=localhost:9999";
+    private MediaDriver srcMediaDriver;
+    private MediaDriver dstMediaDriver;
+    private Archive srcArchive;
+    private Archive dstArchive;
+    private AeronArchive srcAeronArchive;
+    private AeronArchive dstAeronArchive;
+    private final BufferClaim bufferClaim = new BufferClaim();
+
+    @BeforeEach
+    void setup(@TempDir final Path tempDir)
+    {
+        srcMediaDriver = MediaDriver.launch(new MediaDriver.Context()
+            .aeronDirectoryName(tempDir.resolve("src-driver").toString())
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .spiesSimulateConnection(true)
+            .dirDeleteOnStart(true));
+
+        dstMediaDriver = MediaDriver.launch(new MediaDriver.Context()
+            .spiesSimulateConnection(true)
+            .aeronDirectoryName(tempDir.resolve("dst-driver").toString())
+            .termBufferSparseFile(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .spiesSimulateConnection(true)
+            .dirDeleteOnStart(true));
+
+        srcArchive = Archive.launch(new Archive.Context()
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .aeronDirectoryName(srcMediaDriver.aeronDirectoryName())
+            .archiveDir(tempDir.resolve("src-archive").toFile())
+            .controlChannel(SRC_ARCHIVE_CONTROL_CHANNEL)
+            .controlStreamId(SRC_ARCHIVE_CONTROL_STREAM_ID)
+            .replicationChannel(SRC_ARCHIVE_REPLICATION_CHANNEL));
+
+        dstArchive = Archive.launch(new Archive.Context()
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .aeronDirectoryName(dstMediaDriver.aeronDirectoryName())
+            .archiveDir(tempDir.resolve("dst-archive").toFile())
+            .controlChannel(DST_ARCHIVE_CONTROL_CHANNEL)
+            .controlStreamId(DST_ARCHIVE_CONTROL_STREAM_ID)
+            .replicationChannel(DST_ARCHIVE_REPLICATION_CHANNEL));
+
+        srcAeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            .aeronDirectoryName(srcMediaDriver.aeronDirectoryName())
+            .controlRequestChannel(SRC_ARCHIVE_CONTROL_CHANNEL)
+            .controlRequestStreamId(SRC_ARCHIVE_CONTROL_STREAM_ID)
+            .controlResponseChannel("aeron:udp?alias=src-archive-response|endpoint=localhost:0")
+            .recordingSignalConsumer(new RecordingSignalCapture()));
+
+        dstAeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            .aeronDirectoryName(dstMediaDriver.aeronDirectoryName())
+            .controlRequestChannel(DST_ARCHIVE_CONTROL_CHANNEL)
+            .controlRequestStreamId(DST_ARCHIVE_CONTROL_STREAM_ID)
+            .controlResponseChannel("aeron:udp?alias=dst-archive-response|endpoint=localhost:0")
+            .recordingSignalConsumer(new RecordingSignalCapture()));
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        CloseHelper.closeAll(dstAeronArchive, srcAeronArchive, dstArchive, srcArchive, dstMediaDriver, srcMediaDriver);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void replicateAsNewRecording()
+    {
+        createRecording(srcAeronArchive, IPC_CHANNEL, 555);
+        createRecording(srcAeronArchive, "aeron:udp?endpoint=localhost:8108", 666);
+        final long srcRecordingId = createRecording(srcAeronArchive, IPC_CHANNEL + "?alias=third", 1010101010);
+
+        final RecordingReplicator recordingReplicator = new RecordingReplicator(
+            dstAeronArchive,
+            srcRecordingId,
+            NULL_VALUE,
+            SRC_ARCHIVE_CONTROL_CHANNEL,
+            SRC_ARCHIVE_CONTROL_STREAM_ID,
+            null);
+        final long replicatedRecordingId = recordingReplicator.replicate();
+
+        verifyRecordingReplicated(srcRecordingId, replicatedRecordingId);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void replicateOverAnExistingRecording()
+    {
+        createRecording(srcAeronArchive, IPC_CHANNEL, 555);
+        createRecording(srcAeronArchive, "aeron:udp?endpoint=localhost:8108", 666);
+        final long srcRecordingId = createRecording(srcAeronArchive, IPC_CHANNEL + "?alias=third", 1010101010);
+
+        createRecording(dstAeronArchive, IPC_CHANNEL + "?alias=one", 111);
+        final long dstRecordingId = createRecording(
+            dstAeronArchive,
+            "aeron:udp?endpoint=localhost:8114|init-term-id=13|term-id=27|term-offset=1024|term-length=128K",
+            444);
+
+        try (AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            .aeronDirectoryName(dstMediaDriver.aeronDirectoryName())
+            .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
+            .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
+            .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
+            .recordingSignalConsumer(new RecordingSignalCapture())))
+        {
+            final RecordingReplicator recordingReplicator = new RecordingReplicator(
+                aeronArchive,
+                srcRecordingId,
+                dstRecordingId,
+                SRC_ARCHIVE_CONTROL_CHANNEL,
+                SRC_ARCHIVE_CONTROL_STREAM_ID,
+                "aeron:udp?alias=test-channel|endpoint=localhost:9393");
+            final long replicatedRecordingId = recordingReplicator.replicate();
+            assertEquals(dstRecordingId, replicatedRecordingId);
+
+            verifyRecordingReplicated(srcRecordingId, replicatedRecordingId);
+        }
+    }
+
+    private long createRecording(
+        final AeronArchive aeronArchive,
+        final String channel,
+        final int streamId)
+    {
+        try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(channel, streamId))
+        {
+            final CountersReader counters = aeronArchive.context().aeron().countersReader();
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            final ThreadLocalRandom random = ThreadLocalRandom.current();
+            final int numMessages = random.nextInt(1, 10);
+            System.out.println();
+            for (int i = 0; i < numMessages; i++)
+            {
+                final int messageSize = random.nextInt(8, 1200);
+                long result;
+                while ((result = publication.tryClaim(messageSize, bufferClaim)) < 0)
+                {
+                    if (result == Publication.CLOSED ||
+                        result == Publication.NOT_CONNECTED ||
+                        result == Publication.MAX_POSITION_EXCEEDED)
+                    {
+                        fail("tryClaim failed: " + result);
+                    }
+                    Tests.yield();
+                }
+
+                final MutableDirectBuffer buffer = bufferClaim.buffer();
+                final int offset = bufferClaim.offset();
+                buffer.putInt(offset, random.nextInt(), LITTLE_ENDIAN);
+                buffer.putInt(offset + (messageSize - SIZE_OF_INT), random.nextInt(), LITTLE_ENDIAN);
+                bufferClaim.commit();
+            }
+
+            final RecordingSignalCapture signalCapture =
+                (RecordingSignalCapture)aeronArchive.context().recordingSignalConsumer();
+            signalCapture.reset();
+            aeronArchive.stopRecording(publication);
+            signalCapture.awaitSignal(aeronArchive, recordingId, RecordingSignal.STOP);
+
+            return recordingId;
+        }
+    }
+
+    private void verifyRecordingReplicated(final long srcRecordingId, final long dstRecordingId)
+    {
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(1);
+
+        assertEquals(1, srcAeronArchive.listRecording(srcRecordingId, collector.reset()));
+        final RecordingDescriptor srcRecording = collector.descriptors().get(0).retain();
+
+        assertEquals(1, dstAeronArchive.listRecording(dstRecordingId, collector.reset()));
+        final RecordingDescriptor dstRecording = collector.descriptors().get(0).retain();
+
+        assertNotEquals(srcRecording.recordingId(), dstRecording.recordingId());
+        assertNotEquals(srcRecording.stopTimestamp(), dstRecording.stopTimestamp());
+        assertEquals(srcRecording.startTimestamp(), dstRecording.startTimestamp());
+        assertEquals(srcRecording.startPosition(), dstRecording.startPosition());
+        assertEquals(srcRecording.stopPosition(), dstRecording.stopPosition());
+        assertEquals(srcRecording.initialTermId(), dstRecording.initialTermId());
+        assertEquals(srcRecording.segmentFileLength(), dstRecording.segmentFileLength());
+        assertEquals(srcRecording.termBufferLength(), dstRecording.termBufferLength());
+        assertEquals(srcRecording.mtuLength(), dstRecording.mtuLength());
+        assertEquals(srcRecording.sessionId(), dstRecording.sessionId());
+        assertEquals(srcRecording.streamId(), dstRecording.streamId());
+        assertEquals(srcRecording.strippedChannel(), dstRecording.strippedChannel());
+        assertEquals(srcRecording.originalChannel(), dstRecording.originalChannel());
+        assertEquals(srcRecording.sourceIdentity(), dstRecording.sourceIdentity());
+        assertEquals(dstRecording.controlSessionId(), dstRecording.controlSessionId());
+    }
+}

@@ -18,6 +18,7 @@ package io.aeron.samples.archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingSignalConsumer;
 import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.exceptions.AeronException;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -83,6 +84,29 @@ public final class RecordingSignalCapture implements RecordingSignalConsumer
     }
 
     /**
+     * Uses {@link AeronArchive#pollForRecordingSignals()} until the specified signal is received.
+     *
+     * @param archive             client to poll for signals on.
+     * @param expectedSignal      to await.
+     */
+    public void awaitSignal(
+        final AeronArchive archive,
+        final RecordingSignal expectedSignal)
+    {
+        while (expectedSignal != signal)
+        {
+            if (0 == archive.pollForRecordingSignals())
+            {
+                Thread.yield();
+                if (Thread.currentThread().isInterrupted())
+                {
+                    throw new AeronException("unexpected interrupt");
+                }
+            }
+        }
+    }
+
+    /**
      * Uses {@link AeronArchive#pollForRecordingSignals()} until the specified signal for the specified recording is
      * received.
      *
@@ -100,6 +124,10 @@ public final class RecordingSignalCapture implements RecordingSignalConsumer
             if (0 == archive.pollForRecordingSignals())
             {
                 Thread.yield();
+                if (Thread.currentThread().isInterrupted())
+                {
+                    throw new AeronException("unexpected interrupt");
+                }
             }
         }
     }

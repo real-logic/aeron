@@ -1385,9 +1385,14 @@ public final class TestCluster implements AutoCloseable
 
     public static String clusterMembers(final int clusterId, final int memberCount)
     {
+        return clusterMembers(clusterId, 0, memberCount);
+    }
+
+    private static String clusterMembers(final int clusterId, final int initialMemberId, final int memberCount)
+    {
         final StringBuilder builder = new StringBuilder();
 
-        for (int i = 0; i < memberCount; i++)
+        for (int i = initialMemberId; i < (initialMemberId + memberCount); i++)
         {
             builder
                 .append(i).append(',')

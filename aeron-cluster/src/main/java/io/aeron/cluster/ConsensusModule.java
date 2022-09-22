@@ -30,6 +30,7 @@ import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
+import io.aeron.security.DefaultAuthenticatorSupplier;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -685,12 +686,6 @@ public final class ConsensusModule implements AutoCloseable
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.authenticator.supplier";
 
         /**
-         * Name of the class to use as a supplier of {@link Authenticator} for the cluster. Default is
-         * a non-authenticating option.
-         */
-        public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.security.DefaultAuthenticatorSupplier";
-
-        /**
          * Name of the system property for specifying a supplier of {@link AuthorisationService} for the cluster.
          */
         public static final String AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME =
@@ -1074,16 +1069,19 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The value {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
+         * The value {@link DefaultAuthenticatorSupplier#INSTANCE} or system property
          * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
          *
-         * @return {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
+         * @return {@link DefaultAuthenticatorSupplier#INSTANCE} or system property
          * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
          */
         public static AuthenticatorSupplier authenticatorSupplier()
         {
-            final String supplierClassName = System.getProperty(
-                AUTHENTICATOR_SUPPLIER_PROP_NAME, AUTHENTICATOR_SUPPLIER_DEFAULT);
+            final String supplierClassName = System.getProperty(AUTHENTICATOR_SUPPLIER_PROP_NAME);
+            if (Strings.isEmpty(supplierClassName))
+            {
+                return DefaultAuthenticatorSupplier.INSTANCE;
+            }
 
             AuthenticatorSupplier supplier = null;
             try
@@ -3620,12 +3618,14 @@ public final class ConsensusModule implements AutoCloseable
 
         private void concludeMarkFile()
         {
+            final String aeronDirectory = aeron.context().aeronDirectoryName();
+            final String authenticatorClassName = authenticatorSupplier.getClass().getName();
             ClusterMarkFile.checkHeaderLength(
-                aeron.context().aeronDirectoryName(),
+                aeronDirectory,
                 controlChannel(),
                 ingressChannel,
                 null,
-                authenticatorSupplier.getClass().toString());
+                authenticatorClassName);
 
             markFile.encoder()
                 .archiveStreamId(archiveContext.controlRequestStreamId())
@@ -3635,11 +3635,11 @@ public final class ConsensusModule implements AutoCloseable
                 .memberId(clusterMemberId)
                 .serviceId(SERVICE_ID)
                 .clusterId(clusterId)
-                .aeronDirectory(aeron.context().aeronDirectoryName())
+                .aeronDirectory(aeronDirectory)
                 .controlChannel(controlChannel)
                 .ingressChannel(ingressChannel)
-                .serviceName("")
-                .authenticator(authenticatorSupplier.getClass().toString());
+                .serviceName(null)
+                .authenticator(authenticatorClassName);
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();

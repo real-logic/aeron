@@ -20,10 +20,18 @@ import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.codecs.mark.ClusterComponentType;
+import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
+import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.exceptions.ConfigurationException;
+import io.aeron.security.Authenticator;
+import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
+import io.aeron.security.DefaultAuthenticatorSupplier;
+import io.aeron.security.SessionProxy;
 import io.aeron.test.TestContexts;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -57,6 +65,7 @@ class ConsensusModuleContextTest
     {
         final Aeron.Context aeronContext = mock(Aeron.Context.class);
         when(aeronContext.subscriberErrorHandler()).thenReturn(new RethrowingErrorHandler());
+        when(aeronContext.aeronDirectoryName()).thenReturn("some aeron dir");
         final AgentInvoker conductorInvoker = mock(AgentInvoker.class);
         final Aeron aeron = mock(Aeron.class);
         when(aeron.context()).thenReturn(aeronContext);
@@ -243,6 +252,84 @@ class ConsensusModuleContextTest
     }
 
     @Test
+    void shouldUseDefaultAuthenticatorSupplierIfTheSystemPropertyIsSetToEmptyValue()
+    {
+        System.setProperty(AUTHENTICATOR_SUPPLIER_PROP_NAME, "");
+        try
+        {
+            assertNull(context.authenticatorSupplier());
+
+            context.conclude();
+
+            final AuthenticatorSupplier authenticatorSupplier = context.authenticatorSupplier();
+            assertSame(DefaultAuthenticatorSupplier.INSTANCE, authenticatorSupplier);
+        }
+        finally
+        {
+            System.clearProperty(AUTHENTICATOR_SUPPLIER_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldInstantiateAuthenticatorSupplierBasedOnTheSystemProperty()
+    {
+        System.setProperty(AUTHENTICATOR_SUPPLIER_PROP_NAME, TestAuthenticatorSupplier.class.getName());
+        try
+        {
+            context.conclude();
+            final AuthenticatorSupplier supplier = context.authenticatorSupplier();
+            assertInstanceOf(TestAuthenticatorSupplier.class, supplier);
+        }
+        finally
+        {
+            System.clearProperty(AUTHENTICATOR_SUPPLIER_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldUseProvidedAAuthenticatorSupplierInstance()
+    {
+        final AuthenticatorSupplier providedSupplier = mock(AuthenticatorSupplier.class);
+        context.authenticatorSupplier(providedSupplier);
+        assertSame(providedSupplier, context.authenticatorSupplier());
+
+        System.setProperty(AUTHENTICATOR_SUPPLIER_PROP_NAME, TestAuthenticatorSupplier.class.getName());
+        try
+        {
+            context.conclude();
+            assertSame(providedSupplier, context.authenticatorSupplier());
+        }
+        finally
+        {
+            System.clearProperty(AUTHENTICATOR_SUPPLIER_PROP_NAME);
+        }
+    }
+
+    @Test
+    void writeAuthenticatorSupplierClassNameIntoTheMarkFile()
+    {
+        final TestAuthenticatorSupplier authenticatorSupplier = new TestAuthenticatorSupplier();
+        final String authenticatorSupplierClassName = authenticatorSupplier.getClass().getName();
+        context.authenticatorSupplier(authenticatorSupplier);
+
+        context.conclude();
+
+        final ClusterMarkFile markFile = context.clusterMarkFile();
+        assertNotNull(markFile);
+        final MarkFileHeaderDecoder decoder = markFile.decoder();
+        decoder.sbeRewind();
+        assertEquals(ClusterMarkFile.SEMANTIC_VERSION, decoder.version());
+        assertEquals(ClusterComponentType.CONSENSUS_MODULE, decoder.componentType());
+        assertEquals(SystemUtil.getPid(), decoder.pid());
+        assertEquals(SERVICE_ID, decoder.serviceId());
+        assertEquals(context.aeron().context().aeronDirectoryName(), decoder.aeronDirectory());
+        assertEquals(context.controlChannel(), decoder.controlChannel());
+        assertEquals(context.ingressChannel(), decoder.ingressChannel());
+        assertNotNull(decoder.serviceName());
+        assertEquals(authenticatorSupplierClassName, decoder.authenticator());
+    }
+
+    @Test
     void shouldValidateModuleStateCounter()
     {
         context.moduleStateCounter(newCounter("moduleState", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID));
@@ -317,6 +404,33 @@ class ConsensusModuleContextTest
             final int protocolId, final int actionId, final Object type, final byte[] encodedPrincipal)
         {
             return false;
+        }
+    }
+
+    public static class TestAuthenticatorSupplier implements AuthenticatorSupplier
+    {
+        public Authenticator get()
+        {
+            return new TestAuthenticator();
+        }
+    }
+
+    static class TestAuthenticator implements Authenticator
+    {
+        public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+        {
+        }
+
+        public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+        {
+        }
+
+        public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+        {
+        }
+
+        public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+        {
         }
     }
 }

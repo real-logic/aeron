@@ -33,10 +33,9 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
 /**
  * {@code RecordingReplicator} allows replicating a recording from the source Archive to the destination Archive either
  * as a new recording or by replacing an existing recording.
- *
- * <p><em>Note: If {@link #DESTINATION_RECORDING_ID_PROP_NAME} is set then the existing destination recording will
+ * <p>
+ * <em>Note: If {@link #DESTINATION_RECORDING_ID_PROP_NAME} is set then the existing destination recording will
  * be completely replaced, i.e. truncated and overwritten with the data from the source recording.</em>
- *
  * <p>
  * Configuration properties:
  * <ul>
@@ -66,7 +65,6 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
  *     response stream id for receiving responses from the destination Archive. Defaults to
  *     {@link AeronArchive.Configuration#CONTROL_RESPONSE_STREAM_ID_DEFAULT}.</li>
  * </ul>
- *
  * <p>
  * The easiest way is to pass the configuration via file, e.g.:
  * <pre>
@@ -78,7 +76,7 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
  * {@code java -cp ... -Daeron.dir=some-dir ... io.aeron.samples.Archive.RecordingReplicator}
  * </pre>
  */
-public class RecordingReplicator
+public final class RecordingReplicator
 {
     /**
      * Name of the required system property for specifying the id of the source recording that must be replicated to
@@ -110,8 +108,8 @@ public class RecordingReplicator
 
     /**
      * Name of the optional system property for specifying an explicit replication channel for recording replication
-     * between source and destination archives. If not specified then the {@link io.aeron.archive.Archive.Context#replicationChannel()}
-     * of the destination Archive will be used.
+     * between source and destination archives. If not specified then the
+     * {@link io.aeron.archive.Archive.Context#replicationChannel()} of the destination Archive will be used.
      */
     public static final String REPLICATION_CHANNEL = "aeron.sample.archive.replicate.replication.channel";
 
@@ -222,8 +220,8 @@ public class RecordingReplicator
         final long srcRecordingId = parseLong(getProperty(SOURCE_RECORDING_ID_PROP_NAME));
         final long dstRecordingId = parseLong(getProperty(DESTINATION_RECORDING_ID_PROP_NAME));
         final String srcArchiveRequestChannel = getProperty(SOURCE_ARCHIVE_CONTROL_REQUEST_CHANNEL);
-        final int srcArchiveRequestStreamId =
-            parseInt(getProperty(SOURCE_ARCHIVE_CONTROL_REQUEST_STREAM_ID, String.valueOf(CONTROL_STREAM_ID_DEFAULT)));
+        final int srcArchiveRequestStreamId = parseInt(
+            getProperty(SOURCE_ARCHIVE_CONTROL_REQUEST_STREAM_ID, String.valueOf(CONTROL_STREAM_ID_DEFAULT)));
         final String replicationChannel = getProperty(REPLICATION_CHANNEL);
 
         if (NULL_VALUE != dstRecordingId)
@@ -263,7 +261,9 @@ public class RecordingReplicator
         {
             return null;
         }
+
         final String result = value.trim();
+
         return result.isEmpty() ? null : result;
     }
 }

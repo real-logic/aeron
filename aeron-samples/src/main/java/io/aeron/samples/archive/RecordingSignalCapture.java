@@ -32,8 +32,8 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  *     final RecordingSignalCapture recordingSignalCapture = new RecordingSignalCapture();
  *     try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
  *          AeronArchive archive = AeronArchive.connect(new AeronArchive.Context()
- *                     .recordingSignalConsumer(recordingSignalCapture)
- *                     .aeron(aeron)))
+ *              .recordingSignalConsumer(recordingSignalCapture)
+ *              .aeron(aeron)))
  *     {
  *         ...
  *         recordingSignalCapture.reset();
@@ -86,12 +86,10 @@ public final class RecordingSignalCapture implements RecordingSignalConsumer
     /**
      * Uses {@link AeronArchive#pollForRecordingSignals()} until the specified signal is received.
      *
-     * @param archive             client to poll for signals on.
-     * @param expectedSignal      to await.
+     * @param archive        client to poll for signals on.
+     * @param expectedSignal to await.
      */
-    public void awaitSignal(
-        final AeronArchive archive,
-        final RecordingSignal expectedSignal)
+    public void awaitSignal(final AeronArchive archive, final RecordingSignal expectedSignal)
     {
         while (expectedSignal != signal)
         {
@@ -115,9 +113,7 @@ public final class RecordingSignalCapture implements RecordingSignalConsumer
      * @param expectedSignal      to await.
      */
     public void awaitSignal(
-        final AeronArchive archive,
-        final long expectedRecordingId,
-        final RecordingSignal expectedSignal)
+        final AeronArchive archive, final long expectedRecordingId, final RecordingSignal expectedSignal)
     {
         while (expectedRecordingId != recordingId || expectedSignal != signal)
         {

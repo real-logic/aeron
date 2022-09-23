@@ -34,6 +34,7 @@ import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -539,6 +540,26 @@ public final class TestNode implements AutoCloseable
         public void onRoleChange(final Cluster.Role newRole)
         {
             roleChangedTo = newRole;
+        }
+
+        public void awaitServiceMessageCount(final int messageCount, final Runnable keepAlive, final Object node)
+        {
+            int count;
+            while ((count = messageCount()) < messageCount)
+            {
+                Thread.yield();
+                if (Thread.interrupted())
+                {
+                    throw new TimeoutException("count=" + count + " awaiting=" + messageCount + " node=" + node);
+                }
+
+                if (hasReceivedUnexpectedMessage())
+                {
+                    fail("service received unexpected message");
+                }
+
+                keepAlive.run();
+            }
         }
     }
 

@@ -76,15 +76,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public final class TestCluster implements AutoCloseable
 {
-    private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
-    private static final long CATALOG_CAPACITY = 128 * 1024;
-    private static final String LOG_CHANNEL = "aeron:udp?term-length=512k";
+    static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
+    static final long CATALOG_CAPACITY = 128 * 1024;
 
-    private static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
-    private static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
-    private static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
-    private static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";
-    private static final long STARTUP_CANVASS_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
+    static final String LOG_CHANNEL = "aeron:udp?term-length=512k";
+    static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
+    static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
+    static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
+    static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";
+    static final long STARTUP_CANVASS_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
     public static final String DEFAULT_NODE_MAPPINGS =
         "node0,localhost,localhost|" +
@@ -924,8 +924,7 @@ public final class TestCluster implements AutoCloseable
 
     public void awaitResponseMessageCount(final int messageCount)
     {
-        final EpochClock epochClock = client.context().aeron().context().epochClock();
-        long heartbeatDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+        clientKeepAlive.init();
         long count;
         final Supplier<String> msg = () -> "expected=" + messageCount + " responseCount=" + responseCount.get();
 
@@ -933,21 +932,15 @@ public final class TestCluster implements AutoCloseable
         {
             client.pollEgress();
 
-            final long nowMs = epochClock.time();
-            if (nowMs > heartbeatDeadlineMs)
+            try
             {
-                try
-                {
-                    client.sendKeepAlive();
-                }
-                catch (final ClusterException ex)
-                {
-                    final String message = "count=" + count + " awaiting=" + messageCount + " cause=" + ex.getMessage();
-                    throw new RuntimeException(message, ex);
-                }
-                heartbeatDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+                clientKeepAlive.run();
             }
-
+            catch (final ClusterException ex)
+            {
+                final String message = "count=" + count + " awaiting=" + messageCount + " cause=" + ex.getMessage();
+                throw new RuntimeException(message, ex);
+            }
             Tests.yieldingIdle(msg);
         }
     }
@@ -1257,34 +1250,13 @@ public final class TestCluster implements AutoCloseable
         awaitServiceMessageCount(node, service, messageCount);
     }
 
+    private final KeepAlive clientKeepAlive = new KeepAlive();
+
     public void awaitServiceMessageCount(
         final TestNode node, final TestNode.TestService service, final int messageCount)
     {
-        final EpochClock epochClock = client.context().aeron().context().epochClock();
-        long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
-        long count;
-
-        while ((count = service.messageCount()) < messageCount)
-        {
-            Thread.yield();
-            if (Thread.interrupted())
-            {
-                throw new TimeoutException("await message count: count=" + count + " awaiting=" + messageCount +
-                    " node=" + node);
-            }
-
-            if (service.hasReceivedUnexpectedMessage())
-            {
-                fail("service received unexpected message");
-            }
-
-            final long nowMs = epochClock.time();
-            if (nowMs > keepAliveDeadlineMs)
-            {
-                client.sendKeepAlive();
-                keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
-            }
-        }
+        clientKeepAlive.init();
+        service.awaitServiceMessageCount(messageCount, clientKeepAlive, node);
     }
 
     public void awaitTimerEventCount(final TestNode node, final int expectedTimerEventsCount)
@@ -1296,8 +1268,7 @@ public final class TestCluster implements AutoCloseable
     public void awaitTimerEventCount(
         final TestNode node, final TestNode.TestService service, final int expectedTimerEventsCount)
     {
-        final EpochClock epochClock = client.context().aeron().context().epochClock();
-        long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+        clientKeepAlive.init();
         long count;
 
         while ((count = service.timerCount()) < expectedTimerEventsCount)
@@ -1314,19 +1285,13 @@ public final class TestCluster implements AutoCloseable
                 fail("service received unexpected message");
             }
 
-            final long nowMs = epochClock.time();
-            if (nowMs > keepAliveDeadlineMs)
-            {
-                client.sendKeepAlive();
-                keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
-            }
+            clientKeepAlive.run();
         }
     }
 
     public void awaitNodeState(final TestNode node, final Predicate<TestNode> predicate)
     {
-        final EpochClock epochClock = client.context().aeron().context().epochClock();
-        long keepAliveDeadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+        clientKeepAlive.init();
 
         while (!predicate.test(node))
         {
@@ -1336,12 +1301,7 @@ public final class TestCluster implements AutoCloseable
                 throw new TimeoutException("timeout while awaiting node state");
             }
 
-            final long nowMs = epochClock.time();
-            if (nowMs > keepAliveDeadlineMs)
-            {
-                client.sendKeepAlive();
-                keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
-            }
+            clientKeepAlive.run();
         }
     }
 
@@ -1388,7 +1348,7 @@ public final class TestCluster implements AutoCloseable
         return clusterMembers(clusterId, 0, memberCount);
     }
 
-    private static String clusterMembers(final int clusterId, final int initialMemberId, final int memberCount)
+    public static String clusterMembers(final int clusterId, final int initialMemberId, final int memberCount)
     {
         final StringBuilder builder = new StringBuilder();
 
@@ -1954,4 +1914,28 @@ public final class TestCluster implements AutoCloseable
             return "admin:invalid".getBytes(StandardCharsets.US_ASCII);
         }
     };
+
+    private class KeepAlive implements Runnable
+    {
+        private long keepAliveDeadlineMs;
+        private EpochClock epochClock;
+
+        private void init()
+        {
+            this.epochClock = requireNonNull(client, "client is not connected")
+                .context().aeron().context().epochClock();
+            final long nowMs = epochClock.time();
+            keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+        }
+
+        public void run()
+        {
+            final long nowMs = requireNonNull(epochClock, "did you call init() first?").time();
+            if (nowMs > keepAliveDeadlineMs)
+            {
+                client.sendKeepAlive();
+                keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+            }
+        }
+    }
 }

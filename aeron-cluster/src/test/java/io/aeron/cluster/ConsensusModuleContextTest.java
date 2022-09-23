@@ -66,6 +66,7 @@ class ConsensusModuleContextTest
         final Aeron.Context aeronContext = mock(Aeron.Context.class);
         when(aeronContext.subscriberErrorHandler()).thenReturn(new RethrowingErrorHandler());
         when(aeronContext.aeronDirectoryName()).thenReturn("some aeron dir");
+        when(aeronContext.useConductorAgentInvoker()).thenReturn(true);
         final AgentInvoker conductorInvoker = mock(AgentInvoker.class);
         final Aeron aeron = mock(Aeron.class);
         when(aeron.context()).thenReturn(aeronContext);
@@ -388,6 +389,13 @@ class ConsensusModuleContextTest
         final Throwable cause = exception.getCause();
         assertInstanceOf(IllegalStateException.class, cause);
         assertEquals("active Mark file detected", cause.getMessage());
+    }
+
+    @Test
+    void shouldThrowIfConductorInvokerModeIsNotUsed()
+    {
+        when(context.aeron().context().useConductorAgentInvoker()).thenReturn(false);
+        assertThrows(ClusterException.class, () -> context.conclude());
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

@@ -1461,6 +1461,14 @@ public final class ConsensusModule implements AutoCloseable
                         CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, "Cluster Errors - clusterId=" + clusterId);
                 }
             }
+            else
+            {
+                if (!aeron.context().useConductorAgentInvoker())
+                {
+                    throw new ClusterException(
+                        "Supplied Aeron client instance must set Aeron.Context.useConductorInvoker(true)");
+                }
+            }
 
             if (null == ingressChannel)
             {
@@ -3228,10 +3236,17 @@ public final class ConsensusModule implements AutoCloseable
          * <p>
          * This client will be closed when the {@link ConsensusModule#close()} or {@link #close()} methods are called
          * if {@link #ownsAeronClient()} is true.
+         * <p>
+         * The method is mostly here in order to test with a custom Aeron instance. The recommended approach is to set
+         * the aeronDirectoryName and allow the ConsensusModule to construct the Aeron client. The supplied Aeron
+         * client must be set to {@code Aeron.Context.useConductorInvoker(true)} to work correctly with the
+         * ConsensusModule.
          *
          * @param aeron client for communicating with the local Media Driver.
          * @return this for a fluent API.
          * @see Aeron#connect()
+         * @see Aeron.Context#useConductorAgentInvoker(boolean)
+         * @see Context#aeronDirectoryName(String)
          */
         public Context aeron(final Aeron aeron)
         {

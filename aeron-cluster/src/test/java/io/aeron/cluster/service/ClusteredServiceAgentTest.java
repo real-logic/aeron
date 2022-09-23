@@ -15,21 +15,32 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ConcurrentPublication;
+import io.aeron.Counter;
+import io.aeron.Publication;
+import io.aeron.Subscription;
+import io.aeron.UnavailableCounterHandler;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.concurrent.TimeUnit;
+
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.AeronCounters.CLUSTER_COMMIT_POSITION_TYPE_ID;
 import static io.aeron.AeronCounters.CLUSTER_RECOVERY_STATE_TYPE_ID;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.Mockito.*;
 
 class ClusteredServiceAgentTest
@@ -102,10 +113,22 @@ class ClusteredServiceAgentTest
         when(aeron.countersReader()).thenReturn(countersManager);
         when(aeron.isClosed()).thenReturn(false);
 
+        final NanoClock nanoClock = new NanoClock()
+        {
+            private long nanoTime;
+
+            public long nanoTime()
+            {
+                final long time = nanoTime;
+                nanoTime += TimeUnit.MILLISECONDS.toNanos(1);
+                return time;
+            }
+        };
+
         final ClusteredServiceContainer.Context ctx = new ClusteredServiceContainer.Context()
             .aeron(aeron)
-            .nanoClock(SystemNanoClock.INSTANCE)
-            .epochClock(SystemEpochClock.INSTANCE)
+            .nanoClock(nanoClock)
+            .epochClock(() -> 1)
             .clusterMarkFile(markFile)
             .clusteredService(mock(ClusteredService.class))
             .dutyCycleTracker(new DutyCycleTracker())
@@ -121,6 +144,8 @@ class ClusteredServiceAgentTest
 
         captor.getValue().onUnavailableCounter(countersManager, 0, commitPositionCounterId);
 
-        assertThrows(AgentTerminationException.class, clusteredServiceAgent::doWork);
+        final AgentTerminationException exception =
+            assertThrowsExactly(AgentTerminationException.class, clusteredServiceAgent::doWork);
+        assertEquals("commit position counter is closed", exception.getMessage());
     }
 }

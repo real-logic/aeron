@@ -26,10 +26,7 @@ import io.aeron.driver.DutyCycleTracker;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.AgentTerminationException;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.YieldingIdleStrategy;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -113,22 +110,11 @@ class ClusteredServiceAgentTest
         when(aeron.countersReader()).thenReturn(countersManager);
         when(aeron.isClosed()).thenReturn(false);
 
-        final NanoClock nanoClock = new NanoClock()
-        {
-            private long nanoTime;
-
-            public long nanoTime()
-            {
-                final long time = nanoTime;
-                nanoTime += TimeUnit.MILLISECONDS.toNanos(1);
-                return time;
-            }
-        };
-
+        final CachedNanoClock nanoClock = new CachedNanoClock();
         final ClusteredServiceContainer.Context ctx = new ClusteredServiceContainer.Context()
             .aeron(aeron)
             .nanoClock(nanoClock)
-            .epochClock(() -> 1)
+            .epochClock(new CachedEpochClock())
             .clusterMarkFile(markFile)
             .clusteredService(mock(ClusteredService.class))
             .dutyCycleTracker(new DutyCycleTracker())
@@ -144,6 +130,7 @@ class ClusteredServiceAgentTest
 
         captor.getValue().onUnavailableCounter(countersManager, 0, commitPositionCounterId);
 
+        nanoClock.advance(TimeUnit.MILLISECONDS.toNanos(2));
         final AgentTerminationException exception =
             assertThrowsExactly(AgentTerminationException.class, clusteredServiceAgent::doWork);
         assertEquals("commit position counter is closed", exception.getMessage());

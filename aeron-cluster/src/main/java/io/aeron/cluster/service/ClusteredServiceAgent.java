@@ -836,7 +836,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
             counterId = ClusterCounters.find(counters, COMMIT_POSITION_TYPE_ID, clusterId);
         }
 
-        return new ReadableCounter(counters, counterId);
+        return new ReadableCounter(counters, counters.getCounterRegistrationId(counterId), counterId);
     }
 
     private void loadSnapshot(final long recordingId)
@@ -1124,7 +1124,9 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     private void counterUnavailable(final CountersReader countersReader, final long registrationId, final int counterId)
     {
         final ReadableCounter commitPosition = this.commitPosition;
-        if (null != commitPosition && commitPosition.counterId() == counterId)
+        if (null != commitPosition &&
+            commitPosition.counterId() == counterId &&
+            commitPosition.registrationId() == registrationId)
         {
             commitPosition.close();
         }

@@ -522,7 +522,9 @@ int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoi
     if (1 == count)
     {
         const bool is_first_subscription =
-            1 == endpoint->stream_id_to_refcnt_map.size && 0 == endpoint->stream_and_session_id_to_refcnt_map.size;
+            1 == endpoint->stream_id_to_refcnt_map.size &&
+            0 == endpoint->stream_and_session_id_to_refcnt_map.size &&
+            0 == endpoint->conductor_fields.image_ref_count;
 
         if (is_first_subscription)
         {
@@ -578,7 +580,9 @@ int aeron_receive_channel_endpoint_incref_to_stream_and_session(
     if (1 == count)
     {
         const bool is_first_subscription =
-            0 == endpoint->stream_id_to_refcnt_map.size && 1 == endpoint->stream_and_session_id_to_refcnt_map.size;
+            0 == endpoint->stream_id_to_refcnt_map.size &&
+            1 == endpoint->stream_and_session_id_to_refcnt_map.size &&
+            0 == endpoint->conductor_fields.image_ref_count;
 
         if (is_first_subscription)
         {

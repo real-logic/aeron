@@ -73,7 +73,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
         TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
 
     private volatile boolean isAbort;
-    private volatile boolean isCounterUnavailable;
     private boolean isServiceActive;
     private final int serviceId;
     private int memberId = NULL_VALUE;
@@ -108,7 +107,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     private final BoundedLogAdapter logAdapter;
     private final DutyCycleTracker dutyCycleTracker;
     private String activeLifecycleCallbackName;
-    private volatile ReadableCounter commitPosition;
+    private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
     private Role role = Role.FOLLOWER;
     private TimeUnit timeUnit = null;
@@ -197,7 +196,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
                 workCount += 1;
             }
 
-            final ReadableCounter commitPosition = checkCommitPosition();
             if (null != logAdapter.image())
             {
                 final int polled = logAdapter.poll(commitPosition.get());
@@ -1001,6 +999,11 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
             lastSlowTickNs = nowNs;
             final long nowMs = epochClock.time();
 
+            if (commitPosition.isClosed())
+            {
+                throw new AgentTerminationException("commit position counter is closed");
+            }
+
             if (null != aeronAgentInvoker)
             {
                 aeronAgentInvoker.invoke();
@@ -1021,17 +1024,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
         }
 
         return false;
-    }
-
-    private ReadableCounter checkCommitPosition()
-    {
-        final ReadableCounter commitPosition = this.commitPosition;
-        if (null == commitPosition)
-        {
-            throw new AgentTerminationException("commit position counter not available");
-        }
-
-        return commitPosition;
     }
 
     private void pollServiceAdapter()
@@ -1134,7 +1126,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
         final ReadableCounter commitPosition = this.commitPosition;
         if (null != commitPosition && commitPosition.counterId() == counterId)
         {
-            this.commitPosition = null;
+            commitPosition.close();
         }
     }
 

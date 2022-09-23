@@ -20,7 +20,6 @@ import io.aeron.AeronCounters;
 import io.aeron.Counter;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.*;
-import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.Aeron.NULL_VALUE;

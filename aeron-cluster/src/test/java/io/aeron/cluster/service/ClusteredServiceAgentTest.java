@@ -18,19 +18,13 @@ package io.aeron.cluster.service;
 import io.aeron.*;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.driver.DutyCycleTracker;
-import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.test.Tests;
 import org.agrona.DirectBuffer;
-import org.agrona.MarkFile;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
-import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.AeronCounters.CLUSTER_COMMIT_POSITION_TYPE_ID;
@@ -55,10 +49,12 @@ class ClusteredServiceAgentTest
         final int length = 64;
         final DirectBuffer msg = new UnsafeBuffer(new byte[length]);
 
-        final long l = clusteredServiceAgent.tryClaim(0, publication, length, bufferClaim);
-        assertEquals(ClientSession.MOCKED_OFFER, l);
+        final long position = clusteredServiceAgent.tryClaim(0, publication, length, bufferClaim);
+        assertEquals(ClientSession.MOCKED_OFFER, position);
+
         final MutableDirectBuffer buffer = bufferClaim.buffer();
         buffer.putBytes(bufferClaim.offset() + AeronCluster.SESSION_HEADER_LENGTH, msg, 0, length);
+        bufferClaim.commit();
     }
 
     @Test
@@ -71,7 +67,7 @@ class ClusteredServiceAgentTest
         when(aeron.addPublication(any(), anyInt())).thenReturn(publication);
         when(aeron.addSubscription(any(), anyInt())).thenReturn(subscription);
         when(publication.tryClaim(anyInt(), any())).thenAnswer(
-            invocation ->
+            (invocation) ->
             {
                 final BufferClaim claim = invocation.getArgument(1, BufferClaim.class);
                 claim.wrap(claimBuffer, 0, claimBuffer.capacity());
@@ -84,7 +80,7 @@ class ClusteredServiceAgentTest
             new UnsafeBuffer(new byte[64 * 1024]), new UnsafeBuffer(new byte[16 * 1024]));
 
         when(aeron.addCounter(anyInt(), any(), anyInt(), anyInt(), any(), anyInt(), anyInt())).then(
-            invocation ->
+            (invocation) ->
             {
                 final int counterId = countersManager.allocate(
                     invocation.getArgument(0, Integer.class),
@@ -99,10 +95,8 @@ class ClusteredServiceAgentTest
 
         RecoveryState.allocate(aeron, NULL_VALUE, 0, 0, 0, 0);
 
-        final int commitPositionCounterId = countersManager.allocate(
-            "commit-pos", CLUSTER_COMMIT_POSITION_TYPE_ID);
-        final int recoveryStateCounterId = countersManager.allocate(
-            "recovery-state", CLUSTER_RECOVERY_STATE_TYPE_ID);
+        final int commitPositionCounterId = countersManager.allocate("commit-pos", CLUSTER_COMMIT_POSITION_TYPE_ID);
+        final int recoveryStateCounterId = countersManager.allocate("recovery-state", CLUSTER_RECOVERY_STATE_TYPE_ID);
         countersManager.setCounterValue(recoveryStateCounterId, NULL_VALUE);
 
         when(aeron.countersReader()).thenReturn(countersManager);

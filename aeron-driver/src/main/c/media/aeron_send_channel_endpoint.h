@@ -153,4 +153,9 @@ inline int aeron_send_channel_endpoint_bind_addr_and_port(
     return endpoint->transport_bindings->bind_addr_and_port_func(&endpoint->transport, buffer, length);
 }
 
+inline bool aeron_send_channel_is_unicast(aeron_send_channel_endpoint_t *endpoint)
+{
+    return NULL == endpoint->destination_tracker && !endpoint->conductor_fields.udp_channel->is_multicast;
+}
+
 #endif //AERON_SEND_CHANNEL_ENDPOINT_H

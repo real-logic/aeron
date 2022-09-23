@@ -196,6 +196,7 @@ int aeron_publication_image_create(
     _image->last_sm_change_number = -1;
     _image->last_loss_change_number = -1;
     _image->is_end_of_stream = false;
+    _image->send_sm_with_eos_flag = false;
     _image->has_receiver_released = false;
     _image->sm_timeout_ns = (int64_t)context->status_message_timeout_ns;
 
@@ -567,6 +568,9 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
             const int32_t term_id = aeron_logbuffer_compute_term_id_from_position(
                 sm_position, image->position_bits_to_shift, image->initial_term_id);
             const int32_t term_offset = (int32_t)(sm_position & image->term_length_mask);
+            bool send_sm_with_eos_flag;
+            AERON_GET_VOLATILE(send_sm_with_eos_flag, image->send_sm_with_eos_flag);
+            const uint8_t flags = send_sm_with_eos_flag ? AERON_STATUS_MESSAGE_HEADER_EOS_FLAG : 0;
 
             for (size_t i = 0, len = image->connections.length; i < len; i++)
             {
@@ -583,7 +587,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
                         term_id,
                         term_offset,
                         receiver_window_length,
-                        0);
+                        flags);
 
                     if (send_sm_result < 0)
                     {
@@ -888,8 +892,7 @@ void aeron_publication_image_on_time_event(
             {
                 image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_DRAINING;
                 image->conductor_fields.time_of_last_state_change_ns = now_ns;
-
-                aeron_driver_receiver_proxy_on_remove_publication_image(conductor->context->receiver_proxy, image);
+                AERON_PUT_ORDERED(image->send_sm_with_eos_flag, true);
             }
 
             aeron_publication_image_check_untethered_subscriptions(conductor, image, now_ns);
@@ -898,12 +901,19 @@ void aeron_publication_image_on_time_event(
 
         case AERON_PUBLICATION_IMAGE_STATE_DRAINING:
         {
-            if (aeron_publication_image_is_drained(image))
+            if (aeron_publication_image_is_drained(image) &&
+                ((image->conductor_fields.time_of_last_state_change_ns +
+                (AERON_IMAGE_SM_EOS_MULTIPLE * image->sm_timeout_ns)) - now_ns < 0))
             {
                 image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_LINGER;
                 image->conductor_fields.time_of_last_state_change_ns = now_ns;
 
                 aeron_driver_conductor_image_transition_to_linger(conductor, image);
+
+                aeron_receive_channel_endpoint_dec_image_ref_count(image->endpoint);
+                aeron_driver_receiver_proxy_on_remove_publication_image(conductor->context->receiver_proxy, image);
+
+                aeron_receive_channel_endpoint_try_remove_endpoint(image->endpoint);
             }
             break;
         }

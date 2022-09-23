@@ -32,6 +32,8 @@ typedef enum aeron_publication_image_state_enum
 }
 aeron_publication_image_state_t;
 
+#define AERON_IMAGE_SM_EOS_MULTIPLE (5)
+
 typedef struct aeron_publication_image_connection_stct
 {
     struct sockaddr_storage resolved_control_address_for_implicit_unicast_channels;
@@ -123,6 +125,7 @@ typedef struct aeron_publication_image_stct
     int64_t time_of_last_packet_ns;
 
     bool is_end_of_stream;
+    bool send_sm_with_eos_flag;
     volatile bool has_receiver_released;
 
     int64_t *heartbeats_received_counter;

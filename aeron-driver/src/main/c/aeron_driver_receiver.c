@@ -175,7 +175,7 @@ int aeron_driver_receiver_do_work(void *clientd)
     {
         aeron_publication_image_t *image = receiver->images.array[i].image;
 
-        if (NULL != image->endpoint && AERON_PUBLICATION_IMAGE_STATE_ACTIVE == image->conductor_fields.state)
+        if (NULL != image->endpoint)
         {
             int send_sm_result = aeron_publication_image_send_pending_status_message(image, now_ns);
             if (send_sm_result < 0)

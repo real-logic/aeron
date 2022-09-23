@@ -61,6 +61,7 @@ public:
         sm->frame_header.frame_length = send_gtag ?
             sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t) :
             sizeof(aeron_status_message_header_t);
+        sm->frame_header.flags = 0;
         sm->consumption_term_id = 0;
         sm->consumption_term_offset = term_offset;
         sm->receiver_window = WINDOW_LENGTH;
@@ -82,6 +83,7 @@ public:
         auto *asf = (int32_t *)(msg + sizeof(aeron_status_message_header_t));
 
         sm->frame_header.frame_length = sizeof(aeron_status_message_header_t) + sizeof(int32_t);
+        sm->frame_header.flags = 0;
         sm->consumption_term_id = 0;
         sm->consumption_term_offset = term_offset;
         sm->receiver_window = WINDOW_LENGTH;

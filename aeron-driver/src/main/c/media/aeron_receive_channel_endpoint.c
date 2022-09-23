@@ -94,6 +94,7 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->conductor_fields.managed_resource.clientd = _endpoint;
     _endpoint->conductor_fields.managed_resource.registration_id = -1;
     _endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE;
+    _endpoint->conductor_fields.image_ref_count = 0;
     _endpoint->channel_status.counter_id = -1;
     _endpoint->transport_bindings = context->udp_channel_transport_bindings;
 
@@ -498,6 +499,18 @@ int aeron_receive_channel_endpoint_on_rttm(
     return result;
 }
 
+void aeron_receive_channel_endpoint_try_remove_endpoint(aeron_receive_channel_endpoint_t *endpoint)
+{
+    if (0 == endpoint->stream_id_to_refcnt_map.size &&
+        0 == endpoint->stream_and_session_id_to_refcnt_map.size &&
+        0 >= endpoint->conductor_fields.image_ref_count)
+    {
+        /* mark as CLOSING to be aware not to use again (to be receiver_released and deleted) */
+        endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING;
+        aeron_driver_receiver_proxy_on_remove_endpoint(endpoint->receiver_proxy, endpoint);
+    }
+}
+
 int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
     int64_t count;
@@ -542,12 +555,7 @@ int aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoi
     {
         aeron_driver_receiver_proxy_on_remove_subscription(endpoint->receiver_proxy, endpoint, stream_id);
 
-        if (0 == endpoint->stream_id_to_refcnt_map.size && 0 == endpoint->stream_and_session_id_to_refcnt_map.size)
-        {
-            /* mark as CLOSING to be aware not to use again (to be receiver_released and deleted) */
-            endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING;
-            aeron_driver_receiver_proxy_on_remove_endpoint(endpoint->receiver_proxy, endpoint);
-        }
+        aeron_receive_channel_endpoint_try_remove_endpoint(endpoint);
     }
 
     return result;
@@ -610,12 +618,7 @@ int aeron_receive_channel_endpoint_decref_to_stream_and_session(
         aeron_driver_receiver_proxy_on_remove_subscription_by_session(
             endpoint->receiver_proxy, endpoint, stream_id, session_id);
 
-        if (0 == endpoint->stream_id_to_refcnt_map.size && 0 == endpoint->stream_and_session_id_to_refcnt_map.size)
-        {
-            /* mark as CLOSING to be aware not to use again (to be receiver_released and deleted) */
-            endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING;
-            aeron_driver_receiver_proxy_on_remove_endpoint(endpoint->receiver_proxy, endpoint);
-        }
+        aeron_receive_channel_endpoint_try_remove_endpoint(endpoint);
     }
 
     return result;
@@ -971,3 +974,6 @@ extern bool aeron_receive_channel_endpoint_should_elicit_setup_message(aeron_rec
 
 extern int aeron_receive_channel_endpoint_bind_addr_and_port(
     aeron_receive_channel_endpoint_t *endpoint, char *buffer, size_t length);
+
+extern void aeron_receive_channel_endpoint_inc_image_ref_count(aeron_receive_channel_endpoint_t *endpoint);
+extern void aeron_receive_channel_endpoint_dec_image_ref_count(aeron_receive_channel_endpoint_t *endpoint);

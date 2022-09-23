@@ -40,6 +40,7 @@ typedef struct aeron_min_flow_control_strategy_receiver_stct
     int64_t receiver_id;
     int32_t session_id;
     int32_t stream_id;
+    bool eos_flagged;
     uint8_t padding_after[AERON_CACHE_LINE_LENGTH - (3 * sizeof(int64_t))];
 }
 aeron_min_flow_control_strategy_receiver_t;
@@ -100,7 +101,8 @@ int64_t aeron_min_flow_control_strategy_on_idle(
     {
         aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[i];
 
-        if ((receiver->time_of_last_status_message_ns + strategy_state->receiver_timeout_ns) - now_ns < 0)
+        if ((receiver->time_of_last_status_message_ns + strategy_state->receiver_timeout_ns) - now_ns < 0 ||
+            receiver->eos_flagged)
         {
             aeron_array_fast_unordered_remove(
                 (uint8_t *)strategy_state->receivers.array,
@@ -156,6 +158,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
         initial_term_id);
     const int64_t window_length = status_message_header->receiver_window;
     const int64_t receiver_id = status_message_header->receiver_id;
+    const bool eos_flagged = status_message_header->frame_header.flags & AERON_STATUS_MESSAGE_HEADER_EOS_FLAG;
     int64_t position_plus_window = position + window_length;
 
     bool is_existing = false;
@@ -167,6 +170,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
 
         if (matches_tag && receiver_id == receiver->receiver_id)
         {
+            receiver->eos_flagged = eos_flagged;
             receiver->last_position = position > receiver->last_position ? position : receiver->last_position;
             receiver->last_position_plus_window = position + window_length;
             receiver->time_of_last_status_message_ns = now_ns;
@@ -177,7 +181,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
             receiver->last_position_plus_window : min_position;
     }
 
-    if (!is_existing && matches_tag)
+    if (!is_existing && !eos_flagged && matches_tag)
     {
         int ensure_capacity_result = 0;
         AERON_ARRAY_ENSURE_CAPACITY(

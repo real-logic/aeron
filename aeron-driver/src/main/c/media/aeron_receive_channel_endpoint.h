@@ -47,6 +47,7 @@ typedef struct aeron_receive_channel_endpoint_stct
         aeron_driver_managed_resource_t managed_resource;
         aeron_udp_channel_t *udp_channel;
         aeron_receive_channel_endpoint_status_t status;
+        int64_t image_ref_count;
     }
     conductor_fields;
 
@@ -163,6 +164,8 @@ int aeron_receive_channel_endpoint_on_rttm(
     size_t length,
     struct sockaddr_storage *addr);
 
+void aeron_receive_channel_endpoint_try_remove_endpoint(aeron_receive_channel_endpoint_t *endpoint);
+
 int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 
 int aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
@@ -271,6 +274,16 @@ inline int aeron_receive_channel_endpoint_bind_addr_and_port(
     }
 
     return 0;
+}
+
+inline void aeron_receive_channel_endpoint_inc_image_ref_count(aeron_receive_channel_endpoint_t *endpoint)
+{
+    endpoint->conductor_fields.image_ref_count++;
+}
+
+inline void aeron_receive_channel_endpoint_dec_image_ref_count(aeron_receive_channel_endpoint_t *endpoint)
+{
+    endpoint->conductor_fields.image_ref_count--;
 }
 
 #endif //AERON_RECEIVE_CHANNEL_ENDPOINT_H

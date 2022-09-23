@@ -104,6 +104,7 @@ typedef struct aeron_network_publication_stct
     bool is_end_of_stream;
     bool track_sender_limits;
     bool has_sender_released;
+    bool has_received_sm_eos;
     aeron_raw_log_close_func_t raw_log_close_func;
     aeron_raw_log_free_func_t raw_log_free_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;

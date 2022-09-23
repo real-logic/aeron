@@ -521,3 +521,5 @@ extern bool aeron_send_channel_endpoint_tags_match(
 
 extern int aeron_send_channel_endpoint_bind_addr_and_port(
     aeron_send_channel_endpoint_t *endpoint, char *buffer, size_t length);
+
+extern bool aeron_send_channel_is_unicast(aeron_send_channel_endpoint_t *endpoint);

@@ -4533,6 +4533,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         return;
     }
 
+    aeron_receive_channel_endpoint_inc_image_ref_count(endpoint);
     conductor->publication_images.array[conductor->publication_images.length++].image = image;
     int64_t now_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock);
 

@@ -614,7 +614,7 @@ bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
     #pragma clang diagnostic ignored "-Wunused-function"
 #endif
 
-inline static const char *tmp_dir()
+inline static const char *tmp_dir(void)
 {
 #if defined(_MSC_VER)
     static char buff[MAX_PATH + 1];
@@ -652,7 +652,7 @@ inline static bool has_file_separator_at_end(const char *path)
 #pragma clang diagnostic pop
 #endif
 
-inline static const char *username()
+inline static const char *username(void)
 {
 #if (_MSC_VER)
     const char *username = getenv("USER");

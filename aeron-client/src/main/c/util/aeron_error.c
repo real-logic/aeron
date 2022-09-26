@@ -86,7 +86,7 @@ static pthread_key_t error_key = TLS_OUT_OF_INDEXES;
 static pthread_key_t error_key;
 #endif
 
-static void initialize_per_thread_error()
+static void initialize_per_thread_error(void)
 {
     if (aeron_thread_key_create(&error_key, free))
     {
@@ -95,7 +95,7 @@ static void initialize_per_thread_error()
     }
 }
 
-static void initialize_error()
+static void initialize_error(void)
 {
 #if defined(AERON_COMPILER_MSVC)
     if (error_key != TLS_OUT_OF_INDEXES)
@@ -107,7 +107,7 @@ static void initialize_error()
     aeron_thread_once(&error_is_initialized, initialize_per_thread_error);
 }
 
-int aeron_errcode()
+int aeron_errcode(void)
 {
     initialize_error();
 
@@ -122,7 +122,7 @@ int aeron_errcode()
     return result;
 }
 
-const char *aeron_errmsg()
+const char *aeron_errmsg(void)
 {
     initialize_error();
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
@@ -137,7 +137,7 @@ const char *aeron_errmsg()
     }
 }
 
-static aeron_per_thread_error_t *get_required_error_state()
+static aeron_per_thread_error_t *get_required_error_state(void)
 {
     initialize_error();
 
@@ -309,7 +309,7 @@ void aeron_err_append(const char *function, const char *filename, int line_numbe
     va_end(args);
 }
 
-void aeron_err_clear()
+void aeron_err_clear(void)
 {
     aeron_per_thread_error_t *error_state = get_required_error_state();
 

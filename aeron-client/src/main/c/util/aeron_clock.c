@@ -110,7 +110,7 @@ int aeron_clock_gettime_realtime(struct timespec *time)
 
 #endif
 
-int64_t aeron_nano_clock()
+int64_t aeron_nano_clock(void)
 {
     struct timespec ts;
     if (aeron_clock_gettime_monotonic(&ts) < 0)
@@ -121,7 +121,7 @@ int64_t aeron_nano_clock()
     return ((int64_t)ts.tv_sec * 1000000000) + ts.tv_nsec;
 }
 
-int64_t aeron_epoch_clock()
+int64_t aeron_epoch_clock(void)
 {
     struct timespec ts;
     if (aeron_clock_gettime_realtime_coarse(&ts) < 0)

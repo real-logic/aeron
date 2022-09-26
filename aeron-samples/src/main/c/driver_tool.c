@@ -38,7 +38,7 @@ typedef struct aeron_driver_tool_settings_stct
 }
 aeron_driver_tool_settings_t;
 
-static const char *aeron_driver_tool_usage()
+static const char *aeron_driver_tool_usage(void)
 {
     return
         "    -P            Print PID only without anything else.\n"

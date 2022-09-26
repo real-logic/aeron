@@ -28,7 +28,7 @@
 #include <errno.h>
 #include <poll.h>
 
-int aeron_net_init()
+int aeron_net_init(void)
 {
     return 0;
 }

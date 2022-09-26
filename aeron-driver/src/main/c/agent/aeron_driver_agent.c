@@ -135,7 +135,7 @@ typedef struct aeron_driver_agent_name_resolver_state_stct
 }
 aeron_driver_agent_name_resolver_state_t;
 
-aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb()
+aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb(void)
 {
     return &logging_mpsc_rb;
 }
@@ -172,7 +172,7 @@ static void *aeron_driver_agent_log_reader(void *arg)
     return NULL;
 }
 
-void aeron_driver_agent_logging_ring_buffer_init()
+void aeron_driver_agent_logging_ring_buffer_init(void)
 {
     size_t rb_length = AERON_EVENT_RB_LENGTH + AERON_RB_TRAILER_LENGTH;
 
@@ -190,7 +190,7 @@ void aeron_driver_agent_logging_ring_buffer_init()
     }
 }
 
-void aeron_driver_agent_logging_ring_buffer_free()
+void aeron_driver_agent_logging_ring_buffer_free(void)
 {
     if (NULL != rb_buffer)
     {
@@ -479,7 +479,7 @@ bool aeron_driver_agent_logging_events_init(const char *event_log, const char *e
     return result;
 }
 
-void aeron_driver_agent_logging_events_free()
+void aeron_driver_agent_logging_events_free(void)
 {
     for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
@@ -491,7 +491,7 @@ void aeron_driver_agent_logging_events_free()
     num_dynamic_dissector_entries = 0;
 }
 
-static void initialize_agent_logging()
+static void initialize_agent_logging(void)
 {
     const char *event_log_str = getenv(AERON_EVENT_LOG_ENV_VAR);
     const char *event_log_disable_str = getenv(AERON_EVENT_LOG_DISABLE_ENV_VAR);

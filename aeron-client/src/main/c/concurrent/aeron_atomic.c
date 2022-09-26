@@ -22,6 +22,6 @@ extern bool aeron_cas_uint64(volatile uint64_t *dst, uint64_t expected, uint64_t
 
 extern bool aeron_cas_int32(volatile int32_t *dst, int32_t expected, int32_t desired);
 
-extern void aeron_acquire();
+extern void aeron_acquire(void);
 
-extern void aeron_release();
+extern void aeron_release(void);

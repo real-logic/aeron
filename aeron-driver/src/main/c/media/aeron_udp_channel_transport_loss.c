@@ -89,7 +89,7 @@ int aeron_udp_channel_interceptor_loss_configure(const aeron_udp_channel_interce
     return 0;
 }
 
-void aeron_udp_channel_transport_loss_load_env()
+void aeron_udp_channel_transport_loss_load_env(void)
 {
     aeron_udp_channel_interceptor_loss_params_t *params;
     const char *args = AERON_CONFIG_GETENV_OR_DEFAULT(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS_ENV_VAR, "");

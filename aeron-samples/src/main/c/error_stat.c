@@ -39,7 +39,7 @@ typedef struct aeron_error_stat_settings_stct
 }
 aeron_error_stat_settings_t;
 
-static const char *aeron_error_stat_usage()
+static const char *aeron_error_stat_usage(void)
 {
     return
         "    -h                 Displays help information.\n"

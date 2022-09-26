@@ -33,13 +33,13 @@ typedef struct aeron_per_thread_error_stct
 }
 aeron_per_thread_error_t;
 
-int aeron_errcode();
-const char *aeron_errmsg();
+int aeron_errcode(void);
+const char *aeron_errmsg(void);
 void aeron_set_errno(int errcode);
 const char *aeron_error_code_str(int errcode);
 void aeron_err_set(int errcode, const char *function, const char *filename, int line_number, const char *format, ...);
 void aeron_err_append(const char *function, const char *filename, int line_number, const char *format, ...);
-void aeron_err_clear();
+void aeron_err_clear(void);
 
 #if defined(AERON_COMPILER_MSVC)
 bool aeron_error_dll_process_attach();

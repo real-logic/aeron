@@ -173,7 +173,7 @@ typedef struct aeron_driver_agent_name_resolver_resolve_log_header_stct
 }
 aeron_driver_agent_name_resolver_resolve_log_header_t;
 
-aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb();
+aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb(void);
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
@@ -191,13 +191,13 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
 int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *context);
 
-void aeron_driver_agent_logging_ring_buffer_init();
+void aeron_driver_agent_logging_ring_buffer_init(void);
 
-void aeron_driver_agent_logging_ring_buffer_free();
+void aeron_driver_agent_logging_ring_buffer_free(void);
 
 bool aeron_driver_agent_logging_events_init(const char *event_log, const char *event_log_disable);
 
-void aeron_driver_agent_logging_events_free();
+void aeron_driver_agent_logging_events_free(void);
 
 bool aeron_driver_agent_is_event_enabled(aeron_driver_agent_event_t id);
 

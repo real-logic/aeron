@@ -309,7 +309,7 @@ int sched_yield(void)
 
 #include <sched.h>
 
-void proc_yield()
+void proc_yield(void)
 {
 #if !defined(AERON_CPU_ARM)
     __asm__ volatile("pause\n": : : "memory");

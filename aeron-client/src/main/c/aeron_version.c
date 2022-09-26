@@ -21,22 +21,22 @@ int aeron_major_version = AERON_VERSION_MAJOR;
 int aeron_minor_version = AERON_VERSION_MINOR;
 int aeron_patch_version = AERON_VERSION_PATCH;
 
-const char *aeron_version_full()
+const char *aeron_version_full(void)
 {
     return aeron_version_full_str;
 }
 
-int aeron_version_major()
+int aeron_version_major(void)
 {
     return aeron_major_version;
 }
 
-int aeron_version_minor()
+int aeron_version_minor(void)
 {
     return aeron_minor_version;
 }
 
-int aeron_version_patch()
+int aeron_version_patch(void)
 {
     return aeron_patch_version;
 }

@@ -37,7 +37,7 @@ void sigint_handler(int signal)
     AERON_PUT_ORDERED(running, false);
 }
 
-static const char *aeron_stat_usage()
+static const char *aeron_stat_usage(void)
 {
     return
         "    -h               Displays help information.\n"

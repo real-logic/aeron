@@ -96,7 +96,7 @@ void *aeron_thread_get_specific(pthread_key_t key);
 
 #if defined(AERON_COMPILER_GCC)
 
-void proc_yield();
+void proc_yield(void);
 
 #elif defined(AERON_COMPILER_MSVC)
 

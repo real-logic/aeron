@@ -58,7 +58,7 @@ void aeron_log_func_none(const char *str)
 static int aeron_dev_random_fd = -1;
 #endif
 
-int32_t aeron_randomised_int32()
+int32_t aeron_randomised_int32(void)
 {
     int32_t result;
 

@@ -102,7 +102,7 @@ int aeron_connect(aeron_socket_t fd, struct sockaddr *address, socklen_t address
 
 int aeron_bind(aeron_socket_t fd, struct sockaddr *address, socklen_t address_length);
 
-int aeron_net_init();
+int aeron_net_init(void);
 
 int aeron_getsockopt(aeron_socket_t fd, int level, int optname, void *optval, socklen_t *optlen);
 

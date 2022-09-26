@@ -28,7 +28,7 @@
 #include "aeron_common.h"
 #include "util/aeron_strutil.h"
 
-static const char *aeron_loss_stat_usage()
+static const char *aeron_loss_stat_usage(void)
 {
     return
         "    -h            Displays help information.\n"

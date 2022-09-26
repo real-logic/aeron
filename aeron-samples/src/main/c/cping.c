@@ -63,7 +63,7 @@ void sigint_handler(int signal)
     AERON_PUT_ORDERED(running, false);
 }
 
-inline bool is_running()
+inline bool is_running(void)
 {
     bool result;
     AERON_GET_VOLATILE(result, running);
@@ -366,4 +366,4 @@ cleanup:
     return status;
 }
 
-extern bool is_running();
+extern bool is_running(void);

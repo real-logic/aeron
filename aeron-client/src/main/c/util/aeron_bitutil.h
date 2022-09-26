@@ -155,6 +155,6 @@ inline int32_t aeron_find_next_power_of_two(int32_t value)
     return value + 1;
 }
 
-int32_t aeron_randomised_int32();
+int32_t aeron_randomised_int32(void);
 
 #endif //AERON_BITUTIL_H

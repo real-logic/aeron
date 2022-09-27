@@ -16,7 +16,7 @@ Aeron
 [![Code Quality: C/C++](https://img.shields.io/lgtm/grade/cpp/g/real-logic/aeron.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/real-logic/aeron/context:cpp)
 
 Efficient reliable UDP unicast, UDP multicast, and IPC message transport. Java, C, and C++ clients are available in this
-repository, and a [.NET client](https://github.com/AdaptiveConsulting/Aeron.NET) is available from a 3rd party. All
+repository, and a [.NET client](https://github.com/AdaptiveConsulting/Aeron.NET) is available. All
 clients can exchange messages across machines, or on the same machine via IPC, very efficiently. Message streams can be
 recorded by the [Archive](https://github.com/real-logic/aeron/tree/master/aeron-archive) module to persistent storage
 for later, or real-time, replay. Aeron [Cluster](https://github.com/real-logic/aeron/tree/master/aeron-cluster)

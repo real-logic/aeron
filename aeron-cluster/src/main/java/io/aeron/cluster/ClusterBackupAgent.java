@@ -173,6 +173,10 @@ public final class ClusterBackupAgent implements Agent
         if (!aeron.isClosed())
         {
             aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
+            if (NULL_VALUE != liveLogReplaySessionId)
+            {
+                clusterArchive.stopReplay(liveLogReplaySessionId);
+            }
 
             if (NULL_VALUE != liveLogRecordingSubscriptionId)
             {
@@ -305,6 +309,19 @@ public final class ClusterBackupAgent implements Agent
 
         CloseHelper.close(multiSnapshotReplication);
         multiSnapshotReplication = null;
+
+        if (NULL_VALUE != liveLogReplaySessionId)
+        {
+            try
+            {
+                clusterArchive.stopReplay(liveLogReplaySessionId);
+            }
+            catch (final Exception ex)
+            {
+                ctx.countedErrorHandler().onError(ex);
+            }
+            liveLogReplaySessionId = NULL_VALUE;
+        }
 
         if (NULL_VALUE != liveLogRecordingSubscriptionId)
         {

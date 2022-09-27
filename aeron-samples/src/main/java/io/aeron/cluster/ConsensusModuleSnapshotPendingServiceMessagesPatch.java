@@ -27,6 +27,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.ConsensusModuleEncoder;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
+import io.aeron.cluster.codecs.PendingMessageTrackerEncoder;
 import io.aeron.cluster.codecs.SessionMessageHeaderEncoder;
 import io.aeron.cluster.service.ClusterNodeControlProperties;
 import io.aeron.samples.archive.RecordingSignalCapture;
@@ -39,8 +40,8 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.IPC_CHANNEL;
-import static io.aeron.CommonContext.NULL_SESSION_ID;
 import static io.aeron.Publication.*;
+import static java.lang.Math.max;
 
 /**
  * A tool to patch the latest consensus module snapshot if it has divergence in the pending service messages state.
@@ -91,12 +92,16 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         {
             final SnapshotReader snapshotReader = new SnapshotReader();
             replayLocalSnapshotRecording(aeron, archive, recordingId, snapshotReader);
-            final long targetNextServiceSessionId =
-                snapshotReader.logServiceSessionId + 1 + snapshotReader.pendingServiceMessageCount;
-            if (targetNextServiceSessionId != snapshotReader.nextServiceSessionId)
+            final long targetNextServiceSessionId = max(
+                max(snapshotReader.nextServiceSessionId, snapshotReader.maxClusterSessionId + 1),
+                snapshotReader.logServiceSessionId + 1 + snapshotReader.pendingServiceMessageCount);
+            final long targetLogServiceSessionId =
+                targetNextServiceSessionId - 1 - snapshotReader.pendingServiceMessageCount;
+            if (targetNextServiceSessionId != snapshotReader.nextServiceSessionId ||
+                targetLogServiceSessionId != snapshotReader.logServiceSessionId)
             {
                 final long tempRecordingId = createNewSnapshotRecording(
-                    aeron, archive, recordingId, targetNextServiceSessionId);
+                    aeron, archive, recordingId, targetLogServiceSessionId, targetNextServiceSessionId);
 
                 final long stopPosition = awaitRecordingStopPosition(archive, recordingId);
                 final long newStopPosition = awaitRecordingStopPosition(archive, tempRecordingId);
@@ -196,6 +201,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         final Aeron aeron,
         final AeronArchive archive,
         final long oldRecordingId,
+        final long targetLogServiceSessionId,
         final long targetNextServiceSessionId)
     {
         final String channel = "aeron:ipc?alias=consensus-module-snapshot-patch";
@@ -213,7 +219,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                     aeron,
                     archive,
                     oldRecordingId,
-                    new SnapshotWriter(snapshotPublication, targetNextServiceSessionId));
+                    new SnapshotWriter(snapshotPublication, targetLogServiceSessionId, targetNextServiceSessionId));
 
                 awaitRecordingComplete(countersReader, counterId, snapshotPublication.position(), newRecordingId);
 
@@ -279,8 +285,9 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
 
     private static final class SnapshotReader implements ConsensusModuleSnapshotListener
     {
-        private long nextServiceSessionId = NULL_SESSION_ID;
-        private long logServiceSessionId = NULL_SESSION_ID;
+        private long nextServiceSessionId = Long.MIN_VALUE;
+        private long logServiceSessionId = Long.MIN_VALUE;
+        private long maxClusterSessionId = Long.MIN_VALUE;
         private int pendingServiceMessageCount = 0;
 
         public void onLoadBeginSnapshot(
@@ -309,6 +316,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
         {
             pendingServiceMessageCount++;
+            maxClusterSessionId = max(maxClusterSessionId, clusterSessionId);
         }
 
         public void onLoadClusterMembers(
@@ -365,14 +373,21 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         private final ExpandableArrayBuffer tempBuffer = new ExpandableArrayBuffer(1024);
         private final ConsensusModuleEncoder consensusModuleEncoder = new ConsensusModuleEncoder();
         private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
+        private final PendingMessageTrackerEncoder pendingMessageTrackerEncoder = new PendingMessageTrackerEncoder();
         private final ExclusivePublication snapshotPublication;
         private final long targetNextServiceSessionId;
+        private final long targetLogServiceSessionId;
         private long nextClusterSessionId;
 
-        SnapshotWriter(final ExclusivePublication snapshotPublication, final long targetNextServiceSessionId)
+        SnapshotWriter(
+            final ExclusivePublication snapshotPublication,
+            final long targetLogServiceSessionId,
+            final long targetNextServiceSessionId)
         {
             this.snapshotPublication = snapshotPublication;
+            this.targetLogServiceSessionId = targetLogServiceSessionId;
             this.targetNextServiceSessionId = targetNextServiceSessionId;
+            nextClusterSessionId = targetLogServiceSessionId + 1;
         }
 
         public void onLoadBeginSnapshot(
@@ -394,11 +409,10 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             final int offset,
             final int length)
         {
-            nextClusterSessionId = logServiceSessionId + 1;
-
             tempBuffer.putBytes(0, buffer, offset, length);
             consensusModuleEncoder
                 .wrap(tempBuffer, MessageHeaderEncoder.ENCODED_LENGTH)
+                .logServiceSessionId(targetLogServiceSessionId)
                 .nextServiceSessionId(targetNextServiceSessionId);
 
             writeToASnapshot(tempBuffer, 0, length);
@@ -463,7 +477,20 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             final int offset,
             final int length)
         {
-            writeToASnapshot(buffer, offset, length);
+            if (0 == serviceId)
+            {
+                tempBuffer.putBytes(0, buffer, offset, length);
+                pendingMessageTrackerEncoder
+                    .wrap(tempBuffer, MessageHeaderEncoder.ENCODED_LENGTH)
+                    .logServiceSessionId(targetLogServiceSessionId)
+                    .nextServiceSessionId(targetNextServiceSessionId);
+
+                writeToASnapshot(tempBuffer, 0, length);
+            }
+            else
+            {
+                writeToASnapshot(buffer, offset, length);
+            }
         }
 
         public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)

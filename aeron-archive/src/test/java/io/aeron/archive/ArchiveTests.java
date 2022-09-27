@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableBoolean;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -47,9 +48,10 @@ class ArchiveTests
         return archiveDir;
     }
 
-    static void awaitConnectedReply(
+    static void awaitConnectResponse(
         final Subscription controlResponse, final long expectedCorrelationId, final LongConsumer receiveSessionId)
     {
+        final MutableBoolean hasResponse = new MutableBoolean();
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
@@ -60,30 +62,38 @@ class ArchiveTests
                     final ControlResponseCode code,
                     final String errorMessage)
                 {
-                    if (ControlResponseCode.OK != code)
+                    if (correlationId == expectedCorrelationId)
                     {
-                        throw new IllegalStateException(
-                            "expected=" + ControlResponseCode.OK + " actual=" + code);
-                    }
+                        if (ControlResponseCode.OK != code)
+                        {
+                            throw new IllegalStateException("expected=" + ControlResponseCode.OK + " actual=" + code);
+                        }
 
-                    if (correlationId != expectedCorrelationId)
-                    {
-                        throw new IllegalStateException(
-                            "expected=" + expectedCorrelationId + " actual=" + correlationId);
+                        receiveSessionId.accept(controlSessionId);
+                        hasResponse.set(true);
                     }
-
-                    receiveSessionId.accept(controlSessionId);
                 }
             },
             controlResponse,
             1
         );
 
-        Tests.await(() -> controlResponseAdapter.poll() != 0, TIMEOUT_NS);
+        Tests.executeUntil(
+            hasResponse::get,
+            (j) ->
+            {
+                if (0 == controlResponseAdapter.poll())
+                {
+                    Thread.yield();
+                }
+            },
+            Integer.MAX_VALUE,
+            TIMEOUT_NS);
     }
 
     static void awaitOk(final Subscription controlResponse, final long expectedCorrelationId)
     {
+        final MutableBoolean hasResponse = new MutableBoolean();
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
@@ -94,17 +104,15 @@ class ArchiveTests
                     final ControlResponseCode code,
                     final String errorMessage)
                 {
-                    if (ControlResponseCode.OK != code)
+                    if (correlationId == expectedCorrelationId)
                     {
-                        System.out.println(errorMessage);
-                        throw new IllegalStateException(
-                            "expected=" + ControlResponseCode.OK + " actual=" + code);
-                    }
+                        if (ControlResponseCode.OK != code)
+                        {
+                            System.out.println(errorMessage);
+                            throw new IllegalStateException("expected=" + ControlResponseCode.OK + " actual=" + code);
+                        }
 
-                    if (correlationId != expectedCorrelationId)
-                    {
-                        throw new IllegalStateException(
-                            "expected=" + expectedCorrelationId + " actual=" + correlationId);
+                        hasResponse.set(true);
                     }
                 }
             },
@@ -112,11 +120,22 @@ class ArchiveTests
             1
         );
 
-        Tests.await(() -> controlResponseAdapter.poll() != 0, TIMEOUT_NS);
+        Tests.executeUntil(
+            hasResponse::get,
+            (j) ->
+            {
+                if (0 == controlResponseAdapter.poll())
+                {
+                    Thread.yield();
+                }
+            },
+            Integer.MAX_VALUE,
+            TIMEOUT_NS);
     }
 
     static void awaitResponse(final Subscription controlResponse, final long expectedCorrelationId)
     {
+        final MutableBoolean hasResponse = new MutableBoolean();
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
@@ -127,10 +146,9 @@ class ArchiveTests
                     final ControlResponseCode code,
                     final String errorMessage)
                 {
-                    if (correlationId != expectedCorrelationId)
+                    if (correlationId == expectedCorrelationId)
                     {
-                        throw new IllegalStateException(
-                            "expected=" + expectedCorrelationId + " actual=" + correlationId);
+                        hasResponse.set(true);
                     }
                 }
             },
@@ -138,6 +156,16 @@ class ArchiveTests
             1
         );
 
-        Tests.await(() -> controlResponseAdapter.poll() != 0, TIMEOUT_NS);
+        Tests.executeUntil(
+            hasResponse::get,
+            (j) ->
+            {
+                if (0 == controlResponseAdapter.poll())
+                {
+                    Thread.yield();
+                }
+            },
+            Integer.MAX_VALUE,
+            TIMEOUT_NS);
     }
 }

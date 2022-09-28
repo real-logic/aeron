@@ -133,8 +133,6 @@ class ClusteredServiceAgentTest
         captor.getValue().onUnavailableCounter(countersManager, 0, commitPositionCounterId);
 
         nanoClock.advance(TimeUnit.MILLISECONDS.toNanos(2));
-        assertThrowsExactly(
-            ClusterTerminationException.class, clusteredServiceAgent::doWork);
-//        assertEquals("commit position counter is closed", exception.getMessage());
+        assertThrowsExactly(ClusterTerminationException.class, clusteredServiceAgent::doWork);
     }
 }

@@ -167,6 +167,38 @@ class CounterTest
         }
     }
 
+    @Test
+    @InterruptAfter(10)
+    void shouldGetUnavailableCounterWhenOwningClientIsClosed()
+    {
+        clientB.addAvailableCounterHandler(this::createReadableCounter);
+        clientB.addUnavailableCounterHandler(this::unavailableCounterHandler);
+
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            keyBuffer,
+            0,
+            keyBuffer.capacity(),
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
+
+        while (null == readableCounter)
+        {
+            Tests.sleep(1);
+        }
+
+        assertFalse(readableCounter.isClosed());
+        assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());
+
+        clientA.close();
+
+        while (!readableCounter.isClosed())
+        {
+            Tests.sleep(1, "Counter not closed");
+        }
+    }
+
     private void createReadableCounter(final CountersReader counters, final long registrationId, final int counterId)
     {
         if (COUNTER_TYPE_ID == counters.getCounterTypeId(counterId))

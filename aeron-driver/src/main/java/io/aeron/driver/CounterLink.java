@@ -50,6 +50,7 @@ final class CounterLink implements DriverManagedResource
         if (client.hasTimedOut())
         {
             reachedEndOfLife = true;
+            conductor.unavailableCounter(registrationId, counterId());
         }
     }
 

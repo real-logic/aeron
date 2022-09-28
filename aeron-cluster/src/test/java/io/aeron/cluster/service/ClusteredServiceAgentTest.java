@@ -27,6 +27,7 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -119,6 +120,7 @@ class ClusteredServiceAgentTest
             .clusteredService(mock(ClusteredService.class))
             .dutyCycleTracker(new DutyCycleTracker())
             .idleStrategySupplier(() -> YieldingIdleStrategy.INSTANCE)
+            .errorLog(mock(DistinctErrorLog.class))
             .terminationHook(() -> {});
         final ClusteredServiceAgent clusteredServiceAgent = new ClusteredServiceAgent(ctx);
 

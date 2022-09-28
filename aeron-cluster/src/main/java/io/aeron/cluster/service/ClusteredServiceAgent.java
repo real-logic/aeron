@@ -24,6 +24,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.DutyCycleTracker;
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
@@ -1001,7 +1002,10 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
 
             if (commitPosition.isClosed())
             {
-                throw new AgentTerminationException("commit position counter is closed");
+                ctx.errorLog().record(new AeronEvent(
+                    "commit-pos counter unexpectedly closed, terminating", AeronException.Category.WARN));
+
+                throw new ClusterTerminationException(true);
             }
 
             if (null != aeronAgentInvoker)

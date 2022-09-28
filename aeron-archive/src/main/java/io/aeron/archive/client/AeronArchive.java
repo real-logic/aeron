@@ -1113,8 +1113,7 @@ public final class AeronArchive implements AutoCloseable
                 replayStreamId,
                 replayParams,
                 lastCorrelationId,
-                controlSessionId
-            ))
+                controlSessionId))
             {
                 throw new ArchiveException("failed to send bounded replay request");
             }
@@ -1128,9 +1127,10 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Stop a replay session.
+     * Stop an existing replay session.
      *
-     * @param replaySessionId to stop replay for.
+     * @param replaySessionId to stop replay for which would have been returned from
+     *                       {@link #startReplay(long, long, long, String, int)}.
      */
     public void stopReplay(final long replaySessionId)
     {

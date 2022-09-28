@@ -908,6 +908,7 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
     for (size_t i = 0; i < client->counter_links.length; i++)
     {
         aeron_counter_link_t *link = &client->counter_links.array[i];
+        aeron_driver_conductor_on_unavailable_counter(conductor, link->registration_id, link->counter_id);
         aeron_counters_manager_free(&conductor->counters_manager, link->counter_id);
     }
 

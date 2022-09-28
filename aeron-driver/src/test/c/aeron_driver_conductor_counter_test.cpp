@@ -116,7 +116,9 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_CLIENT_TIMEOUT, _, _))
         .With(IsTimeout(client_id));
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, _, _))
-        .With(IsTimeout(client_id));
+        .With(IsCounterUpdate(reg_id, counter_id));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, _, _))
+        .With(IsCounterUpdate(client_id, _));
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
@@ -125,16 +127,47 @@ TEST_F(DriverConductorCounterTest, shouldRemoveMultipleCountersOnClientTimeout)
     int64_t client_id = nextCorrelationId();
     int64_t reg_id1 = nextCorrelationId();
     int64_t reg_id2 = nextCorrelationId();
+    int total_client_plus_custom_counters = 3;
 
     ASSERT_EQ(addCounter(client_id, reg_id1, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
     ASSERT_EQ(addCounter(client_id, reg_id2, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
     doWork();
 
-    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _)).Times(3);
     readAllBroadcastsFromConductor(mock_broadcast_handler);
+    testing::Mock::VerifyAndClear(&m_mockCallbacks);
 
     doWorkForNs((int64_t)(m_context.m_context->client_liveness_timeout_ns * 2));
-    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_CLIENT_TIMEOUT, _, _));
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, _, _))
+        .Times(total_client_plus_custom_counters);
+
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+}
+
+TEST_F(DriverConductorCounterTest, shouldRemoveMultipleCountersOnClientClose)
+{
+    test_set_nano_time(INT64_C(100) * 1000 * 1000 * 1000);
+
+    int64_t client_id = nextCorrelationId();
+    int64_t reg_id1 = nextCorrelationId();
+    int64_t reg_id2 = nextCorrelationId();
+    int total_client_plus_custom_counters = 3;
+
+    ASSERT_EQ(addCounter(client_id, reg_id1, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id2, COUNTER_TYPE_ID, m_key, m_key_length, m_label), 0);
+    doWork();
+
+    closeClient(client_id);
+    doWork();
+    doWorkForNs((int64_t)(m_context.m_context->timer_interval_ns));
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _))
+        .Times(total_client_plus_custom_counters);
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, _, _))
+        .Times(total_client_plus_custom_counters);
+
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
 TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)

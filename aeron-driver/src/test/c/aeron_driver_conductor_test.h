@@ -530,6 +530,16 @@ public:
         return writeCommand(AERON_COMMAND_REMOVE_DESTINATION, sizeof(aeron_destination_command_t) + cmd->channel_length);
     }
 
+    int closeClient(int64_t client_id)
+    {
+        auto *cmd = reinterpret_cast<aeron_correlated_command_t *>(m_command_buffer);
+
+        cmd->client_id = client_id;
+        cmd->correlation_id = 0;
+
+        return writeCommand(AERON_COMMAND_CLIENT_CLOSE, sizeof(aeron_correlated_command_t));
+    }
+
     int doWork()
     {
         return aeron_driver_conductor_do_work(&m_conductor.m_conductor);

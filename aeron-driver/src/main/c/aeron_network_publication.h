@@ -98,22 +98,22 @@ typedef struct aeron_network_publication_stct
     bool signal_eos;
     bool is_setup_elicited;
     bool has_initial_connection;
-    bool has_receivers;
-    bool has_spies;
-    bool is_connected;
-    bool is_end_of_stream;
+    volatile bool has_receivers;
+    volatile bool has_spies;
+    volatile bool is_connected;
+    volatile bool is_end_of_stream;
     bool track_sender_limits;
-    bool has_sender_released;
-    bool has_received_sm_eos;
+    volatile bool has_sender_released;
+    volatile bool has_received_sm_eos;
     aeron_raw_log_close_func_t raw_log_close_func;
     aeron_raw_log_free_func_t raw_log_free_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
 
-    int64_t *short_sends_counter;
-    int64_t *heartbeats_sent_counter;
-    int64_t *sender_flow_control_limits_counter;
-    int64_t *retransmits_sent_counter;
-    int64_t *unblocked_publications_counter;
+    volatile int64_t *short_sends_counter;
+    volatile int64_t *heartbeats_sent_counter;
+    volatile int64_t *sender_flow_control_limits_counter;
+    volatile int64_t *retransmits_sent_counter;
+    volatile int64_t *unblocked_publications_counter;
 }
 aeron_network_publication_t;
 

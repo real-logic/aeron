@@ -666,7 +666,6 @@ void aeron_network_publication_on_rttm(
         uint8_t rttm_reply_buffer[sizeof(aeron_rttm_header_t)];
         aeron_rttm_header_t *rttm_out_header = (aeron_rttm_header_t *)rttm_reply_buffer;
         struct iovec iov;
-        int result;
         int64_t bytes_sent;
 
         rttm_out_header->frame_header.frame_length = sizeof(aeron_rttm_header_t);
@@ -682,8 +681,7 @@ void aeron_network_publication_on_rttm(
         iov.iov_base = rttm_reply_buffer;
         iov.iov_len = sizeof(aeron_rttm_header_t);
 
-
-        if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
+        if (0 <= aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent))
         {
             if (bytes_sent < (int64_t)iov.iov_len)
             {

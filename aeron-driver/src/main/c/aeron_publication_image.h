@@ -128,12 +128,12 @@ typedef struct aeron_publication_image_stct
     volatile bool is_sending_eos_sm;
     volatile bool has_receiver_released;
 
-    int64_t *heartbeats_received_counter;
-    int64_t *flow_control_under_runs_counter;
-    int64_t *flow_control_over_runs_counter;
-    int64_t *status_messages_sent_counter;
-    int64_t *nak_messages_sent_counter;
-    int64_t *loss_gap_fills_counter;
+    volatile int64_t *heartbeats_received_counter;
+    volatile int64_t *flow_control_under_runs_counter;
+    volatile int64_t *flow_control_over_runs_counter;
+    volatile int64_t *status_messages_sent_counter;
+    volatile int64_t *nak_messages_sent_counter;
+    volatile int64_t *loss_gap_fills_counter;
 }
 aeron_publication_image_t;
 

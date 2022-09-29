@@ -124,8 +124,8 @@ typedef struct aeron_publication_image_stct
 
     int64_t time_of_last_packet_ns;
 
-    bool is_end_of_stream;
-    bool send_sm_with_eos_flag;
+    volatile bool is_end_of_stream;
+    volatile bool is_sending_eos_sm;
     volatile bool has_receiver_released;
 
     int64_t *heartbeats_received_counter;

@@ -103,7 +103,7 @@ int aeron_driver_receiver_init(
         system_counters, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES);
 
     int64_t now_ns = context->nano_clock();
-    receiver->re_resolution_deadline_ns = now_ns + context->re_resolution_check_interval_ns;
+    receiver->re_resolution_deadline_ns = now_ns + (int64_t)context->re_resolution_check_interval_ns;
     receiver->context->receiver_duty_cycle_stall_tracker.tracker.update(
         receiver->context->receiver_duty_cycle_stall_tracker.tracker.state, now_ns);
 
@@ -204,7 +204,6 @@ int aeron_driver_receiver_do_work(void *clientd)
 
             work_count += initiate_rttm_result < 0 ? 0 : initiate_rttm_result;
         }
-
     }
 
     for (int last_index = (int)receiver->pending_setups.length - 1, i = last_index; i >= 0; i--)
@@ -254,7 +253,7 @@ int aeron_driver_receiver_do_work(void *clientd)
 
     if (receiver->context->re_resolution_check_interval_ns > 0 && now_ns > receiver->re_resolution_deadline_ns)
     {
-        receiver->re_resolution_deadline_ns = now_ns + receiver->context->re_resolution_check_interval_ns;
+        receiver->re_resolution_deadline_ns = now_ns + (int64_t)receiver->context->re_resolution_check_interval_ns;
         aeron_udp_transport_poller_check_receive_endpoint_re_resolutions(
             &receiver->poller, now_ns, receiver->context->conductor_proxy);
     }

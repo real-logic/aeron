@@ -196,7 +196,7 @@ int aeron_publication_image_create(
     _image->last_sm_change_number = -1;
     _image->last_loss_change_number = -1;
     _image->is_end_of_stream = false;
-    _image->send_sm_with_eos_flag = false;
+    _image->is_sending_eos_sm = false;
     _image->has_receiver_released = false;
     _image->sm_timeout_ns = (int64_t)context->status_message_timeout_ns;
 
@@ -568,9 +568,9 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
             const int32_t term_id = aeron_logbuffer_compute_term_id_from_position(
                 sm_position, image->position_bits_to_shift, image->initial_term_id);
             const int32_t term_offset = (int32_t)(sm_position & image->term_length_mask);
-            bool send_sm_with_eos_flag;
-            AERON_GET_VOLATILE(send_sm_with_eos_flag, image->send_sm_with_eos_flag);
-            const uint8_t flags = send_sm_with_eos_flag ? AERON_STATUS_MESSAGE_HEADER_EOS_FLAG : 0;
+            bool is_sending_eos_sm;
+            AERON_GET_VOLATILE(is_sending_eos_sm, image->is_sending_eos_sm);
+            const uint8_t flags = is_sending_eos_sm ? AERON_STATUS_MESSAGE_HEADER_EOS_FLAG : 0;
 
             for (size_t i = 0, len = image->connections.length; i < len; i++)
             {
@@ -609,7 +609,6 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
             aeron_update_active_transport_count(image, now_ns);
         }
     }
-
 
     return work_count;
 }
@@ -892,7 +891,7 @@ void aeron_publication_image_on_time_event(
             {
                 image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_DRAINING;
                 image->conductor_fields.time_of_last_state_change_ns = now_ns;
-                AERON_PUT_ORDERED(image->send_sm_with_eos_flag, true);
+                AERON_PUT_ORDERED(image->is_sending_eos_sm, true);
             }
 
             aeron_publication_image_check_untethered_subscriptions(conductor, image, now_ns);

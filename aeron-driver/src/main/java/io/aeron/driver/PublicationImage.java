@@ -75,7 +75,7 @@ class PublicationImagePadding2 extends PublicationImageConductorFields
 class PublicationImageReceiverFields extends PublicationImagePadding2
 {
     boolean isEndOfStream = false;
-    boolean sendSmWithEosFlag = false;
+    boolean isSendingEosSm = false;
     long timeOfLastPacketNs;
     ImageConnection[] imageConnections = new ImageConnection[1];
 }
@@ -142,7 +142,7 @@ public final class PublicationImage
     private final boolean isReliable;
 
     private boolean isRebuilding = true;
-    private volatile boolean mayReceiverRelease = false;
+    private volatile boolean isReceiverReleaseTriggered = false;
     private volatile boolean hasReceiverReleased = false;
     private volatile State state = State.INIT;
 
@@ -435,7 +435,7 @@ public final class PublicationImage
     void activate()
     {
         timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
-        this.state = State.ACTIVE;
+        state = State.ACTIVE;
     }
 
     /**
@@ -451,17 +451,17 @@ public final class PublicationImage
             isRebuilding = false;
             timeOfLastStateChangeNs = nowNs;
 
-            if (!sendSmWithEosFlag)
+            if (!isSendingEosSm)
             {
-                sendSmWithEosFlag = !isEndOfStream || rebuildPosition.getVolatile() == hwmPosition.get();
+                isSendingEosSm = !isEndOfStream || rebuildPosition.getVolatile() == hwmPosition.get();
             }
 
-            if (sendSmWithEosFlag)
+            if (isSendingEosSm)
             {
                 timeOfLastSmNs = nowNs - smTimeoutNs - 1;
             }
 
-            this.state = State.DRAINING;
+            state = State.DRAINING;
         }
     }
 
@@ -612,7 +612,7 @@ public final class PublicationImage
     }
 
     /**
-     * To be called from the {@link Receiver} to see if an image should be dispatched to.
+     * To be called from the {@link Receiver} to see if image should be dispatched to.
      *
      * @param nowNs current time to check against for activity.
      * @return true if the image should be retained otherwise false.
@@ -621,26 +621,26 @@ public final class PublicationImage
     {
         return ((timeOfLastPacketNs + imageLivenessTimeoutNs) - nowNs >= 0) &&
             !channelEndpoint.isClosed() &&
-            (!isEndOfStream || !mayReceiverRelease);
+            (!isEndOfStream || !isReceiverReleaseTriggered);
     }
 
     /**
-     * Check for EOS from publication and switch to {@link State#DRAINING} if caught up to end of stream position.
+     * Check for EOS from publication and switch to {@link State#DRAINING} if at end of stream position.
      *
-     * @param nowNs current time of use
+     * @param nowNs current time of use.
      */
-    void processEosAndDrain(final long nowNs)
+    void checkEosForDrainTransition(final long nowNs)
     {
-        if (!sendSmWithEosFlag)
+        if (!isSendingEosSm)
         {
             if (isEndOfStream && rebuildPosition.getVolatile() == hwmPosition.get() && State.ACTIVE == state)
             {
                 isRebuilding = false;
                 timeOfLastStateChangeNs = nowNs;
 
-                sendSmWithEosFlag = true;
+                isSendingEosSm = true;
                 timeOfLastSmNs = nowNs - smTimeoutNs - 1;
-                this.state = State.DRAINING;
+                state = State.DRAINING;
             }
         }
     }
@@ -667,7 +667,7 @@ public final class PublicationImage
             {
                 final int termId = computeTermIdFromPosition(smPosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)smPosition & termLengthMask;
-                final short flags = sendSmWithEosFlag ? StatusMessageFlyweight.END_OF_STREAM_FLAG : 0;
+                final short flags = isSendingEosSm ? StatusMessageFlyweight.END_OF_STREAM_FLAG : 0;
 
                 channelEndpoint.sendStatusMessage(
                     imageConnections, sessionId, streamId, termId, termOffset, receiverWindowLength, flags);
@@ -808,7 +808,7 @@ public final class PublicationImage
                     conductor.tryCloseReceiveChannelEndpoint(channelEndpoint);
 
                     timeOfLastStateChangeNs = timeNs;
-                    mayReceiverRelease = true;
+                    isReceiverReleaseTriggered = true;
                     state = State.LINGER;
                 }
                 break;

@@ -232,14 +232,16 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
     @CsvSource({
         "-9193372036854775999, -9223372036854775808, -9223372036854775808, -9200000000000000000, LogServiceSessionId",
         "1000000, 1000, 500000, 1000000, LogServiceSessionId",
+        "1000000, $compute, 1000001, 1000999, LogServiceSessionId",
         "5000, 200000, 100000, 150000, NextServiceSessionId",
-        "5000, 200000, 1000000000000000, 1223372036854775, MaxClusterSessionId" })
+        "$compute, 200000, 1, 199999, NextServiceSessionId",
+        "7777, 9999, 1000000000000000, 1223372036854775, MaxClusterSessionId" })
     @SlowTest
     @InterruptAfter(30)
     @SuppressWarnings("MethodLength")
     void executeShouldPatchTheStateOfTheLeaderSnapshot(
-        final long baseLogServiceSessionId,
-        final long baseNextServiceSessionId,
+        final String baseLogServiceSessionId,
+        final String baseNextServiceSessionId,
         final long clusterSessionIdLowerBound,
         final long clusterSessionIdUpperBound,
         final String mode)
@@ -352,14 +354,14 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                 {
                     case "LogServiceSessionId":
                     {
-                        assertEquals(baseLogServiceSessionId, logServiceSessionId);
-                        assertEquals(baseLogServiceSessionId + 1 + numPendingMessages, nextServiceSessionId);
+                        assertEquals(Long.parseLong(baseLogServiceSessionId), logServiceSessionId);
+                        assertEquals(logServiceSessionId + 1 + numPendingMessages, nextServiceSessionId);
                         break;
                     }
                     case "NextServiceSessionId":
                     {
-                        assertEquals(baseNextServiceSessionId - 1 - numPendingMessages, logServiceSessionId);
-                        assertEquals(baseNextServiceSessionId, nextServiceSessionId);
+                        assertEquals(Long.parseLong(baseNextServiceSessionId), nextServiceSessionId);
+                        assertEquals(nextServiceSessionId - 1 - numPendingMessages, logServiceSessionId);
                         break;
                     }
                     case "MaxClusterSessionId":
@@ -444,11 +446,32 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         final RecordingLog.Entry leaderSnapshot,
         final MutableInteger consensusModuleStateOffset,
         final IntArrayList pendingMessageOffsets,
-        final long baseLogServiceSessionId,
-        final long baseNextServiceSessionId,
+        final String baseLogServiceSessionId,
+        final String baseNextServiceSessionId,
         final long clusterSessionIdLowerBound,
         final long clusterSessionIdUpperBound)
     {
+        final int numberOfPendingMessages = pendingMessageOffsets.size();
+        final long logServiceSessionId;
+        if ("$compute".equals(baseLogServiceSessionId))
+        {
+            logServiceSessionId = Long.parseLong(baseNextServiceSessionId) - 1 - numberOfPendingMessages;
+        }
+        else
+        {
+            logServiceSessionId = Long.parseLong(baseLogServiceSessionId);
+        }
+
+        final long nextServiceSessionId;
+        if ("$compute".equals(baseNextServiceSessionId))
+        {
+            nextServiceSessionId = Long.parseLong(baseLogServiceSessionId) + 1 + numberOfPendingMessages;
+        }
+        else
+        {
+            nextServiceSessionId = Long.parseLong(baseNextServiceSessionId);
+        }
+
         final ArrayList<File> segmentFiles = listSegmentFiles(leader, leaderSnapshot.recordingId);
         assertEquals(1, segmentFiles.size());
         final MappedByteBuffer mappedByteBuffer =
@@ -462,8 +485,8 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             final ConsensusModuleEncoder consensusModuleEncoder = new ConsensusModuleEncoder();
             consensusModuleEncoder
                 .wrapAndApplyHeader(snapshotBuffer, consensusModuleStateOffset.get(), messageHeaderEncoder)
-                .logServiceSessionId(baseLogServiceSessionId)
-                .nextServiceSessionId(baseNextServiceSessionId);
+                .logServiceSessionId(logServiceSessionId)
+                .nextServiceSessionId(nextServiceSessionId);
 
             // Now randomize clusterSessionId of every pending service message
             final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
@@ -471,14 +494,18 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             pendingMessageOffsets.forEachInt((offset) ->
             {
                 final long clusterSessionId;
-                if (0 == count.getAndIncrement())
+                switch (count.getAndIncrement())
                 {
-                    clusterSessionId = clusterSessionIdUpperBound;
-                }
-                else
-                {
-                    clusterSessionId = ThreadLocalRandom.current()
-                        .nextLong(clusterSessionIdLowerBound, clusterSessionIdUpperBound);
+                    case 0:
+                        clusterSessionId = clusterSessionIdLowerBound;
+                        break;
+                    case 1:
+                        clusterSessionId = clusterSessionIdUpperBound;
+                        break;
+                    default:
+                        clusterSessionId = ThreadLocalRandom.current()
+                            .nextLong(clusterSessionIdLowerBound + 1, clusterSessionIdUpperBound);
+                        break;
                 }
                 sessionMessageHeaderEncoder
                     .wrapAndApplyHeader(snapshotBuffer, offset, messageHeaderEncoder)

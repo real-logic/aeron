@@ -42,6 +42,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.Publication.*;
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 /**
  * A tool to patch the latest consensus module snapshot if it has divergence in the pending service messages state.
@@ -98,7 +99,10 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             final long targetLogServiceSessionId =
                 targetNextServiceSessionId - 1 - snapshotReader.pendingServiceMessageCount;
             if (targetNextServiceSessionId != snapshotReader.nextServiceSessionId ||
-                targetLogServiceSessionId != snapshotReader.logServiceSessionId)
+                targetLogServiceSessionId != snapshotReader.logServiceSessionId ||
+                0 != snapshotReader.pendingServiceMessageCount &&
+                (targetLogServiceSessionId + 1 != snapshotReader.minClusterSessionId ||
+                targetNextServiceSessionId - 1 != snapshotReader.maxClusterSessionId))
             {
                 final long tempRecordingId = createNewSnapshotRecording(
                     aeron, archive, recordingId, targetLogServiceSessionId, targetNextServiceSessionId);
@@ -287,6 +291,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
     {
         private long nextServiceSessionId = Long.MIN_VALUE;
         private long logServiceSessionId = Long.MIN_VALUE;
+        private long minClusterSessionId = Long.MAX_VALUE;
         private long maxClusterSessionId = Long.MIN_VALUE;
         private int pendingServiceMessageCount = 0;
 
@@ -316,6 +321,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
         {
             pendingServiceMessageCount++;
+            minClusterSessionId = min(minClusterSessionId, clusterSessionId);
             maxClusterSessionId = max(maxClusterSessionId, clusterSessionId);
         }
 

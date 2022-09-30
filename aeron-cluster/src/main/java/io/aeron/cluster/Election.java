@@ -1237,7 +1237,7 @@ class Election
             .rejoin(Boolean.FALSE)
             .socketRcvbufLength(logChannelUri)
             .receiverWindowLength(logChannelUri)
-            .alias("log")
+            .alias("log-cm")
             .build();
 
         return aeron.addSubscription(channel, ctx.logStreamId());

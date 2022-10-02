@@ -35,6 +35,7 @@ final class ServiceProxy implements AutoCloseable
         new ServiceTerminationPositionEncoder();
     private final ClusterMembersExtendedResponseEncoder clusterMembersExtendedResponseEncoder =
         new ClusterMembersExtendedResponseEncoder();
+    private final RequestServiceAckEncoder requestServiceAckEncoder = new RequestServiceAckEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final Publication publication;
 
@@ -232,6 +233,36 @@ final class ServiceProxy implements AutoCloseable
             errorHandler.onError(new ClusterException(
                 "failed to send service termination position: result=" + result, AeronException.Category.WARN));
         }
+    }
+
+    void requestServiceAck(final long logPosition)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RequestServiceAckEncoder.BLOCK_LENGTH;
+
+        long result;
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                requestServiceAckEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .logPosition(logPosition);
+
+                bufferClaim.commit();
+
+                return;
+            }
+
+            if (Publication.BACK_PRESSURED == result)
+            {
+                Thread.yield();
+            }
+        }
+        while (--attempts > 0);
+
+        throw new ClusterException("failed to send request for service ack: result=" + Publication.errorString(result));
     }
 
     private static void checkResult(final long result)

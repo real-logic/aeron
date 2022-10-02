@@ -1346,6 +1346,7 @@ public final class ConsensusModule implements AutoCloseable
         private AppVersionValidator appVersionValidator;
         private boolean isLogMdc;
         private boolean useAgentInvoker = false;
+        private ConsensusModuleStateExport boostrapState = null;
 
         /**
          * Perform a shallow copy of the object.
@@ -3629,6 +3630,23 @@ public final class ConsensusModule implements AutoCloseable
         boolean isLogMdc()
         {
             return isLogMdc;
+        }
+
+        /**
+         * Start up the consensus module using presupplied state skipping the recovery process.  Internal use only.
+         *
+         * @param bootstrapState to initialize the consensus module.
+         * @return this for a fluent API.
+         */
+        ConsensusModule.Context bootstrapState(final ConsensusModuleStateExport bootstrapState)
+        {
+            this.boostrapState = bootstrapState;
+            return this;
+        }
+
+        ConsensusModuleStateExport boostrapState()
+        {
+            return boostrapState;
         }
 
         private void concludeMarkFile()

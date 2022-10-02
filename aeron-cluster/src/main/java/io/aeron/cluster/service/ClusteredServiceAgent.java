@@ -113,6 +113,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     private ActiveLogEvent activeLogEvent;
     private Role role = Role.FOLLOWER;
     private TimeUnit timeUnit = null;
+    private long requestedAckPosition = NULL_POSITION;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
@@ -405,6 +406,11 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     void onServiceTerminationPosition(final long logPosition)
     {
         terminationPosition = logPosition;
+    }
+
+    void onRequestServiceAck(final long logPosition)
+    {
+        requestedAckPosition = logPosition;
     }
 
     void onSessionMessage(
@@ -1056,6 +1062,21 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
             }
 
             terminate(logPosition == terminationPosition);
+        }
+
+        if (NULL_POSITION != requestedAckPosition && logPosition >= requestedAckPosition)
+        {
+            if (logPosition > requestedAckPosition)
+            {
+                ctx.countedErrorHandler().onError(new ClusterEvent(
+                    "service terminate: logPosition=" + logPosition +
+                    " > requestedAckPosition=" + terminationPosition));
+            }
+
+            if (consensusModuleProxy.ack(logPosition, clusterTime, ackId++, NULL_VALUE, serviceId))
+            {
+                requestedAckPosition = NULL_POSITION;
+            }
         }
     }
 

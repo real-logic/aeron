@@ -427,7 +427,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             openedPosition,
             timeOfLastActivity,
             responseStreamId,
-            createResponseChannel(responseChannel),
+            refineResponseChannel(responseChannel),
             closeReason);
 
         addSession(session);
@@ -526,7 +526,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
         final ClusterSession session = new ClusterSession(
-            clusterSessionId, responseStreamId, createResponseChannel(responseChannel));
+            clusterSessionId, responseStreamId, refineResponseChannel(responseChannel));
 
         session.asyncConnect(aeron);
         final long now = clusterClock.time();
@@ -1086,7 +1086,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
                 final ClusterSession session = new ClusterSession(
-                    NULL_VALUE, responseStreamId, createResponseChannel(responseChannel));
+                    NULL_VALUE, responseStreamId, refineResponseChannel(responseChannel));
 
                 session.action(ClusterSession.Action.BACKUP);
                 session.asyncConnect(aeron);
@@ -1131,7 +1131,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
                 final ClusterSession session = new ClusterSession(
-                    NULL_VALUE, responseStreamId, createResponseChannel(responseChannel));
+                    NULL_VALUE, responseStreamId, refineResponseChannel(responseChannel));
 
                 session.action(ClusterSession.Action.HEARTBEAT);
                 session.asyncConnect(aeron);
@@ -1430,7 +1430,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final String responseChannel)
     {
         final ClusterSession session = new ClusterSession(
-            clusterSessionId, responseStreamId, createResponseChannel(responseChannel));
+            clusterSessionId, responseStreamId, refineResponseChannel(responseChannel));
         session.open(logPosition);
         session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
 
@@ -3558,7 +3558,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    private String createResponseChannel(final String responseChannel)
+    private String refineResponseChannel(final String responseChannel)
     {
         final String egressChannel = ctx.egressChannel();
         if (null == egressChannel)
@@ -3568,9 +3568,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         else if (responseChannel.contains(ENDPOINT_PARAM_NAME))
         {
             final String responseEndpoint = ChannelUri.parse(responseChannel).get(ENDPOINT_PARAM_NAME);
-            final ChannelUri channel = ChannelUri.parse(egressChannel);
-            channel.put(ENDPOINT_PARAM_NAME, responseEndpoint);
-            return channel.toString();
+            final ChannelUri channelUri = ChannelUri.parse(egressChannel);
+            channelUri.put(ENDPOINT_PARAM_NAME, responseEndpoint);
+
+            return channelUri.toString();
         }
         else if (ctx.isIpcIngressAllowed() && responseChannel.startsWith(IPC_CHANNEL))
         {

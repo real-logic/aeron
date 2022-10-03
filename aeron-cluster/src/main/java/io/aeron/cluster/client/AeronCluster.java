@@ -1001,7 +1001,6 @@ public final class AeronCluster implements AutoCloseable
 
         /**
          * Channel for receiving response messages from a cluster.
-         *
          * <p>
          * Channel's <em>endpoint</em> can be specified explicitly (i.e. by providing address and port pair) or
          * by using zero as a port number. Here is an example of valid response channels:

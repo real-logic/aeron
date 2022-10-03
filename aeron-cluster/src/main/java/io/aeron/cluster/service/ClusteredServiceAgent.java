@@ -107,6 +107,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     private final Collection<ClientSession> unmodifiableClientSessions = Collections.unmodifiableCollection(sessions);
     private final BoundedLogAdapter logAdapter;
     private final DutyCycleTracker dutyCycleTracker;
+    private final String subscriptionAlias;
     private String activeLifecycleCallbackName;
     private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
@@ -127,6 +128,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
         dutyCycleTracker = ctx.dutyCycleTracker();
+        subscriptionAlias = "log-sc-" + ctx.serviceId();
 
         final String channel = ctx.controlChannel();
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
@@ -762,7 +764,11 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
             disconnectEgress(ctx.countedErrorHandler());
         }
 
-        Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
+        final String channel = new ChannelUriStringBuilder(activeLog.channel)
+            .alias(subscriptionAlias)
+            .build();
+
+        Subscription logSubscription = aeron.addSubscription(channel, activeLog.streamId);
         try
         {
             final Image image = awaitImage(activeLog.sessionId, logSubscription);

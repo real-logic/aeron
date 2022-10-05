@@ -671,7 +671,7 @@ public class LogBufferDescriptor
         long rawTail;
         do
         {
-            rawTail = rawTail(metadataBuffer, nextIndex);
+            rawTail = rawTailVolatile(metadataBuffer, nextIndex);
             if (expectedTermId != termId(rawTail))
             {
                 break;
